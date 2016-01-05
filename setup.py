@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2015-11-19 16:44:49
+# @Last Modified time: 2016-01-05 11:36:02
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
         url='https://github.com/poldracklab/mriqc',
         download_url='',
         license='3-clause BSD',
-        packages=['mriqc', 'mriqc.viz', 'mriqc.workflows', 'mriqc.interfaces'],
+        packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces'],
         package_data={},
         scripts=glob("scripts/*"),
         install_requires=["nipype", "nibabel", "pandas", "seaborn", "pyPdf2",
