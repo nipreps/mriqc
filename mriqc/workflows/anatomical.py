@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 16:01:42
+# @Last Modified time: 2016-01-05 16:20:29
 
 
 import os
@@ -29,9 +29,8 @@ def anat_qc_workflow(name='aMRIQC', settings={}):
     from ..interfaces.viz import PlotMosaic
     from qap.workflows.utils import qap_anatomical_spatial as qc_anat
 
+    # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
-
-    # Define inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['anatomical_scan', 'subject_id', 'session_id', 'scan_id',
                 'site_name']), name='inputnode')
