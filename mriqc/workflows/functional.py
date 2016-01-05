@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 18:06:34
+# @Last Modified time: 2016-01-05 19:57:58
 import os
 import os.path as op
 import sys
@@ -27,6 +27,7 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
     from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
     from qap.temporal_qc import fd_jenkinson
     from ..interfaces.viz import PlotMosaic, PlotFD
+    import nipype.algorithms.misc as nam
 
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)

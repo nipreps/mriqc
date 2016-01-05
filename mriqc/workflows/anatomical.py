@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 16:20:29
+# @Last Modified time: 2016-01-05 19:59:55
 
 
 import os
@@ -24,8 +24,6 @@ logger = logging.getLogger('workflow')
 
 
 def anat_qc_workflow(name='aMRIQC', settings={}):
-    import nipype.algorithms.misc as nam
-    from utils import qap_anatomical_spatial
     from ..interfaces.viz import PlotMosaic
     from qap.workflows.utils import qap_anatomical_spatial as qc_anat
 
@@ -74,13 +72,14 @@ def anat_qc_workflow(name='aMRIQC', settings={}):
         (asw, measures, [('outputnode.out_file', 'anatomical_brain')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
+        (arw, plot, [('outputnode.out_file', 'in_file')]),
         (inputnode, plot, [('subject_id', 'subject')]),
         (inputnode, merg, [('session_id', 'in1'),
                            ('scan_id', 'in2'),
                            ('site_name', 'in3')]),
         (merg, plot, [('out', 'metadata')]),
         (measures, outputnode, [('qc', 'qc')]),
-        (measures, plot, [('out_file', 'mosaic')]),
+        (plot, outputnode, [('out_file', 'mosaic')]),
     ])
 
     if settings.get('mask_mosaic', False):

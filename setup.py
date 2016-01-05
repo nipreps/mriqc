@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-05 11:36:02
+# @Last Modified time: 2016-01-05 20:09:19
 
 
 def main():
@@ -14,15 +14,14 @@ def main():
     setup(
         name='mriqc',
         version=__version__,
-        description=''
-                    '',
+        description='',
         author_email='crn.poldracklab@gmail.com',
         url='https://github.com/poldracklab/mriqc',
         download_url='',
         license='3-clause BSD',
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces'],
         package_data={},
-        scripts=glob("scripts/*"),
+        scripts=glob("scripts/*.py"),
         install_requires=["nipype", "nibabel", "pandas", "seaborn", "pyPdf2",
                           "xhtml2pdf", "qap"],
         zip_safe=False)
