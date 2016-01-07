@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-i', '--bids-root', action='store',
-                         default=os.cwd())
+                         default=os.getcwd())
     g_input.add_argument('--nthreads', action='store', default=0,
                          type=int, help='number of repetitions')
 
