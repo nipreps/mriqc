@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-08 11:20:00
+# @Last Modified time: 2016-01-08 18:10:26
 
 
 import os
@@ -29,16 +29,24 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
 
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(
+    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
+                        name='inputnode')
+    datasource = pe.Node(niu.IdentityInterface(
         fields=['anatomical_scan', 'subject_id', 'session_id', 'scan_id',
-                'site_name']), name='inputnode')
+                'site_name']), name='datasource')
 
     if sub_list:
-        sub_t = zip(*sub_list)
-        inputnode.iterables = [('subject_id', sub_t[0]),
-                               ('session_id', sub_t[1]),
-                               ('scan_id', sub_t[2]),
-                               ('anatomical_scan', sub_t[3])]
+        inputnode.iterables = [('data', [list(s) for s in sub_list])]
+
+        dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
+                         name='datasplit')
+        workflow.connect([
+            (inputnode, dsplit, [('data', 'inlist')]),
+            (dsplit, datasource, [('out1', 'subject_id'),
+                                  ('out2', 'session_id'),
+                                  ('out3', 'scan_id'),
+                                  ('out4', 'anatomical_scan')])
+        ])
 
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic']), name='outputnode')
@@ -65,11 +73,11 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (inputnode, measures, [('subject_id', 'subject_id'),
-                               ('session_id', 'session_id'),
-                               ('scan_id', 'scan_id'),
-                               ('site_name', 'site_name')]),
-        (inputnode, arw,
+        (datasource, measures, [('subject_id', 'subject_id'),
+                                ('session_id', 'session_id'),
+                                ('scan_id', 'scan_id'),
+                                ('site_name', 'site_name')]),
+        (datasource, arw,
             [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file',
                      'inputnode.in_file')]),
@@ -81,10 +89,10 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
-        (inputnode, plot, [('subject_id', 'subject')]),
-        (inputnode, merg, [('session_id', 'in1'),
-                           ('scan_id', 'in2'),
-                           ('site_name', 'in3')]),
+        (datasource, plot, [('subject_id', 'subject')]),
+        (datasource, merg, [('session_id', 'in1'),
+                            ('scan_id', 'in2'),
+                            ('site_name', 'in3')]),
         (merg, plot, [('out', 'metadata')]),
         (measures, outputnode, [('qc', 'qc')]),
         (plot, outputnode, [('out_file', 'mosaic')]),

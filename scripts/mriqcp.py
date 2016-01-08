@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-08 14:12:56
+# @Last Modified time: 2016-01-08 18:15:20
 
 """
 =====
@@ -39,6 +39,9 @@ if __name__ == '__main__':
                          default=os.getcwd())
     g_input.add_argument('--nthreads', action='store', default=0,
                          type=int, help='number of repetitions')
+    g_input.add_argument(
+        "--write-graph", action='store_true', default=False,
+        help="Write workflow graph.")
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-path', action='store')
@@ -68,9 +71,12 @@ if __name__ == '__main__':
         plugin = 'MultiProc'
         plugin_args = {'n_proc': nthreads, 'maxtasksperchild': 4}
 
+    subjects = gather_bids_data(settings['bids_root'])
     anat_wf = anat_qc_workflow(sub_list=subjects['anat'])
     if 'work_dir' in settings.keys():
         anat_wf.base_dir = settings['work_dir']
 
-    subjects = gather_bids_data(settings['bids_root'])
+    if opts.write_graph:
+        anat_wf.write_graph()
+        
     anat_wf.run()
