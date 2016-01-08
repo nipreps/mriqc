@@ -1,4 +1,9 @@
-machine:
+dependencies:
+  cache_directories:
+    - "~/examples/"
+    - "~/afni/"
+    - "~/fsl/"
+    - "~/downloads/"
   pre:
     - mkdir -p ${HOME}/downloads
     - mkdir -p ${HOME}/tmp
@@ -6,22 +11,17 @@ machine:
     - source ${HOME}/fsl/etc/fslconf/fsl.sh
     - if [[ ! -d ${HOME}/afni ]]; then wget -P ${HOME}/downloads/ "http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz"; cd ${HOME}/tmp; tar zxvf ${HOME}/downloads/linux_openmp_64.tgz; mv linux_openmp_64 ${HOME}/afni; fi
     - if [[ ! -d ${HOME}/examples/ds003_downsampled ]]; then wget -P ${HOME}/downloads/ "https://googledrive.com/host/0B2JWN60ZLkgkMEw4bW5VUUpSdFU/ds003_downsampled.tar"; mkdir -p ${HOME}/examples; tar xvf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/examples; fi
-  environment:
-    PATH: ${HOME}/afni:${HOME}/fsl/bin:${PATH}
-    FSLDIR: ${HOME}/fsl
-    LD_LIBRARY_PATH: ${HOME}/fsl/lib:${LD_LIBRARY_PATH}
-    FSLOUTPUTTYPE: NIFTI_GZ
-dependencies:
-  cache_directories:
-    - "~/examples/"
-    - "~/afni/"
-    - "~/fsl/"
-    - "~/downloads/"
   override:
     - pip install --upgrade pip
     - pip install numpy
     - pip install -r requirements.txt
     - pip install -e .
+machine:
+  environment:
+    PATH: ${HOME}/afni:${HOME}/fsl/bin:${PATH}
+    FSLDIR: ${HOME}/fsl
+    LD_LIBRARY_PATH: ${HOME}/fsl/lib:${LD_LIBRARY_PATH}
+    FSLOUTPUTTYPE: NIFTI_GZ
 test:
   override:
     # Test mriqcp

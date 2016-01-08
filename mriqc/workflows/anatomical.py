@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
-# @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-08 18:10:26
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-01-08 18:46:25
 
 
 import os
@@ -25,7 +25,15 @@ logger = logging.getLogger('workflow')
 
 def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     from ..interfaces.viz import PlotMosaic
-    from qap.workflows.utils import qap_anatomical_spatial as qc_anat
+
+    def qc_anat(anatomical_reorient, head_mask_path,
+                anatomical_segs, subject_id, session_id,
+                scan_id, site_name=None, out_vox=True):
+        from qap.workflows.utils import qap_anatomical_spatial
+        return qap_anatomical_spatial(
+            anatomical_reorient, head_mask_path, anatomical_gm_mask,
+            anatomical_wm_mask, anatomical_csf_mask, subject_id, session_id,
+            scan_id, site_name, out_vox)
 
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
@@ -54,9 +62,8 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     # Import measures from QAP
     measures = pe.Node(niu.Function(
         input_names=['anatomical_reorient', 'head_mask_path',
-                     'anatomical_gm_mask', 'anatomical_wm_mask',
-                     'anatomical_csf_mask', 'subject_id', 'session_id',
-                     'scan_id', 'site_name'],
+                     'anatomical_segs', 'subject_id', 'session_id',
+                     'scan_id'],
         output_names=['qc'], function=qc_anat), name='measures')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
@@ -75,8 +82,7 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     workflow.connect([
         (datasource, measures, [('subject_id', 'subject_id'),
                                 ('session_id', 'session_id'),
-                                ('scan_id', 'scan_id'),
-                                ('site_name', 'site_name')]),
+                                ('scan_id', 'scan_id')]),
         (datasource, arw,
             [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file',
@@ -85,7 +91,6 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
         (asw, segment,  [('outputnode.out_file', 'in_files')]),
         (arw, measures, [('outputnode.out_file', 'anatomical_reorient')]),
-        (asw, measures, [('outputnode.out_file', 'anatomical_brain')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
