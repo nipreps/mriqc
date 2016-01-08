@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 19:59:55
+# @Last modified by:   Oscar Esteban
+# @Last Modified time: 2016-01-08 11:20:00
 
 
 import os
@@ -23,7 +23,7 @@ from nipype import logging
 logger = logging.getLogger('workflow')
 
 
-def anat_qc_workflow(name='aMRIQC', settings={}):
+def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     from ..interfaces.viz import PlotMosaic
     from qap.workflows.utils import qap_anatomical_spatial as qc_anat
 
@@ -32,6 +32,14 @@ def anat_qc_workflow(name='aMRIQC', settings={}):
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['anatomical_scan', 'subject_id', 'session_id', 'scan_id',
                 'site_name']), name='inputnode')
+
+    if sub_list:
+        sub_t = zip(*sub_list)
+        inputnode.iterables = [('subject_id', sub_t[0]),
+                               ('session_id', sub_t[1]),
+                               ('scan_id', sub_t[2]),
+                               ('anatomical_scan', sub_t[3])]
+
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic']), name='outputnode')
 

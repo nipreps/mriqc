@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-05 19:55:26
+# @Last Modified time: 2016-01-08 11:17:53
 
 """
 =====
@@ -29,6 +29,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from mriqc.workflows import anat_qc_workflow
+    from mriqc.utils import gather_bids_data
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -67,9 +68,9 @@ if __name__ == '__main__':
         plugin = 'MultiProc'
         plugin_args = {'n_proc': nthreads, 'maxtasksperchild': 4}
 
-    wf = anat_qc_workflow()
-
     if 'work_dir' in settings.keys():
         wf.base_dir = settings['work_dir']
 
-    print 'finished!'
+    subjects = gather_bids_data(settings['bids_root'])
+    anat_wf = anat_qc_workflow(sub_list=subjects['anat'])
+    anat_wf.run()

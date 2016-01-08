@@ -35,32 +35,34 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
             inclusion_list = f.readlines()
         # remove any /n's
         inclusion_list = map(lambda s: s.strip(), inclusion_list)
-
         subject_ids = set(subject_ids).intersection(inclusion_list)
 
-    for subject_id in subject_ids:
+    sub_dict = {'anat': [], 'func': []}
+
+    for subject_id in sorted(subject_ids):
         # TODO: implement multisession support
-        session_name = 'session_1'
+        ssid = 'session_1'
 
-        anatomical_scans = sorted(glob(op.join(
-            dataset_folder, subject_id, "anat",
-            "%s_*T1w.nii.gz" % subject_id, )))
+        anatomical_scans = []
+        if get_anat:
+            anatomical_scans = sorted(glob(op.join(
+                dataset_folder, subject_id, "anat",
+                "%s_*T1w.nii.gz" % subject_id, )))
 
-        functional_scans = sorted(glob(op.join(
-            dataset_folder, subject_id, "func",
-            "%s_*bold.nii.gz" % subject_id, )))
+        for i, scan in enumerate(anatomical_scans):
+            scid = 'anat_%d' % (i+1)
+            spath = op.abspath(scan)
+            sub_dict['anat'].append((subject_id, ssid, scid, spath))
 
-        if anatomical_scans or functional_scans:
-            sub_dict[subject_id] = {session_name: {}}
-            if anatomical_scans and get_anat:
-                sub_dict[subject_id][session_name]["anatomical_scan"] = {}
-                for i, anatomical_scan in enumerate(anatomical_scans):
-                    sub_dict[subject_id][session_name]["anatomical_scan"][
-                        "anat_%d" % (i+1)] = op.abspath(anatomical_scan)
-            if functional_scans and get_func:
-                sub_dict[subject_id][session_name]["functional_scan"] = {}
-                for i, anatomical_scan in enumerate(functional_scans):
-                    sub_dict[subject_id][session_name]["functional_scan"][
-                        "func_%d" % (i+1)] = op.abspath(anatomical_scan)
+        functional_scans = []
+        if get_func:
+            functional_scans = sorted(glob(op.join(
+                dataset_folder, subject_id, "func",
+                "%s_*bold.nii.gz" % subject_id, )))
+
+        for i, scan in enumerate(functional_scans):
+            scid = 'func_%d' % (i+1)
+            spath = op.abspath(scan)
+            sub_dict['func'].append((subject_id, ssid, scid, spath))
 
     return sub_dict
