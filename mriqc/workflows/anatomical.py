@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-01-08 18:46:25
+# @Last modified by:   Oscar Esteban
+# @Last Modified time: 2016-01-08 19:15:49
 
 
 import os
@@ -31,8 +31,8 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
                 scan_id, site_name=None, out_vox=True):
         from qap.workflows.utils import qap_anatomical_spatial
         return qap_anatomical_spatial(
-            anatomical_reorient, head_mask_path, anatomical_gm_mask,
-            anatomical_wm_mask, anatomical_csf_mask, subject_id, session_id,
+            anatomical_reorient, head_mask_path, anatomical_segs[1],
+            anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
             scan_id, site_name, out_vox)
 
     # Define workflow, inputs and outputs
