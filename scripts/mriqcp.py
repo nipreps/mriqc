@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-08 11:17:53
+# @Last Modified time: 2016-01-08 14:12:56
 
 """
 =====
@@ -68,9 +68,9 @@ if __name__ == '__main__':
         plugin = 'MultiProc'
         plugin_args = {'n_proc': nthreads, 'maxtasksperchild': 4}
 
+    anat_wf = anat_qc_workflow(sub_list=subjects['anat'])
     if 'work_dir' in settings.keys():
-        wf.base_dir = settings['work_dir']
+        anat_wf.base_dir = settings['work_dir']
 
     subjects = gather_bids_data(settings['bids_root'])
-    anat_wf = anat_qc_workflow(sub_list=subjects['anat'])
     anat_wf.run()
