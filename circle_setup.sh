@@ -12,7 +12,7 @@ if [[ ! -s ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz.md5 ]]; then
 fi
 
 if [[ ! -s ${HOME}/downloads/linux_openmp_64.tgz.md5 ]]; then
-    wget -P ${HOME}/downloads/ -O linux_openmp_64.tgz.md5 "https://drive.google.com/open?id=0BxI12kyv2olZV0tpZ3VJYjJ6NWM"
+    wget -O ${HOME}/downloads/linux_openmp_64.tgz.md5 "https://drive.google.com/open?id=0BxI12kyv2olZV0tpZ3VJYjJ6NWM"
 fi
 
 cd ${HOME}/downloads
