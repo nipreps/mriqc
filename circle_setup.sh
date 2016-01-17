@@ -8,7 +8,7 @@ mkdir -p ${HOME}/downloads
 
 # Download md5 checksums
 if [[ ! -s ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz.md5 ]]; then
-    wget -P ${HOME}/downloads/ "http://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.9-centos6_64.tar.gz.md5"
+    wget -P ${HOME}/downloads/ "http://fsl.fmrib.ox.ac.uk/fsldownloads/md5sums/fsl-5.0.9-centos6_64.tar.gz.md5"
 fi
 
 if [[ ! -s ${HOME}/downloads/linux_openmp_64.tgz.md5 ]]; then
