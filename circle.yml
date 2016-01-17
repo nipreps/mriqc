@@ -7,10 +7,10 @@ dependencies:
   pre:
     - mkdir -p ${HOME}/downloads
     - if [[ ! -s ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz ]]; then wget -P ${HOME}/downloads/ "http://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.9-centos6_64.tar.gz"; fi
-    - if [[ ! -d ${HOME}/fsl ]]; then tar zxvf ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz -C ${HOME}; fi
+    - if [[ ! -d ${HOME}/fsl ]]; then tar zxf ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz -C ${HOME}; fi
     - source ${HOME}/fsl/etc/fslconf/fsl.sh
     - if [[ ! -s ${HOME}/downloads/linux_openmp_64.tgz ]]; then wget -P ${HOME}/downloads/ "http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz"; fi
-    - if [[ ! -d ${HOME}/afni ]]; then tar zxvf ${HOME}/downloads/linux_openmp_64.tgz -C ${HOME}; mv ${HOME}/linux_openmp_64 ${HOME}/afni; fi
+    - if [[ ! -d ${HOME}/afni ]]; then tar zxf ${HOME}/downloads/linux_openmp_64.tgz -C ${HOME}; mv ${HOME}/linux_openmp_64 ${HOME}/afni; fi
     - if [[ ! -d ${HOME}/examples/ds003_downsampled ]]; then wget -P ${HOME}/downloads/ "https://googledrive.com/host/0B2JWN60ZLkgkMEw4bW5VUUpSdFU/ds003_downsampled.tar"; mkdir -p ${HOME}/examples; tar xvf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/examples; fi
   override:
     - pip install --upgrade pip
