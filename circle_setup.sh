@@ -15,7 +15,7 @@ if [[ ! -s ${HOME}/downloads/linux_openmp_64.tgz.md5 ]]; then
     wget -P ${HOME}/downloads/ -O linux_openmp_64.tgz.md5 "https://drive.google.com/open?id=0BxI12kyv2olZV0tpZ3VJYjJ6NWM"
 fi
 
-cd downloads
+cd ${HOME}/downloads
 fslchk=$(md5sum -c fsl-5.0.9-centos6_64.tar.gz.md5 | awk '{print $2}')
 afnichk=$(md5sum -c linux_openmp_64.tgz.md5 | awk '{print $2}')
 cd
