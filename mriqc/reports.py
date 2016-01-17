@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 11:34:19
+# @Last modified by:   Oscar Esteban
+# @Last Modified time: 2016-01-17 09:09:36
 
 
 import sys
@@ -26,16 +26,12 @@ from .interfaces.viz_utils import (plot_measures, plot_mosaic, plot_all,
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 
 
-def workflow_report(in_csv, qap_type, run_name, res_dict,
-                    out_dir=None, out_file=None):
+def workflow_report(in_csv, qap_type, settings={}):
     import datetime
 
-    if out_dir is None:
-        out_dir = os.getcwd()
-
-    if out_file is None:
-        out_file = op.join(
-            out_dir, qap_type + '_%s.pdf')
+    out_dir = settings.get('output_dir', os.getcwd())
+    work_dir = settings.get('work_dir', op.abspath('tmp'))
+    out_file = op.join(out_dir, qap_type + '_%s.pdf')
 
     # Read csv file, sort and drop duplicates
     df = pd.read_csv(in_csv, dtype={'subject': str}).sort(
@@ -53,28 +49,28 @@ def workflow_report(in_csv, qap_type, run_name, res_dict,
     func = getattr(sys.modules[__name__], qap_type)
 
     # Identify failed subjects
-    failed = ['%s (%s_%s)' % (s['id'], s['session'], s['scan'])
-              for s in res_dict if 'failed' in s['status']]
+    # failed = ['%s (%s_%s)' % (s['id'], s['session'], s['scan'])
+    #           for s in res_dict if 'failed' in s['status']]
 
     pdf_group = []
 
     # Generate summary page
-    out_sum = op.join(out_dir, run_name, 'summary_group.pdf')
+    out_sum = op.join(work_dir, 'summary_group.pdf')
     summary_cover(
         (qap_type,
          datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-         ", ".join(failed) if len(failed) > 0 else "none"),
+         "none"),  # ", ".join(failed) if len(failed) > 0 else "none"),
         is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
     # Generate group report
-    qc_group = op.join(out_dir, run_name, 'qc_measures_group.pdf')
+    qc_group = op.join(work_dir, 'qc_measures_group.pdf')
     # Generate violinplots. If successfull, add documentation.
     func(df, out_file=qc_group)
     pdf_group.append(qc_group)
 
     # Generate documentation page
-    doc = op.join(out_dir, run_name, 'documentation.pdf')
+    doc = op.join(work_dir, 'documentation.pdf')
 
     # Let documentation page fail
     get_documentation(qap_type, doc)
@@ -102,7 +98,7 @@ def workflow_report(in_csv, qap_type, run_name, res_dict,
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
                 sub_info = [subid, sesid, scanid]
-                sub_path = op.join(out_dir, run_name, '/'.join(sub_info))
+                sub_path = op.join(work_dir, '/'.join(sub_info))
                 m = op.join(sub_path, 'qap_mosaic', 'mosaic.pdf')
 
                 if op.isfile(m):
@@ -114,22 +110,22 @@ def workflow_report(in_csv, qap_type, run_name, res_dict,
 
             sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
-        failed = ['%s (%s)' % (s['session'], s['scan'])
-                  for s in res_dict if 'failed' in s['status'] and
-                  subid in s['id']]
+        # failed = ['%s (%s)' % (s['session'], s['scan'])
+        #           for s in res_dict if 'failed' in s['status'] and
+        #           subid in s['id']]
 
         # Summary cover
-        out_sum = op.join(out_dir, run_name, 'summary_%s.pdf' % subid)
+        out_sum = op.join(work_dir, 'summary_%s.pdf' % subid)
         summary_cover(
             (subid, subid, qap_type,
              datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
              ", ".join(sess_scans),
-             ",".join(failed) if len(failed) > 0 else "none"),
+             "none"),  # ",".join(failed) if len(failed) > 0 else "none"),
             out_file=out_sum)
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
-        qc_ms = op.join(out_dir, run_name, subid, 'qc_measures.pdf')
+        qc_ms = op.join(work_dir, 'qc_measures_%s.pdf' % subid)
 
         func(df, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)

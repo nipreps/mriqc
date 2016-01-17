@@ -7,16 +7,17 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-08 19:15:49
+# @Last Modified time: 2016-01-17 08:22:41
 
 
 import os
 import os.path as op
 import sys
 
-import nipype.interfaces.io as nio
-import nipype.pipeline.engine as pe
-import nipype.interfaces.utility as niu
+from nipype.interfaces import io as nio
+from nipype.pipeline import engine as pe
+from nipype.algorithms import misc as nam
+from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 
 from nipype import logging
@@ -37,6 +38,10 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
 
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
+
+    if 'work_dir' in settings.keys():
+        workflow.base_dir = settings['work_dir']
+
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
     datasource = pe.Node(niu.IdentityInterface(
@@ -57,7 +62,7 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         ])
 
     outputnode = pe.Node(niu.IdentityInterface(
-        fields=['qc', 'mosaic']), name='outputnode')
+        fields=['qc', 'mosaic', 'out_csv']), name='outputnode')
 
     # Import measures from QAP
     measures = pe.Node(niu.Function(
@@ -106,7 +111,15 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     if settings.get('mask_mosaic', False):
         workflow.connect(qmw, 'outputnode.out_file', plot, 'in_mask')
 
-    return workflow
+    # Export to CSV
+    out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
+    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
+    workflow.connect([
+        (measures, to_csv, [('qc', '_outputs')]),
+        (to_csv, outputnode, [('csv_file', 'out_csv')])
+    ])
+
+    return workflow, out_csv
 
 
 def mri_reorient_wf(name='ReorientWorkflow'):

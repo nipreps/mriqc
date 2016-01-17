@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-08 18:15:20
+# @Last Modified time: 2016-01-17 09:04:17
 
 """
 =====
@@ -30,6 +30,7 @@ if __name__ == '__main__':
     from argparse import RawTextHelpFormatter
     from mriqc.workflows import anat_qc_workflow
     from mriqc.utils import gather_bids_data
+    from mriqc.reports import workflow_report
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -44,15 +45,19 @@ if __name__ == '__main__':
         help="Write workflow graph.")
 
     g_outputs = parser.add_argument_group('Outputs')
-    g_outputs.add_argument('-o', '--output-path', action='store')
+    g_outputs.add_argument('-o', '--output-dir', action='store')
     g_outputs.add_argument('-w', '--work-dir', action='store')
 
     opts = parser.parse_args()
 
     settings = {'bids_root': op.abspath(opts.bids_root)}
 
-    if opts.output_path:
-        settings['output_path'] = op.abspath(opts.output_path)
+    settings['output_dir'] = os.getcwd()
+    if opts.output_dir:
+        settings['output_dir'] = op.abspath(opts.output_dir)
+
+    if not op.exists(settings['output_dir']):
+        os.makedirs(settings['output_dir'])
 
     if opts.work_dir:
         settings['work_dir'] = op.abspath(opts.work_dir)
@@ -72,11 +77,15 @@ if __name__ == '__main__':
         plugin_args = {'n_proc': nthreads, 'maxtasksperchild': 4}
 
     subjects = gather_bids_data(settings['bids_root'])
-    anat_wf = anat_qc_workflow(sub_list=subjects['anat'])
-    if 'work_dir' in settings.keys():
-        anat_wf.base_dir = settings['work_dir']
 
-    if opts.write_graph:
-        anat_wf.write_graph()
-        
-    anat_wf.run()
+    if subjects['anat']:
+        anat_wf, out_csv = anat_qc_workflow(sub_list=subjects['anat'],
+                                            settings=settings)
+
+        if opts.write_graph:
+            anat_wf.write_graph()
+
+        anat_wf.run()
+        reports = workflow_report(out_csv, 'qap_anatomical_spatial',
+                                  settings=settings)
+

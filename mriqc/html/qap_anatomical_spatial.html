@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>PCP Quality Assessment Protocol</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+
+<body>
+<!-- HEADER -->
+<div id="header">
+    <h1 id="project_title">PCP Quality Assessment Protocol - QAP Anatomical Spatial Reports</h1>
+</div>
+
+<p>After all processing has been completed, the designated output directory for the
+<code>qap_anatomical_spatial.py</code> workflow will contain a set of pdf files that
+contain the relevant reports for the set of scans undergoing quality assessment.
+The set of output pdfs includes one pdf file per input scan in the scan directory,
+e.g.: <code>qap_anatomical_spatial_sub-01.pdf</code>, which contains the T1 slice
+mosaic and QC metrics for that scan. There will also be a group report pdf in the
+main output directory, e.g.: <code>qap_anatomical_spatial_group.pdf</code>, that contains
+summary metrics for the entire set of scans.</p>
+
+<h2> For the individual scan reports:</h2>
+
+<h3 id="mosaic">The T1 Anatomical Slice Mosaic</h3>
+
+<p>This plot in the report for the scan being assessed, e.g.: </p>
+<pre><code>Anatomical reoriented, subject sub-01 (session_1_anat_1)</code></pre>
+<p>is the rendering of the axial slices from the 3D stack created by the workflow.
+This image can be used to eyeball the quality of the overall signal in the anatomical scan, as it will be obvious if
+there were any problem areas where there was signal dropout resulting from a bad shim or other sources of
+signal distortion.</p>
+
+<h3 id="metrics"> The Spatial Metrics computed on the Anatomical Scan</h3>
+
+<p>The metrics displayed in the Summary Report, e.g.: <code>QC measures (subject sub-01_session_1)</code>
+were computed using the <code>qap_anatomical_spatial.py</code> workflow and have been
+displayed as violin plots. The stars in these plots denote where the score for the scans for this
+participant fall in the distribution of all scores for scans that were included as inputs to the
+anatomical-spatial workflow.
+If there are several scans per session for this individual, then the stars will be displayed adjacent
+to each other in the violin plot.</p>
+
+<p>The metrics computed are as follows:</p>
+<ol>
+	<li>bg_size - Background mask size</li>
+	<li>fg_size - Foreground mask size</li>
+	<li>bg_mean - Mean intensity of the background mask</li>
+	<li>fg_mean - Mean intensity of the foreground mask</li>
+	<li>bg_std - Standard deviation of the background mask</li>
+	<li>fg_std - Standard deviation of the foreground mask</li>
+	<li>csf_size - Cerebrospinal fluid mask size</li>
+	<li>gm_size - Grey matter mask size</li>
+	<li>wm_size - White matter mask size</li>
+	<li>csf_mean - Mean intensity of the CSF mask</li>
+	<li>gm_mean - Mean intensity of the grey matter mask</li>
+	<li>wm_mean - Mean intensity of the white matter mask</li>
+	<li>csf_std - Standard deviation of the CSF mask</li>
+	<li>gm_std - Standard deviation of the  grey matter mask</li>
+	<li>wm_std - Standard deviation of the white matter mask</li>
+	<li>cnr - Contrast to Noise Ratio</li>
+	<li>efc - Entropy Focus Criterion</li>
+	<li>fber - Foreground to Background Energy Ratio</li>
+	<li>fwhm - Full-width half maximum smoothness of the voxels averaged across the three coordinate
+	axes, and also for each axis [x,y,x]</li>
+	<li>qi1 - Artifact Detection</li>
+	<li>snr -  Signal to Noise Ratio</li>
+</ol>
+
+<p>All metrics are described in more detail in the <a href="http://preprocessed-connectomes-project.github.io/quality-assessment-protocol/#taxonomy-of-qa-measures" target="_blank" >Taxonomy of QA Measures section</a> of the QAP documentation. Please refer to the QAP website for descriptions of these metrics.</p>
+
+<h2> For the group reports:</h2>
+
+<p>The violin plots included in the group report, e.g.: <code>qqap_anatomical_spatial_group.pdf</code>,
+are a graphical representation of the columnar values in the <code>qap_anatomical_spatial.csv</code> file
+that was created in the main output directory for the workflow. The scores for each metric described above
+were aggregated to create the distributions that were plotted in both the individual and group reports.
+Hence, the violin plots in the individual scan reports and the group reports are identical, except that
+the group reports do not contain any stars denoting individual scans. These group reports are intended
+to provide the user a means of visually inspecting the overall quality of the spatial data for that group
+of anatomical scans.</p>
+
+</body>
