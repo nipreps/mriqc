@@ -18,6 +18,7 @@ cd
 # Get fsl if md5 is not ok
 if [ $fslchk != "OK" ]; then 
     wget -P ${HOME}/downloads/ -c "http://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.9-centos6_64.tar.gz"
+    rm -rf ${HOME}/fsl
 fi
 
 if [[ ! -d ${HOME}/fsl ]]; then 
@@ -28,6 +29,7 @@ source ${HOME}/fsl/etc/fslconf/fsl.sh
 # Get afni if md5 is not ok
 if [ $afnichk != "OK" ]; then
     wget -P ${HOME}/downloads/ -c "http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz"
+    rm -rf ${HOME}/afni
 fi
 
 if [[ ! -d ${HOME}/afni ]]; then
