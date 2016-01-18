@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 08:38:54
+# @Last Modified time: 2016-01-18 14:40:18
 
 
 import os
@@ -49,7 +49,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     get_idx = pe.Node(niu.Function(
         input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
         output_names=['start_idx', 'stop_idx']), name='get_idx')
-
 
     if sub_list:
         inputnode.iterables = [('data', [list(s) for s in sub_list])]
@@ -141,7 +140,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                                  ('session_id', 'session_id'),
                                  ('scan_id', 'scan_id'),
                                  (('site_name', _empty), 'site_name')]),
-        (hmcwf, m_temp,         [('outputnode.out_file', 'func_motion_correct')]),
+        (hmcwf, m_temp,  [('outputnode.out_file', 'func_motion_correct')]),
         (datasource, m_temp,    [('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('scan_id', 'scan_id'),

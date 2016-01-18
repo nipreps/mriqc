@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-18 08:15:33
+# @Last Modified time: 2016-01-18 14:39:54
 
 """
 =====
@@ -31,6 +31,7 @@ if __name__ == '__main__':
     from mriqc.workflows import anat_qc_workflow, fmri_qc_workflow
     from mriqc.utils import gather_bids_data
     from mriqc.reports import workflow_report
+    from nipype import config as ncfg
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -61,6 +62,22 @@ if __name__ == '__main__':
 
     if opts.work_dir:
         settings['work_dir'] = op.abspath(opts.work_dir)
+
+        log_dir = op.join(settings['work_dir'], 'log')
+        if not op.exists(log_dir):
+            os.makedirs(log_dir)
+
+        # Set nipype config
+        ncfg.update_config({
+            'logging': {'log_directory': log_dir},
+            'execution': {'crashdump_dir': log_dir}
+        })
+
+    # Set nipype config
+    ncfg.update_config({
+        'logging': {'log_directory': op.join(settings['work_dir'])},
+        'execution': {'stop_on_first_crash': False}
+    })
 
     # Setup multiprocessing
     nthreads = opts.nthreads
