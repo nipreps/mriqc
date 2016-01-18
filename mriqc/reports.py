@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
-# @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-18 08:14:46
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-01-18 08:44:02
 
 
 import sys
@@ -70,7 +70,7 @@ def workflow_report(in_csv, qap_type, settings={}):
     pdf_group.append(qc_group)
 
     # Generate documentation page
-    doc = op.join(work_dir, 'documentation.pdf')
+    doc = op.join(work_dir, '%s_doc.pdf' % qap_type)
 
     # Let documentation page fail
     get_documentation(qap_type, doc)
@@ -97,14 +97,28 @@ def workflow_report(in_csv, qap_type, settings={}):
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
-                m = op.join(work_dir, 'mosaic_%s_%s_%s.pdf' % (subid, sesid, scanid))
+                if 'anat' in qap_type:
+                    m = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
+                                (subid, sesid, scanid))
 
-                if op.isfile(m):
-                    plots.append(m)
+                    if op.isfile(m):
+                        plots.append(m)
 
-                fd = op.join(work_dir, 'fd_%s_%s_%s.pdf' % (subid, sesid, scanid))
-                if 'functional_temporal' in qap_type and op.isfile(fd):
-                    plots.append(fd)
+                if 'func' in qap_type:
+                    mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
+                    if op.isfile(mepi):
+                        plots.append(mepi)
+
+                    tsnr = op.join(work_dir, 'tsnr_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
+                    if op.isfile(tsnr):
+                        plots.append(tsnr)
+
+                    fd = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
+                                 (subid, sesid, scanid))
+                    if op.isfile(fd):
+                        plots.append(fd)
 
             sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
@@ -113,7 +127,7 @@ def workflow_report(in_csv, qap_type, settings={}):
         #           subid in s['id']]
 
         # Summary cover
-        out_sum = op.join(work_dir, 'summary_%s.pdf' % subid)
+        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qap_type, subid))
         summary_cover(
             (subid, subid, qap_type,
              datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
@@ -123,7 +137,7 @@ def workflow_report(in_csv, qap_type, settings={}):
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
-        qc_ms = op.join(work_dir, 'qc_measures_%s.pdf' % subid)
+        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qap_type, subid))
 
         func(df, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)
