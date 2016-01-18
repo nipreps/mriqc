@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-17 09:09:36
+# @Last Modified time: 2016-01-18 08:14:46
 
 
 import sys
@@ -46,7 +46,7 @@ def workflow_report(in_csv, qap_type, settings={}):
 
     subject_list = sorted(pd.unique(df.subject.ravel()))
     result = {}
-    func = getattr(sys.modules[__name__], qap_type)
+    func = getattr(sys.modules[__name__], 'report_' + qap_type)
 
     # Identify failed subjects
     # failed = ['%s (%s_%s)' % (s['id'], s['session'], s['scan'])
@@ -318,7 +318,7 @@ def all_func_spatial(df, sc_split=False, condensed=False,
         condensed=condensed, out_file=out_file)
 
 
-def qap_anatomical_spatial(
+def report_anatomical(
         df, subject=None, sc_split=False, condensed=True,
         out_file='anatomical.pdf'):
     groups = [['bg_size', 'fg_size'],
@@ -338,7 +338,7 @@ def qap_anatomical_spatial(
         out_file=out_file)
 
 
-def qap_functional_temporal(
+def report_functional_spatial(
         df, subject=None, sc_split=False, condensed=True,
         out_file='func_temporal.pdf'):
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
@@ -348,7 +348,7 @@ def qap_functional_temporal(
         out_file=out_file)
 
 
-def qap_functional_spatial(
+def qap_functional_temporal(
         df, subject=None, sc_split=False, condensed=True,
         out_file='func_spatial.pdf'):
     groups = [['bg_size', 'fg_size'],

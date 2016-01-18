@@ -6,15 +6,18 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 19:57:58
+# @Last modified by:   Oscar Esteban
+# @Last Modified time: 2016-01-18 08:20:25
+
+
 import os
 import os.path as op
 import sys
 
-import nipype.interfaces.io as nio
-import nipype.pipeline.engine as pe
-import nipype.interfaces.utility as niu
+from nipype.pipeline import engine as pe
+from nipype.algorithms import misc as nam
+from nipype.interfaces import io as nio
+from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 
@@ -27,13 +30,32 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
     from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
     from qap.temporal_qc import fd_jenkinson
     from ..interfaces.viz import PlotMosaic, PlotFD
-    import nipype.algorithms.misc as nam
 
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'subject_id', 'session_id', 'scan_id',
-                'site_name']), name='inputnode')
+
+    if 'work_dir' in settings.keys():
+        workflow.base_dir = settings['work_dir']
+
+    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
+                        name='inputnode')
+    datasource = pe.Node(niu.IdentityInterface(
+        fields=['functional_scan', 'subject_id', 'session_id', 'scan_id',
+                'site_name']), name='datasource')
+
+    if sub_list:
+        inputnode.iterables = [('data', [list(s) for s in sub_list])]
+
+        dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
+                         name='datasplit')
+        workflow.connect([
+            (inputnode, dsplit, [('data', 'inlist')]),
+            (dsplit, datasource, [('out1', 'subject_id'),
+                                  ('out2', 'session_id'),
+                                  ('out3', 'scan_id'),
+                                  ('out4', 'functional_scan')])
+        ])
+
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic']), name='outputnode')
 
@@ -68,29 +90,29 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (inputnode, merg,  [('session_id', 'in1'),
-                            ('scan_id', 'in2'),
-                            ('site_name', 'in3')]),
-        (inputnode, hmcwf, [('in_file', 'inputnode.in_file'),
-                            ('start_idx', 'inputnode.start_idx'),
-                            ('stop_idx', 'inputnode.stop_idx')]),
-        (hmcwf, bmw,       [('outputnode.out_file', 'inputnode.in_file')]),
-        (hmcwf, mean,      [('outputnode.out_file', 'in_file')]),
-        (hmcwf, tsnr,      [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fd,        [('outputnode.out_xfms', 'in_file')]),
-        (hmcwf, plot_mean, [('outputnode.out_file', 'in_file')]),
-        (tsnr, plot_tsnr,  [('tsnr_file', 'tsnr_volume')]),
-        (fd, fdplot,       [('out_file', 'in_file')]),
-        (inputnode, plot_mean, [('subject_id', 'subject')]),
-        (inputnode, plot_tsnr, [('subject_id', 'subject')]),
-        (inputnode, fdplot, [('subject_id', 'subject')]),
-        (merg, plot_mean,  [('out', 'metadata')]),
-        (merg, plot_tsnr,  [('out', 'metadata')]),
-        (merg, fdplot,     [('out', 'metadata')]),
-        (bmw, m_spatial,   [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, m_spatial,  [('out_file', 'mean_epi')]),
-        (fd, m_temp,       [('out_file', 'fd_file')]),
-        (tsnr, m_temp,     [('tsnr_file', 'tsnr_volume')]),
+        (datasource, merg,      [('session_id', 'in1'),
+                                 ('scan_id', 'in2'),
+                                 ('site_name', 'in3')]),
+        (datasource, hmcwf,     [('in_file', 'inputnode.in_file'),
+                                 ('start_idx', 'inputnode.start_idx'),
+                                 ('stop_idx', 'inputnode.stop_idx')]),
+        (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (hmcwf, mean,           [('outputnode.out_file', 'in_file')]),
+        (hmcwf, tsnr,           [('outputnode.out_file', 'in_file')]),
+        (hmcwf, fd,             [('outputnode.out_xfms', 'in_file')]),
+        (hmcwf, plot_mean,      [('outputnode.out_file', 'in_file')]),
+        (tsnr, plot_tsnr,       [('tsnr_file', 'tsnr_volume')]),
+        (fd, fdplot,            [('out_file', 'in_file')]),
+        (datasource, plot_mean, [('subject_id', 'subject')]),
+        (datasource, plot_tsnr, [('subject_id', 'subject')]),
+        (datasource, fdplot,    [('subject_id', 'subject')]),
+        (merg, plot_mean,       [('out', 'metadata')]),
+        (merg, plot_tsnr,       [('out', 'metadata')]),
+        (merg, fdplot,          [('out', 'metadata')]),
+        (bmw, m_spatial,        [('outputnode.out_file', 'func_brain_mask')]),
+        (mean, m_spatial,       [('out_file', 'mean_epi')]),
+        (fd, m_temp,            [('out_file', 'fd_file')]),
+        (tsnr, m_temp,          [('tsnr_file', 'tsnr_volume')]),
     ])
 
     if settings.get('mosaic_mask', False):

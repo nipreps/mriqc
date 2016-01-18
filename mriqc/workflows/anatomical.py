@@ -6,17 +6,17 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
-# @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-17 19:16:24
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-01-18 08:17:15
 
 
 import os
 import os.path as op
 import sys
 
-from nipype.interfaces import io as nio
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
+from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 
@@ -120,9 +120,19 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     ])
 
     # Save mosaic to well-formed path
-    dsplot = pe.Node(nio.DataSink(base_directory=settings['work_dir']),
-                     name='ds_plot')
-    workflow.connect(plot, 'out_file', dsplot, 'mosaic')
+    mvplot = pe.Node(niu.Rename(
+        format_string='mosaic_%(session_id)s_%(scan_id)s', keep_ext=True),
+        name='rename_plot')
+    dsplot = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parametrization=False),
+        name='ds_plot')
+    workflow.connect([
+        (datasource, mvplot, [('session_id', 'session_id'),
+                              ('scan_id', 'scan_id')]),
+        (plot, mvplot, [('out_file', 'in_file')]),
+        (mvplot, dsplot, [('out_file', '@mosaic')]),
+        (datasource, dsplot, [('subject_id', 'container')])
+    ])
 
     return workflow, out_csv
 

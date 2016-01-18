@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-17 09:04:17
+# @Last Modified time: 2016-01-18 08:15:33
 
 """
 =====
@@ -86,6 +86,14 @@ if __name__ == '__main__':
             anat_wf.write_graph()
 
         anat_wf.run()
-        reports = workflow_report(out_csv, 'qap_anatomical_spatial',
-                                  settings=settings)
+        reports = workflow_report(out_csv, 'anatomical', settings=settings)
 
+    if subjects['func']:
+        func_wf, out_csv = func_qc_workflow(sub_list=subjects['func'],
+                                            settings=settings)
+
+        if opts.write_graph:
+            func_wf.write_graph()
+
+        func_wf.run()
+        reports = workflow_report(out_csv, 'functional', settings=settings)
