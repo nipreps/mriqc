@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-18 08:20:25
+# @Last Modified time: 2016-01-18 08:32:42
 
 
 import os
@@ -83,10 +83,19 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
         function=fd_jenkinson), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
+    # Merge spatial and temporal measures
+    def _merge_dicts(qc_spatial, qc_temporal):
+        qc_spatial.update(qc_temporal)
+        return qc_spatial
+
+    mqc = pe.Node(niu.Function(
+        input_names=['qc_spatial', 'qc_temporal'], output_names=['qc'],
+        function=_merge_dicts), name='merge_qc_measures')
+
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
     plot_tsnr = pe.Node(PlotMosaic(title='tSNR volume'), name='plot_tSNR')
-    fdplot = pe.Node(PlotFD(), name='plot_fd')
+    plot_fd = pe.Node(PlotFD(), name='plot_fd')
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
@@ -102,24 +111,79 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
         (hmcwf, fd,             [('outputnode.out_xfms', 'in_file')]),
         (hmcwf, plot_mean,      [('outputnode.out_file', 'in_file')]),
         (tsnr, plot_tsnr,       [('tsnr_file', 'tsnr_volume')]),
-        (fd, fdplot,            [('out_file', 'in_file')]),
+        (fd, plot_fd,           [('out_file', 'in_file')]),
         (datasource, plot_mean, [('subject_id', 'subject')]),
         (datasource, plot_tsnr, [('subject_id', 'subject')]),
-        (datasource, fdplot,    [('subject_id', 'subject')]),
+        (datasource, plot_fd,   [('subject_id', 'subject')]),
         (merg, plot_mean,       [('out', 'metadata')]),
         (merg, plot_tsnr,       [('out', 'metadata')]),
-        (merg, fdplot,          [('out', 'metadata')]),
+        (merg, plot_fd,         [('out', 'metadata')]),
         (bmw, m_spatial,        [('outputnode.out_file', 'func_brain_mask')]),
         (mean, m_spatial,       [('out_file', 'mean_epi')]),
         (fd, m_temp,            [('out_file', 'fd_file')]),
         (tsnr, m_temp,          [('tsnr_file', 'tsnr_volume')]),
+        (m_spatial, mqc,        [('qc', 'qc_spatial')]),
+        (m_temp, mqc,           [('qc', 'qc_temporal')])
     ])
 
     if settings.get('mosaic_mask', False):
         workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
         workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
 
-    return workflow
+    # Export to CSV
+    out_csv = op.join(settings['output_dir'], 'fMRIQC.csv')
+    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
+    workflow.connect([
+        (mqc, to_csv,        [('qc', '_outputs')]),
+        (to_csv, outputnode, [('csv_file', 'out_csv')])
+    ])
+
+    # Save mean mosaic to well-formed path
+    mvmean = pe.Node(niu.Rename(
+        format_string='meanepi_%(session_id)s_%(scan_id)s', keep_ext=True),
+        name='rename_mean_mosaic')
+    dsmean = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parametrization=False),
+        name='ds_mean')
+    workflow.connect([
+        (datasource, mvmean, [('session_id', 'session_id'),
+                              ('scan_id', 'scan_id')]),
+        (plot_mean, mvmean,  [('out_file', 'in_file')]),
+        (mvmean, dsmean,     [('out_file', '@mosaic')]),
+        (datasource, dsmean, [('subject_id', 'container')])
+    ])
+
+    # Save tSNR mosaic to well-formed path
+    mvtsnr = pe.Node(niu.Rename(
+        format_string='tsnr_%(session_id)s_%(scan_id)s', keep_ext=True),
+        name='rename_tsnr_mosaic')
+    dstsnr = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parametrization=False),
+        name='ds_tsnr')
+    workflow.connect([
+        (datasource, mvtsnr, [('session_id', 'session_id'),
+                              ('scan_id', 'scan_id')]),
+        (plot_tsnr, mvtsnr,  [('out_file', 'in_file')]),
+        (mvtsnr, dstsnr,     [('out_file', '@mosaic')]),
+        (datasource, dstsnr, [('subject_id', 'container')])
+    ])
+
+    # Save FD plot to well-formed path
+    mvfd = pe.Node(niu.Rename(
+        format_string='fd_%(session_id)s_%(scan_id)s', keep_ext=True),
+        name='rename_fd_mosaic')
+    dsfd = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parametrization=False),
+        name='ds_fd')
+    workflow.connect([
+        (datasource, mvfd, [('session_id', 'session_id'),
+                            ('scan_id', 'scan_id')]),
+        (plot_fd, mvfd,  [('out_file', 'in_file')]),
+        (mvfd, dsfd,     [('out_file', '@mosaic')]),
+        (datasource, dsfd, [('subject_id', 'container')])
+    ])
+
+    return workflow, out_csv
 
 
 def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
