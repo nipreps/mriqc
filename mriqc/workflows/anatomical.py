@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-17 19:16:24
+# @Last Modified time: 2016-01-17 19:49:19
 
 
 import os
@@ -120,9 +120,18 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     ])
 
     # Save mosaic to well-formed path
-    dsplot = pe.Node(nio.DataSink(base_directory=settings['work_dir']),
-                     name='ds_plot')
-    workflow.connect(plot, 'out_file', dsplot, 'mosaic')
+    mvplot = pe.Node(niu.Rename(
+        format_string='mosaic_%(subject_id)s_%(session_id)s_%(scan_id)s', keep_ext=True),
+        name='rename_plot')
+    dsplot = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
+    workflow.connect([
+        (datasource, mvplot, [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
+                              ('scan_id', 'scan_id')]),
+        (plot, mvplot, [('out_file', 'in_file')]),
+        (mvplot, dsplot, [('out_file', '@mosaic')])
+    ])
 
     return workflow, out_csv
 

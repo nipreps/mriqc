@@ -97,14 +97,12 @@ def workflow_report(in_csv, qap_type, settings={}):
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
-                sub_info = [subid, sesid, scanid]
-                sub_path = op.join(work_dir, '/'.join(sub_info))
-                m = op.join(sub_path, 'qap_mosaic', 'mosaic.pdf')
+                m = op.join(work_dir, 'mosaic_%s_%s_%s.pdf' % (subid, sesid, scanid))
 
                 if op.isfile(m):
                     plots.append(m)
 
-                fd = op.join(sub_path, 'qap_fd', 'fd.pdf')
+                fd = op.join(work_dir, 'fd_%s_%s_%s.pdf' % (subid, sesid, scanid))
                 if 'functional_temporal' in qap_type and op.isfile(fd):
                     plots.append(fd)
 
