@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 14:40:18
+# @Last modified by:   Oscar Esteban
+# @Last Modified time: 2016-01-18 14:49:43
 
 
 import os
@@ -74,9 +74,11 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         return None
 
     m_spatial = pe.Node(niu.Function(
-        input_names=['mean_epi', 'func_brain_mask', 'subject_id', 'session_id',
-                     'scan_id', 'site_name'], output_names=['qc'],
-        function=qc_fmri_spat), name='m_spatial')
+        input_names=['mean_epi', 'func_brain_mask', 'direction', 'subject_id',
+                     'session_id', 'scan_id', 'site_name'],
+        output_names=['qc'], function=qc_fmri_spat), name='m_spatial')
+    m_spatial.inputs.direction = 'y'  # TODO: handle this parameter
+
     m_temp = pe.Node(niu.Function(
         input_names=['func_motion_correct', 'func_brain_mask', 'tsnr_volume',
                      'fd_file', 'subject_id', 'session_id', 'scan_id',
