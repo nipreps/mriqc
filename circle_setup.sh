@@ -7,8 +7,8 @@ set -e
 mkdir -p ${HOME}/downloads
 
 # Download md5 checksums
-wget -P ${HOME}/downloads/ "http://fsl.fmrib.ox.ac.uk/fsldownloads/md5sums/fsl-5.0.9-centos6_64.tar.gz.md5"
-wget -O ${HOME}/downloads/linux_openmp_64.tgz.md5 "https://docs.google.com/uc?authuser=1&id=0BxI12kyv2olZV0tpZ3VJYjJ6NWM&export=download"
+wget -O ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz.md5 -q "http://fsl.fmrib.ox.ac.uk/fsldownloads/md5sums/fsl-5.0.9-centos6_64.tar.gz.md5"
+wget -O ${HOME}/downloads/linux_openmp_64.tgz.md5 -q "https://docs.google.com/uc?authuser=1&id=0BxI12kyv2olZV0tpZ3VJYjJ6NWM&export=download"
 
 cd ${HOME}/downloads
 fslchk=$(md5sum -c fsl-5.0.9-centos6_64.tar.gz.md5 | awk '{print $2}')
@@ -21,7 +21,7 @@ if [ $fslchk != "OK" ]; then
     rm -rf ${HOME}/fsl
 fi
 
-if [[ ! -d ${HOME}/fsl ]]; then 
+if [[ ! -s ${HOME}/fsl/etc/fslconf/fsl.sh ]]; then 
     tar zxvf ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz -C ${HOME}
 fi
 source ${HOME}/fsl/etc/fslconf/fsl.sh
