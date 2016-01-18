@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-17 08:22:41
+# @Last Modified time: 2016-01-17 19:16:24
 
 
 import os
@@ -118,6 +118,11 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         (measures, to_csv, [('qc', '_outputs')]),
         (to_csv, outputnode, [('csv_file', 'out_csv')])
     ])
+
+    # Save mosaic to well-formed path
+    dsplot = pe.Node(nio.DataSink(base_directory=settings['work_dir']),
+                     name='ds_plot')
+    workflow.connect(plot, 'out_file', dsplot, 'mosaic')
 
     return workflow, out_csv
 
