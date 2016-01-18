@@ -25,10 +25,11 @@ from nipype import logging
 logger = logging.getLogger('workflow')
 
 
-def fmri_qc_workflow(name='fMRIQC', settings={}):
+def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
     from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
     from qap.temporal_qc import fd_jenkinson
+    from .utils import fmri_getidx
     from ..interfaces.viz import PlotMosaic, PlotFD
 
     # Define workflow, inputs and outputs
@@ -41,7 +42,14 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
                         name='inputnode')
     datasource = pe.Node(niu.IdentityInterface(
         fields=['functional_scan', 'subject_id', 'session_id', 'scan_id',
-                'site_name']), name='datasource')
+                'site_name', 'start_idx', 'stop_idx']), name='datasource')
+    datasource.inputs.start_idx = 0
+    datasource.inputs.stop_idx = None
+
+    get_idx = pe.Node(niu.Function(
+        input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
+        output_names=['start_idx', 'stop_idx']), name='get_idx')
+
 
     if sub_list:
         inputnode.iterables = [('data', [list(s) for s in sub_list])]
@@ -60,6 +68,12 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
         fields=['qc', 'mosaic']), name='outputnode')
 
     # Measures
+    def _empty(val):
+        from nipype.interfaces.base import isdefined
+        if isdefined(val):
+            return val
+        return None
+
     m_spatial = pe.Node(niu.Function(
         input_names=['mean_epi', 'func_brain_mask', 'subject_id', 'session_id',
                      'scan_id', 'site_name'], output_names=['qc'],
@@ -99,18 +113,21 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
+        (datasource, get_idx,   [('functional_scan', 'in_file'),
+                                 ('start_idx', 'start_idx'),
+                                 ('stop_idx', 'stop_idx')]),
         (datasource, merg,      [('session_id', 'in1'),
                                  ('scan_id', 'in2'),
                                  ('site_name', 'in3')]),
-        (datasource, hmcwf,     [('in_file', 'inputnode.in_file'),
-                                 ('start_idx', 'inputnode.start_idx'),
+        (datasource, hmcwf,     [('functional_scan', 'inputnode.in_file')]),
+        (get_idx, hmcwf,        [('start_idx', 'inputnode.start_idx'),
                                  ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean,           [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr,           [('outputnode.out_file', 'in_file')]),
         (hmcwf, fd,             [('outputnode.out_xfms', 'in_file')]),
-        (hmcwf, plot_mean,      [('outputnode.out_file', 'in_file')]),
-        (tsnr, plot_tsnr,       [('tsnr_file', 'tsnr_volume')]),
+        (mean, plot_mean,       [('out_file', 'in_file')]),
+        (tsnr, plot_tsnr,       [('tsnr_file', 'in_file')]),
         (fd, plot_fd,           [('out_file', 'in_file')]),
         (datasource, plot_mean, [('subject_id', 'subject')]),
         (datasource, plot_tsnr, [('subject_id', 'subject')]),
@@ -120,6 +137,15 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
         (merg, plot_fd,         [('out', 'metadata')]),
         (bmw, m_spatial,        [('outputnode.out_file', 'func_brain_mask')]),
         (mean, m_spatial,       [('out_file', 'mean_epi')]),
+        (datasource, m_spatial, [('subject_id', 'subject_id'),
+                                 ('session_id', 'session_id'),
+                                 ('scan_id', 'scan_id'),
+                                 (('site_name', _empty), 'site_name')]),
+        (hmcwf, m_temp,         [('outputnode.out_file', 'func_motion_correct')]),
+        (datasource, m_temp,    [('subject_id', 'subject_id'),
+                                 ('session_id', 'session_id'),
+                                 ('scan_id', 'scan_id'),
+                                 (('site_name', _empty), 'site_name')]),
         (fd, m_temp,            [('out_file', 'fd_file')]),
         (tsnr, m_temp,          [('tsnr_file', 'tsnr_volume')]),
         (m_spatial, mqc,        [('qc', 'qc_spatial')]),
@@ -227,17 +253,12 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
 def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
     """A head motion correction (HMC) workflow for functional scans"""
 
-    from .utils import fmri_getidx
-
     wf = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'start_idx', 'stop_idx']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_xfms']), name='outputnode')
 
-    get_idx = pe.Node(niu.Function(
-        input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
-        output_names=['start_idx', 'stop_idx']), name='get_idx')
     drop_trs = pe.Node(afp.Calc(expr='a', outputtype='NIFTI_GZ'),
                        name='drop_trs')
     deoblique = pe.Node(afp.Refit(deoblique=True), name='deoblique')
@@ -256,11 +277,8 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
 
     wf.connect([
-        (inputnode, get_idx,     [('in_file', 'in_file'),
+        (inputnode, drop_trs,    [('in_file', 'in_file_a'),
                                   ('start_idx', 'start_idx'),
-                                  ('stop_idx', 'stop_idx')]),
-        (inputnode, drop_trs,    [('in_file', 'in_file_a')]),
-        (get_idx, drop_trs,      [('start_idx', 'start_idx'),
                                   ('stop_idx', 'stop_idx')]),
         (deoblique, reorient,    [('out_file', 'in_file')]),
         (reorient, get_mean_RPI, [('out_file', 'in_file')]),

@@ -28,7 +28,7 @@ __status__ = "Prototype"
 if __name__ == '__main__':
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from mriqc.workflows import anat_qc_workflow
+    from mriqc.workflows import anat_qc_workflow, fmri_qc_workflow
     from mriqc.utils import gather_bids_data
     from mriqc.reports import workflow_report
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         reports = workflow_report(out_csv, 'anatomical', settings=settings)
 
     if subjects['func']:
-        func_wf, out_csv = func_qc_workflow(sub_list=subjects['func'],
+        func_wf, out_csv = fmri_qc_workflow(sub_list=subjects['func'],
                                             settings=settings)
 
         if opts.write_graph:
