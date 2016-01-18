@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-18 08:32:42
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-01-18 08:38:54
 
 
 import os
@@ -140,13 +140,14 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
 
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(
-        format_string='meanepi_%(session_id)s_%(scan_id)s', keep_ext=True),
-        name='rename_mean_mosaic')
+        format_string='meanepi_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_mean_mosaic')
     dsmean = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parametrization=False),
+        base_directory=settings['work_dir'], parameterization=False),
         name='ds_mean')
     workflow.connect([
-        (datasource, mvmean, [('session_id', 'session_id'),
+        (datasource, mvmean, [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
                               ('scan_id', 'scan_id')]),
         (plot_mean, mvmean,  [('out_file', 'in_file')]),
         (mvmean, dsmean,     [('out_file', '@mosaic')]),
@@ -155,13 +156,14 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
 
     # Save tSNR mosaic to well-formed path
     mvtsnr = pe.Node(niu.Rename(
-        format_string='tsnr_%(session_id)s_%(scan_id)s', keep_ext=True),
-        name='rename_tsnr_mosaic')
+        format_string='tsnr_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_tsnr_mosaic')
     dstsnr = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parametrization=False),
+        base_directory=settings['work_dir'], parameterization=False),
         name='ds_tsnr')
     workflow.connect([
-        (datasource, mvtsnr, [('session_id', 'session_id'),
+        (datasource, mvtsnr, [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
                               ('scan_id', 'scan_id')]),
         (plot_tsnr, mvtsnr,  [('out_file', 'in_file')]),
         (mvtsnr, dstsnr,     [('out_file', '@mosaic')]),
@@ -170,13 +172,14 @@ def fmri_qc_workflow(name='fMRIQC', settings={}):
 
     # Save FD plot to well-formed path
     mvfd = pe.Node(niu.Rename(
-        format_string='fd_%(session_id)s_%(scan_id)s', keep_ext=True),
-        name='rename_fd_mosaic')
+        format_string='fd_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_fd_mosaic')
     dsfd = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parametrization=False),
+        base_directory=settings['work_dir'], parameterization=False),
         name='ds_fd')
     workflow.connect([
-        (datasource, mvfd, [('session_id', 'session_id'),
+        (datasource, mvfd, [('subject_id', 'subject_id'),
+                            ('session_id', 'session_id'),
                             ('scan_id', 'scan_id')]),
         (plot_fd, mvfd,  [('out_file', 'in_file')]),
         (mvfd, dsfd,     [('out_file', '@mosaic')]),
