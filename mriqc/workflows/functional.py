@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 16:06:02
+# @Last Modified time: 2016-01-18 21:16:19
 
 
 import os
@@ -178,8 +178,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                              ('session_id', 'session_id'),
                              ('scan_id', 'scan_id')]),
         (plot_mean, mvmean, [('out_file', 'in_file')]),
-        (mvmean, dsmean,    [('out_file', '@mosaic')]),
-        (dsource, dsmean,   [('subject_id', 'container')])
+        (mvmean, dsmean,    [('out_file', '@mosaic')])])
     ])
 
     # Save tSNR mosaic to well-formed path
@@ -194,8 +193,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                              ('session_id', 'session_id'),
                              ('scan_id', 'scan_id')]),
         (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
-        (mvtsnr, dstsnr,    [('out_file', '@mosaic')]),
-        (dsource, dstsnr,   [('subject_id', 'container')])
+        (mvtsnr, dstsnr,    [('out_file', '@mosaic')])])
     ])
 
     # Save FD plot to well-formed path
@@ -210,8 +208,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                          ('session_id', 'session_id'),
                          ('scan_id', 'scan_id')]),
         (plot_fd, mvfd, [('out_file', 'in_file')]),
-        (mvfd, dsfd,    [('out_file', '@mosaic')]),
-        (dsource, dsfd, [('subject_id', 'container')])
+        (mvfd, dsfd,    [('out_file', '@mosaic')])])
     ])
 
     return workflow, out_csv
