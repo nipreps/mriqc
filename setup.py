@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-05 20:09:19
+# @Last Modified time: 2016-01-18 20:50:16
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
         download_url='',
         license='3-clause BSD',
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces'],
-        package_data={},
+        package_data={'mriqc': ['html/*.html']},
         scripts=glob("scripts/*.py"),
         install_requires=["nipype", "nibabel", "pandas", "seaborn", "pyPdf2",
                           "xhtml2pdf", "qap"],
