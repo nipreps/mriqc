@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 08:44:02
+# @Last Modified time: 2016-01-18 18:05:18
 
 
 import sys
@@ -349,20 +349,18 @@ def report_anatomical(
         df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
         out_file=out_file)
 
-
-def report_functional_spatial(
+def report_functional(
         df, subject=None, sc_split=False, condensed=True,
-        out_file='func_temporal.pdf'):
+        out_file='functional.pdf'):
+    from tempfile import mkdtemp
+    
+    wd = mkdtemp()
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
               ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
-    return _write_report(
+    fspatial = _write_report(
         df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=out_file)
+        out_file=op.join(wd, 'fspatial.pdf'))
 
-
-def qap_functional_temporal(
-        df, subject=None, sc_split=False, condensed=True,
-        out_file='func_spatial.pdf'):
     groups = [['bg_size', 'fg_size'],
               ['bg_mean', 'fg_mean'],
               ['bg_std', 'fg_std'],
@@ -371,6 +369,9 @@ def qap_functional_temporal(
               ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
               ['ghost_%s' % a for a in ['x', 'y', 'z']],
               ['snr']]
-    return _write_report(
+    ftemporal = _write_report(
         df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=out_file)
+        out_file=op.join(wd, 'ftemporal.pdf'))
+
+    concat_pdf([fspatial, ftemporal], out_file)
+    return out_file
