@@ -178,7 +178,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                              ('session_id', 'session_id'),
                              ('scan_id', 'scan_id')]),
         (plot_mean, mvmean, [('out_file', 'in_file')]),
-        (mvmean, dsmean,    [('out_file', '@mosaic')])])
+        (mvmean, dsmean,    [('out_file', '@mosaic')])
     ])
 
     # Save tSNR mosaic to well-formed path
@@ -193,7 +193,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                              ('session_id', 'session_id'),
                              ('scan_id', 'scan_id')]),
         (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
-        (mvtsnr, dstsnr,    [('out_file', '@mosaic')])])
+        (mvtsnr, dstsnr,    [('out_file', '@mosaic')])
     ])
 
     # Save FD plot to well-formed path
@@ -208,7 +208,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                          ('session_id', 'session_id'),
                          ('scan_id', 'scan_id')]),
         (plot_fd, mvfd, [('out_file', 'in_file')]),
-        (mvfd, dsfd,    [('out_file', '@mosaic')])])
+        (mvfd, dsfd,    [('out_file', '@mosaic')])
     ])
 
     return workflow, out_csv
