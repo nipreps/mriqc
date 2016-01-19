@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   Oscar Esteban
-# @Last Modified time: 2016-01-18 14:49:43
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-01-18 16:06:02
 
 
 import os
@@ -40,11 +40,11 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
-    datasource = pe.Node(niu.IdentityInterface(
+    dsource = pe.Node(niu.IdentityInterface(
         fields=['functional_scan', 'subject_id', 'session_id', 'scan_id',
                 'site_name', 'start_idx', 'stop_idx']), name='datasource')
-    datasource.inputs.start_idx = 0
-    datasource.inputs.stop_idx = None
+    dsource.inputs.start_idx = 0
+    dsource.inputs.stop_idx = None
 
     get_idx = pe.Node(niu.Function(
         input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
@@ -57,7 +57,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                          name='datasplit')
         workflow.connect([
             (inputnode, dsplit, [('data', 'inlist')]),
-            (dsplit, datasource, [('out1', 'subject_id'),
+            (dsplit, dsource, [('out1', 'subject_id'),
                                   ('out2', 'session_id'),
                                   ('out3', 'scan_id'),
                                   ('out4', 'functional_scan')])
@@ -114,43 +114,44 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (datasource, get_idx,   [('functional_scan', 'in_file'),
-                                 ('start_idx', 'start_idx'),
-                                 ('stop_idx', 'stop_idx')]),
-        (datasource, merg,      [('session_id', 'in1'),
-                                 ('scan_id', 'in2'),
-                                 ('site_name', 'in3')]),
-        (datasource, hmcwf,     [('functional_scan', 'inputnode.in_file')]),
-        (get_idx, hmcwf,        [('start_idx', 'inputnode.start_idx'),
-                                 ('stop_idx', 'inputnode.stop_idx')]),
-        (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
-        (hmcwf, mean,           [('outputnode.out_file', 'in_file')]),
-        (hmcwf, tsnr,           [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fd,             [('outputnode.out_xfms', 'in_file')]),
-        (mean, plot_mean,       [('out_file', 'in_file')]),
-        (tsnr, plot_tsnr,       [('tsnr_file', 'in_file')]),
-        (fd, plot_fd,           [('out_file', 'in_file')]),
-        (datasource, plot_mean, [('subject_id', 'subject')]),
-        (datasource, plot_tsnr, [('subject_id', 'subject')]),
-        (datasource, plot_fd,   [('subject_id', 'subject')]),
-        (merg, plot_mean,       [('out', 'metadata')]),
-        (merg, plot_tsnr,       [('out', 'metadata')]),
-        (merg, plot_fd,         [('out', 'metadata')]),
-        (bmw, m_spatial,        [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, m_spatial,       [('out_file', 'mean_epi')]),
-        (datasource, m_spatial, [('subject_id', 'subject_id'),
-                                 ('session_id', 'session_id'),
-                                 ('scan_id', 'scan_id'),
-                                 (('site_name', _empty), 'site_name')]),
-        (hmcwf, m_temp,  [('outputnode.out_file', 'func_motion_correct')]),
-        (datasource, m_temp,    [('subject_id', 'subject_id'),
-                                 ('session_id', 'session_id'),
-                                 ('scan_id', 'scan_id'),
-                                 (('site_name', _empty), 'site_name')]),
-        (fd, m_temp,            [('out_file', 'fd_file')]),
-        (tsnr, m_temp,          [('tsnr_file', 'tsnr_volume')]),
-        (m_spatial, mqc,        [('qc', 'qc_spatial')]),
-        (m_temp, mqc,           [('qc', 'qc_temporal')])
+        (dsource, get_idx,   [('functional_scan', 'in_file'),
+                              ('start_idx', 'start_idx'),
+                              ('stop_idx', 'stop_idx')]),
+        (dsource, merg,      [('session_id', 'in1'),
+                              ('scan_id', 'in2'),
+                              ('site_name', 'in3')]),
+        (dsource, hmcwf,     [('functional_scan', 'inputnode.in_file')]),
+        (get_idx, hmcwf,     [('start_idx', 'inputnode.start_idx'),
+                              ('stop_idx', 'inputnode.stop_idx')]),
+        (hmcwf, bmw,         [('outputnode.out_file', 'inputnode.in_file')]),
+        (hmcwf, mean,        [('outputnode.out_file', 'in_file')]),
+        (hmcwf, tsnr,        [('outputnode.out_file', 'in_file')]),
+        (hmcwf, fd,          [('outputnode.out_xfms', 'in_file')]),
+        (mean, plot_mean,    [('out_file', 'in_file')]),
+        (tsnr, plot_tsnr,    [('tsnr_file', 'in_file')]),
+        (fd, plot_fd,        [('out_file', 'in_file')]),
+        (dsource, plot_mean, [('subject_id', 'subject')]),
+        (dsource, plot_tsnr, [('subject_id', 'subject')]),
+        (dsource, plot_fd,   [('subject_id', 'subject')]),
+        (merg, plot_mean,    [('out', 'metadata')]),
+        (merg, plot_tsnr,    [('out', 'metadata')]),
+        (merg, plot_fd,      [('out', 'metadata')]),
+        (bmw, m_spatial,     [('outputnode.out_file', 'func_brain_mask')]),
+        (mean, m_spatial,    [('out_file', 'mean_epi')]),
+        (dsource, m_spatial, [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
+                              ('scan_id', 'scan_id'),
+                              (('site_name', _empty), 'site_name')]),
+        (hmcwf, m_temp,      [('outputnode.out_file', 'func_motion_correct')]),
+        (bmw, m_temp,        [('outputnode.out_file', 'func_brain_mask')]),
+        (dsource, m_temp,    [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
+                              ('scan_id', 'scan_id'),
+                              (('site_name', _empty), 'site_name')]),
+        (fd, m_temp,         [('out_file', 'fd_file')]),
+        (tsnr, m_temp,       [('tsnr_file', 'tsnr_volume')]),
+        (m_spatial, mqc,     [('qc', 'qc_spatial')]),
+        (m_temp, mqc,        [('qc', 'qc_temporal')])
     ])
 
     if settings.get('mosaic_mask', False):
@@ -173,12 +174,12 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         base_directory=settings['work_dir'], parameterization=False),
         name='ds_mean')
     workflow.connect([
-        (datasource, mvmean, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id')]),
-        (plot_mean, mvmean,  [('out_file', 'in_file')]),
-        (mvmean, dsmean,     [('out_file', '@mosaic')]),
-        (datasource, dsmean, [('subject_id', 'container')])
+        (dsource, mvmean,   [('subject_id', 'subject_id'),
+                             ('session_id', 'session_id'),
+                             ('scan_id', 'scan_id')]),
+        (plot_mean, mvmean, [('out_file', 'in_file')]),
+        (mvmean, dsmean,    [('out_file', '@mosaic')]),
+        (dsource, dsmean,   [('subject_id', 'container')])
     ])
 
     # Save tSNR mosaic to well-formed path
@@ -189,12 +190,12 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         base_directory=settings['work_dir'], parameterization=False),
         name='ds_tsnr')
     workflow.connect([
-        (datasource, mvtsnr, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id')]),
-        (plot_tsnr, mvtsnr,  [('out_file', 'in_file')]),
-        (mvtsnr, dstsnr,     [('out_file', '@mosaic')]),
-        (datasource, dstsnr, [('subject_id', 'container')])
+        (dsource, mvtsnr,   [('subject_id', 'subject_id'),
+                             ('session_id', 'session_id'),
+                             ('scan_id', 'scan_id')]),
+        (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
+        (mvtsnr, dstsnr,    [('out_file', '@mosaic')]),
+        (dsource, dstsnr,   [('subject_id', 'container')])
     ])
 
     # Save FD plot to well-formed path
@@ -205,12 +206,12 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         base_directory=settings['work_dir'], parameterization=False),
         name='ds_fd')
     workflow.connect([
-        (datasource, mvfd, [('subject_id', 'subject_id'),
-                            ('session_id', 'session_id'),
-                            ('scan_id', 'scan_id')]),
-        (plot_fd, mvfd,  [('out_file', 'in_file')]),
-        (mvfd, dsfd,     [('out_file', '@mosaic')]),
-        (datasource, dsfd, [('subject_id', 'container')])
+        (dsource, mvfd, [('subject_id', 'subject_id'),
+                         ('session_id', 'session_id'),
+                         ('scan_id', 'scan_id')]),
+        (plot_fd, mvfd, [('out_file', 'in_file')]),
+        (mvfd, dsfd,    [('out_file', '@mosaic')]),
+        (dsource, dsfd, [('subject_id', 'container')])
     ])
 
     return workflow, out_csv
