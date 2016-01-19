@@ -1,9 +1,8 @@
 dependencies:
   cache_directories:
     - "~/examples/"
-    - "~/afni/"
-    - "~/fsl/"
     - "~/downloads/"
+    - "~/.local/"
   pre:
     - bash ./circle_setup.sh
   override:
@@ -13,9 +12,9 @@ dependencies:
     - pip install -e .
 machine:
   environment:
-    PATH: ${HOME}/afni:${HOME}/fsl/bin:${PATH}
-    FSLDIR: ${HOME}/fsl
-    LD_LIBRARY_PATH: ${HOME}/fsl/lib:${LD_LIBRARY_PATH}
+    PATH: ${HOME}/.local/afni:${HOME}/.local/fsl/bin:${PATH}
+    FSLDIR: ${HOME}/.local/fsl
+    LD_LIBRARY_PATH: ${HOME}/.local/fsl/lib:${LD_LIBRARY_PATH}
     FSLOUTPUTTYPE: NIFTI_GZ
 test:
   override:
