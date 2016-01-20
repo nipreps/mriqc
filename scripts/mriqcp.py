@@ -44,6 +44,9 @@ if __name__ == '__main__':
     g_input.add_argument(
         "--write-graph", action='store_true', default=False,
         help="Write workflow graph.")
+    g_input.add_argument(
+        "--use-plugin", action='store', default=None,
+        help='nipype plugin configuration file')
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store')
@@ -79,22 +82,28 @@ if __name__ == '__main__':
         'execution': {'stop_on_first_crash': False}
     })
 
-    # Setup multiprocessing
-    nthreads = opts.nthreads
-    if nthreads == 0:
-        from multiprocessing import cpu_count
-        nthreads = cpu_count()
 
-    settings['nthreads'] = nthreads
+    plugin_settings = {'plugin': 'Linear'}
+    if opts.use_plugin is not None:
+        from yaml import load as loadyml
+        with open(opts.use_plugin) as f:
+            plugin_settings = loadyml(f)
+    else:
+        # Setup multiprocessing
+        nthreads = opts.nthreads
+        if nthreads == 0:
+            from multiprocessing import cpu_count
+            nthreads = cpu_count()
 
-    plugin = 'Linear'
-    plugin_args = {}
-    if nthreads > 1:
-        plugin = 'MultiProc'
-        plugin_args = {'n_proc': nthreads, 'maxtasksperchild': 4}
+        settings['nthreads'] = nthreads
+
+        if nthreads > 1:
+            plugin_settings['plugin'] = 'MultiProc'
+            plugin_settings['plugin_args'] = {'n_proc': nthreads, 'maxtasksperchild': 4}
 
     subjects = gather_bids_data(settings['bids_root'])
 
+    print plugin_settings
     if subjects['anat']:
         anat_wf, out_csv = anat_qc_workflow(sub_list=subjects['anat'],
                                             settings=settings)
@@ -102,7 +111,7 @@ if __name__ == '__main__':
         if opts.write_graph:
             anat_wf.write_graph()
 
-        anat_wf.run()
+        anat_wf.run(**plugin_settings)
         reports = workflow_report(out_csv, 'anatomical', settings=settings)
 
     if subjects['func']:
@@ -112,5 +121,5 @@ if __name__ == '__main__':
         if opts.write_graph:
             func_wf.write_graph()
 
-        func_wf.run()
+        func_wf.run(**plugin_settings)
         reports = workflow_report(out_csv, 'functional', settings=settings)
