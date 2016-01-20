@@ -19,7 +19,8 @@ machine:
 test:
   override:
     # Test mriqcp
-    - python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output -w /tmp/workdir
+    - python scripts/mriqcp.py -i ~/examples/ds003_sub-01/ -o /tmp/output-01 -w /tmp/workdir-01
+    - python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms
 general:
   artifacts:
     - "/tmp/output"
