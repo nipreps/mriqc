@@ -12,7 +12,7 @@ if [[ ! -s ${fsldir}/etc/fslconf/fsl.sh ]]; then
 
     mkdir -p ${HOME}/.local/downloads
     cd ${HOME}/.local/downloads
-    fslchk=$(md5sum -c fsl.md5 | awk '{print $2}')
+    fslchk=$(md5sum -c fsl.tar.gz.md5 | awk '{print $2}')
     cd
 
     # Get fsl if md5 is not ok
