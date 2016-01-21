@@ -54,3 +54,5 @@ fi
 
 mkdir -p ~/examples/ds003_sub-01
 ln -fs ~/examples/ds003_downsampled/sub-01 ~/examples/ds003_sub-01/
+
+echo "{plugin: MultiProc, plugin_args: {n_proc: 2}}" ~/examples/plugin.yml
