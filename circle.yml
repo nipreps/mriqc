@@ -23,5 +23,7 @@ test:
     - python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms
 general:
   artifacts:
-    - "/tmp/output"
-    - "/tmp/workdir"
+    - "/tmp/output-01"
+    - "/tmp/workdir-01"
+    - "/tmp/output-ms"
+    - "/tmp/workdir-ms"
