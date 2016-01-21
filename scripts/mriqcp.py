@@ -95,6 +95,9 @@ if __name__ == '__main__':
 
     subjects = gather_bids_data(settings['bids_root'])
 
+    if not any([len(subjects[k])>0 for k in subjects.keys()]):
+        raise RuntimeError('No scans found in %s' % settings['bids_root'])
+
     if subjects['anat']:
         anat_wf, out_csv = anat_qc_workflow(sub_list=subjects['anat'],
                                             settings=settings)
