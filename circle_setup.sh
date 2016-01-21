@@ -19,11 +19,11 @@ if [[ ! -s ${fsldir}/etc/fslconf/fsl.sh ]]; then
 
     # Get fsl if md5 is not ok
     if [ $fslchk != "OK" ]; then 
-        wget -P ${HOME}/downloads/ -c "http://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.9-centos6_64.tar.gz"
+        wget -q -P ${HOME}/downloads/ -c "http://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.9-centos6_64.tar.gz"
         rm -rf ${fsldir}
     fi
 
-    tar zxvf ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz -C ${HOME}/
+    tar zxf ${HOME}/downloads/fsl-5.0.9-centos6_64.tar.gz -C ${HOME}/
     mv ${HOME}/fsl ${fsldir}
 fi
 
@@ -37,7 +37,7 @@ if [[ ! -d ${afnidir} ]]; then
 
     # Get afni if md5 is not ok
     if [ $afnichk != "OK" ]; then
-        wget -P ${HOME}/downloads/ -c "http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz"
+        wget -q -P ${HOME}/downloads/ -c "http://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz"
         rm -rf ${afnidir}
     fi
 
@@ -49,10 +49,10 @@ if [[ ! -d ${afnidir} ]]; then
 if [[ ! -d ${HOME}/examples/ds003_downsampled ]]; then
     wget -P ${HOME}/downloads/ "https://googledrive.com/host/0B2JWN60ZLkgkMEw4bW5VUUpSdFU/ds003_downsampled.tar"
     mkdir -p ${HOME}/examples
-    tar xvf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/examples
+    tar xf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/examples
 fi
 
 mkdir -p ~/examples/ds003_sub-01
 ln -fs ~/examples/ds003_downsampled/sub-01 ~/examples/ds003_sub-01/
 
-echo "{plugin: MultiProc, plugin_args: {n_proc: 2}}" ~/examples/plugin.yml
+echo "{plugin: MultiProc, plugin_args: {n_proc: 2}}" >> ~/examples/plugin.yml
