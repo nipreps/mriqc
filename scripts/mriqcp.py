@@ -48,6 +48,13 @@ if __name__ == '__main__':
         "--use-plugin", action='store', default=None,
         help='nipype plugin configuration file')
 
+    g_input.add_argument(
+        "--skip-anatomical", action='store_true', default=False,
+        help="Skip anatomical QC workflow.")
+    g_input.add_argument(
+        "--skip-functional", action='store_true', default=False,
+        help="Skip functional QC workflow.")
+
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store')
     g_outputs.add_argument('-w', '--work-dir', action='store')
@@ -106,7 +113,7 @@ if __name__ == '__main__':
     if not any([len(subjects[k])>0 for k in subjects.keys()]):
         raise RuntimeError('No scans found in %s' % settings['bids_root'])
 
-    if subjects['anat']:
+    if not opts.skip_anatomical and subjects['anat']:
         anat_wf, out_csv = anat_qc_workflow(sub_list=subjects['anat'],
                                             settings=settings)
 
@@ -116,7 +123,7 @@ if __name__ == '__main__':
         anat_wf.run(**plugin_settings)
         reports = workflow_report(out_csv, 'anatomical', settings=settings)
 
-    if subjects['func']:
+    if not opts.skip_functional and subjects['func']:
         func_wf, out_csv = fmri_qc_workflow(sub_list=subjects['func'],
                                             settings=settings)
 
