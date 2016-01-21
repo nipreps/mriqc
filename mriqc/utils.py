@@ -61,8 +61,8 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
                 "%s_*bold*.nii.gz" % subject_id, )))
 
         for i, scan in enumerate(functional_scans):
-            taskinfo = re.search(r'.+?task-(([^_]+)(_run-([0-9]+))?)_bold.nii.gz$', scan)
-            if taskinfo == None:
+            taskinfo = re.search(r'.+?task-(([^_]+)(_run-([0-9]+))?)_bold.nii(?:.gz)?$', scan)
+            if taskinfo is None:
                 # warn user of potential nonstandard bids layout?
                 scid = 'func_%d' % (i+1)
             else:
