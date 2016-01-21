@@ -2,7 +2,9 @@ dependencies:
   cache_directories:
     - "~/examples/"
     - "~/downloads/"
-    - "~/.local/"
+    - "~/.local/fsl"
+    - "~/.local/afni"
+    - "~/.local/downloads"
   pre:
     - bash ./circle_setup.sh
   override:
