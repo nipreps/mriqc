@@ -1,10 +1,10 @@
 dependencies:
   cache_directories:
     - "~/examples/"
-    - "~/downloads/"
-    - "~/.local/fsl"
-    - "~/.local/afni"
-    - "~/.local/downloads"
+    # - "~/downloads/"
+    # - "~/.local/fsl"
+    # - "~/.local/afni"
+    # - "~/.local/downloads"
     - "~/.apt-cache"
   pre:
     - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache /var/cache/apt/archives && mkdir -p ~/.apt-cache/partial
@@ -14,7 +14,7 @@ dependencies:
     - bash ./circle_setup.sh
   override:
     - sudo apt-get install -y fsl-core fsl-atlases fsl-mni152-templates afni
-    - source /etc/fsl/fsl.sh
+    - echo "source /etc/fsl/fsl.sh" >> $HOME/.profile
     - pip install --upgrade pip
     - pip install numpy
     - pip install -r requirements.txt
