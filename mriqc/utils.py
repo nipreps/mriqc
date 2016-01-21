@@ -11,7 +11,7 @@
 def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
     import os
     import os.path as op
-    import yaml
+    import yaml, re
     from glob import glob
 
     sub_dict = {}
@@ -58,10 +58,15 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
         if get_func:
             functional_scans = sorted(glob(op.join(
                 dataset_folder, subject_id, "func",
-                "%s_*bold.nii.gz" % subject_id, )))
+                "%s_*bold*.nii.gz" % subject_id, )))
 
         for i, scan in enumerate(functional_scans):
-            scid = 'func_%d' % (i+1)
+            taskinfo = re.search(r'.+?task-(([^_]+)(_run-([0-9]+))?)_bold.nii.gz$', scan)
+            if taskinfo == None:
+                # warn user of potential nonstandard bids layout?
+                scid = 'func_%d' % (i+1)
+            else:
+                scid = taskinfo.group(1)
             spath = op.abspath(scan)
             sub_dict['func'].append((subject_id, ssid, scid, spath))
 
