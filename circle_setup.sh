@@ -51,3 +51,6 @@ if [[ ! -d ${HOME}/examples/ds003_downsampled ]]; then
     mkdir -p ${HOME}/examples
     tar xvf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/examples
 fi
+
+mkdir -p ~/examples/ds003_sub-01
+ln -fs ~/examples/ds003_downsampled/sub-01 ~/examples/ds003_sub-01/
