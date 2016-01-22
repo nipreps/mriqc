@@ -14,3 +14,6 @@ fi
 
 mkdir -p ~/examples/ds003_sub-01
 ln -fs ~/examples/ds003_downsampled/sub-01 ~/examples/ds003_sub-01/
+
+mkdir -p ~/workdir/
+mkdir -p ~/outdir/

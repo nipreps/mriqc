@@ -2,6 +2,7 @@ dependencies:
   cache_directories:
     - "~/examples/"
     - "~/.apt-cache"
+    - "~/workdir"
   pre:
     # Let CircleCI cache the apt archive
     - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache /var/cache/apt/archives && mkdir -p ~/.apt-cache/partial
@@ -23,11 +24,11 @@ machine:
 test:
   override:
     # Test mriqcp
-    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_sub-01/ -o /tmp/output-01 -w /tmp/workdir-01
+    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_sub-01/ -o ~/outdir/single-subject -w ~/workdir/single-subject
     - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms
 general:
   artifacts:
-    - "/tmp/output-01"
-    - "/tmp/workdir-01"
+    - "~/outdir/single-subject"
+    - "~/workdir/single-subject"
     - "/tmp/output-ms"
     - "/tmp/workdir-ms"
