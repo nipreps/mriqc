@@ -80,6 +80,12 @@ def reorder_csv(csv_file, out_file=None):
 
     df = pd.read_csv(csv_file)
     cols = df.columns.tolist()
+    try:
+        cols.remove('Unnamed: 0')
+    except ValueError:
+        # The column does not exist
+        pass
+
     for v in ['scan', 'session', 'subject']:
         cols.remove(v)
         cols.insert(1, v)
