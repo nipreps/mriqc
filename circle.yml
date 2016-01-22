@@ -16,6 +16,7 @@ dependencies:
     - echo "source /etc/afni/afni.sh" >> $HOME/.profile
     - pip install --upgrade pip
     - pip install numpy
+    - pip install lockfile
     - pip install -r requirements.txt
     - pip install -e .
 machine:
