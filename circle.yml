@@ -24,7 +24,7 @@ test:
   override:
     # Test mriqcp
     - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_sub-01/ -o /tmp/output-01 -w /tmp/workdir-01
-    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms
+    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms --use-plugin ~/examples/plugin.yml
 general:
   artifacts:
     - "/tmp/output-01"
