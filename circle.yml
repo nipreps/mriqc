@@ -26,10 +26,13 @@ test:
   override:
     # Test mriqcp
     - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_sub-01/ -o ~/outdir/single-subject -w ~/workdir/single-subject
-    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o /tmp/output-ms -w /tmp/workdir-ms
+    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-func -w ~/workdir/multiple-subject-func --skip-anatomical
+    - source $HOME/.profile; python scripts/mriqcp.py -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional
 general:
   artifacts:
     - "~/outdir/single-subject"
     - "~/workdir/single-subject"
-    - "/tmp/output-ms"
-    - "/tmp/workdir-ms"
+    - "~/outdir/multiple-subject-func"
+    - "~/workdir/multiple-subject-func"
+    - "~/outdir/multiple-subject-anat"
+    - "~/workdir/multiple-subject-anat"
