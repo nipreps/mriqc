@@ -29,7 +29,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from mriqc.workflows import anat_qc_workflow, fmri_qc_workflow
-    from mriqc.utils import gather_bids_data
+    from mriqc.utils import gather_bids_data, reorder_csv
     from mriqc.reports import workflow_report
     from nipype import config as ncfg
 
@@ -122,6 +122,7 @@ if __name__ == '__main__':
 
         anat_wf.run(**plugin_settings)
         reports = workflow_report(out_csv, 'anatomical', settings=settings)
+        reorder_csv(out_csv)
 
     if not opts.skip_functional and subjects['func']:
         func_wf, out_csv = fmri_qc_workflow(sub_list=subjects['func'],
@@ -132,3 +133,4 @@ if __name__ == '__main__':
 
         func_wf.run(**plugin_settings)
         reports = workflow_report(out_csv, 'functional', settings=settings)
+        reorder_csv(out_csv)

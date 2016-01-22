@@ -71,3 +71,22 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
             sub_dict['func'].append((subject_id, ssid, scid, spath))
 
     return sub_dict
+
+
+def reorder_csv(csv_file, out_file=None):
+    import pandas as pd
+    if out_file is None:
+        out_file = csv_file
+
+    df = pd.read_csv(csv_file)
+    cols = df.columns.tolist()
+    try:
+        cols.remove('Unnamed: 0')
+    except ValueError:
+        # The column does not exist
+        pass
+
+    for v in ['scan', 'session', 'subject']:
+        cols.remove(v)
+        cols.insert(1, v)
+    df[cols].to_csv(out_file)
