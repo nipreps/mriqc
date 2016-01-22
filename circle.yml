@@ -12,7 +12,7 @@ dependencies:
   override:
     - sudo apt-get install -y fsl-core fsl-atlases fsl-mni152-templates afni
     - echo "source /etc/fsl/fsl.sh" >> $HOME/.profile
-    - echo "/etc/afni/afni.sh" >> $HOME/.profile
+    - echo "source /etc/afni/afni.sh" >> $HOME/.profile
     - pip install --upgrade pip
     - pip install numpy
     - pip install -r requirements.txt
