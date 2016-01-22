@@ -1,3 +1,4 @@
+lockfile
 nibabel
 -e git+https://github.com/oesteban/nipype.git@enh/ControlNodes#egg=nipype
 -e git+https://github.com/oesteban/quality-assessment-protocol.git@enh/SmartQCWorkflow#egg=qap
