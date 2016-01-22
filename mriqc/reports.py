@@ -26,7 +26,7 @@ from .interfaces.viz_utils import (plot_measures, plot_mosaic, plot_all,
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 
 
-def workflow_report(in_csv, qap_type, settings={}):
+def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
     import datetime
 
     out_dir = settings.get('output_dir', os.getcwd())
@@ -49,8 +49,11 @@ def workflow_report(in_csv, qap_type, settings={}):
     func = getattr(sys.modules[__name__], 'report_' + qap_type)
 
     # Identify failed subjects
-    # failed = ['%s (%s_%s)' % (s['id'], s['session'], s['scan'])
-    #           for s in res_dict if 'failed' in s['status']]
+    if sub_list:
+        success = set([tuple(x) for x in df[['subject', 'session', 'scan']].values])
+        sub_all = set(sub_list)
+        failed = list(sub_all - success)
+
 
     pdf_group = []
 
@@ -59,7 +62,7 @@ def workflow_report(in_csv, qap_type, settings={}):
     summary_cover(
         (qap_type,
          datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-         "none"),  # ", ".join(failed) if len(failed) > 0 else "none"),
+         ", ".join(failed) if failed else "none"),
         is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
@@ -122,17 +125,14 @@ def workflow_report(in_csv, qap_type, settings={}):
 
             sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
-        # failed = ['%s (%s)' % (s['session'], s['scan'])
-        #           for s in res_dict if 'failed' in s['status'] and
-        #           subid in s['id']]
-
         # Summary cover
+        failed = ['%s (%s)' % (s[1], s[2]) for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qap_type, subid))
         summary_cover(
             (subid, subid, qap_type,
              datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
              ", ".join(sess_scans),
-             "none"),  # ",".join(failed) if len(failed) > 0 else "none"),
+             ",".join(failed) if failed else "none"),
             out_file=out_sum)
         plots.insert(0, out_sum)
 

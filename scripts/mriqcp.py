@@ -121,7 +121,7 @@ if __name__ == '__main__':
             anat_wf.write_graph()
 
         anat_wf.run(**plugin_settings)
-        reports = workflow_report(out_csv, 'anatomical', settings=settings)
+        reports = workflow_report(out_csv, 'anatomical', sub_list=subjects['anat'], settings=settings)
         reorder_csv(out_csv)
 
     if not opts.skip_functional and subjects['func']:
@@ -132,5 +132,5 @@ if __name__ == '__main__':
             func_wf.write_graph()
 
         func_wf.run(**plugin_settings)
-        reports = workflow_report(out_csv, 'functional', settings=settings)
+        reports = workflow_report(out_csv, 'functional', sub_list=subjects['func'], settings=settings)
         reorder_csv(out_csv)
