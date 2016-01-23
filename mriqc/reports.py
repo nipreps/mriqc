@@ -53,7 +53,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
     failed_str = "none"
     if sub_list:
         success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
-        failed = set(sub_all) - set(success)
+        failed = set(sub_list) - set(success)
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
