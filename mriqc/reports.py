@@ -55,7 +55,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
         success = set([tuple(x) for x in df[['subject', 'session', 'scan']].values])
         sub_all = set(sub_list)
         failed = np.atleast_2d(list(sub_all - success))
-        if failed:
+        if len(failed) > 0:
           failed_str = ', '.join(sorted(['%s_%s_%s' % tuple(f) for f in failed]))
 
     pdf_group = []
@@ -128,7 +128,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
 
         # Summary cover
         sfailed =[]
-        if failed:
+        if len(failed) > 0:
           sfailed = ['%s (%s)' % (s[1], s[2]) for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qap_type, subid))
         summary_cover(
