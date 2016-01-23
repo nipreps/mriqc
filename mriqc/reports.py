@@ -52,19 +52,18 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
     # Identify failed subjects
     failed_str = "none"
     if sub_list:
-        success = set([tuple(x) for x in df[['subject', 'session', 'scan']].values])
-        sub_all = set(sub_list)
-        failed = np.atleast_2d(list(sub_all - success))
+        success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
+        failed = set(sub_all) - set(success)
         if len(failed) > 0:
-          failed_str = ', '.join(sorted(['%s_%s_%s' % tuple(f) for f in failed]))
+            failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
     pdf_group = []
 
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
     summary_cover(
-        (qap_type, datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"), failed_str),
-        is_group=True, out_file=out_sum)
+        (qap_type, datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+         failed_str), is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
     # Generate group report
@@ -127,15 +126,16 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
             sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
         # Summary cover
-        sfailed =[]
+        sfailed = []
         if len(failed) > 0:
-          sfailed = ['%s (%s)' % (s[1], s[2]) for s in failed if subid == s[0]]
+            sfailed = ['%s (%s)' % (s[1], s[2])
+                       for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qap_type, subid))
         summary_cover(
             (subid, subid, qap_type,
              datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
              ", ".join(sess_scans),
-             ",".join(failed) if sfailed else "none"),
+             ",".join(sfailed) if sfailed else "none"),
             out_file=out_sum)
         plots.insert(0, out_sum)
 
