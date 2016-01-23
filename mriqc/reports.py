@@ -34,8 +34,8 @@ def workflow_report(in_csv, qap_type, settings={}):
     out_file = op.join(out_dir, qap_type + '_%s.pdf')
 
     # Read csv file, sort and drop duplicates
-    df = pd.read_csv(in_csv, dtype={'subject': str}).sort(
-        columns=['subject', 'session', 'scan'])
+    df = pd.read_csv(in_csv, dtype={'subject': str}).sort_values(
+        by=['subject', 'session', 'scan'])
 
     try:
         df.drop_duplicates(['subject', 'session', 'scan'], keep='last',
