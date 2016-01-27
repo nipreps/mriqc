@@ -52,8 +52,11 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
     # Identify failed subjects
     failed_str = "none"
     if sub_list:
+        # Remove undesired elements from sub_list tuples
+        sub_list = [(s[0], s[1], s[2]) for s in sub_list]
         success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
         failed = set(sub_list) - set(success)
+        
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
