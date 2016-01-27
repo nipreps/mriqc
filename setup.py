@@ -5,6 +5,8 @@
 # @Last Modified by:   oesteban
 # @Last Modified time: 2016-01-18 20:50:16
 
+__version__ = '0.0.2rc1'
+
 
 def main():
     from glob import glob
