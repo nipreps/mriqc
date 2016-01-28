@@ -35,8 +35,12 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
     out_file = op.join(out_dir, qap_type + '_%s.pdf')
 
     # Read csv file, sort and drop duplicates
-    df = pd.read_csv(in_csv, dtype={'subject': str}).sort_values(
-        by=['subject', 'session', 'scan'])
+    try:
+        df = pd.read_csv(in_csv, dtype={'subject': str}).sort_values(
+            by=['subject', 'session', 'scan'])
+    except AttributeError:
+        df = pd.read_csv(in_csv, dtype={'subject': str}).sort(
+            columns=['subject', 'session', 'scan'])
 
     try:
         df.drop_duplicates(['subject', 'session', 'scan'], keep='last',
@@ -56,7 +60,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
         sub_list = [(s[0], s[1], s[2]) for s in sub_list]
         success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
         failed = set(sub_list) - set(success)
-        
+
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
@@ -355,11 +359,12 @@ def report_anatomical(
         df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
         out_file=out_file)
 
+
 def report_functional(
         df, subject=None, sc_split=False, condensed=True,
         out_file='functional.pdf'):
     from tempfile import mkdtemp
-    
+
     wd = mkdtemp()
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
               ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
