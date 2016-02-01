@@ -22,6 +22,7 @@ from ..utils import reorder_csv
 
 
 def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
+    """ The fMRI qc workflow """
     from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
     from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
     from qap.temporal_qc import fd_jenkinson
@@ -158,9 +159,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     mvmean = pe.Node(niu.Rename(
         format_string='meanepi_%(subject_id)s_%(session_id)s_%(scan_id)s',
         keep_ext=True), name='rename_mean_mosaic')
-    dsmean = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False),
-        name='ds_mean')
+    dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                     name='ds_mean')
     wf.connect([
         (dsource, mvmean,   [('subject_id', 'subject_id'),
                              ('session_id', 'session_id'),
@@ -173,9 +173,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     mvtsnr = pe.Node(niu.Rename(
         format_string='tsnr_%(subject_id)s_%(session_id)s_%(scan_id)s',
         keep_ext=True), name='rename_tsnr_mosaic')
-    dstsnr = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False),
-        name='ds_tsnr')
+    dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                     name='ds_tsnr')
     wf.connect([
         (dsource, mvtsnr,   [('subject_id', 'subject_id'),
                              ('session_id', 'session_id'),
@@ -188,9 +187,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     mvfd = pe.Node(niu.Rename(
         format_string='fd_%(subject_id)s_%(session_id)s_%(scan_id)s',
         keep_ext=True), name='rename_fd_mosaic')
-    dsfd = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False),
-        name='ds_fd')
+    dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                   name='ds_fd')
     wf.connect([
         (dsource, mvfd, [('subject_id', 'subject_id'),
                          ('session_id', 'session_id'),
