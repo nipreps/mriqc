@@ -80,7 +80,7 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
                      'inputnode.in_file')]),
         (arw, qmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
-        (asw, segment,  [('outputnode.out_file', 'in_files')]),
+        (asw, segment, [('outputnode.out_file', 'in_files')]),
         (arw, measures, [('outputnode.out_file', 'anatomical_reorient')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
@@ -111,22 +111,22 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         (mvplot, dsplot, [('out_file', '@mosaic')])
     ])
 
-
     # Export to CSV
     out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
     re_csv0 = pe.JoinNode(niu.Function(
         input_names=['csv_file'], output_names=['out_file'], function=reorder_csv),
-                          joinsource='inputnode', joinfield='csv_file', name='reorder_anat')
-    report0 = pe.Node(Report(qctype='anatomical', settings=settings), name='AnatomicalReport')
+        joinsource='inputnode', joinfield='csv_file', name='reorder_anat')
+    report0 = pe.Node(
+        Report(qctype='anatomical', settings=settings), name='AnatomicalReport')
     if sub_list:
         report0.inputs.sub_list = sub_list
 
     wf.connect([
         (measures, to_csv, [('qc', '_outputs')]),
-        (to_csv, re_csv0,  [('csv_file', 'csv_file')]),
+        (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
-        (re_csv0, report0,  [('out_file', 'in_csv')]),
+        (re_csv0, report0, [('out_file', 'in_csv')]),
         (report0, outputnode, [('out_group', 'out_group')])
     ])
 
@@ -150,13 +150,13 @@ def mri_reorient_wf(name='ReorientWorkflow'):
         orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
     wf.connect([
         (inputnode, deoblique, [('in_file', 'in_file')]),
-        (deoblique, reorient,  [('out_file', 'in_file')]),
+        (deoblique, reorient, [('out_file', 'in_file')]),
         (reorient, outputnode, [('out_file', 'out_file')])
     ])
     return wf
 
 
-def brainmsk_wf(name='BrainMaskWorkflow', config={}):
+def brainmsk_wf(name='BrainMaskWorkflow'):
     """Computes a brain mask from the original T1 and the skull-stripped"""
     from nipype.interfaces.fsl.maths import MathsCommand
     from qap.workflows.utils import select_thresh, slice_head_mask
@@ -195,27 +195,27 @@ def brainmsk_wf(name='BrainMaskWorkflow', config={}):
     flirt = pe.Node(fsl.FLIRT(cost='corratio'), name='spatial_normalization')
 
     wf.connect([
-        (inputnode, slice_msk,
-            [(('in_template', _default_template), 'standard')]),
-        (inputnode, sel_th,    [('in_file', 'input_skull')]),
-        (inputnode, binarize,  [('in_file', 'in_file')]),
+        (inputnode, slice_msk, [(('in_template', _default_template), 'standard')]),
+        (inputnode, sel_th, [('in_file', 'input_skull')]),
+        (inputnode, binarize, [('in_file', 'in_file')]),
         (inputnode, slice_msk, [('in_file', 'infile')]),
-        (inputnode, flirt,     [
+        (inputnode, flirt, [
             ('in_brain', 'in_file'),
             (('in_template', _default_template), 'reference')]),
-        (flirt, slice_msk,     [('out_matrix_file', 'transform')]),
-        (sel_th, binarize,     [('thresh', 'thresh')]),
-        (binarize, dilate,     [('out_file', 'in_file')]),
-        (dilate, erode,        [('out_file', 'in_file')]),
-        (erode, combine,       [('out_file', 'in_file')]),
-        (slice_msk, combine,   [('outfile_path', 'operand_file')]),
-        (combine, outputnode,  [('out_file', 'out_mask')]),
-        (flirt, outputnode,    [('out_matrix_file', 'out_matrix_file')]),
+        (flirt, slice_msk, [('out_matrix_file', 'transform')]),
+        (sel_th, binarize, [('thresh', 'thresh')]),
+        (binarize, dilate, [('out_file', 'in_file')]),
+        (dilate, erode, [('out_file', 'in_file')]),
+        (erode, combine, [('out_file', 'in_file')]),
+        (slice_msk, combine, [('outfile_path', 'operand_file')]),
+        (combine, outputnode, [('out_file', 'out_mask')]),
+        (flirt, outputnode, [('out_matrix_file', 'out_matrix_file')]),
     ])
     return wf
 
 
 def skullstrip_wf(name='SkullStripWorkflow'):
+    """ Skull-stripping workflow """
     from nipype.interfaces.afni import preprocess as afp
 
     wf = pe.Workflow(name=name)
@@ -229,12 +229,13 @@ def skullstrip_wf(name='SkullStripWorkflow'):
         expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
 
     wf.connect([
-        (inputnode, sstrip,           [('in_file', 'in_file')]),
-        (inputnode, sstrip_orig_vol,  [('in_file', 'in_file_a')]),
-        (sstrip, sstrip_orig_vol,     [('out_file', 'in_file_b')]),
+        (inputnode, sstrip, [('in_file', 'in_file')]),
+        (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
+        (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
         (sstrip_orig_vol, outputnode, [('out_file', 'out_file')])
     ])
     return wf
+
 
 def qc_anat(anatomical_reorient, head_mask_path,
             anatomical_segs, subject_id, session_id,
