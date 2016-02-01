@@ -8,39 +8,48 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-01-18 08:36:22
-
+""" A QC workflow for anatomical MRI """
 import os.path as op
-
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 
-from nipype import logging
-logger = logging.getLogger('workflow')
+from ..interfaces.viz import Report
+from ..utils import reorder_csv
 
 
-def qc_anat(anatomical_reorient, head_mask_path,
-            anatomical_segs, subject_id, session_id,
-            scan_id, site_name=None, out_vox=True):
-    from qap.workflows.utils import qap_anatomical_spatial
-    return qap_anatomical_spatial(
-        anatomical_reorient, head_mask_path, anatomical_segs[1],
-        anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
-        scan_id, site_name, out_vox)
-
-def anat_qc_workflow(name='aMRIQC', settings={}):
+def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     from ..interfaces.viz import PlotMosaic
 
     # Define workflow, inputs and outputs
-    workflow = pe.Workflow(name=name)
+    wf = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=['anatomical_scan', 'subject_id', 'session_id',
-                                                      'scan_id', 'site_name']), name='inputnode')
+    if 'work_dir' in settings.keys():
+        wf.base_dir = settings['work_dir']
+
+    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
+                        name='inputnode')
+    datasource = pe.Node(niu.IdentityInterface(
+        fields=['anatomical_scan', 'subject_id', 'session_id', 'scan_id',
+                'site_name']), name='datasource')
+
+    if sub_list:
+        inputnode.iterables = [('data', [list(s) for s in sub_list])]
+
+        dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
+                         name='datasplit')
+        wf.connect([
+            (inputnode, dsplit, [('data', 'inlist')]),
+            (dsplit, datasource, [('out1', 'subject_id'),
+                                  ('out2', 'session_id'),
+                                  ('out3', 'scan_id'),
+                                  ('out4', 'anatomical_scan')])
+        ])
 
     outputnode = pe.Node(niu.IdentityInterface(
-        fields=['qc', 'mosaic', 'out_csv']), name='outputnode')
+        fields=['qc', 'mosaic', 'out_csv', 'out_group']), name='outputnode')
 
     # Import measures from QAP
     measures = pe.Node(niu.Function(
@@ -62,56 +71,66 @@ def anat_qc_workflow(name='aMRIQC', settings={}):
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
-    workflow.connect([
-        (inputnode, measures, [('subject_id', 'subject_id'),
-                               ('session_id', 'session_id'),
-                               ('scan_id', 'scan_id')]),
-        (inputnode, arw, [('anatomical_scan', 'inputnode.in_file')]),
+    wf.connect([
+        (datasource, measures, [('subject_id', 'subject_id'),
+                                ('session_id', 'session_id'),
+                                ('scan_id', 'scan_id')]),
+        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file',
                      'inputnode.in_file')]),
         (arw, qmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
-        (asw, segment, [('outputnode.out_file', 'in_files')]),
+        (asw, segment,  [('outputnode.out_file', 'in_files')]),
         (arw, measures, [('outputnode.out_file', 'anatomical_reorient')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
-        (inputnode, plot, [('subject_id', 'subject')]),
-        (inputnode, merg, [('session_id', 'in1'),
-                           ('scan_id', 'in2'),
-                           ('site_name', 'in3')]),
+        (datasource, plot, [('subject_id', 'subject')]),
+        (datasource, merg, [('session_id', 'in1'),
+                            ('scan_id', 'in2'),
+                            ('site_name', 'in3')]),
         (merg, plot, [('out', 'metadata')]),
         (measures, outputnode, [('qc', 'qc')]),
         (plot, outputnode, [('out_file', 'mosaic')]),
     ])
 
     if settings.get('mask_mosaic', False):
-        workflow.connect(qmw, 'outputnode.out_file', plot, 'in_mask')
-
-    # Export to CSV
-    out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
-    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
-    workflow.connect([
-        (measures, to_csv, [('qc', '_outputs')]),
-        (to_csv, outputnode, [('csv_file', 'out_csv')])
-    ])
+        wf.connect(qmw, 'outputnode.out_file', plot, 'in_mask')
 
     # Save mosaic to well-formed path
     mvplot = pe.Node(niu.Rename(
         format_string='anatomical_%(subject_id)s_%(session_id)s_%(scan_id)s',
         keep_ext=True), name='rename_plot')
     dsplot = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False),
-        name='ds_plot')
-    workflow.connect([
-        (inputnode, mvplot, [('subject_id', 'subject_id'),
-                             ('session_id', 'session_id'),
-                             ('scan_id', 'scan_id')]),
+        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
+    wf.connect([
+        (datasource, mvplot, [('subject_id', 'subject_id'),
+                              ('session_id', 'session_id'),
+                              ('scan_id', 'scan_id')]),
         (plot, mvplot, [('out_file', 'in_file')]),
         (mvplot, dsplot, [('out_file', '@mosaic')])
     ])
 
-    return workflow
+
+    # Export to CSV
+    out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
+    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
+    re_csv0 = pe.JoinNode(niu.Function(
+        input_names=['csv_file'], output_names=['out_file'], function=reorder_csv),
+                          joinsource='inputnode', joinfield='csv_file', name='reorder_anat')
+    report0 = pe.Node(Report(qctype='anatomical', settings=settings), name='AnatomicalReport')
+    if sub_list:
+        report0.inputs.sub_list = sub_list
+
+    wf.connect([
+        (measures, to_csv, [('qc', '_outputs')]),
+        (to_csv, re_csv0,  [('csv_file', 'csv_file')]),
+        (re_csv0, outputnode, [('out_file', 'out_csv')]),
+        (re_csv0, report0,  [('out_file', 'in_csv')]),
+        (report0, outputnode, [('out_group', 'out_group')])
+    ])
+
+    return wf
 
 
 def mri_reorient_wf(name='ReorientWorkflow'):
@@ -176,7 +195,8 @@ def brainmsk_wf(name='BrainMaskWorkflow', config={}):
     flirt = pe.Node(fsl.FLIRT(cost='corratio'), name='spatial_normalization')
 
     wf.connect([
-        (inputnode, slice_msk, [(('in_template', _default_template), 'standard')]),
+        (inputnode, slice_msk,
+            [(('in_template', _default_template), 'standard')]),
         (inputnode, sel_th,    [('in_file', 'input_skull')]),
         (inputnode, binarize,  [('in_file', 'in_file')]),
         (inputnode, slice_msk, [('in_file', 'infile')]),
@@ -215,3 +235,12 @@ def skullstrip_wf(name='SkullStripWorkflow'):
         (sstrip_orig_vol, outputnode, [('out_file', 'out_file')])
     ])
     return wf
+
+def qc_anat(anatomical_reorient, head_mask_path,
+            anatomical_segs, subject_id, session_id,
+            scan_id, site_name=None, out_vox=True):
+    from qap.workflows.utils import qap_anatomical_spatial
+    return qap_anatomical_spatial(
+        anatomical_reorient, head_mask_path, anatomical_segs[1],
+        anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
+        scan_id, site_name, out_vox)
