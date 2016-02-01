@@ -111,44 +111,44 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     wf.connect([
-        (dsource, get_idx,   [('functional_scan', 'in_file'),
-                              ('start_idx', 'start_idx'),
-                              ('stop_idx', 'stop_idx')]),
-        (dsource, merg,      [('session_id', 'in1'),
-                              ('scan_id', 'in2'),
-                              ('site_name', 'in3')]),
-        (dsource, hmcwf,     [('functional_scan', 'inputnode.in_file')]),
-        (get_idx, hmcwf,     [('start_idx', 'inputnode.start_idx'),
-                              ('stop_idx', 'inputnode.stop_idx')]),
-        (hmcwf, bmw,         [('outputnode.out_file', 'inputnode.in_file')]),
-        (hmcwf, mean,        [('outputnode.out_file', 'in_file')]),
-        (hmcwf, tsnr,        [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fd,          [('outputnode.out_xfms', 'in_file')]),
-        (mean, plot_mean,    [('out_file', 'in_file')]),
-        (tsnr, plot_tsnr,    [('tsnr_file', 'in_file')]),
-        (fd, plot_fd,        [('out_file', 'in_file')]),
+        (dsource, get_idx, [('functional_scan', 'in_file'),
+                            ('start_idx', 'start_idx'),
+                            ('stop_idx', 'stop_idx')]),
+        (dsource, merg, [('session_id', 'in1'),
+                         ('scan_id', 'in2'),
+                         ('site_name', 'in3')]),
+        (dsource, hmcwf, [('functional_scan', 'inputnode.in_file')]),
+        (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
+                          ('stop_idx', 'inputnode.stop_idx')]),
+        (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
+        (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
+        (hmcwf, fd, [('outputnode.out_xfms', 'in_file')]),
+        (mean, plot_mean, [('out_file', 'in_file')]),
+        (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
+        (fd, plot_fd, [('out_file', 'in_file')]),
         (dsource, plot_mean, [('subject_id', 'subject')]),
         (dsource, plot_tsnr, [('subject_id', 'subject')]),
-        (dsource, plot_fd,   [('subject_id', 'subject')]),
-        (merg, plot_mean,    [('out', 'metadata')]),
-        (merg, plot_tsnr,    [('out', 'metadata')]),
-        (merg, plot_fd,      [('out', 'metadata')]),
-        (bmw, m_spatial,     [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, m_spatial,    [('out_file', 'mean_epi')]),
+        (dsource, plot_fd, [('subject_id', 'subject')]),
+        (merg, plot_mean, [('out', 'metadata')]),
+        (merg, plot_tsnr, [('out', 'metadata')]),
+        (merg, plot_fd, [('out', 'metadata')]),
+        (bmw, m_spatial, [('outputnode.out_file', 'func_brain_mask')]),
+        (mean, m_spatial, [('out_file', 'mean_epi')]),
         (dsource, m_spatial, [('subject_id', 'subject_id'),
                               ('session_id', 'session_id'),
                               ('scan_id', 'scan_id'),
                               (('site_name', _empty), 'site_name')]),
-        (hmcwf, m_temp,      [('outputnode.out_file', 'func_motion_correct')]),
-        (bmw, m_temp,        [('outputnode.out_file', 'func_brain_mask')]),
-        (dsource, m_temp,    [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id'),
-                              (('site_name', _empty), 'site_name')]),
-        (fd, m_temp,         [('out_file', 'fd_file')]),
-        (tsnr, m_temp,       [('tsnr_file', 'tsnr_volume')]),
-        (m_spatial, mqc,     [('qc', 'qc_spatial')]),
-        (m_temp, mqc,        [('qc', 'qc_temporal')])
+        (hmcwf, m_temp, [('outputnode.out_file', 'func_motion_correct')]),
+        (bmw, m_temp, [('outputnode.out_file', 'func_brain_mask')]),
+        (dsource, m_temp, [('subject_id', 'subject_id'),
+                           ('session_id', 'session_id'),
+                           ('scan_id', 'scan_id'),
+                           (('site_name', _empty), 'site_name')]),
+        (fd, m_temp, [('out_file', 'fd_file')]),
+        (tsnr, m_temp, [('tsnr_file', 'tsnr_volume')]),
+        (m_spatial, mqc, [('qc', 'qc_spatial')]),
+        (m_temp, mqc, [('qc', 'qc_temporal')])
     ])
 
     if settings.get('mosaic_mask', False):
@@ -162,11 +162,11 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_mean')
     wf.connect([
-        (dsource, mvmean,   [('subject_id', 'subject_id'),
-                             ('session_id', 'session_id'),
-                             ('scan_id', 'scan_id')]),
+        (dsource, mvmean, [('subject_id', 'subject_id'),
+                           ('session_id', 'session_id'),
+                           ('scan_id', 'scan_id')]),
         (plot_mean, mvmean, [('out_file', 'in_file')]),
-        (mvmean, dsmean,    [('out_file', '@mosaic')])
+        (mvmean, dsmean, [('out_file', '@mosaic')])
     ])
 
     # Save tSNR mosaic to well-formed path
@@ -176,11 +176,11 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_tsnr')
     wf.connect([
-        (dsource, mvtsnr,   [('subject_id', 'subject_id'),
-                             ('session_id', 'session_id'),
-                             ('scan_id', 'scan_id')]),
+        (dsource, mvtsnr, [('subject_id', 'subject_id'),
+                           ('session_id', 'session_id'),
+                           ('scan_id', 'scan_id')]),
         (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
-        (mvtsnr, dstsnr,    [('out_file', '@mosaic')])
+        (mvtsnr, dstsnr, [('out_file', '@mosaic')])
     ])
 
     # Save FD plot to well-formed path
@@ -194,7 +194,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
                          ('session_id', 'session_id'),
                          ('scan_id', 'scan_id')]),
         (plot_fd, mvfd, [('out_file', 'in_file')]),
-        (mvfd, dsfd,    [('out_file', '@mosaic')])
+        (mvfd, dsfd, [('out_file', '@mosaic')])
     ])
 
     # Export to CSV
@@ -202,16 +202,17 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
     re_csv0 = pe.JoinNode(niu.Function(
         input_names=['csv_file'], output_names=['out_file'], function=reorder_csv),
-                          joinsource='inputnode', joinfield='csv_file', name='reorder')
-    report0 = pe.Node(Report(qctype='functional', settings=settings), name='report')
+        joinsource='inputnode', joinfield='csv_file', name='reorder')
+    report0 = pe.Node(
+        Report(qctype='functional', settings=settings), name='report')
     if sub_list:
         report0.inputs.sub_list = sub_list
 
     wf.connect([
         (mqc, to_csv, [('qc', '_outputs')]),
-        (to_csv, re_csv0,  [('csv_file', 'csv_file')]),
+        (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
-        (re_csv0, report0,  [('out_file', 'in_csv')]),
+        (re_csv0, report0, [('out_file', 'in_csv')]),
         (report0, outputnode, [('out_group', 'out_group')])
     ])
     return wf
@@ -245,8 +246,8 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
         # Connect brain mask extraction
         wf.connect([
             (inputnode, bet_msk, [('in_file', 'in_file')]),
-            (bet_msk, erode,     [('mask_file', 'in_file')]),
-            (erode, outputnode,  [('out_file', 'out_file')])
+            (bet_msk, erode, [('mask_file', 'in_file')]),
+            (erode, outputnode, [('out_file', 'out_file')])
         ])
 
     return wf
@@ -279,18 +280,18 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
 
     wf.connect([
-        (inputnode, drop_trs,    [('in_file', 'in_file_a'),
-                                  ('start_idx', 'start_idx'),
-                                  ('stop_idx', 'stop_idx')]),
-        (deoblique, reorient,    [('out_file', 'in_file')]),
+        (inputnode, drop_trs, [('in_file', 'in_file_a'),
+                               ('start_idx', 'start_idx'),
+                               ('stop_idx', 'stop_idx')]),
+        (deoblique, reorient, [('out_file', 'in_file')]),
         (reorient, get_mean_RPI, [('out_file', 'in_file')]),
-        (reorient, hmc,          [('out_file', 'in_file')]),
-        (get_mean_RPI, hmc,      [('out_file', 'basefile')]),
-        (hmc, get_mean_motion,   [('out_file', 'in_file')]),
-        (reorient, hmc_A,        [('out_file', 'in_file')]),
+        (reorient, hmc, [('out_file', 'in_file')]),
+        (get_mean_RPI, hmc, [('out_file', 'basefile')]),
+        (hmc, get_mean_motion, [('out_file', 'in_file')]),
+        (reorient, hmc_A, [('out_file', 'in_file')]),
         (get_mean_motion, hmc_A, [('out_file', 'basefile')]),
-        (hmc_A, outputnode,      [('out_file', 'out_file'),
-                                  ('oned_matrix_save', 'out_xfms')])
+        (hmc_A, outputnode, [('out_file', 'out_file'),
+                             ('oned_matrix_save', 'out_xfms')])
     ])
 
     if st_correct:
