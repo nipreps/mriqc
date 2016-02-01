@@ -21,6 +21,7 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     DynamicTraitedSpec, Undefined)
 
 from .viz_utils import (plot_mosaic, plot_fd)
+from ..reports import workflow_report
 
 from nipype import logging
 iflogger = logging.getLogger('interface')
@@ -137,3 +138,38 @@ class PlotFD(BaseInterface):
         outputs = self.output_spec().get()
         outputs['out_file'] = op.abspath(self.inputs.out_file)
         return outputs
+
+
+class ReportInputSpec(BaseInterfaceInputSpec):
+    in_csv = File(exists=True, mandatory=True, desc='File to be plotted')
+    qctype = traits.Enum('anatomical', 'functional', mandatory=True, desc='Type of report')
+    sub_list = traits.List([], traits.Tuple(traits.Str(), traits.Str(), traits.Str(), traits.Str()),
+                           usedefault=True, desc='List of subjects requested')
+    settings = traits.Dict(desc='Settings')
+
+
+class ReportOutputSpec(TraitedSpec):
+    out_group = File(exists=True, desc='output pdf file, group report')
+    out_indiv = OutputMultiPath(File(exists=True), desc='individual reports')
+
+
+class Report(BaseInterface):
+    input_spec = ReportInputSpec
+    output_spec = ReportOutputSpec
+
+    def _run_interface(self, runtime):
+        settings = None
+        if isdefined(self.inputs.settings):
+            settings = self.inputs.settings
+
+        self._results = workflow_report(self.inputs.in_csv, self.inputs.qctype,
+                                        self.inputs.sub_list, settings)
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_group'] = self._results[0]
+        outputs['out_indiv'] = self._results[1]
+        return outputs
+
+

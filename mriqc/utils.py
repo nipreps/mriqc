@@ -75,6 +75,9 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
 def reorder_csv(csv_file, out_file=None):
     import pandas as pd
+    if isinstance(csv_file, list):
+        csv_file = csv_file[-1]
+
     if out_file is None:
         out_file = csv_file
 
@@ -90,3 +93,4 @@ def reorder_csv(csv_file, out_file=None):
         cols.remove(v)
         cols.insert(1, v)
     df[cols].to_csv(out_file)
+    return out_file

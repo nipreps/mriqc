@@ -26,9 +26,11 @@ from .interfaces.viz_utils import (plot_measures, plot_mosaic, plot_all,
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 
 
-def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
+def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
     import datetime
-    import numpy as np
+
+    if settings is None:
+        settings = {}
 
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
@@ -93,6 +95,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
         concat_pdf(pdf_group, out_group_file)
         result['group'] = {'success': True, 'path': out_group_file}
 
+    out_indiv_files = []
     # Generate individual reports for subjects
     for subid in subject_list:
         # Get subject-specific info
@@ -159,8 +162,9 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings={}):
             # Generate final report with collected pdfs in plots
             sub_path = out_file % subid
             concat_pdf(plots, sub_path)
+            out_indiv_files.append(sub_path)
             result[subid] = {'success': True, 'path': sub_path}
-    return result
+    return out_group_file, out_indiv_files, result
 
 
 def get_documentation(doc_type, out_file):

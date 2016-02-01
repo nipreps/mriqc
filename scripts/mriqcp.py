@@ -12,7 +12,14 @@ MRIQC
 """
 import os
 import os.path as op
-import sys
+from multiprocessing import cpu_count
+
+from argparse import ArgumentParser
+from argparse import RawTextHelpFormatter
+from mriqc.workflows import qc_workflows
+from mriqc.utils import gather_bids_data
+
+from nipype import config as ncfg
 
 __author__ = "Oscar Esteban"
 __copyright__ = ("Copyright 2016, Center for Reproducible Neuroscience, "
@@ -26,13 +33,6 @@ __status__ = "Prototype"
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
-    from argparse import RawTextHelpFormatter
-    from mriqc.workflows import anat_qc_workflow, fmri_qc_workflow
-    from mriqc.utils import gather_bids_data, reorder_csv
-    from mriqc.reports import workflow_report
-    from nipype import config as ncfg
-
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
@@ -61,9 +61,17 @@ if __name__ == '__main__':
 
     opts = parser.parse_args()
 
-    settings = {'bids_root': op.abspath(opts.bids_root)}
+    settings = {'bids_root': op.abspath(opts.bids_root),
+                'output_dir': os.getcwd(),
+                'write_graph': opts.write_graph,
+                'skip': [],
+                'nthreads': opts.nthreads}
 
-    settings['output_dir'] = os.getcwd()
+    if opts.skip_anatomical:
+        settings['skip'].append('anat')
+    if opts.skip_functional:
+        settings['skip'].append('func')
+
     if opts.output_dir:
         settings['output_dir'] = op.abspath(opts.output_dir)
 
@@ -73,14 +81,14 @@ if __name__ == '__main__':
     if opts.work_dir:
         settings['work_dir'] = op.abspath(opts.work_dir)
 
-        log_dir = op.join(settings['work_dir'], 'log')
-        if not op.exists(log_dir):
-            os.makedirs(log_dir)
+        LOG_DIR = op.join(settings['work_dir'], 'log')
+        if not op.exists(LOG_DIR):
+            os.makedirs(LOG_DIR)
 
         # Set nipype config
         ncfg.update_config({
-            'logging': {'log_directory': log_dir, 'log_to_file': True},
-            'execution': {'crashdump_dir': log_dir}
+            'logging': {'log_directory': LOG_DIR, 'log_to_file': True},
+            'execution': {'crashdump_dir': LOG_DIR}
         })
 
     plugin_settings = {'plugin': 'Linear'}
@@ -90,40 +98,17 @@ if __name__ == '__main__':
             plugin_settings = loadyml(f)
     else:
         # Setup multiprocessing
-        nthreads = opts.nthreads
-        if nthreads == 0:
-            from multiprocessing import cpu_count
-            nthreads = cpu_count()
+        if settings['nthreads'] == 0:
+            settings['nthreads'] = cpu_count()
 
-        settings['nthreads'] = nthreads
-
-        if nthreads > 1:
+        if settings['nthreads'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_proc': nthreads, 'maxtasksperchild': 4}
+            plugin_settings['plugin_args'] = {'n_proc': settings['nthreads']}
 
     subjects = gather_bids_data(settings['bids_root'])
 
-    if not any([len(subjects[k])>0 for k in subjects.keys()]):
+    if not any([len(subjects[k]) > 0 for k in subjects.keys()]):
         raise RuntimeError('No scans found in %s' % settings['bids_root'])
 
-    if not opts.skip_anatomical and subjects['anat']:
-        anat_wf, out_csv = anat_qc_workflow(sub_list=subjects['anat'],
-                                            settings=settings)
-
-        if opts.write_graph:
-            anat_wf.write_graph()
-
-        anat_wf.run(**plugin_settings)
-        reports = workflow_report(out_csv, 'anatomical', sub_list=subjects['anat'], settings=settings)
-        reorder_csv(out_csv)
-
-    if not opts.skip_functional and subjects['func']:
-        func_wf, out_csv = fmri_qc_workflow(sub_list=subjects['func'],
-                                            settings=settings)
-
-        if opts.write_graph:
-            func_wf.write_graph()
-
-        func_wf.run(**plugin_settings)
-        reports = workflow_report(out_csv, 'functional', sub_list=subjects['func'], settings=settings)
-        reorder_csv(out_csv)
+    wf = qc_workflows(subjects=subjects, settings=settings)
+    wf.run(**plugin_settings)
