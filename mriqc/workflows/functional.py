@@ -32,9 +32,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     # Define workflow, inputs and outputs
     wf = pe.Workflow(name=name)
 
-    if 'work_dir' in settings.keys():
-        wf.base_dir = settings['work_dir']
-
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
     dsource = pe.Node(niu.IdentityInterface(

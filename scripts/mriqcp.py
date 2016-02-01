@@ -110,5 +110,8 @@ if __name__ == '__main__':
     if not any([len(subjects[k]) > 0 for k in subjects.keys()]):
         raise RuntimeError('No scans found in %s' % settings['bids_root'])
 
-    wf = qc_workflows(subjects=subjects, settings=settings)
-    wf.run(**plugin_settings)
+    awf, fwf = qc_workflows(subjects=subjects, settings=settings)
+    if awf is not None:
+        awf.run(**plugin_settings)
+    if fwf is not None:
+        fwf.run(**plugin_settings)

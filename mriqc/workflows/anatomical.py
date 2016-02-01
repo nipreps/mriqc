@@ -26,9 +26,6 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     # Define workflow, inputs and outputs
     wf = pe.Workflow(name=name)
 
-    if 'work_dir' in settings.keys():
-        wf.base_dir = settings['work_dir']
-
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
     datasource = pe.Node(niu.IdentityInterface(
