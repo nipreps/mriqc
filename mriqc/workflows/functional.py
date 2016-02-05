@@ -23,8 +23,6 @@ from ..utils import reorder_csv
 
 def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     """ The fMRI qc workflow """
-    from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
-    from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
     from qap.temporal_qc import fd_jenkinson
     from .utils import fmri_getidx
     from ..interfaces.viz import PlotMosaic, PlotFD
@@ -67,17 +65,10 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
             return val
         return None
 
-    m_spatial = pe.Node(niu.Function(
-        input_names=['mean_epi', 'func_brain_mask', 'direction', 'subject_id',
-                     'session_id', 'scan_id', 'site_name'],
-        output_names=['qc'], function=qc_fmri_spat), name='m_spatial')
-    m_spatial.inputs.direction = 'y'  # TODO: handle this parameter
-
-    m_temp = pe.Node(niu.Function(
-        input_names=['func_motion_correct', 'func_brain_mask', 'tsnr_volume',
-                     'fd_file', 'subject_id', 'session_id', 'scan_id',
-                     'site_name'], output_names=['qc'], function=qc_fmri_temp),
-                     name='m_temp')
+    measures = pe.Node(niu.Function(
+        input_names=['mean_epi', 'func_motion_correct', 'func_brain_mask', 'tsnr_volume',
+                     'fd_file', 'subject_id', 'session_id', 'scan_id'],
+        output_names=['qc'], function=fmri_qc), name='measures')
 
     # Workflow --------------------------------------------------------
     hmcwf = fmri_hmc_workflow(                  # 1. HMC: head motion correct
@@ -91,15 +82,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         input_names=['in_file'], output_names=['out_file'],
         function=fd_jenkinson), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
-
-    # Merge spatial and temporal measures
-    def _merge_dicts(qc_spatial, qc_temporal):
-        qc_spatial.update(qc_temporal)
-        return qc_spatial
-
-    mqc = pe.Node(niu.Function(
-        input_names=['qc_spatial', 'qc_temporal'], output_names=['qc'],
-        function=_merge_dicts), name='merge_qc_measures')
 
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
@@ -130,22 +112,15 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         (merg, plot_mean, [('out', 'metadata')]),
         (merg, plot_tsnr, [('out', 'metadata')]),
         (merg, plot_fd, [('out', 'metadata')]),
-        (bmw, m_spatial, [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, m_spatial, [('out_file', 'mean_epi')]),
-        (dsource, m_spatial, [('subject_id', 'subject_id'),
+        (bmw, measures, [('outputnode.out_file', 'func_brain_mask')]),
+        (mean, measures, [('out_file', 'mean_epi')]),
+        (dsource, measures, [('subject_id', 'subject_id'),
                               ('session_id', 'session_id'),
                               ('scan_id', 'scan_id'),
                               (('site_name', _empty), 'site_name')]),
-        (hmcwf, m_temp, [('outputnode.out_file', 'func_motion_correct')]),
-        (bmw, m_temp, [('outputnode.out_file', 'func_brain_mask')]),
-        (dsource, m_temp, [('subject_id', 'subject_id'),
-                           ('session_id', 'session_id'),
-                           ('scan_id', 'scan_id'),
-                           (('site_name', _empty), 'site_name')]),
-        (fd, m_temp, [('out_file', 'fd_file')]),
-        (tsnr, m_temp, [('tsnr_file', 'tsnr_volume')]),
-        (m_spatial, mqc, [('qc', 'qc_spatial')]),
-        (m_temp, mqc, [('qc', 'qc_temporal')])
+        (hmcwf, measures, [('outputnode.out_file', 'func_motion_correct')]),
+        (fd, measures, [('out_file', 'fd_file')]),
+        (tsnr, measures, [('tsnr_file', 'tsnr_volume')])
     ])
 
     if settings.get('mosaic_mask', False):
@@ -206,7 +181,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         report0.inputs.sub_list = sub_list
 
     wf.connect([
-        (mqc, to_csv, [('qc', '_outputs')]),
+        (measures, to_csv, [('qc', '_outputs')]),
         (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
         (re_csv0, report0, [('out_file', 'in_csv')]),
@@ -303,3 +278,37 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
         ])
 
     return wf
+
+def fmri_qc(mean_epi, func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
+            subject_id, session_id, scan_id, site_name=None, direction='y'):
+    """ A wrapper for the fMRI QC measures """
+
+    import nibabel as nb
+    import numpy as np
+    from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
+    from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
+
+    qc = qc_fmri_spat(mean_epi, func_brain_mask, direction, subject_id,
+                      session_id, scan_id, site_name)
+    qctemp = qc_fmri_temp(func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
+                          subject_id, session_id, scan_id, site_name)
+    qc.update(qctemp)
+
+    im = nb.load(func_motion_correct)
+    hdr = im.get_header()
+    imsize = im.shape
+    imzooms = hdr.get_zooms()
+
+    qc.update({'size_x': imsize[0], 'size_y': imsize[1], 'size_z': imsize[2]})
+    qc.update({'spacing_x': imzooms[0], 'spacing_y': imzooms[1], 'spacing_z': imzooms[2]})
+
+    try:
+        qc.update({'size_t': imsize[3]})
+    except IndexError:
+        pass
+
+    try:
+        qc.update({'tr': imzooms[3]})
+    except IndexError:
+        pass
+    return qc
