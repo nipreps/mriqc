@@ -15,6 +15,7 @@ from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
+from nipype.interfaces import ants
 
 from ..interfaces.viz import Report
 from ..utils import reorder_csv
@@ -51,11 +52,13 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
     # Import measures from QAP
     measures = pe.Node(niu.Function(
         input_names=['anatomical_reorient', 'head_mask_path',
-                     'anatomical_segs', 'subject_id', 'session_id',
-                     'scan_id'],
+                     'anatomical_segs', 'bias_image', 
+                     'subject_id', 'session_id', 'scan_id'],
         output_names=['qc'], function=qc_anat), name='measures')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
+    n4 = pe.Node(ants.N4BiasFieldCorrection(dimension=3, bias_image='output_bias.nii.gz'),
+                 name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     qmw = brainmsk_wf()      # 3. Brain mask (template & 2.)
 
@@ -73,14 +76,15 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
                                 ('session_id', 'session_id'),
                                 ('scan_id', 'scan_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
-        (arw, asw, [('outputnode.out_file',
-                     'inputnode.in_file')]),
-        (arw, qmw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (arw, n4, [('outputnode.out_file', 'input_image')]),
+        (n4, asw, [('output_image', 'inputnode.in_file')]),
+        (n4, qmw, [('output_image', 'inputnode.in_file')]),
         (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
-        (arw, measures, [('outputnode.out_file', 'anatomical_reorient')]),
+        (n4, measures, [('output_image', 'anatomical_reorient')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
+        (n4, measures, [('bias_image', 'bias_image')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
         (datasource, plot, [('subject_id', 'subject')]),
         (datasource, merg, [('session_id', 'in1'),
@@ -182,8 +186,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
 
     slice_msk = pe.Node(niu.Function(
         input_names=['infile', 'transform', 'standard'],
-        output_names=['outfile_path'], function=slice_head_mask),
-        name='slice_msk')
+        output_names=['outfile_path'], function=slice_head_mask), name='slice_msk')
 
     combine = pe.Node(fsl.BinaryMaths(
         operation='add', args='-bin'), name='qap_headmask_combine_masks')
@@ -234,9 +237,12 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     return wf
 
 
-def qc_anat(anatomical_reorient, head_mask_path,
-            anatomical_segs, subject_id, session_id,
-            scan_id, site_name=None, out_vox=True):
+def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
+            subject_id, session_id, scan_id, site_name=None, out_vox=True):
+    """
+    A wrapper for the QC measures calculation imported from QAP.
+    Also adds some measures regarding the inhomogeneity field.
+    """
     import nibabel as nb
     import numpy as np
     from qap.workflows.utils import qap_anatomical_spatial
@@ -246,21 +252,20 @@ def qc_anat(anatomical_reorient, head_mask_path,
         scan_id, site_name, out_vox)
 
     im = nb.load(anatomical_reorient)
-    hdr = im.get_header()
-    imsize = im.shape
-    imzooms = hdr.get_zooms()
-
-    qc.update({'size_x': imsize[0], 'size_y': imsize[1], 'size_z': imsize[2]})
-    qc.update({'spacing_x': imzooms[0], 'spacing_y': imzooms[1], 'spacing_z': imzooms[2]})
+    qc.update({'size_x': im.shape[0], 'size_y': im.shape[1], 'size_z': im.shape[2]})
+    qc.update({'spacing_%s' % i: v 
+               for i, v in zip(['x', 'y', 'z'], im.get_header().get_zooms()[:3])})
 
     try:
-        qc.update({'size_t': imsize[3]})
+        qc.update({'size_t': im.shape[3]})
     except IndexError:
         pass
 
     try:
-        qc.update({'tr': imzooms[3]})
+        qc.update({'tr': im.get_header().get_zooms()[3]})
     except IndexError:
         pass
 
+    bias = nb.load(bias_image).get_data()[nb.load(head_mask_path).get_data() > 0]
+    qc.update({'bias_max': bias.max(), 'bias_min': bias.min(), 'bias_med': np.median(bias)})
     return qc
