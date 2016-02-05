@@ -23,9 +23,6 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
 from .viz_utils import (plot_mosaic, plot_fd)
 from ..reports import workflow_report
 
-from nipype import logging
-iflogger = logging.getLogger('interface')
-
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
