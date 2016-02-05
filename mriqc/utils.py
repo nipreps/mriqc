@@ -6,12 +6,15 @@
 # Original author: @chrisfilo
 # https://github.com/preprocessed-connectomes-project/quality-assessment-prot
 # ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
+""" Helper functions """
 
 
 def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
+    """ Extract data from BIDS root folder """
     import os
     import os.path as op
-    import yaml, re
+    import yaml
+    import re
     from glob import glob
 
     sub_dict = {}
@@ -23,9 +26,6 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
     if scan_type is None:
         scan_type = 'functional anatomical'
 
-    get_anat = 'anatomical' in scan_type
-    get_func = 'functional' in scan_type
-
     if not subject_ids:
         raise Exception("This does not appear to be a BIDS dataset.")
 
@@ -34,7 +34,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
         with open(subject_inclusion, "r") as f:
             inclusion_list = f.readlines()
         # remove any /n's
-        inclusion_list = map(lambda s: s.strip(), inclusion_list)
+        inclusion_list = [s.strip() for s in inclusion_list]
         subject_ids = set(subject_ids).intersection(inclusion_list)
 
     sub_dict = {'anat': [], 'func': []}
@@ -44,7 +44,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
         ssid = 'session_1'
 
         anatomical_scans = []
-        if get_anat:
+        if 'anatomical' in scan_type:
             anatomical_scans = sorted(glob(op.join(
                 dataset_folder, subject_id, "anat",
                 "%s_*T1w.nii.gz" % subject_id, )))
@@ -55,7 +55,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
             sub_dict['anat'].append((subject_id, ssid, scid, spath))
 
         functional_scans = []
-        if get_func:
+        if 'functional' in scan_type:
             functional_scans = sorted(glob(op.join(
                 dataset_folder, subject_id, "func",
                 "%s_*bold*.nii.gz" % subject_id, )))
@@ -74,6 +74,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
 
 def reorder_csv(csv_file, out_file=None):
+    """ Put subject, session and scan in front """
     import pandas as pd
     if isinstance(csv_file, list):
         csv_file = csv_file[-1]
@@ -91,6 +92,6 @@ def reorder_csv(csv_file, out_file=None):
 
     for v in ['scan', 'session', 'subject']:
         cols.remove(v)
-        cols.insert(1, v)
+        cols.insert(0, v)
     df[cols].to_csv(out_file)
     return out_file

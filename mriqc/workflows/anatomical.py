@@ -246,6 +246,9 @@ def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
     import nibabel as nb
     import numpy as np
     from qap.workflows.utils import qap_anatomical_spatial
+    from nipype import logging
+
+    LOGGER = logging.getLogger('interface')
     qc = qap_anatomical_spatial(
         anatomical_reorient, head_mask_path, anatomical_segs[1],
         anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
@@ -268,4 +271,5 @@ def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
 
     bias = nb.load(bias_image).get_data()[nb.load(head_mask_path).get_data() > 0]
     qc.update({'bias_max': bias.max(), 'bias_min': bias.min(), 'bias_med': np.median(bias)})
+    LOGGER.info('QC measures: %s', qc)
     return qc
