@@ -2,10 +2,14 @@ dependencies:
   cache_directories:
     - "~/examples/"
     - "~/.apt-cache"
+    - "~/.apt-lists"
     - "~/workdir"
   pre:
     # Let CircleCI cache the apt archive
-    - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache /var/cache/apt/archives && mkdir -p ~/.apt-cache/partial
+    - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache/archives /var/cache/apt/archives && mkdir -p ~/.apt-cache/archives/partial
+    - sudo rm -rf /var/cache/apt/pkgcache.bin && sudo ln -s ~/.apt-cache/pkgcache.bin /var/cache/apt/pkgcache.bin && touch ~/.apt-cache/pkgcache.bin
+    - sudo rm -rf /var/cache/apt/srcpkgcache.bin && sudo ln -s ~/.apt-cache/srcpkgcache.bin /var/cache/apt/srcpkgcache.bin && touch ~/.apt-cache/srcpkgcache.bin
+    - sudo rm -rf /var/lib/apt/lists && sudo ln -s ~/.apt-lists /var/lib/apt/lists
     - wget -O- http://neuro.debian.net/lists/precise.us-ca.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
     - sudo apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
     - sudo apt-get update
