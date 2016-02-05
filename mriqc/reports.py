@@ -8,7 +8,7 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-01-18 18:05:18
-
+""" Encapsulates report generation functions """
 
 import sys
 import os
@@ -20,13 +20,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from .interfaces.viz_utils import (plot_measures, plot_mosaic, plot_all,
-                                   plot_fd, plot_dist)
+from .interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 
 
-def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
+def workflow_report(in_csv, qctype, sub_list=None, settings=None):
+    """ Creates the report """
     import datetime
 
     if settings is None:
@@ -34,7 +34,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
 
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
-    out_file = op.join(out_dir, qap_type + '_%s.pdf')
+    out_file = op.join(out_dir, qctype + '_%s.pdf')
 
     # Read csv file, sort and drop duplicates
     try:
@@ -53,11 +53,11 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
 
     subject_list = sorted(pd.unique(df.subject.ravel()))
     result = {}
-    func = getattr(sys.modules[__name__], 'report_' + qap_type)
+    func = getattr(sys.modules[__name__], 'report_' + qctype)
 
     # Identify failed subjects
     failed_str = "none"
-    if sub_list:
+    if sub_list is not None:
         # Remove undesired elements from sub_list tuples
         sub_list = [(s[0], s[1], s[2]) for s in sub_list]
         success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
@@ -71,7 +71,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
     summary_cover(
-        (qap_type, datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+        (qctype, datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
          failed_str), is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
@@ -82,15 +82,15 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
     pdf_group.append(qc_group)
 
     # Generate documentation page
-    doc = op.join(work_dir, '%s_doc.pdf' % qap_type)
+    doc = op.join(work_dir, '%s_doc.pdf' % qctype)
 
     # Let documentation page fail
-    get_documentation(qap_type, doc)
+    get_documentation(qctype, doc)
     if doc is not None:
         pdf_group.append(doc)
 
     if len(pdf_group) > 0:
-        out_group_file = op.join(out_dir, '%s_group.pdf' % qap_type)
+        out_group_file = op.join(out_dir, '%s_group.pdf' % qctype)
         # Generate final report with collected pdfs in plots
         concat_pdf(pdf_group, out_group_file)
         result['group'] = {'success': True, 'path': out_group_file}
@@ -110,14 +110,14 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
-                if 'anat' in qap_type:
+                if 'anat' in qctype:
                     m = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
                                 (subid, sesid, scanid))
 
                     if op.isfile(m):
                         plots.append(m)
 
-                if 'func' in qap_type:
+                if 'func' in qctype:
                     mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
                                    (subid, sesid, scanid))
                     if op.isfile(mepi):
@@ -140,9 +140,9 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
         if len(failed) > 0:
             sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in failed if subid == s[0]]
-        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qap_type, subid))
+        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
         summary_cover(
-            (subid, subid, qap_type,
+            (subid, subid, qctype,
              datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
              ", ".join(sess_scans),
              ",".join(sfailed) if sfailed else "none"),
@@ -150,7 +150,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
-        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qap_type, subid))
+        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qctype, subid))
 
         func(df, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)
@@ -168,6 +168,7 @@ def workflow_report(in_csv, qap_type, sub_list=[], settings=None):
 
 
 def get_documentation(doc_type, out_file):
+    """ Generates the documentation page """
     import codecs
     import StringIO
     from xhtml2pdf import pisa
@@ -189,6 +190,7 @@ def get_documentation(doc_type, out_file):
 
 
 def summary_cover(data, is_group=False, out_file=None):
+    """ Generates a cover page with subject information """
     import codecs
     import StringIO
     from xhtml2pdf import pisa
@@ -212,9 +214,7 @@ def summary_cover(data, is_group=False, out_file=None):
 
 
 def concat_pdf(in_files, out_file='concatenated.pdf'):
-    """
-    Concatenate PDF list (http://stackoverflow.com/a/3444735)
-    """
+    """ Concatenate PDF list (http://stackoverflow.com/a/3444735) """
     from PyPDF2 import PdfFileWriter, PdfFileReader
     outpdf = PdfFileWriter()
 
@@ -228,6 +228,7 @@ def concat_pdf(in_files, out_file='concatenated.pdf'):
 
 def _write_report(df, groups, sub_id=None, sc_split=False, condensed=True,
                   out_file='report.pdf'):
+    """ Generates the violin plots of each qctype """
     columns = df.columns.ravel()
     headers = []
     for g in groups:
@@ -303,15 +304,15 @@ def _write_all_reports(df, groups, sc_split=False, condensed=True,
 
 def all_anatomical(df, sc_split=False, condensed=True,
                    out_file='anatomical.pdf'):
+    """ Calls the report generator on the anatomical measures """
     groups = [['bg_size', 'fg_size'],
               ['bg_mean', 'fg_mean'],
               ['bg_std', 'fg_std'],
               ['csf_size', 'gm_size', 'wm_size'],
               ['csf_mean', 'gm_mean', 'wm_mean'],
               ['csf_std', 'gm_std', 'wm_std'],
-              ['cnr'],
-              ['efc'],
-              ['fber'],
+              ['bias_max', 'bias_med', 'bias_min'],
+              ['cnr'], ['efc'], ['fber'],
               ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
               ['qi1'],
               ['snr']]
@@ -322,6 +323,8 @@ def all_anatomical(df, sc_split=False, condensed=True,
 
 def all_func_temporal(df, sc_split=False, condensed=True,
                       out_file='func_temporal.pdf'):
+    """ Calls the report generator on the functional measures """
+
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
               ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
     return _write_all_reports(
@@ -331,6 +334,7 @@ def all_func_temporal(df, sc_split=False, condensed=True,
 
 def all_func_spatial(df, sc_split=False, condensed=False,
                      out_file='func_spatial.pdf'):
+    """ Calls the report generator on the functional measures """
     groups = [['bg_size', 'fg_size'],
               ['bg_mean', 'fg_mean'],
               ['bg_std', 'fg_std'],
@@ -347,15 +351,15 @@ def all_func_spatial(df, sc_split=False, condensed=False,
 def report_anatomical(
         df, subject=None, sc_split=False, condensed=True,
         out_file='anatomical.pdf'):
+    """ Calls the report generator on the functional measures """
     groups = [['bg_size', 'fg_size'],
               ['bg_mean', 'fg_mean'],
               ['bg_std', 'fg_std'],
               ['csf_size', 'gm_size', 'wm_size'],
               ['csf_mean', 'gm_mean', 'wm_mean'],
               ['csf_std', 'gm_std', 'wm_std'],
-              ['cnr'],
-              ['efc'],
-              ['fber'],
+              ['bias_max', 'bias_med', 'bias_min'],
+              ['cnr'], ['efc'], ['fber'],
               ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
               ['qi1'],
               ['snr']]
@@ -367,6 +371,7 @@ def report_anatomical(
 def report_functional(
         df, subject=None, sc_split=False, condensed=True,
         out_file='functional.pdf'):
+    """ Calls the report generator on the functional measures """
     from tempfile import mkdtemp
 
     wd = mkdtemp()
