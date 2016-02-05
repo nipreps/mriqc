@@ -237,8 +237,30 @@ def skullstrip_wf(name='SkullStripWorkflow'):
 def qc_anat(anatomical_reorient, head_mask_path,
             anatomical_segs, subject_id, session_id,
             scan_id, site_name=None, out_vox=True):
+    import nibabel as nb
+    import numpy as np
     from qap.workflows.utils import qap_anatomical_spatial
-    return qap_anatomical_spatial(
+    qc = qap_anatomical_spatial(
         anatomical_reorient, head_mask_path, anatomical_segs[1],
         anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
         scan_id, site_name, out_vox)
+
+    im = nb.load(anatomical_reorient)
+    hdr = im.get_header()
+    imsize = im.shape
+    imzooms = hdr.get_zooms()
+
+    qc.update({'size_x': imsize[0], 'size_y': imsize[1], 'size_z': imsize[2]})
+    qc.update({'spacing_x': imzooms[0], 'spacing_y': imzooms[1], 'spacing_z': imzooms[2]})
+
+    try:
+        qc.update({'size_t': imsize[3]})
+    except IndexError:
+        pass
+
+    try:
+        qc.update({'tr': imzooms[3]})
+    except IndexError:
+        pass
+
+    return qc
