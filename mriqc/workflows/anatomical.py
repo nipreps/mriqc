@@ -57,7 +57,8 @@ def anat_qc_workflow(name='aMRIQC', settings={}, sub_list=[]):
         output_names=['qc'], function=qc_anat), name='measures')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
-    n4 = pe.Node(ants.N4BiasFieldCorrection(dimension=3), name='Bias')
+    n4 = pe.Node(ants.N4BiasFieldCorrection(dimension=3, bias_image='output_bias.nii.gz'),
+                 name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     qmw = brainmsk_wf()      # 3. Brain mask (template & 2.)
 
