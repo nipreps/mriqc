@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    	<title>Subject-wise report</title>
+        <meta charset="utf-8">
+        <style>
+            .data-item {
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+    <h1>PCP Quality Control Protocol (subject report)</h1>
+    <ul>
+    <li>Subject ID: <span class="data-item">{sub_id:s}</span>.</li>
+    <li>Modality: <span class="data-item">{modality:s}</span>.</li>
+	<li>Date and time: <span class="data-item">{timestamp:s}</span>.</li>
+    <li>Sessions and (scans) included: <span class="data-item">{included:s}</span>.</li>
+    <li>Sessions and (scans) failed: <span class="data-item">{failed:s}</span>.</li>
+    <li>Image parameters: <ul>{params:s}</ul></li>
+    </ul>
+    </body>
+</html>

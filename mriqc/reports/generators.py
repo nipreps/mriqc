@@ -20,7 +20,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from .interfaces.viz_utils import plot_measures, plot_all
+from .utils import read_csv, find_failed
+from ..interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 
@@ -35,34 +36,14 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
     out_file = op.join(out_dir, qctype + '_%s.pdf')
+    df, subject_list = read_csv(in_csv)
 
-    # Read csv file, sort and drop duplicates
-    try:
-        df = pd.read_csv(in_csv, dtype={'subject': str}).sort_values(
-            by=['subject', 'session', 'scan'])
-    except AttributeError:
-        df = pd.read_csv(in_csv, dtype={'subject': str}).sort(
-            columns=['subject', 'session', 'scan'])
-
-    try:
-        df.drop_duplicates(['subject', 'session', 'scan'], keep='last',
-                           inplace=True)
-    except TypeError:
-        df.drop_duplicates(['subject', 'session', 'scan'], take_last=True,
-                           inplace=True)
-
-    subject_list = sorted(pd.unique(df.subject.ravel()))
     result = {}
     func = getattr(sys.modules[__name__], 'report_' + qctype)
 
-    # Identify failed subjects
-    failed_str = "none"
+    failed_str = 'none'
     if sub_list is not None:
-        # Remove undesired elements from sub_list tuples
-        sub_list = [(s[0], s[1], s[2]) for s in sub_list]
-        success = [tuple(x) for x in df[['subject', 'session', 'scan']].values]
-        failed = set(sub_list) - set(success)
-
+        failed = find_failed(df, sub_list)
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
@@ -71,8 +52,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
     summary_cover(
-        (qctype, datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-         failed_str), is_group=True, out_file=out_sum)
+        {'modality': qctype, 'failed': failed_str}, is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
     # Generate group report
@@ -142,10 +122,8 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
                        for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
         summary_cover(
-            (subid, subid, qctype,
-             datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-             ", ".join(sess_scans),
-             ",".join(sfailed) if sfailed else "none"),
+            {'sub_id': subid, 'modality': qctype, 'included': ", ".join(sess_scans),
+             'failed': ",".join(sfailed) if sfailed else "none"},
             out_file=out_sum)
         plots.insert(0, out_sum)
 
@@ -191,9 +169,11 @@ def get_documentation(doc_type, out_file):
 
 def summary_cover(data, is_group=False, out_file=None):
     """ Generates a cover page with subject information """
+    import datetime
     import codecs
     import StringIO
     from xhtml2pdf import pisa
+
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
@@ -205,8 +185,9 @@ def summary_cover(data, is_group=False, out_file=None):
     with codecs.open(html_dir, mode='r', encoding='utf-8') as f:
         html = f.read()
 
+    data.update({'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M")})
     # convert HTML to PDF
-    status = pisa.pisaDocument(html % data, result, encoding='UTF-8')
+    status = pisa.pisaDocument(html.format(data), result, encoding='UTF-8')
     result.close()
 
     # return True on success and False on errors
@@ -395,3 +376,5 @@ def report_functional(
 
     concat_pdf([fspatial, ftemporal], out_file)
     return out_file
+
+
