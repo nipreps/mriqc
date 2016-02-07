@@ -181,9 +181,8 @@ def summary_cover(data, is_group=False, out_file=None):
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
-    
+    substr = ''
     for s in data['params'].keys():
-        substr = ''
         info = data['params'][s]
 
         substr += '<li>{idstr:s}:<ul><li>{size:s}</li><li>{spacing:s}</li>'.format(
