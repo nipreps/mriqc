@@ -7,10 +7,13 @@
     <body>
     <h1>PCP Quality Assessment Protocol - Group report</h1>
     <ul>
-    <li>QA protocol: <span class="data-item">{modality:s}</span>.</li>
-	<li>Date and time: <span class="data-item">{timestamp:s}</span>.</li>
-    <li>Failed workflows: <span class="data-item">{failed:s}</span>.</li>
-    <li>Image parameters: <ul>{params:s}</ul></li>
+    <li>QA protocol: <span class="data-item">{modality}</span>.</li>
+	<li>Date and time: <span class="data-item">{timestamp}</span>.</li>
+    <li>Failed workflows: <span class="data-item">{failed}</span>.</li>
+    <li>Image parameters: 
+        <ul>
+            {imparams}
+        </ul></li>
     </ul>
     </body>
 </html>

@@ -20,7 +20,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from .utils import read_csv, find_failed
+from .utils import read_csv, find_failed, image_parameters
 from ..interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
@@ -47,12 +47,13 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
-    pdf_group = []
 
+    imparams = image_parameters(df)
+    pdf_group = []
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
-    summary_cover(
-        {'modality': qctype, 'failed': failed_str}, is_group=True, out_file=out_sum)
+    summary_cover({'modality': qctype, 'failed': failed_str, 'params': imparams},
+                  is_group=True, out_file=out_sum)
     pdf_group.append(out_sum)
 
     # Generate group report
@@ -83,6 +84,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
         sessions = sorted(pd.unique(subdf.session.ravel()))
         plots = []
         sess_scans = []
+        subparams = {}
         # Re-build mosaic location
         for sesid in sessions:
             sesdf = subdf.loc[subdf['session'] == sesid]
@@ -90,6 +92,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
+                subparams[(sesid, scanid)] = imparams[(subid, sesid, scanid)]
                 if 'anat' in qctype:
                     m = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
                                 (subid, sesid, scanid))
@@ -123,7 +126,8 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
         summary_cover(
             {'sub_id': subid, 'modality': qctype, 'included': ", ".join(sess_scans),
-             'failed': ",".join(sfailed) if sfailed else "none"},
+             'failed': ",".join(sfailed) if sfailed else "none",
+             'params': subparams},
             out_file=out_sum)
         plots.insert(0, out_sum)
 
@@ -177,17 +181,37 @@ def summary_cover(data, is_group=False, out_file=None):
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
-    html_file = 'cover_group.html' if is_group else 'cover_subj.html'
+    
+    for s in data['params'].keys():
+        substr = ''
+        info = data['params'][s]
 
-    html_dir = op.abspath(
-        op.join(op.dirname(__file__), 'html', html_file))
+        substr += '<li>{idstr:s}:<ul><li>{size:s}</li><li>{spacing:s}</li>'.format(
+            idstr=('%s (%s, %s)' if is_group else '%s (%s)') % s, **info)
+
+        if 'tr' in info.keys():
+            substr += '<li>%s</li>' % info['tr']
+        if 'size_t' in info.keys():
+            substr += '<li>%s</li>' % info['size_t']
+
+        substr += '</ul></li>\n'
+
+    html_dir = op.abspath(op.join(op.dirname(__file__), 'html',
+                          'cover_group.html' if is_group else 'cover_subj.html'))
 
     with codecs.open(html_dir, mode='r', encoding='utf-8') as f:
-        html = f.read()
+        html = f.read().format
 
-    data.update({'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M")})
+    if is_group:
+        values = {'imparams': substr, 'modality': data['modality'], 'failed': data['failed'],
+                  'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M")}
+    else:
+        values = {'sub_id': data['sub_id'], 'imparams': substr, 'modality': data['modality'],
+                  'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+                  'failed': data['failed']}
+
     # convert HTML to PDF
-    status = pisa.pisaDocument(html.format(data), result, encoding='UTF-8')
+    status = pisa.pisaDocument(html(**values), result, encoding='UTF-8')
     result.close()
 
     # return True on success and False on errors

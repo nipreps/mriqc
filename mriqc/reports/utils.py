@@ -45,14 +45,29 @@ def find_failed(dframe, sub_list):
 
 def image_parameters(dframe):
     """ Generate formatted parameters for each subject, session and scan """
-    im_param = {}
-    for sub in dframe:
-        im_param[tuple(sub[['subject', 'session', 'scan']].values)] = {
-            'size': '%d&times;%d&times;%d [voxels]' %
-            tuple(sub[['size_x', 'size_y', 'size_z']].values),
-            'spacing': '%f&times;%f&times;%f (mm)' %
-            tuple(sub[['spacing_x', 'spacing_y', 'spacing_z']].values),
-            'TR': '%s (ms)' % sub[['tr']].values,
-            'size_t': '%d timepoints' % sub[['size_t']].values}
+    newdf = dframe.copy()
+    # Pack together subject session & scan as identifier
+    newdf['id'] = zip(newdf.subject, newdf.session, newdf.scan)
 
-    return im_param
+    # Format the size
+    newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
+    formatter = lambda x: '%d &times; %d &times; %d [voxels]' % x
+    newdf['size'] = newdf['size'].apply(formatter)
+
+    # Format spacing
+    newdf['spacing'] = zip(newdf.spacing_x, newdf.spacing_y, newdf.spacing_z)
+    formatter = lambda x: '%f &times; %f &times; %f (mm)' % x
+    newdf['spacing'] = newdf['spacing'].apply(formatter)
+
+    cols = ['size', 'spacing']
+    if 'tr' in newdf.columns.ravel():
+        formatter = lambda x: '%f (ms)' % x
+        newdf['tr'] = newdf['tr'].apply(formatter)
+        cols.append('tr')
+
+    if 'size_t' in newdf.columns.ravel():
+        formatter = lambda x: '%d timepoints' % x
+        newdf['size_t'] = newdf['size_t'].apply(formatter)
+        cols.append('size_t')
+
+    return newdf.set_index('id')[cols].to_dict(orient='index')
