@@ -182,7 +182,7 @@ def summary_cover(data, is_group=False, out_file=None):
     result = open(out_file, "w+b")
 
     substr = ''
-    for s in data['params'].keys():
+    for s in sorted(data['params'].keys()):
         info = data['params'][s]
 
         substr += '<li>{idstr:s}:<ul><li>{size:s}</li><li>{spacing:s}</li>'.format(
