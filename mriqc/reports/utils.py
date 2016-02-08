@@ -60,4 +60,9 @@ def image_parameters(dframe):
     newdf['spacing'] = newdf['spacing'].apply(formatter)
     cols = ['size', 'spacing']
 
+    if 'tr' in newdf.columns.ravel():
+        cols.append('tr')
+    if 'size_t' in newdf.columns.ravel():
+        cols.append('size_t')
+
     return newdf.set_index('id')[cols].to_dict(orient='index')

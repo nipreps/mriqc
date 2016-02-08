@@ -196,8 +196,8 @@ def summary_cover(data, is_group=False, out_file=None):
         else:
             substr += '<tr><td>%s</td><td>%s</td>' % s
         substr += '<td>{size:s}</td><td>{spacing:s}</td>'.format(**info)
-        substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else 'N/A'
-        substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else 1
+        substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else '<td>N/A</td>'
+        substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else '<td>1</td>'
         substr += '</tr>\n'
     substr += '</table>'
 
