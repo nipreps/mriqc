@@ -181,19 +181,25 @@ def summary_cover(data, is_group=False, out_file=None):
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
-    substr = ''
+    substr = '<table><tr>' 
+    if is_group:
+        substr += '<th>Subject ID</th>'
+    substr += ('<th>Session</th><th>Scan ID</th><th>Image size (voxels)</th><th>Spacing (mm)</th>'
+               '<th>TR (ms)</th><th>Time steps</th></tr>')
+    
+
     for s in sorted(data['params'].keys()):
         info = data['params'][s]
 
-        substr += '<li>{idstr:s}:<ul><li>{size:s}</li><li>{spacing:s}</li>'.format(
-            idstr=('%s (%s, %s)' if is_group else '%s (%s)') % s, **info)
-
-        if 'tr' in info.keys():
-            substr += '<li>%s</li>' % info['tr']
-        if 'size_t' in info.keys():
-            substr += '<li>%s</li>' % info['size_t']
-
-        substr += '</ul></li>\n'
+        if is_group:
+            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % s
+        else:
+            substr += '<tr><td>%s</td><td>%s</td>' % s
+        substr += '<td>{size:s}</td><td>{spacing:s}</td>'.format(**info)
+        substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else 'N/A'
+        substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else 1
+        substr += '</tr>\n'
+    substr += '</table>'
 
     html_dir = op.abspath(op.join(op.dirname(__file__), 'html',
                           'cover_group.html' if is_group else 'cover_subj.html'))

@@ -51,23 +51,13 @@ def image_parameters(dframe):
 
     # Format the size
     newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
-    formatter = lambda x: '%d &times; %d &times; %d [voxels]' % x
+    formatter = lambda x: '%d &times; %d &times; %d' % x
     newdf['size'] = newdf['size'].apply(formatter)
 
     # Format spacing
     newdf['spacing'] = zip(newdf.spacing_x, newdf.spacing_y, newdf.spacing_z)
-    formatter = lambda x: '%f &times; %f &times; %f (mm)' % x
+    formatter = lambda x: '%f &times; %f &times; %f' % x
     newdf['spacing'] = newdf['spacing'].apply(formatter)
-
     cols = ['size', 'spacing']
-    if 'tr' in newdf.columns.ravel():
-        formatter = lambda x: '%f (ms)' % x
-        newdf['tr'] = newdf['tr'].apply(formatter)
-        cols.append('tr')
-
-    if 'size_t' in newdf.columns.ravel():
-        formatter = lambda x: '%d timepoints' % x
-        newdf['size_t'] = newdf['size_t'].apply(formatter)
-        cols.append('size_t')
 
     return newdf.set_index('id')[cols].to_dict(orient='index')
