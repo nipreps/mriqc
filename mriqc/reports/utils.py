@@ -10,6 +10,7 @@
 # @Last Modified time: 2016-01-18 18:05:18
 """ Helpers in report generation """
 
+import numpy as np
 import pandas as pd
 
 
@@ -50,13 +51,16 @@ def image_parameters(dframe):
     newdf['id'] = zip(newdf.subject, newdf.session, newdf.scan)
 
     # Format the size
+    newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint8)
     newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
     formatter = lambda x: '%d &times; %d &times; %d' % x
     newdf['size'] = newdf['size'].apply(formatter)
 
     # Format spacing
+    newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
+        'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)
     newdf['spacing'] = zip(newdf.spacing_x, newdf.spacing_y, newdf.spacing_z)
-    formatter = lambda x: '%f &times; %f &times; %f' % x
+    formatter = lambda x: '%.3f &times; %.3f &times; %.3f' % x
     newdf['spacing'] = newdf['spacing'].apply(formatter)
     cols = ['size', 'spacing']
 
