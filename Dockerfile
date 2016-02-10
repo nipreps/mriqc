@@ -12,6 +12,7 @@ RUN apt-get install -y wget curl git
 
 # Enable neurodebian
 RUN wget -O- http://neuro.debian.net/lists/vivid.de-m.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
+RUN wget -O- http://neuro.debian.net/lists/vivid.us-tn.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
 RUN apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 RUN apt-get update
 
@@ -42,12 +43,17 @@ RUN pip install xvfbwrapper
 
 RUN pip install lockfile
 RUN pip install --upgrade numpy
-RUN pip install -e git+https://github.com/oesteban/nipype.git@enh/ETSConfigTookit#egg=nipype
-RUN pip install -e git+https://github.com/oesteban/quality-assessment-protocol.git@enh/SmartQCWorkflow#egg=qap
-RUN pip install -e git+https://github.com/poldracklab/mriqc.git#egg=mriqc --user
 
 # replace .bashrc
 ADD files/bashrc /root/.bashrc
+ADD files/run_mriqcp.sh /root/run_mriqcp.sh
+RUN chmod +x /root/run_mriqcp.sh
+
+RUN mkdir -p /scratch/src
+WORKDIR /scratch/src/
+RUN git clone https://github.com/oesteban/nipype.git && cd /scratch/src/nipype && git checkout exp/mriqc && git pull && pip install -e .
+RUN pip install -e git+https://github.com/oesteban/quality-assessment-protocol.git@enh/SmartQCWorkflow#egg=qap
+RUN pip install -e git+https://github.com/poldracklab/mriqc.git#egg=mriqc --user
 
 # run container with supervisor (from scivm/scientific-python-2.7)
 CMD ["/usr/bin/supervisord"]
