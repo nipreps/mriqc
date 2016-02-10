@@ -219,7 +219,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
     workflow.connect([
         (inputnode, slice_msk, [(('in_template', _default_template), 'standard')]),
         (inputnode, maskav, [('in_file', 'in_file')]),
-        (maskav, hist, [(('out_file', _post_maskav), 'max')]),
+        (maskav, hist, [(('out_file', _post_maskav), 'max_value')]),
         (inputnode, hist, [('in_file', 'in_file')]),
         (inputnode, binarize, [('in_file', 'in_file')]),
         (inputnode, slice_msk, [('in_file', 'infile')]),
