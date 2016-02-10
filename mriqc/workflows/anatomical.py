@@ -201,7 +201,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
 
     # Compute threshold from histogram and generate mask
     maskav = pe.Node(afp.Maskave(), 'mask_average')
-    hist = pe.Node(afp.Histogram(nbin=10, showhist=True), 'brain_hist')
+    hist = pe.Node(afp.Hist(nbin=10, showhist=True), 'brain_hist')
     binarize = pe.Node(fsl.Threshold(args='-bin'), name='binarize')
     dilate = pe.Node(MathsCommand(args=' '.join(['-dilM']*6)), name='dilate')
     erode = pe.Node(MathsCommand(args=' '.join(['-eroF']*6)), name='erode')
