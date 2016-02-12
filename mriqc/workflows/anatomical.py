@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-11 11:36:15
+# @Last Modified time: 2016-02-12 08:37:13
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -76,7 +76,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         out_basename='segment'), name='segmentation')
 
     # AFNI check smoothing
-    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True, acf=True), name='smoothness')
 
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
