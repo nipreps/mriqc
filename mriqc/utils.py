@@ -126,29 +126,32 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
     sub_dict = {'anat': [], 'func': []}
 
-    for f in bids_scan_file_walker(dataset_folder,
+    for bidsfile in bids_scan_file_walker(dataset_folder,
         include_types=['anat', 'func']):
-    
+
         if subject_inclusion is not None:
-            if f['sub'] not in inclusion_list:
+            if bidsfile['sub'] not in inclusion_list:
                 continue
 
-        if f['modality'] in ['T1w']:
-            scan_key = f['modality']
-            if f['run'] is not None:
+        # implies that other anatomical modalities might be
+        # analyzed down the road.
+        if bidsfile['modality'] in ['T1w']:
+            scan_key = bidsfile['modality']
+            if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_'+f['run']
+                scan_key += '_'+bidsfile['run']
             sub_dict['anat'].append(
-                (f['sub'], f['ses'], scan_key, 
-                    op.abspath(f['scanfile'])))
-        elif f['modality'] in ['bold']:
-            scan_key = f['task']
-            if f['run'] is not None:
+                (bidsfile['sub'], bidsfile['ses'],
+                    scan_key, op.abspath(f['scanfile'])))
+
+        elif bidsfile['modality'] in ['bold']:
+            scan_key = bidsfile['task']
+            if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_'+f['run']
+                scan_key += '_'+bidsfile['run']
             sub_dict['func'].append(
-                (f['sub'], f['ses'], scan_key, 
-                    op.abspath(f['scanfile'])))
+                (bidsfile['sub'], bidsfile['ses'],
+                    scan_key, op.abspath(f['scanfile'])))
 
     return sub_dict
 
