@@ -21,7 +21,7 @@ def bids_scan_file_walker(dataset=".", include_types=None, warn_no_files=False):
     to include in the results. Can be any combination of "func",
     "anat", "fmap", "dwi".
 
-    warn_no_files -- issue a warning is no imaging files are found
+    warn_no_files -- issue a warning if no imaging files are found
     for a subject or a session.
 
     Returns:
@@ -135,7 +135,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
         # implies that other anatomical modalities might be
         # analyzed down the road.
-        if bidsfile['modality'] in ['T1w']:
+        if bidsfile['modality'] in ['T1w']: # ie, anatomical
             scan_key = bidsfile['modality']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
@@ -144,7 +144,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
                 (bidsfile['sub'], bidsfile['ses'],
                     scan_key, op.abspath(bidsfile['scanfile'])))
 
-        elif bidsfile['modality'] in ['bold']:
+        elif bidsfile['modality'] in ['bold']: # ie, functional
             scan_key = bidsfile['task']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
