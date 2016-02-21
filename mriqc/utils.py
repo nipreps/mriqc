@@ -142,7 +142,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
                 scan_key += '_'+bidsfile['run']
             sub_dict['anat'].append(
                 (bidsfile['sub'], bidsfile['ses'],
-                    scan_key, op.abspath(f['scanfile'])))
+                    scan_key, op.abspath(bidsfile['scanfile'])))
 
         elif bidsfile['modality'] in ['bold']:
             scan_key = bidsfile['task']
@@ -151,7 +151,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
                 scan_key += '_'+bidsfile['run']
             sub_dict['func'].append(
                 (bidsfile['sub'], bidsfile['ses'],
-                    scan_key, op.abspath(f['scanfile'])))
+                    scan_key, op.abspath(bidsfile['scanfile'])))
 
     return sub_dict
 
