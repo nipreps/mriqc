@@ -108,7 +108,6 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
     import os
     import os.path as op
     import yaml
-    import re
     from glob import glob
 
     sub_dict = {}
