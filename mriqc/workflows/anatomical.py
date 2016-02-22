@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 08:36:22
+# @Last Modified time: 2016-02-22 15:37:14
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -19,7 +19,7 @@ from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.viz import Report
-from ..utils import reorder_csv
+from ..utils.misc import reorder_csv
 
 
 def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):

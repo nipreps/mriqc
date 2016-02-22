@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-18 20:50:16
+# @Last Modified time: 2016-02-22 15:31:08
 """ MRIQC setup script """
 import os
 import sys
@@ -24,12 +24,20 @@ def main():
         url='https://github.com/poldracklab/mriqc',
         download_url='',
         license='3-clause BSD',
-        packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports'],
+        entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
+        packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
         package_data={'mriqc': ['reports/html/*.html']},
-        scripts=glob("scripts/*.py"),
         install_requires=["nipype", "nibabel", "pandas", "seaborn", "pyPdf2",
                           "xhtml2pdf", "qap"],
-        zip_safe=False)
+        zip_safe=False,
+        classifiers=[
+            'Development Status :: 3 - Alpha',
+            'Intended Audience :: MRI processing',
+            'Topic :: 3D Image Processing :: Quality Assessment',
+            'License :: OSI Approved :: 3-clause BSD License',
+            'Programming Language :: Python :: 2.7',
+        ],
+    )
 
 if __name__ == "__main__":
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))

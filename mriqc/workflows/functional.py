@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 21:16:19
+# @Last Modified time: 2016-02-22 15:34:47
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -18,7 +18,7 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
 from ..interfaces.viz import Report
-from ..utils import reorder_csv
+from ..utils.misc import reorder_csv
 
 
 def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
