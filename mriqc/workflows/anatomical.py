@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:37:14
+# @Last Modified time: 2016-02-22 15:54:32
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -60,7 +60,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     # Import measures from QAP
     measures = pe.Node(niu.Function(
         input_names=['anatomical_reorient', 'head_mask_path',
-                     'anatomical_segs', 'bias_image',
+                     'anatomical_segs', 'bias_image', 'fwhm',
                      'subject_id', 'session_id', 'scan_id'],
         output_names=['out_qc'], function=qc_anat), name='measures')
 
@@ -74,6 +74,9 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     segment = pe.Node(fsl.FAST(
         img_type=1, segments=True, probability_maps=True,
         out_basename='segment'), name='segmentation')
+
+    # AFNI check smoothing
+    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True, acf=True), name='smoothness')
 
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
@@ -90,7 +93,10 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, measures, [('output_image', 'anatomical_reorient')]),
+        (n4itk, fwhm, [('output_image', 'in_file')]),
         (qmw, measures, [('outputnode.out_mask', 'head_mask_path')]),
+        (qmw, fwhm, [('outputnode.out_mask', 'mask')]),
+        (fwhm, measures, [('fwhm', 'fwhm')]),
         (segment, measures, [('tissue_class_files', 'anatomical_segs')]),
         (n4itk, measures, [('bias_image', 'bias_image')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
@@ -260,7 +266,7 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     return workflow
 
 
-def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
+def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image, fwhm,
             subject_id, session_id, scan_id, site_name=None, out_vox=True):
     """
     A wrapper for the QC measures calculation imported from QAP.
@@ -268,16 +274,27 @@ def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
     """
     import nibabel as nb
     import numpy as np
-    from qap.workflows.utils import qap_anatomical_spatial
     from nipype import logging
+    from qap.spatial_qc import summary_mask, snr, cnr, fber, efc, artifacts
+    from qap.qap_utils import load_image, load_mask
 
     iflogger = logging.getLogger('interface')
-    out_qc = qap_anatomical_spatial(
-        anatomical_reorient, head_mask_path, anatomical_segs[1],
-        anatomical_segs[2], anatomical_segs[0], subject_id, session_id,
-        scan_id, site_name, out_vox)
 
+    # Load the data
     im_anat = nb.load(anatomical_reorient)
+    fg_mask = load_mask(head_mask_path, anatomical_reorient)
+    bg_mask = 1 - fg_mask
+    gm_mask = load_mask(anatomical_segs[1], anatomical_reorient)
+    wm_mask = load_mask(anatomical_segs[2], anatomical_reorient)
+    csf_mask = load_mask(anatomical_segs[0], anatomical_reorient)
+
+    out_qc = {'subject': subject_id, 'session': session_id, 'scan': scan_id}
+    if site_name is not None:
+        out_qc['site_name'] = site_name
+
+    out_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
+                   'fwhm': fwhm[3]})
+
     out_qc.update({'size_x': im_anat.shape[0],
                    'size_y': im_anat.shape[1],
                    'size_z': im_anat.shape[2]})
@@ -297,5 +314,28 @@ def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image,
     bias = nb.load(bias_image).get_data()[nb.load(head_mask_path).get_data() > 0]
     out_qc.update({'bias_max': bias.max(), 'bias_min': bias.min(),
                    'bias_med': np.median(bias)})  #pylint: disable=E1101
+
+    im_anat = load_image(anatomical_reorient)
+
+    # Summary Measures
+    out_qc['fg_mean'], out_qc['fg_std'], out_qc[
+        'fg_size'] = summary_mask(im_anat, fg_mask)
+    out_qc['bg_mean'], out_qc['bg_std'], out_qc[
+        'bg_size'] = summary_mask(im_anat, bg_mask)
+
+    # More Summary Measures
+    out_qc['gm_mean'], out_qc['gm_std'], out_qc[
+        'gm_size'] = summary_mask(im_anat, gm_mask)
+    out_qc['wm_mean'], out_qc['wm_std'], out_qc[
+        'wm_size'] = summary_mask(im_anat, wm_mask)
+    out_qc['csf_mean'], out_qc['csf_std'], out_qc[
+        'csf_size'] = summary_mask(im_anat, csf_mask)
+
+    # FBER, EFC, artifact
+    out_qc.update({'fber': fber(im_anat, fg_mask),
+                   'efc': efc(im_anat),
+                   'qi1': artifacts(im_anat, fg_mask, calculate_qi2=False)[0],
+                   'snr': snr(out_qc['fg_mean'], out_qc['bg_std']),
+                   'cnr': cnr(out_qc['gm_mean'], out_qc['wm_mean'], out_qc['bg_std'])})
     iflogger.info('QC measures: %s', out_qc)
     return out_qc

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 18:05:18
+# @Last Modified time: 2016-02-11 11:46:59
 """ Helpers in report generation """
 
 import numpy as np
@@ -51,6 +51,7 @@ def image_parameters(dframe):
     newdf['id'] = zip(newdf.subject, newdf.session, newdf.scan)
 
     # Format the size
+    #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint8)
     newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
     formatter = lambda x: '%d &times; %d &times; %d' % x
@@ -58,7 +59,7 @@ def image_parameters(dframe):
 
     # Format spacing
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
-        'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)
+        'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
     newdf['spacing'] = zip(newdf.spacing_x, newdf.spacing_y, newdf.spacing_z)
     formatter = lambda x: '%.3f &times; %.3f &times; %.3f' % x
     newdf['spacing'] = newdf['spacing'].apply(formatter)
