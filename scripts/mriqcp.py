@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
         if settings['nthreads'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_proc': settings['nthreads']}
+            plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
     subjects = gather_bids_data(settings['bids_root'])
 
