@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:31:08
+# @Last Modified time: 2016-02-22 15:49:36
 """ MRIQC setup script """
 import os
 import sys
@@ -33,7 +33,7 @@ def main():
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: MRI processing',
-            'Topic :: 3D Image Processing :: Quality Assessment',
+            'Topic :: Scientific/Engineering :: Quality Assessment',
             'License :: OSI Approved :: 3-clause BSD License',
             'Programming Language :: Python :: 2.7',
         ],
