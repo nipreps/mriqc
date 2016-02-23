@@ -76,7 +76,8 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         out_basename='segment'), name='segmentation')
 
     # AFNI check smoothing
-    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True, acf=True), name='smoothness')
+    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
 
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
