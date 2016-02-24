@@ -8,14 +8,14 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 10:36:38
+# @Last Modified time: 2016-02-24 11:52:07
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
 from ..qc.anatomical import (snr, cnr, fber, efc, artifacts,
                              volume_fraction, rpve, summary_stats)
-from ..qc.functional import (gsr, dvars)
+from ..qc.functional import (gsr, dvars, fd_jenkinson)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
@@ -193,7 +193,7 @@ class FunctionalQC(BaseInterface):
         # Get EPI data (with mc done) and get it ready
         msknii = nb.load(self.inputs.in_mask)
         mskdata = np.nan_to_num(msknii.get_data())
-        mskdata = mskdata.astype(np.uin8)
+        mskdata = mskdata.astype(np.uint8)
         mskdata[mskdata < 0] = 0
         mskdata[mskdata > 0] = 1
 
@@ -259,3 +259,39 @@ def _flatten_dict(indict):
                     for ssubk, ssubval in list(subval.items()):
                         out_qc['%s_%s_%s' % (k, subk, ssubk)] = ssubval
     return out_qc
+
+
+class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True,
+                   desc='input file generated with FSL 3dvolreg')
+    rmax = traits.Float(80., usedefault=True, desc='default brain radius')
+
+
+class FramewiseDisplacementOutputSpec(TraitedSpec):
+    out_file = File(desc='output file')
+    mean_fd = traits.Float
+
+
+class FramewiseDisplacement(BaseInterface):
+    """
+    Computes anatomical :abr:`QC (Quality Control)` measures on the
+    structural image given as input
+
+    """
+    input_spec = FramewiseDisplacementInputSpec
+    output_spec = FramewiseDisplacementOutputSpec
+
+    def __init__(self, **inputs):
+        self._results = {}
+        super(FramewiseDisplacement, self).__init__(**inputs)
+
+    def _list_outputs(self):
+        return self._results
+
+    def _run_interface(self, runtime):
+        out_file = fd_jenkinson(self.inputs.in_file,
+                                self.inputs.rmax)
+        self._results['out_file'] = out_file
+        self._results['mean_fd'] = np.loadtxt(out_file).mean()
+        return super(FramewiseDisplacement, self)._run_interface(runtime)
+

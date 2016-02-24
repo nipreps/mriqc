@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-24 10:48:46
+# @Last Modified time: 2016-02-24 11:52:21
 """
 Computation of the quality assessment measures on functional MRI
 ----------------------------------------------------------------
@@ -202,3 +202,93 @@ def ar_nitime(mfunc, order=1):
     mfunc -= mfunc.mean(axis=1)
     ak_coeffs, _ = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, (order, None))
     return ak_coeffs[0, :]
+
+
+def fd_jenkinson(in_file, rmax=80., out_file=None):
+    """
+    Compute the :abbr:`FD (framewise displacement)` [Jenkinson2002]_
+    on a 4D dataset, after ```3dvolreg``` has been executed
+    (generally a file named ```*.affmat12.1D```).
+
+    Parameters
+    ----------
+
+    in_file: str
+        path to epi file
+
+    rmax: float
+        The default radius (as in FSL) of a sphere represents the brain
+
+    out_file: str
+        output file with the FD
+
+
+    Returns
+    -------
+    out_file: string
+        output file with the FD
+
+    mean_fd: float
+        average FD along the time series
+
+
+    .. note ::
+
+      :code:`infile` should have one 3dvolreg affine matrix in one row -
+      NOT the motion parameters
+
+
+    .. note ::
+
+      Adapted from
+      https://github.com/oesteban/quality-assessment-protocol/blob/enh/SmartQCWorkflow/qap/temporal_qc.py#L16
+
+
+    .. [Jenkinson2002] Jenkinson et al., *Improved Optimisation for the Robust and
+      Accurate Linear Registration and Motion Correction of Brain Images.
+      NeuroImage, 17(2), 825-841, 2002.
+      doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`.
+
+    """
+
+    import sys
+    import math
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        out_file = op.abspath('%s_fdfile%s' % (fname, ext))
+
+    # if in_file (coordinate_transformation) is actually the rel_mean output
+    # of the MCFLIRT command, forward that file
+    if 'rel.rms' in in_file:
+        return in_file
+
+    pm_ = np.genfromtxt(in_file)
+    original_shape = pm_.shape
+    pm = np.zeros((pm_.shape[0], pm_.shape[1] + 4))
+    pm[:, :original_shape[1]] = pm_
+    pm[:, original_shape[1]:] = [0.0, 0.0, 0.0, 1.0]
+
+    # rigid body transformation matrix
+    T_rb_prev = np.matrix(np.eye(4))
+
+    flag = 0
+    X = [0]  # First timepoint
+    for i in range(0, pm.shape[0]):
+        # making use of the fact that the order of aff12 matrix is "row-by-row"
+        T_rb = np.matrix(pm[i].reshape(4, 4))
+
+        if flag == 0:
+            flag = 1
+        else:
+            M = np.dot(T_rb, T_rb_prev.I) - np.eye(4)
+            A = M[0:3, 0:3]
+            b = M[0:3, 3]
+
+            FD_J = math.sqrt(
+                (rmax * rmax / 5) * np.trace(np.dot(A.T, A)) + np.dot(b.T, b))
+            X.append(FD_J)
+
+        T_rb_prev = T_rb
+
+    return out_file

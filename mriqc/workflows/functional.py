@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 10:51:39
+# @Last Modified time: 2016-02-24 11:52:59
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -17,16 +17,21 @@ from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
-from ..interfaces.qc import FunctionalQC
+from ..interfaces.qc import FunctionalQC, FramewiseDisplacement
 from ..interfaces.viz import Report
 from ..utils.misc import reorder_csv
 
 
-def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
+def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     """ The fMRI qc workflow """
-    from qap.temporal_qc import fd_jenkinson
     from .utils import fmri_getidx
     from ..interfaces.viz import PlotMosaic, PlotFD
+
+    if sub_list is None:
+        sub_list = []
+
+    if settings is None:
+        settings = {}
 
     # Define workflow, inputs and outputs
     wf = pe.Workflow(name=name)
@@ -68,9 +73,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
 
-    fd = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'],
-        function=fd_jenkinson), name='generate_FD_file')
+    fdisp = pe.Node(FramewiseDisplacement(), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
     # AFNI check smoothing
@@ -84,7 +87,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     #     output_names=['qc'], function=fmri_qc), name='measures')
 
     mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm'],
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'mean_fd'],
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
@@ -106,10 +109,10 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fd, [('outputnode.out_xfms', 'in_file')]),
+        (hmcwf, fdisp, [('outputnode.out_xfms', 'in_file')]),
         (mean, plot_mean, [('out_file', 'in_file')]),
         (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
-        (fd, plot_fd, [('out_file', 'in_file')]),
+        (fdisp, plot_fd, [('out_file', 'in_file')]),
         (dsource, plot_mean, [('subject_id', 'subject')]),
         (dsource, plot_tsnr, [('subject_id', 'subject')]),
         (dsource, plot_fd, [('subject_id', 'subject')]),
@@ -123,11 +126,10 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
         (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
-        # (dsource, measures, [('subject_id', 'subject_id'),
-        #                       ('session_id', 'session_id'),
-        #                       ('scan_id', 'scan_id'),
-        #                       (('site_name', _empty), 'site_name')]),
-        # (fd, measures, [('out_file', 'fd_file')]),
+        (measures, mergqc, [('out_qc', 'in_qc')]),
+        (dsource, mergqc, [('subject_id', 'subject_id')]),
+        (merg, mergqc, [('out', 'metadata')]),
+        (fdisp, mergqc, [('mean_fd', 'mean_fd')]),
     ])
 
     if settings.get('mosaic_mask', False):
@@ -320,7 +322,7 @@ def fmri_qc(mean_epi, func_motion_correct, func_brain_mask, tsnr_volume, fd_file
         pass
     return qc
 
-def _merge_dicts(in_qc, subject_id, metadata, fwhm):
+def _merge_dicts(in_qc, subject_id, metadata, fwhm, mean_fd):
     in_qc['subject'] = subject_id
     in_qc['session'] = metadata[0]
     in_qc['scan'] = metadata[1]
@@ -332,6 +334,7 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm):
 
     in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
                   'fwhm': fwhm[3]})
+    in_qc['mean_fd'] = mean_fd
 
     try:
         in_qc['tr'] = in_qc['spacing_tr']
