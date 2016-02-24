@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 15:51:47
+# @Last Modified time: 2016-02-24 10:28:15
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -265,7 +265,7 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     return workflow
 
 
-def _merge_dicts(in_qc, subject_id, metadata, fwhm, site_name=None):
+def _merge_dicts(in_qc, subject_id, metadata, fwhm):
     in_qc['subject'] = subject_id
     in_qc['session'] = metadata[0]
     in_qc['scan'] = metadata[1]

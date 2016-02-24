@@ -8,20 +8,36 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-23 19:39:38
+# @Last Modified time: 2016-02-24 10:48:46
 """
 Computation of the quality assessment measures on functional MRI
 ----------------------------------------------------------------
 
 
 """
+import os.path as op
 import numpy as np
+import nibabel as nb
+from nitime import algorithms as nta
 
 
-def ghost_direction(epi_data, mask_data, direction="y", ref_file=None,
-                    out_file=None):
+def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
-    Computes the :abr:`GSR (ghost to signal ratio)` [Giannelli2010]_
+    Computes the :abr:`GSR (ghost to signal ratio)` [Giannelli2010]_. The
+    procedure is as follows:
+
+      #. Create a Nyquist ghost mask by circle-shifting the original mask by
+        :math:`N/2`.
+
+      #. Rotate by :math:`N/2`
+
+      #. Remove the intersection with the original mask
+
+      #. Generate a non-ghost background
+
+      #. Calculate the :abr:`GSR (ghost to signal ratio)`
+
+
 
     .. warning ::
 
@@ -35,7 +51,7 @@ def ghost_direction(epi_data, mask_data, direction="y", ref_file=None,
     mask_file: str
         path to brain mask
     direction: str
-        the direction of phase encoding (x, y, z)
+        the direction of phase encoding (x, y, all)
 
     Returns
     -------
@@ -51,53 +67,138 @@ def ghost_direction(epi_data, mask_data, direction="y", ref_file=None,
 
 
     """
-    # first we need to make a nyquist ghost mask, we do this by circle
-    # shifting the original mask by N/2 and then removing the intersection
-    # with the original mask
-    n2_mask_data = np.zeros_like(mask_data)
 
-    # rotate by n/2
-    if direction == "x":
-        n2lim = np.floor(mask_data.shape[0]/2)
-        n2_mask_data[:n2lim, :, :] = mask_data[n2lim:(n2lim*2), :, :]
-        n2_mask_data[n2lim:(n2lim*2), :, :] = mask_data[:n2lim, :, :]
-    elif direction == "y":
-        n2lim = np.floor(mask_data.shape[1]/2)
-        n2_mask_data[:, :n2lim, :] = mask_data[:, n2lim:(n2lim*2), :]
-        n2_mask_data[:, n2lim:(n2lim*2), :] = mask_data[:, :n2lim, :]
-    elif direction == "z":
-        n2lim = np.floor(mask_data.shape[2]/2)
-        n2_mask_data[:, :, :n2lim] = mask_data[:, :, n2lim:(n2lim*2)]
-        n2_mask_data[:, :, n2lim:(n2lim*2)] = mask_data[:, :, :n2lim]
-    else:
-        raise Exception("Unknown direction %s, should be x, y, or z"
+    direction = direction.lower()
+    if direction[-1] not in ['x', 'y', 'all']:
+        raise Exception("Unknown direction %s, should be one of x, -x, y, -y, all"
                         % direction)
 
-    # now remove the intersection with the original mask
-    n2_mask_data = n2_mask_data * (1-mask_data)
+    if direction == 'all':
+        result = []
+        for newdir in ['x', 'y']:
+            ofile = None
+            if out_file is not None:
+                fname, ext = op.splitext(ofile)
+                if ext == '.gz':
+                    fname, ext2 = op.splitext(fname)
+                    ext = ext2 + ext
+                ofile = '%s_%s%s' % (fname, newdir, ext)
+            result += [gsr(epi_data, mask, newdir,
+                           ref_file=ref_file, out_file=ofile)]
+        return result
 
-    # now create a non-ghost background region, that contains 2s
-    n2_mask_data = n2_mask_data + 2*(1-n2_mask_data-mask_data)
+    # Step 1
+    n2_mask = np.zeros_like(mask)
+
+    # Step 2
+    if direction == "x":
+        n2lim = np.floor(mask.shape[0]/2)
+        n2_mask[:n2lim, :, :] = mask[n2lim:(n2lim*2), :, :]
+        n2_mask[n2lim:(n2lim*2), :, :] = mask[:n2lim, :, :]
+    elif direction == "y":
+        n2lim = np.floor(mask.shape[1]/2)
+        n2_mask[:, :n2lim, :] = mask[:, n2lim:(n2lim*2), :]
+        n2_mask[:, n2lim:(n2lim*2), :] = mask[:, :n2lim, :]
+    elif direction == "z":
+        n2lim = np.floor(mask.shape[2]/2)
+        n2_mask[:, :, :n2lim] = mask[:, :, n2lim:(n2lim*2)]
+        n2_mask[:, :, n2lim:(n2lim*2)] = mask[:, :, :n2lim]
+
+    # Step 3
+    n2_mask = n2_mask * (1-mask)
+
+    # Step 4: non-ghost background region is labeled as 2
+    n2_mask = n2_mask + 2 * (1 - n2_mask - mask)
 
     # Save mask
     if ref_file is not None and out_file is not None:
-        import nibabel as nib
-        ref = nib.load(ref_file)
-        out = nib.Nifti1Image(n2_mask_data, ref.get_affine(), ref.get_header())
+        ref = nb.load(ref_file)
+        out = nb.Nifti1Image(n2_mask, ref.get_affine(), ref.get_header())
         out.to_filename(out_file)
 
-    # now we calculate the Ghost to signal ratio, but here we define signal
-    # as the entire foreground image
-    gsr = (epi_data[n2_mask_data == 1].mean(
-        ) - epi_data[n2_mask_data == 2].mean())/epi_data[n2_mask_data == 0].mean()
-
-    return gsr
+    # Step 5: signal is the entire foreground image
+    ghost = epi_data[n2_mask == 1].mean() - epi_data[n2_mask == 2].mean()
+    signal = epi_data[n2_mask == 0].mean()
+    return ghost/signal
 
 
-def ghost_all(epi_data, mask_data):
-    """Wrap the gsr computation to both possible encoding directions"""
+def dvars(in_file, in_mask, dvars_out_file=None):
+    """
+    Compute the mean :abbr:`DVARS (D referring to temporal derivative of
+    timecourses, VARS referring to RMS variance over voxels)` [Power2012]_
 
-    directions = ["x", "y"]
-    gsrs = [ghost_direction(epi_data, mask_data, d) for d in directions]
 
-    return tuple(gsrs + [None])
+    .. [Power2012] Poweret al., *Spurious but systematic correlations in functional
+      connectivity MRI networks arise from subject motion*, NeuroImage 59(3):2142-2154,
+      2012, doi:`10.1016/j.neuroimage.2011.10.018
+      <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`.
+
+
+    """
+
+    fmrinii = nb.load(in_file)
+    func = fmrinii.get_data().astype(np.float32)
+
+    masknii = nb.load(in_mask)
+    mask = masknii.get_data().astype(np.uint8)
+    mask[mask < 0] = 0
+    mask[mask > 0] = 1
+
+    if len(func.shape) != 4:
+        raise RuntimeError(
+            "Input fMRI dataset %s should be 4-dimensional" % in_file)
+
+    # Remove zero-variance voxels across time axis
+    tvariance = func[mask > 0].var(axis=3)
+    tv_mask = np.zeros(tvariance)
+    tv_mask[tvariance > 0] = 1
+
+    # Calculate DVARS
+    dvars = _calc_dvars(func[mask[..., np.newaxis] > 0])
+    if dvars_out_file:
+        np.savetxt(dvars_out_file, dvars, fmt='%.12f')
+
+    return dvars
+
+
+def _calc_dvars(mfunc, output_all=False):
+    """ Calculation of DVARS """
+    # Robust standard deviation
+    func_sd = (np.percentile(mfunc, 75) - np.percentile(mfunc, 25)) / 1.349
+
+    # AR1
+    func_ar_a0 = ar_nitime(mfunc, 0)
+
+    # Predicted standard deviation of temporal derivative
+    func_sd_pd = np.sqrt(2 * (1 - func_ar_a0)) * func_sd
+    diff_sd_mean = func_sd_pd.mean()
+
+    # Compute temporal difference time series
+    func_deriv = np.diff(mfunc, axis=1)
+
+    # DVARS
+    # (no standardization)
+    # TODO: Why are we not ^2 this & getting the sqrt?
+    dvars_plain = func_deriv.std(1, ddof=1)
+    # standardization
+    dvars_stdz = dvars_plain/diff_sd_mean
+    # voxelwise standardization
+    diff_vx_stdz = func_deriv/func_sd_pd
+    dvars_vx_stdz = diff_vx_stdz.std(1, ddof=1)
+
+    if output_all:
+        out = np.vstack((dvars_stdz, dvars_plain, dvars_vx_stdz))
+    else:
+        out = dvars_stdz.reshape(len(dvars_stdz), 1)
+    return out
+
+
+def ar_nitime(mfunc, order=1):
+    """
+    Adapts the computation of the :abbr:`AR (auto-regressive)` filtering
+    from nitime to the fMRI signal.
+
+    """
+    mfunc -= mfunc.mean(axis=1)
+    ak_coeffs, _ = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, (order, None))
+    return ak_coeffs[0, :]

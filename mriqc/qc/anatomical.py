@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 16:11:11
+# @Last Modified time: 2016-02-24 09:22:09
 """
 Computation of the quality assessment measures on structural MRI
 ----------------------------------------------------------------
@@ -17,6 +17,7 @@ Computation of the quality assessment measures on structural MRI
 """
 
 import numpy as np
+from six import string_types
 import scipy.ndimage as nd
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
@@ -35,8 +36,13 @@ def snr(img, seg, fglabel, bglabel='bg'):
     where the noise is computed.
 
     """
-    fg_mean = img[seg == FSL_FAST_LABELS[fglabel]].mean()
-    bg_std = img[seg == FSL_FAST_LABELS[bglabel]].std()
+    if isinstance(fglabel, string_types):
+        fglabel = FSL_FAST_LABELS[fglabel]
+    if isinstance(bglabel, string_types):
+        bglabel = FSL_FAST_LABELS[bglabel]
+
+    fg_mean = img[seg == fglabel].mean()
+    bg_std = img[seg == bglabel].std()
     return fg_mean / bg_std
 
 

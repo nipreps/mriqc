@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:34:47
+# @Last Modified time: 2016-02-24 10:51:39
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -17,6 +17,7 @@ from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
+from ..interfaces.qc import FunctionalQC
 from ..interfaces.viz import Report
 from ..utils.misc import reorder_csv
 
@@ -58,17 +59,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group']), name='outputnode')
 
-    # Measures
-    def _empty(val):
-        from nipype.interfaces.base import isdefined
-        if isdefined(val):
-            return val
-        return None
-
-    measures = pe.Node(niu.Function(
-        input_names=['mean_epi', 'func_motion_correct', 'func_brain_mask', 'tsnr_volume',
-                     'fd_file', 'subject_id', 'session_id', 'scan_id'],
-        output_names=['qc'], function=fmri_qc), name='measures')
 
     # Workflow --------------------------------------------------------
     hmcwf = fmri_hmc_workflow(                  # 1. HMC: head motion correct
@@ -82,6 +72,20 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         input_names=['in_file'], output_names=['out_file'],
         function=fd_jenkinson), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
+
+    # AFNI check smoothing
+    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
+
+    measures = pe.Node(FunctionalQC(), name='measures')
+    # measures = pe.Node(niu.Function(
+    #     input_names=['mean_epi', 'func_motion_correct', 'func_brain_mask', 'tsnr_volume',
+    #                  'fd_file', 'subject_id', 'session_id', 'scan_id'],
+    #     output_names=['qc'], function=fmri_qc), name='measures')
+
+    mergqc = pe.Node(niu.Function(
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm'],
+        output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
@@ -112,15 +116,18 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         (merg, plot_mean, [('out', 'metadata')]),
         (merg, plot_tsnr, [('out', 'metadata')]),
         (merg, plot_fd, [('out', 'metadata')]),
-        (bmw, measures, [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, measures, [('out_file', 'mean_epi')]),
-        (dsource, measures, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id'),
-                              (('site_name', _empty), 'site_name')]),
-        (hmcwf, measures, [('outputnode.out_file', 'func_motion_correct')]),
-        (fd, measures, [('out_file', 'fd_file')]),
-        (tsnr, measures, [('tsnr_file', 'tsnr_volume')])
+        (mean, fwhm, [('out_file', 'in_file')]),
+        (bmw, fwhm, [('outputnode.out_file', 'mask')]),
+        (fwhm, mergqc, [('fwhm', 'fwhm')]),
+        (mean, measures, [('out_file', 'in_epi')]),
+        (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
+        (bmw, measures, [('outputnode.out_file', 'in_mask')]),
+        (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
+        # (dsource, measures, [('subject_id', 'subject_id'),
+        #                       ('session_id', 'session_id'),
+        #                       ('scan_id', 'scan_id'),
+        #                       (('site_name', _empty), 'site_name')]),
+        # (fd, measures, [('out_file', 'fd_file')]),
     ])
 
     if settings.get('mosaic_mask', False):
@@ -181,7 +188,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         report0.inputs.sub_list = sub_list
 
     wf.connect([
-        (measures, to_csv, [('qc', '_outputs')]),
+        (mergqc, to_csv, [('out_qc', '_outputs')]),
         (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
         (re_csv0, report0, [('out_file', 'in_csv')]),
@@ -312,3 +319,23 @@ def fmri_qc(mean_epi, func_motion_correct, func_brain_mask, tsnr_volume, fd_file
     except IndexError:
         pass
     return qc
+
+def _merge_dicts(in_qc, subject_id, metadata, fwhm):
+    in_qc['subject'] = subject_id
+    in_qc['session'] = metadata[0]
+    in_qc['scan'] = metadata[1]
+
+    try:
+        in_qc['site_name'] = metadata[2]
+    except IndexError:
+        pass  # No site_name defined
+
+    in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
+                  'fwhm': fwhm[3]})
+
+    try:
+        in_qc['tr'] = in_qc['spacing_tr']
+    except KeyError:
+        pass  # TR is not defined
+
+    return in_qc
