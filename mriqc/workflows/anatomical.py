@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 12:05:06
+# @Last Modified time: 2016-02-23 15:51:47
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -60,14 +60,8 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
 
     measures = pe.Node(StructuralQC(), 'measures')
     mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'session_id', 'scan_id', 'fwhm',],
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm'],
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
-    # Import measures from QAP
-    # measures = pe.Node(niu.Function(
-    #     input_names=['anatomical_reorient', 'head_mask_path',
-    #                  'anatomical_segs', 'bias_image', 'fwhm',
-    #                  'subject_id', 'session_id', 'scan_id'],
-    #     output_names=['out_qc'], function=qc_anat), name='measures')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, bias_image='output_bias.nii.gz'),
@@ -88,9 +82,6 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (datasource, mergqc, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
@@ -109,6 +100,8 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (datasource, merg, [('session_id', 'in1'),
                             ('scan_id', 'in2'),
                             ('site_name', 'in3')]),
+        (datasource, mergqc, [('subject_id', 'subject_id')]),
+        (merg, mergqc, [('out', 'metadata')]),
         (merg, plot, [('out', 'metadata')]),
         (measures, mergqc, [('out_qc', 'in_qc')]),
         (mergqc, outputnode, [('out_qc', 'qc')]),
@@ -272,87 +265,23 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     return workflow
 
 
-def _merge_dicts(in_qc, subject_id, session_id, scan_id, fwhm,
-                 site_name=None):
-    in_qc['subject_id'] = subject_id
-    in_qc['session_id'] = session_id
-    in_qc['scan_id'] = scan_id
+def _merge_dicts(in_qc, subject_id, metadata, fwhm, site_name=None):
+    in_qc['subject'] = subject_id
+    in_qc['session'] = metadata[0]
+    in_qc['scan'] = metadata[1]
 
-    if site_name is not None:
-        in_qc['site_name'] = site_name
+    try:
+        in_qc['site_name'] = metadata[2]
+    except IndexError:
+        pass  # No site_name defined
 
     in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
                   'fwhm': fwhm[3]})
 
+    in_qc['snr'] = in_qc.pop('snr_total')
+    try:
+        in_qc['tr'] = in_qc['spacing_tr']
+    except KeyError:
+        pass  # TR is not defined
+
     return in_qc
-
-def qc_anat(anatomical_reorient, head_mask_path, anatomical_segs, bias_image, fwhm,
-            subject_id, session_id, scan_id, site_name=None, out_vox=True):
-    """
-    A wrapper for the QC measures calculation imported from QAP.
-    Also adds some measures regarding the inhomogeneity field.
-    """
-    import nibabel as nb
-    import numpy as np
-    from nipype import logging
-    from qap.spatial_qc import summary_mask, snr, cnr, fber, efc, artifacts
-    from qap.qap_utils import load_image, load_mask
-
-    iflogger = logging.getLogger('interface')
-
-    # Load the data
-    im_anat = nb.load(anatomical_reorient)
-    fg_mask = load_mask(head_mask_path, anatomical_reorient)
-    bg_mask = 1 - fg_mask
-    gm_mask = load_mask(anatomical_segs[1], anatomical_reorient)
-    wm_mask = load_mask(anatomical_segs[2], anatomical_reorient)
-    csf_mask = load_mask(anatomical_segs[0], anatomical_reorient)
-
-    out_qc = {'subject': subject_id, 'session': session_id, 'scan': scan_id}
-    if site_name is not None:
-        out_qc['site_name'] = site_name
-
-    out_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
-                   'fwhm': fwhm[3]})
-
-    out_qc.update({'size_x': im_anat.shape[0],
-                   'size_y': im_anat.shape[1],
-                   'size_z': im_anat.shape[2]})
-    out_qc.update({'spacing_%s' % i: v
-                   for i, v in zip(['x', 'y', 'z'], im_anat.get_header().get_zooms()[:3])})
-
-    try:
-        out_qc.update({'size_t': im_anat.shape[3]})
-    except IndexError:
-        pass
-
-    try:
-        out_qc.update({'tr': im_anat.get_header().get_zooms()[3]})
-    except IndexError:
-        pass
-
-
-    im_anat = load_image(anatomical_reorient)
-
-    # Summary Measures
-    out_qc['fg_mean'], out_qc['fg_std'], out_qc[
-        'fg_size'] = summary_mask(im_anat, fg_mask)
-    out_qc['bg_mean'], out_qc['bg_std'], out_qc[
-        'bg_size'] = summary_mask(im_anat, bg_mask)
-
-    # More Summary Measures
-    out_qc['gm_mean'], out_qc['gm_std'], out_qc[
-        'gm_size'] = summary_mask(im_anat, gm_mask)
-    out_qc['wm_mean'], out_qc['wm_std'], out_qc[
-        'wm_size'] = summary_mask(im_anat, wm_mask)
-    out_qc['csf_mean'], out_qc['csf_std'], out_qc[
-        'csf_size'] = summary_mask(im_anat, csf_mask)
-
-    # FBER, EFC, artifact
-    out_qc.update({'fber': fber(im_anat, fg_mask),
-                   'efc': efc(im_anat),
-                   'qi1': artifacts(im_anat, fg_mask, calculate_qi2=False)[0],
-                   'snr': snr(out_qc['fg_mean'], out_qc['bg_std']),
-                   'cnr': cnr(out_qc['gm_mean'], out_qc['wm_mean'], out_qc['bg_std'])})
-    iflogger.info('QC measures: %s', out_qc)
-    return out_qc

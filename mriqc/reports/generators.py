@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+# pylint: disable=no-member
 #
 # @Author: oesteban
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 18:05:18
+# @Last Modified time: 2016-02-23 16:16:28
 """ Encapsulates report generation functions """
 
 import sys
@@ -24,7 +25,30 @@ from .utils import read_csv, find_failed, image_parameters
 from ..interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
+STRUCTURAL_QCGROUPS = [
+    ['icvs_csf', 'icvs_gm', 'icvs_wm'],
+    ['rpve_csf', 'rpve_gm', 'rpve_wm'],
+    ['bias_max', 'bias_med', 'bias_min'],
+    ['cnr'], ['efc'], ['fber'],
+    ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+    ['qi1'],
+    ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
+    ['summary_mean_bg', 'summary_mean_csf', 'summary_mean_wm', 'summary_mean_gm'],
+    ['summary_stdv_bg', 'summary_stdv_csf', 'summary_stdv_wm', 'summary_stdv_gm'],
+    ['summary_p05_bg', 'summary_p05_csf', 'summary_p05_wm', 'summary_p05_gm'],
+    ['summary_p95_bg', 'summary_p95_csf', 'summary_p95_wm', 'summary_p95_gm']
+]
 
+FUNCTIONAL_QCGROUPS = [
+    ['bg_size', 'fg_size'],
+    ['bg_mean', 'fg_mean'],
+    ['bg_std', 'fg_std'],
+    ['efc'],
+    ['fber'],
+    ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+    ['ghost_%s' % a for a in ['x', 'y', 'z']],
+    ['snr']
+]
 
 def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     """ Creates the report """
@@ -36,19 +60,19 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
     out_file = op.join(out_dir, qctype + '_%s.pdf')
-    df, subject_list = read_csv(in_csv)
+    dframe, subject_list = read_csv(in_csv)
 
     result = {}
     func = getattr(sys.modules[__name__], 'report_' + qctype)
 
     failed_str = 'none'
     if sub_list is not None:
-        failed = find_failed(df, sub_list)
+        failed = find_failed(dframe, sub_list)
         if len(failed) > 0:
             failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
 
 
-    imparams = image_parameters(df)
+    imparams = image_parameters(dframe)
     pdf_group = []
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
@@ -59,7 +83,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     # Generate group report
     qc_group = op.join(work_dir, 'qc_measures_group.pdf')
     # Generate violinplots. If successfull, add documentation.
-    func(df, out_file=qc_group)
+    func(dframe, out_file=qc_group)
     pdf_group.append(qc_group)
 
     # Generate documentation page
@@ -80,7 +104,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     # Generate individual reports for subjects
     for subid in subject_list:
         # Get subject-specific info
-        subdf = df.loc[df['subject'] == subid]
+        subdf = dframe.loc[dframe['subject'] == subid]
         sessions = sorted(pd.unique(subdf.session.ravel()))
         plots = []
         sess_scans = []
@@ -94,11 +118,11 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
             for scanid in scans:
                 subparams[(sesid, scanid)] = imparams[(subid, sesid, scanid)]
                 if 'anat' in qctype:
-                    m = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
-                                (subid, sesid, scanid))
+                    fpdf = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
 
-                    if op.isfile(m):
-                        plots.append(m)
+                    if op.isfile(fpdf):
+                        plots.append(fpdf)
 
                 if 'func' in qctype:
                     mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
@@ -111,10 +135,10 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
                     if op.isfile(tsnr):
                         plots.append(tsnr)
 
-                    fd = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
-                                 (subid, sesid, scanid))
-                    if op.isfile(fd):
-                        plots.append(fd)
+                    framedisp = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
+                                        (subid, sesid, scanid))
+                    if op.isfile(framedisp):
+                        plots.append(framedisp)
 
             sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
@@ -134,7 +158,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
         # Summary (violinplots) of QC measures
         qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qctype, subid))
 
-        func(df, subject=subid, out_file=qc_ms)
+        func(dframe, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)
 
         if len(plots) > 0:
@@ -153,15 +177,15 @@ def get_documentation(doc_type, out_file):
     """ Generates the documentation page """
     import codecs
     import StringIO
-    from xhtml2pdf import pisa
+    from xhtml2pdf import pisa  # pylint: disable=no-name-in-module
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
     html_dir = op.abspath(
         op.join(op.dirname(__file__), 'html', '%s.html' % doc_type))
 
-    with codecs.open(html_dir, mode='r', encoding='utf-8') as f:
-        html = f.read()
+    with codecs.open(html_dir, mode='r', encoding='utf-8') as fpt:
+        html = fpt.read()
 
     # convert HTML to PDF
     status = pisa.pisaDocument(html, result, encoding='UTF-8')
@@ -176,36 +200,37 @@ def summary_cover(data, is_group=False, out_file=None):
     import datetime
     import codecs
     import StringIO
-    from xhtml2pdf import pisa
+    from xhtml2pdf import pisa  # pylint: disable=no-name-in-module
 
     # open output file for writing (truncated binary)
     result = open(out_file, "w+b")
 
-    substr = '<table><tr>' 
+    substr = '<table><tr>'
     if is_group:
         substr += '<th>Subject ID</th>'
     substr += ('<th>Session</th><th>Scan ID</th><th>Image size (voxels)</th><th>Spacing (mm)</th>'
                '<th>TR (ms)</th><th>Time steps</th></tr>')
-    
 
-    for s in sorted(data['params'].keys()):
-        info = data['params'][s]
+
+    for k in sorted(data['params'].keys()):
+        info = data['params'][k]
 
         if is_group:
-            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % s
+            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % k
         else:
-            substr += '<tr><td>%s</td><td>%s</td>' % s
+            substr += '<tr><td>%s</td><td>%s</td>' % k
         substr += '<td>{size:s}</td><td>{spacing:s}</td>'.format(**info)
         substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else '<td>N/A</td>'
         substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else '<td>1</td>'
         substr += '</tr>\n'
     substr += '</table>'
 
-    html_dir = op.abspath(op.join(op.dirname(__file__), 'html',
-                          'cover_group.html' if is_group else 'cover_subj.html'))
+    html_dir = op.abspath(
+        op.join(op.dirname(__file__), 'html', 'cover_group.html'
+                if is_group else 'cover_subj.html'))
 
-    with codecs.open(html_dir, mode='r', encoding='utf-8') as f:
-        html = f.read().format
+    with codecs.open(html_dir, mode='r', encoding='utf-8') as ftpl:
+        html = ftpl.read().format
 
     if is_group:
         values = {'imparams': substr, 'modality': data['modality'], 'failed': data['failed'],
@@ -230,40 +255,40 @@ def concat_pdf(in_files, out_file='concatenated.pdf'):
 
     for in_file in in_files:
         inpdf = PdfFileReader(file(in_file, 'rb'))
-        for p in range(inpdf.numPages):
-            outpdf.addPage(inpdf.getPage(p))
+        for fpdf in range(inpdf.numPages):
+            outpdf.addPage(inpdf.getPage(fpdf))
     outpdf.write(file(out_file, 'wb'))
     return out_file
 
 
-def _write_report(df, groups, sub_id=None, sc_split=False, condensed=True,
+def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
                   out_file='report.pdf'):
     """ Generates the violin plots of each qctype """
-    columns = df.columns.ravel()
+    columns = dframe.columns.ravel()
     headers = []
-    for g in groups:
+    for group in groups:
         rem = []
-        for h in g:
-            if h not in columns:
-                rem.append(h)
+        for head in group:
+            if head not in columns:
+                rem.append(head)
             else:
-                headers.append(h)
-        for r in rem:
-            g.remove(r)
+                headers.append(head)
+        for i in rem:
+            group.remove(i)
 
     report = PdfPages(out_file)
-    sessions = sorted(pd.unique(df.session.ravel()))
-    for ss in sessions:
-        sesdf = df.copy().loc[df['session'] == ss]
+    sessions = sorted(pd.unique(dframe.session.ravel()))
+    for ssid in sessions:
+        sesdf = dframe.copy().loc[dframe['session'] == ssid]
         scans = pd.unique(sesdf.scan.ravel())
         if sc_split:
-            for sc in scans:
-                subset = sesdf.loc[sesdf['scan'] == sc]
+            for scid in scans:
+                subset = sesdf.loc[sesdf['scan'] == scid]
                 if len(subset.index) > 1:
                     if sub_id is None:
-                        subtitle = '(%s_%s)' % (ss, sc)
+                        subtitle = '(%s_%s)' % (ssid, scid)
                     else:
-                        subtitle = '(subject %s_%s_%s)' % (sub_id, ss, sc)
+                        subtitle = '(subject %s_%s_%s)' % (sub_id, ssid, scid)
                     if condensed:
                         fig = plot_all(sesdf, groups, subject=sub_id,
                                        title='QC measures ' + subtitle)
@@ -276,9 +301,9 @@ def _write_report(df, groups, sub_id=None, sc_split=False, condensed=True,
         else:
             if len(sesdf.index) > 1:
                 if sub_id is None:
-                    subtitle = '(%s)' % (ss)
+                    subtitle = '(%s)' % (ssid)
                 else:
-                    subtitle = '(subject %s_%s)' % (sub_id, ss)
+                    subtitle = '(subject %s_%s)' % (sub_id, ssid)
                 if condensed:
                     fig = plot_all(sesdf, groups, subject=sub_id,
                                    title='QC measures ' + subtitle)
@@ -295,113 +320,75 @@ def _write_report(df, groups, sub_id=None, sc_split=False, condensed=True,
     return out_file
 
 
-def _write_all_reports(df, groups, sc_split=False, condensed=True,
+def _write_all_reports(dframe, groups, sc_split=False, condensed=True,
                        out_file='report.pdf'):
 
     outlist = []
     _write_report(
-        df, groups, sc_split=sc_split, condensed=condensed, out_file=out_file)
+        dframe, groups, sc_split=sc_split, condensed=condensed, out_file=out_file)
 
-    subject_list = sorted(pd.unique(df.subject.ravel()))
+    subject_list = sorted(pd.unique(dframe.subject.ravel()))
     for sub_id in subject_list:
         tpl, _ = op.splitext(op.basename(out_file))
         tpl = op.join(op.dirname(out_file), tpl) + '_%s.pdf'
         outlist.append(_write_report(
-            df, groups, sub_id=sub_id, sc_split=sc_split, condensed=condensed,
+            dframe, groups, sub_id=sub_id, sc_split=sc_split, condensed=condensed,
             out_file=tpl % sub_id))
     return out_file, outlist
 
 
-def all_anatomical(df, sc_split=False, condensed=True,
+def all_anatomical(dframe, sc_split=False, condensed=True,
                    out_file='anatomical.pdf'):
     """ Calls the report generator on the anatomical measures """
-    groups = [['bg_size', 'fg_size'],
-              ['bg_mean', 'fg_mean'],
-              ['bg_std', 'fg_std'],
-              ['csf_size', 'gm_size', 'wm_size'],
-              ['csf_mean', 'gm_mean', 'wm_mean'],
-              ['csf_std', 'gm_std', 'wm_std'],
-              ['bias_max', 'bias_med', 'bias_min'],
-              ['cnr'], ['efc'], ['fber'],
-              ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-              ['qi1'],
-              ['snr']]
+
     return _write_all_reports(
-        df, groups, sc_split=sc_split,
+        dframe, STRUCTURAL_QCGROUPS, sc_split=sc_split,
         condensed=condensed, out_file=out_file)
 
 
-def all_func_temporal(df, sc_split=False, condensed=True,
+def all_func_temporal(dframe, sc_split=False, condensed=True,
                       out_file='func_temporal.pdf'):
     """ Calls the report generator on the functional measures """
 
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
               ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
     return _write_all_reports(
-        df, groups, sc_split=sc_split,
+        dframe, groups, sc_split=sc_split,
         condensed=condensed, out_file=out_file)
 
 
-def all_func_spatial(df, sc_split=False, condensed=False,
+def all_func_spatial(dframe, sc_split=False, condensed=False,
                      out_file='func_spatial.pdf'):
     """ Calls the report generator on the functional measures """
-    groups = [['bg_size', 'fg_size'],
-              ['bg_mean', 'fg_mean'],
-              ['bg_std', 'fg_std'],
-              ['efc'],
-              ['fber'],
-              ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-              ['ghost_%s' % a for a in ['x', 'y', 'z']],
-              ['snr']]
     return _write_all_reports(
-        df, groups, sc_split=sc_split,
+        dframe, FUNCTIONAL_QCGROUPS, sc_split=sc_split,
         condensed=condensed, out_file=out_file)
 
 
 def report_anatomical(
-        df, subject=None, sc_split=False, condensed=True,
+        dframe, subject=None, sc_split=False, condensed=True,
         out_file='anatomical.pdf'):
     """ Calls the report generator on the functional measures """
-    groups = [['bg_size', 'fg_size'],
-              ['bg_mean', 'fg_mean'],
-              ['bg_std', 'fg_std'],
-              ['csf_size', 'gm_size', 'wm_size'],
-              ['csf_mean', 'gm_mean', 'wm_mean'],
-              ['csf_std', 'gm_std', 'wm_std'],
-              ['bias_max', 'bias_med', 'bias_min'],
-              ['cnr'], ['efc'], ['fber'],
-              ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-              ['qi1'],
-              ['snr']]
-    return _write_report(
-        df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=out_file)
+    return _write_report(dframe, STRUCTURAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
+                         condensed=condensed, out_file=out_file)
 
 
 def report_functional(
-        df, subject=None, sc_split=False, condensed=True,
+        dframe, subject=None, sc_split=False, condensed=True,
         out_file='functional.pdf'):
     """ Calls the report generator on the functional measures """
     from tempfile import mkdtemp
 
-    wd = mkdtemp()
+    wdir = mkdtemp()
     groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
               ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
     fspatial = _write_report(
-        df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=op.join(wd, 'fspatial.pdf'))
+        dframe, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
+        out_file=op.join(wdir, 'fspatial.pdf'))
 
-    groups = [['bg_size', 'fg_size'],
-              ['bg_mean', 'fg_mean'],
-              ['bg_std', 'fg_std'],
-              ['efc'],
-              ['fber'],
-              ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-              ['ghost_%s' % a for a in ['x', 'y', 'z']],
-              ['snr']]
     ftemporal = _write_report(
-        df, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=op.join(wd, 'ftemporal.pdf'))
+        dframe, FUNCTIONAL_QCGROUPS, sub_id=subject, sc_split=sc_split, condensed=condensed,
+        out_file=op.join(wdir, 'ftemporal.pdf'))
 
     concat_pdf([fspatial, ftemporal], out_file)
     return out_file

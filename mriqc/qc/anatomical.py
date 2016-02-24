@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 12:15:21
+# @Last Modified time: 2016-02-23 16:11:11
 """
 Computation of the quality assessment measures on structural MRI
 ----------------------------------------------------------------
@@ -19,7 +19,7 @@ Computation of the quality assessment measures on structural MRI
 import numpy as np
 import scipy.ndimage as nd
 
-FSL_FAST_LABELS = {'csf': 3, 'gm': 2, 'wm': 1, 'bg': 0}
+FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
 def snr(img, seg, fglabel, bglabel='bg'):
     r"""
@@ -105,10 +105,6 @@ def efc(img):
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
-    # TODO: add this check outside this function
-    # if np.isnan(efc):
-    #     print "NaN found for efc (%3.2f,%3.2f)" % (efc_max, b_max)
-
 
 def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     """
@@ -130,8 +126,8 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
 
     # Find the background threshold (the most frequently occurring value
     # excluding 0)
-    bg_counts = np.bincount(bg_img.flatten())
-    bg_threshold = np.argmax(bg_counts[1:]) + 1
+    hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=256)
+    bg_threshold = np.mean(bin_edges[np.argmax(hist)])
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
