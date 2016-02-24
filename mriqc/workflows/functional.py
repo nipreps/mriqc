@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 11:52:59
+# @Last Modified time: 2016-02-24 13:45:22
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -81,13 +81,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     # fwhm.inputs.acf = True  # add when AFNI >= 16
 
     measures = pe.Node(FunctionalQC(), name='measures')
-    # measures = pe.Node(niu.Function(
-    #     input_names=['mean_epi', 'func_motion_correct', 'func_brain_mask', 'tsnr_volume',
-    #                  'fd_file', 'subject_id', 'session_id', 'scan_id'],
-    #     output_names=['qc'], function=fmri_qc), name='measures')
-
     mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'mean_fd'],
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'fd_stats'],
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
@@ -129,7 +124,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         (measures, mergqc, [('out_qc', 'in_qc')]),
         (dsource, mergqc, [('subject_id', 'subject_id')]),
         (merg, mergqc, [('out', 'metadata')]),
-        (fdisp, mergqc, [('mean_fd', 'mean_fd')]),
+        (fdisp, mergqc, [('fd_stats', 'fd_stats')]),
     ])
 
     if settings.get('mosaic_mask', False):
@@ -288,41 +283,7 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
 
     return wf
 
-def fmri_qc(mean_epi, func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
-            subject_id, session_id, scan_id, site_name=None, direction='y'):
-    """ A wrapper for the fMRI QC measures """
-
-    import nibabel as nb
-    import numpy as np
-    from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
-    from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
-
-    qc = qc_fmri_spat(mean_epi, func_brain_mask, direction, subject_id,
-                      session_id, scan_id, site_name)
-    qctemp = qc_fmri_temp(func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
-                          subject_id, session_id, scan_id, site_name)
-    qc.update(qctemp)
-
-    im = nb.load(func_motion_correct)
-    hdr = im.get_header()
-    imsize = im.shape
-    imzooms = hdr.get_zooms()
-
-    qc.update({'size_x': imsize[0], 'size_y': imsize[1], 'size_z': imsize[2]})
-    qc.update({'spacing_x': imzooms[0], 'spacing_y': imzooms[1], 'spacing_z': imzooms[2]})
-
-    try:
-        qc.update({'size_t': imsize[3]})
-    except IndexError:
-        pass
-
-    try:
-        qc.update({'tr': imzooms[3]})
-    except IndexError:
-        pass
-    return qc
-
-def _merge_dicts(in_qc, subject_id, metadata, fwhm, mean_fd):
+def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats):
     in_qc['subject'] = subject_id
     in_qc['session'] = metadata[0]
     in_qc['scan'] = metadata[1]
@@ -334,7 +295,7 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm, mean_fd):
 
     in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
                   'fwhm': fwhm[3]})
-    in_qc['mean_fd'] = mean_fd
+    in_qc.update(fd_stats)
 
     try:
         in_qc['tr'] = in_qc['spacing_tr']

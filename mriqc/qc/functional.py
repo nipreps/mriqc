@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-24 11:52:21
+# @Last Modified time: 2016-02-24 13:32:31
 """
 Computation of the quality assessment measures on functional MRI
 ----------------------------------------------------------------
@@ -19,6 +19,7 @@ import os.path as op
 import numpy as np
 import nibabel as nb
 from nitime import algorithms as nta
+import scipy
 
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
@@ -149,9 +150,7 @@ def dvars(in_file, in_mask, dvars_out_file=None):
             "Input fMRI dataset %s should be 4-dimensional" % in_file)
 
     # Remove zero-variance voxels across time axis
-    tvariance = func[mask > 0].var(axis=3)
-    tv_mask = np.zeros(tvariance)
-    tv_mask[tvariance > 0] = 1
+    tvariance, tv_mask = zero_variance(func, mask)
 
     # Calculate DVARS
     dvars = _calc_dvars(func[mask[..., np.newaxis] > 0])
@@ -290,5 +289,39 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
             X.append(FD_J)
 
         T_rb_prev = T_rb
-
+    np.savetxt(out_file, X)
     return out_file
+
+
+def gcor(in_file, mask):
+    """
+    Compute the :abbr:`GCOR (global correlation)`.
+
+    Parameters
+    ----------
+
+    in_file: numpy.ndarray
+        input fMRI dataset, after motion correction
+
+    mask: numpy.ndarray
+        headmask
+
+
+    Returns
+    -------
+    gcor: float
+        the computed GCOR value
+
+    """
+    # Remove zero-variance voxels across time axis
+    tvariance, tv_mask = zero_variance(in_file, mask)
+    zscores = scipy.stats.mstats.zscore(tvariance[tv_mask > 0], axis=1)
+    avg_ts = zscores.mean(axis=0)
+    return avg_ts.transpose().dot(avg_ts) / len(avg_ts)
+
+def zero_variance(func, mask):
+    """Mask out voxels with zero variance across t-axis"""
+    tvariance = func[mask > 0].var(axis=3)
+    tv_mask = np.zeros(tvariance)
+    tv_mask[tvariance > 0] = 1
+    return tvariance, tv_mask

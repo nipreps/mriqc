@@ -8,14 +8,14 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 11:52:07
+# @Last Modified time: 2016-02-24 13:44:19
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
 from ..qc.anatomical import (snr, cnr, fber, efc, artifacts,
                              volume_fraction, rpve, summary_stats)
-from ..qc.functional import (gsr, dvars, fd_jenkinson)
+from ..qc.functional import (gsr, dvars, fd_jenkinson, gcor)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
@@ -157,6 +157,8 @@ class FunctionalQCOutputSpec(TraitedSpec):
     gsr = traits.Dict
     m_tsnr = traits.Float
     dvars = traits.Float
+    gcor = traits.Float
+
 
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
 
@@ -214,7 +216,7 @@ class FunctionalQC(BaseInterface):
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
         # Summary stats
-        mean, stdv, p95, p05 = summary_stats(epidata, epidata)
+        mean, stdv, p95, p05 = summary_stats(epidata, mskdata)
         self._results['summary'] = {'mean': mean, 'stdv': stdv,
                                     'p95': p95, 'p05': p05}
 
@@ -224,6 +226,9 @@ class FunctionalQC(BaseInterface):
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
         self._results['m_tsnr'] = np.median(tsnr_data[mskdata > 0])
+
+        # GCOR
+        self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # Image specs
         self._results['size'] = {'x': hmcdata.shape[0],
@@ -265,12 +270,12 @@ class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
                    desc='input file generated with FSL 3dvolreg')
     rmax = traits.Float(80., usedefault=True, desc='default brain radius')
+    threshold = traits.Float(1., usedefault=True, desc='motion threshold')
 
 
 class FramewiseDisplacementOutputSpec(TraitedSpec):
     out_file = File(desc='output file')
-    mean_fd = traits.Float
-
+    fd_stats = traits.Dict(traits.Float)
 
 class FramewiseDisplacement(BaseInterface):
     """
@@ -292,6 +297,13 @@ class FramewiseDisplacement(BaseInterface):
         out_file = fd_jenkinson(self.inputs.in_file,
                                 self.inputs.rmax)
         self._results['out_file'] = out_file
-        self._results['mean_fd'] = np.loadtxt(out_file).mean()
-        return super(FramewiseDisplacement, self)._run_interface(runtime)
+
+        fddata = np.loadtxt(out_file)
+        num_fd = np.float((fddata > self.inputs.threshold).sum())
+        self._results['fd_stats'] = {
+            'mean_fd': fddata.mean(),
+            'num_fd': num_fd,
+            'percent_fd': num_fd * 100 / (len(fddata) + 1)
+        }
+        return runtime
 

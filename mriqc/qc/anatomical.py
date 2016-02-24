@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 09:22:09
+# @Last Modified time: 2016-02-24 13:16:13
 """
 Computation of the quality assessment measures on structural MRI
 ----------------------------------------------------------------
@@ -206,10 +206,21 @@ def summary_stats(img, pvms):
     p95 = {}
     p05 = {}
 
-    bgpvm = np.array(pvms).sum(axis=0)
-    pvms.insert(0, bgpvm)
+    if np.array(pvms).ndim == 4:
+        pvms.insert(0, np.array(pvms).sum(axis=0))
+    elif np.array(pvms).ndim == 3:
+        bgpvm = np.ones_like(pvms)
+        pvms = [bgpvm - pvms, pvms]
+    else:
+        raise RuntimeError('Incorrect image dimensions (%d)' %
+            np.array(pvms).ndim)
 
-    for k, lid in list(FSL_FAST_LABELS.items()):
+    if len(pvms) == 4:
+        labels = list(FSL_FAST_LABELS.items())
+    elif len(pvms) == 2:
+        labels = zip(['bg', 'fg'], range(2))
+
+    for k, lid in labels:
         im_lid = pvms[lid] * img
         mean[k] = im_lid[im_lid > 0].mean()
         stdv[k] = im_lid[im_lid > 0].std()
