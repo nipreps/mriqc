@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-01-18 14:39:54
+# @Last Modified time: 2016-02-22 15:36:16
 
 """
 =====
@@ -17,7 +17,7 @@ from multiprocessing import cpu_count
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from mriqc.workflows import qc_workflows
-from mriqc.utils import gather_bids_data
+from mriqc.utils.misc import gather_bids_data
 
 from nipype import config as ncfg
 
@@ -32,7 +32,8 @@ __email__ = "code@oscaresteban.es"
 __status__ = "Prototype"
 
 
-if __name__ == '__main__':
+def main():
+    """Entry point"""
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
@@ -103,7 +104,7 @@ if __name__ == '__main__':
 
         if settings['nthreads'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_proc': settings['nthreads']}
+            plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
     subjects = gather_bids_data(settings['bids_root'])
 
