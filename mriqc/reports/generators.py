@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 16:16:28
+# @Last Modified time: 2016-02-23 16:26:13
 """ Encapsulates report generation functions """
 
 import sys
@@ -33,10 +33,10 @@ STRUCTURAL_QCGROUPS = [
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
     ['qi1'],
     ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
-    ['summary_mean_bg', 'summary_mean_csf', 'summary_mean_wm', 'summary_mean_gm'],
-    ['summary_stdv_bg', 'summary_stdv_csf', 'summary_stdv_wm', 'summary_stdv_gm'],
-    ['summary_p05_bg', 'summary_p05_csf', 'summary_p05_wm', 'summary_p05_gm'],
-    ['summary_p95_bg', 'summary_p95_csf', 'summary_p95_wm', 'summary_p95_gm']
+    ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg'],
+    ['summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf'],
+    ['summary_mean_gm', 'summary_stdv_gm', 'summary_p05_gm', 'summary_p95_gm'],
+    ['summary_mean_wm', 'summary_stdv_wm', 'summary_p05_wm', 'summary_p95_wm']
 ]
 
 FUNCTIONAL_QCGROUPS = [
