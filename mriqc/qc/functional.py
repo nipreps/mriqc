@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-24 13:32:31
+# @Last Modified time: 2016-02-24 14:34:49
 """
 Computation of the quality assessment measures on functional MRI
 ----------------------------------------------------------------
@@ -123,7 +123,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     return ghost/signal
 
 
-def dvars(in_file, in_mask, dvars_out_file=None):
+def dvars(func, mask, output_all=False, out_file=None):
     """
     Compute the mean :abbr:`DVARS (D referring to temporal derivative of
     timecourses, VARS referring to RMS variance over voxels)` [Power2012]_
@@ -136,37 +136,18 @@ def dvars(in_file, in_mask, dvars_out_file=None):
 
 
     """
-
-    fmrinii = nb.load(in_file)
-    func = fmrinii.get_data().astype(np.float32)
-
-    masknii = nb.load(in_mask)
-    mask = masknii.get_data().astype(np.uint8)
-    mask[mask < 0] = 0
-    mask[mask > 0] = 1
-
     if len(func.shape) != 4:
         raise RuntimeError(
-            "Input fMRI dataset %s should be 4-dimensional" % in_file)
+            "Input fMRI dataset should be 4-dimensional" % func)
 
     # Remove zero-variance voxels across time axis
-    tvariance, tv_mask = zero_variance(func, mask)
+    mfunc, tv_mask = zero_variance(func, mask)
 
-    # Calculate DVARS
-    dvars = _calc_dvars(func[mask[..., np.newaxis] > 0])
-    if dvars_out_file:
-        np.savetxt(dvars_out_file, dvars, fmt='%.12f')
-
-    return dvars
-
-
-def _calc_dvars(mfunc, output_all=False):
-    """ Calculation of DVARS """
     # Robust standard deviation
     func_sd = (np.percentile(mfunc, 75) - np.percentile(mfunc, 25)) / 1.349
 
     # AR1
-    func_ar_a0 = ar_nitime(mfunc, 0)
+    func_ar_a0 = ar_nitime(mfunc, tv_mask, 0)
 
     # Predicted standard deviation of temporal derivative
     func_sd_pd = np.sqrt(2 * (1 - func_ar_a0)) * func_sd
@@ -175,8 +156,7 @@ def _calc_dvars(mfunc, output_all=False):
     # Compute temporal difference time series
     func_deriv = np.diff(mfunc, axis=1)
 
-    # DVARS
-    # (no standardization)
+    # DVARS (no standardization)
     # TODO: Why are we not ^2 this & getting the sqrt?
     dvars_plain = func_deriv.std(1, ddof=1)
     # standardization
@@ -186,21 +166,30 @@ def _calc_dvars(mfunc, output_all=False):
     dvars_vx_stdz = diff_vx_stdz.std(1, ddof=1)
 
     if output_all:
-        out = np.vstack((dvars_stdz, dvars_plain, dvars_vx_stdz))
+        gendvars = np.vstack((dvars_stdz, dvars_plain, dvars_vx_stdz))
     else:
-        out = dvars_stdz.reshape(len(dvars_stdz), 1)
-    return out
+        gendvars = dvars_stdz.reshape(len(dvars_stdz), 1)
+
+    if out_file is not None:
+        np.savetxt(out_file, gendvars, fmt='%.12f')
+
+    return gendvars
 
 
-def ar_nitime(mfunc, order=1):
+def ar_nitime(mfunc, mask, order=1):
     """
     Adapts the computation of the :abbr:`AR (auto-regressive)` filtering
     from nitime to the fMRI signal.
 
     """
-    mfunc -= mfunc.mean(axis=1)
-    ak_coeffs, _ = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, (order, None))
-    return ak_coeffs[0, :]
+    mfunc = mfunc.reshape((-1, mfunc.shape[-1]))
+    mask = np.array([mask.reshape(-1)] * mfunc.shape[-1]).T
+    mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
+
+    ak_coeffs = []
+    for tpt in mfunc.T:
+        ak_coeffs.append(nta.AR_est_YW(tpt, order, None))
+    return np.array(ak_coeffs)[:, 0].T
 
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
@@ -320,8 +309,13 @@ def gcor(in_file, mask):
     return avg_ts.transpose().dot(avg_ts) / len(avg_ts)
 
 def zero_variance(func, mask):
-    """Mask out voxels with zero variance across t-axis"""
-    tvariance = func[mask > 0].var(axis=3)
-    tv_mask = np.zeros(tvariance)
+    """
+    Mask out voxels with zero variance across t-axis
+
+    """
+    func *= mask[..., np.newaxis]
+    tvariance = func.var(axis=3)
+    tv_mask = np.zeros_like(tvariance)
     tv_mask[tvariance > 0] = 1
-    return tvariance, tv_mask
+    func *= tv_mask[..., np.newaxis]
+    return func, tv_mask
