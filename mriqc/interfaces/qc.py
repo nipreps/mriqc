@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 13:44:19
+# @Last Modified time: 2016-02-25 14:16:42
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -158,7 +158,9 @@ class FunctionalQCOutputSpec(TraitedSpec):
     m_tsnr = traits.Float
     dvars = traits.Float
     gcor = traits.Float
-
+    size = traits.Dict
+    spacing = traits.Dict
+    summary = traits.Dict
 
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
 
@@ -275,7 +277,7 @@ class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
 
 class FramewiseDisplacementOutputSpec(TraitedSpec):
     out_file = File(desc='output file')
-    fd_stats = traits.Dict(traits.Float)
+    fd_stats = traits.Dict
 
 class FramewiseDisplacement(BaseInterface):
     """
@@ -303,7 +305,7 @@ class FramewiseDisplacement(BaseInterface):
         self._results['fd_stats'] = {
             'mean_fd': fddata.mean(),
             'num_fd': num_fd,
-            'percent_fd': num_fd * 100 / (len(fddata) + 1)
+            'perc_fd': num_fd * 100 / (len(fddata) + 1)
         }
         return runtime
 

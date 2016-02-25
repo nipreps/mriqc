@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-25 11:20:21
+# @Last Modified time: 2016-02-25 14:11:48
 """
 Computation of the quality assessment measures on functional MRI
 
@@ -131,26 +131,26 @@ def dvars(func, mask, output_all=False, out_file=None):
             "Input fMRI dataset should be 4-dimensional" % func)
 
     # Remove zero-variance voxels across time axis
-    mfunc, tv_mask = zero_variance(func, mask)
-    tv_mask = np.array([tv_mask.reshape(-1)] * mfunc.shape[-1]).T
-    indexes = np.where(tv_mask[..., :] > 0)
+    zv_mask = zero_variance(func, mask)
+    idx = np.where(zv_mask > 0)
+    mfunc = func[idx[0], idx[1], idx[2], :]
 
     # Robust standard deviation
-    func_sd = (np.percentile(func[indexes], 75) -
-               np.percentile(func[indexes], 25)) / 1.349
+    func_sd = (np.percentile(mfunc, 75) -
+               np.percentile(mfunc, 25)) / 1.349
 
     # Demean
-    mfunc -= mfunc.mean(axis=3)[..., np.newaxis]
+    mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
 
     # AR1
-    ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc[indexes], 1)
+    ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, 1)
 
     # Predicted standard deviation of temporal derivative
-    func_sd_pd = np.sqrt(2 * (1 - ak_coeffs[:, 0])) * func_sd
+    func_sd_pd = np.squeeze(np.sqrt((2 * (1 - ak_coeffs[:, 0])).tolist()) * func_sd)
     diff_sd_mean = func_sd_pd[func_sd_pd > 0].mean()
 
     # Compute temporal difference time series
-    func_diff = np.diff(mfunc[indexes], axis=1)
+    func_diff = np.diff(mfunc, axis=1)
 
     # DVARS (no standardization)
     dvars_nstd = func_diff.std(axis=0)
@@ -159,7 +159,7 @@ def dvars(func, mask, output_all=False, out_file=None):
     dvars_stdz = dvars_nstd / diff_sd_mean
 
     # voxelwise standardization
-    diff_vx_stdz = func_diff / func_sd_pd
+    diff_vx_stdz = func_diff / np.array([func_sd_pd] * func_diff.shape[-1]).T
     dvars_vx_stdz = diff_vx_stdz.std(1, ddof=1)
 
     if output_all:
@@ -255,14 +255,14 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
     return out_file
 
 
-def gcor(in_file, mask):
+def gcor(func, mask):
     """
     Compute the :abbr:`GCOR (global correlation)`.
 
     Parameters
     ----------
 
-    in_file: numpy.ndarray
+    func: numpy.ndarray
         input fMRI dataset, after motion correction
 
     mask: numpy.ndarray
@@ -276,8 +276,9 @@ def gcor(in_file, mask):
 
     """
     # Remove zero-variance voxels across time axis
-    tvariance, tv_mask = zero_variance(in_file, mask)
-    zscores = scipy.stats.mstats.zscore(tvariance[tv_mask > 0], axis=1)
+    tv_mask = zero_variance(func, mask)
+    idx = np.where(tv_mask > 0)
+    zscores = scipy.stats.mstats.zscore(func[idx[0], idx[1], idx[2], :], axis=1)
     avg_ts = zscores.mean(axis=0)
     return avg_ts.transpose().dot(avg_ts) / len(avg_ts)
 
@@ -286,9 +287,12 @@ def zero_variance(func, mask):
     Mask out voxels with zero variance across t-axis
 
     """
-    func *= mask[..., np.newaxis]
-    tvariance = func.var(axis=3)
+    idx = np.where(mask > 0)
+    func = func[idx[0], idx[1], idx[2], :]
+    tvariance = func.var(axis=1)
     tv_mask = np.zeros_like(tvariance)
     tv_mask[tvariance > 0] = 1
-    func *= tv_mask[..., np.newaxis]
-    return func, tv_mask
+
+    newmask = np.zeros_like(mask)
+    newmask[idx] = tv_mask
+    return newmask
