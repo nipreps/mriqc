@@ -8,10 +8,10 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 13:16:13
+# @Last Modified time: 2016-02-25 09:57:37
 """
 Computation of the quality assessment measures on structural MRI
-----------------------------------------------------------------
+
 
 
 """
@@ -24,7 +24,7 @@ FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
 def snr(img, seg, fglabel, bglabel='bg'):
     r"""
-    Calculate the :abr:`SNR (Signal-to-Noise Ratio)`
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
 
     .. math::
 
@@ -32,7 +32,7 @@ def snr(img, seg, fglabel, bglabel='bg'):
 
 
     where :math:`\mu_F` is the mean intensity of the foreground and
-    :math>`\sigma_B` is the standard deviation of the background,
+    :math:`\sigma_B` is the standard deviation of the background,
     where the noise is computed.
 
     """
@@ -48,7 +48,7 @@ def snr(img, seg, fglabel, bglabel='bg'):
 
 def cnr(img, seg, lbl=None):
     r"""
-    Calculate the :abr:`CNR (Contrast-to-Noise Ratio)`
+    Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)`
 
     .. math::
 
@@ -65,7 +65,7 @@ def cnr(img, seg, lbl=None):
 
 def fber(img, seg, fglabel=None, bglabel=0):
     r"""
-    Calculate the :abr:`FBER (Foreground-Background Energy Ratio)`
+    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`
 
     .. math::
 
@@ -86,17 +86,11 @@ def fber(img, seg, fglabel=None, bglabel=0):
 
 def efc(img):
     """
-    Calculate the :abr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_
+    Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_
 
     The original equation is normalized by the maximum entropy, so that the
-    :abr:`EFC (Entropy Focus Criterion)` can be compared across images with
+    :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
     different dimensions.
-
-    .. [Atkinson1997] Atkinson, D.; Hill, D.L.G.; Stoyle, P.N.R.; Summers, P.E.; Keevil, S.F.,
-      *Automatic correction of motion artifacts in magnetic resonance images using an entropy
-      focus criterion*, IEEE Trans Med Imag 16(6):903-910, 1997.
-      doi:`10.1109/42.650886 <http://dx.doi.org/10.1109/42.650886>`
-
 
     """
 
@@ -120,10 +114,6 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     Optionally, it also calculates QI2, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
     Rician distribution.
-
-    .. [Mortamet2009] Mortamet B et al., *Automatic quality assessment in
-      structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
-      2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`
 
     """
     bg_mask = np.zeros_like(img, dtype=np.uint8)
@@ -161,7 +151,7 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
 
 def volume_fraction(pvms):
     """
-    Computes the :abr:`ICV (intracranial volume)` fractions
+    Computes the :abbr:`ICV (intracranial volume)` fractions
     corresponding to the (partial volume maps).
     """
     tissue_vfs = {}
@@ -179,7 +169,7 @@ def volume_fraction(pvms):
 
 def rpve(pvms, seg):
     """
-    Computes the :abr:`rPVe (residual partial voluming error)`
+    Computes the :abbr:`rPVe (residual partial voluming error)`
     of each tissue class.
     """
     pvfs = {}

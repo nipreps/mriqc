@@ -8,10 +8,10 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-25 09:27:36
+# @Last Modified time: 2016-02-25 09:52:18
 """
 Computation of the quality assessment measures on functional MRI
-----------------------------------------------------------------
+
 
 
 """
@@ -24,11 +24,10 @@ import scipy
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
-    Computes the :abr:`GSR (ghost to signal ratio)` [Giannelli2010]_. The
+    Computes the :abbr:`GSR (ghost to signal ratio)` [Giannelli2010]_. The
     procedure is as follows:
 
-      #. Create a Nyquist ghost mask by circle-shifting the original mask by
-        :math:`N/2`.
+      #. Create a Nyquist ghost mask by circle-shifting the original mask by :math:`N/2`.
 
       #. Rotate by :math:`N/2`
 
@@ -36,8 +35,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
       #. Generate a non-ghost background
 
-      #. Calculate the :abr:`GSR (ghost to signal ratio)`
-
+      #. Calculate the :abbr:`GSR (ghost to signal ratio)`
 
 
     .. warning ::
@@ -58,14 +56,6 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     -------
     gsr: float
         ghost to signal ratio
-
-
-    .. [Giannelli2010] Giannelli et al. *Characterization of Nyquist ghost in
-      EPI-fMRI acquisition sequences implemented on two clinical 1.5 T MR scanner
-      systems: effect of readout bandwidth and echo spacing*. J App Clin Med Phy,
-      11(4). 2010.
-      doi:`10.1120/jacmp.v11i4.3237 <http://dx.doi.org/10.1120/jacmp.v11i4.3237>`.
-
 
     """
 
@@ -129,16 +119,6 @@ def dvars(func, mask, output_all=False, out_file=None):
     derivative of timecourses, VARS referring to RMS variance over voxels)`
     ([Nichols2013]_, [Power2012]_)
 
-
-    .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`
-
-    .. [Power2012] Poweret al., *Spurious but systematic correlations in functional
-      connectivity MRI networks arise from subject motion*, NeuroImage 59(3):2142-2154,
-      2012, doi:`10.1016/j.neuroimage.2011.10.018
-      <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`.
-
-
     """
     if len(func.shape) != 4:
         raise RuntimeError(
@@ -183,10 +163,9 @@ def dvars(func, mask, output_all=False, out_file=None):
 def ar_nitime(mfunc, mask, order=1):
     """
     Adapts the computation of the :abbr:`AR (auto-regressive)` filtering
-    using the Yule-Walker equations to the fMRI signal.
-
-    http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
-#nitime.algorithms.autoregressive.AR_est_YW
+    using the `Yule-Walker equations
+    <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
+#nitime.algorithms.autoregressive.AR_est_YW>`_ to the fMRI signal.
 
     """
     mfunc = mfunc.reshape((-1, mfunc.shape[-1]))
@@ -204,8 +183,8 @@ def ar_nitime(mfunc, mask, order=1):
 def fd_jenkinson(in_file, rmax=80., out_file=None):
     """
     Compute the :abbr:`FD (framewise displacement)` [Jenkinson2002]_
-    on a 4D dataset, after ```3dvolreg``` has been executed
-    (generally a file named ```*.affmat12.1D```).
+    on a 4D dataset, after ``3dvolreg`` has been executed
+    (generally a file named ``*.affmat12.1D``).
 
     Parameters
     ----------
@@ -237,14 +216,7 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
 
     .. note ::
 
-      Adapted from
-      https://github.com/oesteban/quality-assessment-protocol/blob/enh/SmartQCWorkflow/qap/temporal_qc.py#L16
-
-
-    .. [Jenkinson2002] Jenkinson et al., *Improved Optimisation for the Robust and
-      Accurate Linear Registration and Motion Correction of Brain Images.
-      NeuroImage, 17(2), 825-841, 2002.
-      doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`.
+      Adapted from [QAP]_.
 
     """
 
@@ -328,3 +300,33 @@ def zero_variance(func, mask):
     tv_mask[tvariance > 0] = 1
     func *= tv_mask[..., np.newaxis]
     return func, tv_mask
+
+
+"""
+References
+----------
+
+    .. [Giannelli2010] Giannelli et al. *Characterization of Nyquist ghost in
+      EPI-fMRI acquisition sequences implemented on two clinical 1.5 T MR scanner
+      systems: effect of readout bandwidth and echo spacing*. J App Clin Med Phy,
+      11(4). 2010.
+      doi:`10.1120/jacmp.v11i4.3237 <http://dx.doi.org/10.1120/jacmp.v11i4.3237>`_.
+
+    .. [Jenkinson2002] Jenkinson et al., *Improved Optimisation for the Robust and
+      Accurate Linear Registration and Motion Correction of Brain Images*.
+      NeuroImage, 17(2), 825-841, 2002.
+      doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`_.
+
+    .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
+      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_,
+      2013.
+
+    .. [Power2012] Poweret al., *Spurious but systematic correlations in functional
+      connectivity MRI networks arise from subject motion*, NeuroImage 59(3):2142-2154,
+      2012, doi:`10.1016/j.neuroimage.2011.10.018
+      <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`_.
+
+
+    .. [QAP] `The QAP project
+      <https://github.com/oesteban/quality-assessment-protocol/blob/enh/SmartQCWorkflow/qap/temporal_qc.py#L16>`_.
+"""

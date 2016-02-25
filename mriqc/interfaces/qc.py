@@ -50,7 +50,7 @@ class StructuralQCOutputSpec(TraitedSpec):
 
 class StructuralQC(BaseInterface):
     """
-    Computes anatomical :abr:`QC (Quality Control)` measures on the
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
     structural image given as input
 
     """
@@ -165,7 +165,7 @@ class FunctionalQCOutputSpec(TraitedSpec):
 
 class FunctionalQC(BaseInterface):
     """
-    Computes anatomical :abr:`QC (Quality Control)` measures on the
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
     structural image given as input
 
     """
@@ -279,7 +279,7 @@ class FramewiseDisplacementOutputSpec(TraitedSpec):
 
 class FramewiseDisplacement(BaseInterface):
     """
-    Computes anatomical :abr:`QC (Quality Control)` measures on the
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
     structural image given as input
 
     """
