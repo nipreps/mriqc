@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-25 09:52:18
+# @Last Modified time: 2016-02-25 11:20:21
 """
 Computation of the quality assessment measures on functional MRI
 
@@ -117,7 +117,13 @@ def dvars(func, mask, output_all=False, out_file=None):
     """
     Compute the mean standardized :abbr:`DVARS (D referring to temporal
     derivative of timecourses, VARS referring to RMS variance over voxels)`
-    ([Nichols2013]_, [Power2012]_)
+    [Power2012]_.
+
+    Includes the :abbr:`AR (auto-regressive)` proposed by [Nichols2013]_ to
+    filter the fMRI signal.
+    It is implemented using the implementation of the `Yule-Walker equations in nitime
+    <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
+#nitime.algorithms.autoregressive.AR_est_YW>`_.
 
     """
     if len(func.shape) != 4:
@@ -126,58 +132,44 @@ def dvars(func, mask, output_all=False, out_file=None):
 
     # Remove zero-variance voxels across time axis
     mfunc, tv_mask = zero_variance(func, mask)
+    tv_mask = np.array([tv_mask.reshape(-1)] * mfunc.shape[-1]).T
+    indexes = np.where(tv_mask[..., :] > 0)
 
     # Robust standard deviation
-    func_sd = (np.percentile(mfunc, 75) - np.percentile(mfunc, 25)) / 1.349
+    func_sd = (np.percentile(func[indexes], 75) -
+               np.percentile(func[indexes], 25)) / 1.349
+
+    # Demean
+    mfunc -= mfunc.mean(axis=3)[..., np.newaxis]
 
     # AR1
-    func_ar_a0 = ar_nitime(mfunc, tv_mask, 0)
+    ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc[indexes], 1)
 
     # Predicted standard deviation of temporal derivative
-    func_sd_pd = np.sqrt(2 * (1 - func_ar_a0)) * func_sd
-    diff_sd_mean = func_sd_pd.mean()
+    func_sd_pd = np.sqrt(2 * (1 - ak_coeffs[:, 0])) * func_sd
+    diff_sd_mean = func_sd_pd[func_sd_pd > 0].mean()
 
     # Compute temporal difference time series
-    func_deriv = np.diff(mfunc, axis=1)
+    func_diff = np.diff(mfunc[indexes], axis=1)
 
     # DVARS (no standardization)
-    # TODO: Why are we not ^2 this & getting the sqrt?
-    dvars_plain = func_deriv.std(1, ddof=1)
+    dvars_nstd = func_diff.std(axis=0)
+
     # standardization
-    dvars_stdz = dvars_plain/diff_sd_mean
+    dvars_stdz = dvars_nstd / diff_sd_mean
+
     # voxelwise standardization
-    diff_vx_stdz = func_deriv/func_sd_pd
+    diff_vx_stdz = func_diff / func_sd_pd
     dvars_vx_stdz = diff_vx_stdz.std(1, ddof=1)
 
     if output_all:
-        gendvars = np.vstack((dvars_stdz, dvars_plain, dvars_vx_stdz))
+        gendvars = np.vstack((dvars_stdz, dvars_nstd, dvars_vx_stdz))
     else:
         gendvars = dvars_stdz.reshape(len(dvars_stdz), 1)
 
     if out_file is not None:
         np.savetxt(out_file, gendvars, fmt='%.12f')
-
     return gendvars
-
-
-def ar_nitime(mfunc, mask, order=1):
-    """
-    Adapts the computation of the :abbr:`AR (auto-regressive)` filtering
-    using the `Yule-Walker equations
-    <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
-#nitime.algorithms.autoregressive.AR_est_YW>`_ to the fMRI signal.
-
-    """
-    mfunc = mfunc.reshape((-1, mfunc.shape[-1]))
-    mask = np.array([mask.reshape(-1)] * mfunc.shape[-1]).T
-    mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
-    ak_coeffs = []
-    for voxel in mfunc[..., :]:
-        print voxel.shape
-        ak_coeffs.append(nta.AR_est_YW(voxel, order))
-    # ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, order)
-    # Get only the first coefficient
-    return np.array(ak_coeffs)[0, :]
 
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
@@ -300,33 +292,3 @@ def zero_variance(func, mask):
     tv_mask[tvariance > 0] = 1
     func *= tv_mask[..., np.newaxis]
     return func, tv_mask
-
-
-"""
-References
-----------
-
-    .. [Giannelli2010] Giannelli et al. *Characterization of Nyquist ghost in
-      EPI-fMRI acquisition sequences implemented on two clinical 1.5 T MR scanner
-      systems: effect of readout bandwidth and echo spacing*. J App Clin Med Phy,
-      11(4). 2010.
-      doi:`10.1120/jacmp.v11i4.3237 <http://dx.doi.org/10.1120/jacmp.v11i4.3237>`_.
-
-    .. [Jenkinson2002] Jenkinson et al., *Improved Optimisation for the Robust and
-      Accurate Linear Registration and Motion Correction of Brain Images*.
-      NeuroImage, 17(2), 825-841, 2002.
-      doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`_.
-
-    .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_,
-      2013.
-
-    .. [Power2012] Poweret al., *Spurious but systematic correlations in functional
-      connectivity MRI networks arise from subject motion*, NeuroImage 59(3):2142-2154,
-      2012, doi:`10.1016/j.neuroimage.2011.10.018
-      <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`_.
-
-
-    .. [QAP] `The QAP project
-      <https://github.com/oesteban/quality-assessment-protocol/blob/enh/SmartQCWorkflow/qap/temporal_qc.py#L16>`_.
-"""
