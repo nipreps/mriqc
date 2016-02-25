@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-24 14:34:49
+# @Last Modified time: 2016-02-25 09:27:36
 """
 Computation of the quality assessment measures on functional MRI
 ----------------------------------------------------------------
@@ -125,9 +125,13 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
 def dvars(func, mask, output_all=False, out_file=None):
     """
-    Compute the mean :abbr:`DVARS (D referring to temporal derivative of
-    timecourses, VARS referring to RMS variance over voxels)` [Power2012]_
+    Compute the mean standardized :abbr:`DVARS (D referring to temporal
+    derivative of timecourses, VARS referring to RMS variance over voxels)`
+    ([Nichols2013]_, [Power2012]_)
 
+
+    .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
+      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`
 
     .. [Power2012] Poweret al., *Spurious but systematic correlations in functional
       connectivity MRI networks arise from subject motion*, NeuroImage 59(3):2142-2154,
@@ -179,17 +183,22 @@ def dvars(func, mask, output_all=False, out_file=None):
 def ar_nitime(mfunc, mask, order=1):
     """
     Adapts the computation of the :abbr:`AR (auto-regressive)` filtering
-    from nitime to the fMRI signal.
+    using the Yule-Walker equations to the fMRI signal.
+
+    http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
+#nitime.algorithms.autoregressive.AR_est_YW
 
     """
     mfunc = mfunc.reshape((-1, mfunc.shape[-1]))
     mask = np.array([mask.reshape(-1)] * mfunc.shape[-1]).T
     mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
-
     ak_coeffs = []
-    for tpt in mfunc.T:
-        ak_coeffs.append(nta.AR_est_YW(tpt, order, None))
-    return np.array(ak_coeffs)[:, 0].T
+    for voxel in mfunc[..., :]:
+        print voxel.shape
+        ak_coeffs.append(nta.AR_est_YW(voxel, order))
+    # ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, order)
+    # Get only the first coefficient
+    return np.array(ak_coeffs)[0, :]
 
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
