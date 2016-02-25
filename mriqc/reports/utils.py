@@ -52,7 +52,7 @@ def image_parameters(dframe):
 
     # Format the size
     #pylint: disable=E1101
-    newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint8)
+    newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
     newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
     formatter = lambda x: '%d &times; %d &times; %d' % x
     newdf['size'] = newdf['size'].apply(formatter)
