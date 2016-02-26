@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 13:45:22
+# @Last Modified time: 2016-02-26 12:12:29
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -76,13 +76,18 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     fdisp = pe.Node(FramewiseDisplacement(), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
-    # AFNI check smoothing
+    # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
+    outliers = pe.Node(afp.OutlierCount(fraction=True, out_file='ouliers.out'),
+                       name='outliers')
+    quality = pe.Node(afp.QualityIndex(automask=True), out_file='quality.out',
+                      name='quality')
 
     measures = pe.Node(FunctionalQC(), name='measures')
     mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'fd_stats'],
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'fd_stats',
+                     'outlier', 'quality'],
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
@@ -117,6 +122,11 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
+        (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
+        (bmw, outliers, [('outputnode.out_file', 'mask')]),
+        (outliers, mergqc, [(('outliers', _mean), 'outlier')]),
+        (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
+        (quality, mergqc, [(('qi_value', _mean), 'quality')]),
         (mean, measures, [('out_file', 'in_epi')]),
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
@@ -283,7 +293,7 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
 
     return wf
 
-def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats):
+def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats, outlier, quality):
     in_qc['subject'] = subject_id
     in_qc['session'] = metadata[0]
     in_qc['scan'] = metadata[1]
@@ -296,6 +306,8 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats):
     in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
                   'fwhm': fwhm[3]})
     in_qc.update(fd_stats)
+    in_qc['outlier'] = outlier
+    in_qc['quality'] = quality
 
     try:
         in_qc['tr'] = in_qc['spacing_tr']
@@ -303,3 +315,7 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats):
         pass  # TR is not defined
 
     return in_qc
+
+def _mean(inlist):
+    import numpy as np
+    return np.mean(inlist)

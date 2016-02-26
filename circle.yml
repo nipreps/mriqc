@@ -32,6 +32,7 @@ test:
     - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional
 general:
   artifacts:
+    - "~/outdir/doc"
     - "~/outdir/single-subject"
     - "~/workdir/single-subject"
     - "~/outdir/multiple-subject-func"
