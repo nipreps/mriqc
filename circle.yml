@@ -26,7 +26,7 @@ machine:
 test:
   override:
     # Test mriqcp
-    - sphinx-build -b html doc/source ~/outdir/doc
+    - sphinx-build -b html docs/source ~/outdir/doc
     - source $HOME/.profile; mriqc -i ~/examples/ds003_sub-01/ -o ~/outdir/single-subject -w ~/workdir/single-subject
     - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-func -w ~/workdir/multiple-subject-func --skip-anatomical  --use-plugin ~/examples/plugin.yml
     - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional
