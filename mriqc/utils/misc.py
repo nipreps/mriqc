@@ -125,8 +125,10 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
     sub_dict = {'anat': [], 'func': []}
 
-    for bidsfile in bids_scan_file_walker(dataset_folder,
-        include_types=['anat', 'func']):
+    bids_inventory = bids_scan_file_walker(dataset_folder,
+        include_types=['anat', 'func'])
+    for bidsfile in sorted(bids_inventory,
+        key=lambda f: f['scanfile']):
 
         if subject_inclusion is not None:
             if bidsfile['sub'] not in inclusion_list:
