@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-25 09:57:37
+# @Last Modified time: 2016-02-29 11:40:36
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -35,6 +35,13 @@ def snr(img, seg, fglabel, bglabel='bg'):
     :math:`\sigma_B` is the standard deviation of the background,
     where the noise is computed.
 
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
+    :param str fglabel: foreground label in the segmentation data.
+    :param str bglabel: background label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
     """
     if isinstance(fglabel, string_types):
         fglabel = FSL_FAST_LABELS[fglabel]
@@ -54,6 +61,11 @@ def cnr(img, seg, lbl=None):
 
         \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B}
 
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
+    :return: the computed CNR
+
     """
     if lbl is None:
         lbl = FSL_FAST_LABELS
@@ -71,6 +83,9 @@ def fber(img, seg, fglabel=None, bglabel=0):
 
         \text{FBER} = \frac{E[|F|^2]}{E[|B|^2]}
 
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
 
     """
     if fglabel is not None:
@@ -91,6 +106,8 @@ def efc(img):
     The original equation is normalized by the maximum entropy, so that the
     :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
     different dimensions.
+
+    :param numpy.ndarray img: input data
 
     """
 
@@ -114,6 +131,9 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     Optionally, it also calculates QI2, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
     Rician distribution.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
 
     """
     bg_mask = np.zeros_like(img, dtype=np.uint8)
@@ -153,6 +173,9 @@ def volume_fraction(pvms):
     """
     Computes the :abbr:`ICV (intracranial volume)` fractions
     corresponding to the (partial volume maps).
+
+    :param list pvms: list of :code:`numpy.ndarray` of partial volume maps.
+
     """
     tissue_vfs = {}
     total = 0

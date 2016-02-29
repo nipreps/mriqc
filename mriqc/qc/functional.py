@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-25 14:11:48
+# @Last Modified time: 2016-02-29 11:43:16
 """
 Computation of the quality assessment measures on functional MRI
 
@@ -43,19 +43,10 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
       This should be used with EPI images for which the phase
       encoding direction is known.
 
-    Parameters
-    ----------
-    epi_file: str
-        path to epi file
-    mask_file: str
-        path to brain mask
-    direction: str
-        the direction of phase encoding (x, y, all)
-
-    Returns
-    -------
-    gsr: float
-        ghost to signal ratio
+    :param str epi_file: path to epi file
+    :param str mask_file: path to brain mask
+    :param str direction: the direction of phase encoding (x, y, all)
+    :return: the computed gsr
 
     """
 
@@ -115,15 +106,27 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
 def dvars(func, mask, output_all=False, out_file=None):
     """
-    Compute the mean standardized :abbr:`DVARS (D referring to temporal
+    Compute the mean :abbr:`DVARS (D referring to temporal
     derivative of timecourses, VARS referring to RMS variance over voxels)`
     [Power2012]_.
 
-    Includes the :abbr:`AR (auto-regressive)` proposed by [Nichols2013]_ to
-    filter the fMRI signal.
-    It is implemented using the implementation of the `Yule-Walker equations in nitime
-    <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
-#nitime.algorithms.autoregressive.AR_est_YW>`_.
+    Particularly, the *standardized* :abbr:`DVARS (D referring to temporal
+    derivative of timecourses, VARS referring to RMS variance over voxels)`
+    [Nichols2013]_ are computed.
+
+    .. note:: Implementation details
+
+      Uses the implementation of the `Yule-Walker equations
+      from nitime
+      <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
+#nitime.algorithms.autoregressive.AR_est_YW>`_
+      for the :abbr:`AR (auto-regressive)` filtering of the fMRI signal.
+
+    :param numpy.ndarray func: functional data, after head-motion-correction.
+    :param numpy.ndarray mask: a 3D mask of the brain
+    :param bool output_all: write out all dvars
+    :param str out_file: a path to which the standardized dvars should be saved.
+    :return: the standardized DVARS
 
     """
     if len(func.shape) != 4:
@@ -178,26 +181,14 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
     on a 4D dataset, after ``3dvolreg`` has been executed
     (generally a file named ``*.affmat12.1D``).
 
-    Parameters
-    ----------
+    :param str in_file: path to epi file
+    :param float rmax: the default radius (as in FSL) of a sphere represents
+      the brain in which the angular displacements are projected.
+    :param str out_file: a path for the output file with the FD
 
-    in_file: str
-        path to epi file
-
-    rmax: float
-        The default radius (as in FSL) of a sphere represents the brain
-
-    out_file: str
-        output file with the FD
-
-
-    Returns
-    -------
-    out_file: string
-        output file with the FD
-
-    mean_fd: float
-        average FD along the time series
+    :return: the output file with the FD, and the average FD along
+      the time series
+    :rtype: tuple(str, float)
 
 
     .. note ::
@@ -205,10 +196,6 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
       :code:`infile` should have one 3dvolreg affine matrix in one row -
       NOT the motion parameters
 
-
-    .. note ::
-
-      Adapted from [QAP]_.
 
     """
 
@@ -259,20 +246,9 @@ def gcor(func, mask):
     """
     Compute the :abbr:`GCOR (global correlation)`.
 
-    Parameters
-    ----------
-
-    func: numpy.ndarray
-        input fMRI dataset, after motion correction
-
-    mask: numpy.ndarray
-        headmask
-
-
-    Returns
-    -------
-    gcor: float
-        the computed GCOR value
+    :param numpy.ndarray func: input fMRI dataset, after motion correction
+    :param numpy.ndarray mask: 3D brain mask
+    :return: the computed GCOR value
 
     """
     # Remove zero-variance voxels across time axis
@@ -285,6 +261,11 @@ def gcor(func, mask):
 def zero_variance(func, mask):
     """
     Mask out voxels with zero variance across t-axis
+
+    :param numpy.ndarray func: input fMRI dataset, after motion correction
+    :param numpy.ndarray mask: 3D brain mask
+    :return: the 3D mask of voxels with nonzero variance across :math:`t`.
+    :rtype: numpy.ndarray
 
     """
     idx = np.where(mask > 0)
