@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-26 12:12:29
+# @Last Modified time: 2016-02-29 10:50:21
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -124,9 +124,9 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
         (bmw, outliers, [('outputnode.out_file', 'mask')]),
-        (outliers, mergqc, [(('outliers', _mean), 'outlier')]),
+        (outliers, mergqc, [(('out_file', _parse_tout), 'outlier')]),
         (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
-        (quality, mergqc, [(('qi_value', _mean), 'quality')]),
+        (quality, mergqc, [(('out_file', _parse_tqual), 'quality')]),
         (mean, measures, [('out_file', 'in_epi')]),
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
@@ -319,3 +319,18 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats, outlier, quality):
 def _mean(inlist):
     import numpy as np
     return np.mean(inlist)
+
+def _parse_tqual(in_file):
+    import numpy as np
+    with open(in_file, 'r') as fin:
+        lines = fin.readlines()
+        # remove general information
+        lines = [l for l in lines if l[:2] != "++"]
+        # remove general information and warnings
+        return np.mean([float(l.strip()) for l in lines])
+    raise RuntimeError('AFNI 3dTqual was not parsed correctly')
+
+def _parse_tout(in_file):
+    import numpy as np
+    data = np.loadtxt(in_file)
+    return data.mean()
