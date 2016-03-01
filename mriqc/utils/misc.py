@@ -2,33 +2,32 @@
 # -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-
-# Original author: @chrisfilo
-# https://github.com/preprocessed-connectomes-project/quality-assessment-prot
-# ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
 """ Helper functions """
 
 def bids_scan_file_walker(dataset=".", include_types=None, warn_no_files=False):
-    '''
+    """
     Traverse a BIDS dataset and provide a generator interface
     to the imaging files contained within.
 
-    Arguments:
-    dataset -- path to the BIDS dataset folder.
+    :author: @chrisfilo
 
-    Keyword Arguments:
-    include_types -- a list of the scan types (i.e. subfolder names)
-    to include in the results. Can be any combination of "func",
-    "anat", "fmap", "dwi".
+    https://github.com/preprocessed-connectomes-project/quality-assessment-prot\
+ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
 
-    warn_no_files -- issue a warning if no imaging files are found
-    for a subject or a session.
+    :param str dataset: path to the BIDS dataset folder.
 
-    Returns:
-    A list containing, for each .nii or .nii.gz file found, the BIDS
-    identifying tokens and their values. If a file doesn't have an
-    identifying token its key will be None.
-    '''
+    :param list(str) include_types: a list of the scan types (i.e.
+      subfolder names) to include in the results. Can be any combination
+      of "func", "anat", "fmap", "dwi".
+
+    :param bool warn_no_files: issue a warning if no imaging files are found
+      for a subject or a session.
+
+    :return: a list containing, for each .nii or .nii.gz file found, the BIDS
+      identifying tokens and their values. If a file doesn't have an
+      identifying token its key will be None.
+
+    """
     import os
     import os.path as op
     from glob import glob
@@ -158,7 +157,16 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
 
 def reorder_csv(csv_file, out_file=None):
-    """ Put subject, session and scan in front """
+    """
+    Put subject, session and scan in front of csv file
+
+    :param str csv_file: the input csv file
+    :param str out_file: if provided, a new csv file is created
+
+    :return: the path to the file with the columns reordered
+
+
+    """
     import pandas as pd
     if isinstance(csv_file, list):
         csv_file = csv_file[-1]
@@ -166,16 +174,17 @@ def reorder_csv(csv_file, out_file=None):
     if out_file is None:
         out_file = csv_file
 
-    df = pd.read_csv(csv_file)
-    cols = df.columns.tolist()
+    dataframe = pd.read_csv(csv_file)
+    cols = dataframe.columns.tolist()  # pylint: disable=no-member
     try:
         cols.remove('Unnamed: 0')
     except ValueError:
         # The column does not exist
         pass
 
-    for v in ['scan', 'session', 'subject']:
-        cols.remove(v)
-        cols.insert(0, v)
-    df[cols].to_csv(out_file)
+    for col in ['scan', 'session', 'subject']:
+        cols.remove(col)
+        cols.insert(0, col)
+
+    dataframe[cols].to_csv(out_file)
     return out_file

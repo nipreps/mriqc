@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-24 10:28:15
+# @Last Modified time: 2016-03-01 14:00:04
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -19,13 +19,16 @@ from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.qc import StructuralQC
-from ..interfaces.viz import Report
+from ..interfaces.viz import Report, PlotMosaic
 from ..utils.misc import reorder_csv
 
 
+SLICE_MASK_POINTS = [(78., -110., -72.),
+                     (-78., -110., -72.),
+                     (-1., 91., -29.)]
+
 def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     """ The anatomical quality control workflow """
-    from ..interfaces.viz import PlotMosaic
 
     if settings is None:
         settings = {}
@@ -169,8 +172,9 @@ def mri_reorient_wf(name='ReorientWorkflow'):
 
 def brainmsk_wf(name='BrainMaskWorkflow'):
     """Computes a brain mask from the original T1 and the skull-stripped"""
+    import pkg_resources as p
     from nipype.interfaces.fsl.maths import MathsCommand
-    from qap.workflows.utils import select_thresh, slice_head_mask
+    from nipype.interfaces.fsl.utils import WarpPointsFromStd
 
     def _default_template(in_file):
         from nipype.interfaces.fsl.base import Info
@@ -211,9 +215,12 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
     dilate = pe.Node(MathsCommand(args=' '.join(['-dilM']*6)), name='dilate')
     erode = pe.Node(MathsCommand(args=' '.join(['-eroF']*6)), name='erode')
 
+    msk_coords = pe.Node(WarpPointsFromStd(coord_vox=True), name='msk_coords')
+    msk_coords.inputs.in_coords = p.resource_filename('mriqc', 'slice_mask_points.txt')
+
     slice_msk = pe.Node(niu.Function(
-        input_names=['infile', 'transform', 'standard'],
-        output_names=['outfile_path'], function=slice_head_mask), name='slice_msk')
+        input_names=['in_file', 'in_coords'],
+        output_names=['out_file'], function=slice_head_mask), name='slice_msk')
 
     combine = pe.Node(fsl.BinaryMaths(
         operation='add', args='-bin'), name='qap_headmask_combine_masks')
@@ -222,16 +229,17 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
     flirt = pe.Node(fsl.FLIRT(cost='corratio'), name='spatial_normalization')
 
     workflow.connect([
-        (inputnode, slice_msk, [(('in_template', _default_template), 'standard')]),
+        (inputnode, msk_coords, [(('in_template', _default_template), 'std_file')]),
+        (inputnode, msk_coords, [('in_file', 'img_file')]),
         (inputnode, maskav, [('in_file', 'in_file')]),
         (maskav, hist, [(('out_file', _post_maskav), 'max_value')]),
         (inputnode, hist, [('in_file', 'in_file')]),
         (inputnode, binarize, [('in_file', 'in_file')]),
-        (inputnode, slice_msk, [('in_file', 'infile')]),
         (inputnode, flirt, [
             ('in_brain', 'in_file'),
             (('in_template', _default_template), 'reference')]),
-        (flirt, slice_msk, [('out_matrix_file', 'transform')]),
+        (flirt, msk_coords, [('out_matrix_file', 'transform')]),
+        (msk_coords, slice_msk, [('out_file', 'in_file')]),
         (hist, binarize, [(('out_show', _post_hist), 'thresh')]),
         (binarize, dilate, [('out_file', 'in_file')]),
         (dilate, erode, [('out_file', 'in_file')]),
@@ -285,3 +293,75 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm):
         pass  # TR is not defined
 
     return in_qc
+
+
+def slice_head_mask(in_file, in_coords, out_file=None):
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+
+    # get file info
+    in_nii = nb.load(in_file)
+    in_header = in_nii.get_header()
+    in_aff = in_nii.get_affine()
+    in_dims = in_header.get_data_shape()
+
+    coords = []
+    for vox in np.loadtxt(in_coords):  # pylint: disable=no-member
+        vox = [int(v.split('.')[0]) for v in vox]
+
+        for i in range(0, 3):
+            vox[i] = np.clip(vox[i], 1, in_dims[i] - 1)
+
+        coords.append(np.array(vox))
+
+    # get the vectors connecting the points
+    uvector = []
+    for a_pt, c_pt in zip(coords[0], coords[2]):
+        uvector.append(int(a_pt - c_pt))
+
+    vvector = []
+    for b_pt, c_pt in zip(coords[1], coords[2]):
+        vvector.append(int(b_pt - c_pt))
+
+    # vector cross product
+    nvector = np.cross(uvector, vvector)
+
+    # normalize the vector
+    nvector = nvector / np.linalg.norm(nvector, 2)
+    constant = np.dot(nvector, np.asarray(coords[0]))
+
+    # now determine the z-coordinate for each pair of x,y
+    plane_dict = {}
+
+    for yvox in range(0, in_dims[1]):
+        for xvox in range(0, in_dims[0]):
+            zvox = (constant - (nvector[0] * xvox + nvector[1] * yvox)) / nvector[2]
+            zvox = np.floor(zvox)  # pylint: disable=no-member
+
+            if zvox < 1:
+                zvox = 1
+            elif zvox > in_dims[2]:
+                zvox = in_dims[2]
+
+            plane_dict[(xvox, yvox)] = zvox
+
+    # create the mask
+    mask_array = np.zeros(in_dims)
+
+    for i in range(0, in_dims[0]):
+        for j in range(0, in_dims[1]):
+            for k in range(0, in_dims[2]):
+                if plane_dict[(i, j)] > k:
+                    mask_array[i, j, k] = 1
+
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('%s_slice_mask%s' % (fname, ext))
+
+    nb.Nifti1Image(mask_array, in_aff, in_header).to_filename(out_file)
+    return out_file
