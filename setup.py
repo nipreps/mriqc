@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:49:36
+# @Last Modified time: 2016-02-24 10:03:51
 """ MRIQC setup script """
 import os
 import sys
@@ -27,8 +27,8 @@ def main():
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
         package_data={'mriqc': ['reports/html/*.html']},
-        install_requires=["nipype", "nibabel", "pandas", "seaborn", "pyPdf2",
-                          "xhtml2pdf", "qap"],
+        install_requires=['nipype', 'nibabel', 'nitime', 'pandas', 'seaborn', 'pyPdf2',
+                          'xhtml2pdf', 'qap', 'six'],
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',
@@ -39,7 +39,7 @@ def main():
         ],
     )
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     os.chdir(local_path)
     sys.path.insert(0, local_path)

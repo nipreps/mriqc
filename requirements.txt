@@ -1,4 +1,5 @@
+six
 lockfile
 nibabel
--e git+https://github.com/oesteban/nipype@exp/mriqc#egg=mriqc
--e git+https://github.com/oesteban/quality-assessment-protocol.git@enh/SmartQCWorkflow#egg=qap
+nitime
+-e git+https://github.com/oesteban/nipype@exp/mriqc#egg=mriqcSmartQCWorkflow#egg=qap

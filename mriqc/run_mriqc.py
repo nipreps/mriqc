@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:36:16
+# @Last Modified time: 2016-02-29 11:50:32
 
 """
 =====
@@ -116,3 +116,7 @@ def main():
         awf.run(**plugin_settings)
     if fwf is not None:
         fwf.run(**plugin_settings)
+
+
+if __name__ == '__main__':
+    main()

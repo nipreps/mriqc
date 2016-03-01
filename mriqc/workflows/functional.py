@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-22 15:34:47
+# @Last Modified time: 2016-02-29 10:50:21
 """ A QC workflow for fMRI data """
 
 import os.path as op
@@ -17,15 +17,21 @@ from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
+from ..interfaces.qc import FunctionalQC, FramewiseDisplacement
 from ..interfaces.viz import Report
 from ..utils.misc import reorder_csv
 
 
-def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
+def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     """ The fMRI qc workflow """
-    from qap.temporal_qc import fd_jenkinson
     from .utils import fmri_getidx
     from ..interfaces.viz import PlotMosaic, PlotFD
+
+    if sub_list is None:
+        sub_list = []
+
+    if settings is None:
+        settings = {}
 
     # Define workflow, inputs and outputs
     wf = pe.Workflow(name=name)
@@ -58,17 +64,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group']), name='outputnode')
 
-    # Measures
-    def _empty(val):
-        from nipype.interfaces.base import isdefined
-        if isdefined(val):
-            return val
-        return None
-
-    measures = pe.Node(niu.Function(
-        input_names=['mean_epi', 'func_motion_correct', 'func_brain_mask', 'tsnr_volume',
-                     'fd_file', 'subject_id', 'session_id', 'scan_id'],
-        output_names=['qc'], function=fmri_qc), name='measures')
 
     # Workflow --------------------------------------------------------
     hmcwf = fmri_hmc_workflow(                  # 1. HMC: head motion correct
@@ -78,10 +73,22 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
 
-    fd = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'],
-        function=fd_jenkinson), name='generate_FD_file')
+    fdisp = pe.Node(FramewiseDisplacement(), name='generate_FD_file')
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
+
+    # AFNI quality measures
+    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
+    outliers = pe.Node(afp.OutlierCount(fraction=True, out_file='ouliers.out'),
+                       name='outliers')
+    quality = pe.Node(afp.QualityIndex(automask=True), out_file='quality.out',
+                      name='quality')
+
+    measures = pe.Node(FunctionalQC(), name='measures')
+    mergqc = pe.Node(niu.Function(
+        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'fd_stats',
+                     'outlier', 'quality'],
+        output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
@@ -102,25 +109,32 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fd, [('outputnode.out_xfms', 'in_file')]),
+        (hmcwf, fdisp, [('outputnode.out_xfms', 'in_file')]),
         (mean, plot_mean, [('out_file', 'in_file')]),
         (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
-        (fd, plot_fd, [('out_file', 'in_file')]),
+        (fdisp, plot_fd, [('out_file', 'in_file')]),
         (dsource, plot_mean, [('subject_id', 'subject')]),
         (dsource, plot_tsnr, [('subject_id', 'subject')]),
         (dsource, plot_fd, [('subject_id', 'subject')]),
         (merg, plot_mean, [('out', 'metadata')]),
         (merg, plot_tsnr, [('out', 'metadata')]),
         (merg, plot_fd, [('out', 'metadata')]),
-        (bmw, measures, [('outputnode.out_file', 'func_brain_mask')]),
-        (mean, measures, [('out_file', 'mean_epi')]),
-        (dsource, measures, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id'),
-                              (('site_name', _empty), 'site_name')]),
-        (hmcwf, measures, [('outputnode.out_file', 'func_motion_correct')]),
-        (fd, measures, [('out_file', 'fd_file')]),
-        (tsnr, measures, [('tsnr_file', 'tsnr_volume')])
+        (mean, fwhm, [('out_file', 'in_file')]),
+        (bmw, fwhm, [('outputnode.out_file', 'mask')]),
+        (fwhm, mergqc, [('fwhm', 'fwhm')]),
+        (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
+        (bmw, outliers, [('outputnode.out_file', 'mask')]),
+        (outliers, mergqc, [(('out_file', _parse_tout), 'outlier')]),
+        (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
+        (quality, mergqc, [(('out_file', _parse_tqual), 'quality')]),
+        (mean, measures, [('out_file', 'in_epi')]),
+        (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
+        (bmw, measures, [('outputnode.out_file', 'in_mask')]),
+        (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
+        (measures, mergqc, [('out_qc', 'in_qc')]),
+        (dsource, mergqc, [('subject_id', 'subject_id')]),
+        (merg, mergqc, [('out', 'metadata')]),
+        (fdisp, mergqc, [('fd_stats', 'fd_stats')]),
     ])
 
     if settings.get('mosaic_mask', False):
@@ -181,7 +195,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=[], settings={}):
         report0.inputs.sub_list = sub_list
 
     wf.connect([
-        (measures, to_csv, [('qc', '_outputs')]),
+        (mergqc, to_csv, [('out_qc', '_outputs')]),
         (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
         (re_csv0, report0, [('out_file', 'in_csv')]),
@@ -279,36 +293,44 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
 
     return wf
 
-def fmri_qc(mean_epi, func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
-            subject_id, session_id, scan_id, site_name=None, direction='y'):
-    """ A wrapper for the fMRI QC measures """
+def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats, outlier, quality):
+    in_qc['subject'] = subject_id
+    in_qc['session'] = metadata[0]
+    in_qc['scan'] = metadata[1]
 
-    import nibabel as nb
+    try:
+        in_qc['site_name'] = metadata[2]
+    except IndexError:
+        pass  # No site_name defined
+
+    in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
+                  'fwhm': fwhm[3]})
+    in_qc.update(fd_stats)
+    in_qc['outlier'] = outlier
+    in_qc['quality'] = quality
+
+    try:
+        in_qc['tr'] = in_qc['spacing_tr']
+    except KeyError:
+        pass  # TR is not defined
+
+    return in_qc
+
+def _mean(inlist):
     import numpy as np
-    from qap.workflows.utils import qap_functional_spatial as qc_fmri_spat
-    from qap.workflows.utils import qap_functional_temporal as qc_fmri_temp
+    return np.mean(inlist)
 
-    qc = qc_fmri_spat(mean_epi, func_brain_mask, direction, subject_id,
-                      session_id, scan_id, site_name)
-    qctemp = qc_fmri_temp(func_motion_correct, func_brain_mask, tsnr_volume, fd_file,
-                          subject_id, session_id, scan_id, site_name)
-    qc.update(qctemp)
+def _parse_tqual(in_file):
+    import numpy as np
+    with open(in_file, 'r') as fin:
+        lines = fin.readlines()
+        # remove general information
+        lines = [l for l in lines if l[:2] != "++"]
+        # remove general information and warnings
+        return np.mean([float(l.strip()) for l in lines])
+    raise RuntimeError('AFNI 3dTqual was not parsed correctly')
 
-    im = nb.load(func_motion_correct)
-    hdr = im.get_header()
-    imsize = im.shape
-    imzooms = hdr.get_zooms()
-
-    qc.update({'size_x': imsize[0], 'size_y': imsize[1], 'size_z': imsize[2]})
-    qc.update({'spacing_x': imzooms[0], 'spacing_y': imzooms[1], 'spacing_z': imzooms[2]})
-
-    try:
-        qc.update({'size_t': imsize[3]})
-    except IndexError:
-        pass
-
-    try:
-        qc.update({'tr': imzooms[3]})
-    except IndexError:
-        pass
-    return qc
+def _parse_tout(in_file):
+    import numpy as np
+    data = np.loadtxt(in_file)
+    return data.mean()

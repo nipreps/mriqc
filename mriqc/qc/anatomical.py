@@ -8,22 +8,23 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 16:11:11
+# @Last Modified time: 2016-02-29 11:40:36
 """
 Computation of the quality assessment measures on structural MRI
-----------------------------------------------------------------
+
 
 
 """
 
 import numpy as np
+from six import string_types
 import scipy.ndimage as nd
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
 def snr(img, seg, fglabel, bglabel='bg'):
     r"""
-    Calculate the :abr:`SNR (Signal-to-Noise Ratio)`
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
 
     .. math::
 
@@ -31,22 +32,39 @@ def snr(img, seg, fglabel, bglabel='bg'):
 
 
     where :math:`\mu_F` is the mean intensity of the foreground and
-    :math>`\sigma_B` is the standard deviation of the background,
+    :math:`\sigma_B` is the standard deviation of the background,
     where the noise is computed.
 
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
+    :param str fglabel: foreground label in the segmentation data.
+    :param str bglabel: background label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
     """
-    fg_mean = img[seg == FSL_FAST_LABELS[fglabel]].mean()
-    bg_std = img[seg == FSL_FAST_LABELS[bglabel]].std()
+    if isinstance(fglabel, string_types):
+        fglabel = FSL_FAST_LABELS[fglabel]
+    if isinstance(bglabel, string_types):
+        bglabel = FSL_FAST_LABELS[bglabel]
+
+    fg_mean = img[seg == fglabel].mean()
+    bg_std = img[seg == bglabel].std()
     return fg_mean / bg_std
 
 
 def cnr(img, seg, lbl=None):
     r"""
-    Calculate the :abr:`CNR (Contrast-to-Noise Ratio)`
+    Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)`
 
     .. math::
 
         \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B}
+
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
+    :return: the computed CNR
 
     """
     if lbl is None:
@@ -59,12 +77,15 @@ def cnr(img, seg, lbl=None):
 
 def fber(img, seg, fglabel=None, bglabel=0):
     r"""
-    Calculate the :abr:`FBER (Foreground-Background Energy Ratio)`
+    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`
 
     .. math::
 
         \text{FBER} = \frac{E[|F|^2]}{E[|B|^2]}
 
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
 
     """
     if fglabel is not None:
@@ -80,17 +101,13 @@ def fber(img, seg, fglabel=None, bglabel=0):
 
 def efc(img):
     """
-    Calculate the :abr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_
+    Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_
 
     The original equation is normalized by the maximum entropy, so that the
-    :abr:`EFC (Entropy Focus Criterion)` can be compared across images with
+    :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
     different dimensions.
 
-    .. [Atkinson1997] Atkinson, D.; Hill, D.L.G.; Stoyle, P.N.R.; Summers, P.E.; Keevil, S.F.,
-      *Automatic correction of motion artifacts in magnetic resonance images using an entropy
-      focus criterion*, IEEE Trans Med Imag 16(6):903-910, 1997.
-      doi:`10.1109/42.650886 <http://dx.doi.org/10.1109/42.650886>`
-
+    :param numpy.ndarray img: input data
 
     """
 
@@ -115,9 +132,8 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     of noise voxel (non-artifact background voxels) intensities, and a
     Rician distribution.
 
-    .. [Mortamet2009] Mortamet B et al., *Automatic quality assessment in
-      structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
-      2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray seg: input segmentation
 
     """
     bg_mask = np.zeros_like(img, dtype=np.uint8)
@@ -155,8 +171,11 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
 
 def volume_fraction(pvms):
     """
-    Computes the :abr:`ICV (intracranial volume)` fractions
+    Computes the :abbr:`ICV (intracranial volume)` fractions
     corresponding to the (partial volume maps).
+
+    :param list pvms: list of :code:`numpy.ndarray` of partial volume maps.
+
     """
     tissue_vfs = {}
     total = 0
@@ -173,7 +192,7 @@ def volume_fraction(pvms):
 
 def rpve(pvms, seg):
     """
-    Computes the :abr:`rPVe (residual partial voluming error)`
+    Computes the :abbr:`rPVe (residual partial voluming error)`
     of each tissue class.
     """
     pvfs = {}
@@ -200,10 +219,21 @@ def summary_stats(img, pvms):
     p95 = {}
     p05 = {}
 
-    bgpvm = np.array(pvms).sum(axis=0)
-    pvms.insert(0, bgpvm)
+    if np.array(pvms).ndim == 4:
+        pvms.insert(0, np.array(pvms).sum(axis=0))
+    elif np.array(pvms).ndim == 3:
+        bgpvm = np.ones_like(pvms)
+        pvms = [bgpvm - pvms, pvms]
+    else:
+        raise RuntimeError('Incorrect image dimensions (%d)' %
+            np.array(pvms).ndim)
 
-    for k, lid in list(FSL_FAST_LABELS.items()):
+    if len(pvms) == 4:
+        labels = list(FSL_FAST_LABELS.items())
+    elif len(pvms) == 2:
+        labels = zip(['bg', 'fg'], range(2))
+
+    for k, lid in labels:
         im_lid = pvms[lid] * img
         mean[k] = im_lid[im_lid > 0].mean()
         stdv[k] = im_lid[im_lid > 0].std()

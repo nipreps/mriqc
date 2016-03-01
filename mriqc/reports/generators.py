@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-23 16:26:13
+# @Last Modified time: 2016-02-29 11:03:11
 """ Encapsulates report generation functions """
 
 import sys
@@ -39,15 +39,19 @@ STRUCTURAL_QCGROUPS = [
     ['summary_mean_wm', 'summary_stdv_wm', 'summary_p05_wm', 'summary_p95_wm']
 ]
 
-FUNCTIONAL_QCGROUPS = [
-    ['bg_size', 'fg_size'],
-    ['bg_mean', 'fg_mean'],
-    ['bg_std', 'fg_std'],
+FUNC_SPATIAL_QCGROUPS = [
+    ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg'],
+    ['summary_mean_fg', 'summary_stdv_fg', 'summary_p05_fg', 'summary_p95_fg'],
     ['efc'],
     ['fber'],
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['ghost_%s' % a for a in ['x', 'y', 'z']],
+    ['gsr_%s' % a for a in ['x', 'y']],
     ['snr']
+]
+
+FUNC_TEMPORAL_QCGROUPS = [
+    ['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
+    ['num_fd'], ['outlier'], ['perc_fd'], ['quality']
 ]
 
 def workflow_report(in_csv, qctype, sub_list=None, settings=None):
@@ -319,52 +323,6 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
     # print 'Written report file %s' % out_file
     return out_file
 
-
-def _write_all_reports(dframe, groups, sc_split=False, condensed=True,
-                       out_file='report.pdf'):
-
-    outlist = []
-    _write_report(
-        dframe, groups, sc_split=sc_split, condensed=condensed, out_file=out_file)
-
-    subject_list = sorted(pd.unique(dframe.subject.ravel()))
-    for sub_id in subject_list:
-        tpl, _ = op.splitext(op.basename(out_file))
-        tpl = op.join(op.dirname(out_file), tpl) + '_%s.pdf'
-        outlist.append(_write_report(
-            dframe, groups, sub_id=sub_id, sc_split=sc_split, condensed=condensed,
-            out_file=tpl % sub_id))
-    return out_file, outlist
-
-
-def all_anatomical(dframe, sc_split=False, condensed=True,
-                   out_file='anatomical.pdf'):
-    """ Calls the report generator on the anatomical measures """
-
-    return _write_all_reports(
-        dframe, STRUCTURAL_QCGROUPS, sc_split=sc_split,
-        condensed=condensed, out_file=out_file)
-
-
-def all_func_temporal(dframe, sc_split=False, condensed=True,
-                      out_file='func_temporal.pdf'):
-    """ Calls the report generator on the functional measures """
-
-    groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
-              ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
-    return _write_all_reports(
-        dframe, groups, sc_split=sc_split,
-        condensed=condensed, out_file=out_file)
-
-
-def all_func_spatial(dframe, sc_split=False, condensed=False,
-                     out_file='func_spatial.pdf'):
-    """ Calls the report generator on the functional measures """
-    return _write_all_reports(
-        dframe, FUNCTIONAL_QCGROUPS, sc_split=sc_split,
-        condensed=condensed, out_file=out_file)
-
-
 def report_anatomical(
         dframe, subject=None, sc_split=False, condensed=True,
         out_file='anatomical.pdf'):
@@ -380,17 +338,13 @@ def report_functional(
     from tempfile import mkdtemp
 
     wdir = mkdtemp()
-    groups = [['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
-              ['num_fd'], ['outlier'], ['perc_fd'], ['quality']]
     fspatial = _write_report(
-        dframe, groups, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=op.join(wdir, 'fspatial.pdf'))
+        dframe, FUNC_TEMPORAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
+        condensed=condensed, out_file=op.join(wdir, 'fspatial.pdf'))
 
     ftemporal = _write_report(
-        dframe, FUNCTIONAL_QCGROUPS, sub_id=subject, sc_split=sc_split, condensed=condensed,
-        out_file=op.join(wdir, 'ftemporal.pdf'))
+        dframe, FUNC_SPATIAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
+        condensed=condensed, out_file=op.join(wdir, 'ftemporal.pdf'))
 
     concat_pdf([fspatial, ftemporal], out_file)
     return out_file
-
-
