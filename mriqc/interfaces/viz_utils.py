@@ -114,6 +114,9 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
             subdf = df.loc[df['subject'] == subid]
             scans = sorted(pd.unique(subdf.scan.ravel()))
             nstars = len(scans)
+            if nstars == 0:
+                continue
+
             for j, s in enumerate(snames):
                 vals = []
                 for k, scid in enumerate(scans):
