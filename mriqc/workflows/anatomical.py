@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-04 08:02:07
+# @Last Modified time: 2016-03-04 13:51:59
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -223,7 +223,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
         output_names=['out_file'], function=slice_head_mask), name='slice_msk')
 
     combine = pe.Node(fsl.BinaryMaths(
-        operation='add', args='-bin'), name='qap_headmask_combine_masks')
+        operation='add', args='-bin'), name='headmask_combine_masks')
 
     # Get linear mapping to normalized (template) space
     flirt = pe.Node(fsl.FLIRT(cost='corratio'), name='spatial_normalization')
@@ -239,7 +239,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
         (inputnode, flirt, [
             ('in_brain', 'in_file'),
             (('in_template', _default_template), 'reference')]),
-        (flirt, msk_coords, [('out_matrix_file', 'transform')]),
+        (flirt, msk_coords, [('out_matrix_file', 'xfm_file')]),
         (msk_coords, slice_msk, [('out_file', 'in_coords')]),
         (hist, binarize, [(('out_show', _post_hist), 'thresh')]),
         (binarize, dilate, [('out_file', 'in_file')]),
@@ -324,8 +324,6 @@ def slice_head_mask(in_file, in_coords, out_file=None):
     vvector = []
     for b_pt, c_pt in zip(coords[1], coords[2]):
         vvector.append(int(b_pt - c_pt))
-
-    print uvector, vvector
 
     # vector cross product
     nvector = np.cross(uvector, vvector)
