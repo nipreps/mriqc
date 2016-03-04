@@ -3,4 +3,4 @@ lockfile
 nibabel
 pandas
 nitime
--e git+https://github.com/oesteban/nipype@exp/#egg=nipype
+-e git+https://github.com/oesteban/nipype@exp/mriqc#egg=nipype
