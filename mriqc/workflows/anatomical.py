@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-01 14:00:04
+# @Last Modified time: 2016-03-04 08:02:07
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -216,7 +216,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
     erode = pe.Node(MathsCommand(args=' '.join(['-eroF']*6)), name='erode')
 
     msk_coords = pe.Node(WarpPointsFromStd(coord_vox=True), name='msk_coords')
-    msk_coords.inputs.in_coords = p.resource_filename('mriqc', 'slice_mask_points.txt')
+    msk_coords.inputs.in_coords = p.resource_filename('mriqc', 'data/slice_mask_points.txt')
 
     slice_msk = pe.Node(niu.Function(
         input_names=['in_file', 'in_coords'],
@@ -231,6 +231,7 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
     workflow.connect([
         (inputnode, msk_coords, [(('in_template', _default_template), 'std_file')]),
         (inputnode, msk_coords, [('in_file', 'img_file')]),
+        (inputnode, slice_msk, [('in_file', 'in_file')]),
         (inputnode, maskav, [('in_file', 'in_file')]),
         (maskav, hist, [(('out_file', _post_maskav), 'max_value')]),
         (inputnode, hist, [('in_file', 'in_file')]),
@@ -239,12 +240,12 @@ def brainmsk_wf(name='BrainMaskWorkflow'):
             ('in_brain', 'in_file'),
             (('in_template', _default_template), 'reference')]),
         (flirt, msk_coords, [('out_matrix_file', 'transform')]),
-        (msk_coords, slice_msk, [('out_file', 'in_file')]),
+        (msk_coords, slice_msk, [('out_file', 'in_coords')]),
         (hist, binarize, [(('out_show', _post_hist), 'thresh')]),
         (binarize, dilate, [('out_file', 'in_file')]),
         (dilate, erode, [('out_file', 'in_file')]),
         (erode, combine, [('out_file', 'in_file')]),
-        (slice_msk, combine, [('outfile_path', 'operand_file')]),
+        (slice_msk, combine, [('out_file', 'operand_file')]),
         (combine, outputnode, [('out_file', 'out_mask')]),
         (flirt, outputnode, [('out_matrix_file', 'out_matrix_file')]),
     ])
@@ -308,7 +309,7 @@ def slice_head_mask(in_file, in_coords, out_file=None):
 
     coords = []
     for vox in np.loadtxt(in_coords):  # pylint: disable=no-member
-        vox = [int(v.split('.')[0]) for v in vox]
+        vox = [int(v) for v in vox]
 
         for i in range(0, 3):
             vox[i] = np.clip(vox[i], 1, in_dims[i] - 1)
@@ -323,6 +324,8 @@ def slice_head_mask(in_file, in_coords, out_file=None):
     vvector = []
     for b_pt, c_pt in zip(coords[1], coords[2]):
         vvector.append(int(b_pt - c_pt))
+
+    print uvector, vvector
 
     # vector cross product
     nvector = np.cross(uvector, vvector)
