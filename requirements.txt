@@ -1,5 +1,6 @@
 six
 lockfile
 nibabel
+pandas
 nitime
--e git+https://github.com/oesteban/nipype@exp/mriqc#egg=mriqcSmartQCWorkflow#egg=qap
+nipype
