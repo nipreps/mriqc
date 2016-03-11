@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-29 11:50:32
+# @Last Modified time: 2016-03-10 12:48:01
 
 """
 =====
@@ -41,7 +41,7 @@ def main():
     g_input.add_argument('-i', '--bids-root', action='store',
                          default=os.getcwd())
     g_input.add_argument('--nthreads', action='store', default=0,
-                         type=int, help='number of repetitions')
+                         type=int, help='number of threads')
     g_input.add_argument(
         "--write-graph", action='store_true', default=False,
         help="Write workflow graph.")
