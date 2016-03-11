@@ -1,5 +1,6 @@
 six
 lockfile
+numpy
 nibabel
 pandas
 nitime

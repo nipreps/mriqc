@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-11 13:40:47
+# @Last Modified time: 2016-03-11 13:45:03
 """ MRIQC setup script """
 import os
 import sys
@@ -29,8 +29,8 @@ def main():
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
         package_data={'mriqc': ['reports/html/*.html', 'data/*.txt']},
-        install_requires=['nipype', 'nibabel', 'nitime', 'lockfile', 'pandas', 'seaborn', 'pyPdf2',
-                          'xhtml2pdf', 'six'],
+        install_requires=['numpy', 'six', 'pandas', 'nibabel', 'nitime', 'nipype',
+                          'lockfile', 'seaborn', 'pyPdf2', 'xhtml2pdf'],
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',
