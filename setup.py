@@ -3,36 +3,39 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-11 13:55:09
+# @Last Modified time: 2016-03-11 14:24:19
 """ MRIQC setup script """
 import os
 import sys
-from mriqc import __version__
+from mriqc import (__version__, __description__, __license__,
+                   __author__, __email__)
 
+with open('requirements.txt', 'r') as rfile:
+    REQUIREMENTS = [line.strip() for line in rfile.readlines()]
+
+if REQUIREMENTS is None:
+    REQUIREMENTS = []
 
 def main():
     """ Install entry-point """
     from glob import glob
     from setuptools import setup
 
-    req_list = []
-    with open('requirements.txt', 'r') as rfile:
-        req_list = rfile.readlines()
-
     setup(
         name='mriqc',
         version=__version__,
-        description='NR-IQMs (no-reference Image Quality Metrics) for MRI',
-        author='oesteban',
-        author_email='code@oscaresteban.es',
+        description=__description__,
+        author=__author__,
+        author_email=__email__,
+        license=__license__,
         maintainer_email='crn.poldracklab@gmail.com',
         url='http://mriqc.readthedocs.org/',
-        download_url='https://pypi.python.org/packages/source/m/mriqc/mriqc-0.0.2rc1.tar.gz',
-        license='3-clause BSD',
+        download_url='https://pypi.python.org/packages/source/m/mriqc/'
+                     'mriqc-%s.tar.gz' % __version__,
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
         package_data={'mriqc': ['reports/html/*.html', 'data/*.txt']},
-        install_requires=req_list,
+        install_requires=REQUIREMENTS,
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',
@@ -44,8 +47,8 @@ def main():
     )
 
 if __name__ == '__main__':
-    local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-    os.chdir(local_path)
-    sys.path.insert(0, local_path)
+    LOCAL_PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
+    os.chdir(LOCAL_PATH)
+    sys.path.insert(0, LOCAL_PATH)
 
     main()

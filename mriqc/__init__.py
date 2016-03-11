@@ -28,6 +28,17 @@ Example command line:
 ::
 
     mriqc -i ~/Data/bids_dataset -o out/ -w work/
+
+
 """
 
 __version__ = '0.0.2rc2'
+__author__ = 'Oscar Esteban'
+__email__ = 'code@oscaresteban.es'
+__maintainer__ = 'Oscar Esteban'
+__copyright__ = ('Copyright 2016, Center for Reproducible Neuroscience, '
+                 'Stanford University')
+__credits__ = 'Oscar Esteban'
+__license__ = '3-clause BSD'
+__status__ = 'Prototype'
+__description__ = 'NR-IQMs (no-reference Image Quality Metrics) for MRI'

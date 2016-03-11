@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-10 12:48:01
+# @Last Modified time: 2016-03-11 14:15:32
 
 """
 =====
@@ -20,16 +20,6 @@ from mriqc.workflows import qc_workflows
 from mriqc.utils.misc import gather_bids_data
 
 from nipype import config as ncfg
-
-__author__ = "Oscar Esteban"
-__copyright__ = ("Copyright 2016, Center for Reproducible Neuroscience, "
-                 "Stanford University")
-__credits__ = "Oscar Esteban"
-__license__ = "BSD"
-__version__ = "0.0.1"
-__maintainer__ = "Oscar Esteban"
-__email__ = "code@oscaresteban.es"
-__status__ = "Prototype"
 
 
 def main():
