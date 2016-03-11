@@ -6,6 +6,9 @@
 Welcome to mriqc's documentation!
 =================================
 
+.. include:: ../../README.rst
+
+
 Contents:
 
 .. toctree::
@@ -19,5 +22,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-* :ref:`modules`
 

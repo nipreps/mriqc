@@ -1,0 +1,9 @@
+#documentation
+recursive-include docs/build/html *
+
+#data
+recursive-include mriqc/data *
+
+#Misc
+include CHANGES.txt
+include LICENSE.txt

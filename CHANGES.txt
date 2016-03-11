@@ -1,0 +1,9 @@
+Release 0.0.2
+=============
+
+* Completed migration from QAP
+
+Release 0.0.1
+=============
+
+* Basic mriqc functionality

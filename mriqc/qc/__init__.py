@@ -3,12 +3,12 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
-This module contains the actual computation of measures included within
-MRIQC.
+This module contains the actual computation of :abbr:`IQMs (image quality
+metrics)` included within MRIQC.
 
 .. note ::
 
-  Most of the measures computed in this module are adapted, derived or reproduced
+  Most of the :abbr:`IQMs (image quality metrics)` in this module are adapted, derived or reproduced
   from the :abbr:`QAP (quality assessment protocols)` project [QAP]_.
 
 """
