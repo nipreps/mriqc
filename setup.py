@@ -3,12 +3,11 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-11 13:49:49
+# @Last Modified time: 2016-03-11 13:55:09
 """ MRIQC setup script """
 import os
 import sys
-
-__version__ = '0.0.2rc1'
+from mriqc import __version__
 
 
 def main():

@@ -2,6 +2,9 @@ Release 0.0.2
 =============
 
 * Completed migration from QAP
+* Integration with ReadTheDocs
+* Submission to PyPi
+
 
 Release 0.0.1
 =============
