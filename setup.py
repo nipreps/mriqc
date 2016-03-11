@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-01 13:39:02
+# @Last Modified time: 2016-03-11 13:40:47
 """ MRIQC setup script """
 import os
 import sys
@@ -19,10 +19,12 @@ def main():
     setup(
         name='mriqc',
         version=__version__,
-        description='',
-        author_email='crn.poldracklab@gmail.com',
-        url='https://github.com/poldracklab/mriqc',
-        download_url='',
+        description='NR-IQMs (no-reference Image Quality Metrics) for MRI',
+        author='oesteban',
+        author_email='code@oscaresteban.es',
+        maintainer_email='crn.poldracklab@gmail.com',
+        url='http://mriqc.readthedocs.org/',
+        download_url='https://pypi.python.org/packages/source/m/mriqc/mriqc-0.0.2rc1.tar.gz',
         license='3-clause BSD',
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
         packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
@@ -32,9 +34,9 @@ def main():
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',
-            'Intended Audience :: MRI processing',
-            'Topic :: Scientific/Engineering :: Quality Assessment',
-            'License :: OSI Approved :: 3-clause BSD License',
+            'Intended Audience :: Science/Research',
+            'Topic :: Scientific/Engineering :: Image Recognition',
+            'License :: OSI Approved :: BSD License',
             'Programming Language :: Python :: 2.7',
         ],
     )
