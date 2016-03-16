@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-11 14:24:19
+# @Last Modified time: 2016-03-16 15:59:49
 """ MRIQC setup script """
 import os
 import sys
@@ -33,7 +33,12 @@ def main():
         download_url='https://pypi.python.org/packages/source/m/mriqc/'
                      'mriqc-%s.tar.gz' % __version__,
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',]},
-        packages=['mriqc', 'mriqc.workflows', 'mriqc.interfaces', 'mriqc.reports', 'mriqc.utils'],
+        packages=['mriqc',
+                  'mriqc.workflows',
+                  'mriqc.interfaces',
+                  'mriqc.qc',
+                  'mriqc.reports',
+                  'mriqc.utils',],
         package_data={'mriqc': ['reports/html/*.html', 'data/*.txt']},
         install_requires=REQUIREMENTS,
         zip_safe=False,
