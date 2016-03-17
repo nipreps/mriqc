@@ -10,7 +10,7 @@ Dependencies
 ------------
 
 Make sure you have FSL, N4ITK (released with ANTs), and AFNI installed, and the binaries are available in
-the system's `$PATH`.
+the system's ``$PATH``.
 
 
 Installation
