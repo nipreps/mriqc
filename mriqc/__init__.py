@@ -32,7 +32,7 @@ Example command line:
 
 """
 
-__version__ = '0.0.3a4'
+__version__ = '0.0.3a5'
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
