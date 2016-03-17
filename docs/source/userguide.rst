@@ -1,8 +1,48 @@
 User Guide
 ==========
 
+Installation
+------------
+
+We have included ``mriqc`` in the PyPi resource ::
+
+  pip install mriqc
+
+
+Dependencies
+------------
+
+If you are using a linux distribution with `neurodebian <http://neuro.debian.net/>`_, installation
+should be as easy as::
+
+  sudo apt-get fsl afni ants
+  sudo ln -sf /usr/lib/ants/N4BiasFieldCorrection /usr/local/bin/
+
+After installation, make sure that all the necessary binaries are added to the ``$PATH`` environment
+variable, for the profile used run ``mriqc``.
+
+Otherwise, you can follow each software installation guide: `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_, `AFNI <https://afni.nimh.nih.gov/afni/doc/howto/0>`_, and `ANTs <http://stnava.github.io/ANTs/>`_.
+
+Running mriqc
+-------------
+
+The software automatically finds the data the input folder if it follows the
+:abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
+
+Running ``mriqc`` only requires: ::
+
+  mriqc -i ~/Data/bids_dataset -o out/ -w work/
+
+
+Depending on the input images, the resulting outputs will vary as described next.
+
+
+  .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
+
+
+
 Structural images (:abbr:`sMRI (structural MRI)`)
--------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After all processing has been completed, the designated output directory for the ``mriqc`` workflow will contain a set of pdf
 files that contain the relevant reports for the set of scans undergoing
@@ -16,7 +56,7 @@ the entire set of scans.
 
 
 For the individual scan reports:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+................................
 
 **The T1 Anatomical Slice Mosaic**: 
 This plot in the report for the scan being assessed, e.g.:
@@ -39,7 +79,7 @@ displayed adjacent to each other in the violin plot.
 
 
 For the group reports:
-~~~~~~~~~~~~~~~~~~~~~~
+......................
 
 The violin plots included in the group report, e.g.:
 ``anatomical_group.pdf``, are a graphical representation of
@@ -55,7 +95,7 @@ spatial data for that group of anatomical scans.
 
 
 Functional images (:abbr:`fMRI (functional MRI)`)
--------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After all processing has been completed, the designated output directory
 for the functional workflow will contain a set of pdf files that contain
@@ -73,7 +113,7 @@ contains the summary of :abbr:`IQMs (image quality metrics)` for the entire set 
 
 
 For the individual scan reports:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+................................
 
 **The Mean EPI Slice Mosaic**:
 This plot in the report for the scan being assessed, e.g.
@@ -131,7 +171,7 @@ be used to visually determine what proportion of timepoints exceeded
 some pre-set movement threshold (eg: 0.2 mm).
 
 For the group reports:
-~~~~~~~~~~~~~~~~~~~~~~
+......................
 
 The violin plots included in the group report, e.g.:
 *QC measures (session_1)* are a graphical representation of the
