@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-29 11:03:11
+# @Last Modified time: 2016-03-17 11:44:04
 """ Encapsulates report generation functions """
 
 import sys
@@ -90,14 +90,6 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     func(dframe, out_file=qc_group)
     pdf_group.append(qc_group)
 
-    # Generate documentation page
-    doc = op.join(work_dir, '%s_doc.pdf' % qctype)
-
-    # Let documentation page fail
-    get_documentation(qctype, doc)
-    if doc is not None:
-        pdf_group.append(doc)
-
     if len(pdf_group) > 0:
         out_group_file = op.join(out_dir, '%s_group.pdf' % qctype)
         # Generate final report with collected pdfs in plots
@@ -166,37 +158,12 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
         plots.append(qc_ms)
 
         if len(plots) > 0:
-            if doc is not None:
-                plots.append(doc)
-
             # Generate final report with collected pdfs in plots
             sub_path = out_file % subid
             concat_pdf(plots, sub_path)
             out_indiv_files.append(sub_path)
             result[subid] = {'success': True, 'path': sub_path}
     return out_group_file, out_indiv_files, result
-
-
-def get_documentation(doc_type, out_file):
-    """ Generates the documentation page """
-    import codecs
-    import StringIO
-    from xhtml2pdf import pisa  # pylint: disable=no-name-in-module
-    # open output file for writing (truncated binary)
-    result = open(out_file, "w+b")
-
-    html_dir = op.abspath(
-        op.join(op.dirname(__file__), 'html', '%s.html' % doc_type))
-
-    with codecs.open(html_dir, mode='r', encoding='utf-8') as fpt:
-        html = fpt.read()
-
-    # convert HTML to PDF
-    status = pisa.pisaDocument(html, result, encoding='UTF-8')
-    result.close()
-
-    # return True on success and False on errors
-    return status.err
 
 
 def summary_cover(data, is_group=False, out_file=None):

@@ -16,14 +16,13 @@ the system's $PATH.
 Installation
 ------------
 
-Just issue:
-
-::
+The easiest path is using pypi ::
 
     pip install mriqc
 
-Example command line:
----------------------
+
+Example
+-------
 
 ::
 
@@ -32,7 +31,7 @@ Example command line:
 
 """
 
-__version__ = '0.0.4a1'
+__version__ = '0.1.0a1'
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
