@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-11 14:15:32
+# @Last Modified time: 2016-03-16 17:46:05
 
 """
 =====
@@ -16,10 +16,11 @@ from multiprocessing import cpu_count
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
+from nipype import config as ncfg
+
 from mriqc.workflows import qc_workflows
 from mriqc.utils.misc import gather_bids_data
-
-from nipype import config as ncfg
+from mriqc import __version__
 
 
 def main():
@@ -45,12 +46,19 @@ def main():
     g_input.add_argument(
         "--skip-functional", action='store_true', default=False,
         help="Skip functional QC workflow.")
+    g_input.add_argument(
+        '-v', '--version', action='store_true', default=False,
+        help='Show current mriqc version')
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store')
     g_outputs.add_argument('-w', '--work-dir', action='store')
 
     opts = parser.parse_args()
+
+    if opts.version:
+        print 'mriqc version ' + __version__
+        exit(0)
 
     settings = {'bids_root': op.abspath(opts.bids_root),
                 'output_dir': os.getcwd(),

@@ -9,3 +9,4 @@ lockfile
 seaborn
 pyPdf2
 xhtml2pdf
+PyYAML

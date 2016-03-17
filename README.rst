@@ -1,28 +1,26 @@
 mriqc
 =====
 
-The mriqc package provides a series of :abbr:`NR (no-reference)`,
-:abbr:`IQMs (image quality metrics)` to used in :abbr:`QAPs (quality
-assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
+The mriqc package provides a series of NR (no-reference),
+IQMs (image quality metrics) to used in QAPs (quality
+assessment protocols) for MRI (magnetic resonance imaging).
+
 
 Dependencies
 ------------
 
-Make sure you have FSL and AFNI installed, and the binaries available in
-the system's $PATH.
+Make sure you have FSL, N4ITK (released with ANTs), and AFNI installed, and the binaries are available in
+the system's `$PATH`.
+
 
 Installation
 ------------
 
-Just issue:
-
-::
+Just issue ::
 
     pip install mriqc
 
-Example command line:
----------------------
 
-::
+Example command line ::
 
     mriqc -i ~/Data/bids_dataset -o out/ -w work/
