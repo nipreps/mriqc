@@ -19,7 +19,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
 from ..interfaces.qc import FunctionalQC, FramewiseDisplacement
 from ..interfaces.viz import Report
-from ..utils.misc import reorder_csv
+from ..utils.misc import reorder_csv, rotate_files
 
 
 def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
@@ -185,6 +185,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
 
     # Export to CSV
     out_csv = op.join(settings['output_dir'], 'fMRIQC.csv')
+    rotate_files(out_csv)
+
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
     re_csv0 = pe.JoinNode(niu.Function(
         input_names=['csv_file'], output_names=['out_file'], function=reorder_csv),

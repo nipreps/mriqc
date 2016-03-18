@@ -9,6 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-03-04 13:51:59
 """ A QC workflow for anatomical MRI """
+import os
 import os.path as op
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
@@ -20,7 +21,7 @@ from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.qc import StructuralQC
 from ..interfaces.viz import Report, PlotMosaic
-from ..utils.misc import reorder_csv
+from ..utils.misc import reorder_csv, rotate_files
 
 
 SLICE_MASK_POINTS = [(78., -110., -72.),
@@ -130,6 +131,8 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
 
     # Export to CSV
     out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
+    rotate_files(out_csv)
+        
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
     re_csv0 = pe.JoinNode(niu.Function(input_names=['csv_file'], output_names=['out_file'],
                                        function=reorder_csv), joinsource='inputnode',

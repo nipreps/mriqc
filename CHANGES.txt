@@ -1,3 +1,9 @@
+Release 0.1.0a2
+===============
+
+* Added rotation of output csv files if they exist
+
+
 Release 0.0.2
 =============
 
