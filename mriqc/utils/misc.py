@@ -188,3 +188,23 @@ def reorder_csv(csv_file, out_file=None):
 
     dataframe[cols].to_csv(out_file)
     return out_file
+
+def rotate_files(fname):
+    """A function to rotate file names"""
+    import glob
+    import os
+    import os.path as op
+    
+    name, ext = op.splitext(fname)
+    if ext == '.gz':
+        name, ext2 = op.splitext(fname)
+        ext = ext2 + ext
+
+    if not op.isfile(fname):
+        return
+    
+    prev = glob.glob('%s.*%s' % (name, ext))
+    prev.insert(0, fname)
+    prev.append('%s.%d%s' % (name, len(prev) - 1, ext))
+    for i in reversed(range(1, len(prev))):
+        os.rename(prev[i-1], prev[i])
