@@ -1,15 +1,16 @@
 Release 0.1.0a2
 ===============
 
-* Added rotation of output csv files if they exist
+* [FIX] https://github.com/poldracklab/mriqc/issues/55
+* [ENH] Added rotation of output csv files if they exist
 
 
 Release 0.0.2
 =============
 
-* Completed migration from QAP
-* Integration with ReadTheDocs
-* Submission to PyPi
+* [ENH] Completed migration from QAP
+* [ENH] Integration with ReadTheDocs
+* [ENH] Submission to PyPi
 
 
 Release 0.0.1

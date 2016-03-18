@@ -4,6 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
 
+
 def bids_scan_file_walker(dataset=".", include_types=None, warn_no_files=False):
     """
     Traverse a BIDS dataset and provide a generator interface
@@ -33,11 +34,12 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
     from glob import glob
 
     from warnings import warn
+
     def _no_files_warning(folder):
         if not warn_no_files:
             return
-        warn("No files of requested type(s) found in scan folder: %s" \
-               % folder, RuntimeWarning, stacklevel=1)
+        warn("No files of requested type(s) found in scan folder: %s"
+             % folder, RuntimeWarning, stacklevel=1)
 
     def _walk_dir_for_prefix(target_dir, prefix):
         return [x for x in next(os.walk(target_dir))[1]
@@ -125,9 +127,9 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
     sub_dict = {'anat': [], 'func': []}
 
     bids_inventory = bids_scan_file_walker(dataset_folder,
-        include_types=['anat', 'func'])
+                                           include_types=['anat', 'func'])
     for bidsfile in sorted(bids_inventory,
-        key=lambda f: f['scanfile']):
+                           key=lambda f: f['scanfile']):
 
         if subject_inclusion is not None:
             if bidsfile['sub'] not in inclusion_list:
@@ -135,23 +137,23 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
 
         # implies that other anatomical modalities might be
         # analyzed down the road.
-        if bidsfile['modality'] in ['T1w']: # ie, anatomical
+        if bidsfile['modality'] in ['T1w']:  # ie, anatomical
             scan_key = bidsfile['modality']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_'+bidsfile['run']
+                scan_key += '_' + bidsfile['run']
             sub_dict['anat'].append(
-                (bidsfile['sub'], bidsfile['ses'],
-                    scan_key, op.abspath(bidsfile['scanfile'])))
+                (bidsfile['sub'], bidsfile['ses'], scan_key, op.abspath(bidsfile['scanfile'])))
 
-        elif bidsfile['modality'] in ['bold']: # ie, functional
+        elif bidsfile['modality'] in ['bold']:  # ie, functional
             scan_key = bidsfile['task']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_'+bidsfile['run']
+                scan_key += '_' + bidsfile['run']
+            if scan_key is None:
+                scan_key = 'func_1'
             sub_dict['func'].append(
-                (bidsfile['sub'], bidsfile['ses'],
-                    scan_key, op.abspath(bidsfile['scanfile'])))
+                (bidsfile['sub'], bidsfile['ses'], scan_key, op.abspath(bidsfile['scanfile'])))
 
     return sub_dict
 
@@ -189,12 +191,13 @@ def reorder_csv(csv_file, out_file=None):
     dataframe[cols].to_csv(out_file)
     return out_file
 
+
 def rotate_files(fname):
     """A function to rotate file names"""
     import glob
     import os
     import os.path as op
-    
+
     name, ext = op.splitext(fname)
     if ext == '.gz':
         name, ext2 = op.splitext(fname)
@@ -202,7 +205,7 @@ def rotate_files(fname):
 
     if not op.isfile(fname):
         return
-    
+
     prev = glob.glob('%s.*%s' % (name, ext))
     prev.insert(0, fname)
     prev.append('%s.%d%s' % (name, len(prev) - 1, ext))
