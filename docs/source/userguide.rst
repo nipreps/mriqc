@@ -28,6 +28,9 @@ Running mriqc
 
 The software automatically finds the data the input folder if it follows the
 :abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
+A fast and easy way to check that your dataset fulfills the 
+:abbr:`BIDS (brain imaging data structure)` standard is
+the `BIDS validator <http://incf.github.io/bids-validator/>`_.
 
 Running ``mriqc`` only requires: ::
 
