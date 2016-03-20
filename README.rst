@@ -95,6 +95,8 @@ Example command line: ::
 Support and communication
 -------------------------
 
+The documentation of this project is found here: http://mriqc.readthedocs.org/en/latest/.
+
 If you have a problem or would like to ask a question about how to use ``mriqc``,
 please submit a question to NeuroStars.org with an ``mriqc`` tag.
 NeuroStars.org is a platform similar to StackOverflow but dedicated to neuroinformatics.
