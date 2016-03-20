@@ -44,7 +44,8 @@ The :abbr:`IQMs (image quality metrics)` computed are as follows:
 |                         |                   | :abbr:`WM (white-matter)`               |
 +-------------------------+-------------------+-----------------------------------------+
 
-Most of these :abbr:`IQMs (image quality metrics)` are migrated or derivated from [QAP]_.
+Most of these :abbr:`IQMs (image quality metrics)` are migrated or derivated from 
+[QAP-measures]_.
 
 
 Functional images (:abbr:`fMRI (functional MRI)`)
@@ -52,7 +53,7 @@ Functional images (:abbr:`fMRI (functional MRI)`)
 
 The :abbr:`IQMs (image quality metrics)` computed are as follows:
 
-#. **efc** Entropy Focus Criterion
+#. :py:func:`~mriqc.qc.anatomical.efc` Entropy Focus Criterion
 #. **fber** - Foreground to Background Energy Ratio
 #. **fwhm** - Full-width half maximum smoothness of the voxels averaged
    across the three coordinate axes, and also for each axis [x,y,x]
@@ -73,5 +74,6 @@ References
 ----------
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20, 2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_
-  .. [QAP] `The Quality Assessment Protocols website: Taxonomy of QA Measures
+
+  .. [QAP-measures] `The Quality Assessment Protocols website: Taxonomy of QA Measures
     <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol/#taxonomy-of-qa-measures>`_.
