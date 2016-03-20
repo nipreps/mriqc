@@ -9,6 +9,10 @@ for open-source software distribution.
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
+.. image:: https://img.shields.io/pypi/dm/mriqc.svg
+    :target: https://pypi.python.org/pypi/mriqc/
+    :alt: Downloads
+
 About
 -----
 
