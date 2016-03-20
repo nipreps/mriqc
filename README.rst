@@ -6,6 +6,8 @@ This pipeline is developed by `the Poldrack Lab at Stanford University
 Neuroscience (CRN) <http://reproducibility.stanford.edu>`_, as well as
 for open-source software distribution.
 
+.. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
+  :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
 About
 -----
@@ -84,7 +86,7 @@ https://github.com/poldracklab/mriqc/issues.
 Authors
 -------
 
-Oscar Esteban, Krzysztof J. Gorgolewski, Craig A. Moodie, William Triplett.
+Oscar Esteban, Krzysztof F. Gorgolewski, Craig A. Moodie, William Triplett.
 Poldrack Lab, Psychology Department, Stanford University,
 and Center for Reproducible Neuroscience, Stanford University.
 
