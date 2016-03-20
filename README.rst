@@ -20,9 +20,17 @@ for open-source software distribution.
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: Downloads
 
-.. image:: https://img.shields.io/pypi/v/nipype.svg
+.. image:: https://img.shields.io/pypi/pyversions/nipype.svg
     :target: https://pypi.python.org/pypi/nipype/
-    :alt: Latest Version
+    :alt: Supported Python versions
+
+.. image:: https://img.shields.io/pypi/status/nipype.svg
+    :target: https://pypi.python.org/pypi/nipype/
+    :alt: Development Status
+
+.. image:: https://img.shields.io/pypi/l/nipype.svg
+    :target: https://pypi.python.org/pypi/nipype/
+    :alt: License
 
 
 About
