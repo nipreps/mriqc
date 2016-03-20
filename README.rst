@@ -17,7 +17,7 @@ used in QAPs (quality assessment protocols) for MRI (magnetic resonance imaging)
 This open-source neuroimaging data processing tool is being developed as a
 part of the MRI image analysis and reproducibility platform offered by
 the CRN. This pipeline derives from, and is heavily influenced by, the
-*quality assessment protocols* project [QAP]_.
+`PCP Quality Assessment Protocol <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`_.
 
 This tool extracts a series of IQMs from structural and functional MRI data.
 It is also scheduled to add diffusion MRI to the target imaging families.
@@ -29,9 +29,9 @@ External Dependencies
 ``mriqc`` is implemented using ``nipype``, but it requires some other neuroimaging
 software tools:
 
-  - `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_.
-  - The N4ITK bias correction tool released with `ANTs <http://stnava.github.io/ANTs/>`_.
-  - `AFNI <https://afni.nimh.nih.gov/>`_.
+- `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_.
+- The N4ITK bias correction tool released with `ANTs <http://stnava.github.io/ANTs/>`_.
+- `AFNI <https://afni.nimh.nih.gov/>`_.
 
 These tools must be installed and their binaries available in the 
 system's ``$PATH``.
@@ -89,7 +89,14 @@ Poldrack Lab, Psychology Department, Stanford University,
 and Center for Reproducible Neuroscience, Stanford University.
 
 
-License
--------
+License information
+-------------------
 
-Please see :download:`LICENSE file <./LICENSE.txt>`.
+We use the 3-clause BSD license; the full license is in the file ``LICENSE`` in
+the ``mriqc`` distribution.
+
+All trademarks referenced herein are property of their respective
+holders.
+
+Copyright (c) 2015-2016, the mriqc developers and the CRN.
+All rights reserved.
