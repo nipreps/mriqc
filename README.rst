@@ -9,9 +9,21 @@ for open-source software distribution.
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
+.. image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
+  :target: https://www.codacy.com/app/code_3/mriqc
+
+.. image:: https://img.shields.io/pypi/v/nipype.svg
+    :target: https://pypi.python.org/pypi/nipype/
+    :alt: Latest Version
+
 .. image:: https://img.shields.io/pypi/dm/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: Downloads
+
+.. image:: https://img.shields.io/pypi/v/nipype.svg
+    :target: https://pypi.python.org/pypi/nipype/
+    :alt: Latest Version
+
 
 About
 -----
