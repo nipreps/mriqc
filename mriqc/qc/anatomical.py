@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-29 11:40:36
+# @Last Modified time: 2016-03-24 11:15:08
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -55,11 +55,15 @@ def snr(img, seg, fglabel, bglabel='bg'):
 
 def cnr(img, seg, lbl=None):
     r"""
-    Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)`
+    Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)` [Magnota2006]_.
+    Higher values are better.
 
     .. math::
 
-        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B}
+        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B},
+
+    where :math:`\sigma_B` is the standard deviation of the noise distribution within
+    the air (background) mask.
 
 
     :param numpy.ndarray img: input data
@@ -77,7 +81,9 @@ def cnr(img, seg, lbl=None):
 
 def fber(img, seg, fglabel=None, bglabel=0):
     r"""
-    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`
+    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
+    defined as the mean energy of image values within the head relative
+    to outside the head. Higher values are better.
 
     .. math::
 
@@ -101,7 +107,9 @@ def fber(img, seg, fglabel=None, bglabel=0):
 
 def efc(img):
     """
-    Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_
+    Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
+    Uses the Shannon entropy of voxel intensities as an indication of ghosting
+    and blurring induced by head motion. Lower values are better.
 
     The original equation is normalized by the maximum entropy, so that the
     :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
@@ -126,9 +134,10 @@ def efc(img):
 def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Calculates QI1, the fraction of total voxels that within artifacts.
+    The **q1** is the proportion of voxels with intensity corrupted by artifacts
+    normalized by the number of voxels in the background. Lower values are better.
 
-    Optionally, it also calculates QI2, the distance between the distribution
+    Optionally, it also calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
     Rician distribution.
 
