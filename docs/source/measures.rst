@@ -55,6 +55,11 @@ The :abbr:`IQMs (image quality metrics)` computed are as follows:
   of noise voxel (non-artifact background voxels) intensities, and a
   Rician distribution.
 
+  .. figure:: resources/mortamet-mrm2009.png
+
+    The workflow to compute the artifact detection from [Mortamet2009]_.
+
+
 - **icvs_\*** (:py:func:`~mriqc.qc.anatomical.volume_fractions`): the
   :abbr:`ICV (intracranial volume)` fractions of :abbr:`CSF (cerebrospinal fluid)`,
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. They should move within
