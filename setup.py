@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-16 17:56:52
+# @Last Modified time: 2016-03-25 13:54:02
 """ MRIQC setup script """
 import os
 import sys
@@ -41,7 +41,7 @@ def main():
                   'mriqc.reports',
                   'mriqc.utils',
                   'mriqc.workflows',],
-        package_data={'mriqc': ['reports/html/*.html', 'data/*.txt']},
+        package_data={'mriqc': ['reports/html/*.html', 'data/*.nii.gz']},
         install_requires=REQUIREMENTS,
         zip_safe=False,
         classifiers=[

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-04 13:51:59
+# @Last Modified time: 2016-03-25 15:10:14
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -23,10 +23,6 @@ from ..interfaces.qc import StructuralQC
 from ..interfaces.viz import Report, PlotMosaic
 from ..utils.misc import reorder_csv, rotate_files
 
-
-SLICE_MASK_POINTS = [(78., -110., -72.),
-                     (-78., -110., -72.),
-                     (-1., 91., -29.)]
 
 def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     """ The anatomical quality control workflow """
@@ -71,7 +67,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, bias_image='output_bias.nii.gz'),
                     name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
-    qmw = brainmsk_wf()      # 3. Brain mask (template & 2.)
+    amw = airmsk_wf()
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
@@ -89,12 +85,15 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
-        (n4itk, qmw, [('output_image', 'inputnode.in_file')]),
-        (asw, qmw, [('outputnode.out_file', 'inputnode.in_brain')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, measures, [('output_image', 'in_file')]),
         (n4itk, fwhm, [('output_image', 'in_file')]),
-        (qmw, fwhm, [('outputnode.out_mask', 'mask')]),
+        (asw, fwhm, [('outputnode.out_mask', 'mask')]),
+
+        (n4itk, amw, [('output_image', 'inputnode.in_file')]),
+        (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
+        (asw, amw, [('outputnode.out_mask', 'inputnode.head_mask')]),
+
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
@@ -113,7 +112,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     ])
 
     if settings.get('mask_mosaic', False):
-        workflow.connect(qmw, 'outputnode.out_file', plot, 'in_mask')
+        workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
 
     # Save mosaic to well-formed path
     mvplot = pe.Node(niu.Rename(
@@ -132,7 +131,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     # Export to CSV
     out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
     rotate_files(out_csv)
-        
+
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
     re_csv0 = pe.JoinNode(niu.Function(input_names=['csv_file'], output_names=['out_file'],
                                        function=reorder_csv), joinsource='inputnode',
@@ -173,84 +172,47 @@ def mri_reorient_wf(name='ReorientWorkflow'):
     return workflow
 
 
-def brainmsk_wf(name='BrainMaskWorkflow'):
-    """Computes a brain mask from the original T1 and the skull-stripped"""
-    import pkg_resources as p
-    from nipype.interfaces.fsl.maths import MathsCommand
-    from nipype.interfaces.fsl.utils import WarpPointsFromStd
-
-    def _default_template(in_file):
-        from nipype.interfaces.fsl.base import Info
-        from os.path import isfile
-        from nipype.interfaces.base import isdefined
-        if isdefined(in_file) and isfile(in_file):
-            return in_file
-        return Info.standard_image('MNI152_T1_2mm.nii.gz')
-
-    def _post_maskav(in_file):
-        with open(in_file, 'r') as fdesc:
-            avg_out = fdesc.readlines()
-        avg = int(float(avg_out[-1].split(" ")[0]))
-        return int(avg * 3)
-
-    def _post_hist(in_file):
-        with open(in_file, 'r') as fdesc:
-            hist_out = fdesc.readlines()
-
-        bins = {}
-        for line in hist_out:
-            if "*" in line and not line.startswith("*"):
-                vox_bin = line.replace(" ", "").split(":")[0]
-                voxel_value = int(float(vox_bin.split(",")[0]))
-                bins[int(vox_bin.split(",")[1])] = voxel_value
-        return bins[min(bins.keys())]
-
+def headmsk_wf(name='HeadMaskWorkflow'):
+    """Implements the Step 0 of [Mortamet2009]_."""
     workflow = pe.Workflow(name=name)
+
+
+    return workflow
+
+
+def airmsk_wf(name='AirMaskWorkflow'):
+    """Implements the Step 1 of [Mortamet2009]_."""
+    import pkg_resources as p
+    workflow = pe.Workflow(name=name)
+
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_brain', 'in_template']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['out_mask', 'out_matrix_file']), name='outputnode')
-
-    # Compute threshold from histogram and generate mask
-    maskav = pe.Node(afp.Maskave(), 'mask_average')
-    hist = pe.Node(afp.Hist(nbin=10, showhist=True), 'brain_hist')
-    binarize = pe.Node(fsl.Threshold(args='-bin'), name='binarize')
-    dilate = pe.Node(MathsCommand(args=' '.join(['-dilM']*6)), name='dilate')
-    erode = pe.Node(MathsCommand(args=' '.join(['-eroF']*6)), name='erode')
-
-    msk_coords = pe.Node(WarpPointsFromStd(coord_vox=True), name='msk_coords')
-    msk_coords.inputs.in_coords = p.resource_filename('mriqc', 'data/slice_mask_points.txt')
-
-    slice_msk = pe.Node(niu.Function(
-        input_names=['in_file', 'in_coords'],
-        output_names=['out_file'], function=slice_head_mask), name='slice_msk')
-
-    combine = pe.Node(fsl.BinaryMaths(
-        operation='add', args='-bin'), name='headmask_combine_masks')
+        fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
     # Get linear mapping to normalized (template) space
-    flirt = pe.Node(fsl.FLIRT(cost='corratio'), name='spatial_normalization')
+    flirt = pe.Node(fsl.FLIRT(cost='corratio', dof=12, bgvalue=0), name='spatial_normalization')
+    flirt.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
+    flirt.inputs.in_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+
+    # Normalize the bottom part of the mask to the image space
+    mask = pe.Node(fsl.ApplyXfm(bgvalue=1, apply_xfm=True, interp='nearestneighbour'),
+                   name='ApplyXfmToMask')
+    mask.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
+
+    # Combine and invert mask
+    combine = pe.Node(fsl.BinaryMaths(operation='add', args='-bin'), name='combine_masks')
+    invertmsk = pe.Node(fsl.BinaryMaths(operation='mul', operand_value=-1.0, args='-add 1'),
+                        name='InvertMask')
 
     workflow.connect([
-        (inputnode, msk_coords, [(('in_template', _default_template), 'std_file')]),
-        (inputnode, msk_coords, [('in_file', 'img_file')]),
-        (inputnode, slice_msk, [('in_file', 'in_file')]),
-        (inputnode, maskav, [('in_file', 'in_file')]),
-        (maskav, hist, [(('out_file', _post_maskav), 'max_value')]),
-        (inputnode, hist, [('in_file', 'in_file')]),
-        (inputnode, binarize, [('in_file', 'in_file')]),
-        (inputnode, flirt, [
-            ('in_brain', 'in_file'),
-            (('in_template', _default_template), 'reference')]),
-        (flirt, msk_coords, [('out_matrix_file', 'xfm_file')]),
-        (msk_coords, slice_msk, [('out_file', 'in_coords')]),
-        (hist, binarize, [(('out_show', _post_hist), 'thresh')]),
-        (binarize, dilate, [('out_file', 'in_file')]),
-        (dilate, erode, [('out_file', 'in_file')]),
-        (erode, combine, [('out_file', 'in_file')]),
-        (slice_msk, combine, [('out_file', 'operand_file')]),
-        (combine, outputnode, [('out_file', 'out_mask')]),
-        (flirt, outputnode, [('out_matrix_file', 'out_matrix_file')]),
+        (inputnode, flirt, [('in_file', 'reference'),
+                            ('in_mask', 'ref_weight')]),
+        (flirt, mask, [('out_matrix_file', 'in_matrix_file')]),
+        (inputnode, mask, [('in_mask', 'reference')]),
+        (inputnode, combine, [('head_mask', 'in_file')]),
+        (mask, combine, [('out_file', 'operand_file')]),
+        (combine, invertmsk, [('out_file', 'in_file')]),
+        (invertmsk, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
 
@@ -261,18 +223,21 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
                         name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_mask']),
                          name='outputnode')
 
     sstrip = pe.Node(afp.SkullStrip(outputtype='NIFTI_GZ'), name='skullstrip')
     sstrip_orig_vol = pe.Node(afp.Calc(
         expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
+    binarize = pe.Node(fsl.Threshold(args='-bin'), name='binarize')
 
     workflow.connect([
         (inputnode, sstrip, [('in_file', 'in_file')]),
         (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
         (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
-        (sstrip_orig_vol, outputnode, [('out_file', 'out_file')])
+        (sstrip_orig_vol, binarize, [('out_file', 'in_file')]),
+        (sstrip_orig_vol, outputnode, [('out_file', 'out_file')]),
+        (binarize, outputnode, [('out_file', 'out_mask')])
     ])
     return workflow
 
