@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-25 15:10:14
+# @Last Modified time: 2016-03-25 16:09:57
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -64,9 +64,10 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, bias_image='output_bias.nii.gz'),
-                    name='Bias')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True,
+                    bspline_fitting_distance=30.), name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
+    mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     amw = airmsk_wf()
 
     # Brain tissue segmentation
@@ -83,10 +84,13 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
 
     workflow.connect([
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
-        (n4itk, asw, [('output_image', 'inputnode.in_file')]),
-        (asw, segment, [('outputnode.out_file', 'in_files')]),
-        (n4itk, measures, [('output_image', 'in_file')]),
+        (asw, n4itk, [('outputnode.out_mask', 'weight_image')]),
+        (n4itk, mask, [('output_image', 'in_file')]),
+        (asw, mask, [('outputnode.out_mask', 'mask_file')]),
+        (mask, segment, [('out_file', 'in_files')]),
+        (arw, measures, [('outputnode.out_file', 'in_file')]),
         (n4itk, fwhm, [('output_image', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
@@ -95,6 +99,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (asw, amw, [('outputnode.out_mask', 'inputnode.head_mask')]),
 
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
+        (amw, measures, [('outputnode.out_file', 'air_msk')]),
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
@@ -191,8 +196,11 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     # Get linear mapping to normalized (template) space
     flirt = pe.Node(fsl.FLIRT(cost='corratio', dof=12, bgvalue=0), name='spatial_normalization')
-    flirt.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
-    flirt.inputs.in_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+    flirt.inputs.reference = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
+    flirt.inputs.ref_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+
+    # Invert affine matrix
+    invt = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='invert_xfm')
 
     # Normalize the bottom part of the mask to the image space
     mask = pe.Node(fsl.ApplyXfm(bgvalue=1, apply_xfm=True, interp='nearestneighbour'),
@@ -205,9 +213,10 @@ def airmsk_wf(name='AirMaskWorkflow'):
                         name='InvertMask')
 
     workflow.connect([
-        (inputnode, flirt, [('in_file', 'reference'),
-                            ('in_mask', 'ref_weight')]),
-        (flirt, mask, [('out_matrix_file', 'in_matrix_file')]),
+        (inputnode, flirt, [('in_file', 'in_file'),
+                            ('in_mask', 'in_weight')]),
+        (flirt, invt, [('out_matrix_file', 'in_file')]),
+        (invt, mask, [('out_file', 'in_matrix_file')]),
         (inputnode, mask, [('in_mask', 'reference')]),
         (inputnode, combine, [('head_mask', 'in_file')]),
         (mask, combine, [('out_file', 'operand_file')]),
@@ -229,7 +238,7 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     sstrip = pe.Node(afp.SkullStrip(outputtype='NIFTI_GZ'), name='skullstrip')
     sstrip_orig_vol = pe.Node(afp.Calc(
         expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
-    binarize = pe.Node(fsl.Threshold(args='-bin'), name='binarize')
+    binarize = pe.Node(fsl.Threshold(args='-bin', thresh=1.e-3), name='binarize')
 
     workflow.connect([
         (inputnode, sstrip, [('in_file', 'in_file')]),
@@ -262,75 +271,3 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm):
         pass  # TR is not defined
 
     return in_qc
-
-
-def slice_head_mask(in_file, in_coords, out_file=None):
-    import os.path as op
-    import numpy as np
-    import nibabel as nb
-
-    # get file info
-    in_nii = nb.load(in_file)
-    in_header = in_nii.get_header()
-    in_aff = in_nii.get_affine()
-    in_dims = in_header.get_data_shape()
-
-    coords = []
-    for vox in np.loadtxt(in_coords):  # pylint: disable=no-member
-        vox = [int(v) for v in vox]
-
-        for i in range(0, 3):
-            vox[i] = np.clip(vox[i], 1, in_dims[i] - 1)
-
-        coords.append(np.array(vox))
-
-    # get the vectors connecting the points
-    uvector = []
-    for a_pt, c_pt in zip(coords[0], coords[2]):
-        uvector.append(int(a_pt - c_pt))
-
-    vvector = []
-    for b_pt, c_pt in zip(coords[1], coords[2]):
-        vvector.append(int(b_pt - c_pt))
-
-    # vector cross product
-    nvector = np.cross(uvector, vvector)
-
-    # normalize the vector
-    nvector = nvector / np.linalg.norm(nvector, 2)
-    constant = np.dot(nvector, np.asarray(coords[0]))
-
-    # now determine the z-coordinate for each pair of x,y
-    plane_dict = {}
-
-    for yvox in range(0, in_dims[1]):
-        for xvox in range(0, in_dims[0]):
-            zvox = (constant - (nvector[0] * xvox + nvector[1] * yvox)) / nvector[2]
-            zvox = np.floor(zvox)  # pylint: disable=no-member
-
-            if zvox < 1:
-                zvox = 1
-            elif zvox > in_dims[2]:
-                zvox = in_dims[2]
-
-            plane_dict[(xvox, yvox)] = zvox
-
-    # create the mask
-    mask_array = np.zeros(in_dims)
-
-    for i in range(0, in_dims[0]):
-        for j in range(0, in_dims[1]):
-            for k in range(0, in_dims[2]):
-                if plane_dict[(i, j)] > k:
-                    mask_array[i, j, k] = 1
-
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath('%s_slice_mask%s' % (fname, ext))
-
-    nb.Nifti1Image(mask_array, in_aff, in_header).to_filename(out_file)
-    return out_file

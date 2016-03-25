@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-24 11:15:08
+# @Last Modified time: 2016-03-25 15:28:05
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -131,7 +131,7 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, seg, calculate_qi2=False, bglabel=0):
+def artifacts(img, bg_mask, calculate_qi2=False, bglabel=0):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     The **q1** is the proportion of voxels with intensity corrupted by artifacts
@@ -145,8 +145,6 @@ def artifacts(img, seg, calculate_qi2=False, bglabel=0):
     :param numpy.ndarray seg: input segmentation
 
     """
-    bg_mask = np.zeros_like(img, dtype=np.uint8)
-    bg_mask[seg == bglabel] = 1
     bg_img = img * bg_mask
 
     # Find the background threshold (the most frequently occurring value

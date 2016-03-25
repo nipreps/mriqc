@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-25 14:16:42
+# @Last Modified time: 2016-03-25 15:29:48
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -24,10 +24,9 @@ IFLOGGER = logging.getLogger('interface')
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='File to be plotted')
-    in_segm = File(exists=True, mandatory=True,
-                   desc='segmentation file from FSL FAST')
-    in_bias = File(exists=True, mandatory=True,
-                   desc='bias file')
+    in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
+    in_bias = File(exists=True, mandatory=True, desc='bias file')
+    air_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
@@ -77,6 +76,8 @@ class StructuralQC(BaseInterface):
         segnii = nb.load(self.inputs.in_segm)
         segdata = segnii.get_data().astype(np.uint8)
 
+        airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
+
         # SNR
         snrvals = []
         self._results['snr'] = {}
@@ -95,7 +96,7 @@ class StructuralQC(BaseInterface):
         self._results['efc'] = efc(imdata)
 
         # Artifacts
-        self._results['qi1'] = artifacts(imdata, segdata)[0]
+        self._results['qi1'] = artifacts(imdata, airdata)[0]
 
         pvmdata = []
         for fname in self.inputs.in_pvms:
