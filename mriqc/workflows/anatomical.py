@@ -359,6 +359,7 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
 
 def gradient_threshold(in_file, thresh=1.0, out_file=None):
     """ Compute a threshold from the histogram of the magnitude gradient image """
+    import os.path as op
     import numpy as np
     import nibabel as nb
     from scipy.ndimage import (generate_binary_structure, iterate_structure,
@@ -391,3 +392,4 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, im.get_affine(), hdr).to_filename(out_file)
     return out_file
+
