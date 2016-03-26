@@ -392,4 +392,3 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, im.get_affine(), hdr).to_filename(out_file)
     return out_file
-
