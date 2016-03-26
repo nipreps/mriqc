@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-25 16:09:57
+# @Last Modified time: 2016-03-25 16:38:27
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -96,7 +96,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
 
         (n4itk, amw, [('output_image', 'inputnode.in_file')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
-        (asw, amw, [('outputnode.out_mask', 'inputnode.head_mask')]),
+        (asw, amw, [('outputnode.head_mask', 'inputnode.head_mask')]),
 
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (amw, measures, [('outputnode.out_file', 'air_msk')]),
@@ -232,7 +232,7 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
                         name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_mask']),
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_mask', 'head_mask']),
                          name='outputnode')
 
     sstrip = pe.Node(afp.SkullStrip(outputtype='NIFTI_GZ'), name='skullstrip')
@@ -240,12 +240,16 @@ def skullstrip_wf(name='SkullStripWorkflow'):
         expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
     binarize = pe.Node(fsl.Threshold(args='-bin', thresh=1.e-3), name='binarize')
 
+    bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
+
     workflow.connect([
         (inputnode, sstrip, [('in_file', 'in_file')]),
+        (inputnode, bet, [('in_file', 'in_file')]),
         (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
         (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
         (sstrip_orig_vol, binarize, [('out_file', 'in_file')]),
         (sstrip_orig_vol, outputnode, [('out_file', 'out_file')]),
+        (bet, outputnode, [('outskin_mask_file', 'head_mask')]),
         (binarize, outputnode, [('out_file', 'out_mask')])
     ])
     return workflow
