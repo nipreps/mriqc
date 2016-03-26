@@ -33,7 +33,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         settings = {}
 
     # Define workflow, inputs and outputs
-    wf = pe.Workflow(name=name)
+    workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
@@ -52,7 +52,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
 
         dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
                          name='datasplit')
-        wf.connect([
+        workflow.connect([
             (inputnode, dsplit, [('data', 'inlist')]),
             (dsplit, dsource, [('out1', 'subject_id'),
                                ('out2', 'session_id'),
@@ -95,7 +95,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     plot_fd = pe.Node(PlotFD(), name='plot_fd')
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
-    wf.connect([
+    workflow.connect([
         (dsource, get_idx, [('functional_scan', 'in_file'),
                             ('start_idx', 'start_idx'),
                             ('stop_idx', 'stop_idx')]),
@@ -137,8 +137,8 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     ])
 
     if settings.get('mosaic_mask', False):
-        wf.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
-        wf.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
+        workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
+        workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
 
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(
@@ -146,7 +146,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         keep_ext=True), name='rename_mean_mosaic')
     dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_mean')
-    wf.connect([
+    workflow.connect([
         (dsource, mvmean, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
                            ('scan_id', 'scan_id')]),
@@ -160,7 +160,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         keep_ext=True), name='rename_tsnr_mosaic')
     dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_tsnr')
-    wf.connect([
+    workflow.connect([
         (dsource, mvtsnr, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
                            ('scan_id', 'scan_id')]),
@@ -174,7 +174,7 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         keep_ext=True), name='rename_fd_mosaic')
     dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                    name='ds_fd')
-    wf.connect([
+    workflow.connect([
         (dsource, mvfd, [('subject_id', 'subject_id'),
                          ('session_id', 'session_id'),
                          ('scan_id', 'scan_id')]),
@@ -187,28 +187,28 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     rotate_files(out_csv)
 
     to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
-    re_csv0 = pe.JoinNode(niu.Function(
-        input_names=['csv_file'], output_names=['out_file'], function=reorder_csv),
-        joinsource='inputnode', joinfield='csv_file', name='reorder')
+    re_csv0 = pe.JoinNode(niu.Function(input_names=['csv_file'], output_names=['out_file'],
+                          function=reorder_csv), joinsource='inputnode', joinfield='csv_file',
+                          name='reorder')
     report0 = pe.Node(
         Report(qctype='functional', settings=settings), name='report')
     if sub_list:
         report0.inputs.sub_list = sub_list
 
-    wf.connect([
+    workflow.connect([
         (mergqc, to_csv, [('out_qc', '_outputs')]),
         (to_csv, re_csv0, [('csv_file', 'csv_file')]),
         (re_csv0, outputnode, [('out_file', 'out_csv')]),
         (re_csv0, report0, [('out_file', 'in_csv')]),
         (report0, outputnode, [('out_group', 'out_group')])
     ])
-    return wf
+    return workflow
 
 
 def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
     """Comute brain mask of an fmri dataset"""
 
-    wf = pe.Workflow(name=name)
+    workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
@@ -219,7 +219,7 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
             outputtype='NIFTI_GZ'), name='afni_msk')
 
         # Connect brain mask extraction
-        wf.connect([
+        workflow.connect([
             (inputnode, afni_msk, [('in_file', 'in_file')]),
             (afni_msk, outputnode, [('out_file', 'out_file')])
         ])
@@ -231,19 +231,19 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
                         name='erode')
 
         # Connect brain mask extraction
-        wf.connect([
+        workflow.connect([
             (inputnode, bet_msk, [('in_file', 'in_file')]),
             (bet_msk, erode, [('mask_file', 'in_file')]),
             (erode, outputnode, [('out_file', 'out_file')])
         ])
 
-    return wf
+    return workflow
 
 
 def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
     """A head motion correction (HMC) workflow for functional scans"""
 
-    wf = pe.Workflow(name=name)
+    workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'start_idx', 'stop_idx']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
@@ -266,7 +266,7 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
     hmc_A = hmc.clone('motion_correct_A')
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
 
-    wf.connect([
+    workflow.connect([
         (inputnode, drop_trs, [('in_file', 'in_file_a'),
                                ('start_idx', 'start_idx'),
                                ('stop_idx', 'stop_idx')]),
@@ -283,16 +283,16 @@ def fmri_hmc_workflow(name='fMRI_HMC', st_correct=False):
 
     if st_correct:
         st_corr = pe.Node(afp.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
-        wf.connect([
+        workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
             (st_corr, deoblique, [('out_file', 'in_file')])
         ])
     else:
-        wf.connect([
+        workflow.connect([
             (drop_trs, deoblique, [('out_file', 'in_file')])
         ])
 
-    return wf
+    return workflow
 
 def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats, outlier, quality):
     in_qc['subject'] = subject_id
