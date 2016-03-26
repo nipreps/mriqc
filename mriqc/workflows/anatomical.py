@@ -68,6 +68,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
                     bspline_fitting_distance=30.), name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
+    hmsk = headmsk_wf()
     amw = airmsk_wf()
 
     # Brain tissue segmentation
@@ -90,13 +91,15 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
         (mask, segment, [('out_file', 'in_files')]),
+        (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
+        (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (arw, measures, [('outputnode.out_file', 'in_file')]),
         (n4itk, fwhm, [('output_image', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
         (n4itk, amw, [('output_image', 'inputnode.in_file')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
-        (asw, amw, [('outputnode.head_mask', 'inputnode.head_mask')]),
+        (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (amw, measures, [('outputnode.out_file', 'air_msk')]),
@@ -187,7 +190,7 @@ def headmsk_wf(name='HeadMaskWorkflow'):
         has_dipy = False
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'wm_mask']),
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'in_segm']),
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
     
@@ -200,16 +203,22 @@ def headmsk_wf(name='HeadMaskWorkflow'):
         ])
         return workflow
 
+    getwm = pe.Node(niu.Function(
+        input_names=['in_file'], output_names=['out_file'], function=_get_wm), name='GetWM')
     denoise = pe.Node(Denoise(), name='Denoise')
     gradient = pe.Node(niu.Function(
         input_names=['in_file'], output_names=['out_file'], function=image_gradient), name='Grad')
-    thresh = pe
+    thresh = pe.Node(niu.Function(
+        input_names=['in_file'], output_names=['out_file'], function=gradient_threshold),
+                     name='GradientThreshold')
 
     workflow.connect([
-        (inputnode, denoise, [('in_file', 'in_file'),
-                              ('wm_mask', 'noise_mask')]),
+        (inputnode, getwm, [('in_segm', 'in_file')]),
+        (inputnode, denoise, [('in_file', 'in_file')]),
+        (getwm, denoise, [('out_file', 'noise_mask')]),
         (denoise, gradient, [('out_file', 'in_file')]),
-
+        (gradient, thresh, [('out_file', 'in_file')]),
+        (thresh, outputnode, [('out_file', 'out_file')])
     ])
 
     return workflow
@@ -301,6 +310,27 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm):
         pass  # TR is not defined
 
     return in_qc
+
+def _get_wm(in_file, wm_val=3, out_file=None):
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from scipy.ndimage import gaussian_gradient_magnitude as gradient
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('%s_wm%s' % (fname, ext))
+
+    im = nb.load(in_file)
+    data = im.get_data().astype(np.uint8)
+    msk = np.zeros_like(data)
+    msk[data == wm_val] = 1
+    nb.Nifti1Image(msk, im.get_affine(), im.get_header()).to_filename(out_file)
+    return out_file
+
 
 def image_gradient(in_file, compute_abs=True, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
