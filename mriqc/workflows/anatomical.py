@@ -179,8 +179,38 @@ def mri_reorient_wf(name='ReorientWorkflow'):
 
 def headmsk_wf(name='HeadMaskWorkflow'):
     """Implements the Step 0 of [Mortamet2009]_."""
-    workflow = pe.Workflow(name=name)
 
+    try:
+        from nipype.interfaces.dipy import Denoise
+        has_dipy = True
+    except ImportError:
+        has_dipy = False
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'wm_mask']),
+                        name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
+    
+    if not has_dipy:
+        # Alternative for when dipy is not installed
+        bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
+        workflow.connect([
+            (inputnode, bet, [('in_file', 'in_file')]),
+            (bet, outputnode, [('outskin_mask_file', 'out_file')])
+        ])
+        return workflow
+
+    denoise = pe.Node(Denoise(), name='Denoise')
+    gradient = pe.Node(niu.Function(
+        input_names=['in_file'], output_names=['out_file'], function=image_gradient), name='Grad')
+    thresh = pe
+
+    workflow.connect([
+        (inputnode, denoise, [('in_file', 'in_file'),
+                              ('wm_mask', 'noise_mask')]),
+        (denoise, gradient, [('out_file', 'in_file')]),
+
+    ])
 
     return workflow
 
@@ -240,16 +270,12 @@ def skullstrip_wf(name='SkullStripWorkflow'):
         expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
     binarize = pe.Node(fsl.Threshold(args='-bin', thresh=1.e-3), name='binarize')
 
-    bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
-
     workflow.connect([
         (inputnode, sstrip, [('in_file', 'in_file')]),
-        (inputnode, bet, [('in_file', 'in_file')]),
         (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
         (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
         (sstrip_orig_vol, binarize, [('out_file', 'in_file')]),
         (sstrip_orig_vol, outputnode, [('out_file', 'out_file')]),
-        (bet, outputnode, [('outskin_mask_file', 'head_mask')]),
         (binarize, outputnode, [('out_file', 'out_mask')])
     ])
     return workflow
@@ -275,3 +301,63 @@ def _merge_dicts(in_qc, subject_id, metadata, fwhm):
         pass  # TR is not defined
 
     return in_qc
+
+def image_gradient(in_file, compute_abs=True, out_file=None):
+    """Computes the magnitude gradient of an image using numpy"""
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from scipy.ndimage import gaussian_gradient_magnitude as gradient
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('%s_grad%s' % (fname, ext))
+
+    im = nb.load(in_file)
+    data = im.get_data().astype(np.float32)  # pylint: disable=no-member
+    sigma = .01 * (np.percentile(data[data > 0], 75.) - np.percentile(data[data > 0], 25.))  # pylint: disable=no-member
+    grad = gradient(data, sigma)
+
+    if compute_abs:
+        grad = np.abs(grad)
+
+    nb.Nifti1Image(grad, im.get_affine(), im.get_header()).to_filename(out_file)
+    return out_file
+
+def gradient_threshold(in_file, thresh=1.0, out_file=None):
+    """ Compute a threshold from the histogram of the magnitude gradient image """
+    import numpy as np
+    import nibabel as nb
+    from scipy.ndimage import (generate_binary_structure, iterate_structure,
+                               binary_closing, binary_fill_holes)
+    thresh *= 1e-2
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('%s_gradmask%s' % (fname, ext))
+
+
+    im = nb.load(in_file)
+    data = im.get_data()
+    hist, bin_edges = np.histogram(data[data > 0], bins=128, density=True)  # pylint: disable=no-member
+
+    for i, freq in reversed(list(enumerate(hist))):
+        if freq >= thresh:
+            out_thresh = 0.5 * (bin_edges[i+1] - bin_edges[i])
+            break
+
+    mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
+    mask[data > out_thresh] = 1
+    struc = iterate_structure(generate_binary_structure(3, 1), 2)
+    mask = binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    mask = binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+
+    hdr = im.get_header().copy()
+    hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
+    nb.Nifti1Image(mask, im.get_affine(), hdr).to_filename(out_file)
+    return out_file

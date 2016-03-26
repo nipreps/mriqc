@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-02-29 10:50:21
 """ A QC workflow for fMRI data """
-
 import os.path as op
 
 from nipype.pipeline import engine as pe
@@ -334,5 +333,5 @@ def _parse_tqual(in_file):
 
 def _parse_tout(in_file):
     import numpy as np
-    data = np.loadtxt(in_file)
+    data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
