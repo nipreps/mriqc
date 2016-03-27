@@ -234,25 +234,25 @@ def airmsk_wf(name='AirMaskWorkflow'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(dimension=3), name='normalized')
+    norm = pe.Node(ants.Registration(dimension=3), name='normalize')
+    norm.inputs.initial_moving_transform_com = 1
     norm.inputs.transforms = ['Rigid', 'Affine']
-    norm.inputs.transform_parameters = [(2.0,), (1.0,)]
-    norm.inputs.number_of_iterations = [[1500, 200], [1000, 200]]
-    norm.inputs.write_composite_transform = True
-    norm.inputs.metric = ['GC', 'Mattes']
+    norm.inputs.transform_parameters = [(1.0,), (0.5,)]
+    norm.inputs.number_of_iterations = [[500], [1000, 200]]
+    norm.inputs.metric = ['GC', 'GC']
     norm.inputs.metric_weight = [1] * 2
-    norm.inputs.radius_or_number_of_bins = [5, 64]
+    norm.inputs.radius_or_number_of_bins = [5, 3]
     norm.inputs.sampling_strategy = ['Random'] * 2
     norm.inputs.sampling_percentage = [0.2, 0.1]
     norm.inputs.convergence_threshold = [1.e-8, 1.e-9]
     norm.inputs.convergence_window_size = [30, 10]
-    norm.inputs.smoothing_sigmas = [[8, 4], [2, 0]]
+    norm.inputs.smoothing_sigmas = [[8], [4, 2]]
     norm.inputs.sigma_units = ['mm'] * 2
-    norm.inputs.shrink_factors = [[3, 2], [2, 1]]
+    norm.inputs.shrink_factors = [[3], [2, 1]]
     norm.inputs.use_estimate_learning_rate_once = [True] * 2
     norm.inputs.use_histogram_matching = [True] * 2
-    norm.inputs.winsorize_lower_quantile = 0.015
-    norm.inputs.winsorize_upper_quantile = 0.095
+    norm.inputs.winsorize_lower_quantile = 0.001
+    norm.inputs.winsorize_upper_quantile = 0.099
     norm.inputs.fixed_image = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
     norm.inputs.fixed_image_mask = p.resource_filename(
