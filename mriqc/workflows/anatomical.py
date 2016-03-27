@@ -233,18 +233,48 @@ def airmsk_wf(name='AirMaskWorkflow'):
         fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
+    # Spatial normalization, using ANTs
+    norm = pe.Node(ants.Registration(dimension=3), name='normalized')
+    norm.inputs.transforms = ['Rigid', 'Affine']
+    norm.inputs.transform_parameters = [(2.0), (1.0)]
+    norm.inputs.number_of_iterations = [[1500, 200], [1000, 200]]
+    norm.inputs.write_composite_transform = True
+    norm.inputs.metric = ['GC', 'Mattes']
+    norm.inputs.metric_weights = [1] * 2
+    norm.inputs.radius_or_number_of_bins = [5, 64]
+    norm.inputs.sampling_strategy = ['Random'] * 2
+    norm.inputs.sampling_percentage = [0.2, 0.1]
+    norm.inputs.convergence_threshold = [1.e-8, 1.e-9]
+    norm.inputs.convergence_window_size = [30, 10]
+    norm.inputs.smoothing_sigmas = [[8, 4], [2, 0]]
+    norm.inputs.sigma_units = ['mm'] * 2
+    norm.inputs.shrink_factors = [[3, 2], [2, 1]]
+    norm.inputs.use_estimate_learning_rate_once = [True] * 2
+    norm.inputs.use_histogram_matching = [True] * 2
+    norm.inputs.winsorize_lower_quantile = 0.015
+    norm.inputs.winsorize_upper_quantile = 0.095
+    norm.inputs.fixed_image = p.resource_filename(
+        'mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
+    norm.inputs.fixed_image_mask = p.resource_filename(
+        'mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+
+    invt = pe.Node(ants.ApplyTransforms(
+        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
+    invt.inputs.in_file = p.resource_filename(
+        'mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
+
     # Get linear mapping to normalized (template) space
-    flirt = pe.Node(fsl.FLIRT(cost='corratio', dof=12, bgvalue=0), name='spatial_normalization')
-    flirt.inputs.reference = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
-    flirt.inputs.ref_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+    # flirt = pe.Node(fsl.FLIRT(cost='corratio', dof=12, bgvalue=0), name='spatial_normalization')
+    # flirt.inputs.reference = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
+    # flirt.inputs.ref_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
 
     # Invert affine matrix
-    invt = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='invert_xfm')
+    # invt = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='invert_xfm')
 
     # Normalize the bottom part of the mask to the image space
-    mask = pe.Node(fsl.ApplyXfm(bgvalue=1, apply_xfm=True, interp='nearestneighbour'),
-                   name='ApplyXfmToMask')
-    mask.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
+    # mask = pe.Node(fsl.ApplyXfm(bgvalue=1, apply_xfm=True, interp='nearestneighbour'),
+    #                name='ApplyXfmToMask')
+    # mask.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
 
     # Combine and invert mask
     combine = pe.Node(fsl.BinaryMaths(operation='add', args='-bin'), name='combine_masks')
@@ -252,13 +282,13 @@ def airmsk_wf(name='AirMaskWorkflow'):
                         name='InvertMask')
 
     workflow.connect([
-        (inputnode, flirt, [('in_file', 'in_file'),
-                            ('in_mask', 'in_weight')]),
-        (flirt, invt, [('out_matrix_file', 'in_file')]),
-        (invt, mask, [('out_file', 'in_matrix_file')]),
-        (inputnode, mask, [('in_mask', 'reference')]),
+        (inputnode, norm, [('in_file', 'moving_image'),
+                           ('in_mask', 'moving_image_mask')]),
+        (norm, invt, [('reverse_transforms', 'transforms'),
+                      ('reverse_invert_flags', 'invert_transform_flags')]),
+        (inputnode, invt, [('in_mask', 'reference_image')]),
         (inputnode, combine, [('head_mask', 'in_file')]),
-        (mask, combine, [('out_file', 'operand_file')]),
+        (invt, combine, [('output_image', 'operand_file')]),
         (combine, invertmsk, [('out_file', 'in_file')]),
         (invertmsk, outputnode, [('out_file', 'out_file')])
     ])
