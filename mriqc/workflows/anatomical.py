@@ -236,11 +236,11 @@ def airmsk_wf(name='AirMaskWorkflow'):
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(dimension=3), name='normalized')
     norm.inputs.transforms = ['Rigid', 'Affine']
-    norm.inputs.transform_parameters = [(2.0), (1.0)]
+    norm.inputs.transform_parameters = [(2.0,), (1.0,)]
     norm.inputs.number_of_iterations = [[1500, 200], [1000, 200]]
     norm.inputs.write_composite_transform = True
     norm.inputs.metric = ['GC', 'Mattes']
-    norm.inputs.metric_weights = [1] * 2
+    norm.inputs.metric_weight = [1] * 2
     norm.inputs.radius_or_number_of_bins = [5, 64]
     norm.inputs.sampling_strategy = ['Random'] * 2
     norm.inputs.sampling_percentage = [0.2, 0.1]
@@ -260,7 +260,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
-    invt.inputs.in_file = p.resource_filename(
+    invt.inputs.input_image = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
 
     # Get linear mapping to normalized (template) space
