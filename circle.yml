@@ -1,7 +1,9 @@
 dependencies:
   cache_directories:
     - "~/examples/"
-    - "~/.apt-cache"
+    - "~/.apt-cache/"
+    - "~/.local/"
+    - "~/downloads/"
     - "~/workdir"
   pre:
     # Let CircleCI cache the apt archive
@@ -11,14 +13,14 @@ dependencies:
     - sudo apt-get update
     - bash ./circle_setup.sh
   override:
-    - sudo apt-get install -y fsl-core fsl-atlases fsl-mni152-templates afni ants
+    - sudo ln -sf $HOME/local/ants/* /usr/local/bin/
+    - sudo apt-get install -y fsl-core fsl-atlases fsl-mni152-templates afni
     - sudo ln -sf /usr/lib/ants/N4BiasFieldCorrection /usr/local/bin/
     - echo "source /etc/fsl/fsl.sh" >> $HOME/.profile
     - echo "source /etc/afni/afni.sh" >> $HOME/.profile
     - pip install --upgrade pip
     - pip install numpy
     - pip install sphinx sphinx-autobuild
-    - yes s | pip install -e git+https://github.com/oesteban/nipype@exp/mriqc#egg=nipype
     - pip install -r requirements.txt
     - pip install -e .
 machine:
