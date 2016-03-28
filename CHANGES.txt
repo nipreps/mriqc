@@ -1,6 +1,8 @@
 Release 0.3.0a1
 ===============
 
+* [ENH] Updated CircleCI and Docker to use the version 2.1.0 of ANTs
+  compiled by their developers.
 * [ENH] New anatomical workflows to compute the air mask
   (https://github.com/poldracklab/mriqc/issues/56)
 
