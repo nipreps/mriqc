@@ -15,7 +15,7 @@ fi
 if [[ ! -d ${HOME}/local/ants ]]; then
 	mkdir -p ${HOME}/downloads
 	wget -c -O ${HOME}/downloads/ants.tar.bz2 "https://2a353b13e8d2d9ac21ce543b7064482f771ce658.googledrive.com/host/0BxI12kyv2olZVFhUcGVpYWF3R3c/ANTs-Linux_Ubuntu14.04.tar.bz2"
-	mkdir -p ${HOME}/local/ants
+	mkdir -p ${HOME}/local/
 	tar xjf ${HOME}/downloads/ants.tar.bz2 -C ${HOME}/local/
 	mv ${HOME}/local/ANTs.2.1.0.Debian-Ubuntu_X64 ${HOME}/local/ants
 fi
