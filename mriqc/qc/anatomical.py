@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-25 15:28:05
+# @Last Modified time: 2016-03-28 11:48:34
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -79,7 +79,7 @@ def cnr(img, seg, lbl=None):
 
 
 
-def fber(img, seg, fglabel=None, bglabel=0):
+def fber(img, seg, air):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
     defined as the mean energy of image values within the head relative
@@ -94,13 +94,9 @@ def fber(img, seg, fglabel=None, bglabel=0):
     :param numpy.ndarray seg: input segmentation
 
     """
-    if fglabel is not None:
-        fgdata = img[seg == FSL_FAST_LABELS[fglabel]]
-    else:
-        fgdata = img[seg != bglabel]
 
-    fg_mu = (np.abs(fgdata) ** 2).mean()
-    bg_mu = (np.abs(img[seg == bglabel]) ** 2).mean()
+    fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
+    bg_mu = (np.abs(img[air > 0]) ** 2).mean()
     return fg_mu / bg_mu
 
 
@@ -131,7 +127,7 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, bg_mask, calculate_qi2=False, bglabel=0):
+def artifacts(img, airmask, calculate_qi2=False):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     The **q1** is the proportion of voxels with intensity corrupted by artifacts
@@ -145,7 +141,7 @@ def artifacts(img, bg_mask, calculate_qi2=False, bglabel=0):
     :param numpy.ndarray seg: input segmentation
 
     """
-    bg_img = img * bg_mask
+    bg_img = img * airmask
 
     # Find the background threshold (the most frequently occurring value
     # excluding 0)
@@ -158,18 +154,14 @@ def artifacts(img, bg_mask, calculate_qi2=False, bglabel=0):
     bg_img[bg_img != 0] = 1
 
     # Create a structural element to be used in an opening operation.
-    struct_elmnt = np.zeros((3, 3, 3))
-    struct_elmnt[0, 1, 1] = 1
-    struct_elmnt[1, 1, :] = 1
-    struct_elmnt[1, :, 1] = 1
-    struct_elmnt[2, 1, 1] = 1
+    struc = nd.generate_binary_structure(3, 1)
 
     # Perform an opening operation on the background data.
-    bg_img = nd.binary_opening(bg_img, structure=struct_elmnt).astype(np.uint8)
+    bg_img = nd.binary_opening(bg_img, structure=struc).astype(np.uint8)
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    artifact_qi1 = bg_img.sum() / float(bg_mask.sum())
+    artifact_qi1 = bg_img.sum() / float(airmask.sum())
 
     if calculate_qi2:
         raise NotImplementedError

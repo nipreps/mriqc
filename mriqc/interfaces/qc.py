@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-25 15:29:48
+# @Last Modified time: 2016-03-28 11:41:06
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -90,7 +90,7 @@ class StructuralQC(BaseInterface):
         self._results['cnr'] = cnr(imdata, segdata)
 
         # FBER
-        self._results['fber'] = fber(imdata, segdata)
+        self._results['fber'] = fber(imdata, segdata, airdata)
 
         # EFC
         self._results['efc'] = efc(imdata)

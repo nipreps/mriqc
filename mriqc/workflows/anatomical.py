@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-25 16:38:27
+# @Last Modified time: 2016-03-28 11:54:36
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -193,7 +193,7 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'in_segm']),
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
-    
+
     if not has_dipy:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
@@ -233,64 +233,54 @@ def airmsk_wf(name='AirMaskWorkflow'):
         fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
+    def _invt_flags(transforms):
+        return [True] * len(transforms)
+
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(dimension=3), name='normalize')
     norm.inputs.initial_moving_transform_com = 1
     norm.inputs.transforms = ['Rigid', 'Affine']
-    norm.inputs.transform_parameters = [(1.0,), (0.5,)]
+    norm.inputs.transform_parameters = [(2.0,), (1.0,)]
     norm.inputs.number_of_iterations = [[500], [1000, 200]]
-    norm.inputs.metric = ['GC', 'GC']
+    norm.inputs.convergence_window_size = [50, 20]
+    norm.inputs.metric = ['Mattes', 'GC']
     norm.inputs.metric_weight = [1] * 2
-    norm.inputs.radius_or_number_of_bins = [5, 3]
-    norm.inputs.sampling_strategy = ['Random'] * 2
-    norm.inputs.sampling_percentage = [0.2, 0.1]
+    norm.inputs.radius_or_number_of_bins = [64, 3]
+    norm.inputs.sampling_strategy = ['Random', None]
+    norm.inputs.sampling_percentage = [0.2, 1.]
     norm.inputs.convergence_threshold = [1.e-8, 1.e-9]
-    norm.inputs.convergence_window_size = [30, 10]
     norm.inputs.smoothing_sigmas = [[8], [4, 2]]
     norm.inputs.sigma_units = ['mm'] * 2
     norm.inputs.shrink_factors = [[3], [2, 1]]
     norm.inputs.use_estimate_learning_rate_once = [True] * 2
     norm.inputs.use_histogram_matching = [True] * 2
     norm.inputs.winsorize_lower_quantile = 0.001
-    norm.inputs.winsorize_upper_quantile = 0.099
+    norm.inputs.winsorize_upper_quantile = 0.999
     norm.inputs.fixed_image = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
     norm.inputs.fixed_image_mask = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
 
     invt = pe.Node(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
+        dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
     invt.inputs.input_image = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
 
-    # Get linear mapping to normalized (template) space
-    # flirt = pe.Node(fsl.FLIRT(cost='corratio', dof=12, bgvalue=0), name='spatial_normalization')
-    # flirt.inputs.reference = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
-    # flirt.inputs.ref_weight = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
-
-    # Invert affine matrix
-    # invt = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='invert_xfm')
-
-    # Normalize the bottom part of the mask to the image space
-    # mask = pe.Node(fsl.ApplyXfm(bgvalue=1, apply_xfm=True, interp='nearestneighbour'),
-    #                name='ApplyXfmToMask')
-    # mask.inputs.in_file = p.resource_filename('mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
-
     # Combine and invert mask
-    combine = pe.Node(fsl.BinaryMaths(operation='add', args='-bin'), name='combine_masks')
-    invertmsk = pe.Node(fsl.BinaryMaths(operation='mul', operand_value=-1.0, args='-add 1'),
-                        name='InvertMask')
+    combine = pe.Node(niu.Function(
+        input_names=['in_file', 'head_mask', 'artifact_mask'], output_names=['out_file'],
+        function=combine_masks), name='combine_masks')
 
     workflow.connect([
         (inputnode, norm, [('in_file', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
-        (norm, invt, [('reverse_transforms', 'transforms'),
-                      ('reverse_invert_flags', 'invert_transform_flags')]),
+        (norm, invt, [('forward_transforms', 'transforms'),
+                      (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, combine, [('head_mask', 'in_file')]),
-        (invt, combine, [('output_image', 'operand_file')]),
-        (combine, invertmsk, [('out_file', 'in_file')]),
-        (invertmsk, outputnode, [('out_file', 'out_file')])
+        (inputnode, combine, [('in_file', 'in_file'),
+                              ('head_mask', 'head_mask')]),
+        (invt, combine, [('output_image', 'artifact_mask')]),
+        (combine, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
 
@@ -354,13 +344,55 @@ def _get_wm(in_file, wm_val=3, out_file=None):
             ext = ext2 + ext
         out_file = op.abspath('%s_wm%s' % (fname, ext))
 
-    im = nb.load(in_file)
-    data = im.get_data().astype(np.uint8)
+    imnii = nb.load(in_file)
+    data = imnii.get_data().astype(np.uint8)
     msk = np.zeros_like(data)
     msk[data == wm_val] = 1
-    nb.Nifti1Image(msk, im.get_affine(), im.get_header()).to_filename(out_file)
+    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
+def combine_masks(in_file, head_mask, artifact_mask, out_file=None):
+    """Computes an air mask from the head and artifact masks"""
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from scipy import ndimage as sim
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('%s_combined%s' % (fname, ext))
+
+    imdata = nb.load(in_file).get_data()
+    msk = np.ones_like(imdata, dtype=np.uint8)
+    msk[imdata <= 0] = 0
+
+    imnii = nb.load(head_mask)
+    hmdata = imnii.get_data()
+    msk[hmdata == 1] = 0
+
+    adata = nb.load(artifact_mask).get_data()
+    msk[adata == 1] = 0
+
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 3)
+    msk = sim.binary_opening(msk, struc).astype(np.uint8)  # pylint: disable=no-member
+
+    # Remove small objects
+    label_im, nb_labels = sim.label(msk)
+    if nb_labels > 2:
+        sizes = sim.sum(msk, label_im, range(nb_labels + 1))
+        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
+        for _, label in ordered[2:]:
+            msk[label_im == label] = 0
+
+    msk = sim.binary_closing(msk, struc).astype(np.uint8)  # pylint: disable=no-member
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 4)
+    msk = sim.binary_fill_holes(msk, struc).astype(np.uint8)  # pylint: disable=no-member
+
+    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
+    return out_file
 
 def image_gradient(in_file, compute_abs=True, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
@@ -376,15 +408,15 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
             ext = ext2 + ext
         out_file = op.abspath('%s_grad%s' % (fname, ext))
 
-    im = nb.load(in_file)
-    data = im.get_data().astype(np.float32)  # pylint: disable=no-member
-    sigma = .01 * (np.percentile(data[data > 0], 75.) - np.percentile(data[data > 0], 25.))  # pylint: disable=no-member
+    imnii = nb.load(in_file)
+    data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
+    sigma = 1e-3 * data[data > 0].std()  # pylint: disable=no-member
     grad = gradient(data, sigma)
 
     if compute_abs:
         grad = np.abs(grad)
 
-    nb.Nifti1Image(grad, im.get_affine(), im.get_header()).to_filename(out_file)
+    nb.Nifti1Image(grad, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
 def gradient_threshold(in_file, thresh=1.0, out_file=None):
@@ -403,13 +435,15 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
         out_file = op.abspath('%s_gradmask%s' % (fname, ext))
 
 
-    im = nb.load(in_file)
-    data = im.get_data()
+    imnii = nb.load(in_file)
+    data = imnii.get_data()
     hist, bin_edges = np.histogram(data[data > 0], bins=128, density=True)  # pylint: disable=no-member
 
+    # Find threshold at 1% frequency
     for i, freq in reversed(list(enumerate(hist))):
-        if freq >= thresh:
-            out_thresh = 0.5 * (bin_edges[i+1] - bin_edges[i])
+        binw = bin_edges[i+1] - bin_edges[i]
+        if (freq * binw) >= thresh:
+            out_thresh = 0.5 * binw
             break
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
@@ -418,7 +452,7 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     mask = binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
     mask = binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
-    hdr = im.get_header().copy()
+    hdr = imnii.get_header().copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
-    nb.Nifti1Image(mask, im.get_affine(), hdr).to_filename(out_file)
+    nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
