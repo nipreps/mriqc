@@ -99,13 +99,7 @@ fi
 #fi
 
 
-# set PATH so it includes user's private bin if it exists
-if [ -d "$HOME/local/bin" ] ; then
-    PATH="$HOME/local/bin:$PATH"
-fi
-
-LD_LIBRARY_PATH=$HOME/local/lib:$LD_LIBRARY_PATH
-
 # Set up neuroimaging software
 source /etc/fsl/fsl.sh
 source /etc/afni/afni.sh
+source activate mriqcenv
