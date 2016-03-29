@@ -4,28 +4,29 @@ machine:
 
 dependencies:
   cache_directories:
-    - "/scratch"
+    - "~/scratch"
     - "~/downloads/"
+    - "~/docker"
+
   pre:
     # Download test data
     - bash ./circle_setup.sh
   override:
+    - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
     - docker build -t oesteban/mriqc .
-machine:
-  environment:
-    FSLOUTPUTTYPE: NIFTI_GZ
+    - mkdir -p ~/docker; docker save oesteban/mriqc > ~/docker/image.tar
 test:
   override:
     # Test mriqcp
-    # - docker run -i -v /scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_sub-01/ -o outputs/ss-all/out -w outputs/ss-all/work
-    - docker run -i -v /scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-func/out -w outputs/ms-func/work --skip-anatomical  --use-plugin ~/examples/plugin.yml
-    - docker run -i -v /scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-anat/out -w outputs/ms-anat/work --skip-functional
+    # - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_sub-01/ -o outputs/ss-all/out -w outputs/ss-all/work
+    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-func/out -w outputs/ms-func/work --skip-anatomical  --use-plugin plugin.yml
+    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-anat/out -w outputs/ms-anat/work --skip-functional
 general:
   artifacts:
-    #- "/scratch/outputs/ss-all/out"
-    #- "/scratch/outputs/ss-all/work"
-    - "/scratch/outputs/ms-func/out"
-    - "/scratch/outputs/ms-func/work"
-    - "/scratch/outputs/ms-anat/out"
-    - "/scratch/outputs/ms-anat/work"
+    #- "~/scratch/outputs/ss-all/out"
+    #- "~/scratch/outputs/ss-all/work"
+    - "~/scratch/outputs/ms-func/out"
+    - "~/scratch/outputs/ms-func/work"
+    - "~/scratch/outputs/ms-anat/out"
+    - "~/scratch/outputs/ms-anat/work"
