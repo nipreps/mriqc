@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-28 11:54:36
+# @Last Modified time: 2016-03-29 14:25:50
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -183,11 +183,13 @@ def mri_reorient_wf(name='ReorientWorkflow'):
 def headmsk_wf(name='HeadMaskWorkflow'):
     """Implements the Step 0 of [Mortamet2009]_."""
 
+    has_dipy = False
     try:
+        from dipy.denoise import nlmeans
         from nipype.interfaces.dipy import Denoise
         has_dipy = True
     except ImportError:
-        has_dipy = False
+        pass
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'in_segm']),

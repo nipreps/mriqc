@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-28 11:48:34
+# @Last Modified time: 2016-03-29 14:29:04
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -79,7 +79,7 @@ def cnr(img, seg, lbl=None):
 
 
 
-def fber(img, seg, air):
+def fber(img, seg, air=None):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
     defined as the mean energy of image values within the head relative
@@ -94,6 +94,9 @@ def fber(img, seg, air):
     :param numpy.ndarray seg: input segmentation
 
     """
+    if air is None:
+        air = np.zeros_like(seg)
+        air[seg == 0] = 1
 
     fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
     bg_mu = (np.abs(img[air > 0]) ** 2).mean()
