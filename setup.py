@@ -3,15 +3,21 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-25 13:54:02
+# @Last Modified time: 2016-03-29 13:19:29
 """ MRIQC setup script """
 import os
 import sys
 from mriqc import (__version__, __description__, __license__,
                    __author__, __email__)
 
+REQ_LINKS = []
 with open('requirements.txt', 'r') as rfile:
     REQUIREMENTS = [line.strip() for line in rfile.readlines()]
+
+for i, req in enumerate(REQUIREMENTS):
+    if req.startswith('-e'):
+        REQUIREMENTS[i] = req.split('=')[1]
+        REQ_LINKS.append(req.split()[1])
 
 if REQUIREMENTS is None:
     REQUIREMENTS = []
@@ -43,6 +49,7 @@ def main():
                   'mriqc.workflows',],
         package_data={'mriqc': ['reports/html/*.html', 'data/*.nii.gz']},
         install_requires=REQUIREMENTS,
+        dependency_links=REQ_LINKS,
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',
