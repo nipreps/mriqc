@@ -20,8 +20,9 @@ test:
   override:
     # Test mriqcp
     # - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_sub-01/ -o outputs/ss-all/out -w outputs/ss-all/work
-    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-func/out -w outputs/ms-func/work --skip-anatomical  --use-plugin plugin.yml
-    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-anat/out -w outputs/ms-anat/work --skip-functional
+    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-func/out -w outputs/ms-func/work --skip-anatomical
+    - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-anat/out -w outputs/ms-anat/work --skip-functional --use-plugin plugin.yml --save_memory
+
 general:
   artifacts:
     #- "~/scratch/outputs/ss-all/out"
