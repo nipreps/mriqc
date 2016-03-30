@@ -1,0 +1,44 @@
+{
+  "name": "mriqcp",
+  "version": "0.1.0",
+  "helpURI": "https://github.com/poldracklab/mriqc",
+  "label": "agave-mriqcp",
+  "shortDescription": "Agave wrapper of MRIQC",
+  "longDescription": "Agave wrapper of MRIQC.",
+  "executionSystem": "slurm-stampede.tacc.utexas.edu",
+  "executionType": "HPC",
+  "parallelism": "PARALLEL",
+  "defaultQueue": "normal",
+  "defaultNodeCount": 1,
+  "deploymentPath": "apps/mriqc",
+  "deploymentSystem": "openfmri-storage",
+  "archiveSystem": "openfmri-storage",
+  "templatePath": "wrapper.sh",
+  "testPath": "test/test.sh",
+  "tags": [
+    "openfmri", "dummy", "test"
+  ],
+  "modules": [],
+  "inputs": [
+    {
+      "id": "bidsFile",
+      "details": {
+        "label": "file",
+        "description": "input file",
+        "argument": null,
+        "showArgument": false
+      },
+      "value": {
+        "visible": true,
+        "required": true,
+        "type": "string",
+        "default": "agave://openfmri-storage/ds003_downsampled.tar"
+      },
+      "semantics": {
+        "ontology": []
+      }
+    }
+  ],
+  "parameters": [],
+  "checkpointable": false
+}
