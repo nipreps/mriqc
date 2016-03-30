@@ -28,8 +28,8 @@ test:
   override:
     # Test mriqcp
     - source $HOME/.profile; mriqc -i ~/examples/ds003_sub-01/ -o ~/outdir/single-subject -w ~/workdir/single-subject
-    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-func -w ~/workdir/multiple-subject-func --skip-anatomical  --use-plugin ~/examples/plugin.yml
-    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional
+    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-func -w ~/workdir/multiple-subject-func --skip-anatomical
+    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional --save-memory --use-plugin ~/examples/plugin.yml
 general:
   artifacts:
     - "~/outdir/doc"
