@@ -14,7 +14,7 @@ dependencies:
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
-    - docker build -t oesteban/mriqc .
+    - docker build -t oesteban/mriqc build/
     - mkdir -p ~/docker; docker save oesteban/mriqc > ~/docker/image.tar
 test:
   override:
