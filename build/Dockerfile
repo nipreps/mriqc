@@ -1,5 +1,5 @@
 
-FROM oesteban/crn_base
+FROM oesteban/crn_nipype
 
 WORKDIR /root
 # Install nipype & mriqc
