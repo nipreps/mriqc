@@ -10,7 +10,7 @@ dependencies:
 
   pre:
     # Download test data
-    - bash ./circle_setup.sh
+    - bash build/circle_setup.sh
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
@@ -19,9 +19,8 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    # - docker run -i -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_sub-01/ -o outputs/ss-all/out -w outputs/ss-all/work
-    - docker run -i -v /etc/timezone:/etc/timezone:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-func/out -w outputs/ms-func/work --skip-anatomical
-    - docker run -i -v /etc/timezone:/etc/timezone:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -i data/ds003_downsampled -o outputs/ms-anat/out -w outputs/ms-anat/work --skip-functional --use-plugin plugin.yml --save-memory
+    - bash build/circle_tests.sh:
+        parallel: true
 
 general:
   artifacts:
