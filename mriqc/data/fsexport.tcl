@@ -10,14 +10,12 @@
 # Alternatively you can set the slice number (in volume index
 # coordinates). This will not change the in-plane center.
 
-# SetSlice sliceNumber 
-SetSlice 128
-
 # Use SetZoomLevel to zoom in and out. 1 is normal, >1 is zoomed in,
 # and 0-1 is zoomed out.
 
 # SetZoomLevel level 
-SetZoomLevel 4
+SetZoomLevel 2
+# SetZoomCenter 0 0 0
 
 # SetOrientation orientation 
 # orientation:
@@ -53,6 +51,13 @@ SetOrientation 0
 # 23    Maximum Intensity Porjection
 # 24    Head Points
 # 25    Verbose GCA DumpSetDisplayFlag 
+
+# SetCursor coordinateSpace x y z 
+# coordinateSpace:
+# 0     volume index
+# 1     RAS
+# 2     Talairach
+SetCursor 0 128 128 128
 
 # Turn cursor display off.
 SetDisplayFlag 3 0
@@ -92,15 +97,11 @@ SetDisplayFlag 22 1
 
 # Or take pictures of multiple slices for a movie. This goes through
 # slices 0-255 and takes a shot at each one.
-for { set slice 0 } { $slice < 256 } { incr slice } {
-
-    # SetCursor coordinateSpace x y z 
-    # coordinateSpace:
-    # 0     volume index
-    # 1     RAS
-    # 2     Talairach
-    SetCursor 0 128 $slice 128
-    # SetSlice $slice
+for { set slice 30 } { $slice < 226 } { incr slice } {
+    SetZoomCenter 160 80 $slice
+    SetSlice $slice
     RedrawScreen
-    SaveTIFF $::env(FS_OUTPUT_PATH)/screenshot-$slice.tif
+    SaveTIFF $::env(FS_OUTPUT_PATH)[format "/screenshot-%03d.tif" $slice]
 }
+
+QuitMedit
