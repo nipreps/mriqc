@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-28 11:54:36
+# @Last Modified time: 2016-03-30 09:50:07
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -69,7 +69,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     hmsk = headmsk_wf()
-    amw = airmsk_wf()
+    amw = airmsk_wf(save_memory=settings['save_memory'])
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
@@ -183,11 +183,13 @@ def mri_reorient_wf(name='ReorientWorkflow'):
 def headmsk_wf(name='HeadMaskWorkflow'):
     """Implements the Step 0 of [Mortamet2009]_."""
 
+    has_dipy = False
     try:
+        from dipy.denoise import nlmeans
         from nipype.interfaces.dipy import Denoise
         has_dipy = True
     except ImportError:
-        has_dipy = False
+        pass
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'in_segm']),
@@ -224,7 +226,7 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow'):
+def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as p
     workflow = pe.Workflow(name=name)
@@ -256,8 +258,12 @@ def airmsk_wf(name='AirMaskWorkflow'):
     norm.inputs.use_histogram_matching = [True] * 2
     norm.inputs.winsorize_lower_quantile = 0.001
     norm.inputs.winsorize_upper_quantile = 0.999
-    norm.inputs.fixed_image = p.resource_filename(
-        'mriqc', 'data/MNI152_T1_1mm_brain.nii.gz')
+    if save_memory:
+        norm.inputs.fixed_image = p.resource_filename(
+            'mriqc', 'data/MNI152_T1_2mm.nii.gz')
+    else:
+        norm.inputs.fixed_image = p.resource_filename(
+            'mriqc', 'data/MNI152_T1_1mm.nii.gz')
     norm.inputs.fixed_image_mask = p.resource_filename(
         'mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
 

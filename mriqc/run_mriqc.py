@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-16 17:46:05
+# @Last Modified time: 2016-03-30 09:51:20
 
 """
 =====
@@ -41,6 +41,10 @@ def main():
         help='nipype plugin configuration file')
 
     g_input.add_argument(
+        '--save-memory', action='store_true', default=False,
+        help='Save as much memory as possible')
+
+    g_input.add_argument(
         "--skip-anatomical", action='store_true', default=False,
         help="Skip anatomical QC workflow.")
     g_input.add_argument(
@@ -63,6 +67,7 @@ def main():
     settings = {'bids_root': op.abspath(opts.bids_root),
                 'output_dir': os.getcwd(),
                 'write_graph': opts.write_graph,
+                'save_memory': opts.save_memory,
                 'skip': [],
                 'nthreads': opts.nthreads}
 

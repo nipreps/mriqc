@@ -3,15 +3,21 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-25 13:54:02
+# @Last Modified time: 2016-04-04 11:30:59
 """ MRIQC setup script """
 import os
 import sys
 from mriqc import (__version__, __description__, __license__,
                    __author__, __email__)
 
+REQ_LINKS = []
 with open('requirements.txt', 'r') as rfile:
     REQUIREMENTS = [line.strip() for line in rfile.readlines()]
+
+for i, req in enumerate(REQUIREMENTS):
+    if req.startswith('-e'):
+        REQUIREMENTS[i] = req.split('=')[1]
+        REQ_LINKS.append(req.split()[1])
 
 if REQUIREMENTS is None:
     REQUIREMENTS = []
@@ -33,7 +39,8 @@ def main():
         download_url='https://pypi.python.org/packages/source/m/mriqc/'
                      'mriqc-%s.tar.gz' % __version__,
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',
-                                          'abide2bids=mriqc.utils.abide2bids:main']},
+                                          'abide2bids=mriqc.utils.abide2bids:main',
+                                          'fs2gif=mriqc.utils.fs2gif:main']},
         packages=['mriqc',
                   'mriqc.data',
                   'mriqc.interfaces',
@@ -41,8 +48,9 @@ def main():
                   'mriqc.reports',
                   'mriqc.utils',
                   'mriqc.workflows',],
-        package_data={'mriqc': ['reports/html/*.html', 'data/*.nii.gz']},
+        package_data={'mriqc': ['reports/html/*.html', 'data/*.nii.gz', 'data/fsexport.tcl']},
         install_requires=REQUIREMENTS,
+        dependency_links=REQ_LINKS,
         zip_safe=False,
         classifiers=[
             'Development Status :: 3 - Alpha',

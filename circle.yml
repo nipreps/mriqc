@@ -1,43 +1,32 @@
+machine:
+  services:
+    - docker
+
 dependencies:
   cache_directories:
-    - "~/examples/"
-    - "~/.apt-cache/"
-    - "~/local/"
+    - "~/scratch"
     - "~/downloads/"
-    - "~/workdir"
+    - "~/docker"
+
   pre:
-    # Let CircleCI cache the apt archive
-    - sudo rm -rf /var/cache/apt/archives && sudo ln -s ~/.apt-cache /var/cache/apt/archives && mkdir -p ~/.apt-cache/partial
-    - wget -O- http://neuro.debian.net/lists/precise.us-ca.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
-    - sudo apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
-    - sudo apt-get update
-    - bash ./circle_setup.sh
+    # Download test data
+    - bash build/circle_setup.sh
   override:
-    - sudo ln -sf $HOME/local/ants/* /usr/local/bin/
-    - sudo apt-get install -y fsl-core fsl-atlases fsl-mni152-templates afni
-    - echo "source /etc/fsl/fsl.sh" >> $HOME/.profile
-    - echo "source /etc/afni/afni.sh" >> $HOME/.profile
-    - pip install --upgrade pip
-    - pip install numpy
-    - pip install sphinx sphinx-autobuild
-    - pip install -r requirements.txt
-    - pip install -e .
-machine:
-  environment:
-    FSLOUTPUTTYPE: NIFTI_GZ
+    - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
+    - docker info
+    - docker build -t oesteban/mriqc build/
+    - mkdir -p ~/docker; docker save oesteban/mriqc > ~/docker/image.tar
 test:
   override:
     # Test mriqcp
-    - sphinx-build -b html docs/source ~/outdir/doc
-    - source $HOME/.profile; mriqc -i ~/examples/ds003_sub-01/ -o ~/outdir/single-subject -w ~/workdir/single-subject
-    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-func -w ~/workdir/multiple-subject-func --skip-anatomical  --use-plugin ~/examples/plugin.yml
-    - source $HOME/.profile; mriqc -i ~/examples/ds003_downsampled/ -o ~/outdir/multiple-subject-anat -w ~/workdir/multiple-subject-anat --skip-functional
+    - bash build/circle_tests.sh:
+        parallel: true
+
 general:
   artifacts:
-    - "~/outdir/doc"
-    - "~/outdir/single-subject"
-    - "~/workdir/single-subject"
-    - "~/outdir/multiple-subject-func"
-    - "~/workdir/multiple-subject-func"
-    - "~/outdir/multiple-subject-anat"
-    - "~/workdir/multiple-subject-anat"
+    #- "~/scratch/outputs/ss-all/out"
+    #- "~/scratch/outputs/ss-all/work"
+    - "~/scratch/outputs/ms-func/out"
+    - "~/scratch/outputs/ms-func/work"
+    - "~/scratch/outputs/ms-anat/out"
+    - "~/scratch/outputs/ms-anat/work"

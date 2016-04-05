@@ -4,7 +4,7 @@ six
 pandas
 nibabel
 nitime
-nipype
+-e git+https://github.com/nipy/nipype#egg=nipype
 lockfile
 seaborn
 pyPdf2
