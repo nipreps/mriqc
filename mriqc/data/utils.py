@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:04:56
+# @Last Modified time: 2016-04-06 12:07:51
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -61,7 +61,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
     data_dir, _ = op.split(dataset_dir)
 
     if temp_downloads is None:
-        temp_downloads = op.join(os.getenv('HOME'), '.cache', 'mriqc', 'downloads')
+        temp_downloads = op.join(op.expanduser('~/.cache/mriqc'), 'downloads')
 
     # Determine data path
     if not op.exists(temp_downloads):
