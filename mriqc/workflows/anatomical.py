@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-30 09:50:07
+# @Last Modified time: 2016-04-06 12:24:08
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -22,7 +22,7 @@ from nipype.interfaces.afni import preprocess as afp
 from ..interfaces.qc import StructuralQC
 from ..interfaces.viz import Report, PlotMosaic
 from ..utils.misc import reorder_csv, rotate_files
-
+from ..data.getters import get_mni_template
 
 def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     """ The anatomical quality control workflow """
@@ -259,18 +259,17 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     norm.inputs.winsorize_lower_quantile = 0.001
     norm.inputs.winsorize_upper_quantile = 0.999
     if save_memory:
-        norm.inputs.fixed_image = p.resource_filename(
-            'mriqc', 'data/MNI152_T1_2mm.nii.gz')
+        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
+        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
+                                               'MNI152_T1_2mm_brain_mask.nii.gz')
     else:
-        norm.inputs.fixed_image = p.resource_filename(
-            'mriqc', 'data/MNI152_T1_1mm.nii.gz')
-    norm.inputs.fixed_image_mask = p.resource_filename(
-        'mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_1mm.nii.gz')
+        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
+                                               'MNI152_T1_1mm_brain_mask.nii.gz')
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
-    invt.inputs.input_image = p.resource_filename(
-        'mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
+    invt.inputs.input_image = op.join(get_mni_template(), 'MNI152_T1_1mm_brain_bottom.nii.gz')
 
     # Combine and invert mask
     combine = pe.Node(niu.Function(
