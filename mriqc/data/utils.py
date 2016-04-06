@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 09:40:23
+# @Last Modified time: 2016-04-06 12:04:56
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -24,13 +24,13 @@ import subprocess as sp
 from .compat import _urllib, md5_hash
 
 
-def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
+def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
                 md5sum=None, username=None, password=None, handlers=None,
-                verbose=1):
+                verbose=1, temp_downloads=None):
     """Load requested file, downloading it if needed or requested.
 
     :param str url: contains the url of the file to be downloaded.
-    :param str data_dir: path of the data directory. Used for data
+    :param str dataset_dir: path of the data directory. Used for data
         storage in the specified location.
     :param bool resume: if true, try to resume partially downloaded files
     :param overwrite: if bool true and file already exists, delete it.
@@ -55,30 +55,37 @@ def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
     if handlers is None:
         handlers = []
 
+    if not overwrite and os.listdir(dataset_dir):
+        return True
+
+    data_dir, _ = op.split(dataset_dir)
+
+    if temp_downloads is None:
+        temp_downloads = op.join(os.getenv('HOME'), '.cache', 'mriqc', 'downloads')
+
     # Determine data path
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    if not op.exists(temp_downloads):
+        os.makedirs(temp_downloads)
 
     # Determine filename using URL
     parse = _urllib.parse.urlparse(url)
-    file_name = os.path.basename(parse.path)
+    file_name = op.basename(parse.path)
     if file_name == '':
         file_name = md5_hash(parse.path)
 
         if filetype is not None:
             file_name += filetype
 
-    temp_file_name = file_name + ".part"
-    full_name = os.path.join(data_dir, file_name)
-    temp_full_name = os.path.join(data_dir, temp_file_name)
-    if os.path.exists(full_name):
-        if overwrite:
-            os.remove(full_name)
-        else:
-            return full_name
-    if os.path.exists(temp_full_name):
+    temp_full_name = op.join(temp_downloads, file_name)
+    temp_part_name = temp_full_name + ".part"
+
+    if overwrite:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+
+    if op.exists(temp_full_name):
         if overwrite:
             os.remove(temp_full_name)
+
     t_0 = time.time()
     local_file = None
     initial_size = 0
@@ -103,9 +110,9 @@ def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
         if verbose > 0:
             displayed_url = url.split('?')[0] if verbose == 1 else url
             print('Downloading data from %s ...' % displayed_url)
-        if resume and os.path.exists(temp_full_name):
+        if resume and op.exists(temp_part_name):
             # Download has been interrupted, we try to resume it.
-            local_file_size = os.path.getsize(temp_full_name)
+            local_file_size = op.getsize(temp_part_name)
             # If the file exists, then only download the remainder
             request.add_header("Range", "bytes=%s-" % (local_file_size))
             try:
@@ -121,20 +128,20 @@ def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
                 if verbose > 0:
                     print('Resuming failed, try to download the whole file.')
                 return _fetch_file(
-                    url, data_dir, resume=False, overwrite=overwrite,
+                    url, dataset_dir, resume=False, overwrite=overwrite,
                     md5sum=md5sum, username=username, password=password,
                     handlers=handlers, verbose=verbose)
-            local_file = open(temp_full_name, "ab")
+            local_file = open(temp_part_name, "ab")
             initial_size = local_file_size
         else:
             data = url_opener.open(request)
-            local_file = open(temp_full_name, "wb")
+            local_file = open(temp_part_name, "wb")
         _chunk_read_(data, local_file, report_hook=(verbose > 0),
                      initial_size=initial_size, verbose=verbose)
         # temp file must be closed prior to the move
         if not local_file.closed:
             local_file.close()
-        shutil.move(temp_full_name, full_name)
+        shutil.move(temp_part_name, temp_full_name)
         delta_t = time.time() - t_0
         if verbose > 0:
             # Complete the reporting hook
@@ -153,13 +160,14 @@ def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
         if local_file is not None:
             if not local_file.closed:
                 local_file.close()
+
     if md5sum is not None:
-        if _md5_sum_file(full_name) != md5sum:
+        if _md5_sum_file(temp_full_name) != md5sum:
             raise ValueError("File %s checksum verification has failed."
                              " Dataset fetching aborted." % local_file)
 
     if filetype is None:
-        fname, filetype = op.splitext(op.basename(full_name))
+        fname, filetype = op.splitext(op.basename(temp_full_name))
         if filetype == '.gz':
             fname, ext = op.splitext(fname)
             filetype = ext + filetype
@@ -167,15 +175,12 @@ def _fetch_file(url, data_dir, filetype=None, resume=True, overwrite=False,
     if filetype.startswith('.'):
         filetype = filetype[1:]
 
-    success = True
     if filetype == 'tar':
-        success = sp.check_call(['tar', 'xf', full_name]):
+        sp.check_call(['tar', 'xf', temp_full_name], cwd=data_dir)
+        os.remove(temp_full_name)
+        return True
 
-    if success:
-    os.remove(full_name)
-            return True
-
-    return success
+    return True
 
 def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
                      verbose=1):
@@ -201,7 +206,7 @@ def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
         2. the keyword argument data_dir
         3. the global environment variable MRIQC_SHARED_DATA
         4. the user environment variable MRIQC_DATA
-        5. ~/.cache/mriqc_data in the user home folder
+        5. ~/.cache/mriqc in the user home folder
 
 
     """
@@ -229,7 +234,7 @@ def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
         if local_data is not None:
             paths.extend([(d, False) for d in local_data.split(os.pathsep)])
 
-        paths.append((op.expanduser('~/.cache/mriqc_data'), False))
+        paths.append((op.expanduser('~/.cache/mriqc'), False))
 
     if verbose > 2:
         print('Dataset search paths: %s' % paths)

@@ -12,14 +12,6 @@ if [[ ! -d ${HOME}/scratch/data/ds003_downsampled ]]; then
     tar xf ${HOME}/downloads/ds003_downsampled.tar -C ${HOME}/scratch/data
 fi
 
-if [[ ! -d ${HOME}/scratch/data/brainweb ]]; then
-    # Folder for downloads
-    mkdir -p ${HOME}/downloads
-    wget -c -O ${HOME}/downloads/brainweb.tar "https://googledrive.com/host/0BxI12kyv2olZbVlRZUVmd3FaSzg"
-    mkdir -p ${HOME}/scratch/data/
-    tar xf ${HOME}/downloads/brainweb.tar -C ${HOME}/scratch/data
-fi
-
 mkdir -p ${HOME}/scratch/data/ds003_sub-01
 ln -fs ${HOME}/scratch/data/ds003_downsampled/sub-01 ${HOME}/scratch/data/ds003_sub-01/
 echo "{plugin: MultiProc, plugin_args: {n_proc: 4}}" > ${HOME}/scratch/plugin.yml
