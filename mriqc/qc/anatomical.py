@@ -8,14 +8,14 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-29 14:29:04
+# @Last Modified time: 2016-04-06 08:52:54
 """
 Computation of the quality assessment measures on structural MRI
 
 
 
 """
-
+from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 from six import string_types
 import scipy.ndimage as nd
