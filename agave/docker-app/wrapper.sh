@@ -1,5 +1,7 @@
 #set -x
 
+echo "Running mriqc-docker on ${bidsFolder}" >> ${AGAVE_JOB_NAME}.out
+
 # Run the container in docker, mounting the current job directory as /scratch in the container
 # Note that here the docker container image must exist for the container to run. If it was
 # not built using a passed in Dockerfile, then it will be downloaded here prior to
