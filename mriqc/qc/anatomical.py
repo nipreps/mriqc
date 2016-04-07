@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 17:17:09
+# @Last Modified time: 2016-04-07 14:12:23
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -87,6 +87,32 @@ def cnr(img, seg, lbl=None):
     return np.abs(img[seg == lbl['gm']].mean() - img[seg == lbl['wm']].mean()) / \
                   img[seg == lbl['bg']].std()
 
+
+def cjv(img, wmmask, gmmask):
+    r"""
+    Calculate the :abbr:`CJV (coefficient of joint variation)`, a measure
+    related to :abbr:`SNR (Signal-to-Noise Ratio)` and
+    :abbr:`CNR (Contrast-to-Noise Ratio)` that is presented as a proxy for
+    the :abbr:`INU (intensity non-uniformity)` artifact [Ganzetti2016]_.
+    Lower is better.
+
+    .. math::
+
+        \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{\mu_\text{WM} - \mu_\text{GM}}.
+
+    :param numpy.ndarray img: the input data
+    :param numpy.ndarray wmmask: the white matter mask
+    :param numpy.ndarray gmmask: the gray matter mask
+    :return: the computed CJV
+
+
+    """
+
+    mu_wm = img[wmmask > .5].mean()
+    mu_gm = img[gmmask > .5].mean()
+    sigma_wm = img[wmmask > .5].std(ddof=1)
+    sigma_gm = img[gmmask > .5].std(ddof=1)
+    return (sigma_wm + sigma_gm) / (mu_wm - mu_gm)
 
 
 def fber(img, seg, air=None):
