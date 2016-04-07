@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:23:01
+# @Last Modified time: 2016-04-06 16:33:35
 """
 Data grabbers
 """
@@ -25,13 +25,13 @@ def get_brainweb_1mm_normal(data_dir=None, url=None, resume=True, verbose=1):
 
     """
     if url is None:
-        url = "https://googledrive.com/host/0BxI12kyv2olZbVlRZUVmd3FaSzg"
+        url = "https://googledrive.com/host/0BxI12kyv2olZZkhrUzZLbExKRzQ"
 
     dataset_name = 'brainweb'
     data_dir = _get_dataset_dir(dataset_name, data_dir=data_dir, verbose=verbose)
 
     if _fetch_file(url, data_dir, filetype='tar', resume=resume, verbose=verbose,
-                   md5sum='e338e6e1db3584eb78b00f2c6402ff28'):
+                   md5sum='384263fbeadc8e2cca92ced98f224c4b'):
         return data_dir
     else:
         return None

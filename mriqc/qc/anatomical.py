@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 08:52:54
+# @Last Modified time: 2016-04-06 17:17:09
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -22,7 +22,7 @@ import scipy.ndimage as nd
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, seg, fglabel, bglabel='bg'):
+def snr(img, fgmask, bgmask=None, fglabel=1, bglabel=0):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
 
@@ -36,20 +36,30 @@ def snr(img, seg, fglabel, bglabel='bg'):
     where the noise is computed.
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray mask: input mask or segmentation
     :param str fglabel: foreground label in the segmentation data.
     :param str bglabel: background label in the segmentation data.
 
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, string_types):
-        fglabel = FSL_FAST_LABELS[fglabel]
-    if isinstance(bglabel, string_types):
-        bglabel = FSL_FAST_LABELS[bglabel]
 
-    fg_mean = img[seg == fglabel].mean()
-    bg_std = img[seg == bglabel].std()
+    if bgmask is None:
+        bgmask = fgmask
+
+    if np.issubdtype(fgmask.dtype, np.integer):
+        if isinstance(fglabel, string_types):
+            fglabel = FSL_FAST_LABELS[fglabel]
+        if isinstance(bglabel, string_types):
+            bglabel = FSL_FAST_LABELS[bglabel]
+
+        fgmask[fgmask != fglabel] = 0
+        fgmask[fgmask == fglabel] = 1
+        bgmask[bgmask != bglabel] = 0
+        bgmask[bgmask == bglabel] = 1
+
+    fg_mean = img[fgmask > .5].mean()
+    bg_std = img[bgmask > .5].std(ddof=1)
     return fg_mean / bg_std
 
 
