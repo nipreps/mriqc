@@ -14,5 +14,8 @@ for test_params in "${MRIQC_TESTS[@]}"; do
 	if [ $(($i % $CIRCLE_NODE_TOTAL)) -eq $CIRCLE_NODE_INDEX ]; then
 	    docker run -i -e TZ=PST -v ~/scratch:/scratch -w /scratch oesteban/mriqc ${test_params}
 	fi
+	if [ $i -eq 0]; then
+		docker run -i -e TZ=PST --entrypoint="/usr/bin/run_tests" oesteban/mriqc	
+	fi
 	((i=i+1))
 done

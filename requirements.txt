@@ -1,6 +1,5 @@
 mock
 numpy
-nose
 six
 pandas
 nitime
