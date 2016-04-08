@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-07 14:12:23
+# @Last Modified time: 2016-04-08 10:27:29
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -22,7 +22,8 @@ import scipy.ndimage as nd
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, fgmask, bgmask=None, fglabel=1, bglabel=0):
+def snr(img, fgmask, bgmask=None, fglabel=1, bglabel=0, erode=True,
+        corr_rayleigh=False):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
 
@@ -36,7 +37,132 @@ def snr(img, fgmask, bgmask=None, fglabel=1, bglabel=0):
     where the noise is computed.
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray mask: input mask or segmentation
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param numpy.ndarray bgmask: input background mask or segmentation
+    :param str fglabel: foreground label in the segmentation data.
+    :param str bglabel: background label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
+    """
+
+    if np.issubdtype(fgmask.dtype, np.integer):
+        if isinstance(fglabel, string_types):
+            fglabel = FSL_FAST_LABELS[fglabel]
+        if isinstance(bglabel, string_types):
+            bglabel = FSL_FAST_LABELS[bglabel]
+
+        fgmask[fgmask != fglabel] = 0
+        fgmask[fgmask == fglabel] = 1
+
+        if bgmask is not None:
+            bgmask[bgmask != bglabel] = 0
+            bgmask[bgmask == bglabel] = 1
+    else:
+        fgmask[fgmask > .95] = 1.
+        fgmask[fgmask < 1.] = 0
+        if bgmask is not None:
+            bgmask[bgmask > .95] = 1.
+            bgmask[bgmask < 1.] = 0
+
+    if erode:
+        # Create a structural element to be used in an opening operation.
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+
+        if bgmask is not None:
+            bgmask = nd.binary_opening(bgmask, structure=struc).astype(np.uint8)
+
+    fg_mean = np.median(img[fgmask > 0])
+
+    if bgmask is None:
+        bgmask = fgmask
+        bg_mean = fg_mean
+    else:
+        bg_mean = 0
+
+    # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
+    bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
+
+    value = fg_mean / bg_std
+
+    if corr_rayleigh:
+        value /= .8
+
+    return value
+
+def snr_spectral(img, fgmask, bgmask=None, fglabel=1, bglabel=0, erode=True,
+                 corr_rayleigh=False):
+    r"""
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
+
+    .. math::
+
+        \text{SNR} = \frac{\mu_F}{\sigma_B}
+
+
+    where :math:`\mu_F` is the mean intensity of the foreground and
+    :math:`\sigma_B` is the standard deviation of the background,
+    where the noise is computed.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param numpy.ndarray bgmask: input background mask or segmentation
+    :param str fglabel: foreground label in the segmentation data.
+    :param str bglabel: background label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
+    """
+
+    if np.issubdtype(fgmask.dtype, np.integer):
+        if isinstance(fglabel, string_types):
+            fglabel = FSL_FAST_LABELS[fglabel]
+        if isinstance(bglabel, string_types):
+            bglabel = FSL_FAST_LABELS[bglabel]
+
+        fgmask[fgmask != fglabel] = 0
+        fgmask[fgmask == fglabel] = 1
+
+        if bgmask is not None:
+            bgmask[bgmask != bglabel] = 0
+            bgmask[bgmask == bglabel] = 1
+    else:
+        fgmask[fgmask > .95] = 1.
+        fgmask[fgmask < 1.] = 0
+        if bgmask is not None:
+            bgmask[bgmask > .95] = 1.
+            bgmask[bgmask < 1.] = 0
+
+    if erode:
+        # Create a structural element to be used in an opening operation.
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+
+        if bgmask is not None:
+            bgmask = nd.binary_opening(bgmask, structure=struc).astype(np.uint8)
+
+    if bgmask is None:
+        bgmask = fgmask
+
+    fg_fft = np.fft.fftn(img * fgmask)
+    bg_fft = np.fft.fftn(img * bgmask)
+
+    value = np.max(fg_fft.real ** 2 + fg_fft.imag ** 2) / np.average(bg_fft.real ** 2 + bg_fft.imag ** 2)
+
+    return value
+
+
+def snr2(img, fgmask, bgmask, erode=True):
+    r"""
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)` using `DER_SNR
+    <http://www.spacetelescope.org/static/archives/stecfnewsletters/pdf/hst_stecf_0042.pdf>`_.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param numpy.ndarray bgmask: input background mask or segmentation
     :param str fglabel: foreground label in the segmentation data.
     :param str bglabel: background label in the segmentation data.
 
@@ -47,20 +173,28 @@ def snr(img, fgmask, bgmask=None, fglabel=1, bglabel=0):
     if bgmask is None:
         bgmask = fgmask
 
-    if np.issubdtype(fgmask.dtype, np.integer):
-        if isinstance(fglabel, string_types):
-            fglabel = FSL_FAST_LABELS[fglabel]
-        if isinstance(bglabel, string_types):
-            bglabel = FSL_FAST_LABELS[bglabel]
+    if np.issubdtype(fgmask.dtype, np.float):
+        fgmask[fgmask > .95] = 1.
+        fgmask[fgmask < 1.] = 0
+        bgmask[bgmask > .95] = 1.
+        bgmask[bgmask < 1.] = 0
 
-        fgmask[fgmask != fglabel] = 0
-        fgmask[fgmask == fglabel] = 1
-        bgmask[bgmask != bglabel] = 0
-        bgmask[bgmask == bglabel] = 1
+    if erode:
+        # Create a structural element to be used in an opening operation.
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+        bgmask = nd.binary_opening(bgmask, structure=struc).astype(np.uint8)
 
-    fg_mean = img[fgmask > .5].mean()
-    bg_std = img[bgmask > .5].std(ddof=1)
-    return fg_mean / bg_std
+    nvox = np.sum(fgmask)
+    # For spectra shorter than this, no value can be returned
+    if nvox > 4:
+        flux = img[fgmask > 0]
+        signal = np.median(flux)
+        noise  = 0.6052697 * np.median(np.abs(2.0 * flux[2:nvox-2] - flux[0:nvox-4] - flux[4:nvox]))
+        return float(signal / noise)
+    else:
+        return 0.0
 
 
 def cnr(img, seg, lbl=None):
