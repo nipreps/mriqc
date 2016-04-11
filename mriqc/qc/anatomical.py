@@ -268,8 +268,13 @@ def artifacts(img, airmask, ncoils=1, compute_qi2=False):
                 break
 
         # Fit central chi distribution
-        param = chi.fit(data[data > 0], 2*ncoils)
+        param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[np.argmax(hist)])
         pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+
+        # import matplotlib.pyplot as plt
+        # plt.plot(bin_centers[t2idx:], hist[t2idx:])
+        # plt.plot(bin_centers[t2idx:], pdf_fitted[t2idx:])
+        # plt.savefig('fig.png')
 
         # Compute goodness-of-fit (gof)
         gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / artfree_msk.sum()
