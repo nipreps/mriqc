@@ -7,9 +7,8 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:24:08
+# @Last Modified time: 2016-04-11 11:34:55
 """ A QC workflow for anatomical MRI """
-import os
 import os.path as op
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
