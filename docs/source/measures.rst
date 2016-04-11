@@ -112,9 +112,17 @@ References
     focus criterion*, IEEE Trans Med Imag 16(6):903-910, 1997.
     doi:`10.1109/42.650886 <http://dx.doi.org/10.1109/42.650886>`_.
 
+  .. [Dietrich2007] Dietrich et al., *Measurement of SNRs in MR images: influence
+    of multichannel coils, parallel imaging and reconstruction filters*, JMRI 26(2):375--385.
+    2007. doi:`10.1002/jmri.20969 <http://dx.doi.org/10.1002/jmri.20969>`_.
+
   .. [Friedman2008] Friedman, L et al., *Test--retest and between‐site reliability in a multicenter 
     fMRI study*. Hum Brain Mapp, 29(8):958--972, 2008. doi:`10.1002/hbm.20440
-    <http://dx.doi.org/10.1002/hbm.20440>_.
+    <http://dx.doi.org/10.1002/hbm.20440>`_.
+
+  .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
+    a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
+    doi:`10.3389/finf.201600010 <http://dx.doi.org/10.3389/finf.201600010>`_.
 
   .. [Giannelli2010] Giannelli et al., *Characterization of Nyquist ghost in
     EPI-fMRI acquisition sequences implemented on two clinical 1.5 T MR scanner

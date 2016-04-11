@@ -11,7 +11,9 @@ RUN mkdir -p src && \
     pip install -e .
 
 ADD files/run_mriqc /usr/bin/run_mriqc
-RUN chmod +x /usr/bin/run_mriqc
+ADD files/run_tests /usr/bin/run_tests
+RUN chmod +x /usr/bin/run_mriqc && \
+	chmod +x /usr/bin/run_tests
 
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]
