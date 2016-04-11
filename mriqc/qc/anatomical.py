@@ -16,11 +16,11 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-import numpy as np
 from math import pi
 from six import string_types
+import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import rice
+from scipy.stats import chi
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
@@ -202,7 +202,7 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, airmask, calculate_qi2=False):
+def artifacts(img, airmask, ncoils=1, compute_qi2=False):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     The **q1** is the proportion of voxels with intensity corrupted by artifacts
@@ -223,7 +223,6 @@ def artifacts(img, airmask, calculate_qi2=False):
 
     bg_img = img * airmask
 
-
     # Find the background threshold (the most frequently occurring value
     # excluding 0)
     hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=128)
@@ -232,26 +231,51 @@ def artifacts(img, airmask, calculate_qi2=False):
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
-    bg_img[bg_img <= bg_threshold] = 0
+    qi1_img = np.zeros_like(bg_img)
+    qi1_img[bg_img > bg_threshold] = bg_img[bg_img > bg_threshold]
 
     # Create a structural element to be used in an opening operation.
     struc = nd.generate_binary_structure(3, 1)
 
     # Perform an a grayscale erosion operation.
-    bg_img = nd.grey_erosion(bg_img, structure=struc).astype(np.float32)
+    qi1_img = nd.grey_erosion(qi1_img, structure=struc).astype(np.float32)
     # Binarize and binary dilation
-    bg_img[bg_img > 0.] = 1
-    bg_img[bg_img < 1.] = 0
-    bg_img = nd.binary_dilation(bg_img, structure=struc).astype(np.uint8)
+    qi1_img[qi1_img > 0.] = 1
+    qi1_img[qi1_img < 1.] = 0
+    qi1_img = nd.binary_dilation(qi1_img, structure=struc).astype(np.uint8)
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    artifact_qi1 = bg_img.sum() / float(airmask.sum())
+    artifact_qi1 = qi1_img.sum() / float(airmask.sum())
+    artifact_qi2 = None
+    if compute_qi2:
+        # Artifact-free air region
+        artfree_msk = airmask.copy()
+        artfree_msk[qi1_img > 0] = 0
+        data = img[artfree_msk > 0]
 
-    if calculate_qi2:
-        raise NotImplementedError
+        # Estimate data pdf
+        hist, bin_edges = np.histogram(data, bins=128)
+        bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
 
-    return artifact_qi1, None
+        # Find t2 (intensity at half width, left side)
+        hist_max = hist[np.argmax(hist)]
+        t2idx = -1
+        for i in range(len(bin_centers)):
+            ihw = 0.45 * hist_max
+            if hist[i] > ihw:
+                t2idx = i
+                break
+
+        # Fit central chi distribution
+        param = chi.fit(data[data > 0], 2*ncoils)
+        pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+
+        # Compute goodness-of-fit (gof)
+        gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / artfree_msk.sum()
+        artifact_qi2 = artifact_qi1 + gof
+
+    return artifact_qi1, artifact_qi2
 
 def volume_fraction(pvms):
     """
