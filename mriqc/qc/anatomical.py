@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 11:24:40
+# @Last Modified time: 2016-04-11 12:24:39
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -216,23 +216,33 @@ def artifacts(img, airmask, calculate_qi2=False):
     :param numpy.ndarray seg: input segmentation
 
     """
+
+    if not np.issubdtype(airmask.dtype, np.integer):
+        airmask[airmask < .95] = 0
+        airmask[airmask > 0.] = 1
+
     bg_img = img * airmask
+
 
     # Find the background threshold (the most frequently occurring value
     # excluding 0)
-    hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=256)
+    hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=128)
     bg_threshold = np.mean(bin_edges[np.argmax(hist)])
+
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
     bg_img[bg_img <= bg_threshold] = 0
-    bg_img[bg_img != 0] = 1
 
     # Create a structural element to be used in an opening operation.
     struc = nd.generate_binary_structure(3, 1)
 
-    # Perform an opening operation on the background data.
-    bg_img = nd.binary_opening(bg_img, structure=struc).astype(np.uint8)
+    # Perform an a grayscale erosion operation.
+    bg_img = nd.grey_erosion(bg_img, structure=struc).astype(np.float32)
+    # Binarize and binary dilation
+    bg_img[bg_img > 0.] = 1
+    bg_img[bg_img < 1.] = 0
+    bg_img = nd.binary_dilation(bg_img, structure=struc).astype(np.uint8)
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.

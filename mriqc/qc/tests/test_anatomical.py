@@ -7,15 +7,16 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 11:31:22
+# @Last Modified time: 2016-04-11 13:04:57
 """
 Anatomical tests
 """
 import os.path as op
+import glob
 import nibabel as nb
 
 from mriqc.data import get_brainweb_1mm_normal
-from mriqc.qc.anatomical import snr, cjv
+from mriqc.qc.anatomical import snr, cjv, artifacts
 import numpy as np
 # from numpy.testing import allclose
 
@@ -101,3 +102,22 @@ def test_cjv():
         cjvs.append(cjv(test_data, wmdata, gmdata))
 
     return np.allclose(cjvs, exp_cjvs, rtol=.01)
+
+
+def test_artifacts():
+    data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
+    airdata = nb.load(op.join(get_brainweb_1mm_normal(), 'derivatives',
+                              'volume_fraction_bck.nii.gz')).get_data()
+
+    files = glob.glob(op.join(data, '*', 'anat', 'sub-normal01_*_T1w.nii.gz'))
+
+    delfiles = [f for f in files if 'ses-pn0' in f]
+    for fname in delfiles:
+        files.remove(fname)
+
+    values = []
+    for fname in files:
+        imdata = nb.load(fname).get_data().astype(np.float32)
+        values.append(artifacts(imdata, airdata))
+
+    return np.all(values > .05)
