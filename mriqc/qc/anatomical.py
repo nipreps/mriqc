@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 12:24:39
+# @Last Modified time: 2016-04-12 11:01:56
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -202,7 +202,7 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, airmask, ncoils=1, compute_qi2=False):
+def artifacts(img, airmask, artmask, ncoils=1, compute_qi2=False):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     The **q1** is the proportion of voxels with intensity corrupted by artifacts
@@ -221,38 +221,17 @@ def artifacts(img, airmask, ncoils=1, compute_qi2=False):
         airmask[airmask < .95] = 0
         airmask[airmask > 0.] = 1
 
-    bg_img = img * airmask
-
-    # Find the background threshold (the most frequently occurring value
-    # excluding 0)
-    hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=128)
-    bg_threshold = np.mean(bin_edges[np.argmax(hist)])
-
-
-    # Apply this threshold to the background voxels to identify voxels
-    # contributing artifacts.
-    qi1_img = np.zeros_like(bg_img)
-    qi1_img[bg_img > bg_threshold] = bg_img[bg_img > bg_threshold]
-
-    # Create a structural element to be used in an opening operation.
-    struc = nd.generate_binary_structure(3, 1)
-
-    # Perform an a grayscale erosion operation.
-    qi1_img = nd.grey_erosion(qi1_img, structure=struc).astype(np.float32)
-    # Binarize and binary dilation
-    qi1_img[qi1_img > 0.] = 1
-    qi1_img[qi1_img < 1.] = 0
-    qi1_img = nd.binary_dilation(qi1_img, structure=struc).astype(np.uint8)
+    if not np.issubdtype(artmask.dtype, np.integer):
+        artmask[artmask < .95] = 0
+        artmask[artmask > 0.] = 1
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    artifact_qi1 = qi1_img.sum() / float(airmask.sum())
+    artifact_qi1 = artmask.sum() / float(airmask.sum() + artmask.sum())
     artifact_qi2 = None
     if compute_qi2:
         # Artifact-free air region
-        artfree_msk = airmask.copy()
-        artfree_msk[qi1_img > 0] = 0
-        data = img[artfree_msk > 0]
+        data = img[airmask > 0]
 
         # Estimate data pdf
         hist, bin_edges = np.histogram(data, bins=128)
@@ -277,7 +256,7 @@ def artifacts(img, airmask, ncoils=1, compute_qi2=False):
         # plt.savefig('fig.png')
 
         # Compute goodness-of-fit (gof)
-        gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / artfree_msk.sum()
+        gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
         artifact_qi2 = artifact_qi1 + gof
 
     return artifact_qi1, artifact_qi2

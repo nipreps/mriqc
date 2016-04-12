@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-28 11:41:06
+# @Last Modified time: 2016-04-12 10:59:04
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -27,6 +27,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
+    artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
@@ -77,6 +78,7 @@ class StructuralQC(BaseInterface):
         segdata = segnii.get_data().astype(np.uint8)
 
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
+        artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
