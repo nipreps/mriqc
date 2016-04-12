@@ -7,6 +7,7 @@ dependencies:
     - "~/scratch"
     - "~/downloads/"
     - "~/docker"
+    - "~/.cache/mriqc"
 
   pre:
     # Download test data
@@ -14,8 +15,9 @@ dependencies:
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
-    - docker build -t oesteban/mriqc build/
-    - mkdir -p ~/docker; docker save oesteban/mriqc > ~/docker/image.tar
+    - docker pull oesteban/crn_nipype
+    - mkdir -p ~/docker; docker save oesteban/crn_nipype > ~/docker/image.tar
+    - docker build GIT_BRANCH="${CIRCLE_BRANCH} --build-arg GIT_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" -t oesteban/mriqc build/
 test:
   override:
     # Test mriqcp
