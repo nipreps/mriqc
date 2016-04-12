@@ -11,7 +11,7 @@ declare -a MRIQC_TESTS=(
 
 i=0
 for test_params in "${MRIQC_TESTS[@]}"; do
-	if [ $($i) -eq 0 ]; then
+	if [[ $i -eq 0 ]]; then
 		docker run -i -e TZ=PST --entrypoint="/usr/bin/run_tests" oesteban/mriqc
 	fi
 	if [ $(($i % $CIRCLE_NODE_TOTAL)) -eq $CIRCLE_NODE_INDEX ]; then

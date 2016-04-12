@@ -7,7 +7,6 @@ dependencies:
     - "~/scratch"
     - "~/downloads/"
     - "~/docker"
-    - "~/.cache/mriqc"
 
   pre:
     # Download test data
