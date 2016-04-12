@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 13:55:14
+# @Last Modified time: 2016-04-12 15:02:25
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -207,7 +207,7 @@ class FunctionalQC(BaseInterface):
         mskdata[mskdata > 0] = 1
 
         # SNR
-        self._results['snr'] = snr(epidata, mskdata, 1)
+        self._results['snr'] = snr(epidata, mskdata, fglabel=1)
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
