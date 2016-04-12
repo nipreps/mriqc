@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 10:59:04
+# @Last Modified time: 2016-04-12 13:55:14
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -98,7 +98,9 @@ class StructuralQC(BaseInterface):
         self._results['efc'] = efc(imdata)
 
         # Artifacts
-        self._results['qi1'] = artifacts(imdata, airdata)[0]
+        qi1, qi2 = artifacts(imdata, airdata, artdata)
+        self._results['qi1'] = qi1
+        self._results['qi2'] = qi2
 
         pvmdata = []
         for fname in self.inputs.in_pvms:

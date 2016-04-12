@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 11:17:26
+# @Last Modified time: 2016-04-12 13:57:00
 """
 Anatomical tests
 """
@@ -17,6 +17,7 @@ import nibabel as nb
 
 from mriqc.data import get_brainweb_1mm_normal
 from mriqc.qc.anatomical import snr, cjv, artifacts
+from mriqc.interfaces.anatomical import artifact_mask
 import numpy as np
 # from numpy.testing import allclose
 
@@ -118,6 +119,8 @@ def test_artifacts():
     values = []
     for fname in files:
         imdata = nb.load(fname).get_data().astype(np.float32)
-        values.append(artifacts(imdata, airdata))
+        artmask = artifact_mask(imdata, airdata)
+        airdata[artmask > 0] = 0
+        values.append(artifacts(imdata, airdata, artmask))
 
     return np.all(values > .05)
