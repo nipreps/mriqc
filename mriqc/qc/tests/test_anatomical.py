@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 11:04:03
+# @Last Modified time: 2016-04-12 11:17:26
 """
 Anatomical tests
 """
@@ -91,11 +91,7 @@ def test_cjv():
     im_file = op.join(data, ses, 'anat', 'sub-normal01_%s_T1w.nii.gz' % ses)
     imdata = nb.load(im_file).get_data()
 
-    try:
-        fg_mean = np.mean(imdata[wmdata > 0], weights=wmdata[wmdata > 0])
-    except TypeError:
-        fg_mean = np.mean(imdata[wmdata > .95])
-
+    fg_mean = np.mean(imdata[wmdata > .95])
     cjvs = []
     sigmas = [0.01, 0.03, 0.05, 0.08, 0.12, 0.15, 0.20]
     exp_cjvs = [0.45419429982401677, 0.51149489333538289, 0.60775532593579662, 0.79450797884093927, 1.0781050744254561, 1.3013580100905036, 1.6898180485107017]
