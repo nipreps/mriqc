@@ -17,7 +17,7 @@ dependencies:
     - docker info
     - docker pull oesteban/crn_nipype
     - mkdir -p ~/docker; docker save oesteban/crn_nipype > ~/docker/image.tar
-    - docker build GIT_BRANCH="${CIRCLE_BRANCH} --build-arg GIT_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" -t oesteban/mriqc build/
+    - docker build GIT_BRANCH=${CIRCLE_BRANCH} --build-arg GIT_URL="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" -t oesteban/mriqc build/
 test:
   override:
     # Test mriqcp
