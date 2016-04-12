@@ -7,21 +7,20 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 10:43:25
+# @Last Modified time: 2016-04-12 15:43:05
 """ Nipype interfaces to support anatomical workflow """
+import os.path as op
 import numpy as np
 import nibabel as nb
 import scipy.ndimage as nd
 
 from nipype.interfaces.base import TraitedSpec, BaseInterface, BaseInterfaceInputSpec, File
 
+
 class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
-    out_art_msk = File(name_template=['%s_artifact'], name_source=['in_file'],
-                       desc='output artifacts mask')
-    out_air_msk = File(name_template=['%s_onlyair'], name_source=['in_file'],
-                       desc='output artifacts mask, without artifacts')
+
 
 class ArtifactMaskOutputSpec(TraitedSpec):
     out_art_msk = File(exists=True, desc='output artifacts mask')
@@ -51,13 +50,26 @@ class ArtifactMask(BaseInterface):
         # Run the artifact detection
         qi1_img = artifact_mask(imdata, airdata)
 
+        fname, ext = op.splitext(op.basename(self.inputs.in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+
+        self._results['out_art_msk'] = op.abspath('%s_artifacts%s' % (fname, ext))
+        self._results['out_air_msk'] = op.abspath('%s_noart-air%s' % (fname, ext))
+
         hdr = imnii.get_header().copy()
         hdr.set_data_dtype(np.uint8)
-        nb.Nifti1Image(qi1_img, imnii.get_affine(), hdr).to_filename(self.inputs.out_art_msk)
+        nb.Nifti1Image(qi1_img, imnii.get_affine(), hdr).to_filename(
+            self._results['out_art_msk'])
 
         airdata[qi1_img > 0] = 0
-        nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(self.inputs.out_air_msk)
+        nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(
+            self._results['out_air_msk'])
         return runtime
+
+    def _list_outputs(self):
+        return self._results
 
 def artifact_mask(imdata, airdata):
     """Computes a mask of artifacts found in the air region"""
