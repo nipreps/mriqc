@@ -1,11 +1,11 @@
 
 FROM oesteban/crn_nipype
 
-ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH:-master}
-
-ARG GIT_URL
-ENV GIT_URL ${GIT_URL:-"https://github.com/poldracklab/mriqc.git"}
+# ARG GIT_BRANCH
+# ENV GIT_BRANCH ${GIT_BRANCH:-master}
+# 
+# ARG GIT_URL
+# ENV GIT_URL ${GIT_URL:-"https://github.com/poldracklab/mriqc.git"}
 
 WORKDIR /root/src
 ADD . mriqc/
