@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 07:58:42
+# @Last Modified time: 2016-04-13 08:08:15
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -57,39 +57,10 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1, bglabel=0):
     :return: the computed SNR for the foreground segmentation
 
     """
-    fgmask = smask.copy()
-    bgmask = None if nmask is None else nmask.copy()
-
-    if np.issubdtype(fgmask.dtype, np.integer):
-        if isinstance(fglabel, string_types):
-            fglabel = FSL_FAST_LABELS[fglabel]
-        if isinstance(bglabel, string_types):
-            bglabel = FSL_FAST_LABELS[bglabel]
-
-        fgmask[fgmask != fglabel] = 0
-        fgmask[fgmask == fglabel] = 1
-
-        if bgmask is not None:
-            bgmask[bgmask != bglabel] = 0
-            bgmask[bgmask == bglabel] = 1
-    else:
-        fgmask[fgmask > .95] = 1.
-        fgmask[fgmask < 1.] = 0
-        if bgmask is not None:
-            bgmask[bgmask > .95] = 1.
-            bgmask[bgmask < 1.] = 0
-
-    if erode:
-        # Create a structural element to be used in an opening operation.
-        struc = nd.generate_binary_structure(3, 2)
-        # Perform an opening operation on the background data.
-        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
-
-        if bgmask is not None:
-            bgmask = nd.binary_opening(bgmask, structure=struc).astype(np.uint8)
+    fgmask = _prepare_mask(smask, fglabel, erode)
+    bgmask = _prepare_mask(nmask, bglabel, erode) if nmask is not None else None
 
     fg_mean = np.median(img[fgmask > 0])
-
     if bgmask is None:
         bgmask = fgmask
         bg_mean = fg_mean
@@ -204,7 +175,7 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, airmask, artmask, ncoils=1, compute_qi2=False):
+def artifacts(img, airmask, artmask, ncoils=1):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     The **q1** is the proportion of voxels with intensity corrupted by artifacts
@@ -219,47 +190,33 @@ def artifacts(img, airmask, artmask, ncoils=1, compute_qi2=False):
 
     """
 
-    if not np.issubdtype(airmask.dtype, np.integer):
-        airmask[airmask < .95] = 0
-        airmask[airmask > 0.] = 1
-
-    if not np.issubdtype(artmask.dtype, np.integer):
-        artmask[artmask < .95] = 0
-        artmask[artmask > 0.] = 1
-
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
     artifact_qi1 = artmask.sum() / float(airmask.sum() + artmask.sum())
-    artifact_qi2 = None
-    if compute_qi2:
-        # Artifact-free air region
-        data = img[airmask > 0]
 
-        # Estimate data pdf
-        hist, bin_edges = np.histogram(data, bins=128)
-        bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
-
-        # Find t2 (intensity at half width, left side)
-        hist_max = hist[np.argmax(hist)]
-        t2idx = -1
-        for i in range(len(bin_centers)):
-            ihw = 0.45 * hist_max
-            if hist[i] > ihw:
-                t2idx = i
-                break
-
-        # Fit central chi distribution
-        param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[np.argmax(hist)])
-        pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
-
-        # import matplotlib.pyplot as plt
-        # plt.plot(bin_centers[t2idx:], hist[t2idx:])
-        # plt.plot(bin_centers[t2idx:], pdf_fitted[t2idx:])
-        # plt.savefig('fig.png')
-
-        # Compute goodness-of-fit (gof)
-        gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
-        artifact_qi2 = artifact_qi1 + gof
+    # Artifact-free air region
+    data = img[airmask > 0]
+    # Estimate data pdf
+    hist, bin_edges = np.histogram(data, bins=128)
+    bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
+    # Find t2 (intensity at half width, left side)
+    hist_max = hist[np.argmax(hist)]
+    t2idx = -1
+    for i in range(len(bin_centers)):
+        ihw = 0.45 * hist_max
+        if hist[i] > ihw:
+            t2idx = i
+            break
+    # Fit central chi distribution
+    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[np.argmax(hist)])
+    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+    # import matplotlib.pyplot as plt
+    # plt.plot(bin_centers[t2idx:], hist[t2idx:])
+    # plt.plot(bin_centers[t2idx:], pdf_fitted[t2idx:])
+    # plt.savefig('fig.png')
+    # Compute goodness-of-fit (gof)
+    gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
+    artifact_qi2 = artifact_qi1 + gof
 
     return artifact_qi1, artifact_qi2
 
@@ -335,3 +292,24 @@ def summary_stats(img, pvms):
         p05[k] = np.percentile(im_lid[im_lid > 0], 5)
 
     return mean, stdv, p95, p05
+
+def _prepare_mask(mask, label, erode=True):
+    fgmask = mask.copy()
+
+    if np.issubdtype(fgmask.dtype, np.integer):
+        if isinstance(label, string_types):
+            label = FSL_FAST_LABELS[label]
+
+        fgmask[fgmask != label] = 0
+        fgmask[fgmask == label] = 1
+    else:
+        fgmask[fgmask > .95] = 1.
+        fgmask[fgmask < 1.] = 0
+
+    if erode:
+        # Create a structural element to be used in an opening operation.
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+
+    return fgmask

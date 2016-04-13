@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 15:43:05
+# @Last Modified time: 2016-04-13 08:10:35
 """ Nipype interfaces to support anatomical workflow """
 import os.path as op
 import numpy as np
@@ -91,7 +91,7 @@ def artifact_mask(imdata, airdata):
     qi1_img[bg_img > bg_threshold] = bg_img[bg_img > bg_threshold]
 
     # Create a structural element to be used in an opening operation.
-    struc = nd.generate_binary_structure(3, 1)
+    struc = nd.generate_binary_structure(3, 2)
 
     # Perform an a grayscale erosion operation.
     qi1_img = nd.grey_erosion(qi1_img, structure=struc).astype(np.float32)
