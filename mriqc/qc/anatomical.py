@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 08:34:09
+# @Last Modified time: 2016-04-13 12:28:43
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -97,7 +97,7 @@ def cnr(img, seg, lbl=None):
                   img[seg == lbl['bg']].std()
 
 
-def cjv(img, wmmask, gmmask):
+def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     r"""
     Calculate the :abbr:`CJV (coefficient of joint variation)`, a measure
     related to :abbr:`SNR (Signal-to-Noise Ratio)` and
@@ -116,6 +116,20 @@ def cjv(img, wmmask, gmmask):
 
 
     """
+
+    if seg is None and (wmmask is None or gmmask is None):
+        raise RuntimeError('Masks or segmentation should be provided')
+
+    if seg is not None:
+        if isinstance(wmlabel, string_types):
+            wmlabel = FSL_FAST_LABELS[wmlabel]
+        if isinstance(gmlabel, string_types):
+            gmlabel = FSL_FAST_LABELS[gmlabel]
+
+        wmmask = np.zeros_like(seg)
+        wmmask[seg == wmlabel] = 1
+        gmmask = np.zeros_like(seg)
+        gmmask[seg == gmlabel] = 1
 
     mu_wm = img[wmmask > .5].mean()
     mu_gm = img[gmmask > .5].mean()
