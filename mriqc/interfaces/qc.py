@@ -84,7 +84,7 @@ class StructuralQC(BaseInterface):
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(imdata, segdata, tlabel))
+            snrvals.append(snr(imdata, segdata, airdata, fglabel=tlabel))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = np.mean(snrvals)
 
