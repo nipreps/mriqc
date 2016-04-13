@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 14:29:53
+# @Last Modified time: 2016-04-13 15:34:59
 """ Encapsulates report generation functions """
 
 import sys

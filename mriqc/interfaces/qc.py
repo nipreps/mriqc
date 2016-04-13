@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 14:29:28
+# @Last Modified time: 2016-04-13 15:35:14
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
