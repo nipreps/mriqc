@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 11:34:55
+# @Last Modified time: 2016-04-12 10:58:14
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -19,6 +19,7 @@ from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.qc import StructuralQC
+from ..interfaces.anatomical import ArtifactMask
 from ..interfaces.viz import Report, PlotMosaic
 from ..utils.misc import reorder_csv, rotate_files
 from ..data.getters import get_mni_template
@@ -102,6 +103,8 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
 
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (amw, measures, [('outputnode.out_file', 'air_msk')]),
+        (amw, measures, [('outputnode.artifact_msk', 'artifact_msk')]),
+
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
@@ -232,7 +235,8 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
 
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
+                         name='outputnode')
 
     def _invt_flags(transforms):
         return [True] * len(transforms)
@@ -272,10 +276,13 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
 
     # Combine and invert mask
     combine = pe.Node(niu.Function(
-        input_names=['in_file', 'head_mask', 'artifact_mask'], output_names=['out_file'],
+        input_names=['in_file', 'head_mask', 'artifact_msk'], output_names=['out_file'],
         function=combine_masks), name='combine_masks')
 
+    qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
+
     workflow.connect([
+        (inputnode, qi1, [('in_file', 'in_file')]),
         (inputnode, norm, [('in_file', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
         (norm, invt, [('forward_transforms', 'transforms'),
@@ -283,8 +290,11 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
         (inputnode, invt, [('in_mask', 'reference_image')]),
         (inputnode, combine, [('in_file', 'in_file'),
                               ('head_mask', 'head_mask')]),
-        (invt, combine, [('output_image', 'artifact_mask')]),
-        (combine, outputnode, [('out_file', 'out_file')])
+        (invt, combine, [('output_image', 'artifact_msk')]),
+        (combine, qi1, [('out_file', 'air_msk')]),
+        (qi1, outputnode, [('out_air_msk', 'out_file'),
+                           ('out_art_msk', 'artifact_msk')])
+
     ])
     return workflow
 
@@ -355,7 +365,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def combine_masks(in_file, head_mask, artifact_mask, out_file=None):
+def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
     """Computes an air mask from the head and artifact masks"""
     import os.path as op
     import numpy as np
@@ -377,7 +387,7 @@ def combine_masks(in_file, head_mask, artifact_mask, out_file=None):
     hmdata = imnii.get_data()
     msk[hmdata == 1] = 0
 
-    adata = nb.load(artifact_mask).get_data()
+    adata = nb.load(artifact_msk).get_data()
     msk[adata == 1] = 0
 
     struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 3)

@@ -8,12 +8,12 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-28 11:41:06
+# @Last Modified time: 2016-04-13 09:26:48
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
-from ..qc.anatomical import (snr, cnr, fber, efc, artifacts,
+from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                              volume_fraction, rpve, summary_stats)
 from ..qc.functional import (gsr, dvars, fd_jenkinson, gcor)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -27,6 +27,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
+    artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
@@ -44,6 +45,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     fber = traits.Float
     efc = traits.Float
     qi1 = traits.Float
+    qi2 = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
 
 
@@ -77,12 +79,13 @@ class StructuralQC(BaseInterface):
         segdata = segnii.get_data().astype(np.uint8)
 
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
+        artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(imdata, segdata, tlabel))
+            snrvals.append(snr(imdata, segdata, airdata, fglabel=tlabel))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = np.mean(snrvals)
 
@@ -96,7 +99,8 @@ class StructuralQC(BaseInterface):
         self._results['efc'] = efc(imdata)
 
         # Artifacts
-        self._results['qi1'] = artifacts(imdata, airdata)[0]
+        self._results['qi1'] = art_qi1(airdata, artdata)
+        self._results['qi2'] = art_qi2(imdata, airdata, artdata)
 
         pvmdata = []
         for fname in self.inputs.in_pvms:
@@ -203,7 +207,7 @@ class FunctionalQC(BaseInterface):
         mskdata[mskdata > 0] = 1
 
         # SNR
-        self._results['snr'] = snr(epidata, mskdata, 1)
+        self._results['snr'] = snr(epidata, mskdata, fglabel=1)
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
