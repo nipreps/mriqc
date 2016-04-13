@@ -8,11 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-<<<<<<< HEAD
-# @Last Modified time: 2016-04-13 12:23:29
-=======
-# @Last Modified time: 2016-04-13 13:19:37
->>>>>>> enh/renameINU
+# @Last Modified time: 2016-04-13 13:48:01
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
