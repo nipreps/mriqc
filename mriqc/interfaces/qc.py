@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 12:23:29
+# @Last Modified time: 2016-04-13 14:29:28
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -39,7 +39,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     rpve = traits.Dict(desc='partial volume fractions')
     size = traits.Dict(desc='image sizes')
     spacing = traits.Dict(desc='image sizes')
-    bias = traits.Dict(desc='summary statistics of the bias field')
+    inu = traits.Dict(desc='summary statistics of the bias field')
     snr = traits.Dict
     cnr = traits.Float
     fber = traits.Float
@@ -141,8 +141,8 @@ class StructuralQC(BaseInterface):
 
         # Bias
         bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
-        self._results['bias'] = {
-            'max': bias.max(), 'min': bias.min(), 'med': np.median(bias)}  #pylint: disable=E1101
+        self._results['inu'] = {
+            'range': np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.)), 'med': np.median(bias)}  #pylint: disable=E1101
 
 
         # Flatten the dictionary
