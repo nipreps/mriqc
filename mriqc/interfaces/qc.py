@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 13:48:01
+# @Last Modified time: 2016-04-13 13:58:52
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -39,7 +39,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     rpve = traits.Dict(desc='partial volume fractions')
     size = traits.Dict(desc='image sizes')
     spacing = traits.Dict(desc='image sizes')
-    bias = traits.Dict(desc='summary statistics of the bias field')
+    inu = traits.Dict(desc='summary statistics of the bias field')
     snr = traits.Dict
     cnr = traits.Float
     fber = traits.Float
