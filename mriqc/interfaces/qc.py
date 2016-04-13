@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 15:02:25
+# @Last Modified time: 2016-04-13 07:52:20
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -84,7 +84,7 @@ class StructuralQC(BaseInterface):
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(imdata, segdata, tlabel))
+            snrvals.append(snr(imdata, segdata, airdata, fglabel=tlabel))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = np.mean(snrvals)
 

@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 11:01:56
+# @Last Modified time: 2016-04-13 07:58:42
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -24,7 +24,7 @@ from scipy.stats import chi
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, fgmask, bgmask=None, erode=True, fglabel=1, bglabel=0):
+def snr(img, smask, nmask=None, erode=True, fglabel=1, bglabel=0):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -57,6 +57,8 @@ def snr(img, fgmask, bgmask=None, erode=True, fglabel=1, bglabel=0):
     :return: the computed SNR for the foreground segmentation
 
     """
+    fgmask = smask.copy()
+    bgmask = None if nmask is None else nmask.copy()
 
     if np.issubdtype(fgmask.dtype, np.integer):
         if isinstance(fglabel, string_types):
