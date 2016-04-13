@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 08:34:52
+# @Last Modified time: 2016-04-13 09:12:35
 """
 Anatomical tests
 """
@@ -121,6 +121,6 @@ def test_artifacts():
         imdata = nb.load(fname).get_data().astype(np.float32)
         artmask = artifact_mask(imdata, airdata)
         airdata[artmask > 0] = 0
-        values.append(art_qi1(imdata, airdata, artmask))
+        values.append(art_qi1(airdata, artmask))
 
     return np.all(values > .05)
