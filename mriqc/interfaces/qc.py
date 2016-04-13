@@ -8,7 +8,11 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
+<<<<<<< HEAD
 # @Last Modified time: 2016-04-13 12:23:29
+=======
+# @Last Modified time: 2016-04-13 13:19:37
+>>>>>>> enh/renameINU
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -141,8 +145,8 @@ class StructuralQC(BaseInterface):
 
         # Bias
         bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
-        self._results['bias'] = {
-            'max': bias.max(), 'min': bias.min(), 'med': np.median(bias)}  #pylint: disable=E1101
+        self._results['inu'] = {
+            'range': np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.)), 'med': np.median(bias)}  #pylint: disable=E1101
 
 
         # Flatten the dictionary

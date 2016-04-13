@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 13:22:06
+# @Last Modified time: 2016-04-13 13:46:09
 """ Encapsulates report generation functions """
 
 import sys
@@ -28,7 +28,7 @@ from ..interfaces.viz_utils import plot_measures, plot_all
 STRUCTURAL_QCGROUPS = [
     ['icvs_csf', 'icvs_gm', 'icvs_wm'],
     ['rpve_csf', 'rpve_gm', 'rpve_wm'],
-    ['bias_max', 'bias_med', 'bias_min'],
+    ['inu_range', 'inu_med'],
     ['cnr'], ['efc'], ['fber'], ['cjv'],
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
     ['qi1', 'qi2'],
