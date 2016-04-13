@@ -8,12 +8,12 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 07:52:20
+# @Last Modified time: 2016-04-13 08:35:44
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
-from ..qc.anatomical import (snr, cnr, fber, efc, artifacts,
+from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                              volume_fraction, rpve, summary_stats)
 from ..qc.functional import (gsr, dvars, fd_jenkinson, gcor)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -98,9 +98,8 @@ class StructuralQC(BaseInterface):
         self._results['efc'] = efc(imdata)
 
         # Artifacts
-        qi1, qi2 = artifacts(imdata, airdata, artdata)
-        self._results['qi1'] = qi1
-        self._results['qi2'] = qi2
+        self._results['qi1'] = art_qi1(airdata, artdata)
+        self._results['qi2'] = art_qi2(imdata, airdata, artdata)
 
         pvmdata = []
         for fname in self.inputs.in_pvms:

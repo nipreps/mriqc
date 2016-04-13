@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 08:08:15
+# @Last Modified time: 2016-04-13 08:34:09
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -175,24 +175,32 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, airmask, artmask, ncoils=1):
+def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    The **q1** is the proportion of voxels with intensity corrupted by artifacts
+    Caculates **q1**, as the proportion of voxels with intensity corrupted by artifacts
     normalized by the number of voxels in the background. Lower values are better.
 
-    Optionally, it also calculates **qi2**, the distance between the distribution
-    of noise voxel (non-artifact background voxels) intensities, and a
-    Rician distribution.
-
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray airmask: input air mask, without artifacts
+    :param numpy.ndarray artmask: input artifacts mask
 
     """
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    artifact_qi1 = artmask.sum() / float(airmask.sum() + artmask.sum())
+    return artmask.sum() / float(airmask.sum() + artmask.sum())
+
+
+def art_qi2(img, airmask, artmask, ncoils=1):
+    """
+    Calculates **qi2**, the distance between the distribution
+    of noise voxel (non-artifact background voxels) intensities, and a
+    centered Chi distribution.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray airmask: input air mask without artifacts
+
+    """
 
     # Artifact-free air region
     data = img[airmask > 0]
@@ -216,9 +224,8 @@ def artifacts(img, airmask, artmask, ncoils=1):
     # plt.savefig('fig.png')
     # Compute goodness-of-fit (gof)
     gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
-    artifact_qi2 = artifact_qi1 + gof
+    return art_qi1(airmask, artmask) + gof
 
-    return artifact_qi1, artifact_qi2
 
 def volume_fraction(pvms):
     """
