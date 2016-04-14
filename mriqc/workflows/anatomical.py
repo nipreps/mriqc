@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-12 10:58:14
+# @Last Modified time: 2016-04-14 15:10:15
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -64,12 +64,12 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True,
-                    bspline_fitting_distance=30.), name='Bias')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True),
+                    name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     hmsk = headmsk_wf()
-    amw = airmsk_wf(save_memory=settings['save_memory'])
+    amw = airmsk_wf(save_memory=settings.get('save_memory', False))
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
@@ -91,13 +91,13 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
         (mask, segment, [('out_file', 'in_files')]),
-        (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
+        (arw, hmsk, [('outputnode.out_file', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (arw, measures, [('outputnode.out_file', 'in_file')]),
-        (n4itk, fwhm, [('output_image', 'in_file')]),
+        (arw, fwhm, [('outputnode.out_file', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
-        (n4itk, amw, [('output_image', 'inputnode.in_file')]),
+        (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
