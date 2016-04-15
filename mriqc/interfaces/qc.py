@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 15:35:14
+# @Last Modified time: 2016-04-15 15:39:39
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -23,7 +23,8 @@ from nipype import logging
 IFLOGGER = logging.getLogger('interface')
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
+    in_file = File(exists=True, mandatory=True, desc='file to be plotted')
+    in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
@@ -76,6 +77,10 @@ class StructuralQC(BaseInterface):
         # Remove negative values
         imdata[imdata < 0] = 0
 
+        # Load image corrected for INU
+        inudata = np.nan_to_num(nb.load(self.inputs.in_noinu).get_data())
+        inudata[inudata < 0] = 0
+
         segnii = nb.load(self.inputs.in_segm)
         segdata = segnii.get_data().astype(np.uint8)
 
@@ -86,25 +91,25 @@ class StructuralQC(BaseInterface):
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(imdata, segdata, airdata, fglabel=tlabel))
+            snrvals.append(snr(inudata, segdata, airdata, fglabel=tlabel))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = np.mean(snrvals)
 
         # CNR
-        self._results['cnr'] = cnr(imdata, segdata)
+        self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(imdata, segdata, airdata)
+        self._results['fber'] = fber(inudata, segdata, airdata)
 
         # EFC
-        self._results['efc'] = efc(imdata)
+        self._results['efc'] = efc(inudata)
 
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
         self._results['qi2'] = art_qi2(imdata, airdata, artdata)
 
         # CJV
-        self._results['cjv'] = cjv(imdata, segdata)
+        self._results['cjv'] = cjv(inudata, segdata)
 
         pvmdata = []
         for fname in self.inputs.in_pvms:
