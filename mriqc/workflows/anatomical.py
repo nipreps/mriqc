@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-14 15:10:15
+# @Last Modified time: 2016-04-15 09:30:45
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -99,6 +99,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
         (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
@@ -235,7 +236,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
+        fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
@@ -284,7 +285,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
 
     workflow.connect([
         (inputnode, qi1, [('in_file', 'in_file')]),
-        (inputnode, norm, [('in_file', 'moving_image'),
+        (inputnode, norm, [('in_noinu', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
         (norm, invt, [('forward_transforms', 'transforms'),
                       (('forward_transforms', _invt_flags), 'invert_transform_flags')]),

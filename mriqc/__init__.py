@@ -31,7 +31,7 @@ Example
 
 """
 
-__version__ = '0.4.0a1'
+__version__ = '0.5.0a1'
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
