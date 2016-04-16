@@ -7,7 +7,8 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 11:32:09
+# @Last Modified time: 2016-04-11 11:40:26
+""" Visualization utilities """
 
 import math
 import os.path as op
@@ -32,12 +33,12 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
         nrows += 1
 
     fig = plt.figure(figsize=figsize)
-    gs = gridspec.GridSpec(nrows, ncols)
+    gsp = gridspec.GridSpec(nrows, ncols)
 
     axes = []
 
     for i, mname in enumerate(measures):
-        axes.append(plt.subplot(gs[i]))
+        axes.append(plt.subplot(gsp[i]))
         axes[-1].set_xlabel(mname)
         sns.distplot(
             df[[mname]], ax=axes[-1], color="b", rug=True,  norm_hist=True)
@@ -75,12 +76,12 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
 def plot_all(df, groups, subject=None, figsize=(11.69, 5),
              strip_nsubj=10, title='Summary report'):
     import matplotlib.gridspec as gridspec
-    colnames = [v for gnames in groups for v in gnames]
+    # colnames = [v for gnames in groups for v in gnames]
     lengs = [len(el) for el in groups]
-    ncols = np.sum(lengs)
+    # ncols = np.sum(lengs)
 
     fig = plt.figure(figsize=figsize)
-    gs = gridspec.GridSpec(1, len(groups), width_ratios=lengs)
+    gsp = gridspec.GridSpec(1, len(groups), width_ratios=lengs)
 
     subjects = sorted(pd.unique(df.subject.ravel()))
     nsubj = len(subjects)
@@ -93,7 +94,7 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
 
     axes = []
     for i, snames in enumerate(groups):
-        axes.append(plt.subplot(gs[i]))
+        axes.append(plt.subplot(gsp[i]))
 
         if nsubj > strip_nsubj:
             sns.violinplot(data=df[snames], ax=axes[-1])
@@ -117,10 +118,10 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
             if nstars == 0:
                 continue
 
-            for j, s in enumerate(snames):
+            for j, sname in enumerate(snames):
                 vals = []
-                for k, scid in enumerate(scans):
-                    val = subdf.loc[df.scan == scid, [s]].iloc[0, 0]
+                for _, scid in enumerate(scans):
+                    val = subdf.loc[df.scan == scid, [sname]].iloc[0, 0]
                     vals.append(val)
 
                 if len(vals) != nstars:
@@ -255,12 +256,12 @@ def plot_dist(
     fig = plt.Figure(figsize=figsize)
     FigureCanvas(fig)
 
-    gs = GridSpec(2, 1)
-    ax = fig.add_subplot(gs[0, 0])
+    gsp = GridSpec(2, 1)
+    ax = fig.add_subplot(gsp[0, 0])
     sns.distplot(data.astype(np.double), kde=False, bins=100, ax=ax)
     ax.set_xlabel(xlabel)
 
-    ax = fig.add_subplot(gs[1, 0])
+    ax = fig.add_subplot(gsp[1, 0])
     sns.distplot(np.array(distribution).astype(np.double), ax=ax)
     cur_val = np.median(data)
     label = "%g" % cur_val
@@ -304,24 +305,24 @@ def _calc_fd(fd_file):
     translations = np.transpose(np.abs(np.diff(cols[0:3, :])))
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
-    FD_power = np.sum(translations, axis=1) + \
+    fd_power = np.sum(translations, axis=1) + \
         (50 * 3.141 / 180) * np.sum(rotations, axis=1)
 
     # FD is zero for the first time point
-    FD_power = np.insert(FD_power, 0, 0)
+    fd_power = np.insert(fd_power, 0, 0)
 
-    return FD_power
+    return fd_power
 
 
 def _get_mean_fd_distribution(fd_files):
-    mean_FDs = []
-    max_FDs = []
+    mean_fds = []
+    max_fds = []
     for fd_file in fd_files:
-        FD_power = _calc_fd(fd_file)
-        mean_FDs.append(FD_power.mean())
-        max_FDs.append(FD_power.max())
+        fd_power = _calc_fd(fd_file)
+        mean_fds.append(fd_power.mean())
+        max_fds.append(fd_power.max())
 
-    return mean_FDs, max_FDs
+    return mean_fds, max_fds
 
 
 def _get_values_inside_a_mask(main_file, mask_file):

@@ -8,48 +8,67 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-29 14:29:04
+# @Last Modified time: 2016-04-13 12:28:43
 """
 Computation of the quality assessment measures on structural MRI
 
 
 
 """
-
-import numpy as np
+from __future__ import absolute_import, division, print_function, unicode_literals
+from math import pi
 from six import string_types
+import numpy as np
 import scipy.ndimage as nd
+from scipy.stats import chi
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, seg, fglabel, bglabel='bg'):
+def snr(img, smask, nmask=None, erode=True, fglabel=1, bglabel=0):
     r"""
-    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
+    The estimation may be provided with only one foreground region in
+    which the noise is computed as follows:
 
     .. math::
 
-        \text{SNR} = \frac{\mu_F}{\sigma_B}
-
+        \text{SNR} = \frac{\mu_F}{\sigma_F},
 
     where :math:`\mu_F` is the mean intensity of the foreground and
-    :math:`\sigma_B` is the standard deviation of the background,
-    where the noise is computed.
+    :math:`\sigma_F` is the standard deviation of the same region.
+    Alternatively, a background mask containing only noise can be provided.
+    This must be an air mask around the head, and it should not contain artifacts.
+    The computation is done following the eq. A.12 of [Dietrich2007]_, which
+    includes a correction factor in the estimation of the standard deviation of
+    air and its Rayleigh distribution:
+
+    .. math::
+
+        \text{SNR} = \frac{\mu_F}{\sqrt{\frac{2}{4-\pi}}\,\sigma_\text{air}}.
+
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param numpy.ndarray bgmask: input background mask or segmentation
+    :param bool erode: erode masks before computations.
     :param str fglabel: foreground label in the segmentation data.
     :param str bglabel: background label in the segmentation data.
 
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, string_types):
-        fglabel = FSL_FAST_LABELS[fglabel]
-    if isinstance(bglabel, string_types):
-        bglabel = FSL_FAST_LABELS[bglabel]
+    fgmask = _prepare_mask(smask, fglabel, erode)
+    bgmask = _prepare_mask(nmask, bglabel, erode) if nmask is not None else None
 
-    fg_mean = img[seg == fglabel].mean()
-    bg_std = img[seg == bglabel].std()
+    fg_mean = np.median(img[fgmask > 0])
+    if bgmask is None:
+        bgmask = fgmask
+        bg_mean = fg_mean
+        # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
+        bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
+    else:
+        bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
+
     return fg_mean / bg_std
 
 
@@ -77,6 +96,46 @@ def cnr(img, seg, lbl=None):
     return np.abs(img[seg == lbl['gm']].mean() - img[seg == lbl['wm']].mean()) / \
                   img[seg == lbl['bg']].std()
 
+
+def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
+    r"""
+    Calculate the :abbr:`CJV (coefficient of joint variation)`, a measure
+    related to :abbr:`SNR (Signal-to-Noise Ratio)` and
+    :abbr:`CNR (Contrast-to-Noise Ratio)` that is presented as a proxy for
+    the :abbr:`INU (intensity non-uniformity)` artifact [Ganzetti2016]_.
+    Lower is better.
+
+    .. math::
+
+        \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{\mu_\text{WM} - \mu_\text{GM}}.
+
+    :param numpy.ndarray img: the input data
+    :param numpy.ndarray wmmask: the white matter mask
+    :param numpy.ndarray gmmask: the gray matter mask
+    :return: the computed CJV
+
+
+    """
+
+    if seg is None and (wmmask is None or gmmask is None):
+        raise RuntimeError('Masks or segmentation should be provided')
+
+    if seg is not None:
+        if isinstance(wmlabel, string_types):
+            wmlabel = FSL_FAST_LABELS[wmlabel]
+        if isinstance(gmlabel, string_types):
+            gmlabel = FSL_FAST_LABELS[gmlabel]
+
+        wmmask = np.zeros_like(seg)
+        wmmask[seg == wmlabel] = 1
+        gmmask = np.zeros_like(seg)
+        gmmask[seg == gmlabel] = 1
+
+    mu_wm = img[wmmask > .5].mean()
+    mu_gm = img[gmmask > .5].mean()
+    sigma_wm = img[wmmask > .5].std(ddof=1)
+    sigma_gm = img[gmmask > .5].std(ddof=1)
+    return (sigma_wm + sigma_gm) / (mu_wm - mu_gm)
 
 
 def fber(img, seg, air=None):
@@ -130,46 +189,57 @@ def efc(img):
     return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
 
 
-def artifacts(img, airmask, calculate_qi2=False):
+def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    The **q1** is the proportion of voxels with intensity corrupted by artifacts
+    Caculates **q1**, as the proportion of voxels with intensity corrupted by artifacts
     normalized by the number of voxels in the background. Lower values are better.
 
-    Optionally, it also calculates **qi2**, the distance between the distribution
-    of noise voxel (non-artifact background voxels) intensities, and a
-    Rician distribution.
-
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray airmask: input air mask, without artifacts
+    :param numpy.ndarray artmask: input artifacts mask
 
     """
-    bg_img = img * airmask
-
-    # Find the background threshold (the most frequently occurring value
-    # excluding 0)
-    hist, bin_edges = np.histogram(bg_img[bg_img > 0], bins=256)
-    bg_threshold = np.mean(bin_edges[np.argmax(hist)])
-
-    # Apply this threshold to the background voxels to identify voxels
-    # contributing artifacts.
-    bg_img[bg_img <= bg_threshold] = 0
-    bg_img[bg_img != 0] = 1
-
-    # Create a structural element to be used in an opening operation.
-    struc = nd.generate_binary_structure(3, 1)
-
-    # Perform an opening operation on the background data.
-    bg_img = nd.binary_opening(bg_img, structure=struc).astype(np.uint8)
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    artifact_qi1 = bg_img.sum() / float(airmask.sum())
+    return artmask.sum() / float(airmask.sum() + artmask.sum())
 
-    if calculate_qi2:
-        raise NotImplementedError
 
-    return artifact_qi1, None
+def art_qi2(img, airmask, artmask, ncoils=1):
+    """
+    Calculates **qi2**, the distance between the distribution
+    of noise voxel (non-artifact background voxels) intensities, and a
+    centered Chi distribution.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray airmask: input air mask without artifacts
+
+    """
+
+    # Artifact-free air region
+    data = img[airmask > 0]
+    # Estimate data pdf
+    hist, bin_edges = np.histogram(data, bins=128)
+    bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
+    # Find t2 (intensity at half width, left side)
+    hist_max = hist[np.argmax(hist)]
+    t2idx = -1
+    for i in range(len(bin_centers)):
+        ihw = 0.45 * hist_max
+        if hist[i] > ihw:
+            t2idx = i
+            break
+    # Fit central chi distribution
+    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[np.argmax(hist)])
+    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+    # import matplotlib.pyplot as plt
+    # plt.plot(bin_centers[t2idx:], hist[t2idx:])
+    # plt.plot(bin_centers[t2idx:], pdf_fitted[t2idx:])
+    # plt.savefig('fig.png')
+    # Compute goodness-of-fit (gof)
+    gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
+    return art_qi1(airmask, artmask) + gof
+
 
 def volume_fraction(pvms):
     """
@@ -243,3 +313,24 @@ def summary_stats(img, pvms):
         p05[k] = np.percentile(im_lid[im_lid > 0], 5)
 
     return mean, stdv, p95, p05
+
+def _prepare_mask(mask, label, erode=True):
+    fgmask = mask.copy()
+
+    if np.issubdtype(fgmask.dtype, np.integer):
+        if isinstance(label, string_types):
+            label = FSL_FAST_LABELS[label]
+
+        fgmask[fgmask != label] = 0
+        fgmask[fgmask == label] = 1
+    else:
+        fgmask[fgmask > .95] = 1.
+        fgmask[fgmask < 1.] = 0
+
+    if erode:
+        # Create a structural element to be used in an opening operation.
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+
+    return fgmask

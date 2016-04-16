@@ -7,18 +7,13 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-05 11:32:27
+# @Last Modified time: 2016-04-11 11:37:27
+""" Visualization interfaces """
 
-import os
 import os.path as op
-
-import nibabel as nb
-import numpy as np
-
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
-                                    InputMultiPath, OutputMultiPath,
-                                    BaseInterfaceInputSpec, isdefined,
-                                    DynamicTraitedSpec, Undefined)
+                                    OutputMultiPath, BaseInterfaceInputSpec,
+                                    isdefined)
 
 from .viz_utils import (plot_mosaic, plot_fd)
 from ..reports import workflow_report

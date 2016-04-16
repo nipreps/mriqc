@@ -7,9 +7,8 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-03-30 09:50:07
+# @Last Modified time: 2016-04-15 15:33:31
 """ A QC workflow for anatomical MRI """
-import os
 import os.path as op
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
@@ -20,9 +19,10 @@ from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.qc import StructuralQC
+from ..interfaces.anatomical import ArtifactMask
 from ..interfaces.viz import Report, PlotMosaic
 from ..utils.misc import reorder_csv, rotate_files
-
+from ..data.getters import get_mni_template
 
 def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     """ The anatomical quality control workflow """
@@ -64,12 +64,12 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     arw = mri_reorient_wf()  # 1. Reorient anatomical image
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True,
-                    bspline_fitting_distance=30.), name='Bias')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True),
+                    name='Bias')
     asw = skullstrip_wf()    # 2. Skull-stripping (afni)
     mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     hmsk = headmsk_wf()
-    amw = airmsk_wf(save_memory=settings['save_memory'])
+    amw = airmsk_wf(save_memory=settings.get('save_memory', False))
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
@@ -87,22 +87,26 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
-        (asw, n4itk, [('outputnode.out_mask', 'weight_image')]),
+        # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
         (mask, segment, [('out_file', 'in_files')]),
-        (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
+        (arw, hmsk, [('outputnode.out_file', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
+        (n4itk, measures, [('output_image', 'in_noinu')]),
         (arw, measures, [('outputnode.out_file', 'in_file')]),
-        (n4itk, fwhm, [('output_image', 'in_file')]),
+        (arw, fwhm, [('outputnode.out_file', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
-        (n4itk, amw, [('output_image', 'inputnode.in_file')]),
+        (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
         (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (amw, measures, [('outputnode.out_file', 'air_msk')]),
+        (amw, measures, [('outputnode.artifact_msk', 'artifact_msk')]),
+
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
@@ -232,8 +236,9 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_mask', 'head_mask']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
+        fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
+                         name='outputnode')
 
     def _invt_flags(transforms):
         return [True] * len(transforms)
@@ -241,52 +246,77 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(dimension=3), name='normalize')
     norm.inputs.initial_moving_transform_com = 1
+    norm.inputs.winsorize_lower_quantile = 0.05
+    norm.inputs.winsorize_upper_quantile = 0.98
+    norm.inputs.float = True
+
     norm.inputs.transforms = ['Rigid', 'Affine']
     norm.inputs.transform_parameters = [(2.0,), (1.0,)]
-    norm.inputs.number_of_iterations = [[500], [1000, 200]]
+    norm.inputs.number_of_iterations = [[500], [200]]
     norm.inputs.convergence_window_size = [50, 20]
     norm.inputs.metric = ['Mattes', 'GC']
-    norm.inputs.metric_weight = [1] * 2
+    norm.inputs.metric_weight = [1] * 3
     norm.inputs.radius_or_number_of_bins = [64, 3]
     norm.inputs.sampling_strategy = ['Random', None]
     norm.inputs.sampling_percentage = [0.2, 1.]
-    norm.inputs.convergence_threshold = [1.e-8, 1.e-9]
-    norm.inputs.smoothing_sigmas = [[8], [4, 2]]
+    norm.inputs.smoothing_sigmas = [[8], [4]]
+    norm.inputs.shrink_factors = [[3], [2]]
+    norm.inputs.convergence_threshold = [1.e-8] * 2
     norm.inputs.sigma_units = ['mm'] * 2
-    norm.inputs.shrink_factors = [[3], [2, 1]]
     norm.inputs.use_estimate_learning_rate_once = [True] * 2
     norm.inputs.use_histogram_matching = [True] * 2
-    norm.inputs.winsorize_lower_quantile = 0.001
-    norm.inputs.winsorize_upper_quantile = 0.999
+
+#    norm.inputs.transforms = ['Rigid', 'Affine', 'SyN']
+#    norm.inputs.transform_parameters = [(2.0,), (1.0,), (.2, 3, 0)]
+#    norm.inputs.number_of_iterations = [[500], [200], [100]]
+#    norm.inputs.convergence_window_size = [50, 20, 10]
+#    norm.inputs.metric = ['Mattes', 'GC', 'Mattes']
+#    norm.inputs.metric_weight = [1] * 3
+#    norm.inputs.radius_or_number_of_bins = [64, 3, 64]
+#    norm.inputs.sampling_strategy = ['Random', None, 'Random']
+#    norm.inputs.sampling_percentage = [0.2, 1., 0.1]
+#    norm.inputs.convergence_threshold = [1.e-8] * 3
+#    norm.inputs.smoothing_sigmas = [[8], [4], [2]]
+#    norm.inputs.sigma_units = ['mm'] * 3
+#    norm.inputs.shrink_factors = [[3], [2], [2]]
+#    norm.inputs.use_estimate_learning_rate_once = [True] * 3
+#    norm.inputs.use_histogram_matching = [True] * 3
+
+
     if save_memory:
-        norm.inputs.fixed_image = p.resource_filename(
-            'mriqc', 'data/MNI152_T1_2mm.nii.gz')
+        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
+        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
+                                               'MNI152_T1_2mm_brain_mask.nii.gz')
     else:
-        norm.inputs.fixed_image = p.resource_filename(
-            'mriqc', 'data/MNI152_T1_1mm.nii.gz')
-    norm.inputs.fixed_image_mask = p.resource_filename(
-        'mriqc', 'data/MNI152_T1_1mm_brain_mask.nii.gz')
+        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_1mm.nii.gz')
+        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
+                                               'MNI152_T1_1mm_brain_mask.nii.gz')
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
-    invt.inputs.input_image = p.resource_filename(
-        'mriqc', 'data/MNI152_T1_1mm_brain_bottom.nii.gz')
+    invt.inputs.input_image = op.join(get_mni_template(), 'MNI152_T1_1mm_brain_bottom.nii.gz')
 
     # Combine and invert mask
     combine = pe.Node(niu.Function(
-        input_names=['in_file', 'head_mask', 'artifact_mask'], output_names=['out_file'],
+        input_names=['in_file', 'head_mask', 'artifact_msk'], output_names=['out_file'],
         function=combine_masks), name='combine_masks')
 
+    qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
+
     workflow.connect([
-        (inputnode, norm, [('in_file', 'moving_image'),
+        (inputnode, qi1, [('in_file', 'in_file')]),
+        (inputnode, norm, [('in_noinu', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
         (norm, invt, [('forward_transforms', 'transforms'),
                       (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
         (inputnode, combine, [('in_file', 'in_file'),
                               ('head_mask', 'head_mask')]),
-        (invt, combine, [('output_image', 'artifact_mask')]),
-        (combine, outputnode, [('out_file', 'out_file')])
+        (invt, combine, [('output_image', 'artifact_msk')]),
+        (combine, qi1, [('out_file', 'air_msk')]),
+        (qi1, outputnode, [('out_air_msk', 'out_file'),
+                           ('out_art_msk', 'artifact_msk')])
+
     ])
     return workflow
 
@@ -357,7 +387,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def combine_masks(in_file, head_mask, artifact_mask, out_file=None):
+def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
     """Computes an air mask from the head and artifact masks"""
     import os.path as op
     import numpy as np
@@ -379,7 +409,7 @@ def combine_masks(in_file, head_mask, artifact_mask, out_file=None):
     hmdata = imnii.get_data()
     msk[hmdata == 1] = 0
 
-    adata = nb.load(artifact_mask).get_data()
+    adata = nb.load(artifact_msk).get_data()
     msk[adata == 1] = 0
 
     struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 3)

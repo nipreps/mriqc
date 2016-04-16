@@ -2,8 +2,8 @@ mock
 numpy
 six
 pandas
-nibabel
 nitime
+nilearn
 -e git+https://github.com/nipy/nipype#egg=nipype
 lockfile
 seaborn
