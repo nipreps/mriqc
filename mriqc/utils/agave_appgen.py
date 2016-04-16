@@ -19,9 +19,7 @@ agaveapp = {
     'helpURI': 'http://mriqc.readthedocs.org',
     'label': 'mriqc',
     'shortDescription': mriqc.__description__,
-    'longDescription': """
-
-    """,
+    'longDescription': mriqc.__longdesc__,
     'executionSystem': 'slurm-stampede.tacc.utexas.edu',
     'executionType': 'HPC',
     'parallelism': 'PARALLEL',
