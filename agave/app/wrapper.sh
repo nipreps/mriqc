@@ -4,8 +4,6 @@
 # @Last Modified by:   oesteban
 # @Last Modified time: 2015-11-13 10:00:55
 
-# Unzip bids file
-tar xf ${bidsFile}
 
 # Create output folder in scratch
 mkdir -p $SCRATCH/mriqcp
@@ -14,7 +12,7 @@ mkdir -p $SCRATCH/mriqcp
 source activate qap
 
 # Call mriqcp
-FSLOUTPUTTYPE='NIFTI_GZ' mriqcp.py -i ds003_downsampled -o $SCRATCH/mriqcp/out -w $SCRATCH/mriqcp/tmp
+FSLOUTPUTTYPE='NIFTI_GZ' mriqc -i ds003_downsampled -o $SCRATCH/mriqcp/out -w $SCRATCH/mriqcp/tmp
 
 # Collect outputs
 archivepath=$(echo $SCRATCH/mriqcp/out | cut -d: -f2 | xargs)
