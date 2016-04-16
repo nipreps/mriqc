@@ -100,7 +100,7 @@ def test_cjv():
     for sigma_n in sigmas:
         test_data = imdata + np.random.normal(0.0, scale=sigma_n*fg_mean, size=imdata.shape)
         test_data[test_data < 0] = 0
-        cjvs.append(cjv(test_data, wmdata, gmdata))
+        cjvs.append(cjv(test_data, wmmask=wmdata, gmmask=gmdata))
 
     return np.allclose(cjvs, exp_cjvs, rtol=.01)
 

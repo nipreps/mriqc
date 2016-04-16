@@ -111,7 +111,7 @@ class StructuralQC(BaseInterface):
         self._results['qi2'] = art_qi2(imdata, airdata, artdata)
 
         # CJV
-        self._results['cjv'] = cjv(inudata, segdata)
+        self._results['cjv'] = cjv(inudata, seg=segdata)
 
         pvmdata = []
         for fname in self.inputs.in_pvms:
