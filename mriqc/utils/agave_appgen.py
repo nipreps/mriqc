@@ -13,9 +13,13 @@ import json
 from argparse import ArgumentParser, RawTextHelpFormatter
 import mriqc
 
+version = '.'.join([v for v in mriqc.__version__.split('.') if v.isdigit()])
+if len(version.split('.')) > 3:
+    version = '.'.join(version.split('.')[:3])
+
 agaveapp = {
     'name': mriqc.__name__,
-    'version': mriqc.__version__.split('.')[:3],
+    'version': mriqc.__version__,
     'helpURI': 'http://mriqc.readthedocs.org',
     'label': 'mriqc',
     'shortDescription': mriqc.__description__,
