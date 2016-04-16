@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-15 15:33:31
+# @Last Modified time: 2016-04-15 16:37:24
 """ A QC workflow for anatomical MRI """
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -91,7 +91,7 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
         (mask, segment, [('out_file', 'in_files')]),
-        (arw, hmsk, [('outputnode.out_file', 'inputnode.in_file')]),
+        (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (n4itk, measures, [('output_image', 'in_noinu')]),
         (arw, measures, [('outputnode.out_file', 'in_file')]),
@@ -185,7 +185,7 @@ def mri_reorient_wf(name='ReorientWorkflow'):
 
 
 def headmsk_wf(name='HeadMaskWorkflow'):
-    """Implements the Step 0 of [Mortamet2009]_."""
+    """Computes a head mask as in [Mortamet2009]_."""
 
     has_dipy = False
     try:
