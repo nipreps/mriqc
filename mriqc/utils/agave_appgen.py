@@ -42,7 +42,8 @@ agaveapp = {
         'value': {
             'visible': True,
             'required': True,
-            'type': 'string'
+            'type': 'string',
+            'default': 'agave://openfmri-storage/ds003_downsampled.tar'
         },
         'semantics': {
             'ontology': []
