@@ -67,9 +67,10 @@ class StructuralQC(BaseInterface):
     def _list_outputs(self):
         return self._results
 
-    def _run_interface(self, runtime):
+    def _run_interface(self, runtime):  # pylint: disable=R0914
         imnii = nb.load(self.inputs.in_file)
         imdata = np.nan_to_num(imnii.get_data())
+        erode = np.all(imnii.get_header().get_zooms()[:3] < 1.2)
 
         # Cast to float32
         imdata = imdata.astype(np.float32)
@@ -91,7 +92,8 @@ class StructuralQC(BaseInterface):
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(inudata, segdata, airdata, fglabel=tlabel))
+            snrvals.append(snr(inudata, segdata, airdata, fglabel=tlabel,
+                               erode=erode))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = np.mean(snrvals)
 
