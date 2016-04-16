@@ -15,7 +15,7 @@ import mriqc
 
 agaveapp = {
     'name': mriqc.__name__,
-    'version': mriqc.__version__,
+    'version': mriqc.__version__.split('.')[:3],
     'helpURI': 'http://mriqc.readthedocs.org',
     'label': 'mriqc',
     'shortDescription': mriqc.__description__,
