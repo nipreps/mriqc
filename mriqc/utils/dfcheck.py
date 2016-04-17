@@ -25,8 +25,10 @@ def main():
                          required=True, help='reference dataframe')
     
     opts = parser.parse_args()
-    tstdf = pd.read_csv(opts.input_csv)
-    refdf = pd.read_csv(opts.reference_csv)
+    tstdf = pd.read_csv(opts.input_csv).sort_values(['subject', 'session', 'scan'],
+                                                    ascending=[True, True, True])
+    refdf = pd.read_csv(opts.reference_csv).sort_values(['subject', 'session', 'scan'],
+                                                        ascending=[True, True, True])
 
     return np.all(tstdf == refdf)
 
