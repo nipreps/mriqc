@@ -18,8 +18,7 @@ import subprocess as sp
 import tempfile
 from xml.etree import ElementTree as et
 from multiprocessing import Pool
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
+from argparse import ArgumentParser, RawTextHelpFormatter
 import numpy as np
 import pandas as pd
 
