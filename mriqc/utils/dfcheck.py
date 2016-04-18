@@ -30,7 +30,20 @@ def main():
     refdf = pd.read_csv(opts.reference_csv).sort_values(['subject', 'session', 'scan'],
                                                         ascending=[True, True, True])
 
-    return np.all(tstdf == refdf)
+    refcolumns = refdf.columns.ravel().tolist()
+    for col in refcolumns:
+        if 'Unnamed' in col:
+            refcolumns.remove(col)
+
+    tstcolumns = tstdf.columns.ravel().tolist()
+    for col in tstcolumns:
+        if 'Unnamed' in col:
+            tstcolumns.remove(col)
+
+    if not sorted(refcolumns) == sorted(tstcolumns):
+        return False
+
+    return np.all(refdf[refcolumns].values == tstdf[refcolumns].values)
 
 
 if __name__ == '__main__':
