@@ -24,7 +24,7 @@ def main():
                          required=True, help='input data frame')
     g_input.add_argument('-r', '--reference-csv', action='store',
                          required=True, help='reference dataframe')
-    
+
     opts = parser.parse_args()
     tstdf = pd.read_csv(opts.input_csv).sort_values(['subject', 'session', 'scan'],
                                                     ascending=[True, True, True])
