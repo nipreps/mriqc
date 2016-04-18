@@ -9,6 +9,7 @@
 Compares pandas dataframes by columns
 
 """
+import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
 import numpy as np
 import pandas as pd
@@ -40,10 +41,13 @@ def main():
         if 'Unnamed' in col:
             tstcolumns.remove(col)
 
-    if not sorted(refcolumns) == sorted(tstcolumns):
-        return False
+    if sorted(refcolumns) != sorted(tstcolumns):
+        sys.exit('Output CSV file changed number of columns')
 
-    return np.all(refdf[refcolumns].values == tstdf[refcolumns].values)
+    if not np.all(refdf[refcolumns].values == tstdf[refcolumns].values):
+        sys.exit('Output CSV file changed one or more values')
+
+    sys.exit(0)
 
 
 if __name__ == '__main__':
