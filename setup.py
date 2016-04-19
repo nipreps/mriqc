@@ -8,7 +8,7 @@
 import os
 import sys
 from mriqc import (__version__, __description__, __license__,
-                   __author__, __email__)
+                   __author__, __email__, __longdesc__)
 
 REQ_LINKS = []
 with open('requirements.txt', 'r') as rfile:
@@ -31,6 +31,7 @@ def main():
         name='mriqc',
         version=__version__,
         description=__description__,
+        long_description=__longdesc__,
         author=__author__,
         author_email=__email__,
         license=__license__,
@@ -40,7 +41,8 @@ def main():
                      'mriqc-%s.tar.gz' % __version__,
         entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',
-                                          'fs2gif=mriqc.utils.fs2gif:main']},
+                                          'fs2gif=mriqc.utils.fs2gif:main',
+                                          'dfcheck=mriqc.utils.dfcheck:main']},
         packages=['mriqc',
                   'mriqc.data',
                   'mriqc.interfaces',
@@ -48,7 +50,7 @@ def main():
                   'mriqc.reports',
                   'mriqc.utils',
                   'mriqc.workflows',],
-        package_data={'mriqc': ['reports/html/*.html']},
+        package_data={'mriqc': ['reports/html/*.html', 'data/tests/*']},
         install_requires=REQUIREMENTS,
         dependency_links=REQ_LINKS,
         zip_safe=False,

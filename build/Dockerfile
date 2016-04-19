@@ -24,8 +24,10 @@ RUN git clone $GIT_URL && \
 WORKDIR /root/
 ADD files/run_mriqc /usr/bin/run_mriqc
 ADD files/run_tests /usr/bin/run_tests
+ADD files/run_dfcheck /usr/bin/run_dfcheck
 RUN chmod +x /usr/bin/run_mriqc && \
-	chmod +x /usr/bin/run_tests
+	chmod +x /usr/bin/run_tests && \
+	chmod +x /usr/bin/run_dfcheck
 
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]

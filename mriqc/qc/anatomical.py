@@ -20,11 +20,11 @@ from math import pi
 from six import string_types
 import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import chi
+from scipy.stats import chi  # pylint: disable=E0611
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, smask, nmask=None, erode=True, fglabel=1, bglabel=0):
+def snr(img, smask, nmask=None, erode=True, fglabel=1):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -58,7 +58,7 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1, bglabel=0):
 
     """
     fgmask = _prepare_mask(smask, fglabel, erode)
-    bgmask = _prepare_mask(nmask, bglabel, erode) if nmask is not None else None
+    bgmask = _prepare_mask(nmask, 1, erode) if nmask is not None else None
 
     fg_mean = np.median(img[fgmask > 0])
     if bgmask is None:
