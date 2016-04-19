@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-01-18 08:36:22
+# @Last Modified time: 2016-04-19 13:42:50
 """ The core module combines the existing workflows """
 from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
@@ -24,7 +24,7 @@ def qc_workflows(settings=None, subjects=None):
     skip = settings.get('skip', [])
     anat_wf = None
     if 'anat' not in skip and subjects['anat']:
-        anat_wf = anat_qc_workflow(settings=settings, sub_list=subjects['anat'])
+        anat_wf = anat_qc_workflow(settings=settings)
         if 'work_dir' in settings.keys():
             anat_wf.base_dir = settings['work_dir']
 

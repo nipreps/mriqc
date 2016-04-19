@@ -4,6 +4,42 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
 
+def bids_getfile(bids_root, scan_type, subject_id, session_id=None, run_id=None):
+    """
+    A simple function to select files from a BIDS structure
+
+    >>> from mriqc.data import get_ds003_downsampled()
+    >>> bids_root = get_ds003_downsampled()
+    >>> bids_getfile(bids_root, 't1', '05') # doctests: +ELLIPSIS
+    '...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
+
+    """
+    import os.path as op
+    import glob
+
+    if 't1' in scan_type.lower():
+        data_type = 'anat'
+        scan_type = 'T1w'
+
+    out_file = op.join(bids_root, 'sub-%s' % subject_id)
+
+    onesession = (session_id is None or session_id == 'single_session')
+    onerun = (run_id is None or run_id == 'single_run')
+
+    if onesession and onerun:
+        pattern = op.join(out_file, data_type, 'sub-%s_*%s.nii*' % (subject_id, scan_type))
+
+    if not onesession and onerun:
+        pattern = op.join(out_file, 'ses-%s' % session_id, data_type,
+                          'sub-%s_ses-%s_*%s.nii*' % (subject_id, session_id, scan_type))
+
+    results = glob.glob(pattern)
+
+    if not results:
+        raise RuntimeError('No file found with this pattern: "%s"' % pattern)
+
+    return results[0]
+
 
 def bids_scan_file_walker(dataset=".", include_types=None, warn_no_files=False):
     """

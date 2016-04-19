@@ -7,8 +7,9 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-15 16:37:24
+# @Last Modified time: 2016-04-19 15:27:52
 """ A QC workflow for anatomical MRI """
+import os
 import os.path as op
 from nipype.pipeline import engine as pe
 from nipype.algorithms import misc as nam
@@ -21,54 +22,48 @@ from nipype.interfaces.afni import preprocess as afp
 from ..interfaces.qc import StructuralQC
 from ..interfaces.anatomical import ArtifactMask
 from ..interfaces.viz import Report, PlotMosaic
-from ..utils.misc import reorder_csv, rotate_files
+from ..utils.misc import reorder_csv, rotate_files, bids_getfile
 from ..data.getters import get_mni_template
 
-def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
-    """ The anatomical quality control workflow """
-
+def anat_qc_workflow(name='MRIQC_Anat', settings=None):
+    """
+    One-subject-one-session-one-run pipeline to extract the NR-IQMs from
+    anatomical images
+    """
     if settings is None:
         settings = {}
 
-    if sub_list is None:
-        sub_list = []
-
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(
+        fields=['bids_root', 'data_type', 'subject_id', 'session_id',
+                'run_id']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
-                        name='inputnode')
-    datasource = pe.Node(niu.IdentityInterface(
-        fields=['anatomical_scan', 'subject_id', 'session_id', 'scan_id',
-                'site_name']), name='datasource')
+    deriv_dir = op.abspath('./derivatives')
+    if 'work_dir' in settings.keys():
+        workflow.base_dir = settings['work_dir']
+        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
 
-    if sub_list:
-        inputnode.iterables = [('data', [list(s) for s in sub_list])]
+    if not op.exists(deriv_dir):
+        os.makedirs(deriv_dir)
 
-        dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
-                         name='datasplit')
-        workflow.connect([
-            (inputnode, dsplit, [('data', 'inlist')]),
-            (dsplit, datasource, [('out1', 'subject_id'),
-                                  ('out2', 'session_id'),
-                                  ('out3', 'scan_id'),
-                                  ('out4', 'anatomical_scan')])
-        ])
+    # 0. Get data
+    datasource = pe.Node(niu.Function(
+        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
 
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['qc', 'mosaic', 'out_csv', 'out_group']), name='outputnode')
 
-    measures = pe.Node(StructuralQC(), 'measures')
-    mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm'],
-        output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
-
-    arw = mri_reorient_wf()  # 1. Reorient anatomical image
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True),
-                    name='Bias')
-    asw = skullstrip_wf()    # 2. Skull-stripping (afni)
+    # 1a. Reorient anatomical image
+    arw = mri_reorient_wf()
+    # 1b. Estimate bias
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
+    # 2. Skull-stripping (afni)
+    asw = skullstrip_wf()
     mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
+    # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
+    # 4. Air mask (with and without artifacts)
     amw = airmsk_wf(save_memory=settings.get('save_memory', False))
 
     # Brain tissue segmentation
@@ -79,12 +74,22 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
 
+    # Compute python-coded measures
+    measures = pe.Node(StructuralQC(), 'measures')
+
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
+    # Connect all nodes
     workflow.connect([
-        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (inputnode, datasource, [('bids_root', 'base_directory'),
+                                 ('subject_id', 'subject_id'),
+                                 ('session_id', 'session_id'),
+                                 ('run_id', 'run_id')]),
+
+
+        (inputnode, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
@@ -103,7 +108,6 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
-        (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (amw, measures, [('outputnode.out_file', 'air_msk')]),
         (amw, measures, [('outputnode.artifact_msk', 'artifact_msk')]),
 
@@ -111,56 +115,29 @@ def anat_qc_workflow(name='aMRIQC', settings=None, sub_list=None):
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
         (arw, plot, [('outputnode.out_file', 'in_file')]),
-        (datasource, plot, [('subject_id', 'subject')]),
-        (datasource, merg, [('session_id', 'in1'),
-                            ('scan_id', 'in2'),
-                            ('site_name', 'in3')]),
-        (datasource, mergqc, [('subject_id', 'subject_id')]),
-        (merg, mergqc, [('out', 'metadata')]),
-        (merg, plot, [('out', 'metadata')]),
-        (measures, mergqc, [('out_qc', 'in_qc')]),
-        (mergqc, outputnode, [('out_qc', 'qc')]),
-        (plot, outputnode, [('out_file', 'mosaic')]),
+        (inputnode, plot, [('subject_id', 'subject')]),
+        (inputnode, merg, [('session_id', 'in1'),
+                           ('run_id', 'in2')]),
+        (merg, plot, [('out', 'metadata')])
     ])
 
     if settings.get('mask_mosaic', False):
         workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
 
-    # Save mosaic to well-formed path
-    mvplot = pe.Node(niu.Rename(
-        format_string='anatomical_%(subject_id)s_%(session_id)s_%(scan_id)s',
-        keep_ext=True), name='rename_plot')
-    dsplot = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
-    workflow.connect([
-        (datasource, mvplot, [('subject_id', 'subject_id'),
-                              ('session_id', 'session_id'),
-                              ('scan_id', 'scan_id')]),
-        (plot, mvplot, [('out_file', 'in_file')]),
-        (mvplot, dsplot, [('out_file', '@mosaic')])
-    ])
 
-    # Export to CSV
-    out_csv = op.join(settings['output_dir'], 'aMRIQC.csv')
-    rotate_files(out_csv)
-
-    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
-    re_csv0 = pe.JoinNode(niu.Function(input_names=['csv_file'], output_names=['out_file'],
-                                       function=reorder_csv), joinsource='inputnode',
-                          joinfield='csv_file', name='reorder_anat')
-    report0 = pe.Node(
-        Report(qctype='anatomical', settings=settings), name='AnatomicalReport')
-    if sub_list:
-        report0.inputs.sub_list = sub_list
+    # Save to JSON file
+    datasink = pe.Node(nio.JSONFileSink(
+        out_file=op.join(deriv_dir, settings['formatted_name'] + '.json')), name='datasink')
 
     workflow.connect([
-        (mergqc, to_csv, [('out_qc', '_outputs')]),
-        (to_csv, re_csv0, [('csv_file', 'csv_file')]),
-        (re_csv0, outputnode, [('out_file', 'out_csv')]),
-        (re_csv0, report0, [('out_file', 'in_csv')]),
-        (report0, outputnode, [('out_group', 'out_group')])
+        (inputnode, datasink, [('subject_id', 'subject_id'),
+                               ('session_id', 'session_id'),
+                               ('run_id', 'run_id')]),
+        (plot, datasink, [('out_file', 'mosaic_file')]),
+        (fwhm, datasink, [('fwhm', 'fwhm')]),
+        (measures, datasink, [('out_qc', 'in_qc')]),
+        (datasink, outputnode, [('out_file', 'out_file')])
     ])
-
     return workflow
 
 
@@ -492,3 +469,9 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
+
+
+def _format_run(subject_id, session_id, run_id, prefix='anat_qc', ext='json'):
+    return '{prefix}_{subject_id}_{session_id}_{run_id}.{ext}'.format(
+        subject_id=subject_id, session_id=session_id, run_id=run_id,
+        prefix=prefix, ext=ext)

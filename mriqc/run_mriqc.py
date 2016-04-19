@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-30 09:51:20
+# @Last Modified time: 2016-04-19 15:13:56
 
 """
 =====
@@ -29,30 +29,24 @@ def main():
                             formatter_class=RawTextHelpFormatter)
 
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-i', '--bids-root', action='store',
-                         default=os.getcwd())
+    g_input.add_argument('-B', '--bids-root', action='store', default=os.getcwd())
+    g_input.add_argument('-S', '--subject-id', action='store', mandatory=True)
+    g_input.add_argument('-s', '--session-id', action='store', default='single_session')
+    g_input.add_argument('-r', '--run-id', action='store', default='single_run')
+    g_input.add_argument('-d', '--data-type', action='store', choices=['anat', 'func'])
+    g_input.add_argument('-v', '--version', action='store_true', default=False,
+                         help='Show current mriqc version')
+
     g_input.add_argument('--nthreads', action='store', default=0,
                          type=int, help='number of threads')
-    g_input.add_argument(
-        "--write-graph", action='store_true', default=False,
-        help="Write workflow graph.")
-    g_input.add_argument(
-        "--use-plugin", action='store', default=None,
-        help='nipype plugin configuration file')
+    g_input.add_argument('--write-graph', action='store_true', default=False,
+                         help='Write workflow graph.')
+    g_input.add_argument('--use-plugin', action='store', default=None,
+                         help='nipype plugin configuration file')
 
-    g_input.add_argument(
-        '--save-memory', action='store_true', default=False,
-        help='Save as much memory as possible')
+    g_input.add_argument('--save-memory', action='store_true', default=False,
+                         help='Save as much memory as possible')
 
-    g_input.add_argument(
-        "--skip-anatomical", action='store_true', default=False,
-        help="Skip anatomical QC workflow.")
-    g_input.add_argument(
-        "--skip-functional", action='store_true', default=False,
-        help="Skip functional QC workflow.")
-    g_input.add_argument(
-        '-v', '--version', action='store_true', default=False,
-        help='Show current mriqc version')
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store')
@@ -71,11 +65,6 @@ def main():
                 'skip': [],
                 'nthreads': opts.nthreads}
 
-    if opts.skip_anatomical:
-        settings['skip'].append('anat')
-    if opts.skip_functional:
-        settings['skip'].append('func')
-
     if opts.output_dir:
         settings['output_dir'] = op.abspath(opts.output_dir)
 
@@ -85,21 +74,21 @@ def main():
     if opts.work_dir:
         settings['work_dir'] = op.abspath(opts.work_dir)
 
-        LOG_DIR = op.join(settings['work_dir'], 'log')
-        if not op.exists(LOG_DIR):
-            os.makedirs(LOG_DIR)
+        log_dir = op.join(settings['work_dir'], 'log')
+        if not op.exists(log_dir):
+            os.makedirs(log_dir)
 
         # Set nipype config
         ncfg.update_config({
-            'logging': {'log_directory': LOG_DIR, 'log_to_file': True},
-            'execution': {'crashdump_dir': LOG_DIR}
+            'logging': {'log_directory': log_dir, 'log_to_file': True},
+            'execution': {'crashdump_dir': log_dir}
         })
 
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
         from yaml import load as loadyml
-        with open(opts.use_plugin) as f:
-            plugin_settings = loadyml(f)
+        with open(opts.use_plugin) as pfile:
+            plugin_settings = loadyml(pfile)
     else:
         # Setup multiprocessing
         if settings['nthreads'] == 0:
@@ -109,16 +98,7 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    subjects = gather_bids_data(settings['bids_root'])
 
-    if not any([len(subjects[k]) > 0 for k in subjects.keys()]):
-        raise RuntimeError('No scans found in %s' % settings['bids_root'])
-
-    awf, fwf = qc_workflows(subjects=subjects, settings=settings)
-    if awf is not None:
-        awf.run(**plugin_settings)
-    if fwf is not None:
-        fwf.run(**plugin_settings)
 
 
 if __name__ == '__main__':
