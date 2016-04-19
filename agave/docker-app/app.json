@@ -1,0 +1,43 @@
+{
+  "name": "mriqc-docker",
+  "version": "0.1.0",
+  "helpURI": "http://mriqc.readthedocs.org",
+  "label": "The MRIQC workflow in docker",
+  "defaultNodeCount": 1,
+  "defaultRequestedTime": "48:00:00",
+  "shortDescription": "Run CRN's workflows in Agave's Dockerized cloud.",
+  "longDescription": "Generic template for running an arbitrary application in Agave's hosted Docker cloud. Apps should be a gzipped archive.",
+  "executionSystem": "docker.tacc.utexas.edu",
+  "executionType": "CLI",
+  "parallelism": "SERIAL",
+  "deploymentPath": "apps/mriqc-docker",
+  "deploymentSystem": "openfmri-storage",
+  "templatePath": "wrapper.sh",
+  "testPath": "test/test.sh",
+  "tags": [
+    "docker", "qc", "preprocessing"
+  ],
+  "modules": [],
+  "inputs": [
+    {
+      "id": "bidsFolder",
+      "details": {
+        "label": "folder",
+        "description": "input folder, should be BIDS compliant",
+        "argument": null,
+        "showArgument": false
+      },
+      "value": {
+        "visible": true,
+        "required": true,
+        "type": "string",
+        "default": "agave://openfmri-storage/ds003_downsampled.tar"
+      },
+      "semantics": {
+        "ontology": []
+      }
+    }
+  ],
+  "parameters": [],
+  "checkpointable": false
+}

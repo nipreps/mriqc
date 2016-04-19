@@ -31,7 +31,9 @@ Example
 
 """
 
-__version__ = '0.8.0a1'
+__versionbase__ = '0.8.0'
+__versionrev__ = 'a1'
+__version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'

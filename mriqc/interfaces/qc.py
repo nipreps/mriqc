@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-# pylint: disable=no-member
 #
 # @Author: oesteban
 # @Date:   2016-01-05 11:29:40
@@ -324,4 +323,3 @@ class FramewiseDisplacement(BaseInterface):
             'perc_fd': num_fd * 100 / (len(fddata) + 1)
         }
         return runtime
-
