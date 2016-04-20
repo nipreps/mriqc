@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-19 15:27:52
+# @Last Modified time: 2016-04-20 12:11:10
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -83,13 +83,12 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     # Connect all nodes
     workflow.connect([
-        (inputnode, datasource, [('bids_root', 'base_directory'),
+        (inputnode, datasource, [('bids_root', 'bids_root'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
-                                 ('run_id', 'run_id')]),
-
-
-        (inputnode, arw, [('anatomical_scan', 'inputnode.in_file')]),
+                                 ('run_id', 'run_id'),
+                                 ('data_type', 'data_type')]),
+        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
@@ -134,8 +133,20 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
         (plot, datasink, [('out_file', 'mosaic_file')]),
-        (fwhm, datasink, [('fwhm', 'fwhm')]),
-        (measures, datasink, [('out_qc', 'in_qc')]),
+        (fwhm, datasink, [(('fwhm', _fwhm_dict), 'fwhm')]),
+        (measures, datasink, [('summary', 'summary'),
+                              ('icvs', 'icvs'),
+                              ('rpve', 'rpve'),
+                              ('size', 'size'),
+                              ('spacing', 'spacing'),
+                              ('inu', 'inu'),
+                              ('snr', 'snr'),
+                              ('cnr', 'cnr'),
+                              ('fber', 'fber'),
+                              ('efc', 'efc'),
+                              ('qi1', 'qi1'),
+                              ('qi2', 'qi2'),
+                              ('cjv', 'cjv')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
@@ -322,27 +333,10 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     ])
     return workflow
 
-
-def _merge_dicts(in_qc, subject_id, metadata, fwhm):
-    in_qc['subject'] = subject_id
-    in_qc['session'] = metadata[0]
-    in_qc['scan'] = metadata[1]
-
-    try:
-        in_qc['site_name'] = metadata[2]
-    except IndexError:
-        pass  # No site_name defined
-
-    in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
-                  'fwhm': fwhm[3]})
-
-    in_qc['snr'] = in_qc.pop('snr_total')
-    try:
-        in_qc['tr'] = in_qc['spacing_tr']
-    except KeyError:
-        pass  # TR is not defined
-
-    return in_qc
+def _fwhm_dict(fwhm):
+    fwhm = [float(f) for f in fwhm]
+    return {'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1],
+            'fwhm_z': fwhm[2], 'fwhm': fwhm[3]}
 
 def _get_wm(in_file, wm_val=3, out_file=None):
     import os.path as op

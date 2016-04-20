@@ -4,21 +4,21 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
 
-def bids_getfile(bids_root, scan_type, subject_id, session_id=None, run_id=None):
+def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None):
     """
     A simple function to select files from a BIDS structure
 
-    >>> from mriqc.data import get_ds003_downsampled()
-    >>> bids_root = get_ds003_downsampled()
-    >>> bids_getfile(bids_root, 't1', '05') # doctests: +ELLIPSIS
-    '...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
+    Example::
+
+    >>> from mriqc.data import get_ds003_downsampled
+    >>> bids_getfile(get_ds003_downsampled(), 'anat', '05') #doctest: +ELLIPSIS
+    u'...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
 
     """
     import os.path as op
     import glob
 
-    if 't1' in scan_type.lower():
-        data_type = 'anat'
+    if data_type == 'anat':
         scan_type = 'T1w'
 
     out_file = op.join(bids_root, 'sub-%s' % subject_id)
