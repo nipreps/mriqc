@@ -22,10 +22,9 @@ fi
 # done
 
 i=0
-for s in data/ds003_downsampled/sub-*; do 
-    subid=$(basename $s)
+for s in seq -f '%02g' 01 12; do 
     if [ $(($i % $CIRCLE_NODE_TOTAL)) -eq $CIRCLE_NODE_INDEX ]; then
-    	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B data/ds003_downsampled -S ${subid:4} -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
+    	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B ${HOME}/scratch/data/ds003_downsampled -S $s -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
     fi
     ((i=i+1))
 done
