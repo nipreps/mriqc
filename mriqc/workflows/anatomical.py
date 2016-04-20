@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-20 12:11:10
+# @Last Modified time: 2016-04-20 13:19:37
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -417,8 +417,14 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
-    sigma = 1e-3 * data[data > 0].std()  # pylint: disable=no-member
+    range_max = np.percentile(data.reshape(-1), 95.)
+    data *= (100/range_max)
+    sigma = 1e-3 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
     grad = gradient(data, sigma)
+
+    while grad.sum() < 5.e6:
+        sigma *= 1.5
+        grad = gradient(data, sigma)
 
     if compute_abs:
         grad = np.abs(grad)
