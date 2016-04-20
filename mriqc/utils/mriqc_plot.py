@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-20 12:07:05
+# @Last Modified time: 2016-04-20 16:40:13
 
 """
 MRIQC Plot script
@@ -71,7 +71,9 @@ def main():
         cols.insert(0, col)
 
     dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
-    dataframe[cols].to_csv(op.join(settings['output_dir'], 'output.csv'), index=False)
+
+    out_fname = op.join(settings['output_dir'], opts.data_type + 'MRIQC.csv')
+    dataframe[cols].to_csv(out_fname, index=False)
 
 
 def _read_and_save(in_file):

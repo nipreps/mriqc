@@ -9,9 +9,6 @@ set -e
 # # -i data/ds003_sub-01/ -o outputs/ss-all/out -w outputs/ss-all/work
 # )
 
-if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then
-	docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
-fi
 
 # i=0
 # for test_params in "${MRIQC_TESTS[@]}"; do
@@ -22,7 +19,7 @@ fi
 # done
 
 i=0
-for s in $(seq -f '%02g' 01 12); do 
+for s in $(seq -f '%02g' 01 04); do 
     if [ $(($i % $CIRCLE_NODE_TOTAL)) -eq $CIRCLE_NODE_INDEX ]; then
     	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B /scratch/data/ds003_downsampled -S $s -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
     fi
@@ -30,7 +27,11 @@ for s in $(seq -f '%02g' 01 12); do
 done
 
 if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then
-	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_dfcheck" oesteban/mriqc -i /scratch/outputs/ms-func/out/fMRIQC.csv -r /root/src/mriqc/mriqc/data/tests/ds003_downsampled_fMRI.csv
-elif [[ $CIRCLE_NODE_INDEX -eq 1 ]]; then
-	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_dfcheck" oesteban/mriqc -i /scratch/outputs/ms-anat/out/aMRIQC.csv -r /root/src/mriqc/mriqc/data/tests/ds003_downsampled_sMRI.csv
+	docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
+#	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_dfcheck" oesteban/mriqc -i /scratch/outputs/ms-func/out/funcMRIQC.csv -r /root/src/mriqc/mriqc/data/tests/ds003_downsampled_fMRI.csv
+fi
+
+if [[ $CIRCLE_NODE_INDEX -eq 1 ]]; then
+	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_mriqc_plot" oesteban/mriqc -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
+	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_dfcheck" oesteban/mriqc -i /scratch/outputs/ms-anat/out/anatMRIQC.csv -r /root/src/mriqc/mriqc/data/tests/ds003_downsampled_sMRI.csv
 fi
