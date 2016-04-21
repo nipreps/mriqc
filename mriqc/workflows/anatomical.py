@@ -7,12 +7,11 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-20 13:19:37
+# @Last Modified time: 2016-04-21 11:42:54
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
 from nipype.pipeline import engine as pe
-from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
@@ -21,8 +20,8 @@ from nipype.interfaces.afni import preprocess as afp
 
 from ..interfaces.qc import StructuralQC
 from ..interfaces.anatomical import ArtifactMask
-from ..interfaces.viz import Report, PlotMosaic
-from ..utils.misc import reorder_csv, rotate_files, bids_getfile
+from ..interfaces.viz import PlotMosaic
+from ..utils.misc import bids_getfile
 from ..data.getters import get_mni_template
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -417,12 +416,12 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
-    range_max = np.percentile(data.reshape(-1), 95.)
+    range_max = np.percentile(data.reshape(-1), 90.)
     data *= (100/range_max)
-    sigma = 1e-3 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
+    sigma = 1e-4 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
     grad = gradient(data, sigma)
 
-    while grad.sum() < 5.e6:
+    while grad.sum() < 1.e4:
         sigma *= 1.5
         grad = gradient(data, sigma)
 
@@ -437,8 +436,8 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     import os.path as op
     import numpy as np
     import nibabel as nb
-    from scipy.ndimage import (generate_binary_structure, iterate_structure,
-                               binary_closing, binary_fill_holes)
+    from scipy import ndimage as sim
+
     thresh *= 1e-2
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -461,9 +460,19 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
     mask[data > out_thresh] = 1
-    struc = iterate_structure(generate_binary_structure(3, 1), 2)
-    mask = binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
-    mask = binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+    mask = sim.binary_opening(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+
+    # Remove small objects
+    label_im, nb_labels = sim.label(mask)
+    if nb_labels > 2:
+        sizes = sim.sum(mask, label_im, range(nb_labels + 1))
+        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
+        for _, label in ordered[2:]:
+            mask[label_im == label] = 0
+
+    mask = sim.binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
     hdr = imnii.get_header().copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
