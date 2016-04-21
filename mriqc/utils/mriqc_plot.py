@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:27:48
+# @Last Modified time: 2016-04-21 15:57:25
 
 """
 MRIQC Plot script
@@ -60,8 +60,14 @@ def main():
         raise RuntimeError('Work directory of a previous MRIQC run was not found.')
 
     datalist = []
+    errorlist = []
     for jsonfile in glob.glob(op.join(settings['work_dir'], 'derivatives', '*.json')):
-        datalist.append(_read_and_save(jsonfile))
+        dfentry = _read_and_save(jsonfile)
+        if dfentry is not None:
+            if 'exec_error' not in dfentry.keys():
+                datalist.append(dfentry)
+            else:
+                errorlist.append(dfentry['subject_id'])
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
