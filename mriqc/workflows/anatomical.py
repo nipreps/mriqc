@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 11:42:54
+# @Last Modified time: 2016-04-21 14:09:45
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -285,7 +285,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
 
     # Combine and invert mask
     combine = pe.Node(niu.Function(
-        input_names=['in_file', 'head_mask', 'artifact_msk'], output_names=['out_file'],
+        input_names=['head_mask', 'artifact_msk'], output_names=['out_file'],
         function=combine_masks), name='combine_masks')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
@@ -297,8 +297,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
         (norm, invt, [('forward_transforms', 'transforms'),
                       (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, combine, [('in_file', 'in_file'),
-                              ('head_mask', 'head_mask')]),
+        (inputnode, combine, [('head_mask', 'head_mask')]),
         (invt, combine, [('output_image', 'artifact_msk')]),
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
@@ -357,7 +356,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
+def combine_masks(head_mask, artifact_msk, out_file=None):
     """Computes an air mask from the head and artifact masks"""
     import os.path as op
     import numpy as np
@@ -365,38 +364,20 @@ def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
     from scipy import ndimage as sim
 
     if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
+        fname, ext = op.splitext(op.basename(head_mask))
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
         out_file = op.abspath('%s_combined%s' % (fname, ext))
 
-    imdata = nb.load(in_file).get_data()
-    msk = np.ones_like(imdata, dtype=np.uint8)
-    msk[imdata <= 0] = 0
-
     imnii = nb.load(head_mask)
     hmdata = imnii.get_data()
+
+    msk = np.ones_like(hmdata, dtype=np.uint8)
     msk[hmdata == 1] = 0
 
     adata = nb.load(artifact_msk).get_data()
     msk[adata == 1] = 0
-
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 3)
-    msk = sim.binary_opening(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-
-    # Remove small objects
-    label_im, nb_labels = sim.label(msk)
-    if nb_labels > 2:
-        sizes = sim.sum(msk, label_im, range(nb_labels + 1))
-        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
-        for _, label in ordered[2:]:
-            msk[label_im == label] = 0
-
-    msk = sim.binary_closing(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 4)
-    msk = sim.binary_fill_holes(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
