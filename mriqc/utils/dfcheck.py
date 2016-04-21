@@ -26,9 +26,9 @@ def main():
                          required=True, help='reference dataframe')
 
     opts = parser.parse_args()
-    tstdf = pd.read_csv(opts.input_csv).sort_values(['subject', 'session', 'scan'],
+    tstdf = pd.read_csv(opts.input_csv).sort_values(['subject_id', 'session_id', 'run_id'],
                                                     ascending=[True, True, True])
-    refdf = pd.read_csv(opts.reference_csv).sort_values(['subject', 'session', 'scan'],
+    refdf = pd.read_csv(opts.reference_csv).sort_values(['subject_id', 'session_id', 'run_id'],
                                                         ascending=[True, True, True])
 
     refcolumns = refdf.columns.ravel().tolist()
