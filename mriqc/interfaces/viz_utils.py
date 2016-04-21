@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 11:40:26
+# @Last Modified time: 2016-04-21 15:08:22
 """ Visualization utilities """
 
 import math
@@ -55,15 +55,15 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
             except ValueError:
                 pass
 
-            subdf = df.loc[df['subject'] == subid]
-            sessions = np.atleast_1d(subdf[['session']]).reshape(-1).tolist()
+            subdf = df.loc[df['subject_id'] == subid]
+            sessions = np.atleast_1d(subdf[['session_id']]).reshape(-1).tolist()
 
             for ss in sessions:
-                sesdf = subdf.loc[subdf['session'] == ss]
-                scans = np.atleast_1d(sesdf[['scan']]).reshape(-1).tolist()
+                sesdf = subdf.loc[subdf['session_id'] == ss]
+                scans = np.atleast_1d(sesdf[['run_id']]).reshape(-1).tolist()
 
                 for sc in scans:
-                    scndf = subdf.loc[sesdf['scan'] == sc]
+                    scndf = subdf.loc[sesdf['run_id'] == sc]
                     plot_vline(
                         scndf.iloc[0][mname], '%s_%s' % (ss, sc), axes[-1])
 
@@ -83,7 +83,7 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
     fig = plt.figure(figsize=figsize)
     gsp = gridspec.GridSpec(1, len(groups), width_ratios=lengs)
 
-    subjects = sorted(pd.unique(df.subject.ravel()))
+    subjects = sorted(pd.unique(df.subject_id.ravel()))
     nsubj = len(subjects)
     subid = subject
     if subid is not None:
@@ -94,14 +94,18 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
 
     axes = []
     for i, snames in enumerate(groups):
+        if len(snames) == 0:
+            continue
+
         axes.append(plt.subplot(gsp[i]))
 
         if nsubj > strip_nsubj:
-            sns.violinplot(data=df[snames], ax=axes[-1])
+            pal = sns.color_palette("hls", len(snames))
+            sns.violinplot(data=df[snames], ax=axes[-1], linewidth=.8, palette=pal)
         else:
             stdf = df.copy()
             if subid is not None:
-                stdf = stdf.loc[stdf['subject'] != subid]
+                stdf = stdf.loc[stdf['subject_id'] != subid]
             sns.stripplot(data=stdf[snames], ax=axes[-1], jitter=0.25)
 
         axes[-1].set_xticklabels(
@@ -112,8 +116,8 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
 
         # If we know the subject, place a star for each scan
         if subject is not None:
-            subdf = df.loc[df['subject'] == subid]
-            scans = sorted(pd.unique(subdf.scan.ravel()))
+            subdf = df.loc[df['subject_id'] == subid]
+            scans = sorted(pd.unique(subdf.run_id.ravel()))
             nstars = len(scans)
             if nstars == 0:
                 continue
@@ -121,7 +125,7 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
             for j, sname in enumerate(snames):
                 vals = []
                 for _, scid in enumerate(scans):
-                    val = subdf.loc[df.scan == scid, [sname]].iloc[0, 0]
+                    val = subdf.loc[df.run_id == scid, [sname]].iloc[0, 0]
                     vals.append(val)
 
                 if len(vals) != nstars:

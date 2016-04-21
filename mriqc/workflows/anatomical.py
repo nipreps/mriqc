@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 14:09:45
+# @Last Modified time: 2016-04-21 15:18:14
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -333,8 +333,8 @@ def skullstrip_wf(name='SkullStripWorkflow'):
 
 def _fwhm_dict(fwhm):
     fwhm = [float(f) for f in fwhm]
-    return {'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1],
-            'fwhm_z': fwhm[2], 'fwhm': fwhm[3]}
+    return {'x': fwhm[0], 'y': fwhm[1],
+            'z': fwhm[2], 'avg': fwhm[3]}
 
 def _get_wm(in_file, wm_val=3, out_file=None):
     import os.path as op

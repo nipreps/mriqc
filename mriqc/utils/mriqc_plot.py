@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-20 16:40:13
+# @Last Modified time: 2016-04-21 14:37:13
 
 """
 MRIQC Plot script
@@ -22,7 +22,7 @@ import json
 import pandas as pd
 
 from mriqc import __version__
-
+from ..reports import anat_report
 
 def main():
     """Entry point"""
@@ -75,6 +75,8 @@ def main():
     out_fname = op.join(settings['output_dir'], opts.data_type + 'MRIQC.csv')
     dataframe[cols].to_csv(out_fname, index=False)
 
+    if opts.data_type == 'anat':
+        anat_report(out_fname, settings=settings)
 
 def _read_and_save(in_file):
     with open(in_file, 'r') as jsondata:

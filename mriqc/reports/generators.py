@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 15:34:59
+# @Last Modified time: 2016-04-21 15:18:27
 """ Encapsulates report generation functions """
 
 import sys
@@ -30,13 +30,13 @@ STRUCTURAL_QCGROUPS = [
     ['rpve_csf', 'rpve_gm', 'rpve_wm'],
     ['inu_range', 'inu_med'],
     ['cnr'], ['efc'], ['fber'], ['cjv'],
-    ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+    ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
     ['qi1', 'qi2'],
     ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
-    ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg'],
-    ['summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf'],
-    ['summary_mean_gm', 'summary_stdv_gm', 'summary_p05_gm', 'summary_p95_gm'],
-    ['summary_mean_wm', 'summary_stdv_wm', 'summary_p05_wm', 'summary_p95_wm']
+    ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
+     'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',
+     'summary_mean_gm', 'summary_stdv_gm', 'summary_p05_gm', 'summary_p95_gm',
+     'summary_mean_wm', 'summary_stdv_wm', 'summary_p05_wm', 'summary_p95_wm']
 ]
 
 FUNC_SPATIAL_QCGROUPS = [
@@ -54,6 +54,10 @@ FUNC_TEMPORAL_QCGROUPS = [
     ['num_fd'], ['outlier'], ['perc_fd'], ['quality']
 ]
 
+def anat_report(in_csv, settings=None):
+    return workflow_report(in_csv, 'anatomical', settings=settings)
+
+
 def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     """ Creates the report """
     import datetime
@@ -70,6 +74,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     func = getattr(sys.modules[__name__], 'report_' + qctype)
 
     failed_str = 'none'
+    failed = []
     if sub_list is not None:
         failed = find_failed(dframe, sub_list)
         if len(failed) > 0:
@@ -100,15 +105,15 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
     # Generate individual reports for subjects
     for subid in subject_list:
         # Get subject-specific info
-        subdf = dframe.loc[dframe['subject'] == subid]
-        sessions = sorted(pd.unique(subdf.session.ravel()))
+        subdf = dframe.loc[dframe['subject_id'] == subid]
+        sessions = sorted(pd.unique(subdf.session_id.ravel()))
         plots = []
         sess_scans = []
         subparams = {}
         # Re-build mosaic location
         for sesid in sessions:
-            sesdf = subdf.loc[subdf['session'] == sesid]
-            scans = sorted(pd.unique(sesdf.scan.ravel()))
+            sesdf = subdf.loc[subdf['session_id'] == sesid]
+            scans = sorted(pd.unique(sesdf.run_id.ravel()))
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
@@ -140,7 +145,7 @@ def workflow_report(in_csv, qctype, sub_list=None, settings=None):
 
         # Summary cover
         sfailed = []
-        if len(failed) > 0:
+        if failed:
             sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
@@ -248,13 +253,13 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
             group.remove(i)
 
     report = PdfPages(out_file)
-    sessions = sorted(pd.unique(dframe.session.ravel()))
+    sessions = sorted(pd.unique(dframe.session_id.ravel()))
     for ssid in sessions:
-        sesdf = dframe.copy().loc[dframe['session'] == ssid]
-        scans = pd.unique(sesdf.scan.ravel())
+        sesdf = dframe.copy().loc[dframe['session_id'] == ssid]
+        scans = pd.unique(sesdf.run_id.ravel())
         if sc_split:
             for scid in scans:
-                subset = sesdf.loc[sesdf['scan'] == scid]
+                subset = sesdf.loc[sesdf['run_id'] == scid]
                 if len(subset.index) > 1:
                     if sub_id is None:
                         subtitle = '(%s_%s)' % (ssid, scid)

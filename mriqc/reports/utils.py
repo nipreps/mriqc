@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-11 11:46:59
+# @Last Modified time: 2016-04-21 14:39:29
 """ Helpers in report generation """
 
 import numpy as np
@@ -16,30 +16,30 @@ import pandas as pd
 
 def read_csv(in_csv):
     """ Read csv file, sort and drop duplicates """
-    dframe = pd.read_csv(in_csv, dtype={'subject': str})
+    dframe = pd.read_csv(in_csv, dtype={'subject_id': str})
     try:
-        dframe = dframe.sort_values(by=['subject', 'session', 'scan'])
+        dframe = dframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
     except AttributeError:
         #pylint: disable=E1101
-        dframe = dframe.sort(columns=['subject', 'session', 'scan'])
+        dframe = dframe.sort(columns=['subject_id', 'session_id', 'run_id'])
 
     try:
         #pylint: disable=E1101
-        dframe.drop_duplicates(['subject', 'session', 'scan'], keep='last',
+        dframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
                                inplace=True)
     except TypeError:
         #pylint: disable=E1101
-        dframe.drop_duplicates(['subject', 'session', 'scan'], take_last=True,
+        dframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                inplace=True)
     #pylint: disable=E1101
-    subject_list = sorted(pd.unique(dframe.subject.ravel()))
+    subject_list = sorted(pd.unique(dframe.subject_id.ravel()))
     return dframe, subject_list
 
 
 def find_failed(dframe, sub_list):
     """ Identify failed subjects """
     sub_list = [(s[0], s[1], s[2]) for s in sub_list]
-    success = [tuple(x) for x in dframe[['subject', 'session', 'scan']].values]
+    success = [tuple(x) for x in dframe[['subject_id', 'session_id', 'run_id']].values]
     failed = list(set(sub_list) - set(success))
     return failed
 
@@ -48,7 +48,7 @@ def image_parameters(dframe):
     """ Generate formatted parameters for each subject, session and scan """
     newdf = dframe.copy()
     # Pack together subject session & scan as identifier
-    newdf['id'] = zip(newdf.subject, newdf.session, newdf.scan)
+    newdf['id'] = zip(newdf.subject_id, newdf.session_id, newdf.run_id)
 
     # Format the size
     #pylint: disable=E1101
