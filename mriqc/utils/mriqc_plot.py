@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-21 14:37:13
+# @Last Modified time: 2016-04-21 15:27:48
 
 """
 MRIQC Plot script
@@ -70,13 +70,31 @@ def main():
         cols.remove(col)
         cols.insert(0, col)
 
-    dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
+    if 'mosaic_file' in cols:
+        cols.remove('mosaic_file')
+
+    # Sort the dataframe, with failsafe if pandas version is too old
+    try:
+        dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
+    except AttributeError:
+        #pylint: disable=E1101
+        dataframe = dataframe.sort(columns=['subject_id', 'session_id', 'run_id'])
+
+    # Drop duplicates
+    try:
+        #pylint: disable=E1101
+        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
+                                  inplace=True)
+    except TypeError:
+        #pylint: disable=E1101
+        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
+                                  inplace=True)
 
     out_fname = op.join(settings['output_dir'], opts.data_type + 'MRIQC.csv')
     dataframe[cols].to_csv(out_fname, index=False)
 
     if opts.data_type == 'anat':
-        anat_report(out_fname, settings=settings)
+        anat_report(dataframe, settings=settings)
 
 def _read_and_save(in_file):
     with open(in_file, 'r') as jsondata:

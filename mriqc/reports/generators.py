@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:18:27
+# @Last Modified time: 2016-04-21 15:46:53
 """ Encapsulates report generation functions """
 
 import sys
@@ -54,8 +54,110 @@ FUNC_TEMPORAL_QCGROUPS = [
     ['num_fd'], ['outlier'], ['perc_fd'], ['quality']
 ]
 
-def anat_report(in_csv, settings=None):
-    return workflow_report(in_csv, 'anatomical', settings=settings)
+def anat_report(dframe, settings=None):
+    qctype = 'anatomical'
+    out_dir = settings.get('output_dir', os.getcwd())
+    work_dir = settings.get('work_dir', op.abspath('tmp'))
+    out_file = op.join(out_dir, 'anatomical_%s.pdf')
+    sub_list = sorted(pd.unique(dframe.subject_id.ravel()))
+
+    result = {}
+    func = getattr(sys.modules[__name__], 'report_anatomical')
+
+    failed_str = 'none'
+    failed = []
+    if sub_list is not None:
+        failed = find_failed(dframe, sub_list)
+        if len(failed) > 0:
+            failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
+
+
+    imparams = image_parameters(dframe)
+    pdf_group = []
+    # Generate summary page
+    out_sum = op.join(work_dir, 'summary_group.pdf')
+    summary_cover({'modality': qctype, 'failed': failed_str, 'params': imparams},
+                  is_group=True, out_file=out_sum)
+    pdf_group.append(out_sum)
+
+    # Generate group report
+    qc_group = op.join(work_dir, 'qc_measures_group.pdf')
+    # Generate violinplots. If successfull, add documentation.
+    func(dframe, out_file=qc_group)
+    pdf_group.append(qc_group)
+
+    if len(pdf_group) > 0:
+        out_group_file = op.join(out_dir, '%s_group.pdf' % qctype)
+        # Generate final report with collected pdfs in plots
+        concat_pdf(pdf_group, out_group_file)
+        result['group'] = {'success': True, 'path': out_group_file}
+
+    out_indiv_files = []
+    # Generate individual reports for subjects
+    for subid in sub_list:
+        # Get subject-specific info
+        subdf = dframe.loc[dframe['subject_id'] == subid]
+        sessions = sorted(pd.unique(subdf.session_id.ravel()))
+        plots = []
+        sess_scans = []
+        subparams = {}
+        # Re-build mosaic location
+        for sesid in sessions:
+            sesdf = subdf.loc[subdf['session_id'] == sesid]
+            scans = sorted(pd.unique(sesdf.run_id.ravel()))
+
+            # Each scan has a volume and (optional) fd plot
+            for scanid in scans:
+                subparams[(sesid, scanid)] = imparams[(subid, sesid, scanid)]
+                if 'anat' in qctype:
+                    fpdf = sesdf.loc[sesdf['run_id'] == scanid]['mosaic_file'].values[0]
+                    if op.isfile(fpdf):
+                        plots.append(fpdf)
+
+                if 'func' in qctype:
+                    mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
+                    if op.isfile(mepi):
+                        plots.append(mepi)
+
+                    tsnr = op.join(work_dir, 'tsnr_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
+                    if op.isfile(tsnr):
+                        plots.append(tsnr)
+
+                    framedisp = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
+                                        (subid, sesid, scanid))
+                    if op.isfile(framedisp):
+                        plots.append(framedisp)
+
+            sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
+
+        # Summary cover
+        sfailed = []
+        if failed:
+            sfailed = ['%s (%s)' % (s[1], s[2])
+                       for s in failed if subid == s[0]]
+        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
+        summary_cover(
+            {'sub_id': subid, 'modality': qctype, 'included': ", ".join(sess_scans),
+             'failed': ",".join(sfailed) if sfailed else "none",
+             'params': subparams},
+            out_file=out_sum)
+        plots.insert(0, out_sum)
+
+        # Summary (violinplots) of QC measures
+        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qctype, subid))
+
+        func(dframe, subject=subid, out_file=qc_ms)
+        plots.append(qc_ms)
+
+        if len(plots) > 0:
+            # Generate final report with collected pdfs in plots
+            sub_path = out_file % subid
+            concat_pdf(plots, sub_path)
+            out_indiv_files.append(sub_path)
+            result[subid] = {'success': True, 'path': sub_path}
+    return out_group_file, out_indiv_files, result
 
 
 def workflow_report(in_csv, qctype, sub_list=None, settings=None):
