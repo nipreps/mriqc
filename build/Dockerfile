@@ -8,22 +8,21 @@ ARG GIT_URL
 ENV GIT_URL ${GIT_URL:-"https://github.com/poldracklab/mriqc.git"}
 
 WORKDIR /root/src
-
-# Install nipype & mriqc
-RUN source activate crnenv && \
-    pip install --upgrade numpy && \
-    python -c "from matplotlib import font_manager"
-
 RUN git clone $GIT_URL && \
     cd mriqc && \
     git checkout $GIT_BRANCH && \
     source activate crnenv && \
-    pip install -e . && \
+    python setup.py install && \
     python -c "from mriqc.data import get_brainweb_1mm_normal; get_brainweb_1mm_normal()"
-
+    
 WORKDIR /root/
 ADD files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
+
+RUN groupadd -g 1002 agave && \
+    groupadd -g 1001 docker && \
+    useradd -m -G agave,docker -s /bin/bash -u 1001 ubuntu
+USER ubuntu
 
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]
