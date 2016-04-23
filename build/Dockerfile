@@ -19,7 +19,9 @@ WORKDIR /root/
 ADD files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
-RUN useradd -m -G users -s /bin/bash -u 1021 ubuntu
+RUN groupadd -g 1002 agave && \
+    groupadd -g 1001 docker && \
+    useradd -m -G agave,docker -s /bin/bash -u 1001 ubuntu
 USER ubuntu
 
 ENTRYPOINT ["/usr/bin/run_mriqc"]
