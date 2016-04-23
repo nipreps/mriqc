@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:46:53
+# @Last Modified time: 2016-04-21 17:04:43
 """ Encapsulates report generation functions """
 
 import sys
@@ -54,7 +54,11 @@ FUNC_TEMPORAL_QCGROUPS = [
     ['num_fd'], ['outlier'], ['perc_fd'], ['quality']
 ]
 
-def anat_report(dframe, settings=None):
+def anat_report(dframe, failed=None, settings=None):
+    if failed is None:
+        failed = []
+
+    failed_str = 'none'
     qctype = 'anatomical'
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
@@ -63,14 +67,6 @@ def anat_report(dframe, settings=None):
 
     result = {}
     func = getattr(sys.modules[__name__], 'report_anatomical')
-
-    failed_str = 'none'
-    failed = []
-    if sub_list is not None:
-        failed = find_failed(dframe, sub_list)
-        if len(failed) > 0:
-            failed_str = ', '.join(sorted(['%s_%s_%s' % f for f in failed]))
-
 
     imparams = image_parameters(dframe)
     pdf_group = []
