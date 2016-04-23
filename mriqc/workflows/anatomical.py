@@ -310,8 +310,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
         (norm, invt, [('forward_transforms', 'transforms'),
                       (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, combine, [('in_file', 'in_file'),
-                              ('head_mask', 'head_mask')]),
+        (inputnode, combine, [('head_mask', 'head_mask')]),
         (invt, combine, [('output_image', 'artifact_msk')]),
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
@@ -387,7 +386,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
+def combine_masks(head_mask, artifact_msk, out_file=None):
     """Computes an air mask from the head and artifact masks"""
     import os.path as op
     import numpy as np
@@ -395,38 +394,20 @@ def combine_masks(in_file, head_mask, artifact_msk, out_file=None):
     from scipy import ndimage as sim
 
     if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
+        fname, ext = op.splitext(op.basename(head_mask))
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
         out_file = op.abspath('%s_combined%s' % (fname, ext))
 
-    imdata = nb.load(in_file).get_data()
-    msk = np.ones_like(imdata, dtype=np.uint8)
-    msk[imdata <= 0] = 0
-
     imnii = nb.load(head_mask)
     hmdata = imnii.get_data()
+
+    msk = np.ones_like(hmdata, dtype=np.uint8)
     msk[hmdata == 1] = 0
 
     adata = nb.load(artifact_msk).get_data()
     msk[adata == 1] = 0
-
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 3)
-    msk = sim.binary_opening(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-
-    # Remove small objects
-    label_im, nb_labels = sim.label(msk)
-    if nb_labels > 2:
-        sizes = sim.sum(msk, label_im, range(nb_labels + 1))
-        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
-        for _, label in ordered[2:]:
-            msk[label_im == label] = 0
-
-    msk = sim.binary_closing(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 1), 4)
-    msk = sim.binary_fill_holes(msk, struc).astype(np.uint8)  # pylint: disable=no-member
-
     nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
@@ -446,8 +427,14 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
-    sigma = 1e-3 * data[data > 0].std()  # pylint: disable=no-member
+    range_max = np.percentile(data.reshape(-1), 90.)
+    data *= (100/range_max)
+    sigma = 1e-4 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
     grad = gradient(data, sigma)
+
+    while grad.sum() < 1.e4:
+        sigma *= 1.5
+        grad = gradient(data, sigma)
 
     if compute_abs:
         grad = np.abs(grad)
@@ -460,8 +447,8 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     import os.path as op
     import numpy as np
     import nibabel as nb
-    from scipy.ndimage import (generate_binary_structure, iterate_structure,
-                               binary_closing, binary_fill_holes)
+    from scipy import ndimage as sim
+
     thresh *= 1e-2
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -484,9 +471,19 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
     mask[data > out_thresh] = 1
-    struc = iterate_structure(generate_binary_structure(3, 1), 2)
-    mask = binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
-    mask = binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+    mask = sim.binary_opening(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+
+    # Remove small objects
+    label_im, nb_labels = sim.label(mask)
+    if nb_labels > 2:
+        sizes = sim.sum(mask, label_im, range(nb_labels + 1))
+        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
+        for _, label in ordered[2:]:
+            mask[label_im == label] = 0
+
+    mask = sim.binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
     hdr = imnii.get_header().copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
