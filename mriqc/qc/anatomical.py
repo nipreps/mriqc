@@ -235,8 +235,6 @@ def art_qi2(img, airmask, artmask, ncoils=1):
             t2idx = i
             break
 
-    print(hist[:10])
-    print(pdf_fitted[:10])
     # Compute goodness-of-fit (gof)
     gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
     return art_qi1(airmask, artmask) + gof
