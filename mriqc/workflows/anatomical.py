@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:18:14
+# @Last Modified time: 2016-05-03 11:22:24
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -35,7 +35,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'data_type', 'subject_id', 'session_id',
+        fields=['bids_root', 'subject_id', 'session_id',
                 'run_id']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
@@ -51,6 +51,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     datasource = pe.Node(niu.Function(
         input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
+    datasource.inputs.data_type = 'anat'
 
 
     # 1a. Reorient anatomical image
@@ -85,8 +86,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (inputnode, datasource, [('bids_root', 'bids_root'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
-                                 ('run_id', 'run_id'),
-                                 ('data_type', 'data_type')]),
+                                 ('run_id', 'run_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
@@ -123,11 +123,20 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
 
 
+    # Format name
+    out_name = pe.Node(niu.Function(
+        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
+        function=_format_name), name='FormatName')
+    out_name.inputs.out_path = deriv_dir
+    out_name.inputs.prefix = 'anat'
+
     # Save to JSON file
-    datasink = pe.Node(nio.JSONFileSink(
-        out_file=op.join(deriv_dir, settings['formatted_name'] + '.json')), name='datasink')
+    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
 
     workflow.connect([
+        (inputnode, out_name, [('subject_id', 'subid'),
+                               ('session_id', 'sesid'),
+                               ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
@@ -146,6 +155,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('qi1', 'qi1'),
                               ('qi2', 'qi2'),
                               ('cjv', 'cjv')]),
+        (out_name, datasink, [('out_file', 'out_file')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
@@ -460,8 +470,17 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
 
+def _format_name(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
+    import os.path as op
+    fname = 'sub-%s' % subid
 
-def _format_run(subject_id, session_id, run_id, prefix='anat_qc', ext='json'):
-    return '{prefix}_{subject_id}_{session_id}_{run_id}.{ext}'.format(
-        subject_id=subject_id, session_id=session_id, run_id=run_id,
-        prefix=prefix, ext=ext)
+    if prefix is not None:
+        fname = prefix + fname
+    if sesid is not None:
+        fname += '_ses-%s' % sesid
+    if runid is not None:
+        fname += '_run-%s' % runid
+
+    if out_path is not None:
+        fname = op.join(out_path, fname)
+    return op.abspath(fname + '.' + ext)

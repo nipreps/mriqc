@@ -7,10 +7,24 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-19 13:42:50
+# @Last Modified time: 2016-05-03 11:23:23
 """ The core module combines the existing workflows """
+from six import string_types
 from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
+
+def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
+    if subject_id is None:
+        raise NotImplementedError
+
+    if isinstance(subject_id, string_types):
+        workflow = anat_qc_workflow(name='mriqc_sub_' + subject_id, settings=settings)
+        workflow.inputs.inputnode.bids_root = settings['bids_root']
+        workflow.inputs.inputnode.subject_id = subject_id
+        workflow.inputs.inputnode.session_id = 'single_session' if session_id is None else session_id
+        workflow.inputs.inputnode.run_id = 'single_run' if run_id is None else run_id
+    return workflow
+
 
 
 def qc_workflows(settings=None, subjects=None):

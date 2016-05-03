@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-20 09:35:19
+# @Last Modified time: 2016-05-03 11:24:51
 
 """
 =====
@@ -18,7 +18,7 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from nipype import config as ncfg
 
-from mriqc.workflows import anat_qc_workflow
+from mriqc.workflows import ms_anat
 from mriqc import __version__
 
 
@@ -29,9 +29,9 @@ def main():
 
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-B', '--bids-root', action='store', default=os.getcwd())
-    g_input.add_argument('-S', '--subject-id', action='store', required=True)
-    g_input.add_argument('-s', '--session-id', action='store', default='single_session')
-    g_input.add_argument('-r', '--run-id', action='store', default='single_run')
+    g_input.add_argument('-S', '--subject-id', action='store')
+    g_input.add_argument('-s', '--session-id', action='store')
+    g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('-d', '--data-type', action='store', choices=['anat', 'func'])
     g_input.add_argument('-v', '--version', action='store_true', default=False,
                          help='Show current mriqc version')
@@ -97,20 +97,11 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    settings['formatted_name'] = 'sub-%s' % opts.subject_id
-    if opts.session_id is not None:
-        settings['formatted_name'] += '_ses-%s' % opts.session_id
-    if opts.run_id is not None:
-        settings['formatted_name'] += '_run-%s' % opts.run_id
-
     if opts.data_type == 'anat':
-        workflow = anat_qc_workflow(name='mriqc_sub_' + opts.subject_id, settings=settings)
+        workflow = ms_anat(subject_id=opts.subject_id, session_id=opts.session_id,
+                           run_id=opts.run_id, settings=settings)
 
-    workflow.inputs.inputnode.bids_root = opts.bids_root
-    workflow.inputs.inputnode.subject_id = opts.subject_id
-    workflow.inputs.inputnode.session_id = opts.session_id
-    workflow.inputs.inputnode.run_id = opts.run_id
-    workflow.inputs.inputnode.data_type = opts.data_type
+
     workflow.run(**plugin_settings)
 
 
