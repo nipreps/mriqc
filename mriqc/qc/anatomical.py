@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-20 08:59:02
+# @Last Modified time: 2016-05-03 11:29:22
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -219,23 +219,22 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     # Artifact-free air region
     data = img[airmask > 0]
     # Estimate data pdf
-    hist, bin_edges = np.histogram(data, bins=128)
+    hist, bin_edges = np.histogram(data, density=True, bins=128)
     bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
-    # Find t2 (intensity at half width, left side)
-    hist_max = hist[np.argmax(hist)]
-    t2idx = -1
-    for i in range(len(bin_centers)):
-        ihw = 0.45 * hist_max
-        if hist[i] > ihw:
+    max_pos = np.argmax(hist)
+
+    # Fit central chi distribution
+    param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
+    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+
+    # Find t2 (intensity at half width, right side)
+    ihw = 0.5 * hist[max_pos]
+    t2idx = 0
+    for i in range(max_pos + 1, len(bin_centers)):
+        if hist[i] < ihw:
             t2idx = i
             break
-    # Fit central chi distribution
-    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[np.argmax(hist)])
-    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
-    # import matplotlib.pyplot as plt
-    # plt.plot(bin_centers[t2idx:], hist[t2idx:])
-    # plt.plot(bin_centers[t2idx:], pdf_fitted[t2idx:])
-    # plt.savefig('fig.png')
+
     # Compute goodness-of-fit (gof)
     gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
     return float(art_qi1(airmask, artmask) + gof)
