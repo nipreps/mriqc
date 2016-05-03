@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:24:51
+# @Last Modified time: 2016-05-03 14:27:23
 
 """
 =====
@@ -29,7 +29,7 @@ def main():
 
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-B', '--bids-root', action='store', default=os.getcwd())
-    g_input.add_argument('-S', '--subject-id', action='store')
+    g_input.add_argument('-S', '--subject-id', nargs='*', action='store')
     g_input.add_argument('-s', '--session-id', action='store')
     g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('-d', '--data-type', action='store', choices=['anat', 'func'])

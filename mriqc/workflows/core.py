@@ -7,37 +7,49 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:56:48
+# @Last Modified time: 2016-05-03 14:08:01
 """ The core module combines the existing workflows """
 from six import string_types
 from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
+from ..utils.misc import gather_bids_data
+
+from nipype.pipeline import engine as pe
+from nipype.interfaces import utility as niu
 
 def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
-    if subject_id is None:
-        raise NotImplementedError
+    """ Multi-subject anatomical workflow wrapper """
+    # Run single subject mode if only one subject id is provided
+    if subject_id is not None and isinstance(subject_id, string_types):
+        subject_id = [subject_id]
 
-    if isinstance(subject_id, string_types):
-        if subject_id.startswith('sub-'):
-            subject_id = subject_id[4:]
+    sub_list = gather_bids_data(settings['bids_root'],
+                                subject_inclusion=subject_id,
+                                include_types=['anat'])
 
-        if session_id is None:
-            session_id = 'single_session'
-        elif session_id.startswith('sub-'):
-            session_id = session_id[4:]
+    if session_id is not None:
+        sub_list = [s for s in sub_list if s[1] == session_id]
+    if run_id is not None:
+        sub_list = [s for s in sub_list if s[2] == run_id]
 
-        if run_id is None:
-            run_id = 'single_run'
-        elif run_id.startswith('sub-'):
-            run_id = run_id[4:]
+    if not sub_list:
+        raise RuntimeError('No scans found in %s' % settings['bids_root'])
 
-        workflow = anat_qc_workflow(name='mriqc_sub_' + subject_id, settings=settings)
-        workflow.inputs.inputnode.bids_root = settings['bids_root']
-        workflow.inputs.inputnode.subject_id = subject_id
-        workflow.inputs.inputnode.session_id = session_id
-        workflow.inputs.inputnode.run_id = run_id
+    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
+                        name='inputnode')
+    inputnode.iterables = [('data', [list(s) for s in sub_list])]
+    anat_qc = anat_qc_workflow(settings=settings)
+    dsplit = pe.Node(niu.Split(splits=[1, 1, 1], squeeze=True),
+                     name='datasplit')
+    workflow = pe.Workflow(name='anatMRIQC')
+    workflow.connect([
+        (inputnode, dsplit, [('data', 'inlist')]),
+        (dsplit, anat_qc, [('out1', 'inputnode.subject_id'),
+                           ('out2', 'inputnode.session_id'),
+                           ('out3', 'inputnode.run_id')])
+    ])
+
     return workflow
-
 
 
 def qc_workflows(settings=None, subjects=None):

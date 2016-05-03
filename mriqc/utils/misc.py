@@ -90,7 +90,7 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
         # BIDS with non ses-* subfolders given default
         # "single_session" ses.
         file_tokens = {'scanfile': scanfile,
-                       'sub': None, 'ses': "single_session",
+                       'sub': None, 'ses': 'single_session',
                        'acq': None, 'rec': None,
                        'run': None, 'task': None,
                        'modality': file_bits[-1]}
@@ -140,30 +140,38 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
                     yield _tokenize_bids_scan_name(scan_file)
 
 
-def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
+def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None):
     """ Extract data from BIDS root folder """
     import os
     import os.path as op
+    from six import string_types
     import yaml
     from glob import glob
 
     sub_dict = {}
     inclusion_list = []
 
-    if scan_type is None:
-        scan_type = 'functional anatomical'
+    if include_types is None:
+        include_types = ['anat', 'func']
 
     # create subject inclusion list
-    if subject_inclusion is not None:
+    if subject_inclusion is not None and isinstance(subject_inclusion, string_types):
         with open(subject_inclusion, "r") as f:
             inclusion_list = f.readlines()
         # remove any /n's
         inclusion_list = [s.strip() for s in inclusion_list]
 
+    if subject_inclusion is not None and isinstance(subject_inclusion, list):
+        inclusion_list = []
+        for s in subject_inclusion:
+            if not s.startswith('sub-'):
+                s = 'sub-' + s
+            inclusion_list.append(s)
+
     sub_dict = {'anat': [], 'func': []}
 
     bids_inventory = bids_scan_file_walker(dataset_folder,
-                                           include_types=['anat', 'func'])
+                                           include_types=include_types)
     for bidsfile in sorted(bids_inventory,
                            key=lambda f: f['scanfile']):
 
@@ -174,12 +182,12 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
         # implies that other anatomical modalities might be
         # analyzed down the road.
         if bidsfile['modality'] in ['T1w']:  # ie, anatomical
-            scan_key = bidsfile['modality']
+            scan_key = 'single_run'
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
                 scan_key += '_' + bidsfile['run']
             sub_dict['anat'].append(
-                (bidsfile['sub'], bidsfile['ses'], scan_key, op.abspath(bidsfile['scanfile'])))
+                (bidsfile['sub'], bidsfile['ses'], scan_key))
 
         elif bidsfile['modality'] in ['bold']:  # ie, functional
             scan_key = bidsfile['task']
@@ -190,6 +198,9 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, scan_type=None):
                 scan_key = 'func_1'
             sub_dict['func'].append(
                 (bidsfile['sub'], bidsfile['ses'], scan_key, op.abspath(bidsfile['scanfile'])))
+
+    if len(include_types) == 1:
+        return sub_dict[include_types[0]]
 
     return sub_dict
 
