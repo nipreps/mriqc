@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:22:24
+# @Last Modified time: 2016-05-03 11:53:00
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
