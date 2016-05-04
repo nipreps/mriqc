@@ -21,17 +21,17 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     if data_type == 'anat':
         scan_type = 'T1w'
 
-    out_file = op.join(bids_root, 'sub-%s' % subject_id)
+    out_file = op.join(bids_root, subject_id)
 
     onesession = (session_id is None or session_id == 'single_session')
     onerun = (run_id is None or run_id == 'single_run')
 
     if onesession and onerun:
-        pattern = op.join(out_file, data_type, 'sub-%s_*%s.nii*' % (subject_id, scan_type))
+        pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
 
     if not onesession and onerun:
-        pattern = op.join(out_file, 'ses-%s' % session_id, data_type,
-                          'sub-%s_ses-%s_*%s.nii*' % (subject_id, session_id, scan_type))
+        pattern = op.join(out_file, session_id, data_type,
+                          '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
 
     results = glob.glob(pattern)
 
