@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 14:08:01
+# @Last Modified time: 2016-05-03 17:01:22
 """ The core module combines the existing workflows """
 from six import string_types
 from .anatomical import anat_qc_workflow
@@ -39,6 +39,8 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
                         name='inputnode')
     inputnode.iterables = [('data', [list(s) for s in sub_list])]
     anat_qc = anat_qc_workflow(settings=settings)
+    anat_qc.inputs.inputnode.bids_root = settings['bids_root']
+
     dsplit = pe.Node(niu.Split(splits=[1, 1, 1], squeeze=True),
                      name='datasplit')
     workflow = pe.Workflow(name='anatMRIQC')
