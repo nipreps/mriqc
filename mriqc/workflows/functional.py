@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-05 14:47:22
+# @Last Modified time: 2016-05-05 15:09:56
 """ A QC workflow for fMRI data """
 import os
 import os.path as op
@@ -127,40 +127,40 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(
-        format_string='meanepi_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='meanepi_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_mean_mosaic')
     dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_mean')
     workflow.connect([
-        (dsource, mvmean, [('subject_id', 'subject_id'),
+        (inputnode, mvmean, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
-                           ('scan_id', 'scan_id')]),
+                           ('run_id', 'run_id')]),
         (plot_mean, mvmean, [('out_file', 'in_file')]),
         (mvmean, dsmean, [('out_file', '@mosaic')])
     ])
     # Save tSNR mosaic to well-formed path
     mvtsnr = pe.Node(niu.Rename(
-        format_string='tsnr_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='tsnr_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_tsnr_mosaic')
     dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_tsnr')
     workflow.connect([
-        (dsource, mvtsnr, [('subject_id', 'subject_id'),
+        (inputnode, mvtsnr, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
-                           ('scan_id', 'scan_id')]),
+                           ('run_id', 'run_id')]),
         (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
         (mvtsnr, dstsnr, [('out_file', '@mosaic')])
     ])
     # Save FD plot to well-formed path
     mvfd = pe.Node(niu.Rename(
-        format_string='fd_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='fd_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_fd_mosaic')
     dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                    name='ds_fd')
     workflow.connect([
-        (dsource, mvfd, [('subject_id', 'subject_id'),
+        (inputnode, mvfd, [('subject_id', 'subject_id'),
                          ('session_id', 'session_id'),
-                         ('scan_id', 'scan_id')]),
+                         ('run_id', 'run_id')]),
         (plot_fd, mvfd, [('out_file', 'in_file')]),
         (mvfd, dsfd, [('out_file', '@mosaic')])
     ])
