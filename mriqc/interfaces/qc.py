@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-20 09:12:50
+# @Last Modified time: 2016-05-04 15:30:56
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -218,7 +218,7 @@ class FunctionalQC(BaseInterface):
         mskdata[mskdata > 0] = 1
 
         # SNR
-        self._results['snr'] = snr(epidata, mskdata, fglabel=1)
+        self._results['snr'] = float(snr(epidata, mskdata, fglabel=1))
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
@@ -235,34 +235,36 @@ class FunctionalQC(BaseInterface):
 
         # Summary stats
         mean, stdv, p95, p05 = summary_stats(epidata, mskdata)
-        self._results['summary'] = {'mean': mean, 'stdv': stdv,
-                                    'p95': p95, 'p05': p05}
+        self._results['summary'] = {'mean': mean,
+                                    'stdv': stdv,
+                                    'p95': p95,
+                                    'p05': p05}
 
         # DVARS
-        self._results['dvars'] = dvars(hmcdata, mskdata).mean(axis=0)[0]
+        self._results['dvars'] = float(np.mean(dvars(hmcdata, mskdata), axis=0)[0])
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
-        self._results['m_tsnr'] = np.median(tsnr_data[mskdata > 0])
+        self._results['m_tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
 
         # GCOR
         self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # Image specs
-        self._results['size'] = {'x': hmcdata.shape[0],
-                                 'y': hmcdata.shape[1],
-                                 'z': hmcdata.shape[2]}
+        self._results['size'] = {'x': int(hmcdata.shape[0]),
+                                 'y': int(hmcdata.shape[1]),
+                                 'z': int(hmcdata.shape[2])}
         self._results['spacing'] = {
-            i: v for i, v in zip(['x', 'y', 'z'],
-                                 hmcnii.get_header().get_zooms()[:3])}
+            i: float(v) for i, v in zip(['x', 'y', 'z'],
+                                        hmcnii.get_header().get_zooms()[:3])}
 
         try:
-            self._results['size']['t'] = hmcdata.shape[3]
+            self._results['size']['t'] = int(hmcdata.shape[3])
         except IndexError:
             pass
 
         try:
-            self._results['spacing']['tr'] = hmcnii.get_header().get_zooms()[3]
+            self._results['spacing']['tr'] = float(hmcnii.get_header().get_zooms()[3])
         except IndexError:
             pass
 

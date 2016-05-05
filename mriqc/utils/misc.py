@@ -21,6 +21,9 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     if data_type == 'anat':
         scan_type = 'T1w'
 
+    if data_type == 'func':
+        scan_type = 'bold'
+
     out_file = op.join(bids_root, subject_id)
 
     onesession = (session_id is None or session_id == 'single_session')
@@ -29,9 +32,14 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     if onesession and onerun:
         pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
 
-    if not onesession and onerun:
+    elif not onesession and onerun:
         pattern = op.join(out_file, session_id, data_type,
                           '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
+    elif onesession and not onerun:
+        pattern = op.join(out_file, data_type, '%s_%s*%s.nii*' % (subject_id, run_id, scan_type))
+    else:
+        pattern = op.join(out_file, session_id, data_type,
+                          '%s_%s_%s*%s.nii*' % (subject_id, session_id, run_id, scan_type))
 
     results = glob.glob(pattern)
 
@@ -197,7 +205,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None)
             if scan_key is None:
                 scan_key = 'func_1'
             sub_dict['func'].append(
-                (bidsfile['sub'], bidsfile['ses'], scan_key, op.abspath(bidsfile['scanfile'])))
+                (bidsfile['sub'], bidsfile['ses'], scan_key))
 
     if len(include_types) == 1:
         return sub_dict[include_types[0]]
@@ -258,3 +266,19 @@ def rotate_files(fname):
     prev.append('%s.%d%s' % (name, len(prev) - 1, ext))
     for i in reversed(range(1, len(prev))):
         os.rename(prev[i-1], prev[i])
+
+
+def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
+    import os.path as op
+    fname = 'sub-%s' % subid
+
+    if prefix is not None:
+        fname = prefix + fname
+    if sesid is not None:
+        fname += '_ses-%s' % sesid
+    if runid is not None:
+        fname += '_run-%s' % runid
+
+    if out_path is not None:
+        fname = op.join(out_path, fname)
+    return op.abspath(fname + '.' + ext)

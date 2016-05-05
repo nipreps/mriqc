@@ -101,7 +101,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     # Step 5: signal is the entire foreground image
     ghost = epi_data[n2_mask == 1].mean() - epi_data[n2_mask == 2].mean()
     signal = epi_data[n2_mask == 0].mean()
-    return ghost/signal
+    return float(ghost/signal)
 
 
 def dvars(func, mask, output_all=False, out_file=None):
@@ -172,6 +172,7 @@ def dvars(func, mask, output_all=False, out_file=None):
 
     if out_file is not None:
         np.savetxt(out_file, gendvars, fmt='%.12f')
+
     return gendvars
 
 
@@ -256,7 +257,7 @@ def gcor(func, mask):
     idx = np.where(tv_mask > 0)
     zscores = scipy.stats.mstats.zscore(func[idx[0], idx[1], idx[2], :], axis=1)
     avg_ts = zscores.mean(axis=0)
-    return avg_ts.transpose().dot(avg_ts) / len(avg_ts)
+    return float(avg_ts.transpose().dot(avg_ts) / len(avg_ts))
 
 def zero_variance(func, mask):
     """

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:53:00
+# @Last Modified time: 2016-05-04 15:27:25
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -18,10 +18,11 @@ from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
+from .utils import fwhm_dict
 from ..interfaces.qc import StructuralQC
 from ..interfaces.anatomical import ArtifactMask
 from ..interfaces.viz import PlotMosaic
-from ..utils.misc import bids_getfile
+from ..utils.misc import bids_getfile, bids_path
 from ..data.getters import get_mni_template
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -32,13 +33,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     if settings is None:
         settings = {}
 
-    # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'subject_id', 'session_id',
-                'run_id']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
-
     deriv_dir = op.abspath('./derivatives')
     if 'work_dir' in settings.keys():
         workflow.base_dir = settings['work_dir']
@@ -46,6 +41,12 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     if not op.exists(deriv_dir):
         os.makedirs(deriv_dir)
+    # Define workflow, inputs and outputs
+    inputnode = pe.Node(niu.IdentityInterface(
+        fields=['bids_root', 'subject_id', 'session_id',
+                'run_id']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
+
 
     # 0. Get data
     datasource = pe.Node(niu.Function(
@@ -126,7 +127,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # Format name
     out_name = pe.Node(niu.Function(
         input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
-        function=_format_name), name='FormatName')
+        function=bids_path), name='FormatName')
     out_name.inputs.out_path = deriv_dir
     out_name.inputs.prefix = 'anat'
 
@@ -141,12 +142,12 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
         (plot, datasink, [('out_file', 'mosaic_file')]),
-        (fwhm, datasink, [(('fwhm', _fwhm_dict), 'fwhm')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (measures, datasink, [('summary', 'summary'),
+                              ('spacing', 'spacing'),
+                              ('size', 'size'),
                               ('icvs', 'icvs'),
                               ('rpve', 'rpve'),
-                              ('size', 'size'),
-                              ('spacing', 'spacing'),
                               ('inu', 'inu'),
                               ('snr', 'snr'),
                               ('cnr', 'cnr'),
@@ -341,11 +342,6 @@ def skullstrip_wf(name='SkullStripWorkflow'):
     ])
     return workflow
 
-def _fwhm_dict(fwhm):
-    fwhm = [float(f) for f in fwhm]
-    return {'x': fwhm[0], 'y': fwhm[1],
-            'z': fwhm[2], 'avg': fwhm[3]}
-
 def _get_wm(in_file, wm_val=3, out_file=None):
     import os.path as op
     import numpy as np
@@ -469,18 +465,3 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
-
-def _format_name(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
-    import os.path as op
-    fname = 'sub-%s' % subid
-
-    if prefix is not None:
-        fname = prefix + fname
-    if sesid is not None:
-        fname += '_ses-%s' % sesid
-    if runid is not None:
-        fname += '_run-%s' % runid
-
-    if out_path is not None:
-        fname = op.join(out_path, fname)
-    return op.abspath(fname + '.' + ext)
