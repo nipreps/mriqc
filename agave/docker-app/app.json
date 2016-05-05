@@ -5,6 +5,7 @@
   "label": "The MRIQC workflow in docker",
   "defaultNodeCount": 1,
   "defaultRequestedTime": "48:00:00",
+  "defaultQueue": "debug",
   "shortDescription": "Run CRN's workflows in Agave's Dockerized cloud.",
   "longDescription": "Generic template for running an arbitrary application in Agave's hosted Docker cloud. Apps should be a gzipped archive.",
   "executionSystem": "docker.tacc.utexas.edu",

@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:15:27
+# @Last Modified time: 2016-04-20 16:30:19
 """ MRIQC setup script """
 import os
 import sys
@@ -39,7 +39,8 @@ def main():
         url='http://mriqc.readthedocs.org/',
         download_url='https://pypi.python.org/packages/source/m/mriqc/'
                      'mriqc-%s.tar.gz' % __version__,
-        entry_points={'console_scripts': ['mriqc=mriqc.run_mriqc:main',
+        entry_points={'console_scripts': ['mriqc=mriqc.utils.mriqc_run:main',
+                                          'mriqc_plot=mriqc.utils.mriqc_plot:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',
                                           'fs2gif=mriqc.utils.fs2gif:main',
                                           'dfcheck=mriqc.utils.dfcheck:main']},

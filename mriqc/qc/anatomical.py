@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-02 12:09:19
+# @Last Modified time: 2016-05-03 11:29:22
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -69,7 +69,7 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1):
     else:
         bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
 
-    return fg_mean / bg_std
+    return float(fg_mean / bg_std)
 
 
 def cnr(img, seg, lbl=None):
@@ -93,8 +93,8 @@ def cnr(img, seg, lbl=None):
     if lbl is None:
         lbl = FSL_FAST_LABELS
 
-    return np.abs(img[seg == lbl['gm']].mean() - img[seg == lbl['wm']].mean()) / \
-                  img[seg == lbl['bg']].std()
+    return float(np.abs(img[seg == lbl['gm']].mean() - img[seg == lbl['wm']].mean()) / \
+                 img[seg == lbl['bg']].std())
 
 
 def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
@@ -135,7 +135,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     mu_gm = img[gmmask > .5].mean()
     sigma_wm = img[wmmask > .5].std(ddof=1)
     sigma_gm = img[gmmask > .5].std(ddof=1)
-    return (sigma_wm + sigma_gm) / (mu_wm - mu_gm)
+    return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
 def fber(img, seg, air=None):
@@ -159,7 +159,7 @@ def fber(img, seg, air=None):
 
     fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
     bg_mu = (np.abs(img[air > 0]) ** 2).mean()
-    return fg_mu / bg_mu
+    return float(fg_mu / bg_mu)
 
 
 
@@ -186,7 +186,7 @@ def efc(img):
     b_max = np.sqrt((img**2).sum())
 
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
-    return (1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max))
+    return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
 
 
 def art_qi1(airmask, artmask):
@@ -202,7 +202,7 @@ def art_qi1(airmask, artmask):
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    return artmask.sum() / float(airmask.sum() + artmask.sum())
+    return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
 
 
 def art_qi2(img, airmask, artmask, ncoils=1):
@@ -237,7 +237,7 @@ def art_qi2(img, airmask, artmask, ncoils=1):
 
     # Compute goodness-of-fit (gof)
     gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
-    return art_qi1(airmask, artmask) + gof
+    return float(art_qi1(airmask, artmask) + gof)
 
 
 def volume_fraction(pvms):
@@ -258,8 +258,7 @@ def volume_fraction(pvms):
 
     for k in tissue_vfs.keys():
         tissue_vfs[k] /= total
-
-    return tissue_vfs
+    return {k: float(v) for k, v in list(tissue_vfs.items())}
 
 def rpve(pvms, seg):
     """
@@ -278,7 +277,7 @@ def rpve(pvms, seg):
         pvmap[pvmap < loth] = 0
         pvmap[pvmap > upth] = 0
         pvfs[k] = pvmap[pvmap > 0].sum()
-    return pvfs
+    return {k: float(v) for k, v in list(pvfs.items())}
 
 def summary_stats(img, pvms):
     r"""
@@ -306,10 +305,10 @@ def summary_stats(img, pvms):
 
     for k, lid in labels:
         im_lid = pvms[lid] * img
-        mean[k] = im_lid[im_lid > 0].mean()
-        stdv[k] = im_lid[im_lid > 0].std()
-        p95[k] = np.percentile(im_lid[im_lid > 0], 95)
-        p05[k] = np.percentile(im_lid[im_lid > 0], 5)
+        mean[k] = float(im_lid[im_lid > 0].mean())
+        stdv[k] = float(im_lid[im_lid > 0].std())
+        p95[k] = float(np.percentile(im_lid[im_lid > 0], 95))
+        p05[k] = float(np.percentile(im_lid[im_lid > 0], 5))
 
     return mean, stdv, p95, p05
 

@@ -7,8 +7,9 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-02-29 10:50:21
+# @Last Modified time: 2016-05-05 15:09:56
 """ A QC workflow for fMRI data """
+import os
 import os.path as op
 
 from nipype.pipeline import engine as pe
@@ -16,53 +17,44 @@ from nipype.algorithms import misc as nam
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces.afni import preprocess as afp
+from .utils import fmri_getidx, fwhm_dict
 from ..interfaces.qc import FunctionalQC, FramewiseDisplacement
-from ..interfaces.viz import Report
-from ..utils.misc import reorder_csv, rotate_files
+from ..interfaces.viz import PlotMosaic, PlotFD
+from ..utils.misc import bids_getfile, bids_path
 
 
-def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
+def fmri_qc_workflow(name='fMRIQC', settings=None):
     """ The fMRI qc workflow """
-    from .utils import fmri_getidx
-    from ..interfaces.viz import PlotMosaic, PlotFD
-
-    if sub_list is None:
-        sub_list = []
 
     if settings is None:
         settings = {}
 
-    # Define workflow, inputs and outputs
     workflow = pe.Workflow(name=name)
+    deriv_dir = op.abspath('./derivatives')
+    if 'work_dir' in settings.keys():
+        workflow.base_dir = settings['work_dir']
+        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
-                        name='inputnode')
-    dsource = pe.Node(niu.IdentityInterface(
-        fields=['functional_scan', 'subject_id', 'session_id', 'scan_id',
-                'site_name', 'start_idx', 'stop_idx']), name='datasource')
-    dsource.inputs.start_idx = 0
-    dsource.inputs.stop_idx = None
+    if not op.exists(deriv_dir):
+        os.makedirs(deriv_dir)
 
+    # Define workflow, inputs and outputs
+    inputnode = pe.Node(niu.IdentityInterface(
+        fields=['bids_root', 'subject_id', 'session_id', 'run_id',
+                'site_name', 'start_idx', 'stop_idx']), name='inputnode')
     get_idx = pe.Node(niu.Function(
         input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
         output_names=['start_idx', 'stop_idx']), name='get_idx')
 
-    if sub_list:
-        inputnode.iterables = [('data', [list(s) for s in sub_list])]
-
-        dsplit = pe.Node(niu.Split(splits=[1, 1, 1, 1], squeeze=True),
-                         name='datasplit')
-        workflow.connect([
-            (inputnode, dsplit, [('data', 'inlist')]),
-            (dsplit, dsource, [('out1', 'subject_id'),
-                               ('out2', 'session_id'),
-                               ('out3', 'scan_id'),
-                               ('out4', 'functional_scan')])
-        ])
-
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group']), name='outputnode')
 
+
+    # 0. Get data
+    datasource = pe.Node(niu.Function(
+        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        output_names=['out_file'], function=bids_getfile), name='datasource')
+    datasource.inputs.data_type = 'func'
 
     # Workflow --------------------------------------------------------
     hmcwf = fmri_hmc_workflow(                  # 1. HMC: head motion correct
@@ -84,10 +76,6 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
                       name='quality')
 
     measures = pe.Node(FunctionalQC(), name='measures')
-    mergqc = pe.Node(niu.Function(
-        input_names=['in_qc', 'subject_id', 'metadata', 'fwhm', 'fd_stats',
-                     'outlier', 'quality'],
-        output_names=['out_qc'], function=_merge_dicts), name='merge_qc')
 
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
@@ -96,13 +84,17 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (dsource, get_idx, [('functional_scan', 'in_file'),
-                            ('start_idx', 'start_idx'),
-                            ('stop_idx', 'stop_idx')]),
-        (dsource, merg, [('session_id', 'in1'),
-                         ('scan_id', 'in2'),
-                         ('site_name', 'in3')]),
-        (dsource, hmcwf, [('functional_scan', 'inputnode.in_file')]),
+        (inputnode, datasource, [('bids_root', 'bids_root'),
+                                 ('subject_id', 'subject_id'),
+                                 ('session_id', 'session_id'),
+                                 ('run_id', 'run_id')]),
+        (inputnode, get_idx, [('start_idx', 'start_idx'),
+                              ('stop_idx', 'stop_idx')]),
+        (datasource, get_idx, [('out_file', 'in_file')]),
+        (inputnode, merg, [('session_id', 'in1'),
+                           ('run_id', 'in2'),
+                           ('site_name', 'in3')]),
+        (datasource, hmcwf, [('out_file', 'inputnode.in_file')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
@@ -112,28 +104,21 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
         (mean, plot_mean, [('out_file', 'in_file')]),
         (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
         (fdisp, plot_fd, [('out_file', 'in_file')]),
-        (dsource, plot_mean, [('subject_id', 'subject')]),
-        (dsource, plot_tsnr, [('subject_id', 'subject')]),
-        (dsource, plot_fd, [('subject_id', 'subject')]),
+        (inputnode, plot_mean, [('subject_id', 'subject')]),
+        (inputnode, plot_tsnr, [('subject_id', 'subject')]),
+        (inputnode, plot_fd, [('subject_id', 'subject')]),
         (merg, plot_mean, [('out', 'metadata')]),
         (merg, plot_tsnr, [('out', 'metadata')]),
         (merg, plot_fd, [('out', 'metadata')]),
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
-        (fwhm, mergqc, [('fwhm', 'fwhm')]),
         (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
         (bmw, outliers, [('outputnode.out_file', 'mask')]),
-        (outliers, mergqc, [(('out_file', _parse_tout), 'outlier')]),
         (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
-        (quality, mergqc, [(('out_file', _parse_tqual), 'quality')]),
         (mean, measures, [('out_file', 'in_epi')]),
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
-        (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
-        (measures, mergqc, [('out_qc', 'in_qc')]),
-        (dsource, mergqc, [('subject_id', 'subject_id')]),
-        (merg, mergqc, [('out', 'metadata')]),
-        (fdisp, mergqc, [('fd_stats', 'fd_stats')]),
+        (tsnr, measures, [('tsnr_file', 'in_tsnr')])
     ])
 
     if settings.get('mosaic_mask', False):
@@ -142,66 +127,83 @@ def fmri_qc_workflow(name='fMRIQC', sub_list=None, settings=None):
 
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(
-        format_string='meanepi_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='meanepi_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_mean_mosaic')
     dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_mean')
     workflow.connect([
-        (dsource, mvmean, [('subject_id', 'subject_id'),
+        (inputnode, mvmean, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
-                           ('scan_id', 'scan_id')]),
+                           ('run_id', 'run_id')]),
         (plot_mean, mvmean, [('out_file', 'in_file')]),
         (mvmean, dsmean, [('out_file', '@mosaic')])
     ])
-
     # Save tSNR mosaic to well-formed path
     mvtsnr = pe.Node(niu.Rename(
-        format_string='tsnr_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='tsnr_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_tsnr_mosaic')
     dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                      name='ds_tsnr')
     workflow.connect([
-        (dsource, mvtsnr, [('subject_id', 'subject_id'),
+        (inputnode, mvtsnr, [('subject_id', 'subject_id'),
                            ('session_id', 'session_id'),
-                           ('scan_id', 'scan_id')]),
+                           ('run_id', 'run_id')]),
         (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
         (mvtsnr, dstsnr, [('out_file', '@mosaic')])
     ])
-
     # Save FD plot to well-formed path
     mvfd = pe.Node(niu.Rename(
-        format_string='fd_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        format_string='fd_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_fd_mosaic')
     dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
                    name='ds_fd')
     workflow.connect([
-        (dsource, mvfd, [('subject_id', 'subject_id'),
+        (inputnode, mvfd, [('subject_id', 'subject_id'),
                          ('session_id', 'session_id'),
-                         ('scan_id', 'scan_id')]),
+                         ('run_id', 'run_id')]),
         (plot_fd, mvfd, [('out_file', 'in_file')]),
         (mvfd, dsfd, [('out_file', '@mosaic')])
     ])
 
-    # Export to CSV
-    out_csv = op.join(settings['output_dir'], 'fMRIQC.csv')
-    rotate_files(out_csv)
+    # Format name
+    out_name = pe.Node(niu.Function(
+        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
+        function=bids_path), name='FormatName')
+    out_name.inputs.out_path = deriv_dir
+    out_name.inputs.prefix = 'func'
 
-    to_csv = pe.Node(nam.AddCSVRow(in_file=out_csv), name='write_csv')
-    re_csv0 = pe.JoinNode(niu.Function(input_names=['csv_file'], output_names=['out_file'],
-                          function=reorder_csv), joinsource='inputnode', joinfield='csv_file',
-                          name='reorder')
-    report0 = pe.Node(
-        Report(qctype='functional', settings=settings), name='report')
-    if sub_list:
-        report0.inputs.sub_list = sub_list
+    # Save to JSON file
+    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
+    datasink.inputs.qc_type = 'func'
 
     workflow.connect([
-        (mergqc, to_csv, [('out_qc', '_outputs')]),
-        (to_csv, re_csv0, [('csv_file', 'csv_file')]),
-        (re_csv0, outputnode, [('out_file', 'out_csv')]),
-        (re_csv0, report0, [('out_file', 'in_csv')]),
-        (report0, outputnode, [('out_group', 'out_group')])
+        (inputnode, out_name, [('subject_id', 'subid'),
+                               ('session_id', 'sesid'),
+                               ('run_id', 'runid')]),
+        (inputnode, datasink, [('subject_id', 'subject_id'),
+                               ('session_id', 'session_id'),
+                               ('run_id', 'run_id')]),
+        (plot_mean, datasink, [('out_file', 'mean_plot')]),
+        (plot_tsnr, datasink, [('out_file', 'tsnr_plot')]),
+        (plot_fd, datasink, [('out_file', 'fd_plot')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
+        (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
+        (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),
+        (fdisp, datasink, [('fd_stats', 'fd_stats')]),
+        (measures, datasink, [('summary', 'summary'),
+                              ('spacing', 'spacing'),
+                              ('size', 'size'),
+                              ('fber', 'fber'),
+                              ('efc', 'efc'),
+                              ('snr', 'snr'),
+                              ('gsr', 'gsr'),
+                              ('m_tsnr', 'm_tsnr'),
+                              ('dvars', 'dvars'),
+                              ('gcor', 'gcor')]),
+        (out_name, datasink, [('out_file', 'out_file')]),
+        (datasink, outputnode, [('out_file', 'out_file')])
     ])
+
     return workflow
 
 
