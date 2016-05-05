@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:57:25
+# @Last Modified time: 2016-05-05 14:37:34
 
 """
 MRIQC Plot script
@@ -11,18 +11,11 @@ MRIQC Plot script
 """
 import os
 import os.path as op
-import collections
-from multiprocessing import cpu_count
-
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-import glob
-import json
-import pandas as pd
-
 from mriqc import __version__
-from ..reports import anat_report
+from ..reports import workflow_report
 
 def main():
     """Entry point"""
@@ -30,7 +23,8 @@ def main():
                             formatter_class=RawTextHelpFormatter)
 
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-d', '--data-type', action='store', choices=['anat', 'func'])
+    g_input.add_argument('-d', '--data-type', action='store', nargs='*',
+                         choices=['anat', 'func'], default=['anat', 'func'])
     g_input.add_argument('-v', '--version', action='store_true', default=False,
                          help='Show current mriqc version')
 
@@ -59,65 +53,8 @@ def main():
     if not op.exists(settings['work_dir']):
         raise RuntimeError('Work directory of a previous MRIQC run was not found.')
 
-    datalist = []
-    errorlist = []
-    for jsonfile in glob.glob(op.join(settings['work_dir'], 'derivatives', '*.json')):
-        dfentry = _read_and_save(jsonfile)
-        if dfentry is not None:
-            if 'exec_error' not in dfentry.keys():
-                datalist.append(dfentry)
-            else:
-                errorlist.append(dfentry['subject_id'])
-
-    dataframe = pd.DataFrame(datalist)
-    cols = dataframe.columns.tolist()  # pylint: disable=no-member
-
-    for col in ['run_id', 'session_id', 'subject_id']:
-        cols.remove(col)
-        cols.insert(0, col)
-
-    if 'mosaic_file' in cols:
-        cols.remove('mosaic_file')
-
-    # Sort the dataframe, with failsafe if pandas version is too old
-    try:
-        dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
-    except AttributeError:
-        #pylint: disable=E1101
-        dataframe = dataframe.sort(columns=['subject_id', 'session_id', 'run_id'])
-
-    # Drop duplicates
-    try:
-        #pylint: disable=E1101
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
-                                  inplace=True)
-    except TypeError:
-        #pylint: disable=E1101
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
-                                  inplace=True)
-
-    out_fname = op.join(settings['output_dir'], opts.data_type + 'MRIQC.csv')
-    dataframe[cols].to_csv(out_fname, index=False)
-
-    if opts.data_type == 'anat':
-        anat_report(dataframe, settings=settings)
-
-def _read_and_save(in_file):
-    with open(in_file, 'r') as jsondata:
-        values = _flatten(json.load(jsondata))
-        return values
-    return None
-
-
-def _flatten(in_dict, parent_key='', sep='_'):
-    items = []
-    for k, val in list(in_dict.items()):
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(val, collections.MutableMapping):
-            items.extend(_flatten(val, new_key, sep=sep).items())
-        else:
-            items.append((new_key, val))
-    return dict(items)
+    for dtype in opts.data_type:
+        workflow_report(dtype, settings)
 
 
 if __name__ == '__main__':

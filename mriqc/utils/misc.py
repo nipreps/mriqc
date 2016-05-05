@@ -270,9 +270,10 @@ def rotate_files(fname):
 
 def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
     import os.path as op
-    fname = 'sub-%s' % subid
-
+    fname = '%s' % subid
     if prefix is not None:
+        if not prefix.endswith('_'):
+            prefix += '_'
         fname = prefix + fname
     if sesid is not None:
         fname += '_ses-%s' % sesid

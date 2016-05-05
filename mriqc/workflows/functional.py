@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:39:10
+# @Last Modified time: 2016-05-05 14:47:22
 """ A QC workflow for fMRI data """
 import os
 import os.path as op
@@ -125,6 +125,46 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
         workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
 
+    # Save mean mosaic to well-formed path
+    mvmean = pe.Node(niu.Rename(
+        format_string='meanepi_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_mean_mosaic')
+    dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                     name='ds_mean')
+    workflow.connect([
+        (dsource, mvmean, [('subject_id', 'subject_id'),
+                           ('session_id', 'session_id'),
+                           ('scan_id', 'scan_id')]),
+        (plot_mean, mvmean, [('out_file', 'in_file')]),
+        (mvmean, dsmean, [('out_file', '@mosaic')])
+    ])
+    # Save tSNR mosaic to well-formed path
+    mvtsnr = pe.Node(niu.Rename(
+        format_string='tsnr_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_tsnr_mosaic')
+    dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                     name='ds_tsnr')
+    workflow.connect([
+        (dsource, mvtsnr, [('subject_id', 'subject_id'),
+                           ('session_id', 'session_id'),
+                           ('scan_id', 'scan_id')]),
+        (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
+        (mvtsnr, dstsnr, [('out_file', '@mosaic')])
+    ])
+    # Save FD plot to well-formed path
+    mvfd = pe.Node(niu.Rename(
+        format_string='fd_%(subject_id)s_%(session_id)s_%(scan_id)s',
+        keep_ext=True), name='rename_fd_mosaic')
+    dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
+                   name='ds_fd')
+    workflow.connect([
+        (dsource, mvfd, [('subject_id', 'subject_id'),
+                         ('session_id', 'session_id'),
+                         ('scan_id', 'scan_id')]),
+        (plot_fd, mvfd, [('out_file', 'in_file')]),
+        (mvfd, dsfd, [('out_file', '@mosaic')])
+    ])
+
     # Format name
     out_name = pe.Node(niu.Function(
         input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
@@ -134,6 +174,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Save to JSON file
     datasink = pe.Node(nio.JSONFileSink(), name='datasink')
+    datasink.inputs.qc_type = 'func'
 
     workflow.connect([
         (inputnode, out_name, [('subject_id', 'subid'),

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:27:25
+# @Last Modified time: 2016-05-05 14:45:07
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -123,6 +123,19 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     if settings.get('mask_mosaic', False):
         workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
 
+    # Save mosaic to well-formed path
+    mvplot = pe.Node(niu.Rename(
+        format_string='anatomical_%(subject_id)s_%(session_id)s_%(run_id)s',
+        keep_ext=True), name='rename_plot')
+    dsplot = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
+    workflow.connect([
+        (inputnode, mvplot, [('subject_id', 'subject_id'),
+                             ('session_id', 'session_id'),
+                             ('run_id', 'run_id')]),
+        (plot, mvplot, [('out_file', 'in_file')]),
+        (mvplot, dsplot, [('out_file', '@mosaic')])
+    ])
 
     # Format name
     out_name = pe.Node(niu.Function(
@@ -133,6 +146,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     # Save to JSON file
     datasink = pe.Node(nio.JSONFileSink(), name='datasink')
+    datasink.inputs.qc_type = 'anat'
 
     workflow.connect([
         (inputnode, out_name, [('subject_id', 'subid'),
