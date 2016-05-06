@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-05 14:45:07
+# @Last Modified time: 2016-05-06 12:11:18
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -241,9 +241,9 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
+def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
     """Implements the Step 1 of [Mortamet2009]_."""
-    import pkg_resources as p
+    import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
@@ -251,48 +251,16 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
+    antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
+    antsparms.inputs.in_file = (
+        ants_settings if ants_settings is not None else pkgr.resource_filename(
+            'mriqc', 'data/ants_settings.json'))
+
     def _invt_flags(transforms):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(dimension=3), name='normalize')
-    norm.inputs.initial_moving_transform_com = 1
-    norm.inputs.winsorize_lower_quantile = 0.05
-    norm.inputs.winsorize_upper_quantile = 0.98
-    norm.inputs.float = True
-
-    norm.inputs.transforms = ['Rigid', 'Affine']
-    norm.inputs.transform_parameters = [(1.0,), (0.75,)]
-    norm.inputs.number_of_iterations = [[500], [200]]
-    norm.inputs.convergence_window_size = [50, 20]
-    norm.inputs.metric = ['Mattes', 'GC']
-    norm.inputs.metric_weight = [1] * 3
-    norm.inputs.radius_or_number_of_bins = [64, 3]
-    norm.inputs.sampling_strategy = ['Random', None]
-    norm.inputs.sampling_percentage = [0.2, 1.]
-    norm.inputs.smoothing_sigmas = [[8], [4]]
-    norm.inputs.shrink_factors = [[3], [2]]
-    norm.inputs.convergence_threshold = [1.e-8] * 2
-    norm.inputs.sigma_units = ['mm'] * 2
-    norm.inputs.use_estimate_learning_rate_once = [True] * 2
-    norm.inputs.use_histogram_matching = [True] * 2
-
-#    norm.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-#    norm.inputs.transform_parameters = [(2.0,), (1.0,), (.2, 3, 0)]
-#    norm.inputs.number_of_iterations = [[500], [200], [100]]
-#    norm.inputs.convergence_window_size = [50, 20, 10]
-#    norm.inputs.metric = ['Mattes', 'GC', 'Mattes']
-#    norm.inputs.metric_weight = [1] * 3
-#    norm.inputs.radius_or_number_of_bins = [64, 3, 64]
-#    norm.inputs.sampling_strategy = ['Random', None, 'Random']
-#    norm.inputs.sampling_percentage = [0.2, 1., 0.1]
-#    norm.inputs.convergence_threshold = [1.e-8] * 3
-#    norm.inputs.smoothing_sigmas = [[8], [4], [2]]
-#    norm.inputs.sigma_units = ['mm'] * 3
-#    norm.inputs.shrink_factors = [[3], [2], [2]]
-#    norm.inputs.use_estimate_learning_rate_once = [True] * 3
-#    norm.inputs.use_histogram_matching = [True] * 3
-
 
     if save_memory:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
@@ -315,6 +283,27 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
+        (antsparms, norm, [
+            ('initial_moving_transform_com', 'initial_moving_transform_com'),
+            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
+            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
+            ('float', 'float'),
+            ('transforms', 'transforms'),
+            ('transform_parameters', 'transform_parameters'),
+            ('number_of_iterations', 'number_of_iterations'),
+            ('convergence_window_size', 'convergence_window_size'),
+            ('metric', 'metric'),
+            ('metric_weight', 'metric_weight'),
+            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
+            ('sampling_strategy', 'sampling_strategy'),
+            ('sampling_percentage', 'sampling_percentage'),
+            ('smoothing_sigmas', 'smoothing_sigmas'),
+            ('shrink_factors', 'shrink_factors'),
+            ('convergence_threshold', 'convergence_threshold'),
+            ('sigma_units', 'sigma_units'),
+            ('use_estimate_learning_rate_once', 'use_estimate_learning_rate_once'),
+            ('use_histogram_matching', 'use_histogram_matching')
+        ]),
         (inputnode, qi1, [('in_file', 'in_file')]),
         (inputnode, norm, [('in_noinu', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
