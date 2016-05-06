@@ -20,7 +20,6 @@ set -e
 
 if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then
 	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B /scratch/data/ds003_downsampled -d func -o outputs/ms-func/out -w outputs/ms-func/work
-	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_mriqc_plot" oesteban/mriqc -d func -o outputs/ms-func/out -w outputs/ms-func/work
 	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B /scratch/data/ds003_downsampled -S $(seq -f '%02g' 01 05) -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
 	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch --entrypoint="/usr/bin/run_mriqc_plot" oesteban/mriqc -d anat -o outputs/ms-anat/out -w outputs/ms-anat/work
 fi
