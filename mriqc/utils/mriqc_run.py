@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-04 14:43:55
+# @Last Modified time: 2016-05-06 11:14:22
 
 """
 =====
@@ -19,6 +19,7 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from nipype import config as ncfg
 
+from mriqc.reports.generators import workflow_report
 from mriqc.workflows import core as mwc
 from mriqc import __version__
 
@@ -116,6 +117,9 @@ def main():
             workflow.write_graph()
 
         workflow.run(**plugin_settings)
+
+        if opts.subject_id is None:
+            workflow_report(dtype, settings)
 
 
 if __name__ == '__main__':
