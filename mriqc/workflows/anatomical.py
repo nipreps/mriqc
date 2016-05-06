@@ -262,7 +262,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False):
     norm.inputs.float = True
 
     norm.inputs.transforms = ['Rigid', 'Affine']
-    norm.inputs.transform_parameters = [(2.0,), (1.0,)]
+    norm.inputs.transform_parameters = [(1.0,), (0.75,)]
     norm.inputs.number_of_iterations = [[500], [200]]
     norm.inputs.convergence_window_size = [50, 20]
     norm.inputs.metric = ['Mattes', 'GC']
