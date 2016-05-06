@@ -51,8 +51,6 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
                            ('out3', 'inputnode.run_id')])
     ])
 
-    if settings.get('write_graph', False):
-        workflow.write_graph()
     return workflow
 
 
@@ -92,6 +90,4 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
                            ('out3', 'inputnode.run_id')])
     ])
 
-    if settings.get('write_graph', False):
-        workflow.write_graph()
     return workflow

@@ -112,6 +112,9 @@ def main():
         workflow = ms_func(subject_id=opts.subject_id, session_id=opts.session_id,
                            run_id=opts.run_id, settings=settings)
         workflow.base_dir = settings['work_dir']
+        if settings.get('write_graph', False):
+            workflow.write_graph()
+
         workflow.run(**plugin_settings)
 
 
