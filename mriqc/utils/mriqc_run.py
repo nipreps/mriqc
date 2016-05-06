@@ -19,7 +19,7 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from nipype import config as ncfg
 
-from mriqc.workflows import ms_anat, ms_func
+from mriqc.workflows import core as mwc
 from mriqc import __version__
 
 
@@ -107,15 +107,16 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    if 'anat' in opts.data_type:
-        workflow = ms_anat(subject_id=opts.subject_id, session_id=opts.session_id,
-                           run_id=opts.run_id, settings=settings)
-        workflow.run(**plugin_settings)
-
-    if 'func' in opts.data_type:
+    for dtype in opts.data_type:
+        ms_func = getattr(mwc, 'ms_' + dtype)
         workflow = ms_func(subject_id=opts.subject_id, session_id=opts.session_id,
                            run_id=opts.run_id, settings=settings)
+        workflow.base_dir = settings['work_dir']
+        if settings.get('write_graph', False):
+            workflow.write_graph()
+
         workflow.run(**plugin_settings)
+
 
 if __name__ == '__main__':
     main()
