@@ -12,21 +12,28 @@ coverage:
     project:
       default:
         target: auto
-        threshold: null
-        branches: null
+        threshold: 5.0
+        branches:
+          - master
 
     patch:
       default:
         target: auto
-        branches: null
+        branches:
+          - master
 
     changes:
       default:
-        branches: null
+        branches:
+          - master
 
-  ignore: null
+  ignore:
+    - build/.*
+    - agave/.*
+    - .*/data/.*
 
 comment:
   layout: "header, diff, changes, sunburst, uncovered"
-  branches: null
+  branches:
+    - master
   behavior: default
