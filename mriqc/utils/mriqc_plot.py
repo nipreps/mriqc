@@ -42,7 +42,7 @@ def main():
 
     opts = parser.parse_args()
     if opts.version:
-        print 'mriqc version ' + __version__
+        print('mriqc version ' + __version__)
         exit(0)
 
     settings = {'output_dir': os.getcwd(),
