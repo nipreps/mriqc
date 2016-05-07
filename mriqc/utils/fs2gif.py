@@ -9,6 +9,11 @@
 Batch export freesurfer results to animated gifs
 
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import os.path as op
 import subprocess as sp
@@ -144,7 +149,7 @@ set i 0
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
             sp.call(['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file], env=environ)
-    
+
             # Export tiffs for right hemisphere
             tcl_file = op.join(tmp_sub, 'rh-%s.tcl' % subid)
             with open(tcl_file, 'w') as tclfp:
@@ -159,7 +164,7 @@ set i 0
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
             sp.call(['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file], env=environ)
-    
+
             # Convert to animated gif
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-lh-*.tif' % (tmp_sub, subid),
                      '%s/%s-lh.gif' % (out_dir, subid)])
