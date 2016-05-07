@@ -1,6 +1,7 @@
 Release 0.8.2
 =============
 
+* [ENH] Python 3 compatibility (https://github.com/poldracklab/mriqc/issues/99)
 * [ENH] Add JSON settings file for ANTS (https://github.com/poldracklab/mriqc/issues/95)
 * [ENH] Generate reports automatically if mriqc is run without the -S flag (https://github.com/poldracklab/mriqc/issues/93)
 * [FIX] Revised implementation of QI2 measure (https://github.com/poldracklab/mriqc/issues/90)
