@@ -1,3 +1,14 @@
+Release 0.8.2
+=============
+
+* [ENH] Add JSON settings file for ANTS (https://github.com/poldracklab/mriqc/issues/95)
+* [ENH] Generate reports automatically if mriqc is run without the -S flag (https://github.com/poldracklab/mriqc/issues/93)
+* [FIX] Revised implementation of QI2 measure (https://github.com/poldracklab/mriqc/issues/90)
+* [AGAVE] Fixed docker image for agave (https://github.com/poldracklab/mriqc/issues/89)
+* [FIX] Problem when generating the air mask with dipy installed (https://github.com/poldracklab/mriqc/issues/88)
+* [ENH] One-session-one-run execution mode (https://github.com/poldracklab/mriqc/issues/85)
+* [AGAVE] Added an agave app description generator (https://github.com/poldracklab/mriqc/issues/84)
+
 Release 0.3.0a1
 ===============
 
