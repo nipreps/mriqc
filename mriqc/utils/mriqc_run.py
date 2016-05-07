@@ -10,6 +10,11 @@
 MRIQC
 =====
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
 import os.path as op
 from warnings import warn
@@ -65,7 +70,7 @@ def main():
             bids_root = op.abspath(opts.input_folder)
 
     if opts.version:
-        print 'mriqc version ' + __version__
+        print('mriqc version ' + __version__)
         exit(0)
 
     settings = {'bids_root': bids_root,
