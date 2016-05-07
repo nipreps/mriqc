@@ -136,7 +136,7 @@ def fetch(args):
     except:
         pass
 
-    print 'Successfully processed subject %s from site %s' % (subject_id[4:], site_name)
+    print('Successfully processed subject %s from site %s' % (subject_id[4:], site_name))
     return subject_id[4:], site_name
 
 
