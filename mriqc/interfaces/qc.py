@@ -69,7 +69,8 @@ class StructuralQC(BaseInterface):
     def _run_interface(self, runtime):  # pylint: disable=R0914
         imnii = nb.load(self.inputs.in_file)
         imdata = np.nan_to_num(imnii.get_data())
-        erode = np.all(imnii.get_header().get_zooms()[:3] < 1.2)
+        erode = np.all(np.array(imnii.get_header().get_zooms()[:3],
+                                dtype=np.float32) < 1.2)
 
         # Cast to float32
         imdata = imdata.astype(np.float32)
