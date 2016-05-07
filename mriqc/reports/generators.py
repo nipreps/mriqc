@@ -172,7 +172,6 @@ def summary_cover(data, is_group=False, out_file=None):
     """ Generates a cover page with subject information """
     import datetime
     import codecs
-    import StringIO
     from xhtml2pdf import pisa  # pylint: disable=no-name-in-module
 
     # open output file for writing (truncated binary)
@@ -185,13 +184,11 @@ def summary_cover(data, is_group=False, out_file=None):
                '<th>TR (ms)</th><th>Time steps</th></tr>')
 
 
-    for k in sorted(data['params'].keys()):
-        info = data['params'][k]
-
+    for k, info in sorted(list(data['params'].items())):
         if is_group:
-            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % k
+            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % tuple(k)
         else:
-            substr += '<tr><td>%s</td><td>%s</td>' % k
+            substr += '<tr><td>%s</td><td>%s</td>' % tuple(k)
         substr += '<td>{size:s}</td><td>{spacing:s}</td>'.format(**info)
         substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else '<td>N/A</td>'
         substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else '<td>1</td>'
@@ -224,13 +221,17 @@ def summary_cover(data, is_group=False, out_file=None):
 def concat_pdf(in_files, out_file='concatenated.pdf'):
     """ Concatenate PDF list (http://stackoverflow.com/a/3444735) """
     from PyPDF2 import PdfFileWriter, PdfFileReader
-    outpdf = PdfFileWriter()
 
-    for in_file in in_files:
-        inpdf = PdfFileReader(file(in_file, 'rb'))
-        for fpdf in range(inpdf.numPages):
-            outpdf.addPage(inpdf.getPage(fpdf))
-    outpdf.write(file(out_file, 'wb'))
+    with open(out_file, 'wb') as out_pdffile:
+        outpdf = PdfFileWriter()
+
+        for in_file in in_files:
+            with open(in_file, 'rb') as in_pdffile:
+                inpdf = PdfFileReader(in_pdffile)
+                for fpdf in range(inpdf.numPages):
+                    outpdf.addPage(inpdf.getPage(fpdf))
+                outpdf.write(out_pdffile)
+
     return out_file
 
 
@@ -322,6 +323,11 @@ def generate_csv(data_type, settings):
     datalist = []
     errorlist = []
     jsonfiles = glob.glob(op.join(settings['work_dir'], 'derivatives', '%s*.json' % data_type))
+
+    if not jsonfiles:
+        raise RuntimeError('No individual QC files were found in the working directory'
+                           '\'%s\' for the \'%s\' data type.' % (settings['work_dir'], data_type))
+
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
         if dfentry is not None:
@@ -333,7 +339,13 @@ def generate_csv(data_type, settings):
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    for col in ['run_id', 'session_id', 'subject_id']:
+    reorder = []
+    for field in ['run', 'session', 'subject']:
+        for col in cols:
+            if col.startswith(field):
+                reorder.append(col)
+
+    for col in reorder:
         cols.remove(col)
         cols.insert(0, col)
 

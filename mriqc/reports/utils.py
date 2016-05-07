@@ -48,21 +48,22 @@ def image_parameters(dframe):
     """ Generate formatted parameters for each subject, session and scan """
     newdf = dframe.copy()
     # Pack together subject session & scan as identifier
-    newdf['id'] = zip(newdf.subject_id, newdf.session_id, newdf.run_id)
+    newdf['id'] = [tuple(val[1]) for val in newdf[['subject_id', 'session_id', 'run_id']].iterrows()]
 
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    newdf['size'] = zip(newdf.size_x, newdf.size_y, newdf.size_z)
-    formatter = lambda x: '%d &times; %d &times; %d' % x
-    newdf['size'] = newdf['size'].apply(formatter)
+    formatter = lambda row: '%d &times; %d &times; %d' % (
+        row['size_x'], row['size_y'], row['size_z'])
+    newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
     # Format spacing
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
         'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
     newdf['spacing'] = zip(newdf.spacing_x, newdf.spacing_y, newdf.spacing_z)
-    formatter = lambda x: '%.3f &times; %.3f &times; %.3f' % x
-    newdf['spacing'] = newdf['spacing'].apply(formatter)
+    formatter = lambda row: '%.3f &times; %.3f &times; %.3f' % (
+        row['spacing_x'], row['spacing_y'], row['spacing_z'])
+    newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
     cols = ['size', 'spacing']
 
     if 'tr' in newdf.columns.ravel():
