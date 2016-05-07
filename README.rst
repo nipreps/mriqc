@@ -15,6 +15,8 @@ for open-source software distribution.
 .. image:: https://coveralls.io/repos/github/poldracklab/mriqc/badge.svg?branch=master 
   :target: https://coveralls.io/github/poldracklab/mriqc?branch=master
 
+.. image:: https://codecov.io/gh/poldracklab/mriqc/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/poldracklab/mriqc
 
 .. image:: https://img.shields.io/pypi/v/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
