@@ -1,5 +1,11 @@
-Release 0.8.2
-=============
+Release 0.8.3a1
+===============
+
+* [DOC] Added examples of the PDF reports (https://github.com/poldracklab/mriqc/pull/107)
+* [FIX] Fixed problems with Python 3 when generating reports.
+
+Release 0.8.2a1
+===============
 
 * [ENH] Python 3 compatibility (https://github.com/poldracklab/mriqc/issues/99)
 * [ENH] Add JSON settings file for ANTS (https://github.com/poldracklab/mriqc/issues/95)
