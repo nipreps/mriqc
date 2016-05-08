@@ -6,7 +6,6 @@ ADD . mriqc/
 # Install nipype & mriqc
 RUN source activate crnenv && \
     pip install --upgrade numpy && \
-    pip install coverage && \
     cd mriqc && \
     pip install -e . && \
     python -c "from matplotlib import font_manager" && \
