@@ -88,7 +88,7 @@ This plot in the report for the scan being assessed, e.g.
 is the rendering of the axial slices from the 3D stack created by the
 workflow.
 
-.. figure:: resources/reports-anatomical-mosaic_0.png
+.. figure:: resources/reports-functional-mosaic_0.png
   :alt: example of mosaic view of the average EPI image
 
   This mean :abbr:`EPI (echo-planar imaging)` was created by averaging
@@ -110,7 +110,7 @@ The image showing the :abbr:`tSNR (signal-to-noise ration across timesteps)` map
 is the rendering of the temporal signal-to-noise ratio information from
 the scan.
 
-.. figure:: resources/reports-anatomical-mosaic_0.png
+.. figure:: resources/reports-functional-mosaic_1.png
   :alt: example of mosaic view of the tSNR image
 
   The :abbr:`tSNR (signal-to-noise ration across timesteps)` plot is similar to the mean :abbr:`EPI (echo-planar imaging)` plot in that both metrics reduce the
@@ -135,7 +135,7 @@ The image showing the framewise displacement plot for the scan being
 assessed, e.g. *FD, subject sub-01 (session_1_func_1)*
 is the :abbr:`FD (frame displacement)` that occurred throughout the scan.
 
-.. figure:: resources/reports-anatomical-fd.png
+.. figure:: resources/reports-functional-fd.png
   :alt: example of mosaic view of the average EPI image
 
   This is a temporal motion quality assurance metric and tracks head motions over
@@ -162,10 +162,10 @@ The violin plots included in the group report, e.g.:
 columnar values in the ``fMRIQC.csv`` file that was
 created in the main output directory for the workflow.
 
-.. figure:: resources/reports-anatomical-violin_0.png
+.. figure:: resources/reports-functional-violin_0.png
   :alt: example of mosaic view of the average EPI image
 
-.. figure:: resources/reports-anatomical-mosaic_1.png
+.. figure:: resources/reports-functional-mosaic_1.png
   :alt: example of mosaic view of the average EPI image
 
 
