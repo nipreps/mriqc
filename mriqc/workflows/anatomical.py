@@ -64,7 +64,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
     # 4. Air mask (with and without artifacts)
-    amw = airmsk_wf(save_memory=settings.get('save_memory', False))
+    amw = airmsk_wf(save_memory=settings.get('save_memory', False),
+                    ants_settings=settings.get('ants_settings', None))
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(

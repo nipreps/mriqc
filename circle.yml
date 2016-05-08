@@ -11,6 +11,7 @@ dependencies:
   pre:
     # Download test data
     - bash build/circle_setup.sh
+    - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
@@ -31,3 +32,9 @@ general:
     - "~/scratch/outputs/ms-func/work"
     - "~/scratch/outputs/ms-anat/out"
     - "~/scratch/outputs/ms-anat/work"
+
+# deployment:
+#   codecov:
+#     branch: /.*/
+#     commands:
+#       - bash <(curl -s https://codecov.io/bash)

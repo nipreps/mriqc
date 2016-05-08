@@ -54,6 +54,8 @@ def main():
 
     g_input.add_argument('--save-memory', action='store_true', default=False,
                          help='Save as much memory as possible')
+    g_input.add_argument('--ants-settings', action='store',
+                         help='path to JSON file with settings for ANTS')
 
 
     g_outputs = parser.add_argument_group('Outputs')
@@ -88,6 +90,9 @@ def main():
     settings['work_dir'] = op.abspath(opts.work_dir)
     if not op.exists(settings['work_dir']):
         os.makedirs(settings['work_dir'])
+
+    if opts.ants_settings:
+        settings['ants_settings'] = opts.ants_settings
 
     log_dir = op.join(settings['work_dir'] + '_log')
     if not op.exists(log_dir):

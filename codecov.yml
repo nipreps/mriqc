@@ -1,0 +1,39 @@
+codecov:
+  token: 507d37e9-5aac-4c1e-b28c-f2b4ef9d2edf
+  branch: master
+  bot: oesteban
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 5.0
+        branches:
+          - master
+
+    patch:
+      default:
+        target: auto
+        branches:
+          - master
+
+    changes:
+      default:
+        branches:
+          - master
+
+  ignore:
+    - build/.*
+    - agave/.*
+    - .*/data/.*
+
+comment:
+  layout: "header, diff, changes, sunburst, uncovered"
+  branches:
+    - master
+  behavior: default
