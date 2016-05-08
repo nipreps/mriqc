@@ -165,7 +165,7 @@ created in the main output directory for the workflow.
 .. figure:: resources/reports-functional-violin_0.png
   :alt: example of mosaic view of the average EPI image
 
-.. figure:: resources/reports-functional-mosaic_1.png
+.. figure:: resources/reports-functional-violin_1.png
   :alt: example of mosaic view of the average EPI image
 
 
