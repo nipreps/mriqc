@@ -9,6 +9,10 @@ for open-source software distribution.
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
+.. image:: https://readthedocs.org/projects/mriqc/badge/?version=latest
+  :target: http://mriqc.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
 .. image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
   :target: https://www.codacy.com/app/code_3/mriqc
 
