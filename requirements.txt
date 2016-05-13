@@ -1,3 +1,4 @@
+lockfile
 mock
 numpy
 six
@@ -6,7 +7,7 @@ nitime
 nilearn
 dipy
 -e git+https://github.com/nipy/nipype#egg=nipype
-lockfile
+sklearn
 seaborn
 pyPdf2
 xhtml2pdf
