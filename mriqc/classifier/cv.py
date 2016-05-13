@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-12 17:46:31
+# @Last Modified time: 2016-05-13 10:11:21
 
 """
 MRIQC Cross-validation
@@ -34,7 +34,9 @@ def main():
     g_input.add_argument('-y', '--in-training-labels', action='store',
                          required=True)
 
-    # g_outputs = parser.add_argument_group('Outputs')
+    g_outputs = parser.add_argument_group('Outputs')
+    g_outputs.add_argument('-o', '--out-csv', action='store',
+                           help='output CSV file combining X and y')
     opts = parser.parse_args()
 
     with open(opts.in_training, 'r') as fileX:
@@ -44,20 +46,25 @@ def main():
     	y_df = pd.read_csv(fileY).sort_values(by=['subject_id'])
 
     # Remove columns that are not IQMs
-    columns = X_df.columns.ravel().to_list()
+    columns = list(X_df.columns.ravel())
     columns.remove('subject_id')
     columns.remove('session_id')
     columns.remove('run_id')
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df['subject_id'].isin(X_df.subject_id)]
-	sites = list(y_df.site.values)
-	X_df['rate'] = y_df.rate.values
+    sites = list(y_df.site.values)
+    X_df['rate'] = y_df.rate.values
+    X_df['site'] = y_df.site.values
+
+    if opts.out_csv is not None:
+        with open(opts.out_csv, 'w') as outfile:
+            X_df.to_csv(outfile, index=False)
 
 	# Convert all samples to tuples
     X = [tuple(x) for x in X_df[columns].values]
 
-    lolo = LeaveOneLabelOut(labels)
+    # lolo = LeaveOneLabelOut(sites)
     clf = svm.SVC()
     clf.fit(X, list(y_df.rate.values))
 

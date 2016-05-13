@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-06 11:55:46
+# @Last Modified time: 2016-05-13 10:06:04
 """ MRIQC setup script """
 import os
 import sys
@@ -43,7 +43,8 @@ def main():
                                           'mriqc_plot=mriqc.utils.mriqc_plot:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',
                                           'fs2gif=mriqc.utils.fs2gif:main',
-                                          'dfcheck=mriqc.utils.dfcheck:main']},
+                                          'dfcheck=mriqc.utils.dfcheck:main',
+                                          'mriqc_fit=mriqc.classifier.cv:main']},
         packages=['mriqc',
                   'mriqc.data',
                   'mriqc.interfaces',
