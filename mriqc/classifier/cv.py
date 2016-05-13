@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-13 11:07:01
+# @Last Modified time: 2016-05-13 11:20:41
 
 """
 MRIQC Cross-validation
@@ -68,42 +68,36 @@ def main():
     # Set the parameters by cross-validation
     tuned_parameters = [
         convert({'kernel': ['rbf'], 'gamma': [1e-3, 1e-4], 'C': [1, 10, 100, 1000]}),
-        # convert({'kernel': ['linear'], 'C': [1, 10, 100, 1000]})
+        convert({'kernel': ['linear'], 'C': [1, 10, 100, 1000]})
     ]
 
     scores = ['precision', 'recall']
 
     for score in scores:
-        for train, test in lolo_folds:
-            # Generate data splits
-            X_train = [tuple(x) for x in X_df.ix[train, columns].values]
-            y_train = [int(y_i) for y_i in y_df.iloc[train].rate.values]
-            X_test = [tuple(x) for x in X_df.ix[test, columns].values]
-            y_test = [int(y_i) for y_i in y_df.iloc[test].rate.values]
+        sample_x = [tuple(x) for x in X_df[columns].values]
+        labels_y = [int(y_i) for y_i in y_df.rate.values]
+        clf = GridSearchCV(svm.SVC(C=1), tuned_parameters, cv=lolo_folds,
+                           scoring='%s_weighted' % score, n_jobs=-1)
+        clf.fit(sample_x, labels_y)
 
-            clf = GridSearchCV(svm.SVC(C=1), tuned_parameters,
-                               scoring='%s_weighted' % score)
-            clf.fit(X_train, y_train)
-
-            print("Best parameters set found on development set:")
-            print()
-            print(clf.best_params_)
-            print()
-            print("Grid scores on development set:")
-            print()
-            for params, mean_score, scores in clf.grid_scores_:
-                print("%0.3f (+/-%0.03f) for %r"
-                      % (mean_score, scores.std() * 2, params))
-            print()
-
-            print("Detailed classification report:")
-            print()
-            print("The model is trained on the full development set.")
-            print("The scores are computed on the full evaluation set.")
-            print()
-            y_true, y_pred = y_test, clf.predict(X_test)
-            print(classification_report(y_true, y_pred))
-            print()
+        print("Best parameters set found on development set:")
+        print()
+        print(clf.best_params_)
+        print()
+        print("Grid scores on development set:")
+        print()
+        for params, mean_score, scores in clf.grid_scores_:
+            print("%0.3f (+/-%0.03f) for %r"
+                  % (mean_score, scores.std() * 2, params))
+        # print()
+        # print("Detailed classification report:")
+        # print()
+        # print("The model is trained on the full development set.")
+        # print("The scores are computed on the full evaluation set.")
+        # print()
+        # y_true, y_pred = y_test, clf.predict(X_test)
+        # print(classification_report(y_true, y_pred))
+        # print()
 
 
 def convert(data):
