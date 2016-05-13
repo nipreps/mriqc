@@ -21,6 +21,7 @@ from argparse import RawTextHelpFormatter
 
 import pandas as pd
 from sklearn import svm
+from sklearn.cross_validation import LeaveOneLabelOut
 
 def main():
     """Entry point"""
@@ -50,12 +51,13 @@ def main():
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df['subject_id'].isin(X_df.subject_id)]
-	X_df['site'] = y_df.site.values
+	sites = list(y_df.site.values)
 	X_df['rate'] = y_df.rate.values
 
 	# Convert all samples to tuples
     X = [tuple(x) for x in X_df[columns].values]
 
+    lolo = LeaveOneLabelOut(labels)
     clf = svm.SVC()
     clf.fit(X, list(y_df.rate.values))
 
