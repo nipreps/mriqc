@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-17 15:42:03
+# @Last Modified time: 2016-05-17 15:45:03
 
 """
 MRIQC Cross-validation
@@ -233,9 +233,9 @@ def permutation_distribution(y_true, y_pred, n_permutations=50000):
     random_acc = np.array(random_acc)
 
     pval_f1 = ((len(random_f1[random_f1 > f1_score(y_true, y_pred)]) + 1) /
-                float(n_permutations + 1))
+               float(n_permutations + 1))
     pval_acc = ((len(random_acc[random_acc > accuracy_score(y_true, y_pred)]) + 1) /
-                 float(n_permutations + 1))
+                float(n_permutations + 1))
     return pval_f1, pval_acc
 
 
