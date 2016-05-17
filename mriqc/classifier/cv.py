@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-17 13:57:47
+# @Last Modified time: 2016-05-17 15:42:03
 
 """
 MRIQC Cross-validation
@@ -219,18 +219,24 @@ def main():
 #
 #            print("Classification score %s (pvalue : %s)" % (score, pvalue))
 
-def permutation_distribution(y_true, y_pred, n_permutations=100):
+def permutation_distribution(y_true, y_pred, n_permutations=50000):
     """ Compute the distribution of permutations """
     # Save actual f1_score in front
-    f1 = [f1_score(y_true, y_pred)]
-    acc = [accuracy_score(y_true, y_pred)]
-
+    random_f1 = []
+    random_acc = []
     for i in range(n_permutations):
         y_sh = np.random.permutation(y_true)
-        f1.append(f1_score(y_sh, y_pred))
-        acc.append(accuracy_score(y_sh, y_pred))
+        random_f1.append(f1_score(y_sh, y_pred))
+        random_acc.append(accuracy_score(y_sh, y_pred))
 
-    return zscore(f1, ddof=1)[0], zscore(acc, ddof=1)[0]
+    random_f1 = np.array(random_f1)
+    random_acc = np.array(random_acc)
+
+    pval_f1 = ((len(random_f1[random_f1 > f1_score(y_true, y_pred)]) + 1) /
+                float(n_permutations + 1))
+    pval_acc = ((len(random_acc[random_acc > accuracy_score(y_true, y_pred)]) + 1) /
+                 float(n_permutations + 1))
+    return pval_f1, pval_acc
 
 
 def convert(data):
