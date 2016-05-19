@@ -1,12 +1,13 @@
 
-Quality Assessment - {modality} group report
-============================================
+Quality Assessment - {{ modality }} group report
+=========
 
 
-  - Date and time: {timestamp}.
-  - Failed workflows: {failed}.
+  - Date and time: {{ timestamp }}.
+  - Failed workflows: {{ failed or 'none' }}.
   - Image parameters: 
-            {imparams}
+    {% for p in imparams %}- {{ imparams }}.
+    {% endfor %}
     
 
 For details on the IQMs (image quality metrics) and further information on
