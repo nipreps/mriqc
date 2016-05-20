@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-17 15:45:03
+# @Last Modified time: 2016-05-20 10:08:20
 
 """
 MRIQC Cross-validation
@@ -70,6 +70,9 @@ def main():
     colnames.remove('subject_id')
     colnames.remove('session_id')
     colnames.remove('run_id')
+    for axis in ['x', 'y', 'z']:
+        colnames.remove('size_' + axis)
+        colnames.remove('spacing_' + axis)
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df['subject_id'].isin(X_df.subject_id)]
@@ -79,11 +82,16 @@ def main():
 
     if opts.site_normalization:
         for site in sites:
-            means = X_df[colnames].loc[X_df.site == site, :].mean(numeric_only=True)
-            stdvs = X_df[colnames].loc[X_df.site == site, :].std(numeric_only=True)
-            thesecols = means.index.ravel()
-            X_df.loc[X_df.site == site, thesecols] -= means
-            X_df.loc[X_df.site == site, thesecols] -= stdvs
+            for col in colnames:
+                X_df.loc[X_df.site == site, col] = zscore(
+                    X_df.loc[X_df.site == site, col].values.tolist(), ddof=1)
+
+    # Z-Scoring voxnum and voxsize will fail for sites with homogeneous
+    # acquisition matrix or resolution across all subjects (sigma is 0).
+    X_df['voxnum'] = np.array(
+        X_df.size_x.values * X_df.size_y.values * X_df.size_z.values, dtype=np.uint32)
+    X_df['voxsize'] = np.array(
+        X_df.spacing_x.values * X_df.spacing_y.values * X_df.spacing_z.values, dtype=np.float32)
 
     X_df_test = X_df.sample(n=100, random_state=31051983)
     y_test = [int(y_i) for y_i in X_df_test.rate.values]
@@ -125,16 +133,8 @@ def main():
             print()
             y_pred = clf.predict(X_test)
             print(classification_report(y_test, y_pred))
-            print(y_pred)
             print()
-
-            f1, acc = permutation_distribution(y_test, y_pred)
-            print("F1 z-score = %f" % zscore(f1 + [f1_score(y_test, y_pred)], ddof=1)[-1])
-            print("Acc z-score = %f" % zscore(acc + [accuracy_score(y_test, y_pred)], ddof=1)[-1])
-#            score, _, pvalue = permutation_test_score(
-#                clf, X_test, y_test, scoring="accuracy", n_permutations=100, n_jobs=1)
-#
-#            print("Classification score %s (pvalue : %s)" % (score, pvalue))
+            print("Permutation test, p-values F1/Acc = %f / %f" % permutation_distribution(y_test, y_pred))
 
     if 'svc_rbf' in test_clfs:
     # Set the parameters by cross-validation
@@ -170,13 +170,7 @@ def main():
             y_pred = clf.predict(X_test)
             print(classification_report(y_test, y_pred))
             print()
-            f1, acc = permutation_distribution(y_test, y_pred)
-            print("F1 z-score = %f" % zscore(f1 + [f1_score(y_test, y_pred)], ddof=1)[-1])
-            print("Acc z-score = %f" % zscore(acc + [accuracy_score(y_test, y_pred)], ddof=1)[-1])
-#            score, _, pvalue = permutation_test_score(
-#                clf, X_test, y_test, scoring="accuracy", n_permutations=100, n_jobs=1)
-#
-#            print("Classification score %s (pvalue : %s)" % (score, pvalue))
+            print("Permutation test, p-values F1/Acc = %f / %f" % permutation_distribution(y_test, y_pred))
 
 
     if 'rfc' in test_clfs:
@@ -211,15 +205,10 @@ def main():
             y_pred = clf.predict(X_test)
             print(classification_report(y_test, y_pred))
             print()
-            f1, acc = permutation_distribution(y_test, y_pred)
-            print("F1 z-score = %f" % f1)
-            print("Acc z-score = %f" % acc)
-#            score, _, pvalue = permutation_test_score(
-#                clf, X_test, y_test, scoring="accuracy", n_permutations=100, n_jobs=1)
-#
-#            print("Classification score %s (pvalue : %s)" % (score, pvalue))
+            print("Permutation test, p-values F1/Acc = %f / %f" % permutation_distribution(y_test, y_pred))
 
-def permutation_distribution(y_true, y_pred, n_permutations=50000):
+
+def permutation_distribution(y_true, y_pred, n_permutations=5e4):
     """ Compute the distribution of permutations """
     # Save actual f1_score in front
     random_f1 = []
