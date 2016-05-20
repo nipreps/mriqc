@@ -220,7 +220,9 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     sep = colformat.format(*['=' * c for c in colsizes])
     ptable = '\n'.join([sep, header, sep] + rowsformatted + [sep])
 
-    title = 'Quality Assessment - %s group report' % qctype
+    title = 'Quality Assessment: %s MRI %s report' % (
+        qctype, 'group' if sub_id is None else 'individual')
+
     # Substitution dictionary
     context = {
         'title': title + '\n' + ''.join(['='] * len(title)),
