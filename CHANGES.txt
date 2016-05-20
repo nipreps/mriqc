@@ -1,11 +1,16 @@
-Release 0.8.3a1
-===============
+Release 0.8.4
+=============
+
+* [ENH] PDF reports now use RST templates and jinja2 (https://github.com/poldracklab/mriqc/pull/109)
+
+Release 0.8.3
+=============
 
 * [DOC] Added examples of the PDF reports (https://github.com/poldracklab/mriqc/pull/107)
 * [FIX] Fixed problems with Python 3 when generating reports.
 
-Release 0.8.2a1
-===============
+Release 0.8.2
+=============
 
 * [ENH] Python 3 compatibility (https://github.com/poldracklab/mriqc/issues/99)
 * [ENH] Add JSON settings file for ANTS (https://github.com/poldracklab/mriqc/issues/95)
@@ -16,19 +21,19 @@ Release 0.8.2a1
 * [ENH] One-session-one-run execution mode (https://github.com/poldracklab/mriqc/issues/85)
 * [AGAVE] Added an agave app description generator (https://github.com/poldracklab/mriqc/issues/84)
 
-Release 0.3.0a1
-===============
+Release 0.3.0
+=============
 
 * [ENH] Updated CircleCI and Docker to use the version 2.1.0 of ANTs
   compiled by their developers.
 * [ENH] New anatomical workflows to compute the air mask
   (https://github.com/poldracklab/mriqc/issues/56)
 
-Release 0.2.0a1
-===============
+Release 0.2.0
+=============
 
-Release 0.1.0a2
-===============
+Release 0.1.0
+=============
 
 * [FIX] https://github.com/poldracklab/mriqc/issues/55
 * [ENH] Added rotation of output csv files if they exist
