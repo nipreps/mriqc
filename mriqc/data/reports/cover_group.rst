@@ -2,6 +2,7 @@
 
 
   - Date and time: {{ timestamp }}.
+  - MRIQC version: {{ version }}.
   - Failed workflows: {{ failed or 'none' }}.
   - Image parameters:
 

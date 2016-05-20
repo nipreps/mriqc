@@ -163,6 +163,7 @@ def workflow_report(qctype, settings=None):
 
 def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     """ Generates a cover page with subject information """
+    from mriqc import __version__
     import datetime
     import numpy as np
     from rst2pdf.createpdf import RstToPdf
@@ -220,13 +221,14 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     sep = colformat.format(*['=' * c for c in colsizes])
     ptable = '\n'.join([sep, header, sep] + rowsformatted + [sep])
 
-    title = 'Quality Assessment: %s MRI %s report' % (
+    title = 'MRIQC: %s MRI %s report' % (
         qctype, 'group' if sub_id is None else 'individual')
 
     # Substitution dictionary
     context = {
         'title': title + '\n' + ''.join(['='] * len(title)),
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+        'version': __version__,
         'failed': failed,
         'imparams': ptable
     }

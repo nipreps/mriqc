@@ -3,6 +3,7 @@
 
   - Subject ID: {{ sub_id }}.
   - Date and time: {{ timestamp }}.
+  - MRIQC version: {{ version }}.
   - Sessions and (scans) failed: {{ failed or 'none'}}.
   - Image parameters:
 
