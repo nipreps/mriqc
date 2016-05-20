@@ -7,7 +7,8 @@ nilearn
 dipy
 -e git+https://github.com/nipy/nipype#egg=nipype
 lockfile
+jinja2
 seaborn
 pyPdf2
-xhtml2pdf
+rst2pdf
 PyYAML

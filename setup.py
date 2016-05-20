@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-06 11:55:46
+# @Last Modified time: 2016-05-19 16:08:49
 """ MRIQC setup script """
 import os
 import sys
@@ -52,7 +52,7 @@ def main():
                   'mriqc.utils',
                   'mriqc.workflows',],
         package_data={'mriqc': ['data/ants_settings.json',
-                                'reports/html/*.html',
+                                'data/reports/*.rst',
                                 'data/tests/*']},
         install_requires=REQUIREMENTS,
         dependency_links=REQ_LINKS,
