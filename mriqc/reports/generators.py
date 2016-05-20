@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-05 14:40:08
+# @Last Modified time: 2016-05-19 16:40:43
 """ Encapsulates report generation functions """
 
 import sys
@@ -21,9 +21,10 @@ import json
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+
+import jinja2
 
 from .utils import find_failed, image_parameters
 from ..interfaces.viz_utils import plot_measures, plot_all
@@ -78,12 +79,10 @@ def workflow_report(qctype, settings=None):
     result = {}
     func = getattr(sys.modules[__name__], 'report_' + qctype)
 
-    imparams = image_parameters(dframe)
     pdf_group = []
     # Generate summary page
     out_sum = op.join(work_dir, 'summary_group.pdf')
-    summary_cover({'modality': qctype, 'failed': 'none', 'params': imparams},
-                  is_group=True, out_file=out_sum)
+    summary_cover(dframe, qctype, failed=failed, out_file=out_sum)
     pdf_group.append(out_sum)
 
     # Generate group report
@@ -106,7 +105,6 @@ def workflow_report(qctype, settings=None):
         sessions = sorted(pd.unique(subdf.session_id.ravel()))
         plots = []
         sess_scans = []
-        subparams = {}
         # Re-build mosaic location
         for sesid in sessions:
             sesdf = subdf.loc[subdf['session_id'] == sesid]
@@ -114,7 +112,6 @@ def workflow_report(qctype, settings=None):
 
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
-                subparams[(sesid, scanid)] = imparams[(subid, sesid, scanid)]
                 if 'anat' in qctype:
                     fpdf = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
                                    (subid, sesid, scanid))
@@ -146,11 +143,7 @@ def workflow_report(qctype, settings=None):
             sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in failed if subid == s[0]]
         out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
-        summary_cover(
-            {'sub_id': subid, 'modality': qctype, 'included': ", ".join(sess_scans),
-             'failed': ",".join(sfailed) if sfailed else "none",
-             'params': subparams},
-            out_file=out_sum)
+        summary_cover(dframe, qctype, failed=sfailed, sub_id=subid, out_file=out_sum)
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
@@ -168,54 +161,86 @@ def workflow_report(qctype, settings=None):
     return out_group_file, out_indiv_files, result
 
 
-def summary_cover(data, is_group=False, out_file=None):
+def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     """ Generates a cover page with subject information """
     import datetime
-    import codecs
-    from xhtml2pdf import pisa  # pylint: disable=no-name-in-module
+    import numpy as np
+    from rst2pdf.createpdf import RstToPdf
+    import pkg_resources as pkgr
 
-    # open output file for writing (truncated binary)
-    result = open(out_file, "w+b")
+    if failed is None:
+        failed = []
 
-    substr = '<table><tr>'
-    if is_group:
-        substr += '<th>Subject ID</th>'
-    substr += ('<th>Session</th><th>Scan ID</th><th>Image size (voxels)</th><th>Spacing (mm)</th>'
-               '<th>TR (ms)</th><th>Time steps</th></tr>')
+    newdf = dframe.copy()
 
+    # Format the size
+    #pylint: disable=E1101
+    newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
+    formatter = lambda row: ur'%d \u00D7 %d \u00D7 %d' % (
+        row['size_x'], row['size_y'], row['size_z'])
+    newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
-    for k, info in sorted(list(data['params'].items())):
-        if is_group:
-            substr += '<tr><td>%s</td><td>%s</td><td>%s</td>' % tuple(k)
-        else:
-            substr += '<tr><td>%s</td><td>%s</td>' % tuple(k)
-        substr += '<td>{size:s}</td><td>{spacing:s}</td>'.format(**info)
-        substr += '<td>%f</td>' % info['tr'] if 'tr' in info.keys() else '<td>N/A</td>'
-        substr += '<td>%d</td>' % info['size_t'] if 'size_t' in info.keys() else '<td>1</td>'
-        substr += '</tr>\n'
-    substr += '</table>'
+    # Format spacing
+    newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
+        'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
+    formatter = lambda row: ur'%.3f \u00D7 %.3f \u00D7 %.3f' % (
+        row['spacing_x'], row['spacing_y'], row['spacing_z'])
+    newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
 
-    html_dir = op.abspath(
-        op.join(op.dirname(__file__), 'html', 'cover_group.html'
-                if is_group else 'cover_subj.html'))
+    # columns
+    cols = ['session_id', 'run_id', 'size', 'spacing']
+    colnames = ['Session', 'Run', 'Size', 'Spacing']
+    if 'tr' in newdf.columns.ravel():
+        cols.append('tr')
+        colnames.append('TR (sec)')
+    if 'size_t' in newdf.columns.ravel():
+        cols.append('size_t')
+        colnames.append(r'\# Timepoints')
 
-    with codecs.open(html_dir, mode='r', encoding='utf-8') as ftpl:
-        html = ftpl.read().format
-
-    if is_group:
-        values = {'imparams': substr, 'modality': data['modality'], 'failed': data['failed'],
-                  'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M")}
+    # Format parameters table
+    if sub_id is None:
+        cols.insert(0, 'subject_id')
+        colnames.insert(0, 'Subject')
     else:
-        values = {'sub_id': data['sub_id'], 'imparams': substr, 'modality': data['modality'],
-                  'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-                  'failed': data['failed']}
+        newdf = newdf[newdf.subject_id.astype(unicode) == sub_id]
 
-    # convert HTML to PDF
-    status = pisa.pisaDocument(html(**values), result, encoding='UTF-8')
-    result.close()
+    newdf = newdf[cols]
 
-    # return True on success and False on errors
-    return status.err
+    colsizes = []
+    for col, colname in zip(cols, colnames):
+        newdf[[col]] =newdf[[col]].astype(unicode)
+        colsize = newdf.loc[:, col].map(len).max()
+        colsizes.append(colsize if colsize > len(colname) else len(colname))
+
+    colformat = u' '.join(u'{:<%d}' % c for c in colsizes)
+    formatter = lambda row: colformat.format(*row)
+    rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
+    # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]
+    header = colformat.format(*colnames)
+    sep = colformat.format(*['=' * c for c in colsizes])
+    ptable = '\n'.join([sep, header, sep] + rowsformatted + [sep])
+
+    title = 'Quality Assessment - %s group report' % qctype
+    # Substitution dictionary
+    context = {
+        'title': title + '\n' + ''.join(['='] * len(title)),
+        'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+        'failed': failed,
+        'imparams': ptable
+    }
+
+    if sub_id is not None:
+        context['sub_id'] = sub_id
+
+    if sub_id is None:
+        template = ConfigGen(pkgr.resource_filename(
+            'mriqc', op.join('data', 'reports', 'cover_group.rst')))
+    else:
+        template = ConfigGen(pkgr.resource_filename(
+            'mriqc', op.join('data', 'reports', 'cover_individual.rst')))
+
+    RstToPdf().createPdf(
+        text=template.compile(context), output=out_file)
 
 
 def concat_pdf(in_files, out_file='concatenated.pdf'):
@@ -390,3 +415,24 @@ def _flatten(in_dict, parent_key='', sep='_'):
         else:
             items.append((new_key, val))
     return dict(items)
+
+
+class ConfigGen(object):
+    """
+    Utility class for generating a config file from a jinja template.
+    https://github.com/oesteban/endofday/blob/f2e79c625d648ef45b08cc1f11fd0bd84342d604/endofday/core/template.py
+    """
+    def __init__(self, template_str):
+        self.template_str = template_str
+        self.env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(searchpath='/'),
+            trim_blocks=True, lstrip_blocks=True)
+
+    def compile(self, configs):
+        template = self.env.get_template(self.template_str)
+        return template.render(configs)
+
+    def generate_conf(self, configs, path):
+        output = self.compile(configs)
+        with open(path, 'w+') as output_file:
+            output_file.write(output)

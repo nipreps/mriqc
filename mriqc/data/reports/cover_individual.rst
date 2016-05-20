@@ -1,13 +1,13 @@
-
-Quality Assessment - {{ modality }} individual report
-========
+{{ title }}
 
 
   - Subject ID: {{ sub_id }}.
   - Date and time: {{ timestamp }}.
   - Sessions and (scans) failed: {{ failed or 'none'}}.
-  - Image parameters: {{ imparams }}.
-    
+  - Image parameters:
+
+{{ imparams }}
+
 
 For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
