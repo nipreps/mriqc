@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-20 10:08:20
+# @Last Modified time: 2016-05-20 10:22:52
 
 """
 MRIQC Cross-validation
@@ -112,7 +112,7 @@ def main():
             sample_x = [tuple(x) for x in X_df[colnames].values]
             labels_y = [int(y_i) for y_i in y_df.rate.values]
             clf = GridSearchCV(
-                svm.LinearSVC(C=1), convert([{'C': [1]}]),
+                svm.LinearSVC(C=1), convert([{'C': [0.01, 0.1, 1, 10, 100, 1000]}]),
                 cv=lolo_folds, scoring=stype, n_jobs=-1)
             clf.fit(sample_x, labels_y)
 
@@ -213,7 +213,7 @@ def permutation_distribution(y_true, y_pred, n_permutations=5e4):
     # Save actual f1_score in front
     random_f1 = []
     random_acc = []
-    for i in range(n_permutations):
+    for i in range(int(n_permutations)):
         y_sh = np.random.permutation(y_true)
         random_f1.append(f1_score(y_sh, y_pred))
         random_acc.append(accuracy_score(y_sh, y_pred))
