@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-19 16:40:43
+# @Last Modified time: 2016-05-20 09:10:18
 """ Encapsulates report generation functions """
 
 import sys
@@ -26,7 +26,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import jinja2
 
-from .utils import find_failed, image_parameters
 from ..interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
