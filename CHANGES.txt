@@ -2,6 +2,7 @@ Release 0.8.4
 =============
 
 * [ENH] PDF reports now use RST templates and jinja2 (https://github.com/poldracklab/mriqc/pull/109)
+* [FIX] Single-session-multiple-run anatomical files were not correctly located (https://github.com/poldracklab/mriqc/pull/112)
 
 Release 0.8.3
 =============
