@@ -29,22 +29,26 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     onesession = (session_id is None or session_id == 'single_session')
     onerun = (run_id is None or run_id == 'single_run')
 
-    if onesession and onerun:
-        pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
+    if onesession:
+        if onerun:
+            pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
+        else:
+            pattern = op.join(out_file, data_type, '%s_%s*%s.nii*' % (subject_id, run_id, scan_type))
 
-    elif not onesession and onerun:
-        pattern = op.join(out_file, session_id, data_type,
-                          '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
-    elif onesession and not onerun:
-        pattern = op.join(out_file, data_type, '%s_%s*%s.nii*' % (subject_id, run_id, scan_type))
     else:
-        pattern = op.join(out_file, session_id, data_type,
-                          '%s_%s_%s*%s.nii*' % (subject_id, session_id, run_id, scan_type))
+        if onerun:
+            pattern = op.join(out_file, session_id, data_type,
+                              '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
+        else:
+            pattern = op.join(out_file, session_id, data_type,
+                              '%s_%s_%s*%s.nii*' % (subject_id, session_id, run_id, scan_type))
 
     results = glob.glob(pattern)
 
     if not results:
-        raise RuntimeError('No file found with this pattern: "%s"' % pattern)
+        raise RuntimeError(
+            'No file found with this pattern: "%s", finding '
+            'BIDS dataset coordinates are (%s, %s, %s)' % (pattern, subject_id, session_id, run_id))
 
     return results[0]
 
@@ -193,7 +197,7 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None)
             scan_key = 'single_run'
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_' + bidsfile['run']
+                scan_key = bidsfile['run']
             sub_dict['anat'].append(
                 (bidsfile['sub'], bidsfile['ses'], scan_key))
 
