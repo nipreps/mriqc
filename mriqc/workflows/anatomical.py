@@ -145,7 +145,9 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     out_name.inputs.prefix = 'anat'
 
     # Save to JSON file
-    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
+    jfs_if = nio.JSONFileSink()
+    setattr(jfs_if, '_always_run', settings.get('force_run', False))
+    datasink = pe.Node(jfs_if, name='datasink')
     datasink.inputs.qc_type = 'anat'
 
     workflow.connect([
