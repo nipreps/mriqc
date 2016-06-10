@@ -203,6 +203,8 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None)
 
         elif bidsfile['modality'] in ['bold']:  # ie, functional
             scan_key = bidsfile['task']
+            if bidsfile['acq'] is not None:
+                scan_key += '_' + bidsfile['acq']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
                 scan_key += '_' + bidsfile['run']
