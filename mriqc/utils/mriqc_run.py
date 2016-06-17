@@ -49,6 +49,8 @@ def main():
                          type=int, help='number of threads')
     g_input.add_argument('--write-graph', action='store_true', default=False,
                          help='Write workflow graph.')
+    g_input.add_argument('--test-run', action='store_true', default=False,
+                         help='Do not run the workflow.')
     g_input.add_argument('--use-plugin', action='store', default=None,
                          help='nipype plugin configuration file')
 
@@ -126,9 +128,10 @@ def main():
         if settings.get('write_graph', False):
             workflow.write_graph()
 
-        workflow.run(**plugin_settings)
+        if not opts.test_run:
+            workflow.run(**plugin_settings)
 
-        if opts.subject_id is None:
+        if opts.subject_id is None and not opts.test_run:
             workflow_report(dtype, settings)
 
 
