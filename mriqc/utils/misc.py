@@ -33,7 +33,7 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
         if onerun:
             pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
         else:
-            pattern = op.join(out_file, data_type, '%s_%s*%s.nii*' % (subject_id, run_id, scan_type))
+            pattern = op.join(out_file, data_type, '%s_*%s_%s.nii*' % (subject_id, run_id, scan_type))
 
     else:
         if onerun:
@@ -41,7 +41,7 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
                               '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
         else:
             pattern = op.join(out_file, session_id, data_type,
-                              '%s_%s_%s*%s.nii*' % (subject_id, session_id, run_id, scan_type))
+                              '%s_%s*_%s_%s.nii*' % (subject_id, session_id, run_id, scan_type))
 
     results = glob.glob(pattern)
 
