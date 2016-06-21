@@ -14,7 +14,7 @@ import numpy as np
 import nibabel as nb
 from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                              volume_fraction, rpve, summary_stats, cjv)
-from ..qc.functional import (gsr, dvars, fd_jenkinson, gcor)
+from ..qc.functional import (gsr, dvars, gcor)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
@@ -289,7 +289,7 @@ def _flatten_dict(indict):
 
 class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
-                   desc='input file generated with FSL 3dvolreg')
+                   desc='input file generated with FSL-mcflirt or AFNI-3dvolreg')
     rmax = traits.Float(80., usedefault=True, desc='default brain radius')
     threshold = traits.Float(1., usedefault=True, desc='motion threshold')
 
@@ -315,11 +315,9 @@ class FramewiseDisplacement(BaseInterface):
         return self._results
 
     def _run_interface(self, runtime):
-        out_file = fd_jenkinson(self.inputs.in_file,
-                                self.inputs.rmax)
-        self._results['out_file'] = out_file
+        self._results['out_file'] = self.inputs.in_file
 
-        fddata = np.loadtxt(out_file)
+        fddata = np.loadtxt(self.inputs.in_file)
         num_fd = np.float((fddata > self.inputs.threshold).sum())
         self._results['fd_stats'] = {
             'mean_fd': fddata.mean(),
