@@ -71,7 +71,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
 
-    fdisp = pe.Node(FramewiseDisplacement(), name='generate_FD_file')
+    # Compute TSNR using nipype implementation
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
     # AFNI quality measures
@@ -109,10 +109,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
-        (hmcwf, fdisp, [('outputnode.out_movpar', 'in_file')]),
         (mean, plot_mean, [('out_file', 'in_file')]),
         (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
-        (fdisp, plot_fd, [('out_file', 'in_file')]),
+        (hmcwf, plot_fd, [('outputnode.out_movpar', 'in_file')]),
         (inputnode, plot_mean, [('subject_id', 'subject')]),
         (inputnode, plot_tsnr, [('subject_id', 'subject')]),
         (inputnode, plot_fd, [('subject_id', 'subject')]),
@@ -125,7 +124,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (bmw, outliers, [('outputnode.out_file', 'mask')]),
         (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
         (mean, measures, [('out_file', 'in_epi')]),
-        (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
+        (hmcwf, measures, [('outputnode.out_file', 'in_hmc'),
+                           ('outputnode.out_movpar', 'fd_movpar')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
         (tsnr, measures, [('tsnr_file', 'in_tsnr')])
     ])
@@ -198,7 +198,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),
-        (fdisp, datasink, [('fd_stats', 'fd_stats')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
                               ('size', 'size'),
@@ -207,6 +206,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                               ('snr', 'snr'),
                               ('gsr', 'gsr'),
                               ('m_tsnr', 'm_tsnr'),
+                              ('fd_stats', 'fd_stats'),
                               ('dvars', 'dvars'),
                               ('gcor', 'gcor')]),
         (out_name, datasink, [('out_file', 'out_file')]),
@@ -333,29 +333,6 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
         ])
 
     return workflow
-
-def _merge_dicts(in_qc, subject_id, metadata, fwhm, fd_stats, outlier, quality):
-    in_qc['subject'] = subject_id
-    in_qc['session'] = metadata[0]
-    in_qc['scan'] = metadata[1]
-
-    try:
-        in_qc['site_name'] = metadata[2]
-    except IndexError:
-        pass  # No site_name defined
-
-    in_qc.update({'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1], 'fwhm_z': fwhm[2],
-                  'fwhm': fwhm[3]})
-    in_qc.update(fd_stats)
-    in_qc['outlier'] = outlier
-    in_qc['quality'] = quality
-
-    try:
-        in_qc['tr'] = in_qc['spacing_tr']
-    except KeyError:
-        pass  # TR is not defined
-
-    return in_qc
 
 def _mean(inlist):
     import numpy as np

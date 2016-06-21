@@ -165,6 +165,9 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_mask = File(exists=True, mandatory=True, desc='input mask')
     direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
                             desc='direction for GSR computation')
+    fd_movpar = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
+    fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -175,6 +178,7 @@ class FunctionalQCOutputSpec(TraitedSpec):
     m_tsnr = traits.Float
     dvars = traits.Float
     gcor = traits.Float
+    fd_stats = traits.Dict
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
@@ -251,6 +255,15 @@ class FunctionalQC(BaseInterface):
         # GCOR
         self._results['gcor'] = gcor(hmcdata, mskdata)
 
+        # FD
+        fddata = np.loadtxt(self.inputs.fd_movpar)
+        num_fd = np.float((fddata > self.inputs.fd_thres).sum())
+        self._results['fd_stats'] = {
+            'mean_fd': float(fddata.mean()),
+            'num_fd': int(num_fd),
+            'perc_fd': float(num_fd * 100 / (len(fddata) + 1))
+        }
+
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),
                                  'y': int(hmcdata.shape[1]),
@@ -285,43 +298,3 @@ def _flatten_dict(indict):
                     for ssubk, ssubval in list(subval.items()):
                         out_qc['%s_%s_%s' % (k, subk, ssubk)] = ssubval
     return out_qc
-
-
-class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True,
-                   desc='input file generated with FSL-mcflirt or AFNI-3dvolreg')
-    rmax = traits.Float(80., usedefault=True, desc='default brain radius')
-    threshold = traits.Float(1., usedefault=True, desc='motion threshold')
-
-
-class FramewiseDisplacementOutputSpec(TraitedSpec):
-    out_file = File(desc='output file')
-    fd_stats = traits.Dict
-
-class FramewiseDisplacement(BaseInterface):
-    """
-    Computes anatomical :abbr:`QC (Quality Control)` measures on the
-    structural image given as input
-
-    """
-    input_spec = FramewiseDisplacementInputSpec
-    output_spec = FramewiseDisplacementOutputSpec
-
-    def __init__(self, **inputs):
-        self._results = {}
-        super(FramewiseDisplacement, self).__init__(**inputs)
-
-    def _list_outputs(self):
-        return self._results
-
-    def _run_interface(self, runtime):
-        self._results['out_file'] = self.inputs.in_file
-
-        fddata = np.loadtxt(self.inputs.in_file)
-        num_fd = np.float((fddata > self.inputs.threshold).sum())
-        self._results['fd_stats'] = {
-            'mean_fd': fddata.mean(),
-            'num_fd': num_fd,
-            'perc_fd': num_fd * 100 / (len(fddata) + 1)
-        }
-        return runtime
