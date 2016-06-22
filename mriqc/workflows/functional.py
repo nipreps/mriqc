@@ -19,7 +19,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 from .utils import fmri_getidx, fwhm_dict, fd_jenkinson
-from ..interfaces.qc import FunctionalQC, FramewiseDisplacement
+from ..interfaces.qc import FunctionalQC
 from ..interfaces.viz import PlotMosaic, PlotFD
 from ..utils.misc import bids_getfile, bids_path
 
