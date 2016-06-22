@@ -17,7 +17,7 @@ set -e
 # 	fi
 # 	((i=i+1))
 # done
-cp build/ants_settings_test.json /scratch/data
+cp build/ants_settings_test.json ~/scratch/data
 
 if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then
 	docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc -B /scratch/data/ds003_downsampled -d func -o outputs/ms-func/out -w outputs/ms-func/work
