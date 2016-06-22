@@ -216,9 +216,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     return fig
 
 
-def plot_fd(fd_file, title='FD plot', mean_fd_dist=None, figsize=(11.7, 8.3)):
+def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.7, 8.3)):
 
-    fd_power = _calc_fd(fd_file)
+    fd_power = _calc_fd(fd_file, fd_radius)
 
     fig = plt.Figure(figsize=figsize)
     FigureCanvas(fig)
@@ -301,7 +301,8 @@ def _calc_rows_columns(ratio, n_images):
     return rows, columns
 
 
-def _calc_fd(fd_file):
+def _calc_fd(fd_file, fd_radius):
+    from math import pi
     lines = open(fd_file, 'r').readlines()
     rows = [[float(x) for x in line.split()] for line in lines]
     cols = np.array([list(col) for col in zip(*rows)])
@@ -310,7 +311,7 @@ def _calc_fd(fd_file):
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
     fd_power = np.sum(translations, axis=1) + \
-        (50 * 3.141 / 180) * np.sum(rotations, axis=1)
+        (fd_radius * pi / 180) * np.sum(rotations, axis=1)
 
     # FD is zero for the first time point
     fd_power = np.insert(fd_power, 0, 0)
@@ -318,11 +319,11 @@ def _calc_fd(fd_file):
     return fd_power
 
 
-def _get_mean_fd_distribution(fd_files):
+def _get_mean_fd_distribution(fd_files, fd_radius):
     mean_fds = []
     max_fds = []
     for fd_file in fd_files:
-        fd_power = _calc_fd(fd_file)
+        fd_power = _calc_fd(fd_file, fd_radius)
         mean_fds.append(fd_power.mean())
         max_fds.append(fd_power.max())
 
