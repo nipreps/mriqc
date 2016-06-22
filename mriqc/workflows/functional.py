@@ -262,7 +262,7 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_movpar']), name='outputnode')
 
-    mcflirt = pe.Node(fsl.MCFLIRT(save_mats=True), name="MCFLIRT")
+    mcflirt = pe.Node(fsl.MCFLIRT(mean_vol=True), name="MCFLIRT")
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
