@@ -23,6 +23,7 @@ test:
     # Test mriqcp
     - bash build/circle_tests.sh:
         parallel: true
+        timeout: 2400
 
 general:
   artifacts:
