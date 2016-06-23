@@ -1,3 +1,11 @@
+Release 0.8.5
+=============
+
+* [ENH] Use MCFLIRT to compute motion parameters. AFNI's 3dvolreg now is optional (https://github.com/poldracklab/mriqc/pull/121)
+* [FIX] BIDS trees with anatomical images with different acquisition tokens (https://github.com/poldracklab/mriqc/pull/116)
+* [FIX] BIDS trees with anatomical images with several runs (https://github.com/poldracklab/mriqc/issues/112)
+* [ENH] Options for ANTs normalization: reduced test times (https://github.com/poldracklab/mriqc/pull/124), and updated options (https://github.com/poldracklab/mriqc/pull/115)
+
 Release 0.8.4
 =============
 
