@@ -5,4 +5,4 @@
 """ mriqc nipype interfaces """
 
 from .anatomical import ArtifactMask
-from .qc import StructuralQC, FunctionalQC, FramewiseDisplacement
+from .qc import StructuralQC, FunctionalQC

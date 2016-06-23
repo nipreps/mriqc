@@ -56,6 +56,9 @@ def main():
 
     g_input.add_argument('--save-memory', action='store_true', default=False,
                          help='Save as much memory as possible')
+    g_input.add_argument('--hmc-afni', action='store_true', default=False,
+                         help='Use ANFI 3dvolreg for head motion correction (HMC) and '
+                              'frame displacement (FD) estimation')
     g_input.add_argument('--ants-settings', action='store',
                          help='path to JSON file with settings for ANTS')
 
@@ -81,6 +84,7 @@ def main():
                 'output_dir': os.getcwd(),
                 'write_graph': opts.write_graph,
                 'save_memory': opts.save_memory,
+                'hmc_afni': opts.hmc_afni,
                 'nthreads': opts.nthreads}
 
     if opts.output_dir:

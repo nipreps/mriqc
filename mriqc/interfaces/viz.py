@@ -83,6 +83,8 @@ class PlotMosaic(BaseInterface):
 class PlotFDInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
                    desc='File to be plotted')
+    fd_radius = traits.Float(80., mandatory=True, usedefault=True,
+                             desc='Radius to compute power of FD')
     title = traits.Str('FD', usedefault=True,
                        desc='modality name to be prepended')
     subject = traits.Str(desc='Subject id')
@@ -117,10 +119,12 @@ class PlotFD(BaseInterface):
         if isdefined(self.inputs.figsize):
             fig = plot_fd(
                 self.inputs.in_file,
+                self.inputs.fd_radius,
                 title=title,
                 figsize=self.inputs.figsize)
         else:
-            fig = plot_fd(self.inputs.in_file)
+            fig = plot_fd(self.inputs.in_file,
+                          self.inputs.fd_radius)
 
         fig.savefig(self.inputs.out_file, dpi=float(self.inputs.dpi))
 
