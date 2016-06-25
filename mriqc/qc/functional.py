@@ -131,6 +131,7 @@ def dvars(in_file, in_mask, output_all=False, out_file=None):
     import numpy as np
     import nibabel as nb
     from nitime.algorithms import AR_est_YW
+    from mriqc.qc.functional import zero_variance
 
     func = nb.load(in_file).get_data()
     mask = nb.load(in_mask).get_data()
