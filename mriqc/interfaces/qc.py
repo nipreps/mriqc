@@ -14,7 +14,7 @@ import numpy as np
 import nibabel as nb
 from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                              volume_fraction, rpve, summary_stats, cjv)
-from ..qc.functional import (gsr, dvars, gcor)
+from ..qc.functional import (gsr, gcor, summary_fd)
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
@@ -167,6 +167,7 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
                             desc='direction for GSR computation')
     fd_movpar = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
     fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+    in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
 
 
 
@@ -246,7 +247,8 @@ class FunctionalQC(BaseInterface):
                                     'p05': p05}
 
         # DVARS
-        self._results['dvars'] = float(np.mean(dvars(hmcdata, mskdata), axis=0)[0])
+        self._results['dvars'] = float(np.mean(np.loadtxt(
+            self.inputs.in_dvars), axis=0)[0])
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
@@ -256,13 +258,7 @@ class FunctionalQC(BaseInterface):
         self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # FD
-        fddata = np.loadtxt(self.inputs.fd_movpar)
-        num_fd = np.float((fddata > self.inputs.fd_thres).sum())
-        self._results['fd_stats'] = {
-            'mean_fd': float(fddata.mean()),
-            'num_fd': int(num_fd),
-            'perc_fd': float(num_fd * 100 / (len(fddata) + 1))
-        }
+        self._results['fd_stats'] = summary_fd(self.inputs.fd_movpar)
 
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),

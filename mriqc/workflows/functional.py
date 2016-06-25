@@ -19,6 +19,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 from .utils import fmri_getidx, fwhm_dict, fd_jenkinson
+from ..qc.functional import dvars
 from ..interfaces.qc import FunctionalQC
 from ..interfaces.viz import PlotMosaic, PlotFD
 from ..utils.misc import bids_getfile, bids_path
@@ -50,7 +51,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         output_names=['start_idx', 'stop_idx']), name='get_idx')
 
     outputnode = pe.Node(niu.IdentityInterface(
-        fields=['qc', 'mosaic', 'out_group']), name='outputnode')
+        fields=['qc', 'mosaic', 'out_group', 'out_movpar', 'out_dvars']), name='outputnode')
 
 
     # 0. Get data
@@ -73,6 +74,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
+
+    # Compute DVARS
+    dvnode = pe.Node(niu.Function(
+        input_names=['in_file', 'in_mask'], output_names=['out_file'],
+        function=dvars), name='ComputeDVARS')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -123,11 +129,16 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
         (bmw, outliers, [('outputnode.out_file', 'mask')]),
         (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
+        (hmcwf, dvnode, [('outputnode.out_file', 'in_file')]),
+        (bmw, dvnode, [('outputnode.out_file', 'in_mask')]),
         (mean, measures, [('out_file', 'in_epi')]),
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc'),
                            ('outputnode.out_movpar', 'fd_movpar')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
-        (tsnr, measures, [('tsnr_file', 'in_tsnr')])
+        (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
+        (dvnode, measures, [('out_file', 'in_dvars')]),
+        (dvnode, outputnode, [('out_file', 'out_dvars')]),
+        (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
     ])
 
     if settings.get('mosaic_mask', False):
