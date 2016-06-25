@@ -185,7 +185,7 @@ def dvars(in_file, in_mask, output_all=False, out_file=None):
         out_file = op.abspath(fname)
 
     np.savetxt(out_file, gendvars, fmt='%.12f')
-    return gendvars
+    return out_file
 
 
 def summary_fd(fd_movpar, fd_thres=1.0):
