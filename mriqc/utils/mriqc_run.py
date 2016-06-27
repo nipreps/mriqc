@@ -19,6 +19,7 @@ import os
 import os.path as op
 from warnings import warn
 from multiprocessing import cpu_count
+from lockfile import LockFile
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -94,8 +95,10 @@ def main():
         os.makedirs(settings['output_dir'])
 
     settings['work_dir'] = op.abspath(opts.work_dir)
-    if not op.exists(settings['work_dir']):
-        os.makedirs(settings['work_dir'])
+
+    with LockFile(settings['work_dir']):
+        if not op.exists(settings['work_dir']):
+            os.makedirs(settings['work_dir'])
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
