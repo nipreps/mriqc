@@ -247,8 +247,8 @@ class FunctionalQC(BaseInterface):
                                     'p05': p05}
 
         # DVARS
-        self._results['dvars'] = float(np.mean(np.loadtxt(
-            self.inputs.in_dvars), axis=0)[0])
+        self._results['dvars'] = float(np.loadtxt(
+            self.inputs.in_dvars).mean())
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
