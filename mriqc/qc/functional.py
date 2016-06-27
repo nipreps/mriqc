@@ -18,8 +18,6 @@ Computation of the quality assessment measures on functional MRI
 import os.path as op
 import numpy as np
 import nibabel as nb
-from nitime import algorithms as nta
-import scipy
 
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
@@ -104,7 +102,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     return float(ghost/signal)
 
 
-def dvars(func, mask, output_all=False, out_file=None):
+def dvars(in_file, in_mask, output_all=False, out_file=None):
     """
     Compute the mean :abbr:`DVARS (D referring to temporal
     derivative of timecourses, VARS referring to RMS variance over voxels)`
@@ -129,6 +127,15 @@ def dvars(func, mask, output_all=False, out_file=None):
     :return: the standardized DVARS
 
     """
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from nitime.algorithms import AR_est_YW
+    from mriqc.qc.functional import zero_variance
+
+    func = nb.load(in_file).get_data()
+    mask = nb.load(in_mask).get_data()
+
     if len(func.shape) != 4:
         raise RuntimeError(
             "Input fMRI dataset should be 4-dimensional" % func)
@@ -146,7 +153,7 @@ def dvars(func, mask, output_all=False, out_file=None):
     mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
 
     # AR1
-    ak_coeffs = np.apply_along_axis(nta.AR_est_YW, 1, mfunc, 1)
+    ak_coeffs = np.apply_along_axis(AR_est_YW, 1, mfunc, 1)
 
     # Predicted standard deviation of temporal derivative
     func_sd_pd = np.squeeze(np.sqrt((2 * (1 - ak_coeffs[:, 0])).tolist()) * func_sd)
@@ -170,11 +177,30 @@ def dvars(func, mask, output_all=False, out_file=None):
     else:
         gendvars = dvars_stdz.reshape(len(dvars_stdz), 1)
 
-    if out_file is not None:
-        np.savetxt(out_file, gendvars, fmt='%.12f')
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        fname += '_dvars.txt'
+        out_file = op.abspath(fname)
 
-    return gendvars
+    np.savetxt(out_file, gendvars, fmt='%.12f')
+    return out_file
 
+
+def summary_fd(fd_movpar, fd_thres=1.0):
+    """
+    Generates a dictionary with the mean FD, the number of FD timepoints above
+    fd_thres, and the percentage of FD timepoints above the fd_thres
+    """
+    fddata = np.loadtxt(fd_movpar)
+    num_fd = np.float((fddata > fd_thres).sum())
+    out_dict = {
+        'mean_fd': float(fddata.mean()),
+        'num_fd': int(num_fd),
+        'perc_fd': float(num_fd * 100 / (len(fddata) + 1))
+    }
+    return out_dict
 
 def gcor(func, mask):
     """
@@ -185,10 +211,11 @@ def gcor(func, mask):
     :return: the computed GCOR value
 
     """
+    from scipy.stats.mstats import zscore
     # Remove zero-variance voxels across time axis
     tv_mask = zero_variance(func, mask)
     idx = np.where(tv_mask > 0)
-    zscores = scipy.stats.mstats.zscore(func[idx[0], idx[1], idx[2], :], axis=1)
+    zscores = zscore(func[idx[0], idx[1], idx[2], :], axis=1)
     avg_ts = zscores.mean(axis=0)
     return float(avg_ts.transpose().dot(avg_ts) / len(avg_ts))
 
