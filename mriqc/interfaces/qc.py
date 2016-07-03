@@ -12,12 +12,13 @@
 
 import numpy as np
 import nibabel as nb
-from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                             volume_fraction, rpve, summary_stats, cjv)
-from ..qc.functional import (gsr, gcor, summary_fd)
+
+from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
+                                 volume_fraction, rpve, summary_stats, cjv)
+from mriqc.qc.functional import (gsr, gcor, summary_fd)
+
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
-
 from nipype import logging
 IFLOGGER = logging.getLogger('interface')
 

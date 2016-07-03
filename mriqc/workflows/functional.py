@@ -18,11 +18,12 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
-from .utils import fmri_getidx, fwhm_dict, fd_jenkinson
-from ..qc.functional import dvars
-from ..interfaces.qc import FunctionalQC
-from ..interfaces.viz import PlotMosaic, PlotFD
-from ..utils.misc import bids_getfile, bids_path
+
+from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
+from mriqc.qc.functional import dvars
+from mriqc.interfaces.qc import FunctionalQC
+from mriqc.interfaces.viz import PlotMosaic, PlotFD
+from mriqc.utils.misc import bids_getfile, bids_path
 
 
 def fmri_qc_workflow(name='fMRIQC', settings=None):

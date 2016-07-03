@@ -32,7 +32,7 @@ Example
 """
 
 __versionbase__ = '0.8.5'
-__versionrev__ = 'a2'
+__versionrev__ = 'a3'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'

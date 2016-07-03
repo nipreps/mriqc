@@ -18,12 +18,12 @@ from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
-from .utils import fwhm_dict
-from ..interfaces.qc import StructuralQC
-from ..interfaces.anatomical import ArtifactMask
-from ..interfaces.viz import PlotMosaic
-from ..utils.misc import bids_getfile, bids_path
-from ..data.getters import get_mni_template
+from mriqc.workflows.utils import fwhm_dict
+from mriqc.interfaces.qc import StructuralQC
+from mriqc.interfaces.anatomical import ArtifactMask
+from mriqc.interfaces.viz import PlotMosaic
+from mriqc.utils.misc import bids_getfile, bids_path
+from mriqc.data.getters import get_mni_template
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     """

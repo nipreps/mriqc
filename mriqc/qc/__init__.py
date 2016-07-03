@@ -13,5 +13,5 @@ metrics)` included within MRIQC.
 
 """
 
-from .anatomical import *  # pylint: disable=wildcard-import
-from .functional import *  # pylint: disable=wildcard-import
+from mriqc.qc.anatomical import *  # pylint: disable=wildcard-import
+from mriqc.qc.functional import *  # pylint: disable=wildcard-import
