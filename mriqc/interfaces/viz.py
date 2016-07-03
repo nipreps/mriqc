@@ -15,8 +15,8 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
 
-from .viz_utils import (plot_mosaic, plot_fd)
-from ..reports import workflow_report
+from mriqc.interfaces.viz_utils import (plot_mosaic, plot_fd)
+from mriqc.reports import workflow_report
 
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):

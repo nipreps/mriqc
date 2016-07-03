@@ -21,7 +21,7 @@ import time
 import base64
 import hashlib
 import subprocess as sp
-from .compat import _urllib, md5_hash
+from mriqc.data.compat import _urllib, md5_hash
 
 
 def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,

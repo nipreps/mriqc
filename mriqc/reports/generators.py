@@ -26,7 +26,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import jinja2
 
-from ..interfaces.viz_utils import plot_measures, plot_all
+from mriqc.interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 STRUCTURAL_QCGROUPS = [

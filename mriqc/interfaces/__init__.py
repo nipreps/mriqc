@@ -4,5 +4,5 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ mriqc nipype interfaces """
 
-from .anatomical import ArtifactMask
-from .qc import StructuralQC, FunctionalQC
+from mriqc.interfaces.anatomical import ArtifactMask
+from mriqc.interfaces.qc import StructuralQC, FunctionalQC

@@ -10,12 +10,12 @@
 # @Last Modified time: 2016-05-04 14:53:43
 """ The core module combines the existing workflows """
 from six import string_types
-from .anatomical import anat_qc_workflow
-from .functional import fmri_qc_workflow
-from ..utils.misc import gather_bids_data
-
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
+
+from mriqc.workflows.anatomical import anat_qc_workflow
+from mriqc.workflows.functional import fmri_qc_workflow
+from mriqc.utils.misc import gather_bids_data
 
 def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
     """ Multi-subject anatomical workflow wrapper """

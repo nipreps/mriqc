@@ -12,7 +12,7 @@
 Data grabbers
 """
 
-from .utils import _get_dataset_dir, _fetch_file
+from mriqc.data.utils import _get_dataset_dir, _fetch_file
 
 
 def get_brainweb_1mm_normal(data_dir=None, url=None, resume=True, verbose=1):
