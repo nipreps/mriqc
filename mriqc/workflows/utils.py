@@ -53,6 +53,12 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
       NOT the motion parameters
 
 
+    .. note :: Acknowledgments
+
+      We thank Steve Giavasis (@sgiavasis) and Krishna Somandepali for their
+      original implementation of this code in the [QAP]_.
+
+
     """
 
     import sys
