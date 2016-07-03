@@ -72,17 +72,20 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     # Step 2
     if direction == "x":
-        n2lim = np.floor(mask.shape[0]/2)
-        n2_mask[:n2lim, :, :] = mask[n2lim:(n2lim*2), :, :]
-        n2_mask[n2lim:(n2lim*2), :, :] = mask[:n2lim, :, :]
+        n2max = mask.shape[0]
+        n2lim = int(np.floor(n2max/2))
+        n2_mask[:n2lim, :, :] = mask[n2lim:n2max, :, :]
+        n2_mask[n2lim:n2max, :, :] = mask[:n2lim, :, :]
     elif direction == "y":
-        n2lim = np.floor(mask.shape[1]/2)
-        n2_mask[:, :n2lim, :] = mask[:, n2lim:(n2lim*2), :]
-        n2_mask[:, n2lim:(n2lim*2), :] = mask[:, :n2lim, :]
+        n2max = mask.shape[1]
+        n2lim = int(np.floor(n2max/2))
+        n2_mask[:, :n2lim, :] = mask[:, n2lim:n2max, :]
+        n2_mask[:, n2lim:n2max, :] = mask[:, :n2lim, :]
     elif direction == "z":
-        n2lim = np.floor(mask.shape[2]/2)
-        n2_mask[:, :, :n2lim] = mask[:, :, n2lim:(n2lim*2)]
-        n2_mask[:, :, n2lim:(n2lim*2)] = mask[:, :, :n2lim]
+        n2max = mask.shape[2]
+        n2lim = int(np.floor(n2max/2))
+        n2_mask[:, :, :n2lim] = mask[:, :, n2lim:n2max]
+        n2_mask[:, :, n2lim:n2max] = mask[:, :, :n2lim]
 
     # Step 3
     n2_mask = n2_mask * (1-mask)
