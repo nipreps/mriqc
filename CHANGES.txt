@@ -1,6 +1,7 @@
 Release 0.8.5
 =============
 
+* [FIX] VisibleDeprecationWarning (https://github.com/poldracklab/mriqc/issues/132)
 * [ENH] Provide full FD/DVARS files (https://github.com/poldracklab/mriqc/pull/128)
 * [ENH] Use MCFLIRT to compute motion parameters. AFNI's 3dvolreg now is optional (https://github.com/poldracklab/mriqc/pull/121)
 * [FIX] BIDS trees with anatomical images with different acquisition tokens (https://github.com/poldracklab/mriqc/pull/116)
