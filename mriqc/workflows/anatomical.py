@@ -92,6 +92,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (datasource, meta, [('anatomical_scan', 'in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
