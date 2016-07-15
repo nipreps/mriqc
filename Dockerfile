@@ -1,5 +1,5 @@
 
-FROM oesteban/crn_nipype_py3
+FROM oesteban/crn_nipype
 
 WORKDIR /root/src
 ADD . mriqc/
