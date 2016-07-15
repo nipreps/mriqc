@@ -15,8 +15,8 @@ dependencies:
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker info
-    - docker pull oesteban/crn_nipype
-    - mkdir -p ~/docker; docker save oesteban/crn_nipype > ~/docker/image.tar
+    - docker pull oesteban/crn_nipype_py3
+    - mkdir -p ~/docker; docker save oesteban/crn_nipype_py3 > ~/docker/image.tar
     - docker build -t oesteban/mriqc .
 test:
   override:
