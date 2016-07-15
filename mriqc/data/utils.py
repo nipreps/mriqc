@@ -21,8 +21,7 @@ import time
 import base64
 import hashlib
 import subprocess as sp
-from mriqc.data.compat import _urllib, md5_hash
-
+from six.moves import urllib
 
 def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
                 md5sum=None, username=None, password=None, handlers=None,
@@ -68,10 +67,10 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
         os.makedirs(temp_downloads)
 
     # Determine filename using URL
-    parse = _urllib.parse.urlparse(url)
+    parse = urllib.parse.urlparse(url)
     file_name = op.basename(parse.path)
     if file_name == '':
-        file_name = md5_hash(parse.path)
+        file_name = _md5_hash(parse.path)
 
         if filetype is not None:
             file_name += filetype
@@ -92,8 +91,8 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
     try:
         # Download data
-        url_opener = _urllib.request.build_opener(*handlers)
-        request = _urllib.request.Request(url)
+        url_opener = urllib.request.build_opener(*handlers)
+        request = urllib.request.Request(url)
         request.add_header('Connection', 'Keep-Alive')
         if username is not None and password is not None:
             if not url.startswith('https'):
@@ -147,7 +146,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             # Complete the reporting hook
             sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
                              .format(delta_t, delta_t // 60))
-    except (_urllib.error.HTTPError, _urllib.error.URLError) as exc:
+    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
         if 'Error while fetching' not in str(exc):
             # For some odd reason, the error message gets doubled up
             #   (possibly from the re-raise), so only add extra info
@@ -299,7 +298,7 @@ def _chunk_read_(response, local_file, chunk_size=8192, report_hook=None,
                  initial_size=0, total_size=None, verbose=1):
     """Download a file chunk by chunk and show advancement
 
-    :param _urllib.response.addinfourl response: response to the download
+    :param urllib.response.addinfourl response: response to the download
         request in order to get file size
     :param str local_file: hard disk file where data should be written
     :param int chunk_size: size of downloaded chunks. Default: 8192
@@ -382,3 +381,10 @@ def _format_time(t_secs):
         return "%4.1fmin" % (t_secs / 60.)
     else:
         return " %5.1fs" % (t_secs)
+
+def _md5_hash(string):
+    m = hashlib.md5()
+    if sys.version_info[0] > 2:
+        string = string.encode('utf-8')
+    m.update(string)
+    return m.hexdigest()
