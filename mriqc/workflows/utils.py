@@ -68,7 +68,7 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        out_file = op.abspath('%s_fdfile%s' % (fname, ext))
+        out_file = op.abspath('{}_fdfile{}'.format(fname, ext))
 
     pm_ = np.genfromtxt(in_file)
     original_shape = pm_.shape

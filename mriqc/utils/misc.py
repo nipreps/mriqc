@@ -31,24 +31,24 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
 
     if onesession:
         if onerun:
-            pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
+            pattern = op.join(out_file, data_type, '{}_*{}.nii*'.format(subject_id, scan_type))
         else:
-            pattern = op.join(out_file, data_type, '%s_*%s_%s.nii*' % (subject_id, run_id, scan_type))
+            pattern = op.join(out_file, data_type, '{}_*{}_{}.nii*'.format(subject_id, run_id, scan_type))
 
     else:
         if onerun:
             pattern = op.join(out_file, session_id, data_type,
-                              '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
+                              '{}_{}_*{}.nii*'.format(subject_id, session_id, scan_type))
         else:
             pattern = op.join(out_file, session_id, data_type,
-                              '%s_%s*_%s_%s.nii*' % (subject_id, session_id, run_id, scan_type))
+                              '{}_{}*_{}_{}.nii*'.format(subject_id, session_id, run_id, scan_type))
 
     results = glob.glob(pattern)
 
     if not results:
         raise RuntimeError(
-            'No file found with this pattern: "%s", finding '
-            'BIDS dataset coordinates are (%s, %s, %s)' % (pattern, subject_id, session_id, run_id))
+            'No file found with this pattern: "{}", finding '
+            'BIDS dataset coordinates are ({}, {}, {})'.format(pattern, subject_id, session_id, run_id))
 
     return results[0]
 
@@ -86,8 +86,8 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
     def _no_files_warning(folder):
         if not warn_no_files:
             return
-        warn("No files of requested type(s) found in scan folder: %s"
-             % folder, RuntimeWarning, stacklevel=1)
+        warn("No files of requested type(s) found in scan folder: {}"
+            .format(folder), RuntimeWarning, stacklevel=1)
 
     def _walk_dir_for_prefix(target_dir, prefix):
         return [x for x in next(os.walk(target_dir))[1]
@@ -267,24 +267,24 @@ def rotate_files(fname):
     if not op.isfile(fname):
         return
 
-    prev = glob.glob('%s.*%s' % (name, ext))
+    prev = glob.glob('{}.*{}'.format(name, ext))
     prev.insert(0, fname)
-    prev.append('%s.%d%s' % (name, len(prev) - 1, ext))
+    prev.append('{0}.{1!d}{2}'.format(name, len(prev) - 1, ext))
     for i in reversed(range(1, len(prev))):
         os.rename(prev[i-1], prev[i])
 
 
 def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
     import os.path as op
-    fname = '%s' % subid
+    fname = '{}'.format(subid)
     if prefix is not None:
         if not prefix.endswith('_'):
             prefix += '_'
         fname = prefix + fname
     if sesid is not None:
-        fname += '_ses-%s' % sesid
+        fname += '_ses-{}'.format(sesid)
     if runid is not None:
-        fname += '_run-%s' % runid
+        fname += '_run-{}'.format(runid)
 
     if out_path is not None:
         fname = op.join(out_path, fname)

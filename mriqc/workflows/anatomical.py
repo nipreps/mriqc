@@ -358,7 +358,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_wm%s' % (fname, ext))
+        out_file = op.abspath('{}_wm{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.uint8)
@@ -379,7 +379,7 @@ def combine_masks(head_mask, artifact_msk, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_combined%s' % (fname, ext))
+        out_file = op.abspath('{}_combined{}'.format(fname, ext))
 
     imnii = nb.load(head_mask)
     hmdata = imnii.get_data()
@@ -404,7 +404,7 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_grad%s' % (fname, ext))
+        out_file = op.abspath('{}_grad{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
@@ -436,7 +436,7 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_gradmask%s' % (fname, ext))
+        out_file = op.abspath('{}_gradmask{}'.format(fname, ext))
 
 
     imnii = nb.load(in_file)

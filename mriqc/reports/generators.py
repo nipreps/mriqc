@@ -49,7 +49,7 @@ FUNC_SPATIAL_QCGROUPS = [
     ['efc'],
     ['fber'],
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['gsr_%s' % a for a in ['x', 'y']],
+    ['gsr_{}'.format(a) for a in ['x', 'y']],
     ['snr']
 ]
 
@@ -73,7 +73,7 @@ def workflow_report(qctype, settings=None):
 
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
-    out_file = op.join(out_dir, qctype + '_%s.pdf')
+    out_file = op.join(out_dir, qctype + '_{}.pdf')
 
     result = {}
     func = getattr(sys.modules[__name__], 'report_' + qctype)
@@ -91,7 +91,7 @@ def workflow_report(qctype, settings=None):
     pdf_group.append(qc_group)
 
     if len(pdf_group) > 0:
-        out_group_file = op.join(out_dir, '%s_group.pdf' % qctype)
+        out_group_file = op.join(out_dir, '{}_group.pdf'.format(qctype))
         # Generate final report with collected pdfs in plots
         concat_pdf(pdf_group, out_group_file)
         result['group'] = {'success': True, 'path': out_group_file}
@@ -112,48 +112,48 @@ def workflow_report(qctype, settings=None):
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
                 if 'anat' in qctype:
-                    fpdf = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
-                                   (subid, sesid, scanid))
+                    fpdf = op.join(work_dir, 'anatomical_{}_{}_{}.pdf'.format(
+                        subid, sesid, scanid))
 
                     if op.isfile(fpdf):
                         plots.append(fpdf)
 
                 if 'func' in qctype:
-                    mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
-                                   (subid, sesid, scanid))
+                    mepi = op.join(work_dir, 'meanepi_{}_{}_{}.pdf'.format(
+                        subid, sesid, scanid))
                     if op.isfile(mepi):
                         plots.append(mepi)
 
-                    tsnr = op.join(work_dir, 'tsnr_%s_%s_%s.pdf' %
-                                   (subid, sesid, scanid))
+                    tsnr = op.join(work_dir, 'tsnr_{}_{}_{}.pdf'.format(
+                        subid, sesid, scanid))
                     if op.isfile(tsnr):
                         plots.append(tsnr)
 
-                    framedisp = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
-                                        (subid, sesid, scanid))
+                    framedisp = op.join(work_dir, 'fd_{}_{}_{}.pdf'.format(
+                        subid, sesid, scanid))
                     if op.isfile(framedisp):
                         plots.append(framedisp)
 
-            sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
+            sess_scans.append('{} ({})'.format(sesid, ', '.join(scans)))
 
         # Summary cover
         sfailed = []
         if failed:
-            sfailed = ['%s (%s)' % (s[1], s[2])
+            sfailed = ['{} ({})'.format(s[1], s[2])
                        for s in failed if subid == s[0]]
-        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
+        out_sum = op.join(work_dir, '{}_summary_{}.pdf'.format(qctype, subid))
         summary_cover(dframe, qctype, failed=sfailed, sub_id=subid, out_file=out_sum)
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
-        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qctype, subid))
+        qc_ms = op.join(work_dir, '{}_measures_{}.pdf'.format(qctype, subid))
 
         func(dframe, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)
 
         if len(plots) > 0:
             # Generate final report with collected pdfs in plots
-            sub_path = out_file % subid
+            sub_path = out_file.format(subid)
             concat_pdf(plots, sub_path)
             out_indiv_files.append(sub_path)
             result[subid] = {'success': True, 'path': sub_path}
@@ -213,7 +213,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
-    colformat = u' '.join(u'{:<%d}' % c for c in colsizes)
+    colformat = u' '.join(u'{:<' + '{0!d}'.format(c) + '}' for c in colsizes)
     formatter = lambda row: colformat.format(*row)
     rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
     # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]
@@ -221,7 +221,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     sep = colformat.format(*['=' * c for c in colsizes])
     ptable = '\n'.join([sep, header, sep] + rowsformatted + [sep])
 
-    title = 'MRIQC: %s MRI %s report' % (
+    title = 'MRIQC: {} MRI {} report'.format(
         qctype, 'group' if sub_id is None else 'individual')
 
     # Substitution dictionary
@@ -289,9 +289,9 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
                 subset = sesdf.loc[sesdf['run_id'] == scid]
                 if len(subset.index) > 1:
                     if sub_id is None:
-                        subtitle = '(%s_%s)' % (ssid, scid)
+                        subtitle = '({}_{})'.format(ssid, scid)
                     else:
-                        subtitle = '(subject %s_%s_%s)' % (sub_id, ssid, scid)
+                        subtitle = '(subject {})'.format('_'.join([sub_id, ssid, scid]))
                     if condensed:
                         fig = plot_all(sesdf, groups, subject=sub_id,
                                        title='QC measures ' + subtitle)
@@ -304,9 +304,9 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
         else:
             if len(sesdf.index) > 1:
                 if sub_id is None:
-                    subtitle = '(%s)' % (ssid)
+                    subtitle = '({})'.format(ssid)
                 else:
-                    subtitle = '(subject %s_%s)' % (sub_id, ssid)
+                    subtitle = '(subject {}_{})'.format(sub_id, ssid)
                 if condensed:
                     fig = plot_all(sesdf, groups, subject=sub_id,
                                    title='QC measures ' + subtitle)
@@ -319,7 +319,6 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
 
     report.close()
     plt.close()
-    # print 'Written report file %s' % out_file
     return out_file
 
 def report_anatomical(
@@ -351,11 +350,12 @@ def report_functional(
 def generate_csv(data_type, settings):
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['work_dir'], 'derivatives', '%s*.json' % data_type))
+    jsonfiles = glob.glob(op.join(settings['work_dir'], 'derivatives',
+                                  '{}*.json'.format(data_type)))
 
     if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory'
-                           '\'%s\' for the \'%s\' data type.' % (settings['work_dir'], data_type))
+        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
+                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)

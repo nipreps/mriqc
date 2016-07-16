@@ -290,8 +290,8 @@ def _flatten_dict(indict):
         else:
             for subk, subval in list(value.items()):
                 if not isinstance(subval, dict):
-                    out_qc['%s_%s' % (k, subk)] = subval
+                    out_qc['_'.join([k, subk])] = subval
                 else:
                     for ssubk, ssubval in list(subval.items()):
-                        out_qc['%s_%s_%s' % (k, subk, ssubk)] = ssubval
+                        out_qc['_'.join([k, subk, ssubk])] = ssubval
     return out_qc

@@ -38,7 +38,7 @@ def main():
         maintainer_email='crn.poldracklab@gmail.com',
         url='http://mriqc.readthedocs.org/',
         download_url='https://pypi.python.org/packages/source/m/mriqc/'
-                     'mriqc-%s.tar.gz' % __version__,
+                     'mriqc-{}.tar.gz'.format(__version__),
         entry_points={'console_scripts': ['mriqc=mriqc.utils.mriqc_run:main',
                                           'mriqc_plot=mriqc.utils.mriqc_plot:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',

@@ -11,6 +11,7 @@
 """ Visualization utilities """
 
 import math
+import time
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -65,7 +66,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
                 for sc in scans:
                     scndf = subdf.loc[sesdf['run_id'] == sc]
                     plot_vline(
-                        scndf.iloc[0][mname], '%s_%s' % (ss, sc), axes[-1])
+                        scndf.iloc[0][mname], '_'.join([ss, sc]), axes[-1])
 
     fig.suptitle(title)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -210,8 +211,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     if not title:
         _, title = op.split(nifti_file)
-        title += " (last modified: %s)" % time.ctime(
-            op.getmtime(nifti_file))
+        title += " (last modified: {})".format(time.ctime(op.getmtime(nifti_file)))
     fig.suptitle(title, fontsize='10')
     return fig
 
@@ -245,7 +245,7 @@ def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.
         sns.distplot(mean_fd_dist, ax=ax)
         ax.set_xlabel("Mean Frame Displacement (over all subjects) [mm]")
         mean_fd = fd_power.mean()
-        label = r'$\overline{\text{FD}}$ = %g' % mean_fd
+        label = r'$\overline{\text{FD}}$ = {0!g}'.format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
     fig.suptitle(title)
@@ -268,7 +268,7 @@ def plot_dist(
     ax = fig.add_subplot(gsp[1, 0])
     sns.distplot(np.array(distribution).astype(np.double), ax=ax)
     cur_val = np.median(data)
-    label = "%g" % cur_val
+    label = "{0!g}".format(cur_val)
     plot_vline(cur_val, label, ax=ax)
     ax.set_xlabel(xlabel2)
 

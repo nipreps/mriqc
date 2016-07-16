@@ -53,7 +53,7 @@ class PlotMosaic(BaseInterface):
 
         title = self.inputs.title
         if isdefined(self.inputs.subject):
-            title += ', subject %s' % self.inputs.subject
+            title += ', subject {}'.format(self.inputs.subject)
 
         if isdefined(self.inputs.metadata):
             title += ' (' + '_'.join(self.inputs.metadata) + ')'
@@ -111,7 +111,7 @@ class PlotFD(BaseInterface):
     def _run_interface(self, runtime):
         title = self.inputs.title
         if isdefined(self.inputs.subject):
-            title += ', subject %s' % self.inputs.subject
+            title += ', subject {}'.format(self.inputs.subject)
 
         if isdefined(self.inputs.metadata):
             title += ' (' + '_'.join(self.inputs.metadata) + ')'

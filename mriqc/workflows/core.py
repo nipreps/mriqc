@@ -33,7 +33,7 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
         sub_list = [s for s in sub_list if s[2] == run_id]
 
     if not sub_list:
-        raise RuntimeError('No scans found in %s' % settings['bids_root'])
+        raise RuntimeError('No scans found in {}'.format(settings['bids_root']))
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
@@ -70,7 +70,7 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
         sub_list = [s for s in sub_list if s[2] == run_id]
 
     if not sub_list:
-        raise RuntimeError('No scans found in %s' % settings['bids_root'])
+        raise RuntimeError('No scans found in {}'.format(settings['bids_root']))
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')

@@ -50,8 +50,8 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     direction = direction.lower()
     if direction[-1] not in ['x', 'y', 'all']:
-        raise Exception("Unknown direction %s, should be one of x, -x, y, -y, all"
-                        % direction)
+        raise Exception("Unknown direction {}, should be one of x, -x, y, -y, all".format(
+            direction))
 
     if direction == 'all':
         result = []
@@ -62,7 +62,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
                 if ext == '.gz':
                     fname, ext2 = op.splitext(fname)
                     ext = ext2 + ext
-                ofile = '%s_%s%s' % (fname, newdir, ext)
+                ofile = '{0}_{1}{2}'.format(fname, newdir, ext)
             result += [gsr(epi_data, mask, newdir,
                            ref_file=ref_file, out_file=ofile)]
         return result
@@ -141,7 +141,7 @@ def dvars(in_file, in_mask, output_all=False, out_file=None):
 
     if len(func.shape) != 4:
         raise RuntimeError(
-            "Input fMRI dataset should be 4-dimensional" % func)
+            "Input fMRI dataset should be 4-dimensional")
 
     # Remove zero-variance voxels across time axis
     zv_mask = zero_variance(func, mask)

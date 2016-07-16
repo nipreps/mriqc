@@ -55,8 +55,8 @@ class ArtifactMask(BaseInterface):
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
 
-        self._results['out_art_msk'] = op.abspath('%s_artifacts%s' % (fname, ext))
-        self._results['out_air_msk'] = op.abspath('%s_noart-air%s' % (fname, ext))
+        self._results['out_art_msk'] = op.abspath('{}_artifacts{}'.format(fname, ext))
+        self._results['out_air_msk'] = op.abspath('{}_noart-air{}'.format(fname, ext))
 
         hdr = imnii.get_header().copy()
         hdr.set_data_dtype(np.uint8)
