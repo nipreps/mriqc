@@ -176,7 +176,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    formatter = lambda row: ur'{r[size_x]:d} \u00D7 {r[size_y]:d} \u00D7 {r[size_z]:d}'.format(
+    formatter = lambda row: u'{r[size_x]:d} \u00D7 {r[size_y]:d} \u00D7 {r[size_z]:d}'.format(
         r=row)
     newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
@@ -184,7 +184,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
         'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
     formatter = (lambda row:
-        ur'{r[spacing_x]:.3f} \u00D7 {r[spacing_y]:.3f} \u00D7 {r[spacing_z]:.3f}'.format(
+        u'{r[spacing_x]:.3f} \u00D7 {r[spacing_y]:.3f} \u00D7 {r[spacing_z]:.3f}'.format(
         r=row))
     newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
 
