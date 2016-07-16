@@ -10,5 +10,6 @@ lockfile
 jinja2
 seaborn
 pyPdf2
+-e git+https://github.com/oesteban/rst2pdf#egg=rst2pdf
 rst2pdf
 PyYAML
