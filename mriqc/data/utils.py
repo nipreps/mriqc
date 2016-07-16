@@ -355,7 +355,7 @@ def _chunk_report_(bytes_so_far, total_size, initial_size, t_0):
     """
 
     if not total_size:
-        sys.stderr.write("\rDownloaded {0!d} of ? bytes.".format(bytes_so_far))
+        sys.stderr.write("\rDownloaded {0:d} of ? bytes.".format(bytes_so_far))
 
     else:
         # Estimate remaining download time
@@ -371,7 +371,7 @@ def _chunk_report_(bytes_so_far, total_size, initial_size, t_0):
         # Trailing whitespace is to erase extra char when message length
         # varies
         sys.stderr.write(
-            "\rDownloaded {0!d} of {1!d} bytes ({2:.1f}%, {3!s} remaining)".format(
+            "\rDownloaded {0:d} of {1:d} bytes ({2:.1f}%, {3!s} remaining)".format(
                 bytes_so_far, total_size, total_percent * 100, _format_time(time_remaining)))
 
 

@@ -295,7 +295,7 @@ def summary_stats(img, pvms):
         bgpvm = np.ones_like(pvms)
         pvms = [bgpvm - pvms, pvms]
     else:
-        raise RuntimeError('Incorrect image dimensions ({0!d})'.format(
+        raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
 
     if len(pvms) == 4:

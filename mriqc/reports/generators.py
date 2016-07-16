@@ -176,7 +176,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    formatter = lambda row: ur'{r[size_x]!d} \u00D7 {r[size_y]!d} \u00D7 {r[size_z]!d}'.format(
+    formatter = lambda row: ur'{r[size_x]:d} \u00D7 {r[size_y]:d} \u00D7 {r[size_z]:d}'.format(
         r=row)
     newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
@@ -213,7 +213,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
-    colformat = u' '.join(u'{:<' + '{0!d}'.format(c) + '}' for c in colsizes)
+    colformat = u' '.join(u'{:<' + '{0:d}'.format(c) + '}' for c in colsizes)
     formatter = lambda row: colformat.format(*row)
     rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
     # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]

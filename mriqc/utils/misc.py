@@ -269,7 +269,7 @@ def rotate_files(fname):
 
     prev = glob.glob('{}.*{}'.format(name, ext))
     prev.insert(0, fname)
-    prev.append('{0}.{1!d}{2}'.format(name, len(prev) - 1, ext))
+    prev.append('{0}.{1:d}{2}'.format(name, len(prev) - 1, ext))
     for i in reversed(range(1, len(prev))):
         os.rename(prev[i-1], prev[i])
 
