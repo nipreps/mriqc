@@ -28,6 +28,9 @@ import jinja2
 
 from mriqc.interfaces.viz_utils import plot_measures, plot_all
 
+if sys.version_info[0] > 2:
+    unicode = str
+
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 STRUCTURAL_QCGROUPS = [
     ['icvs_csf', 'icvs_gm', 'icvs_wm'],
