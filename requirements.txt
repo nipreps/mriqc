@@ -1,6 +1,8 @@
 mock
 numpy
 six
+future
+past
 pandas
 nitime
 nilearn
@@ -9,6 +11,6 @@ dipy
 lockfile
 jinja2
 seaborn
--e git+https://github.com/oesteban/rst2pdf#egg=rst2pdf
+rst2pdf
 pyPdf2
 PyYAML

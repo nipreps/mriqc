@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-19 09:41:31
+# @Last Modified time: 2016-07-19 10:09:50
 """ Encapsulates report generation functions """
 
 import sys
@@ -168,8 +168,12 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     from mriqc import __version__
     import datetime
     import numpy as np
-    from rst2pdf.createpdf import RstToPdf
     import pkg_resources as pkgr
+    from past.translation import install_hooks, remove_hooks
+    install_hooks(['rst2pdf'])
+    from rst2pdf.createpdf import RstToPdf
+    remove_hooks()
+
 
     if failed is None:
         failed = []
