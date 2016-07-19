@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-20 09:10:18
+# @Last Modified time: 2016-07-19 09:41:31
 """ Encapsulates report generation functions """
 
 import sys
@@ -210,7 +210,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
             thisid = newdf.subject_id.astype(unicode)
         except NameError:
             thisid = newdf.subject_id.astype(str)
-        newdf = newdf[ == sub_id]
+        newdf = newdf[thisid]
     newdf = newdf[cols]
 
     colsizes = []
