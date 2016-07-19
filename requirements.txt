@@ -2,7 +2,6 @@ mock
 numpy
 six
 future
-past
 pandas
 nitime
 nilearn
