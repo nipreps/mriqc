@@ -203,13 +203,20 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        newdf = newdf[newdf.subject_id.astype(unicode) == sub_id]
-
+        try:
+            thisid = newdf.subject_id.astype(unicode)
+        except NameError:
+            thisid = newdf.subject_id.astype(str)
+        newdf = newdf[ == sub_id]
     newdf = newdf[cols]
 
     colsizes = []
     for col, colname in zip(cols, colnames):
-        newdf[[col]] =newdf[[col]].astype(unicode)
+        try:
+            newdf[[col]] = newdf[[col]].astype(unicode)
+        except:
+            newdf[[col]] = newdf[[col]].astype(str)
+
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
