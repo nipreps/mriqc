@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-19 10:09:50
+# @Last Modified time: 2016-07-19 18:36:16
 """ Encapsulates report generation functions """
 
 import sys
@@ -221,7 +221,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     for col, colname in zip(cols, colnames):
         try:
             newdf[[col]] = newdf[[col]].astype(unicode)
-        except:
+        except NameError:
             newdf[[col]] = newdf[[col]].astype(str)
 
         colsize = newdf.loc[:, col].map(len).max()
