@@ -1,5 +1,5 @@
 
-FROM oesteban/crn_nipype_py3
+FROM oesteban/crn_nipype
 
 ARG GIT_BRANCH
 ENV GIT_BRANCH ${GIT_BRANCH:-master}

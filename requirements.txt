@@ -10,6 +10,6 @@ dipy
 lockfile
 jinja2
 seaborn
-rst2pdf
+-e https://github.com/aquavitae/rst2pdf-py3-dev#egg=rst2pdf
 pyPdf2
 PyYAML
