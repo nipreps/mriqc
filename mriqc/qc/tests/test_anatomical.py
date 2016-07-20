@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 09:12:35
+# @Last Modified time: 2016-07-20 15:07:14
 """
 Anatomical tests
 """
@@ -123,4 +123,4 @@ def test_artifacts():
         airdata[artmask > 0] = 0
         values.append(art_qi1(airdata, artmask))
 
-    return np.all(values > .05)
+    return np.all(np.array(values) > .05)
