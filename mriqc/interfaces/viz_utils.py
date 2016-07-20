@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:08:22
+# @Last Modified time: 2016-07-19 18:35:16
 """ Visualization utilities """
 
 import math
@@ -245,7 +245,7 @@ def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.
         sns.distplot(mean_fd_dist, ax=ax)
         ax.set_xlabel("Mean Frame Displacement (over all subjects) [mm]")
         mean_fd = fd_power.mean()
-        label = r'$\overline{\text{FD}}$ = {0:g}'.format(mean_fd)
+        label = r'$\overline{{\text{{FD}}}}$ = {0:g}'.format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
     fig.suptitle(title)
