@@ -14,10 +14,8 @@ dependencies:
     - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
-    - docker info
-    - docker pull oesteban/crn_nipype_py3
-    - mkdir -p ~/docker; docker save oesteban/crn_nipype_py3 > ~/docker/image.tar
-    - docker build -t oesteban/mriqc .
+    - docker build -t oesteban/mriqc:latest .
+    - mkdir -p ~/docker; docker save oesteban/mriqc:latest > ~/docker/image.tar
 test:
   override:
     # Test mriqcp
