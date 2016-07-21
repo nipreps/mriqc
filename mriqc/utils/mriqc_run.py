@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-07-20 17:33:20
+# @Last Modified time: 2016-07-20 18:28:25
 
 """
 =====
@@ -24,13 +24,13 @@ from lockfile import LockFile
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from nipype import config as ncfg
-from nipype.logging import getLogger
+from nipype import logging
 
 from mriqc.reports.generators import workflow_report
 from mriqc.workflows import core as mwc
 from mriqc import __version__
 
-LOGGER = getLogger('workflow')
+LOGGER = logging.getLogger('workflow')
 
 
 def main():
