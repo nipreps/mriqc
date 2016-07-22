@@ -18,6 +18,9 @@ from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 
+from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+from niworkflows.common import reorient as mri_reorient_wf
+
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
@@ -178,26 +181,6 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     return workflow
 
 
-def mri_reorient_wf(name='ReorientWorkflow'):
-    """A workflow to reorient images to 'RPI' orientation"""
-    workflow = pe.Workflow(name=name)
-
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
-                        name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['out_file']), name='outputnode')
-
-    deoblique = pe.Node(afp.Refit(deoblique=True), name='deoblique')
-    reorient = pe.Node(afp.Resample(
-        orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
-    workflow.connect([
-        (inputnode, deoblique, [('in_file', 'in_file')]),
-        (deoblique, reorient, [('out_file', 'in_file')]),
-        (reorient, outputnode, [('out_file', 'out_file')])
-    ])
-    return workflow
-
-
 def headmsk_wf(name='HeadMaskWorkflow'):
     """Computes a head mask as in [Mortamet2009]_."""
 
@@ -319,31 +302,6 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
 
-    ])
-    return workflow
-
-
-def skullstrip_wf(name='SkullStripWorkflow'):
-    """ Skull-stripping workflow """
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
-                        name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_mask', 'head_mask']),
-                         name='outputnode')
-
-    sstrip = pe.Node(afp.SkullStrip(outputtype='NIFTI_GZ'), name='skullstrip')
-    sstrip_orig_vol = pe.Node(afp.Calc(
-        expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
-    binarize = pe.Node(fsl.Threshold(args='-bin', thresh=1.e-3), name='binarize')
-
-    workflow.connect([
-        (inputnode, sstrip, [('in_file', 'in_file')]),
-        (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
-        (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
-        (sstrip_orig_vol, binarize, [('out_file', 'in_file')]),
-        (sstrip_orig_vol, outputnode, [('out_file', 'out_file')]),
-        (binarize, outputnode, [('out_file', 'out_mask')])
     ])
     return workflow
 

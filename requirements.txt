@@ -6,6 +6,7 @@ nitime
 nilearn
 dipy
 -e git+https://github.com/nipy/nipype#egg=nipype
+niworkflows
 lockfile
 jinja2
 seaborn
