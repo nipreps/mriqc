@@ -215,6 +215,8 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     :param numpy.ndarray airmask: input air mask without artifacts
 
     """
+    import matplotlib.mlab as mlab
+    import matplotlib.pyplot as plt
 
     # Artifact-free air region
     data = img[airmask > 0]
@@ -226,6 +228,13 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     # Fit central chi distribution
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+
+    # Write out figure of the fitting
+    _, bins, _ = plt.hist(data, 128, normed=True, color='gray')
+    plt.plot(bins, chi.pdf(bins, *param[:-2], loc=param[-2], scale=param[-1]),
+             'r-', linewidth=1)
+    plt.savefig('background_fit.pdf', format='pdf', dpi=300)
+
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
