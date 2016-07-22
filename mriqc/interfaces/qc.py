@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 11:20:45
+# @Last Modified time: 2016-07-22 11:46:15
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -111,7 +111,7 @@ class StructuralQC(BaseInterface):
 
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
-        qi2, bg_plot = art_qi2(imdata, airdata, artdata)
+        qi2, bg_plot = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils)
         self._results['qi2'] = qi2
         self._results['out_noisefit'] = bg_plot
 

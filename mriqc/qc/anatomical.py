@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 11:17:43
+# @Last Modified time: 2016-07-22 11:46:03
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -206,7 +206,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, erodemask=True, ncoils=12):
+def art_qi2(img, airmask, ncoils=12, erodemask=True):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
