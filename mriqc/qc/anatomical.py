@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 11:46:03
+# @Last Modified time: 2016-07-22 14:04:56
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -220,7 +220,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     import seaborn as sn
     import matplotlib.pyplot as plt
     rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-    rc('text', usetex=True)
+    # rc('text', usetex=True)
 
     if erodemask:
         struc = nd.generate_binary_structure(3, 2)
@@ -249,7 +249,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
     #_, bins, _ = ax1.hist(data, nbins, normed=True, color='gray', linewidth=0)
     ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.suptitle(r'Noise distribution on the air mask, and fitted $\chi$ distribution')
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
     ax1.set_xlabel('Intensity')
     ax1.set_ylabel('Frequency')
     fig.savefig(out_file, format='png', dpi=300)
