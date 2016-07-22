@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:29:22
+# @Last Modified time: 2016-07-22 11:17:43
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -16,6 +16,7 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import os.path as op
 from math import pi
 from six import string_types
 import numpy as np
@@ -205,7 +206,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, artmask, ncoils=1):
+def art_qi2(img, airmask, erodemask=True, ncoils=12):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -215,13 +216,25 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     :param numpy.ndarray airmask: input air mask without artifacts
 
     """
-    import matplotlib.mlab as mlab
+    from matplotlib import rc
+    import seaborn as sn
     import matplotlib.pyplot as plt
+    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    rc('text', usetex=True)
+
+    if erodemask:
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
     # Artifact-free air region
     data = img[airmask > 0]
+    data = data[data < np.percentile(data, 99.5)]
+    maxvalue = int(data.max())
+    nbins = maxvalue if maxvalue < 100 else 100
+
     # Estimate data pdf
-    hist, bin_edges = np.histogram(data, density=True, bins=128)
+    hist, bin_edges = np.histogram(data, density=True, bins=nbins)
     bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
     max_pos = np.argmax(hist)
 
@@ -230,11 +243,17 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
 
     # Write out figure of the fitting
-    _, bins, _ = plt.hist(data, 128, normed=True, color='gray')
-    plt.plot(bins, chi.pdf(bins, *param[:-2], loc=param[-2], scale=param[-1]),
-             'r-', linewidth=1)
-    plt.savefig('background_fit.pdf', format='pdf', dpi=300)
-
+    out_file = op.abspath('background_fit.png')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
+    #_, bins, _ = ax1.hist(data, nbins, normed=True, color='gray', linewidth=0)
+    ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
+    fig.suptitle(r'Noise distribution on the air mask, and fitted $\chi$ distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+    fig.savefig(out_file, format='png', dpi=300)
+    plt.close()
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
@@ -245,8 +264,8 @@ def art_qi2(img, airmask, artmask, ncoils=1):
             break
 
     # Compute goodness-of-fit (gof)
-    gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
-    return float(art_qi1(airmask, artmask) + gof)
+    return (float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() /
+                  len(pdf_fitted[t2idx:])), out_file)
 
 
 def volume_fraction(pvms):

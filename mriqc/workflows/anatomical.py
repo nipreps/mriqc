@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-06 12:11:18
+# @Last Modified time: 2016-07-22 11:24:05
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -138,6 +138,20 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                              ('run_id', 'run_id')]),
         (plot, mvplot, [('out_file', 'in_file')]),
         (mvplot, dsplot, [('out_file', '@mosaic')])
+    ])
+
+    # Save background-noise fitting plot
+    mvbgplot = pe.Node(niu.Rename(
+        format_string='anatomical_bgplot_%(subject_id)s_%(session_id)s_%(run_id)s',
+        keep_ext=True), name='rename_bgplot')
+    dsbgplot = pe.Node(nio.DataSink(
+        base_directory=settings['work_dir'], parameterization=False), name='ds_bgplot')
+    workflow.connect([
+        (inputnode, mvbgplot, [('subject_id', 'subject_id'),
+                               ('session_id', 'session_id'),
+                               ('run_id', 'run_id')]),
+        (measures, mvbgplot, [('out_noisefit', 'in_file')]),
+        (mvbgplot, dsbgplot, [('out_file', '@bg_fitting')])
     ])
 
     # Format name
