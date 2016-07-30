@@ -1,6 +1,11 @@
 Release 0.8.5
 =============
 
+* [FIX] TypeError computing DVARS (https://github.com/poldracklab/mriqc/pull/145)
+* [ENH] Plot figure of fitted background chi for QI2 (https://github.com/poldracklab/mriqc/pull/143)
+* [ENH] Move skull-stripping and reorient to NIworkflows (https://github.com/poldracklab/mriqc/pull/142)
+* [FIX] mriqc crashes if no anatomical scans are found (https://github.com/poldracklab/mriqc/pull/141)
+* [DOC] Added acknoledgments to CPAC team members (https://github.com/poldracklab/mriqc/pull/134)
 * [ENH] Use absolute imports (https://github.com/poldracklab/mriqc/pull/133)
 * [FIX] VisibleDeprecationWarning (https://github.com/poldracklab/mriqc/pull/132)
 * [ENH] Provide full FD/DVARS files (https://github.com/poldracklab/mriqc/pull/128)
