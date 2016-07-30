@@ -20,8 +20,8 @@ from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
-from mriqc.qc.functional import dvars
 from mriqc.interfaces.qc import FunctionalQC
+from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path
 
@@ -77,9 +77,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(niu.Function(
-        input_names=['in_file', 'in_mask'], output_names=['out_file'],
-        function=dvars), name='ComputeDVARS')
+    dvnode = pe.Node(ComputeDVARS(), name='ComputeDVARS')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')

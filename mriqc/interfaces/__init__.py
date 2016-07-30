@@ -5,4 +5,5 @@
 """ mriqc nipype interfaces """
 
 from mriqc.interfaces.anatomical import ArtifactMask
+from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.qc import StructuralQC, FunctionalQC

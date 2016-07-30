@@ -105,7 +105,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     return float(ghost/signal)
 
 
-def dvars(in_file, in_mask, output_all=False, out_file=None):
+def compute_dvars(in_file, in_mask, output_all=False, out_file=None):
     """
     Compute the mean :abbr:`DVARS (D referring to temporal
     derivative of timecourses, VARS referring to RMS variance over voxels)`
@@ -137,7 +137,7 @@ def dvars(in_file, in_mask, output_all=False, out_file=None):
     from mriqc.qc.functional import zero_variance
 
     func = nb.load(in_file).get_data()
-    mask = nb.load(in_mask).get_data()
+    mask = nb.load(in_mask).get_data().astype(np.uint8)
 
     if len(func.shape) != 4:
         raise RuntimeError(
@@ -159,7 +159,7 @@ def dvars(in_file, in_mask, output_all=False, out_file=None):
     ak_coeffs = np.apply_along_axis(AR_est_YW, 1, mfunc, 1)
 
     # Predicted standard deviation of temporal derivative
-    func_sd_pd = np.squeeze(np.sqrt((2 * (1 - ak_coeffs[:, 0])).tolist()) * func_sd)
+    func_sd_pd = np.squeeze(np.sqrt((2. * (1. - ak_coeffs[:, 0])).tolist()) * func_sd)
     diff_sd_mean = func_sd_pd[func_sd_pd > 0].mean()
 
     # Compute temporal difference time series
@@ -235,9 +235,9 @@ def zero_variance(func, mask):
     idx = np.where(mask > 0)
     func = func[idx[0], idx[1], idx[2], :]
     tvariance = func.var(axis=1)
-    tv_mask = np.zeros_like(tvariance)
+    tv_mask = np.zeros_like(tvariance, dtype=np.uint8)
     tv_mask[tvariance > 0] = 1
 
-    newmask = np.zeros_like(mask)
+    newmask = np.zeros_like(mask, dtype=np.uint8)
     newmask[idx] = tv_mask
     return newmask
