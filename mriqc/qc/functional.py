@@ -136,7 +136,7 @@ def compute_dvars(in_file, in_mask, output_all=False, out_file=None):
     from nitime.algorithms import AR_est_YW
     from mriqc.qc.functional import zero_variance
 
-    func = nb.load(in_file).get_data()
+    func = nb.load(in_file).get_data().astype(np.float32)
     mask = nb.load(in_mask).get_data().astype(np.uint8)
 
     if len(func.shape) != 4:
@@ -153,7 +153,7 @@ def compute_dvars(in_file, in_mask, output_all=False, out_file=None):
                np.percentile(mfunc, 25)) / 1.349
 
     # Demean
-    mfunc -= mfunc.mean(axis=1)[..., np.newaxis]
+    mfunc -= mfunc.mean(axis=1).astype(np.float32)[..., np.newaxis]
 
     # AR1
     ak_coeffs = np.apply_along_axis(AR_est_YW, 1, mfunc, 1)
