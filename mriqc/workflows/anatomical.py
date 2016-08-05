@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 10:40:20
+# @Last Modified time: 2016-08-05 15:10:44
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -260,7 +260,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(dimension=3), name='normalize')
+    norm = pe.Node(ants.Registration(), name='normalize')
 
     if save_memory:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
