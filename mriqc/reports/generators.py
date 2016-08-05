@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 15:51:48
+# @Last Modified time: 2016-08-05 16:41:14
 """ Encapsulates report generation functions """
 
 import sys
@@ -354,7 +354,7 @@ def generate_csv(data_type, settings):
 
     if not jsonfiles:
         raise RuntimeError('No individual QC files were found in the working directory'
-                           '\'%s\' for the \'%s\' data type.' % (settings['work_dir'], data_type))
+                           '\'%s\' for the \'%s\' data type.' % (settings['output_dir'], data_type))
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
