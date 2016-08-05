@@ -10,6 +10,7 @@ dependencies:
 
   pre:
     # Download test data
+    - cp build/ants_settings_test.json ~/scratch/data
     - bash build/circle_setup.sh
     - pip install coverage
   override:
@@ -21,9 +22,20 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - bash build/circle_tests.sh:
+    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc; fi
+    - if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-func/out participant -d func -w outputs/ms-func/work; fi
         parallel: true
         timeout: 2400
+    - if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-anat/out participant -d anat -w outputs/ms-anat/work --participant_label $(seq -f '%02g' 01 05) --ants-settings /scratch/data/ants_settings_test.json; fi
+        parallel: true
+        timeout: 2400
+    - if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-anat/out group -d anat -w outputs/ms-anat/out; fi
+        parallel: true
+    - if [[ $CIRCLE_NODE_INDEX -eq 1 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-anat/out participant -d anat -w outputs/ms-anat/work --participant_label $(seq -f '%02g' 06 13) --ants-settings /scratch/data/ants_settings_test.json; fi
+        parallel: true
+        timeout: 2400
+    - if [[ $CIRCLE_NODE_INDEX -eq 1 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-anat/out group -d anat -w outputs/ms-anat/out; fi
+        parallel: true
 
 general:
   artifacts:
