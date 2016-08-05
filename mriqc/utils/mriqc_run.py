@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-07-20 18:28:25
+# @Last Modified time: 2016-08-05 10:01:05
 
 """
 =====
@@ -38,14 +38,33 @@ def main():
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
+    g_bids = parser.add_argument_group('Standard Inputs')
+    g_bids.add_argument('bids_dir', action='store',
+                        help='The directory with the input dataset '
+                        'formatted according to the BIDS standard.')
+    g_bids.add_argument('output_dir', action='store',
+                        help='The directory where the output files '
+                        'should be stored. If you are running group level analysis '
+                        'this folder should be prepopulated with the results of the'
+                        'participant level analysis.')
+    g_bids.add_argument('analysis_level', action='store',
+                        help='Level of the analysis that will be performed. '
+                        'Multiple participant level analyses can be run independently '
+                        '(in parallel) using the same output_dir.',
+                        choices=['participant', 'group'])
+    g_bids.add_argument('--participant_label', action='store',
+                        help='The label(s) of the participant(s) that should be analyzed. '
+                             'The label corresponds to sub-<participant_label> from the '
+                             'BIDS spec (so it does not include "sub-"). If this parameter '
+                             'is not provided all subjects should be analyzed. Multiple '
+                             'participants can be specified with a space separated list.',
+                        nargs="*")
+
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-B', '--bids-root', action='store', default=os.getcwd())
-    g_input.add_argument('-i', '--input-folder', action='store')
-    g_input.add_argument('-S', '--subject-id', nargs='*', action='store')
-    g_input.add_argument('-s', '--session-id', action='store')
-    g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('-d', '--data-type', action='store', nargs='*',
                          choices=['anat', 'func'], default=['anat', 'func'])
+    g_input.add_argument('-s', '--session-id', action='store')
+    g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('-v', '--version', action='store_true', default=False,
                          help='Show current mriqc version')
 
@@ -68,47 +87,39 @@ def main():
 
 
     g_outputs = parser.add_argument_group('Outputs')
-    g_outputs.add_argument('-o', '--output-dir', action='store')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
 
     opts = parser.parse_args()
-
-    bids_root = op.abspath(opts.bids_root)
-    if opts.input_folder is not None:
-        warn('The --input-folder flag is deprecated, please use -B instead', DeprecationWarning)
-
-        if bids_root == os.getcwd():
-            bids_root = op.abspath(opts.input_folder)
 
     if opts.version:
         print('mriqc version ' + __version__)
         exit(0)
 
-    settings = {'bids_root': bids_root,
-                'output_dir': os.getcwd(),
-                'write_graph': opts.write_graph,
-                'save_memory': opts.save_memory,
-                'hmc_afni': opts.hmc_afni,
-                'nthreads': opts.nthreads}
-
-    if opts.output_dir:
-        settings['output_dir'] = op.abspath(opts.output_dir)
-
-    if not op.exists(settings['output_dir']):
-        os.makedirs(settings['output_dir'])
-
-    settings['work_dir'] = op.abspath(opts.work_dir)
-
-    with LockFile(settings['work_dir']):
-        if not op.exists(settings['work_dir']):
-            os.makedirs(settings['work_dir'])
+    # Build settings dict
+    bids_dir = op.abspath(opts.bids_dir)
+    settings = {
+        'bids_dir': bids_dir,
+        'write_graph': opts.write_graph,
+        'save_memory': opts.save_memory,
+        'hmc_afni': opts.hmc_afni,
+        'nthreads': opts.nthreads,
+        'output_dir': op.abspath(opts.output_dir),
+        'work_dir': op.abspath(opts.work_dir)
+    }
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
+    log_dir = op.join(settings['output_dir'], 'logs')
 
-    log_dir = op.join(settings['work_dir'] + '_log')
-    if not op.exists(log_dir):
-        os.makedirs(log_dir)
+    with LockFile('.mriqc-lock'):
+        if not op.exists(settings['output_dir']):
+            os.makedirs(settings['output_dir'])
+
+        if not op.exists(settings['work_dir']):
+            os.makedirs(settings['work_dir'])
+
+        if not op.exists(log_dir):
+            os.makedirs(log_dir)
 
     # Set nipype config
     ncfg.update_config({
@@ -130,22 +141,27 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    for dtype in opts.data_type:
-        ms_func = getattr(mwc, 'ms_' + dtype)
-        workflow = ms_func(subject_id=opts.subject_id, session_id=opts.session_id,
-                           run_id=opts.run_id, settings=settings)
-        if workflow is None:
-            LOGGER.warn('No {} scans were found in {}', dtype, settings['bids_root'])
-            continue
 
-        workflow.base_dir = settings['work_dir']
-        if settings.get('write_graph', False):
-            workflow.write_graph()
+    # Set up participant level
+    if opts.analysis_level == 'participant':
+        for dtype in opts.data_type:
+            ms_func = getattr(mwc, 'ms_' + dtype)
+            workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
+                               run_id=opts.run_id, settings=settings)
+            if workflow is None:
+                LOGGER.warn('No {} scans were found in {}', dtype, settings['bids_dir'])
+                continue
 
-        if not opts.test_run:
-            workflow.run(**plugin_settings)
+            workflow.base_dir = settings['work_dir']
+            if settings.get('write_graph', False):
+                workflow.write_graph()
 
-        if opts.subject_id is None and not opts.test_run:
+            if not opts.test_run:
+                workflow.run(**plugin_settings)
+
+    # Set up group level
+    elif opts.analysis_level == 'group':
+        for dtype in opts.data_type:
             workflow_report(dtype, settings)
 
 
