@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-05 15:09:56
+# @Last Modified time: 2016-08-05 09:50:52
 """ A QC workflow for fMRI data """
 import os
 import os.path as op
@@ -45,7 +45,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'subject_id', 'session_id', 'run_id',
+        fields=['bids_dir', 'subject_id', 'session_id', 'run_id',
                 'site_name', 'start_idx', 'stop_idx']), name='inputnode')
     get_idx = pe.Node(niu.Function(
         input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
@@ -57,7 +57,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # 0. Get data
     datasource = pe.Node(niu.Function(
-        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['out_file'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'func'
 
@@ -98,7 +98,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (inputnode, datasource, [('bids_root', 'bids_root'),
+        (inputnode, datasource, [('bids_dir', 'bids_dir'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),

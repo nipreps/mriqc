@@ -4,7 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
 
-def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None):
+def bids_getfile(bids_dir, data_type, subject_id, session_id=None, run_id=None):
     """
     A simple function to select files from a BIDS structure
 
@@ -24,7 +24,7 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     if data_type == 'func':
         scan_type = 'bold'
 
-    out_file = op.join(bids_root, subject_id)
+    out_file = op.join(bids_dir, subject_id)
 
     onesession = (session_id is None or session_id == 'single_session')
     onerun = (run_id is None or run_id == 'single_run')
