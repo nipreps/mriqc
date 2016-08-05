@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 11:24:05
+# @Last Modified time: 2016-08-05 09:16:29
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -283,40 +283,47 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
-        (antsparms, norm, [
-            ('initial_moving_transform_com', 'initial_moving_transform_com'),
-            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
-            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
-            ('float', 'float'),
-            ('transforms', 'transforms'),
-            ('transform_parameters', 'transform_parameters'),
-            ('number_of_iterations', 'number_of_iterations'),
-            ('convergence_window_size', 'convergence_window_size'),
-            ('metric', 'metric'),
-            ('metric_weight', 'metric_weight'),
-            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
-            ('sampling_strategy', 'sampling_strategy'),
-            ('sampling_percentage', 'sampling_percentage'),
-            ('smoothing_sigmas', 'smoothing_sigmas'),
-            ('shrink_factors', 'shrink_factors'),
-            ('convergence_threshold', 'convergence_threshold'),
-            ('sigma_units', 'sigma_units'),
-            ('use_estimate_learning_rate_once', 'use_estimate_learning_rate_once'),
-            ('use_histogram_matching', 'use_histogram_matching')
-        ]),
         (inputnode, qi1, [('in_file', 'in_file')]),
         (inputnode, norm, [('in_noinu', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
-        (norm, invt, [('forward_transforms', 'transforms'),
-                      (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
+        (norm, invt, [('reverse_transforms', 'transforms'),
+                      ('reverse_invert_flags', 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
         (inputnode, combine, [('head_mask', 'head_mask')]),
         (invt, combine, [('output_image', 'artifact_msk')]),
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
-
     ])
+
+    # ANTs inputs connected here for clarity
+    workflow.connect([
+        (antsparms, norm, [
+            ('metric', 'metric'),
+            ('metric_weight', 'metric_weight'),
+            ('dimension', 'dimension'),
+            ('write_composite_transform', 'write_composite_transform'),
+            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
+            ('shrink_factors', 'shrink_factors'),
+            ('smoothing_sigmas', 'smoothing_sigmas'),
+            ('sigma_units', 'sigma_units'),
+            ('output_transform_prefix', 'output_transform_prefix'),
+            ('transforms', 'transforms'),
+            ('transform_parameters', 'transform_parameters'),
+            ('initial_moving_transform_com', 'initial_moving_transform_com'),
+            ('number_of_iterations', 'number_of_iterations'),
+            ('convergence_threshold', 'convergence_threshold'),
+            ('convergence_window_size', 'convergence_window_size'),
+            ('sampling_strategy', 'sampling_strategy'),
+            ('sampling_percentage', 'sampling_percentage'),
+            ('output_warped_image', 'output_warped_image'),
+            ('use_histogram_matching', 'use_histogram_matching'),
+            ('use_estimate_learning_rate_once',
+             'use_estimate_learning_rate_once'),
+            ('collapse_output_transforms', 'collapse_output_transforms'),
+            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
+            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
+        ])
     return workflow
 
 def _get_wm(in_file, wm_val=3, out_file=None):
