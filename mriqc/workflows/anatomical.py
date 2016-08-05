@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 09:16:29
+# @Last Modified time: 2016-08-05 10:39:48
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -39,20 +39,20 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     workflow = pe.Workflow(name=name)
     deriv_dir = op.abspath('./derivatives')
     if 'work_dir' in settings.keys():
-        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
+        deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
 
     if not op.exists(deriv_dir):
         os.makedirs(deriv_dir)
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'subject_id', 'session_id',
+        fields=['bids_dir', 'subject_id', 'session_id',
                 'run_id']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
 
     # 0. Get data
     datasource = pe.Node(niu.Function(
-        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'anat'
 
@@ -87,7 +87,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     # Connect all nodes
     workflow.connect([
-        (inputnode, datasource, [('bids_root', 'bids_root'),
+        (inputnode, datasource, [('bids_dir', 'bids_dir'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
