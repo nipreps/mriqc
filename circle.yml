@@ -9,7 +9,8 @@ dependencies:
 
   pre:
     # Download test data
-    - cp build/ants_settings_test.json ~/data
+    - mkdir -p ~/data/
+    - cp build/ants_settings_test.json ~/data/
     - bash build/circle_setup.sh
     - pip install coverage
   override:
