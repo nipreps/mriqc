@@ -26,7 +26,7 @@ test:
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out participant -d func -w /scratch/outputs/ms-func/work
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out group -d func -w /scratch/outputs/ms-func/work
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out participant -d anat -w /scratch/outputs/ms-anat/work --ants-settings /data/ants_settings_test.json :
-      timeout: 2600
+        timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out group -d anat -w /scratch/outputs/ms-anat/work
 
 general:
