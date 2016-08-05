@@ -22,7 +22,7 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc; fi
+    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
     - if [[ $CIRCLE_NODE_INDEX -eq 0 ]]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /scratch/data/ds003_downsampled outputs/ms-func/out participant -d func -w outputs/ms-func/work; fi :
         parallel: true
         timeout: 2400
