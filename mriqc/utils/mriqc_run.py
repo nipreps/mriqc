@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-05 10:01:05
+# @Last Modified time: 2016-08-05 11:47:46
 
 """
 =====
@@ -141,6 +141,10 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
+    LOGGER.info("""Running MRIQC version %s:
+            analysis_level=%s
+            participant_label=%s
+            settings=%s""", __version__, opts.analysis_level, opts.participant_label, settings)
 
     # Set up participant level
     if opts.analysis_level == 'participant':
@@ -149,7 +153,7 @@ def main():
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
-                LOGGER.warn('No {} scans were found in {}', dtype, settings['bids_dir'])
+                LOGGER.warn('No scans were found for the given inputs')
                 continue
 
             workflow.base_dir = settings['work_dir']
