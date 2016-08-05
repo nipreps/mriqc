@@ -6,7 +6,7 @@ Release 0.8.5
 * [ENH] Plot figure of fitted background chi for QI2 (#143)
 * [ENH] Move skull-stripping and reorient to NIworkflows (#142)
 * [FIX] mriqc crashes if no anatomical scans are found (#141)
-* [DOC] Added acknoledgments to CPAC team members (#134)
+* [DOC] Added acknowledgments to CPAC team members (#134)
 * [ENH] Use absolute imports (#133)
 * [FIX] VisibleDeprecationWarning (#132)
 * [ENH] Provide full FD/DVARS files (#128)
