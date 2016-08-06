@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 10:31:34
+# @Last Modified time: 2016-08-05 15:10:44
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -37,9 +37,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath('./derivatives')
-    if 'work_dir' in settings.keys():
-        deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
+    deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
 
     if not op.exists(deriv_dir):
         os.makedirs(deriv_dir)
@@ -67,7 +65,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
     # 4. Air mask (with and without artifacts)
-    amw = airmsk_wf(save_memory=settings.get('save_memory', False),
+    amw = airmsk_wf(testing=settings.get('testing', False),
                     ants_settings=settings.get('ants_settings', None))
 
     # Brain tissue segmentation
@@ -79,7 +77,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # fwhm.inputs.acf = True  # add when AFNI >= 16
 
     # Compute python-coded measures
-    measures = pe.Node(StructuralQC(), 'measures')
+    measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
+                       'measures')
 
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
@@ -241,7 +240,7 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
+def airmsk_wf(name='AirMaskWorkflow', testing=False, ants_settings=None):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
@@ -252,17 +251,20 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
                          name='outputnode')
 
     antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
+
+    defset = ('data/t1-mni_registration.json' if not testing else
+              'data/t1-mni_registration_testing.json')
     antsparms.inputs.in_file = (
         ants_settings if ants_settings is not None else pkgr.resource_filename(
-            'mriqc', 'data/ants_settings.json'))
+            'mriqc', defset))
 
     def _invt_flags(transforms):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(dimension=3), name='normalize')
+    norm = pe.Node(ants.Registration(), name='normalize')
 
-    if save_memory:
+    if testing:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
         norm.inputs.fixed_image_mask = op.join(get_mni_template(),
                                                'MNI152_T1_2mm_brain_mask.nii.gz')
@@ -283,38 +285,47 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
-        (antsparms, norm, [
-            ('initial_moving_transform_com', 'initial_moving_transform_com'),
-            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
-            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
-            ('float', 'float'),
-            ('transforms', 'transforms'),
-            ('transform_parameters', 'transform_parameters'),
-            ('number_of_iterations', 'number_of_iterations'),
-            ('convergence_window_size', 'convergence_window_size'),
-            ('metric', 'metric'),
-            ('metric_weight', 'metric_weight'),
-            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
-            ('sampling_strategy', 'sampling_strategy'),
-            ('sampling_percentage', 'sampling_percentage'),
-            ('smoothing_sigmas', 'smoothing_sigmas'),
-            ('shrink_factors', 'shrink_factors'),
-            ('convergence_threshold', 'convergence_threshold'),
-            ('sigma_units', 'sigma_units'),
-            ('use_estimate_learning_rate_once', 'use_estimate_learning_rate_once'),
-            ('use_histogram_matching', 'use_histogram_matching')
-        ]),
         (inputnode, qi1, [('in_file', 'in_file')]),
         (inputnode, norm, [('in_noinu', 'moving_image'),
                            ('in_mask', 'moving_image_mask')]),
-        (norm, invt, [('forward_transforms', 'transforms'),
-                      (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
+        (norm, invt, [('reverse_transforms', 'transforms'),
+                      ('reverse_invert_flags', 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
         (inputnode, combine, [('head_mask', 'head_mask')]),
         (invt, combine, [('output_image', 'artifact_msk')]),
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
+    ])
+
+    # ANTs inputs connected here for clarity
+    workflow.connect([
+        (antsparms, norm, [
+            ('metric', 'metric'),
+            ('metric_weight', 'metric_weight'),
+            ('dimension', 'dimension'),
+            ('write_composite_transform', 'write_composite_transform'),
+            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
+            ('shrink_factors', 'shrink_factors'),
+            ('smoothing_sigmas', 'smoothing_sigmas'),
+            ('sigma_units', 'sigma_units'),
+            ('output_transform_prefix', 'output_transform_prefix'),
+            ('transforms', 'transforms'),
+            ('transform_parameters', 'transform_parameters'),
+            ('initial_moving_transform_com', 'initial_moving_transform_com'),
+            ('number_of_iterations', 'number_of_iterations'),
+            ('convergence_threshold', 'convergence_threshold'),
+            ('convergence_window_size', 'convergence_window_size'),
+            ('sampling_strategy', 'sampling_strategy'),
+            ('sampling_percentage', 'sampling_percentage'),
+            ('output_warped_image', 'output_warped_image'),
+            ('use_histogram_matching', 'use_histogram_matching'),
+            ('use_estimate_learning_rate_once',
+             'use_estimate_learning_rate_once'),
+            ('collapse_output_transforms', 'collapse_output_transforms'),
+            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
+            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
+        ])
     ])
     return workflow
 

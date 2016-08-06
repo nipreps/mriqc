@@ -33,9 +33,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath('./derivatives')
-    if 'work_dir' in settings.keys():
-        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
+    deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
 
     if not op.exists(deriv_dir):
         os.makedirs(deriv_dir)
