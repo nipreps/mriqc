@@ -6,26 +6,26 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
+    - "~/.cache/stanford-crn/"
 
   pre:
     # Download test data
-    - mkdir -p ~/data/
+    - mkdir -p ~/data/ ~/docker ~/.cache/stanford-crn ~/scratch
     - cp build/ants_settings_test.json ~/data/
     - bash build/circle_setup.sh
     - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
-    - docker info
     - docker pull oesteban/crn_nipype
-    - mkdir -p ~/docker; docker save oesteban/crn_nipype > ~/docker/image.tar
+    - docker save oesteban/crn_nipype > ~/docker/image.tar
     - docker build -t oesteban/mriqc .
 test:
   override:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out participant -d func -w /scratch/outputs/ms-func/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out participant -d func -w /scratch/outputs/ms-func/work
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out group -d func -w /scratch/outputs/ms-func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out participant -d anat -w /scratch/outputs/ms-anat/work --ants-settings /data/ants_settings_test.json :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out participant -d anat -w /scratch/outputs/ms-anat/work --ants-settings /data/ants_settings_test.json :
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out group -d anat -w /scratch/outputs/ms-anat/work
 
