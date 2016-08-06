@@ -11,4 +11,4 @@ if [[ ! -d ${HOME}/data/ds003_downsampled ]]; then
     rm ${HOME}/downloads/ds003_downsampled.tar
 fi
 
-echo "{plugin: MultiProc, plugin_args: {n_proc: 4}}" > ${HOME}/scratch/plugin.yml
+# echo "{plugin: MultiProc, plugin_args: {n_proc: 4}}" > ${HOME}/scratch/plugin.yml
