@@ -67,7 +67,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
     # 4. Air mask (with and without artifacts)
-    amw = airmsk_wf(save_memory=settings.get('save_memory', False),
+    amw = airmsk_wf(testing=settings.get('testing', False),
                     ants_settings=settings.get('ants_settings', None))
 
     # Brain tissue segmentation
@@ -79,7 +79,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # fwhm.inputs.acf = True  # add when AFNI >= 16
 
     # Compute python-coded measures
-    measures = pe.Node(StructuralQC(), 'measures')
+    measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
+                       'measures')
 
     # Plot mosaic
     plot = pe.Node(PlotMosaic(), name='plot_mosaic')
@@ -241,7 +242,7 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
+def airmsk_wf(name='AirMaskWorkflow', testing=False, ants_settings=None):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
@@ -262,7 +263,7 @@ def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(), name='normalize')
 
-    if save_memory:
+    if testing:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
         norm.inputs.fixed_image_mask = op.join(get_mni_template(),
                                                'MNI152_T1_2mm_brain_mask.nii.gz')

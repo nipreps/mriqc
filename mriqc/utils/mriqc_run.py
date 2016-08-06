@@ -72,13 +72,13 @@ def main():
                          type=int, help='number of threads')
     g_input.add_argument('--write-graph', action='store_true', default=False,
                          help='Write workflow graph.')
-    g_input.add_argument('--test-run', action='store_true', default=False,
+    g_input.add_argument('--dry-run', action='store_true', default=False,
                          help='Do not run the workflow.')
     g_input.add_argument('--use-plugin', action='store', default=None,
                          help='nipype plugin configuration file')
 
-    g_input.add_argument('--save-memory', action='store_true', default=False,
-                         help='Save as much memory as possible')
+    g_input.add_argument('--testing', action='store_true', default=False,
+                         help='use testing settings for a minimal footprint')
     g_input.add_argument('--hmc-afni', action='store_true', default=False,
                          help='Use ANFI 3dvolreg for head motion correction (HMC) and '
                               'frame displacement (FD) estimation')
@@ -100,7 +100,7 @@ def main():
     settings = {
         'bids_dir': bids_dir,
         'write_graph': opts.write_graph,
-        'save_memory': opts.save_memory,
+        'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
         'nthreads': opts.nthreads,
         'output_dir': op.abspath(opts.output_dir),
@@ -160,7 +160,7 @@ def main():
             if settings.get('write_graph', False):
                 workflow.write_graph()
 
-            if not opts.test_run:
+            if not opts.dry_run:
                 workflow.run(**plugin_settings)
 
     # Set up group level

@@ -33,6 +33,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
     ncoils = traits.Int(12, usedefault=True, desc='number of coils')
+    testing = traits.Bool(False, usedefault=True, desc='use test configuration')
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -111,7 +112,8 @@ class StructuralQC(BaseInterface):
 
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
-        qi2, bg_plot = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils)
+        qi2, bg_plot = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils,
+                               erodemask=not self.inputs.testing)
         self._results['qi2'] = qi2
         self._results['out_noisefit'] = bg_plot
 
