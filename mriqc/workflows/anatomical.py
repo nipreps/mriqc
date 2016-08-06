@@ -253,9 +253,12 @@ def airmsk_wf(name='AirMaskWorkflow', testing=False, ants_settings=None):
                          name='outputnode')
 
     antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
+
+    defset = ('data/t1-mni_registration.json' if not testing else
+              'data/t1-mni_registration_testing.json')
     antsparms.inputs.in_file = (
         ants_settings if ants_settings is not None else pkgr.resource_filename(
-            'mriqc', 'data/ants_settings.json'))
+            'mriqc', defset))
 
     def _invt_flags(transforms):
         return [True] * len(transforms)
