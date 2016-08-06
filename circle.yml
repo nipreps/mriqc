@@ -6,11 +6,10 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
-    - "~/.cache/stanford-crn/"
 
   pre:
     # Download test data
-    - mkdir -p ~/data/ ~/docker ~/.cache/stanford-crn ~/scratch
+    - mkdir -p ~/data/ ~/docker ~/scratch/func ~/scratch/anat
     - cp build/ants_settings_test.json ~/data/
     - bash build/circle_setup.sh
     - pip install coverage
@@ -23,20 +22,20 @@ test:
   override:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out participant -d func -w /scratch/outputs/ms-func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-func/out group -d func -w /scratch/outputs/ms-func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out participant -d anat -w /scratch/outputs/ms-anat/work --ants-settings /data/ants_settings_test.json :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/outputs/ms-anat/out group -d anat -w /scratch/outputs/ms-anat/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
 
 general:
   artifacts:
     #- "~/scratch/outputs/ss-all/out"
     #- "~/scratch/outputs/ss-all/work"
-    - "~/scratch/outputs/ms-func/out"
-    - "~/scratch/outputs/ms-func/work"
-    - "~/scratch/outputs/ms-anat/out"
-    - "~/scratch/outputs/ms-anat/work"
+    - "~/scratch/func/out"
+    - "~/scratch/func/work"
+    - "~/scratch/anat/out"
+    - "~/scratch/anat/work"
 
 # deployment:
 #   codecov:
