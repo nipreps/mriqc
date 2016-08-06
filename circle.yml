@@ -10,7 +10,6 @@ dependencies:
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker ~/scratch/func ~/scratch/anat
-    - cp build/ants_settings_test.json ~/data/
     - bash build/circle_setup.sh
     - pip install coverage
   override:
