@@ -11,6 +11,8 @@
 # @Last Modified time: 2016-08-05 16:41:14
 """ Encapsulates report generation functions """
 
+from __future__ import unicode_literals
+
 import sys
 import os
 import os.path as op
@@ -176,14 +178,14 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    formatter = lambda row: ur'%d \u00D7 %d \u00D7 %d' % (
+    formatter = lambda row: '%d \u00D7 %d \u00D7 %d' % (
         row['size_x'], row['size_y'], row['size_z'])
     newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
     # Format spacing
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
         'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
-    formatter = lambda row: ur'%.3f \u00D7 %.3f \u00D7 %.3f' % (
+    formatter = lambda row: '%.3f \u00D7 %.3f \u00D7 %.3f' % (
         row['spacing_x'], row['spacing_y'], row['spacing_z'])
     newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
 
