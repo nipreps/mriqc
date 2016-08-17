@@ -142,6 +142,15 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
         workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
 
+    # Save the TSNR results (tsnr, mean, stdev)
+    tsnr_results = pe.Node(nio.DataSink(parameterization=False), name='tsnr_results')
+
+    workflow.connect([
+        (tsnr, tsnr_results, [('tsnr_file', '@tsnr')]),
+        (tsnr, tsnr_results, [('mean_file', '@mean')]),
+        (tsnr, tsnr_results, [('stddev_file', '@stddev')]),
+    ])
+
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(
         format_string='meanepi_%(subject_id)s_%(session_id)s_%(run_id)s',
