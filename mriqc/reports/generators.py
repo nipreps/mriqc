@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-20 11:56:34
+# @Last Modified time: 2016-08-19 10:43:14
 """ Encapsulates report generation functions """
 from __future__ import print_function
 from __future__ import division
@@ -366,8 +366,6 @@ def report_functional(
 def generate_csv(data_type, settings):
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['work_dir'], 'derivatives',
-                                  '{}*.json'.format(data_type)))
 
     if not jsonfiles:
         raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '

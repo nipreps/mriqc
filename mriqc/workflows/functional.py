@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-05 15:09:56
+# @Last Modified time: 2016-08-19 10:38:05
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -23,8 +23,8 @@ from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
-from mriqc.qc.functional import dvars
 from mriqc.interfaces.qc import FunctionalQC
+from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path
 
@@ -36,9 +36,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath('./derivatives')
-    if 'work_dir' in list(settings.keys()):
-        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
+    deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
 
     if not op.exists(deriv_dir):
         os.makedirs(deriv_dir)
@@ -48,7 +46,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'subject_id', 'session_id', 'run_id',
+        fields=['bids_dir', 'subject_id', 'session_id', 'run_id',
                 'site_name', 'start_idx', 'stop_idx']), name='inputnode')
     get_idx = pe.Node(niu.Function(
         input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
@@ -60,7 +58,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # 0. Get data
     datasource = pe.Node(niu.Function(
-        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['out_file'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'func'
 
@@ -80,9 +78,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(niu.Function(
-        input_names=['in_file', 'in_mask'], output_names=['out_file'],
-        function=dvars), name='ComputeDVARS')
+    dvnode = pe.Node(ComputeDVARS(), name='ComputeDVARS')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -103,7 +99,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
     workflow.connect([
-        (inputnode, datasource, [('bids_root', 'bids_root'),
+        (inputnode, datasource, [('bids_dir', 'bids_dir'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),

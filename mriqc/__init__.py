@@ -26,7 +26,7 @@ Example
 
 ::
 
-    mriqc -i ~/Data/bids_dataset -o out/ -w work/
+    mriqc bids_dataset/ output_folder/ participant
 
 
 """
@@ -35,7 +35,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 __versionbase__ = '0.8.5'
-__versionrev__ = 'a3'
+__versionrev__ = 'a5'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'

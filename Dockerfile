@@ -4,7 +4,8 @@ ADD build/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
 WORKDIR /root/src
-ADD . mriqc/
+
+COPY . mriqc/
 
 # Install nipype & mriqc
 RUN source activate crnenv && \
@@ -13,8 +14,9 @@ RUN source activate crnenv && \
     python -c "from matplotlib import font_manager" && \
     python -c "from mriqc.data import get_brainweb_1mm_normal; get_brainweb_1mm_normal()"
 
-WORKDIR /root/
+COPY build/files/run_* /usr/bin/
+RUN chmod +x /usr/bin/run_*
 
-
+WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]
