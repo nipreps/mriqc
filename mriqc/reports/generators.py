@@ -8,14 +8,12 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-19 10:43:14
+# @Last Modified time: 2016-08-19 11:12:27
 """ Encapsulates report generation functions """
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
-from builtins import zip
-from builtins import range
-from builtins import object
+from builtins import zip, range, object, str
 
 import sys
 import os
@@ -33,9 +31,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 import jinja2
 
 from mriqc.interfaces.viz_utils import plot_measures, plot_all
-
-if sys.version_info[0] > 2:
-    str = str
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 STRUCTURAL_QCGROUPS = [
@@ -364,9 +359,14 @@ def report_functional(
     return out_file
 
 def generate_csv(data_type, settings):
+    """
+    Generates a csv file from all json files in the derivatives directory
+    """
     datalist = []
     errorlist = []
 
+    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives',
+                                  '{}*.json'.format(data_type)))
     if not jsonfiles:
         raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
                            'the \'{}\' data type.'.format(settings['work_dir'], data_type))

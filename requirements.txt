@@ -11,6 +11,6 @@ niworkflows
 lockfile
 jinja2
 seaborn
--e https://github.com/aquavitae/rst2pdf-py3-dev#egg=rst2pdf
+rst2pdf
 pyPdf2
 PyYAML
