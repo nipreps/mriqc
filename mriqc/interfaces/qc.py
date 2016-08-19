@@ -9,6 +9,10 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-04 15:30:56
 """ Nipype interfaces to quality control measures """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import zip
 
 import numpy as np
 import nibabel as nb

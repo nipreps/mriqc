@@ -9,6 +9,9 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-04 14:53:43
 """ The core module combines the existing workflows """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 from six import string_types
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu

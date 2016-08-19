@@ -9,6 +9,9 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-04-13 08:10:35
 """ Nipype interfaces to support anatomical workflow """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import os.path as op
 import numpy as np
 import nibabel as nb

@@ -9,6 +9,10 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-04 15:15:14
 """Helper functions for the workflows"""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import range
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""

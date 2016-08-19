@@ -10,6 +10,12 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-07-20 11:56:34
 """ Encapsulates report generation functions """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import zip
+from builtins import range
+from builtins import object
 
 import sys
 import os
@@ -29,7 +35,7 @@ import jinja2
 from mriqc.interfaces.viz_utils import plot_measures, plot_all
 
 if sys.version_info[0] > 2:
-    unicode = str
+    str = str
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 STRUCTURAL_QCGROUPS = [
@@ -207,7 +213,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         colnames.insert(0, 'Subject')
     else:
         try:
-            thisid = newdf.subject_id.astype(unicode)
+            thisid = newdf.subject_id.astype(str)
         except NameError:
             thisid = newdf.subject_id.astype(str)
         newdf = newdf[thisid]
@@ -216,7 +222,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     colsizes = []
     for col, colname in zip(cols, colnames):
         try:
-            newdf[[col]] = newdf[[col]].astype(unicode)
+            newdf[[col]] = newdf[[col]].astype(str)
         except NameError:
             newdf[[col]] = newdf[[col]].astype(str)
 
@@ -370,7 +376,7 @@ def generate_csv(data_type, settings):
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
         if dfentry is not None:
-            if 'exec_error' not in dfentry.keys():
+            if 'exec_error' not in list(dfentry.keys()):
                 datalist.append(dfentry)
             else:
                 errorlist.append(dfentry['subject_id'])
@@ -425,7 +431,7 @@ def _flatten(in_dict, parent_key='', sep='_'):
     for k, val in list(in_dict.items()):
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(val, collections.MutableMapping):
-            items.extend(_flatten(val, new_key, sep=sep).items())
+            items.extend(list(_flatten(val, new_key, sep=sep).items()))
         else:
             items.append((new_key, val))
     return dict(items)

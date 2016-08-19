@@ -9,6 +9,9 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-05 15:09:56
 """ A QC workflow for fMRI data """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import os
 import os.path as op
 
@@ -34,7 +37,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     workflow = pe.Workflow(name=name)
     deriv_dir = op.abspath('./derivatives')
-    if 'work_dir' in settings.keys():
+    if 'work_dir' in list(settings.keys()):
         deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
 
     if not op.exists(deriv_dir):

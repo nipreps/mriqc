@@ -9,6 +9,12 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-07-19 18:35:16
 """ Visualization utilities """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from builtins import zip
+from builtins import range
 
 import math
 import time
@@ -158,7 +164,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     else:
         mean_data = nifti_file
 
-    z_vals = np.array(range(0, mean_data.shape[2]))
+    z_vals = np.array(list(range(0, mean_data.shape[2])))
     # Reduce the number of slices shown
     if mean_data.shape[2] > 70:
         rem = 15
