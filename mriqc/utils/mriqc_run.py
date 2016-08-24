@@ -3,17 +3,13 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-05 11:47:46
+# @Last Modified time: 2016-08-24 15:51:54
 
 """
 =====
 MRIQC
 =====
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 import os.path as op
@@ -38,21 +34,23 @@ def main():
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
-    g_bids = parser.add_argument_group('Standard Inputs')
-    g_bids.add_argument('bids_dir', action='store',
+    parser.add_argument('-v', '--version', action='version',
+                        version='mriqc v{}'.format(__version__))
+
+    parser.add_argument('bids_dir', action='store',
                         help='The directory with the input dataset '
-                        'formatted according to the BIDS standard.')
-    g_bids.add_argument('output_dir', action='store',
+                             'formatted according to the BIDS standard.')
+    parser.add_argument('output_dir', action='store',
                         help='The directory where the output files '
-                        'should be stored. If you are running group level analysis '
-                        'this folder should be prepopulated with the results of the'
-                        'participant level analysis.')
-    g_bids.add_argument('analysis_level', action='store',
+                             'should be stored. If you are running group level analysis '
+                             'this folder should be prepopulated with the results of the'
+                             'participant level analysis.')
+    parser.add_argument('analysis_level', action='store',
                         help='Level of the analysis that will be performed. '
-                        'Multiple participant level analyses can be run independently '
-                        '(in parallel) using the same output_dir.',
+                             'Multiple participant level analyses can be run independently '
+                             '(in parallel) using the same output_dir.',
                         choices=['participant', 'group'])
-    g_bids.add_argument('--participant_label', action='store',
+    parser.add_argument('--participant_label', '--subject_list', '-S', action='store',
                         help='The label(s) of the participant(s) that should be analyzed. '
                              'The label corresponds to sub-<participant_label> from the '
                              'BIDS spec (so it does not include "sub-"). If this parameter '
@@ -60,14 +58,11 @@ def main():
                              'participants can be specified with a space separated list.',
                         nargs="*")
 
-    g_input = parser.add_argument_group('Inputs')
+    g_input = parser.add_argument_group('mriqc specific inputs')
     g_input.add_argument('-d', '--data-type', action='store', nargs='*',
                          choices=['anat', 'func'], default=['anat', 'func'])
     g_input.add_argument('-s', '--session-id', action='store')
     g_input.add_argument('-r', '--run-id', action='store')
-    g_input.add_argument('-v', '--version', action='store_true', default=False,
-                         help='Show current mriqc version')
-
     g_input.add_argument('--nthreads', action='store', default=0,
                          type=int, help='number of threads')
     g_input.add_argument('--write-graph', action='store_true', default=False,
@@ -86,14 +81,11 @@ def main():
                          help='path to JSON file with settings for ANTS')
 
 
-    g_outputs = parser.add_argument_group('Outputs')
+    g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
 
     opts = parser.parse_args()
 
-    if opts.version:
-        print('mriqc version ' + __version__)
-        exit(0)
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
