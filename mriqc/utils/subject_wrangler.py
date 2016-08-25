@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-24 17:14:50
+# @Last Modified time: 2016-08-24 17:45:06
 
 """
 BIDS-Apps subject wrangler
@@ -54,6 +54,8 @@ requested participants have the corresponding folder in the bids_dir.
                         help='parallelize participants in groups')
     parser.add_argument('--no-randomize', default=False, action='store_true',
                         help='do not randomize participants list before grouping')
+    parser.add_argument('--log-groups', default=False, action='store_true',
+                        help='append logging output')
     parser.add_argument('--bids-app-name', default='mriqc', action='store',
                         help='BIDS app to call')
     parser.add_argument('--args', default='', action='store', help='append arguments')
@@ -93,8 +95,15 @@ requested participants have the corresponding folder in the bids_dir.
 
     groups = [subject_list[i:i+gsize] for i in range(0, len(subject_list), gsize)]
 
-    for part_group in groups:
-        print('{} {} {} participant --participant_label {} {}'.format(
-            opts.bids_app_name, bids_dir, opts.output_dir, ' '.join(part_group), opts.args))
+    log_arg = ''.format
+    if opts.log_groups:
+        log_arg = '>> log/mriqc-{:04d}.log'.format
+
+    for i, part_group in enumerate(groups):
+        print('{} {} {} participant --participant_label {} {} {} {}'.format(
+            opts.bids_app_name, bids_dir, opts.output_dir, ' '.join(part_group),
+            '-w work/sjob-{:04d}'.format(i), opts.args, log_arg(i)))
+
+
 if __name__ == '__main__':
     main()
