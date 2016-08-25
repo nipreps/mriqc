@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-24 15:51:54
+# @Last Modified time: 2016-08-24 15:58:55
 
 """
 =====
@@ -13,14 +13,13 @@ MRIQC
 
 import os
 import os.path as op
-from warnings import warn
 from multiprocessing import cpu_count
+from nipype import logging, config as ncfg
 from lockfile import LockFile
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
-from nipype import config as ncfg
-from nipype import logging
+
 
 from mriqc.reports.generators import workflow_report
 from mriqc.workflows import core as mwc
