@@ -1,11 +1,10 @@
 
-FROM oesteban/crn_nipype
+FROM oesteban/crn_nipype:freesurfer
 
 WORKDIR /root/src
 COPY . mriqc/
 # Install nipype & mriqc
-RUN source activate crnenv && \
-    pip install --upgrade numpy && \
+RUN pip install --upgrade numpy && \
     cd mriqc && \
     pip install -e . && \
     python -c "from matplotlib import font_manager" && \
