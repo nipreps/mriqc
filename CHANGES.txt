@@ -1,3 +1,9 @@
+Release 0.8.6
+=============
+
+* [FIX] QI2 is skipped if background intensity is not appropriate (#147)
+
+
 Release 0.8.5
 =============
 

@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 14:04:56
+# @Last Modified time: 2016-08-26 09:47:52
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -229,7 +229,18 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
 
     # Artifact-free air region
     data = img[airmask > 0]
-    data = data[data < np.percentile(data, 99.5)]
+
+    # Compute an upper bound threshold
+    thresh = np.percentile(data, 99.5)
+
+    # If thresh is too low, for some reason there is no noise
+    # in the background image (image was preprocessed, etc)
+    if thresh < 1.0:
+        return 0.0, ''
+
+    # Threshold image
+    data = data[data < thresh]
+
     maxvalue = int(data.max())
     nbins = maxvalue if maxvalue < 100 else 100
 
