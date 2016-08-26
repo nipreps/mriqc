@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 10:18:30
+# @Last Modified time: 2016-08-26 10:27:26
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
@@ -50,6 +50,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     efc = traits.Float
     qi1 = traits.Float
     qi2 = traits.Float
+    m2wm = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
     out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
