@@ -7,14 +7,15 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 11:46:15
+# @Last Modified time: 2016-08-26 10:18:30
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
 
 from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                                 volume_fraction, rpve, summary_stats, cjv)
+                                 volume_fraction, rpve, summary_stats, cjv,
+                                 max2wm)
 from mriqc.qc.functional import (gsr, gcor, summary_fd)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -109,6 +110,9 @@ class StructuralQC(BaseInterface):
 
         # EFC
         self._results['efc'] = efc(inudata)
+
+        # M2WM
+        self._results['m2wm'] = max2wm(imdata, segdata)
 
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
