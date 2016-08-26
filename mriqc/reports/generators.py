@@ -35,7 +35,7 @@ STRUCTURAL_QCGROUPS = [
     ['inu_range', 'inu_med'],
     ['cnr'], ['efc'], ['fber'], ['cjv'],
     ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['qi1', 'qi2', 'm2wm'],
+    ['qi1', 'qi2', 'wm2max'],
     ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
      'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',

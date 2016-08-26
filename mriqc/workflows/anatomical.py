@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 11:25:44
+# @Last Modified time: 2016-08-26 11:33:32
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -189,7 +189,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('efc', 'efc'),
                               ('qi1', 'qi1'),
                               ('qi2', 'qi2'),
-                              ('cjv', 'cjv')]),
+                              ('cjv', 'cjv'),
+                              ('wm2max', 'wm2max')]),
         (out_name, datasink, [('out_file', 'out_file')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])

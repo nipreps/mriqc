@@ -15,7 +15,7 @@ import nibabel as nb
 
 from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                                  volume_fraction, rpve, summary_stats, cjv,
-                                 max2wm)
+                                 wm2max)
 from mriqc.qc.functional import (gsr, gcor, summary_fd)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -50,7 +50,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     efc = traits.Float
     qi1 = traits.Float
     qi2 = traits.Float
-    m2wm = traits.Float
+    wm2max = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
     out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
@@ -113,7 +113,7 @@ class StructuralQC(BaseInterface):
         self._results['efc'] = efc(inudata)
 
         # M2WM
-        self._results['m2wm'] = max2wm(imdata, segdata)
+        self._results['wm2max'] = wm2max(imdata, segdata)
 
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)

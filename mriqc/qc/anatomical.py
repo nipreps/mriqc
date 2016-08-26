@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 10:25:34
+# @Last Modified time: 2016-08-26 11:36:08
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -190,9 +190,9 @@ def efc(img):
     return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
 
 
-def max2wm(img, seg):
+def wm2max(img, seg):
     r"""
-    Calculate the :abbr:`M2WM (max-to-white-matter-mean ratio)`,
+    Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
     defined as the maximum intensity found in the volume w.r.t. the
     mean value of the white matter tissue. Values close to 1.0 are
     better.
@@ -200,7 +200,7 @@ def max2wm(img, seg):
     """
     wmmask = np.zeros_like(seg)
     wmmask[seg == FSL_FAST_LABELS['wm']] = 1
-    return np.percentile(img.reshape(-1), 99.95) / np.median(img[wmmask > 0])
+    return np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95)
 
 def art_qi1(airmask, artmask):
     """
