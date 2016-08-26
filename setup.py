@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-19 16:08:49
+# @Last Modified time: 2016-08-24 16:01:58
 """ MRIQC setup script """
 import os
 import sys
@@ -43,7 +43,8 @@ def main():
                                           'mriqc_plot=mriqc.utils.mriqc_plot:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',
                                           'fs2gif=mriqc.utils.fs2gif:main',
-                                          'dfcheck=mriqc.utils.dfcheck:main']},
+                                          'dfcheck=mriqc.utils.dfcheck:main',
+                                          'participants=mriqc.utils.subject_wrangler:main']},
         packages=['mriqc',
                   'mriqc.data',
                   'mriqc.interfaces',
@@ -51,7 +52,8 @@ def main():
                   'mriqc.reports',
                   'mriqc.utils',
                   'mriqc.workflows',],
-        package_data={'mriqc': ['data/ants_settings.json',
+        package_data={'mriqc': ['data/t1-mni_registration.json',
+                                'data/t1-mni_registration_testing.json',
                                 'data/reports/*.rst',
                                 'data/tests/*']},
         install_requires=REQUIREMENTS,

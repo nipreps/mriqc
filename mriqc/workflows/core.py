@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 14:53:43
+# @Last Modified time: 2016-08-05 09:50:57
 """ The core module combines the existing workflows """
 from six import string_types
 from nipype.pipeline import engine as pe
@@ -17,13 +17,14 @@ from mriqc.workflows.anatomical import anat_qc_workflow
 from mriqc.workflows.functional import fmri_qc_workflow
 from mriqc.utils.misc import gather_bids_data
 
+
 def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
     """ Multi-subject anatomical workflow wrapper """
     # Run single subject mode if only one subject id is provided
     if subject_id is not None and isinstance(subject_id, string_types):
         subject_id = [subject_id]
 
-    sub_list = gather_bids_data(settings['bids_root'],
+    sub_list = gather_bids_data(settings['bids_dir'],
                                 subject_inclusion=subject_id,
                                 include_types=['anat'])
 
@@ -33,13 +34,13 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
         sub_list = [s for s in sub_list if s[2] == run_id]
 
     if not sub_list:
-        raise RuntimeError('No scans found in %s' % settings['bids_root'])
+        return None
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
     inputnode.iterables = [('data', [list(s) for s in sub_list])]
     anat_qc = anat_qc_workflow(settings=settings)
-    anat_qc.inputs.inputnode.bids_root = settings['bids_root']
+    anat_qc.inputs.inputnode.bids_dir = settings['bids_dir']
 
     dsplit = pe.Node(niu.Split(splits=[1, 1, 1], squeeze=True),
                      name='datasplit')
@@ -60,7 +61,7 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
     if subject_id is not None and isinstance(subject_id, string_types):
         subject_id = [subject_id]
 
-    sub_list = gather_bids_data(settings['bids_root'],
+    sub_list = gather_bids_data(settings['bids_dir'],
                                 subject_inclusion=subject_id,
                                 include_types=['func'])
 
@@ -70,13 +71,13 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
         sub_list = [s for s in sub_list if s[2] == run_id]
 
     if not sub_list:
-        raise RuntimeError('No scans found in %s' % settings['bids_root'])
+        return None
 
     inputnode = pe.Node(niu.IdentityInterface(fields=['data']),
                         name='inputnode')
     inputnode.iterables = [('data', [list(s) for s in sub_list])]
     func_qc = fmri_qc_workflow(settings=settings)
-    func_qc.inputs.inputnode.bids_root = settings['bids_root']
+    func_qc.inputs.inputnode.bids_dir = settings['bids_dir']
     func_qc.inputs.inputnode.start_idx = settings.get('start_idx', 0)
     func_qc.inputs.inputnode.stop_idx = settings.get('stop_idx', None)
 

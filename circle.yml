@@ -4,35 +4,37 @@ machine:
 
 dependencies:
   cache_directories:
-    - "~/scratch"
-    - "~/downloads/"
     - "~/docker"
+    - "~/data"
 
   pre:
     # Download test data
+    - mkdir -p ~/data/ ~/docker ~/scratch/func ~/scratch/anat
     - bash build/circle_setup.sh
     - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
-    - docker info
     - docker pull oesteban/crn_nipype
-    - mkdir -p ~/docker; docker save oesteban/crn_nipype > ~/docker/image.tar
+    - docker save oesteban/crn_nipype > ~/docker/image.tar
     - docker build -t oesteban/mriqc .
 test:
   override:
     # Test mriqcp
-    - bash build/circle_tests.sh:
-        parallel: true
-        timeout: 2400
+    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
+        timeout: 2600
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
 
 general:
   artifacts:
     #- "~/scratch/outputs/ss-all/out"
     #- "~/scratch/outputs/ss-all/work"
-    - "~/scratch/outputs/ms-func/out"
-    - "~/scratch/outputs/ms-func/work"
-    - "~/scratch/outputs/ms-anat/out"
-    - "~/scratch/outputs/ms-anat/work"
+    - "~/scratch/func/out"
+    - "~/scratch/func/work"
+    - "~/scratch/anat/out"
+    - "~/scratch/anat/work"
 
 # deployment:
 #   codecov:

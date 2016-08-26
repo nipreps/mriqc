@@ -1,5 +1,2 @@
 #!/bin/bash
-
-source activate crnenv
-
 dfcheck $@

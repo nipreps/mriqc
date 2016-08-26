@@ -1,4 +1,2 @@
 #!/bin/bash
-source activate crnenv
-
 mriqc_plot $@
