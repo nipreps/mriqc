@@ -19,12 +19,12 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc:latest
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
 
 general:
   artifacts:
