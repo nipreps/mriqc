@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 11:33:32
+# @Last Modified time: 2016-08-26 12:57:06
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -461,6 +461,6 @@ def _bgplot(in_file, base_directory):
     if not in_file:
         return ''
 
-    ds = nio.DataSink(base_directory=base_directory, parameterization=False)
+    ds = DataSink(base_directory=base_directory, parameterization=False)
     setattr(ds.inputs, '@bg_fitting', in_file)
     return ds.run().outputs['out_file']
