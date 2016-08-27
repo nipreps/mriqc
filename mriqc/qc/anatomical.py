@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 09:47:52
+# @Last Modified time: 2016-08-26 11:36:08
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -190,6 +190,18 @@ def efc(img):
     return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
 
 
+def wm2max(img, seg):
+    r"""
+    Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
+    defined as the maximum intensity found in the volume w.r.t. the
+    mean value of the white matter tissue. Values close to 1.0 are
+    better.
+
+    """
+    wmmask = np.zeros_like(seg)
+    wmmask[seg == FSL_FAST_LABELS['wm']] = 1
+    return np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95)
+
 def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
@@ -275,8 +287,13 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
             break
 
     # Compute goodness-of-fit (gof)
-    return (float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() /
-                  len(pdf_fitted[t2idx:])), out_file)
+    gof = float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / len(pdf_fitted[t2idx:]))
+
+    # Clip values for sanity
+    gof = 1.0 if gof > 1.0 else gof
+    gof = 0.0 if gof < 0.0 else gof
+
+    return (gof, out_file)
 
 
 def volume_fraction(pvms):

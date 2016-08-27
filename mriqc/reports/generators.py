@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 16:41:14
+# @Last Modified time: 2016-08-26 10:26:15
 """ Encapsulates report generation functions """
 
 import sys
@@ -35,7 +35,7 @@ STRUCTURAL_QCGROUPS = [
     ['inu_range', 'inu_med'],
     ['cnr'], ['efc'], ['fber'], ['cjv'],
     ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['qi1', 'qi2'],
+    ['qi1', 'qi2', 'wm2max'],
     ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
      'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',

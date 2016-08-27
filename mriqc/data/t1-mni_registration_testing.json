@@ -6,7 +6,7 @@
     "metric_weight": [1, 1, 1],
     "radius_or_number_of_bins": [ 56, 56, 56 ],
     "transforms": [ "Translation", "Rigid", "Affine"],
-    "transform_parameters": [[1.0], [0.5], [0.1]],
+    "transform_parameters": [[0.1], [0.1], [0.1]],
     "number_of_iterations": [[20], [20], [15]],
     "initial_moving_transform_com": true,
     "sampling_strategy": ["Random", "Random", "Random"],
