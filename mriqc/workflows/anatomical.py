@@ -25,6 +25,8 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.viz import PlotMosaic
+from mriqc.interfaces.bids import ReadSidecarJSON
+
 from mriqc.utils.misc import bids_getfile, bids_path
 from mriqc.data.getters import get_mni_template
 
@@ -54,6 +56,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'anat'
 
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
     arw = mri_reorient_wf()
@@ -91,6 +94,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (datasource, meta, [('anatomical_scan', 'in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
@@ -192,6 +196,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('cjv', 'cjv'),
                               ('wm2max', 'wm2max')]),
         (out_name, datasink, [('out_file', 'out_file')]),
+        (meta, datasink, [('out_dict', 'metadata')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow

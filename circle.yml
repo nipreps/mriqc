@@ -10,7 +10,7 @@ dependencies:
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker ~/scratch/func ~/scratch/anat
-    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/host/0BxI12kyv2olZVUswazA3NkFvOXM/ds003_downsampled.tar && tar xf ds003_downsampled.tar -C ~/data/; fi
+    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/host/0BxI12kyv2olZVUswazA3NkFvOXM/ds003_downsampled.tar.gz && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
     # - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
