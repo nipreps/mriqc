@@ -26,10 +26,6 @@ for open-source software distribution.
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: Latest Version
 
-.. image:: https://img.shields.io/pypi/dm/mriqc.svg
-    :target: https://pypi.python.org/pypi/mriqc/
-    :alt: Downloads
-
 .. image:: https://img.shields.io/pypi/pyversions/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: Supported Python versions
