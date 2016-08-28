@@ -1,10 +1,11 @@
+-e git+https://github.com/nipy/nipype#egg=nipype
+mock
 numpy
 six
 pandas
 nitime
 nilearn
 dipy
--e git+https://github.com/nipy/nipype#egg=nipype
 niworkflows
 lockfile
 jinja2
