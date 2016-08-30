@@ -10,22 +10,21 @@ dependencies:
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker ~/scratch/func ~/scratch/anat
-    - bash build/circle_setup.sh
-    - pip install coverage
+    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/host/0BxI12kyv2olZVUswazA3NkFvOXM/ds003_downsampled.tar.gz && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
+    # - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
-    - docker pull oesteban/crn_nipype
-    - docker save oesteban/crn_nipype > ~/docker/image.tar
-    - docker build -t oesteban/mriqc .
+    - docker build -t oesteban/mriqc:latest .
+    - docker save oesteban/mriqc:latest > ~/docker/image.tar
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro --entrypoint="/usr/bin/run_tests" oesteban/mriqc:latest
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --testing :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch oesteban/mriqc:latest /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
 
 general:
   artifacts:

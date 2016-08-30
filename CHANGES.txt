@@ -1,8 +1,8 @@
 Release 0.8.6
 =============
 
+* [ENH] Added new M2WM measure #158
 * [FIX] QI2 is skipped if background intensity is not appropriate (#147)
-
 
 Release 0.8.5
 =============

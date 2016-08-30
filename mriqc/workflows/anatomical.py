@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 15:10:44
+# @Last Modified time: 2016-08-26 13:31:10
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -25,6 +25,8 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.viz import PlotMosaic
+from mriqc.interfaces.bids import ReadSidecarJSON
+
 from mriqc.utils.misc import bids_getfile, bids_path
 from mriqc.data.getters import get_mni_template
 
@@ -54,6 +56,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'anat'
 
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
     arw = mri_reorient_wf()
@@ -91,6 +94,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
         (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (datasource, meta, [('anatomical_scan', 'in_file')]),
         (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
         (arw, n4itk, [('outputnode.out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
@@ -143,14 +147,16 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     mvbgplot = pe.Node(niu.Rename(
         format_string='anatomical_bgplot_%(subject_id)s_%(session_id)s_%(run_id)s',
         keep_ext=True), name='rename_bgplot')
-    dsbgplot = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False), name='ds_bgplot')
+    dsbgplot = pe.Node(niu.Function(input_names=['in_file', 'base_directory'],
+        output_names=['out_file'], function=_bgplot), name='ds_bgplot')
+    dsbgplot.inputs.base_directory = settings['work_dir']
+
     workflow.connect([
         (inputnode, mvbgplot, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
         (measures, mvbgplot, [('out_noisefit', 'in_file')]),
-        (mvbgplot, dsbgplot, [('out_file', '@bg_fitting')])
+        (mvbgplot, dsbgplot, [('out_file', 'in_file')])
     ])
 
     # Format name
@@ -187,8 +193,10 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('efc', 'efc'),
                               ('qi1', 'qi1'),
                               ('qi2', 'qi2'),
-                              ('cjv', 'cjv')]),
+                              ('cjv', 'cjv'),
+                              ('wm2max', 'wm2max')]),
         (out_name, datasink, [('out_file', 'out_file')]),
+        (meta, datasink, [('out_dict', 'metadata')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
@@ -452,3 +460,12 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
+
+def _bgplot(in_file, base_directory):
+    from nipype.interfaces.io import DataSink
+    if not in_file:
+        return ''
+
+    ds = DataSink(base_directory=base_directory, parameterization=False)
+    setattr(ds.inputs, '@bg_fitting', in_file)
+    return ds.run().outputs.out_file
