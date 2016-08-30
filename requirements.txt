@@ -5,7 +5,7 @@ pandas
 nitime
 nilearn
 dipy
-niworkflows
+niworkflows>=0.0.3a3
 lockfile
 jinja2
 seaborn
