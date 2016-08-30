@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-24 15:58:55
+# @Last Modified time: 2016-08-30 10:11:18
 
 """
 =====
@@ -76,12 +76,17 @@ def main():
     g_input.add_argument('--hmc-afni', action='store_true', default=False,
                          help='Use ANFI 3dvolreg for head motion correction (HMC) and '
                               'frame displacement (FD) estimation')
-    g_input.add_argument('--ants-settings', action='store',
-                         help='path to JSON file with settings for ANTS')
 
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
+
+    # ANTs options
+    g_ants = parser.add_argument_group('specific settings for ANTs registrations')
+    g_ants.add_argument('--ants-nthreads', action='store', type=int,
+                        help='number of threads that will be set in ANTs processes')
+    g_ants.add_argument('--ants-settings', action='store',
+                         help='path to JSON file with settings for ANTS')
 
     opts = parser.parse_args()
 
@@ -100,6 +105,10 @@ def main():
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
+
+    if opts.ants_nthreads:
+        settings['ants_threads'] = opts.ants_nthreads
+
     log_dir = op.join(settings['output_dir'], 'logs')
 
     with LockFile('.mriqc-lock'):

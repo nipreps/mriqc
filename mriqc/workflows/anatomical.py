@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 13:31:10
+# @Last Modified time: 2016-08-30 10:23:16
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -68,8 +68,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
     # 4. Air mask (with and without artifacts)
-    amw = airmsk_wf(testing=settings.get('testing', False),
-                    ants_settings=settings.get('ants_settings', None))
+    amw = airmsk_wf(settings=settings)
 
     # Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
@@ -248,10 +247,19 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', testing=False, ants_settings=None):
+def airmsk_wf(name='AirMaskWorkflow', settings=None):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
+
+    if settings is None:
+        settings = {}
+
+    testing = settings.get('testing', False)
+    defset = ('data/t1-mni_registration.json' if not testing else
+              'data/t1-mni_registration_testing.json')
+    ants_settings = settings.get('ants_settings', pkgr.resource_filename(
+        'mriqc', defset))
 
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
@@ -259,18 +267,14 @@ def airmsk_wf(name='AirMaskWorkflow', testing=False, ants_settings=None):
                          name='outputnode')
 
     antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
-
-    defset = ('data/t1-mni_registration.json' if not testing else
-              'data/t1-mni_registration_testing.json')
-    antsparms.inputs.in_file = (
-        ants_settings if ants_settings is not None else pkgr.resource_filename(
-            'mriqc', defset))
+    antsparms.inputs.in_file = ants_settings
 
     def _invt_flags(transforms):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
     norm = pe.Node(ants.Registration(), name='normalize')
+    norm.inputs.num_threads = settings.get('ants_nthreads', 4)
 
     if testing:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
