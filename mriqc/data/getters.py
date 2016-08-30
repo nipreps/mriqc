@@ -7,13 +7,15 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 16:33:35
+# @Last Modified time: 2016-08-26 14:36:31
 """
 Data grabbers
 """
 
 from mriqc.data.utils import _get_dataset_dir, _fetch_file
 
+GOOGLEDRIVE_URL = ('https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/'
+                   'host/0BxI12kyv2olZVUswazA3NkFvOXM')
 
 def get_brainweb_1mm_normal(data_dir=None, url=None, resume=True, verbose=1):
     """Download and load the BIDS-fied brainweb 1mm normal
@@ -24,10 +26,10 @@ def get_brainweb_1mm_normal(data_dir=None, url=None, resume=True, verbose=1):
     :param str url: download URL of the dataset. Overwrite the default URL.
 
     """
-    if url is None:
-        url = "https://googledrive.com/host/0BxI12kyv2olZZkhrUzZLbExKRzQ"
-
     dataset_name = 'brainweb'
+    if url is None:
+        url = '{}/{}.tar'.format(GOOGLEDRIVE_URL, dataset_name)
+
     data_dir = _get_dataset_dir(dataset_name, data_dir=data_dir, verbose=verbose)
 
     if _fetch_file(url, data_dir, filetype='tar', resume=resume, verbose=verbose,
@@ -45,13 +47,14 @@ def get_ds003_downsampled(data_dir=None, url=None, resume=True, verbose=1):
     :param str url: download URL of the dataset. Overwrite the default URL.
 
     """
-    if url is None:
-        url = "https://googledrive.com/host/0B2JWN60ZLkgkMEw4bW5VUUpSdFU/ds003_downsampled.tar"
 
     dataset_name = 'ds003_downsampled'
+    if url is None:
+        url = '{}/{}.tar.gz'.format(GOOGLEDRIVE_URL, dataset_name)
+
     data_dir = _get_dataset_dir(dataset_name, data_dir=data_dir, verbose=verbose)
 
-    if _fetch_file(url, data_dir, filetype='tar', resume=resume, verbose=verbose):
+    if _fetch_file(url, data_dir, filetype='tar.gz', resume=resume, verbose=verbose):
         return data_dir
     else:
         return None
@@ -65,10 +68,10 @@ def get_mni_template(data_dir=None, url=None, resume=True, verbose=1):
     :param str url: download URL of the dataset. Overwrite the default URL.
 
     """
-    if url is None:
-        url = "http://googledrive.com/host/0BxI12kyv2olZdzRDUnBPYWZGZk0"
-
     dataset_name = 'mni_template'
+    if url is None:
+        url = '{}/{}.tar'.format(GOOGLEDRIVE_URL, dataset_name)
+
     data_dir = _get_dataset_dir(dataset_name, data_dir=data_dir, verbose=verbose)
 
     if _fetch_file(url, data_dir, filetype='tar', resume=resume, verbose=verbose,
