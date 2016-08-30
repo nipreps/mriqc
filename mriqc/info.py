@@ -4,7 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a1'
+__versionrev__ = 'a2'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'

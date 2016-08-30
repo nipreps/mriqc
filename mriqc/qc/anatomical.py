@@ -239,16 +239,27 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
         # Perform an opening operation on the background data.
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
+    # Write out figure of the fitting
+    out_file = op.abspath('background_fit.png')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+
     # Artifact-free air region
     data = img[airmask > 0]
 
     # Compute an upper bound threshold
-    thresh = np.percentile(data, 99.5)
+    thresh = np.percentile(data[data > 0], 99.5)
 
     # If thresh is too low, for some reason there is no noise
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
-        return 0.0, ''
+        sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
+        fig.savefig(out_file, format='png', dpi=300)
+        plt.close()
+        return 0.0, out_file
 
     # Threshold image
     data = data[data < thresh]
@@ -265,16 +276,9 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
 
-    # Write out figure of the fitting
-    out_file = op.abspath('background_fit.png')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+
     sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
-    #_, bins, _ = ax1.hist(data, nbins, normed=True, color='gray', linewidth=0)
     ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
-    ax1.set_xlabel('Intensity')
-    ax1.set_ylabel('Frequency')
     fig.savefig(out_file, format='png', dpi=300)
     plt.close()
 
