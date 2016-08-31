@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-30 10:23:16
+# @Last Modified time: 2016-08-31 14:06:54
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -321,6 +321,7 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
             ('shrink_factors', 'shrink_factors'),
             ('smoothing_sigmas', 'smoothing_sigmas'),
             ('sigma_units', 'sigma_units'),
+            ('float', 'float'),
             ('output_transform_prefix', 'output_transform_prefix'),
             ('transforms', 'transforms'),
             ('transform_parameters', 'transform_parameters'),

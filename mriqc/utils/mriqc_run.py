@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-30 10:11:18
+# @Last Modified time: 2016-08-31 14:09:05
 
 """
 =====
@@ -107,7 +107,7 @@ def main():
         settings['ants_settings'] = opts.ants_settings
 
     if opts.ants_nthreads:
-        settings['ants_threads'] = opts.ants_nthreads
+        settings['ants_nthreads'] = opts.ants_nthreads
 
     log_dir = op.join(settings['output_dir'], 'logs')
 
