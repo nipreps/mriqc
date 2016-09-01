@@ -30,12 +30,12 @@ Running mriqc
       docker run -it poldracklab/mriqc:latest -v
 
 
-2. Run the participants level in subjects 001 002 003:
+2. Run the :code:`participant` level in subjects 001 002 003:
 
   ::
 
       
-      docker run -v <bids_dir>:/data -v <scratch_dir>:/scratch -w /scratch poldracklab/mriqc:latest /data /scratch/out participant --participant_level 001 002 003 -w /scratch/work
+      docker run -v <bids_dir>:/data -v <scratch_dir>:/scratch -w /scratch poldracklab/mriqc:latest /data /scratch/out participant --participant_label 001 002 003 -w /scratch/work
 
 
 3. Run the group level and report generation on previously processed
