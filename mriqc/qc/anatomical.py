@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-22 14:04:56
+# @Last Modified time: 2016-08-26 11:36:08
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -190,6 +190,18 @@ def efc(img):
     return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
 
 
+def wm2max(img, seg):
+    r"""
+    Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
+    defined as the maximum intensity found in the volume w.r.t. the
+    mean value of the white matter tissue. Values close to 1.0 are
+    better.
+
+    """
+    wmmask = np.zeros_like(seg)
+    wmmask[seg == FSL_FAST_LABELS['wm']] = 1
+    return np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95)
+
 def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
@@ -227,9 +239,31 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
         # Perform an opening operation on the background data.
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
+    # Write out figure of the fitting
+    out_file = op.abspath('background_fit.png')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+
     # Artifact-free air region
     data = img[airmask > 0]
-    data = data[data < np.percentile(data, 99.5)]
+
+    # Compute an upper bound threshold
+    thresh = np.percentile(data[data > 0], 99.5)
+
+    # If thresh is too low, for some reason there is no noise
+    # in the background image (image was preprocessed, etc)
+    if thresh < 1.0:
+        sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
+        fig.savefig(out_file, format='png', dpi=300)
+        plt.close()
+        return 0.0, out_file
+
+    # Threshold image
+    data = data[data < thresh]
+
     maxvalue = int(data.max())
     nbins = maxvalue if maxvalue < 100 else 100
 
@@ -242,16 +276,9 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
 
-    # Write out figure of the fitting
-    out_file = op.abspath('background_fit.png')
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
+
     sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
-    #_, bins, _ = ax1.hist(data, nbins, normed=True, color='gray', linewidth=0)
     ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
-    ax1.set_xlabel('Intensity')
-    ax1.set_ylabel('Frequency')
     fig.savefig(out_file, format='png', dpi=300)
     plt.close()
 
@@ -264,8 +291,13 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
             break
 
     # Compute goodness-of-fit (gof)
-    return (float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() /
-                  len(pdf_fitted[t2idx:])), out_file)
+    gof = float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / len(pdf_fitted[t2idx:]))
+
+    # Clip values for sanity
+    gof = 1.0 if gof > 1.0 else gof
+    gof = 0.0 if gof < 0.0 else gof
+
+    return (gof, out_file)
 
 
 def volume_fraction(pvms):

@@ -17,6 +17,7 @@ Contents
 
    userguide
    measures
+   docker
 
 
 Indices and tables

@@ -1,12 +1,11 @@
-mock
+-e git+https://github.com/nipy/nipype#egg=nipype
 numpy
 six
 pandas
 nitime
 nilearn
 dipy
--e git+https://github.com/nipy/nipype#egg=nipype
-niworkflows
+niworkflows>=0.0.3a3
 lockfile
 jinja2
 seaborn
