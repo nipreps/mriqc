@@ -49,7 +49,7 @@ Running mriqc
 
 .. note::
 
-   If the argument :code:`--participant_level` is not provided, then all
+   If the argument :code:`--participant_label` is not provided, then all
    subjects will be processed and the group level analysis will
    automatically be executed without need of running the command in item 3.
 
