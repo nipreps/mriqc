@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-07 10:33:09
+# @Last Modified time: 2016-09-07 11:04:58
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -17,9 +17,9 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
+from nipype.interfaces.freesurfer import MRIConvert
 
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-from niworkflows.common import reorient as mri_reorient_wf
 
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
@@ -59,7 +59,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    arw = mri_reorient_wf()
+    arw = pe.Node(MRIConvert(out_type='niigz', out_orientation='LAS'), name='Reorient')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
@@ -92,10 +92,10 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
-        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (datasource, arw, [('anatomical_scan', 'in_file')]),
         (datasource, meta, [('anatomical_scan', 'in_file')]),
-        (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
-        (arw, n4itk, [('outputnode.out_file', 'input_image')]),
+        (arw, asw, [('out_file', 'inputnode.in_file')]),
+        (arw, n4itk, [('out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
@@ -103,11 +103,11 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (n4itk, measures, [('output_image', 'in_noinu')]),
-        (arw, measures, [('outputnode.out_file', 'in_file')]),
-        (arw, fwhm, [('outputnode.out_file', 'in_file')]),
+        (arw, measures, [('out_file', 'in_file')]),
+        (arw, fwhm, [('out_file', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
-        (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (arw, amw, [('out_file', 'inputnode.in_file')]),
         (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
@@ -118,7 +118,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
-        (arw, plot, [('outputnode.out_file', 'in_file')]),
+        (arw, plot, [('out_file', 'in_file')]),
         (inputnode, plot, [('subject_id', 'subject')]),
         (inputnode, merg, [('session_id', 'in1'),
                            ('run_id', 'in2')]),
