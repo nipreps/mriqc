@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-07 11:04:58
+# @Last Modified time: 2016-09-12 09:30:39
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -266,15 +266,12 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
-    antsparms.inputs.in_file = ants_settings
-
     def _invt_flags(transforms):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(num_threads=settings.get('ants_nthreads', 4)),
-                   name='normalize')
+    norm = pe.Node(ants.Registration(num_threads=settings.get('ants_nthreads', 4),
+                   from_file=ants_settings), name='normalize')
 
     if testing:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
@@ -308,37 +305,6 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
-    ])
-
-    # ANTs inputs connected here for clarity
-    workflow.connect([
-        (antsparms, norm, [
-            ('metric', 'metric'),
-            ('metric_weight', 'metric_weight'),
-            ('dimension', 'dimension'),
-            ('write_composite_transform', 'write_composite_transform'),
-            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
-            ('shrink_factors', 'shrink_factors'),
-            ('smoothing_sigmas', 'smoothing_sigmas'),
-            ('sigma_units', 'sigma_units'),
-            ('float', 'float'),
-            ('output_transform_prefix', 'output_transform_prefix'),
-            ('transforms', 'transforms'),
-            ('transform_parameters', 'transform_parameters'),
-            ('initial_moving_transform_com', 'initial_moving_transform_com'),
-            ('number_of_iterations', 'number_of_iterations'),
-            ('convergence_threshold', 'convergence_threshold'),
-            ('convergence_window_size', 'convergence_window_size'),
-            ('sampling_strategy', 'sampling_strategy'),
-            ('sampling_percentage', 'sampling_percentage'),
-            ('output_warped_image', 'output_warped_image'),
-            ('use_histogram_matching', 'use_histogram_matching'),
-            ('use_estimate_learning_rate_once',
-             'use_estimate_learning_rate_once'),
-            ('collapse_output_transforms', 'collapse_output_transforms'),
-            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
-            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
-        ])
     ])
     return workflow
 
