@@ -1,4 +1,4 @@
--e git+https://github.com/nipy/nipype#egg=nipype
+-e git+https://github.com/oesteban/nipype#egg=nipype
 numpy
 six
 pandas
