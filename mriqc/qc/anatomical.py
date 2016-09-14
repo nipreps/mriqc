@@ -16,7 +16,7 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import zip, range
+from builtins import zip, range  # pylint: disable=W0622
 import os.path as op
 from math import pi
 from six import string_types

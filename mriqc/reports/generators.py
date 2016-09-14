@@ -11,7 +11,7 @@
 # @Last Modified time: 2016-08-26 10:26:15
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range, object, str
+from builtins import zip, range, object, str  # pylint: disable=W0622
 
 import sys
 import os

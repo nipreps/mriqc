@@ -13,7 +13,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from builtins import range
+from builtins import range  # pylint: disable=W0622
 
 import os
 import os.path as op

@@ -16,7 +16,7 @@ def main():
     from glob import glob
     from inspect import getfile, currentframe
     from setuptools import setup, find_packages
-    from io import open
+    from io import open  # pylint: disable=W0622
     this_path = op.dirname(op.abspath(getfile(currentframe())))
 
     # Python 3: use a locals dictionary
@@ -26,7 +26,7 @@ def main():
     module_file = op.join(this_path, PACKAGE_NAME, 'info.py')
     with open(module_file) as infofile:
         pythoncode = [line for line in infofile.readlines() if not line.strip().startswith('#')]
-        exec('\n'.join(pythoncode), globals(), ldict)
+        exec('\n'.join(pythoncode), globals(), ldict)  # pylint: disable=W0122
 
     setup(
         name=PACKAGE_NAME,
