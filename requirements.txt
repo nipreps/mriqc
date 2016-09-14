@@ -1,2 +1,25 @@
+numpy
+future
+lockfile
+six
+matplotlib
+nibabel
+niworkflows>=0.0.3a5
+pandas
+dipy
+jinja2
+seaborn
+pyPdf2
+rst2pdf
+PyYAML
+nitime
+nilearn
+sklearn
+scikit-learn
+mock
+codecov
+nose
+doctest-ignore-unicode
+sphinx
 -e git+https://github.com/oesteban/nipype.git@master#egg=nipype
 -e git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf
