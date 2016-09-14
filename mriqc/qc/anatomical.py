@@ -8,11 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-<<<<<<< HEAD
 # @Last Modified time: 2016-08-26 11:36:08
-=======
-# @Last Modified time: 2016-08-19 10:43:36
->>>>>>> e232d825e17a48e68503b726ea59959de37221ab
 """
 Computation of the quality assessment measures on structural MRI
 
