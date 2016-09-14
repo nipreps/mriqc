@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-20 11:56:34
+# @Last Modified time: 2016-08-26 10:26:15
 """ Encapsulates report generation functions """
 
 import sys
@@ -28,9 +28,6 @@ import jinja2
 
 from mriqc.interfaces.viz_utils import plot_measures, plot_all
 
-if sys.version_info[0] > 2:
-    unicode = str
-
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
 STRUCTURAL_QCGROUPS = [
     ['icvs_csf', 'icvs_gm', 'icvs_wm'],
@@ -38,7 +35,7 @@ STRUCTURAL_QCGROUPS = [
     ['inu_range', 'inu_med'],
     ['cnr'], ['efc'], ['fber'], ['cjv'],
     ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['qi1', 'qi2'],
+    ['qi1', 'qi2', 'wm2max'],
     ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
      'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',
@@ -52,7 +49,7 @@ FUNC_SPATIAL_QCGROUPS = [
     ['efc'],
     ['fber'],
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['gsr_{}'.format(a) for a in ['x', 'y']],
+    ['gsr_%s' % a for a in ['x', 'y']],
     ['snr']
 ]
 
@@ -76,7 +73,7 @@ def workflow_report(qctype, settings=None):
 
     out_dir = settings.get('output_dir', os.getcwd())
     work_dir = settings.get('work_dir', op.abspath('tmp'))
-    out_file = op.join(out_dir, qctype + '_{}.pdf')
+    out_file = op.join(out_dir, qctype + '_%s.pdf')
 
     result = {}
     func = getattr(sys.modules[__name__], 'report_' + qctype)
@@ -94,7 +91,7 @@ def workflow_report(qctype, settings=None):
     pdf_group.append(qc_group)
 
     if len(pdf_group) > 0:
-        out_group_file = op.join(out_dir, '{}_group.pdf'.format(qctype))
+        out_group_file = op.join(out_dir, '%s_group.pdf' % qctype)
         # Generate final report with collected pdfs in plots
         concat_pdf(pdf_group, out_group_file)
         result['group'] = {'success': True, 'path': out_group_file}
@@ -115,48 +112,48 @@ def workflow_report(qctype, settings=None):
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
                 if 'anat' in qctype:
-                    fpdf = op.join(work_dir, 'anatomical_{}_{}_{}.pdf'.format(
-                        subid, sesid, scanid))
+                    fpdf = op.join(work_dir, 'anatomical_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
 
                     if op.isfile(fpdf):
                         plots.append(fpdf)
 
                 if 'func' in qctype:
-                    mepi = op.join(work_dir, 'meanepi_{}_{}_{}.pdf'.format(
-                        subid, sesid, scanid))
+                    mepi = op.join(work_dir, 'meanepi_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
                     if op.isfile(mepi):
                         plots.append(mepi)
 
-                    tsnr = op.join(work_dir, 'tsnr_{}_{}_{}.pdf'.format(
-                        subid, sesid, scanid))
+                    tsnr = op.join(work_dir, 'tsnr_%s_%s_%s.pdf' %
+                                   (subid, sesid, scanid))
                     if op.isfile(tsnr):
                         plots.append(tsnr)
 
-                    framedisp = op.join(work_dir, 'fd_{}_{}_{}.pdf'.format(
-                        subid, sesid, scanid))
+                    framedisp = op.join(work_dir, 'fd_%s_%s_%s.pdf' %
+                                        (subid, sesid, scanid))
                     if op.isfile(framedisp):
                         plots.append(framedisp)
 
-            sess_scans.append('{} ({})'.format(sesid, ', '.join(scans)))
+            sess_scans.append('%s (%s)' % (sesid, ', '.join(scans)))
 
         # Summary cover
         sfailed = []
         if failed:
-            sfailed = ['{} ({})'.format(s[1], s[2])
+            sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in failed if subid == s[0]]
-        out_sum = op.join(work_dir, '{}_summary_{}.pdf'.format(qctype, subid))
+        out_sum = op.join(work_dir, '%s_summary_%s.pdf' % (qctype, subid))
         summary_cover(dframe, qctype, failed=sfailed, sub_id=subid, out_file=out_sum)
         plots.insert(0, out_sum)
 
         # Summary (violinplots) of QC measures
-        qc_ms = op.join(work_dir, '{}_measures_{}.pdf'.format(qctype, subid))
+        qc_ms = op.join(work_dir, '%s_measures_%s.pdf' % (qctype, subid))
 
         func(dframe, subject=subid, out_file=qc_ms)
         plots.append(qc_ms)
 
         if len(plots) > 0:
             # Generate final report with collected pdfs in plots
-            sub_path = out_file.format(subid)
+            sub_path = out_file % subid
             concat_pdf(plots, sub_path)
             out_indiv_files.append(sub_path)
             result[subid] = {'success': True, 'path': sub_path}
@@ -168,8 +165,8 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     from mriqc import __version__
     import datetime
     import numpy as np
-    import pkg_resources as pkgr
     from rst2pdf.createpdf import RstToPdf
+    import pkg_resources as pkgr
 
     if failed is None:
         failed = []
@@ -179,16 +176,15 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    formatter = lambda row: u'{r[size_x]:d} \u00D7 {r[size_y]:d} \u00D7 {r[size_z]:d}'.format(
-        r=row)
+    formatter = lambda row: ur'%d \u00D7 %d \u00D7 %d' % (
+        row['size_x'], row['size_y'], row['size_z'])
     newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
     # Format spacing
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
         'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
-    formatter = (lambda row:
-        u'{r[spacing_x]:.3f} \u00D7 {r[spacing_y]:.3f} \u00D7 {r[spacing_z]:.3f}'.format(
-        r=row))
+    formatter = lambda row: ur'%.3f \u00D7 %.3f \u00D7 %.3f' % (
+        row['spacing_x'], row['spacing_y'], row['spacing_z'])
     newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
 
     # columns
@@ -206,24 +202,17 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        try:
-            thisid = newdf.subject_id.astype(unicode)
-        except NameError:
-            thisid = newdf.subject_id.astype(str)
-        newdf = newdf[thisid]
+        newdf = newdf[newdf.subject_id.astype(unicode) == sub_id]
+
     newdf = newdf[cols]
 
     colsizes = []
     for col, colname in zip(cols, colnames):
-        try:
-            newdf[[col]] = newdf[[col]].astype(unicode)
-        except NameError:
-            newdf[[col]] = newdf[[col]].astype(str)
-
+        newdf[[col]] =newdf[[col]].astype(unicode)
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
-    colformat = u' '.join(u'{:<' + '{0:d}'.format(c) + '}' for c in colsizes)
+    colformat = u' '.join(u'{:<%d}' % c for c in colsizes)
     formatter = lambda row: colformat.format(*row)
     rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
     # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]
@@ -231,7 +220,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     sep = colformat.format(*['=' * c for c in colsizes])
     ptable = '\n'.join([sep, header, sep] + rowsformatted + [sep])
 
-    title = 'MRIQC: {} MRI {} report'.format(
+    title = 'MRIQC: %s MRI %s report' % (
         qctype, 'group' if sub_id is None else 'individual')
 
     # Substitution dictionary
@@ -299,9 +288,9 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
                 subset = sesdf.loc[sesdf['run_id'] == scid]
                 if len(subset.index) > 1:
                     if sub_id is None:
-                        subtitle = '({}_{})'.format(ssid, scid)
+                        subtitle = '(%s_%s)' % (ssid, scid)
                     else:
-                        subtitle = '(subject {})'.format('_'.join([sub_id, ssid, scid]))
+                        subtitle = '(subject %s_%s_%s)' % (sub_id, ssid, scid)
                     if condensed:
                         fig = plot_all(sesdf, groups, subject=sub_id,
                                        title='QC measures ' + subtitle)
@@ -314,9 +303,9 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
         else:
             if len(sesdf.index) > 1:
                 if sub_id is None:
-                    subtitle = '({})'.format(ssid)
+                    subtitle = '(%s)' % (ssid)
                 else:
-                    subtitle = '(subject {}_{})'.format(sub_id, ssid)
+                    subtitle = '(subject %s_%s)' % (sub_id, ssid)
                 if condensed:
                     fig = plot_all(sesdf, groups, subject=sub_id,
                                    title='QC measures ' + subtitle)
@@ -329,6 +318,7 @@ def _write_report(dframe, groups, sub_id=None, sc_split=False, condensed=True,
 
     report.close()
     plt.close()
+    # print 'Written report file %s' % out_file
     return out_file
 
 def report_anatomical(
@@ -360,12 +350,11 @@ def report_functional(
 def generate_csv(data_type, settings):
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['work_dir'], 'derivatives',
-                                  '{}*.json'.format(data_type)))
+    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives', '%s*.json' % data_type))
 
     if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
-                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
+        raise RuntimeError('No individual QC files were found in the working directory'
+                           '\'%s\' for the \'%s\' data type.' % (settings['output_dir'], data_type))
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)

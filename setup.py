@@ -3,73 +3,62 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-19 16:08:49
+# @Last Modified time: 2016-08-29 18:40:10
 """ MRIQC setup script """
-import os
+
 import sys
-from mriqc import (__version__, __description__, __license__,
-                   __author__, __email__, __longdesc__)
 
-REQ_LINKS = []
-with open('requirements.txt', 'r') as rfile:
-    REQUIREMENTS = [line.strip() for line in rfile.readlines()]
-
-for i, req in enumerate(REQUIREMENTS):
-    if req.startswith('-e'):
-        REQUIREMENTS[i] = req.split('=')[1]
-        REQ_LINKS.append(req.split()[1])
-
-if REQUIREMENTS is None:
-    REQUIREMENTS = []
+PACKAGE_NAME = 'mriqc'
 
 def main():
     """ Install entry-point """
+    from os import path as op
     from glob import glob
-    from setuptools import setup
+    from inspect import getfile, currentframe
+    from setuptools import setup, find_packages
+    from io import open
+    this_path = op.dirname(op.abspath(getfile(currentframe())))
+
+    # Python 3: use a locals dictionary
+    # http://stackoverflow.com/a/1463370/6820620
+    ldict = locals()
+    # Get version and release info, which is all stored in mriqc/info.py
+    module_file = op.join(this_path, PACKAGE_NAME, 'info.py')
+    with open(module_file) as infofile:
+        pythoncode = [line for line in infofile.readlines() if not line.strip().startswith('#')]
+        exec('\n'.join(pythoncode), globals(), ldict)
 
     setup(
-        name='mriqc',
-        version=__version__,
-        description=__description__,
-        long_description=__longdesc__,
-        author=__author__,
-        author_email=__email__,
-        license=__license__,
+        name=PACKAGE_NAME,
+        version=ldict['__version__'],
+        description=ldict['__description__'],
+        long_description=ldict['__longdesc__'],
+        author=ldict['__author__'],
+        author_email=ldict['__email__'],
+        license=ldict['__license__'],
         maintainer_email='crn.poldracklab@gmail.com',
-        url='http://mriqc.readthedocs.org/',
-        download_url='https://pypi.python.org/packages/source/m/mriqc/'
-                     'mriqc-{}.tar.gz'.format(__version__),
+        classifiers=ldict['CLASSIFIERS'],
+        # Dependencies handling
+        setup_requires=[],
+        install_requires=ldict['REQUIRES'],
+        tests_require=ldict['TESTS_REQUIRES'],
+        extras_require=ldict['EXTRA_REQUIRES'],
+        dependency_links=ldict['LINKS_REQUIRES'],
+        url=ldict['URL'],
+        download_url=ldict['DOWNLOAD_URL'],
         entry_points={'console_scripts': ['mriqc=mriqc.utils.mriqc_run:main',
                                           'mriqc_plot=mriqc.utils.mriqc_plot:main',
                                           'abide2bids=mriqc.utils.abide2bids:main',
                                           'fs2gif=mriqc.utils.fs2gif:main',
-                                          'dfcheck=mriqc.utils.dfcheck:main']},
-        packages=['mriqc',
-                  'mriqc.data',
-                  'mriqc.interfaces',
-                  'mriqc.qc',
-                  'mriqc.reports',
-                  'mriqc.utils',
-                  'mriqc.workflows',],
-        package_data={'mriqc': ['data/ants_settings.json',
+                                          'dfcheck=mriqc.utils.dfcheck:main',
+                                          'participants=mriqc.utils.subject_wrangler:main']},
+        packages=find_packages(),
+        package_data={'mriqc': ['data/t1-mni_registration.json',
+                                'data/t1-mni_registration_testing.json',
                                 'data/reports/*.rst',
                                 'data/tests/*']},
-        install_requires=REQUIREMENTS,
-        dependency_links=REQ_LINKS,
         zip_safe=False,
-        classifiers=[
-            'Development Status :: 3 - Alpha',
-            'Intended Audience :: Science/Research',
-            'Topic :: Scientific/Engineering :: Image Recognition',
-            'License :: OSI Approved :: BSD License',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.5',
-        ],
     )
 
 if __name__ == '__main__':
-    LOCAL_PATH = os.path.dirname(os.path.abspath(sys.argv[0]))
-    os.chdir(LOCAL_PATH)
-    sys.path.insert(0, LOCAL_PATH)
-
     main()

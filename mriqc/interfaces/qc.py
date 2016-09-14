@@ -7,14 +7,15 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:30:56
+# @Last Modified time: 2016-08-26 10:27:26
 """ Nipype interfaces to quality control measures """
 
 import numpy as np
 import nibabel as nb
 
 from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                                 volume_fraction, rpve, summary_stats, cjv)
+                                 volume_fraction, rpve, summary_stats, cjv,
+                                 wm2max)
 from mriqc.qc.functional import (gsr, gcor, summary_fd)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -32,6 +33,8 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    ncoils = traits.Int(12, usedefault=True, desc='number of coils')
+    testing = traits.Bool(False, usedefault=True, desc='use test configuration')
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -47,8 +50,10 @@ class StructuralQCOutputSpec(TraitedSpec):
     efc = traits.Float
     qi1 = traits.Float
     qi2 = traits.Float
+    wm2max = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
+    out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
 
 
 class StructuralQC(BaseInterface):
@@ -107,9 +112,15 @@ class StructuralQC(BaseInterface):
         # EFC
         self._results['efc'] = efc(inudata)
 
+        # M2WM
+        self._results['wm2max'] = wm2max(imdata, segdata)
+
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
-        self._results['qi2'] = art_qi2(imdata, airdata, artdata)
+        qi2, bg_plot = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils,
+                               erodemask=not self.inputs.testing)
+        self._results['qi2'] = qi2
+        self._results['out_noisefit'] = bg_plot
 
         # CJV
         self._results['cjv'] = cjv(inudata, seg=segdata)
