@@ -10,6 +10,10 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-08-26 10:26:15
 """ Encapsulates report generation functions """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import zip, range, object, str
 
 import sys
 import os
@@ -202,13 +206,21 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        newdf = newdf[newdf.subject_id.astype(unicode) == sub_id]
+        try:
+            thisid = newdf.subject_id.astype(str)
+        except NameError:
+            thisid = newdf.subject_id.astype(str)
+        newdf = newdf[thisid]
 
     newdf = newdf[cols]
 
     colsizes = []
     for col, colname in zip(cols, colnames):
-        newdf[[col]] =newdf[[col]].astype(unicode)
+        try:
+            newdf[[col]] = newdf[[col]].astype(str)
+        except NameError:
+            newdf[[col]] = newdf[[col]].astype(str)
+
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
@@ -348,18 +360,21 @@ def report_functional(
     return out_file
 
 def generate_csv(data_type, settings):
+    """
+    Generates a csv file from all json files in the derivatives directory
+    """
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives', '%s*.json' % data_type))
-
+    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives',
+                                  '{}*.json'.format(data_type)))
     if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory'
-                           '\'%s\' for the \'%s\' data type.' % (settings['output_dir'], data_type))
+        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
+                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
         if dfentry is not None:
-            if 'exec_error' not in dfentry.keys():
+            if 'exec_error' not in list(dfentry.keys()):
                 datalist.append(dfentry)
             else:
                 errorlist.append(dfentry['subject_id'])
@@ -414,7 +429,7 @@ def _flatten(in_dict, parent_key='', sep='_'):
     for k, val in list(in_dict.items()):
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(val, collections.MutableMapping):
-            items.extend(_flatten(val, new_key, sep=sep).items())
+            items.extend(list(_flatten(val, new_key, sep=sep).items()))
         else:
             items.append((new_key, val))
     return dict(items)

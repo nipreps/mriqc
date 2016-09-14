@@ -9,6 +9,11 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-09-12 09:30:39
 """ A QC workflow for anatomical MRI """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import zip
+from builtins import range
 import os
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -419,8 +424,8 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
     if nb_labels > 2:
-        sizes = sim.sum(mask, label_im, range(nb_labels + 1))
-        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
+        sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
+        ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
         for _, label in ordered[2:]:
             mask[label_im == label] = 0
 

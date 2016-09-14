@@ -8,7 +8,11 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
+<<<<<<< HEAD
 # @Last Modified time: 2016-08-26 11:36:08
+=======
+# @Last Modified time: 2016-08-19 10:43:36
+>>>>>>> e232d825e17a48e68503b726ea59959de37221ab
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -16,6 +20,7 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from builtins import zip, range
 import os.path as op
 from math import pi
 from six import string_types
@@ -316,7 +321,7 @@ def volume_fraction(pvms):
         tissue_vfs[k] = pvms[lid - 1].sum()
         total += tissue_vfs[k]
 
-    for k in tissue_vfs.keys():
+    for k in list(tissue_vfs.keys()):
         tissue_vfs[k] /= total
     return {k: float(v) for k, v in list(tissue_vfs.items())}
 
@@ -361,7 +366,7 @@ def summary_stats(img, pvms):
     if len(pvms) == 4:
         labels = list(FSL_FAST_LABELS.items())
     elif len(pvms) == 2:
-        labels = zip(['bg', 'fg'], range(2))
+        labels = list(zip(['bg', 'fg'], list(range(2))))
 
     for k, lid in labels:
         im_lid = pvms[lid] * img

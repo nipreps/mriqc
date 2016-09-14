@@ -3,6 +3,11 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import next
+from builtins import range
 
 def bids_getfile(bids_dir, data_type, subject_id, session_id=None, run_id=None):
     """
@@ -107,7 +112,7 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
                        'run': None, 'task': None,
                        'modality': file_bits[-1]}
         for bit in file_bits:
-            for key in file_tokens.keys():
+            for key in list(file_tokens.keys()):
                 if bit.startswith(key):
                     file_tokens[key] = bit
 
@@ -270,7 +275,7 @@ def rotate_files(fname):
     prev = glob.glob('{}.*{}'.format(name, ext))
     prev.insert(0, fname)
     prev.append('{0}.{1:d}{2}'.format(name, len(prev) - 1, ext))
-    for i in reversed(range(1, len(prev))):
+    for i in reversed(list(range(1, len(prev)))):
         os.rename(prev[i-1], prev[i])
 
 
