@@ -55,7 +55,6 @@ REQUIRES = [
     'jinja2',
     'seaborn',
     'pyPdf2',
-    'rst2pdf',
     'PyYAML',
     'nitime',
     'nilearn',

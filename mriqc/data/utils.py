@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-14 11:23:03
+# @Last Modified time: 2016-09-14 11:24:26
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -390,7 +390,7 @@ def _format_time(t_secs):
 
 def _md5_hash(string):
     m = hashlib.md5()
-    if sys.version_info[0] > 2:
+    if PY3:
         string = string.encode('utf-8')
     m.update(string)
     return m.hexdigest()
