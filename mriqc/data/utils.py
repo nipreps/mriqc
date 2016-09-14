@@ -7,12 +7,11 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:07:51
+# @Last Modified time: 2016-09-14 11:23:03
 """
 Utilities for data grabbers (from nilearn)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import str
 
 import os
 import os.path as op
@@ -22,10 +21,22 @@ import time
 import base64
 import hashlib
 import subprocess as sp
-from six.moves import urllib
+from io import open
+from builtins import str, bytes
+
+try:
+    from urllib.parse import urlparse, urlencode
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    from urlparse import urlparse
+    from urllib import urlencode
+    from urllib2 import urlopen, Request, HTTPError, URLError
+
+PY3 = sys.version_info[0] > 2
 
 def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
-                md5sum=None, username=None, password=None, handlers=None,
+                md5sum=None, username=None, password=None,
                 verbose=1, temp_downloads=None):
     """Load requested file, downloading it if needed or requested.
 
@@ -38,9 +49,6 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
         is required
     :param str username: username used for basic HTTP authentication
     :param str password: password used for basic HTTP authentication
-    :param list(BaseHandler) handlers: urllib handlers passed to
-        urllib.request.build_opener. Used by advanced users to customize
-        request handling.
     :param int verbose: verbosity level (0 means no message).
     :returns: absolute path of downloaded file
     :rtype: str
@@ -52,9 +60,6 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
 
     """
-    if handlers is None:
-        handlers = []
-
     if not overwrite and os.listdir(dataset_dir):
         return True
 
@@ -68,7 +73,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
         os.makedirs(temp_downloads)
 
     # Determine filename using URL
-    parse = urllib.parse.urlparse(url)
+    parse = urlparse(url)
     file_name = op.basename(parse.path)
     if file_name == '':
         file_name = _md5_hash(parse.path)
@@ -92,8 +97,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
     try:
         # Download data
-        url_opener = urllib.request.build_opener(*handlers)
-        request = urllib.request.Request(url)
+        request = Request(url)
         request.add_header('Connection', 'Keep-Alive')
         if username is not None and password is not None:
             if not url.startswith('https'):
@@ -116,7 +120,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             # If the file exists, then only download the remainder
             request.add_header("Range", "bytes={}-".format(local_file_size))
             try:
-                data = url_opener.open(request)
+                data = urlopen(request)
                 content_range = data.info().get('Content-Range')
                 if (content_range is None or not content_range.startswith(
                         'bytes {}-'.format(local_file_size))):
@@ -130,12 +134,14 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
                 return _fetch_file(
                     url, dataset_dir, resume=False, overwrite=overwrite,
                     md5sum=md5sum, username=username, password=password,
-                    handlers=handlers, verbose=verbose)
+                    verbose=verbose)
             local_file = open(temp_part_name, "ab")
             initial_size = local_file_size
         else:
-            data = url_opener.open(request)
+            data = urlopen(request)
+
             local_file = open(temp_part_name, "wb")
+
         _chunk_read_(data, local_file, report_hook=(verbose > 0),
                      initial_size=initial_size, verbose=verbose)
         # temp file must be closed prior to the move
@@ -147,7 +153,7 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             # Complete the reporting hook
             sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
                              .format(delta_t, delta_t // 60))
-    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+    except (HTTPError, URLError) as exc:
         if 'Error while fetching' not in str(exc):
             # For some odd reason, the error message gets doubled up
             #   (possibly from the re-raise), so only add extra info
