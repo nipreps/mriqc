@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-31 14:13:04
+# @Last Modified time: 2016-09-12 09:30:39
 """ A QC workflow for anatomical MRI """
 import os
 import os.path as op
@@ -17,9 +17,9 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
+from nipype.interfaces.freesurfer import MRIConvert
 
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-from niworkflows.common import reorient as mri_reorient_wf
 
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
@@ -59,7 +59,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    arw = mri_reorient_wf()
+    arw = pe.Node(MRIConvert(out_type='niigz', out_orientation='LAS'), name='Reorient')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
@@ -92,10 +92,10 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
-        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
+        (datasource, arw, [('anatomical_scan', 'in_file')]),
         (datasource, meta, [('anatomical_scan', 'in_file')]),
-        (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
-        (arw, n4itk, [('outputnode.out_file', 'input_image')]),
+        (arw, asw, [('out_file', 'inputnode.in_file')]),
+        (arw, n4itk, [('out_file', 'input_image')]),
         # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
         (n4itk, mask, [('output_image', 'in_file')]),
         (asw, mask, [('outputnode.out_mask', 'mask_file')]),
@@ -103,11 +103,11 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (n4itk, measures, [('output_image', 'in_noinu')]),
-        (arw, measures, [('outputnode.out_file', 'in_file')]),
-        (arw, fwhm, [('outputnode.out_file', 'in_file')]),
+        (arw, measures, [('out_file', 'in_file')]),
+        (arw, fwhm, [('out_file', 'in_file')]),
         (asw, fwhm, [('outputnode.out_mask', 'mask')]),
 
-        (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
+        (arw, amw, [('out_file', 'inputnode.in_file')]),
         (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
@@ -118,7 +118,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
-        (arw, plot, [('outputnode.out_file', 'in_file')]),
+        (arw, plot, [('out_file', 'in_file')]),
         (inputnode, plot, [('subject_id', 'subject')]),
         (inputnode, merg, [('session_id', 'in1'),
                            ('run_id', 'in2')]),
@@ -266,16 +266,12 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
-    antsparms.inputs.in_file = ants_settings
-
     def _invt_flags(transforms):
         return [True] * len(transforms)
 
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(num_threads=settings.get('ants_nthreads', 4)),
-                   name='normalize')
-    norm.inputs.args = '-v'
+    norm = pe.Node(ants.Registration(num_threads=settings.get('ants_nthreads', 4),
+                   from_file=ants_settings), name='normalize')
 
     if testing:
         norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
@@ -309,37 +305,6 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
         (combine, qi1, [('out_file', 'air_msk')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
-    ])
-
-    # ANTs inputs connected here for clarity
-    workflow.connect([
-        (antsparms, norm, [
-            ('metric', 'metric'),
-            ('metric_weight', 'metric_weight'),
-            ('dimension', 'dimension'),
-            ('write_composite_transform', 'write_composite_transform'),
-            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
-            ('shrink_factors', 'shrink_factors'),
-            ('smoothing_sigmas', 'smoothing_sigmas'),
-            ('sigma_units', 'sigma_units'),
-            ('float', 'float'),
-            ('output_transform_prefix', 'output_transform_prefix'),
-            ('transforms', 'transforms'),
-            ('transform_parameters', 'transform_parameters'),
-            ('initial_moving_transform_com', 'initial_moving_transform_com'),
-            ('number_of_iterations', 'number_of_iterations'),
-            ('convergence_threshold', 'convergence_threshold'),
-            ('convergence_window_size', 'convergence_window_size'),
-            ('sampling_strategy', 'sampling_strategy'),
-            ('sampling_percentage', 'sampling_percentage'),
-            ('output_warped_image', 'output_warped_image'),
-            ('use_histogram_matching', 'use_histogram_matching'),
-            ('use_estimate_learning_rate_once',
-             'use_estimate_learning_rate_once'),
-            ('collapse_output_transforms', 'collapse_output_transforms'),
-            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
-            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
-        ])
     ])
     return workflow
 
