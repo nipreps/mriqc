@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 10:26:15
+# @Last Modified time: 2016-09-14 14:10:26
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range, object, str  # pylint: disable=W0622
@@ -204,11 +204,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        try:
-            thisid = newdf.subject_id.astype(str)
-        except NameError:
-            thisid = newdf.subject_id.astype(str)
-        newdf = newdf[thisid]
+        newdf = newdf['{}'.format(newdf.subject_id) == sub_id]
 
     newdf = newdf[cols]
 
