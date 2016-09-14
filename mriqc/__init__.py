@@ -8,6 +8,10 @@ The mriqc package provides a series of :abbr:`NR (no-reference)`,
 assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 from .info import (
     __versionbase__,
     __versionrev__,

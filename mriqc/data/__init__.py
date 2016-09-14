@@ -6,5 +6,6 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 from .getters import get_brainweb_1mm_normal, get_ds003_downsampled, get_mni_template

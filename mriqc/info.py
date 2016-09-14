@@ -3,6 +3,10 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 __versionbase__ = '0.8.6'
 __versionrev__ = 'a2'
 __version__ = __versionbase__ + __versionrev__

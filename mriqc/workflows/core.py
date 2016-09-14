@@ -12,6 +12,7 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 from six import string_types
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu

@@ -7,6 +7,10 @@
 # @Date:   2016-06-03 09:35:13
 # @Last Modified by:   oesteban
 # @Last Modified time: 2016-06-03 10:06:55
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import os.path as op
 import simplejson as json
 from nipype.interfaces.base import (traits, isdefined, TraitedSpec, BaseInterface,

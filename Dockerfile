@@ -42,8 +42,7 @@ RUN conda config --add channels conda-forge && \
 WORKDIR /root/src/mriqc
 # Install mriqc
 COPY . /root/src/mriqc/
-RUN rm -r ./src/nipype && \
-    pip install -r requirements.txt && \
+RUN pip install -r requirements.txt && \
     pip install -e .[all] && \
     python -c "from mriqc.data import get_mni_template; get_mni_template()"
 

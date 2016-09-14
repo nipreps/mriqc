@@ -6,6 +6,7 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.functional import ComputeDVARS
