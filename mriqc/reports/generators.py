@@ -10,9 +10,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-08-26 10:26:15
 """ Encapsulates report generation functions """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range, object, str
 
 import sys
@@ -180,14 +178,14 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
     # Format the size
     #pylint: disable=E1101
     newdf[['size_x', 'size_y', 'size_z']] = newdf[['size_x', 'size_y', 'size_z']].astype(np.uint16)
-    formatter = lambda row: ur'%d \u00D7 %d \u00D7 %d' % (
+    formatter = lambda row: r'%d \u00D7 %d \u00D7 %d' % (
         row['size_x'], row['size_y'], row['size_z'])
     newdf['size'] = newdf[['size_x', 'size_y', 'size_z']].apply(formatter, axis=1)
 
     # Format spacing
     newdf[['spacing_x', 'spacing_y', 'spacing_z']] = newdf[[
         'spacing_x', 'spacing_y', 'spacing_z']].astype(np.float32)  #pylint: disable=E1101
-    formatter = lambda row: ur'%.3f \u00D7 %.3f \u00D7 %.3f' % (
+    formatter = lambda row: r'%.3f \u00D7 %.3f \u00D7 %.3f' % (
         row['spacing_x'], row['spacing_y'], row['spacing_z'])
     newdf['spacing'] = newdf[['spacing_x', 'spacing_y', 'spacing_z']].apply(formatter, axis=1)
 
@@ -224,7 +222,7 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
-    colformat = u' '.join(u'{:<%d}' % c for c in colsizes)
+    colformat = ' '.join('{:<%d}' % c for c in colsizes)
     formatter = lambda row: colformat.format(*row)
     rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
     # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]

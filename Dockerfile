@@ -31,14 +31,19 @@ FROM oesteban/crn_nipype:freesurfer
 COPY build/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
-RUN conda update -y conda && \
-    conda update --all -y python=3.5 && \
-    rm -r /usr/local/miniconda/lib/python3.5/site-packages/nipype*
+RUN rm -r /usr/local/miniconda && \
+    curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda3-latest-Linux-x86_64.sh
+
+RUN conda config --add channels conda-forge && \
+    conda install -y numpy scipy matplotlib
 
 WORKDIR /root/src/mriqc
 # Install mriqc
 COPY . /root/src/mriqc/
-RUN pip install -r requirements.txt && \
+RUN rm -r ./src/nipype && \
+    pip install -r requirements.txt && \
     pip install -e .[all] && \
     python -c "from mriqc.data import get_mni_template; get_mni_template()"
 
