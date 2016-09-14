@@ -69,8 +69,10 @@ LINKS_REQUIRES = [
 ]
 
 TESTS_REQUIRES = [
-    "mock",
-    "codecov"
+    'mock',
+    'codecov',
+    'nose',
+    'doctest-ignore-unicode'
 ]
 
 EXTRA_REQUIRES = {
