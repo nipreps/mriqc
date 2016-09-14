@@ -6,8 +6,8 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 09:50:52
+# @Last modified by:   jvarada
+# @Last Modified time: 2016-09-14 11:12:48
 """ A QC workflow for fMRI data """
 import os
 import os.path as op

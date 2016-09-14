@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 10:26:15
+# @Last Modified time: 2016-09-14 11:14:25
 """ Encapsulates report generation functions """
 
 from __future__ import unicode_literals
