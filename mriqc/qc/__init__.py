@@ -15,6 +15,10 @@ metrics)` included within MRIQC.
 
 
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 from mriqc.qc.anatomical import *  # pylint: disable=wildcard-import
 from mriqc.qc.functional import *  # pylint: disable=wildcard-import

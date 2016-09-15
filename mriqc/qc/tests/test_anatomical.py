@@ -7,10 +7,15 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-13 09:12:35
+# @Last Modified time: 2016-07-20 15:07:14
 """
 Anatomical tests
 """
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from past.utils import old_div
 import os.path as op
 import glob
 import nibabel as nb
@@ -45,9 +50,9 @@ def test_snr():
         snrs_wm.append(snr(test_data, wmdata))
         snrs_bg.append(snr(test_data, wmdata, airdata))
 
-    ref = 1./np.array(sigmas)
-    err1 = ((np.array(snrs_wm) - ref) ** 2) / ref
-    err2 = ((np.array(snrs_bg) - ref) ** 2) / ref
+    ref = old_div(1.,np.array(sigmas))
+    err1 = old_div(((np.array(snrs_wm) - ref) ** 2), ref)
+    err2 = old_div(((np.array(snrs_bg) - ref) ** 2), ref)
     return [err < 6.0 for err in np.average([err1, err2], axis=1)]
 
 
@@ -75,9 +80,9 @@ def test_snr_rayleigh():
         snrs_wm.append(snr(test_data, wmdata))
         snrs_bg.append(snr(test_data, wmdata, airdata))
 
-    ref = 1./np.array(sigmas)
-    err1 = ((np.array(snrs_wm) - ref) ** 2) / ref
-    err2 = ((np.array(snrs_bg) - ref) ** 2) / ref
+    ref = old_div(1.,np.array(sigmas))
+    err1 = old_div(((np.array(snrs_wm) - ref) ** 2), ref)
+    err2 = old_div(((np.array(snrs_bg) - ref) ** 2), ref)
     return [err < 2.0 for err in np.average([err1, err2], axis=1)]
 
 def test_cjv():
@@ -123,4 +128,4 @@ def test_artifacts():
         airdata[artmask > 0] = 0
         values.append(art_qi1(airdata, artmask))
 
-    return np.all(values > .05)
+    return np.all(np.array(values) > .05)

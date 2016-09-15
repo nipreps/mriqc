@@ -9,6 +9,11 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-04 15:15:14
 """Helper functions for the workflows"""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import range
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
@@ -68,7 +73,7 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        out_file = op.abspath('%s_fdfile%s' % (fname, ext))
+        out_file = op.abspath('{}_fdfile{}'.format(fname, ext))
 
     pm_ = np.genfromtxt(in_file)
     original_shape = pm_.shape

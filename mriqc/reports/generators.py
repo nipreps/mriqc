@@ -8,10 +8,10 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-14 11:14:25
+# @Last Modified time: 2016-09-14 14:59:47
 """ Encapsulates report generation functions """
-
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
+from builtins import zip, range, object, str  # pylint: disable=W0622
 
 import sys
 import os
@@ -204,17 +204,23 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        newdf = newdf[newdf.subject_id.astype(unicode) == sub_id]
+        print('trace! sub_id={}'.format(sub_id))
+        newdf = newdf[newdf.subject_id == sub_id]
 
     newdf = newdf[cols]
 
     colsizes = []
     for col, colname in zip(cols, colnames):
-        newdf[[col]] =newdf[[col]].astype(unicode)
-        colsize = newdf.loc[:, col].map(len).max()
+        try:
+            newdf[[col]] = newdf[[col]].astype(str)
+        except NameError:
+            newdf[[col]] = newdf[[col]].astype(str)
+
+        colsize = np.max([len('{}'.format(val)) for val in newdf.loc[:, col]])
+        # colsize = newdf.loc[:, col].map(len).max()
         colsizes.append(colsize if colsize > len(colname) else len(colname))
 
-    colformat = u' '.join(u'{:<%d}' % c for c in colsizes)
+    colformat = ' '.join('{:<%d}' % c for c in colsizes)
     formatter = lambda row: colformat.format(*row)
     rowsformatted = newdf[cols].apply(formatter, axis=1).ravel().tolist()
     # rowsformatted = [formatter.format(*row) for row in newdf.iterrows()]
@@ -350,18 +356,21 @@ def report_functional(
     return out_file
 
 def generate_csv(data_type, settings):
+    """
+    Generates a csv file from all json files in the derivatives directory
+    """
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives', '%s*.json' % data_type))
-
+    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives',
+                                  '{}*.json'.format(data_type)))
     if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory'
-                           '\'%s\' for the \'%s\' data type.' % (settings['output_dir'], data_type))
+        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
+                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
         if dfentry is not None:
-            if 'exec_error' not in dfentry.keys():
+            if 'exec_error' not in list(dfentry.keys()):
                 datalist.append(dfentry)
             else:
                 errorlist.append(dfentry['subject_id'])
@@ -416,7 +425,7 @@ def _flatten(in_dict, parent_key='', sep='_'):
     for k, val in list(in_dict.items()):
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(val, collections.MutableMapping):
-            items.extend(_flatten(val, new_key, sep=sep).items())
+            items.extend(list(_flatten(val, new_key, sep=sep).items()))
         else:
             items.append((new_key, val))
     return dict(items)

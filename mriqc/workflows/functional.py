@@ -6,9 +6,13 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   jvarada
-# @Last Modified time: 2016-09-14 11:12:48
+# @Last modified by:   oesteban
+# @Last Modified time: 2016-08-19 10:38:05
 """ A QC workflow for fMRI data """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import os
 import os.path as op
 
@@ -141,15 +145,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     if settings.get('mosaic_mask', False):
         workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
         workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
-
-    # Save the TSNR results (tsnr, mean, stdev)
-    tsnr_results = pe.Node(nio.DataSink(parameterization=False), name='tsnr_results')
-
-    workflow.connect([
-        (tsnr, tsnr_results, [('tsnr_file', '@tsnr')]),
-        (tsnr, tsnr_results, [('mean_file', '@mean')]),
-        (tsnr, tsnr_results, [('stddev_file', '@stddev')]),
-    ])
 
     # Save mean mosaic to well-formed path
     mvmean = pe.Node(niu.Rename(

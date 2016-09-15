@@ -7,10 +7,18 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:08:22
+# @Last Modified time: 2016-07-19 18:35:16
 """ Visualization utilities """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import str
+from builtins import zip
+from builtins import range
 
 import math
+import time
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -65,7 +73,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
                 for sc in scans:
                     scndf = subdf.loc[sesdf['run_id'] == sc]
                     plot_vline(
-                        scndf.iloc[0][mname], '%s_%s' % (ss, sc), axes[-1])
+                        scndf.iloc[0][mname], '_'.join([ss, sc]), axes[-1])
 
     fig.suptitle(title)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -157,7 +165,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     else:
         mean_data = nifti_file
 
-    z_vals = np.array(range(0, mean_data.shape[2]))
+    z_vals = np.array(list(range(0, mean_data.shape[2])))
     # Reduce the number of slices shown
     if mean_data.shape[2] > 70:
         rem = 15
@@ -210,8 +218,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     if not title:
         _, title = op.split(nifti_file)
-        title += " (last modified: %s)" % time.ctime(
-            op.getmtime(nifti_file))
+        title += " (last modified: {})".format(time.ctime(op.getmtime(nifti_file)))
     fig.suptitle(title, fontsize='10')
     return fig
 
@@ -245,7 +252,7 @@ def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.
         sns.distplot(mean_fd_dist, ax=ax)
         ax.set_xlabel("Mean Frame Displacement (over all subjects) [mm]")
         mean_fd = fd_power.mean()
-        label = r'$\overline{\text{FD}}$ = %g' % mean_fd
+        label = r'$\overline{{\text{{FD}}}}$ = {0:g}'.format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
     fig.suptitle(title)
@@ -268,7 +275,7 @@ def plot_dist(
     ax = fig.add_subplot(gsp[1, 0])
     sns.distplot(np.array(distribution).astype(np.double), ax=ax)
     cur_val = np.median(data)
-    label = "%g" % cur_val
+    label = "{0!g}".format(cur_val)
     plot_vline(cur_val, label, ax=ax)
     ax.set_xlabel(xlabel2)
 

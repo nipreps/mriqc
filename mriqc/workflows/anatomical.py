@@ -9,6 +9,12 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-09-12 09:30:39
 """ A QC workflow for anatomical MRI """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import zip
+from builtins import range
 import os
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -319,7 +325,7 @@ def _get_wm(in_file, wm_val=3, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_wm%s' % (fname, ext))
+        out_file = op.abspath('{}_wm{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.uint8)
@@ -340,7 +346,7 @@ def combine_masks(head_mask, artifact_msk, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_combined%s' % (fname, ext))
+        out_file = op.abspath('{}_combined{}'.format(fname, ext))
 
     imnii = nb.load(head_mask)
     hmdata = imnii.get_data()
@@ -365,7 +371,7 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_grad%s' % (fname, ext))
+        out_file = op.abspath('{}_grad{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
@@ -397,7 +403,7 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_gradmask%s' % (fname, ext))
+        out_file = op.abspath('{}_gradmask{}'.format(fname, ext))
 
 
     imnii = nb.load(in_file)
@@ -419,8 +425,8 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
     if nb_labels > 2:
-        sizes = sim.sum(mask, label_im, range(nb_labels + 1))
-        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
+        sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
+        ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
         for _, label in ordered[2:]:
             mask[label_im == label] = 0
 

@@ -9,6 +9,11 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-08-26 10:27:26
 """ Nipype interfaces to quality control measures """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import zip
 
 import numpy as np
 import nibabel as nb
@@ -301,8 +306,8 @@ def _flatten_dict(indict):
         else:
             for subk, subval in list(value.items()):
                 if not isinstance(subval, dict):
-                    out_qc['%s_%s' % (k, subk)] = subval
+                    out_qc['_'.join([k, subk])] = subval
                 else:
                     for ssubk, ssubval in list(subval.items()):
-                        out_qc['%s_%s_%s' % (k, subk, ssubk)] = ssubval
+                        out_qc['_'.join([k, subk, ssubk])] = ssubval
     return out_qc
