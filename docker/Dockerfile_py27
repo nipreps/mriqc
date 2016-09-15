@@ -49,9 +49,7 @@ RUN conda config --add channels conda-forge && \
 WORKDIR /root/src/mriqc
 COPY . /root/src/mriqc/
 
-# Make sure we install latest version of nipype
-RUN rm -rf /usr/local/miniconda/lib/python2.7/system-packages/nipype* && \
-    pip install -e .[all] && \
+RUN pip install -e .[all] && \
     python -c "from mriqc.data import get_mni_template; get_mni_template()"
 
 WORKDIR /scratch
