@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-06 12:07:51
+# @Last Modified time: 2016-09-14 11:24:26
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -21,11 +21,22 @@ import time
 import base64
 import hashlib
 import subprocess as sp
-from mriqc.data.compat import _urllib, md5_hash
+from io import open
+from builtins import str, bytes
 
+try:
+    from urllib.parse import urlparse, urlencode
+    from urllib.request import urlopen, Request
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    from urlparse import urlparse
+    from urllib import urlencode
+    from urllib2 import urlopen, Request, HTTPError, URLError
+
+PY3 = sys.version_info[0] > 2
 
 def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
-                md5sum=None, username=None, password=None, handlers=None,
+                md5sum=None, username=None, password=None,
                 verbose=1, temp_downloads=None):
     """Load requested file, downloading it if needed or requested.
 
@@ -38,9 +49,6 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
         is required
     :param str username: username used for basic HTTP authentication
     :param str password: password used for basic HTTP authentication
-    :param list(BaseHandler) handlers: urllib handlers passed to
-        urllib.request.build_opener. Used by advanced users to customize
-        request handling.
     :param int verbose: verbosity level (0 means no message).
     :returns: absolute path of downloaded file
     :rtype: str
@@ -52,9 +60,6 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
 
     """
-    if handlers is None:
-        handlers = []
-
     if not overwrite and os.listdir(dataset_dir):
         return True
 
@@ -68,10 +73,10 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
         os.makedirs(temp_downloads)
 
     # Determine filename using URL
-    parse = _urllib.parse.urlparse(url)
+    parse = urlparse(url)
     file_name = op.basename(parse.path)
     if file_name == '':
-        file_name = md5_hash(parse.path)
+        file_name = _md5_hash(parse.path)
 
         if filetype is not None:
             file_name += filetype
@@ -92,14 +97,13 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
     try:
         # Download data
-        url_opener = _urllib.request.build_opener(*handlers)
-        request = _urllib.request.Request(url)
+        request = Request(url)
         request.add_header('Connection', 'Keep-Alive')
         if username is not None and password is not None:
             if not url.startswith('https'):
                 raise ValueError(
-                    'Authentication was requested on a non  secured URL (%s).'
-                    'Request has been blocked for security reasons.' % url)
+                    'Authentication was requested on a non  secured URL ({0!s}).'
+                    'Request has been blocked for security reasons.'.format(url))
             # Note: HTTPBasicAuthHandler is not fitted here because it relies
             # on the fact that the server will return a 401 error with proper
             # www-authentication header, which is not the case of most
@@ -109,17 +113,17 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             request.add_header(b'Authorization', b'Basic ' + encoded_auth)
         if verbose > 0:
             displayed_url = url.split('?')[0] if verbose == 1 else url
-            print('Downloading data from %s ...' % displayed_url)
+            print('Downloading data from {} ...'.format(displayed_url))
         if resume and op.exists(temp_part_name):
             # Download has been interrupted, we try to resume it.
             local_file_size = op.getsize(temp_part_name)
             # If the file exists, then only download the remainder
-            request.add_header("Range", "bytes=%s-" % (local_file_size))
+            request.add_header("Range", "bytes={}-".format(local_file_size))
             try:
-                data = url_opener.open(request)
+                data = urlopen(request)
                 content_range = data.info().get('Content-Range')
                 if (content_range is None or not content_range.startswith(
-                        'bytes %s-' % local_file_size)):
+                        'bytes {}-'.format(local_file_size))):
                     raise IOError('Server does not support resuming')
             except Exception:
                 # A wide number of errors can be raised here. HTTPError,
@@ -130,12 +134,14 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
                 return _fetch_file(
                     url, dataset_dir, resume=False, overwrite=overwrite,
                     md5sum=md5sum, username=username, password=password,
-                    handlers=handlers, verbose=verbose)
+                    verbose=verbose)
             local_file = open(temp_part_name, "ab")
             initial_size = local_file_size
         else:
-            data = url_opener.open(request)
+            data = urlopen(request)
+
             local_file = open(temp_part_name, "wb")
+
         _chunk_read_(data, local_file, report_hook=(verbose > 0),
                      initial_size=initial_size, verbose=verbose)
         # temp file must be closed prior to the move
@@ -147,13 +153,13 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             # Complete the reporting hook
             sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
                              .format(delta_t, delta_t // 60))
-    except (_urllib.error.HTTPError, _urllib.error.URLError) as exc:
+    except (HTTPError, URLError) as exc:
         if 'Error while fetching' not in str(exc):
             # For some odd reason, the error message gets doubled up
             #   (possibly from the re-raise), so only add extra info
             #   if it's not already there.
-            exc.reason = ("%s| Error while fetching file %s; "
-                          "dataset fetching aborted." % (
+            exc.reason = ("{0}| Error while fetching file {1}; "
+                          "dataset fetching aborted.".format(
                               str(exc.reason), file_name))
         raise
     finally:
@@ -163,8 +169,8 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
 
     if md5sum is not None:
         if _md5_sum_file(temp_full_name) != md5sum:
-            raise ValueError("File %s checksum verification has failed."
-                             " Dataset fetching aborted." % local_file)
+            raise ValueError("File {} checksum verification has failed."
+                             " Dataset fetching aborted.".format(local_file))
 
     if filetype is None:
         fname, filetype = op.splitext(op.basename(temp_full_name))
@@ -237,7 +243,7 @@ def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
         paths.append((op.expanduser('~/.cache/mriqc'), False))
 
     if verbose > 2:
-        print('Dataset search paths: %s' % paths)
+        print('Dataset search paths: {0!s}'.format(paths))
 
     # Check if the dataset exists somewhere
     for path, is_pre_dir in paths:
@@ -248,7 +254,7 @@ def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
             path = readlinkabs(path)
         if op.exists(path) and op.isdir(path):
             if verbose > 1:
-                print('\nDataset found in %s\n' % path)
+                print('Dataset found in {}'.format(path), end='\n')
             return path
 
     # If not, create a folder in the first writeable directory
@@ -260,7 +266,7 @@ def _get_dataset_dir(dataset_name, data_dir=None, default_paths=None,
             try:
                 os.makedirs(path)
                 if verbose > 0:
-                    print('\nDataset created in %s\n' % path)
+                    print('Dataset created in {}'.format(path), end='\n')
                 return path
             except Exception as exc:
                 short_error_message = getattr(exc, 'strerror', str(exc))
@@ -299,7 +305,7 @@ def _chunk_read_(response, local_file, chunk_size=8192, report_hook=None,
                  initial_size=0, total_size=None, verbose=1):
     """Download a file chunk by chunk and show advancement
 
-    :param _urllib.response.addinfourl response: response to the download
+    :param urllib.response.addinfourl response: response to the download
         request in order to get file size
     :param str local_file: hard disk file where data should be written
     :param int chunk_size: size of downloaded chunks. Default: 8192
@@ -320,7 +326,7 @@ def _chunk_read_(response, local_file, chunk_size=8192, report_hook=None,
         if verbose > 2:
             print("Warning: total size could not be determined.")
             if verbose > 3:
-                print("Full stack trace: %s" % exc)
+                print("Full stack trace: {}".format(exc))
         total_size = None
     bytes_so_far = initial_size
 
@@ -356,7 +362,7 @@ def _chunk_report_(bytes_so_far, total_size, initial_size, t_0):
     """
 
     if not total_size:
-        sys.stderr.write("\rDownloaded %d of ? bytes." % (bytes_so_far))
+        sys.stderr.write("\rDownloaded {0:d} of ? bytes.".format(bytes_so_far))
 
     else:
         # Estimate remaining download time
@@ -372,13 +378,19 @@ def _chunk_report_(bytes_so_far, total_size, initial_size, t_0):
         # Trailing whitespace is to erase extra char when message length
         # varies
         sys.stderr.write(
-            "\rDownloaded %d of %d bytes (%.1f%%, %s remaining)"
-            % (bytes_so_far, total_size, total_percent * 100,
-               _format_time(time_remaining)))
+            "\rDownloaded {0:d} of {1:d} bytes ({2:.1f}%, {3!s} remaining)".format(
+                bytes_so_far, total_size, total_percent * 100, _format_time(time_remaining)))
 
 
 def _format_time(t_secs):
     if t_secs > 60:
-        return "%4.1fmin" % (t_secs / 60.)
+        return "{0:4.1f}min".format(t_secs / 60.)
     else:
-        return " %5.1fs" % (t_secs)
+        return " {0:5.1f}s".format(t_secs)
+
+def _md5_hash(string):
+    m = hashlib.md5()
+    if PY3:
+        string = string.encode('utf-8')
+    m.update(string)
+    return m.hexdigest()

@@ -7,8 +7,12 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-05 09:50:52
+# @Last Modified time: 2016-08-19 10:38:05
 """ A QC workflow for fMRI data """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import os
 import os.path as op
 

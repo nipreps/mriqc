@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+"""
+MRIQC
 
+"""
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a2'
+__versionrev__ = 'a3'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -25,3 +28,57 @@ from, and is heavily influenced by, the PCP Quality Assessment Protocol.
 This tool extracts a series of IQMs from structural and functional MRI data. It is also
 scheduled to add diffusion MRI to the target imaging families.
 """
+
+URL = 'http://mriqc.readthedocs.org/'
+DOWNLOAD_URL = ('https://pypi.python.org/packages/source/m/mriqc/'
+                'mriqc-{}.tar.gz'.format(__version__))
+CLASSIFIERS = [
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Image Recognition',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.5',
+]
+
+
+REQUIRES = [
+    'numpy',
+    'future',
+    'lockfile',
+    'six',
+    'matplotlib',
+    'nibabel',
+    'niworkflows>=0.0.3a5',
+    'pandas',
+    'dipy',
+    'jinja2',
+    'seaborn',
+    'pyPdf2',
+    'PyYAML',
+    'nitime',
+    'nilearn',
+    'sklearn',
+    'scikit-learn'
+]
+
+LINKS_REQUIRES = [
+    'git+https://github.com/oesteban/nipype.git@master#egg=nipype',
+    'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf'
+]
+
+TESTS_REQUIRES = [
+    'mock',
+    'codecov',
+    'nose',
+    'doctest-ignore-unicode'
+]
+
+EXTRA_REQUIRES = {
+    'doc': ['sphinx'],
+    'tests': TESTS_REQUIRES,
+    'duecredit': ['duecredit']
+}
+
+# Enable a handle to install all extra dependencies at once
+EXTRA_REQUIRES['all'] = [val for _, val in list(EXTRA_REQUIRES.items())]

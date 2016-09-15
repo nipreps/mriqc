@@ -26,21 +26,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-FROM oesteban/crn_nipype:freesurfer
-
+FROM oesteban/crn_base:freesurfer
 
 COPY build/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
-WORKDIR /root/src/mriqc
-# Update nipype, check requirements
-COPY requirements.txt requirements.txt
-RUN rm -r /usr/local/miniconda/lib/python2.7/site-packages/nipype* && \
-    pip install -r requirements.txt
+# Install miniconda
+RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda3-latest-Linux-x86_64.sh
+ENV PATH /usr/local/miniconda/bin:$PATH
+
+# http://bugs.python.org/issue19846
+# > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+# Create conda environment, use nipype's conda-forge channel
+RUN conda config --add channels conda-forge && \
+    conda install -y numpy scipy lockfile nipype matplotlib && \
+    rm -rf /usr/local/miniconda/lib/python3.5/system-packages/nipype* && \
+    python -c "from matplotlib import font_manager"
 
 # Install mriqc
+WORKDIR /root
+COPY requirements.txt /root/requirements.txt
+RUN pip install -r requirements.txt
+
+WORKDIR /root/src/mriqc
 COPY . /root/src/mriqc/
-RUN pip install -e . && \
+RUN pip install -e .[all] && \
     python -c "from mriqc.data import get_mni_template; get_mni_template()"
 
 WORKDIR /scratch

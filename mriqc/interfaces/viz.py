@@ -9,6 +9,10 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-04-11 11:37:27
 """ Visualization interfaces """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import os.path as op
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -53,7 +57,7 @@ class PlotMosaic(BaseInterface):
 
         title = self.inputs.title
         if isdefined(self.inputs.subject):
-            title += ', subject %s' % self.inputs.subject
+            title += ', subject {}'.format(self.inputs.subject)
 
         if isdefined(self.inputs.metadata):
             title += ' (' + '_'.join(self.inputs.metadata) + ')'
@@ -111,7 +115,7 @@ class PlotFD(BaseInterface):
     def _run_interface(self, runtime):
         title = self.inputs.title
         if isdefined(self.inputs.subject):
-            title += ', subject %s' % self.inputs.subject
+            title += ', subject {}'.format(self.inputs.subject)
 
         if isdefined(self.inputs.metadata):
             title += ' (' + '_'.join(self.inputs.metadata) + ')'

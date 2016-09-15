@@ -9,6 +9,10 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-05-20 09:10:54
 """ Helpers in report generation """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
 import pandas as pd
 
 def read_csv(in_csv):
