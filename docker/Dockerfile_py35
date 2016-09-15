@@ -42,19 +42,19 @@ ENV PATH /usr/local/miniconda/bin:$PATH
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
+WORKDIR /root
+COPY requirements.txt /root/requirements.txt
+
 # Create conda environment, use nipype's conda-forge channel
 RUN conda config --add channels conda-forge && \
     conda install -y numpy scipy lockfile nipype matplotlib && \
-    rm -rf /usr/local/miniconda/lib/python3.5/system-packages/nipype* && \
+    pip install -r requirements.txt && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
-WORKDIR /root
-COPY requirements.txt /root/requirements.txt
-RUN pip install -r requirements.txt
-
 WORKDIR /root/src/mriqc
 COPY . /root/src/mriqc/
+
 RUN pip install -e .[all] && \
     python -c "from mriqc.data import get_mni_template; get_mni_template()"
 
