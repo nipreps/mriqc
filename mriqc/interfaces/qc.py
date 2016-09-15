@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 10:27:26
+# @Last Modified time: 2016-09-15 09:58:34
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -264,8 +264,11 @@ class FunctionalQC(BaseInterface):
                                     'p05': p05}
 
         # DVARS
-        self._results['dvars'] = float(np.loadtxt(
-            self.inputs.in_dvars).mean())
+        dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)
+        dvars_col = ['std', 'nstd', 'vstd']
+        self._results['dvars'] = {
+            dvars_col[i]: float(val) for i, val in enumerate(dvars_avg)
+        }
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()

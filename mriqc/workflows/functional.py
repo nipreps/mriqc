@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-19 10:38:05
+# @Last Modified time: 2016-09-15 10:02:11
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -17,7 +17,7 @@ import os
 import os.path as op
 
 from nipype.pipeline import engine as pe
-from nipype.algorithms import misc as nam
+from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
@@ -25,7 +25,6 @@ from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
 from mriqc.interfaces.qc import FunctionalQC
-from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path
 
@@ -76,10 +75,12 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         use_bet=settings.get('use_bet', False))
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
+    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(ComputeDVARS(), name='ComputeDVARS')
+    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True,
+                     save_plot=True, save_all=True), name='ComputeDVARS')
+    fdnode = pe.Node(nac.FramewiseDisplacement(), name='ComputeFD')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -137,8 +138,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                            ('outputnode.out_movpar', 'fd_movpar')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
         (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
-        (dvnode, measures, [('out_file', 'in_dvars')]),
-        (dvnode, outputnode, [('out_file', 'out_dvars')]),
+        (dvnode, measures, [('out_all', 'in_dvars')]),
+        (dvnode, outputnode, [('out_all', 'out_dvars')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
     ])
 
