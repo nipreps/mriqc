@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-14 11:24:26
+# @Last Modified time: 2016-09-15 10:06:35
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -154,13 +154,13 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
             sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
                              .format(delta_t, delta_t // 60))
     except (HTTPError, URLError) as exc:
-        if 'Error while fetching' not in str(exc):
+        if 'Error while fetching' not in '{}'.format(exc):
             # For some odd reason, the error message gets doubled up
             #   (possibly from the re-raise), so only add extra info
             #   if it's not already there.
             exc.reason = ("{0}| Error while fetching file {1}; "
                           "dataset fetching aborted.".format(
-                              str(exc.reason), file_name))
+                              exc.reason, file_name))
         raise
     finally:
         if local_file is not None:
