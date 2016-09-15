@@ -20,5 +20,5 @@ codecov
 nose
 doctest-ignore-unicode
 sphinx
--e git+https://github.com/oesteban/nipype.git@master#egg=nipype
+# -e git+https://github.com/oesteban/nipype.git@master#egg=nipype
 -e git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf
