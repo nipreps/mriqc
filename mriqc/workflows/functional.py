@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 10:33:22
+# @Last Modified time: 2016-09-15 11:34:13
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -206,7 +206,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                                ('run_id', 'run_id')]),
         (plot_mean, datasink, [('out_file', 'mean_plot')]),
         (plot_tsnr, datasink, [('out_file', 'tsnr_plot')]),
-        (plot_fd, datasink, [('out_file', 'fd_plot')]),
+        (fdnode, datasink, [('out_figure', 'fd_plot')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),
@@ -218,7 +218,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                               ('snr', 'snr'),
                               ('gsr', 'gsr'),
                               ('m_tsnr', 'm_tsnr'),
-                              ('fd_stats', 'fd_stats'),
+                              ('fd', 'fd'),
                               ('dvars', 'dvars'),
                               ('gcor', 'gcor')]),
         (out_name, datasink, [('out_file', 'out_file')]),

@@ -9,6 +9,5 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from mriqc.interfaces.anatomical import ArtifactMask
-from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.qc import StructuralQC, FunctionalQC
 from mriqc.interfaces.bids import ReadSidecarJSON

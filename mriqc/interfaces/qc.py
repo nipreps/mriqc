@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 10:25:33
+# @Last Modified time: 2016-09-15 11:23:45
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -195,9 +195,9 @@ class FunctionalQCOutputSpec(TraitedSpec):
     snr = traits.Float
     gsr = traits.Dict
     m_tsnr = traits.Float
-    dvars = traits.Float
+    dvars = traits.Dict
     gcor = traits.Float
-    fd_stats = traits.Dict
+    fd = traits.Dict
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
@@ -281,10 +281,10 @@ class FunctionalQC(BaseInterface):
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd)
         num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
-        self._results['fd_stats'] = {
-            'mean_fd': float(fd_data.mean()),
-            'num_fd': int(num_fd),
-            'perc_fd': float(num_fd * 100 / (len(fd_data) + 1))
+        self._results['fd'] = {
+            'mean': float(fd_data.mean()),
+            'num': int(num_fd),
+            'perc': float(num_fd * 100 / (len(fd_data) + 1))
         }
 
         # Image specs
