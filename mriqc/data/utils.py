@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 10:06:35
+# @Last Modified time: 2016-09-15 11:11:25
 """
 Utilities for data grabbers (from nilearn)
 """
@@ -34,9 +34,10 @@ except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
 
 PY3 = sys.version_info[0] > 2
+MAX_RETRIES = 20
 
 def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
-                md5sum=None, username=None, password=None,
+                md5sum=None, username=None, password=None, retry=0,
                 verbose=1, temp_downloads=None):
     """Load requested file, downloading it if needed or requested.
 
@@ -95,77 +96,77 @@ def _fetch_file(url, dataset_dir, filetype=None, resume=True, overwrite=False,
     local_file = None
     initial_size = 0
 
-    try:
-        # Download data
-        request = Request(url)
-        request.add_header('Connection', 'Keep-Alive')
-        if username is not None and password is not None:
-            if not url.startswith('https'):
-                raise ValueError(
-                    'Authentication was requested on a non  secured URL ({0!s}).'
-                    'Request has been blocked for security reasons.'.format(url))
-            # Note: HTTPBasicAuthHandler is not fitted here because it relies
-            # on the fact that the server will return a 401 error with proper
-            # www-authentication header, which is not the case of most
-            # servers.
-            encoded_auth = base64.b64encode(
-                (username + ':' + password).encode())
-            request.add_header(b'Authorization', b'Basic ' + encoded_auth)
-        if verbose > 0:
-            displayed_url = url.split('?')[0] if verbose == 1 else url
-            print('Downloading data from {} ...'.format(displayed_url))
-        if resume and op.exists(temp_part_name):
-            # Download has been interrupted, we try to resume it.
-            local_file_size = op.getsize(temp_part_name)
-            # If the file exists, then only download the remainder
-            request.add_header("Range", "bytes={}-".format(local_file_size))
-            try:
-                data = urlopen(request)
-                content_range = data.info().get('Content-Range')
-                if (content_range is None or not content_range.startswith(
-                        'bytes {}-'.format(local_file_size))):
-                    raise IOError('Server does not support resuming')
-            except Exception:
-                # A wide number of errors can be raised here. HTTPError,
-                # URLError... I prefer to catch them all and rerun without
-                # resuming.
+    # Download data
+    request = Request(url)
+    request.add_header('Connection', 'Keep-Alive')
+    if username is not None and password is not None:
+        if not url.startswith('https'):
+            raise ValueError(
+                'Authentication was requested on a non  secured URL ({0!s}).'
+                'Request has been blocked for security reasons.'.format(url))
+        # Note: HTTPBasicAuthHandler is not fitted here because it relies
+        # on the fact that the server will return a 401 error with proper
+        # www-authentication header, which is not the case of most
+        # servers.
+        encoded_auth = base64.b64encode(
+            (username + ':' + password).encode())
+        request.add_header(b'Authorization', b'Basic ' + encoded_auth)
+    if verbose > 0:
+        displayed_url = url.split('?')[0] if verbose == 1 else url
+        print('Downloading data from {} ...'.format(displayed_url))
+    if resume and op.exists(temp_part_name):
+        # Download has been interrupted, we try to resume it.
+        local_file_size = op.getsize(temp_part_name)
+        # If the file exists, then only download the remainder
+        request.add_header("Range", "bytes={}-".format(local_file_size))
+        try:
+            data = urlopen(request)
+            content_range = data.info().get('Content-Range')
+            if (content_range is None or not content_range.startswith(
+                    'bytes {}-'.format(local_file_size))):
+                raise IOError('Server does not support resuming')
+        except Exception:
+            # A wide number of errors can be raised here. HTTPError,
+            # URLError... I prefer to catch them all and rerun without
+            # resuming.
+            if verbose > 0:
+                print('Resuming failed, try to download the whole file.')
+            return _fetch_file(
+                url, dataset_dir, resume=False, overwrite=overwrite,
+                md5sum=md5sum, username=username, password=password,
+                verbose=verbose)
+        local_file = open(temp_part_name, "ab")
+        initial_size = local_file_size
+    else:
+        try:
+            data = urlopen(request)
+        except (HTTPError, URLError):
+            if retry < MAX_RETRIES:
                 if verbose > 0:
-                    print('Resuming failed, try to download the whole file.')
+                    print('Download failed, retrying...')
+                time.sleep(5)
                 return _fetch_file(
                     url, dataset_dir, resume=False, overwrite=overwrite,
                     md5sum=md5sum, username=username, password=password,
-                    verbose=verbose)
-            local_file = open(temp_part_name, "ab")
-            initial_size = local_file_size
-        else:
-            data = urlopen(request)
+                    verbose=verbose, retry=retry + 1)
+            else:
+                raise
 
-            local_file = open(temp_part_name, "wb")
+        local_file = open(temp_part_name, "wb")
 
-        _chunk_read_(data, local_file, report_hook=(verbose > 0),
-                     initial_size=initial_size, verbose=verbose)
-        # temp file must be closed prior to the move
-        if not local_file.closed:
-            local_file.close()
-        shutil.move(temp_part_name, temp_full_name)
-        delta_t = time.time() - t_0
-        if verbose > 0:
-            # Complete the reporting hook
-            sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
-                             .format(delta_t, delta_t // 60))
-    except (HTTPError, URLError) as exc:
-        if 'Error while fetching' not in '{}'.format(exc):
-            # For some odd reason, the error message gets doubled up
-            #   (possibly from the re-raise), so only add extra info
-            #   if it's not already there.
-            exc.reason = ("{0}| Error while fetching file {1}; "
-                          "dataset fetching aborted.".format(
-                              exc.reason, file_name))
-        raise
-    finally:
-        if local_file is not None:
-            if not local_file.closed:
-                local_file.close()
+    _chunk_read_(data, local_file, report_hook=(verbose > 0),
+                 initial_size=initial_size, verbose=verbose)
+    # temp file must be closed prior to the move
+    if not local_file.closed:
+        local_file.close()
+    shutil.move(temp_part_name, temp_full_name)
+    delta_t = time.time() - t_0
+    if verbose > 0:
+        # Complete the reporting hook
+        sys.stderr.write(' ...done. ({0:.0f} seconds, {1:.0f} min)\n'
+                         .format(delta_t, delta_t // 60))
+
+
 
     if md5sum is not None:
         if _md5_sum_file(temp_full_name) != md5sum:
