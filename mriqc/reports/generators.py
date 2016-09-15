@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-14 14:59:47
+# @Last Modified time: 2016-09-15 11:24:45
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range, object, str  # pylint: disable=W0622
@@ -56,8 +56,9 @@ FUNC_SPATIAL_QCGROUPS = [
 ]
 
 FUNC_TEMPORAL_QCGROUPS = [
-    ['dvars'], ['gcor'], ['m_tsnr'], ['mean_fd'],
-    ['num_fd'], ['outlier'], ['perc_fd'], ['quality']
+    ['dvars_std', 'dvars_nstd', 'dvars_vstd'],
+    ['fd_mean'], ['fd_num'], ['fd_perc'],
+    ['gcor'], ['m_tsnr'], ['outlier'], ['quality']
 ]
 
 

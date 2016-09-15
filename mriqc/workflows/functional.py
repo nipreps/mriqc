@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-19 10:38:05
+# @Last Modified time: 2016-09-15 11:34:13
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -17,7 +17,7 @@ import os
 import os.path as op
 
 from nipype.pipeline import engine as pe
-from nipype.algorithms import misc as nam
+from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
@@ -25,7 +25,6 @@ from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
 from mriqc.interfaces.qc import FunctionalQC
-from mriqc.interfaces.functional import ComputeDVARS
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path
 
@@ -43,7 +42,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         os.makedirs(deriv_dir)
 
     # Read FD radius, or default it
-    fd_radius = settings.get('fd_radius', 80.)
+    fd_radius = settings.get('fd_radius', 50.)
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
@@ -54,7 +53,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         output_names=['start_idx', 'stop_idx']), name='get_idx')
 
     outputnode = pe.Node(niu.IdentityInterface(
-        fields=['qc', 'mosaic', 'out_group', 'out_movpar', 'out_dvars']), name='outputnode')
+        fields=['qc', 'mosaic', 'out_group', 'out_movpar', 'out_dvars',
+                'out_fd']), name='outputnode')
 
 
     # 0. Get data
@@ -76,10 +76,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         use_bet=settings.get('use_bet', False))
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nam.TSNR(), name='compute_tsnr')
+    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(ComputeDVARS(), name='ComputeDVARS')
+    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True,
+                     save_plot=True, save_all=True), name='ComputeDVARS')
+    fdnode = pe.Node(nac.FramewiseDisplacement(
+        normalize=True, save_plot=True, radius=fd_radius), name='ComputeFD')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -94,8 +97,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     # Plots
     plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
     plot_tsnr = pe.Node(PlotMosaic(title='tSNR volume'), name='plot_tSNR')
-    plot_fd = pe.Node(PlotFD(), name='plot_fd')
-    plot_fd.inputs.fd_radius = fd_radius
 
     merg = pe.Node(niu.Merge(3), name='plot_metadata')
 
@@ -118,13 +119,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, plot_mean, [('out_file', 'in_file')]),
         (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
-        (hmcwf, plot_fd, [('outputnode.out_movpar', 'in_file')]),
+        (hmcwf, fdnode, [('outputnode.out_movpar', 'in_plots')]),
         (inputnode, plot_mean, [('subject_id', 'subject')]),
         (inputnode, plot_tsnr, [('subject_id', 'subject')]),
-        (inputnode, plot_fd, [('subject_id', 'subject')]),
         (merg, plot_mean, [('out', 'metadata')]),
         (merg, plot_tsnr, [('out', 'metadata')]),
-        (merg, plot_fd, [('out', 'metadata')]),
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
         (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
@@ -133,12 +132,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, dvnode, [('outputnode.out_file', 'in_file')]),
         (bmw, dvnode, [('outputnode.out_file', 'in_mask')]),
         (mean, measures, [('out_file', 'in_epi')]),
-        (hmcwf, measures, [('outputnode.out_file', 'in_hmc'),
-                           ('outputnode.out_movpar', 'fd_movpar')]),
+        (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
         (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
-        (dvnode, measures, [('out_file', 'in_dvars')]),
-        (dvnode, outputnode, [('out_file', 'out_dvars')]),
+        (dvnode, measures, [('out_all', 'in_dvars')]),
+        (fdnode, measures, [('out_file', 'in_fd')]),
+        (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (dvnode, outputnode, [('out_all', 'out_dvars')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
     ])
 
@@ -182,7 +182,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, mvfd, [('subject_id', 'subject_id'),
                          ('session_id', 'session_id'),
                          ('run_id', 'run_id')]),
-        (plot_fd, mvfd, [('out_file', 'in_file')]),
+        (fdnode, mvfd, [('out_figure', 'in_file')]),
         (mvfd, dsfd, [('out_file', '@mosaic')])
     ])
 
@@ -206,7 +206,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                                ('run_id', 'run_id')]),
         (plot_mean, datasink, [('out_file', 'mean_plot')]),
         (plot_tsnr, datasink, [('out_file', 'tsnr_plot')]),
-        (plot_fd, datasink, [('out_file', 'fd_plot')]),
+        (fdnode, datasink, [('out_figure', 'fd_plot')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),
@@ -218,7 +218,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                               ('snr', 'snr'),
                               ('gsr', 'gsr'),
                               ('m_tsnr', 'm_tsnr'),
-                              ('fd_stats', 'fd_stats'),
+                              ('fd', 'fd'),
                               ('dvars', 'dvars'),
                               ('gcor', 'gcor')]),
         (out_name, datasink, [('out_file', 'out_file')]),
