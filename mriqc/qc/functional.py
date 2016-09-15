@@ -15,10 +15,7 @@ Computation of the quality assessment measures on functional MRI
 
 
 """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -191,7 +188,7 @@ def compute_dvars(in_file, in_mask, output_all=False, out_file=None):
         fname += '_dvars.txt'
         out_file = op.abspath(fname)
 
-    np.savetxt(out_file, gendvars, fmt='%.12f')
+    np.savetxt(out_file, gendvars, fmt=b'%.12f')
     return out_file
 
 
