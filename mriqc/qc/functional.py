@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-02-29 11:43:16
+# @Last Modified time: 2016-09-15 10:24:45
 """
 Computation of the quality assessment measures on functional MRI
 
@@ -19,6 +19,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os.path as op
 import numpy as np
 import nibabel as nb
+from nipype.algorithms.confounds import zero_variance
 
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
@@ -106,106 +107,6 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     return float(ghost/signal)
 
 
-def compute_dvars(in_file, in_mask, output_all=False, out_file=None):
-    """
-    Compute the mean :abbr:`DVARS (D referring to temporal
-    derivative of timecourses, VARS referring to RMS variance over voxels)`
-    [Power2012]_.
-
-    Particularly, the *standardized* :abbr:`DVARS (D referring to temporal
-    derivative of timecourses, VARS referring to RMS variance over voxels)`
-    [Nichols2013]_ are computed.
-
-    .. note:: Implementation details
-
-      Uses the implementation of the `Yule-Walker equations
-      from nitime
-      <http://nipy.org/nitime/api/generated/nitime.algorithms.autoregressive.html\
-#nitime.algorithms.autoregressive.AR_est_YW>`_
-      for the :abbr:`AR (auto-regressive)` filtering of the fMRI signal.
-
-    :param numpy.ndarray func: functional data, after head-motion-correction.
-    :param numpy.ndarray mask: a 3D mask of the brain
-    :param bool output_all: write out all dvars
-    :param str out_file: a path to which the standardized dvars should be saved.
-    :return: the standardized DVARS
-
-    """
-    import os.path as op
-    import numpy as np
-    import nibabel as nb
-    from nitime.algorithms import AR_est_YW
-    from mriqc.qc.functional import zero_variance
-
-    func = nb.load(in_file).get_data().astype(np.float32)
-    mask = nb.load(in_mask).get_data().astype(np.uint8)
-
-    if len(func.shape) != 4:
-        raise RuntimeError(
-            "Input fMRI dataset should be 4-dimensional")
-
-    # Remove zero-variance voxels across time axis
-    zv_mask = zero_variance(func, mask)
-    idx = np.where(zv_mask > 0)
-    mfunc = func[idx[0], idx[1], idx[2], :]
-
-    # Robust standard deviation
-    func_sd = (np.percentile(mfunc, 75) -
-               np.percentile(mfunc, 25)) / 1.349
-
-    # Demean
-    mfunc -= mfunc.mean(axis=1).astype(np.float32)[..., np.newaxis]
-
-    # AR1
-    ak_coeffs = np.apply_along_axis(AR_est_YW, 1, mfunc, 1)
-
-    # Predicted standard deviation of temporal derivative
-    func_sd_pd = np.squeeze(np.sqrt((2. * (1. - ak_coeffs[:, 0])).tolist()) * func_sd)
-    diff_sd_mean = func_sd_pd[func_sd_pd > 0].mean()
-
-    # Compute temporal difference time series
-    func_diff = np.diff(mfunc, axis=1)
-
-    # DVARS (no standardization)
-    dvars_nstd = func_diff.std(axis=0)
-
-    # standardization
-    dvars_stdz = dvars_nstd / diff_sd_mean
-
-    # voxelwise standardization
-    diff_vx_stdz = func_diff / np.array([func_sd_pd] * func_diff.shape[-1]).T
-    dvars_vx_stdz = diff_vx_stdz.std(1, ddof=1)
-
-    if output_all:
-        gendvars = np.vstack((dvars_stdz, dvars_nstd, dvars_vx_stdz))
-    else:
-        gendvars = dvars_stdz.reshape(len(dvars_stdz), 1)
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
-            fname, _ = op.splitext(fname)
-        fname += '_dvars.txt'
-        out_file = op.abspath(fname)
-
-    np.savetxt(out_file, gendvars, fmt=b'%.12f')
-    return out_file
-
-
-def summary_fd(fd_movpar, fd_thres=1.0):
-    """
-    Generates a dictionary with the mean FD, the number of FD timepoints above
-    fd_thres, and the percentage of FD timepoints above the fd_thres
-    """
-    fddata = np.loadtxt(fd_movpar)
-    num_fd = np.float((fddata > fd_thres).sum())
-    out_dict = {
-        'mean_fd': float(fddata.mean()),
-        'num_fd': int(num_fd),
-        'perc_fd': float(num_fd * 100 / (len(fddata) + 1))
-    }
-    return out_dict
-
 def gcor(func, mask):
     """
     Compute the :abbr:`GCOR (global correlation)`.
@@ -222,23 +123,3 @@ def gcor(func, mask):
     zscores = zscore(func[idx[0], idx[1], idx[2], :], axis=1)
     avg_ts = zscores.mean(axis=0)
     return float(avg_ts.transpose().dot(avg_ts) / len(avg_ts))
-
-def zero_variance(func, mask):
-    """
-    Mask out voxels with zero variance across t-axis
-
-    :param numpy.ndarray func: input fMRI dataset, after motion correction
-    :param numpy.ndarray mask: 3D brain mask
-    :return: the 3D mask of voxels with nonzero variance across :math:`t`.
-    :rtype: numpy.ndarray
-
-    """
-    idx = np.where(mask > 0)
-    func = func[idx[0], idx[1], idx[2], :]
-    tvariance = func.var(axis=1)
-    tv_mask = np.zeros_like(tvariance, dtype=np.uint8)
-    tv_mask[tvariance > 0] = 1
-
-    newmask = np.zeros_like(mask, dtype=np.uint8)
-    newmask[idx] = tv_mask
-    return newmask

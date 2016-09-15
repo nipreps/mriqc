@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 09:58:34
+# @Last Modified time: 2016-09-15 10:25:33
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -21,12 +21,13 @@ import nibabel as nb
 from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
                                  volume_fraction, rpve, summary_stats, cjv,
                                  wm2max)
-from mriqc.qc.functional import (gsr, gcor, summary_fd)
+from mriqc.qc.functional import (gsr, gcor)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 from nipype import logging
 IFLOGGER = logging.getLogger('interface')
+
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='file to be plotted')
@@ -182,7 +183,7 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_mask = File(exists=True, mandatory=True, desc='input mask')
     direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
                             desc='direction for GSR computation')
-    fd_movpar = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
+    in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
     fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
     in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
 
@@ -278,7 +279,13 @@ class FunctionalQC(BaseInterface):
         self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # FD
-        self._results['fd_stats'] = summary_fd(self.inputs.fd_movpar)
+        fd_data = np.loadtxt(self.inputs.in_fd)
+        num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
+        self._results['fd_stats'] = {
+            'mean_fd': float(fd_data.mean()),
+            'num_fd': int(num_fd),
+            'perc_fd': float(num_fd * 100 / (len(fd_data) + 1))
+        }
 
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),
