@@ -205,7 +205,6 @@ def summary_cover(dframe, qctype, failed=None, sub_id=None, out_file=None):
         cols.insert(0, 'subject_id')
         colnames.insert(0, 'Subject')
     else:
-        print('trace! sub_id={}'.format(sub_id))
         newdf = newdf[newdf.subject_id == sub_id]
 
     newdf = newdf[cols]
