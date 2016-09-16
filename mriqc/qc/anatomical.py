@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 11:36:08
+# @Last Modified time: 2016-09-15 15:27:03
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -250,6 +250,12 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
 
     # Artifact-free air region
     data = img[airmask > 0]
+
+    if np.all(data <= 0):
+        sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
+        fig.savefig(out_file, format='png', dpi=300)
+        plt.close()
+        return 0.0, out_file
 
     # Compute an upper bound threshold
     thresh = np.percentile(data[data > 0], 99.5)
