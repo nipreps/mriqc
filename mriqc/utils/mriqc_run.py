@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-31 14:09:05
+# @Last Modified time: 2016-09-16 11:47:50
 
 """
 =====
@@ -124,6 +124,9 @@ def main():
 
         if not op.exists(log_dir):
             os.makedirs(log_dir)
+
+        if not op.exists(op.join(settings['work_dir'], 'reports')):
+            os.makedirs(op.join(settings['work_dir'], 'reports'))
 
     # Set nipype config
     ncfg.update_config({

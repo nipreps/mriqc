@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 11:24:45
+# @Last Modified time: 2016-09-16 11:04:38
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range, object, str  # pylint: disable=W0622
@@ -16,9 +16,6 @@ from builtins import zip, range, object, str  # pylint: disable=W0622
 import sys
 import os
 import os.path as op
-import collections
-import glob
-import json
 
 import pandas as pd
 import matplotlib
@@ -28,6 +25,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import jinja2
 
+from mriqc.utils.misc import generate_csv
 from mriqc.interfaces.viz_utils import plot_measures, plot_all
 
 # matplotlib.rc('figure', figsize=(11.69, 8.27))  # for DINA4 size
@@ -56,9 +54,15 @@ FUNC_SPATIAL_QCGROUPS = [
 ]
 
 FUNC_TEMPORAL_QCGROUPS = [
-    ['dvars_std', 'dvars_nstd', 'dvars_vstd'],
-    ['fd_mean'], ['fd_num'], ['fd_perc'],
-    ['gcor'], ['m_tsnr'], ['outlier'], ['quality']
+    ['dvars_std', 'dvars_vstd'],
+    ['dvars_nstd'],
+    ['fd_mean'],
+    ['fd_num'],
+    ['fd_perc'],
+    ['gcor'],
+    ['m_tsnr'],
+    ['outlier'],
+    ['quality']
 ]
 
 
@@ -336,7 +340,6 @@ def report_anatomical(
     return _write_report(dframe, STRUCTURAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
                          condensed=condensed, out_file=out_file)
 
-
 def report_functional(
         dframe, subject=None, sc_split=False, condensed=True,
         out_file='functional.pdf'):
@@ -354,82 +357,6 @@ def report_functional(
 
     concat_pdf([fspatial, ftemporal], out_file)
     return out_file
-
-def generate_csv(data_type, settings):
-    """
-    Generates a csv file from all json files in the derivatives directory
-    """
-    datalist = []
-    errorlist = []
-    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives',
-                                  '{}*.json'.format(data_type)))
-    if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
-                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
-
-    for jsonfile in jsonfiles:
-        dfentry = _read_and_save(jsonfile)
-        if dfentry is not None:
-            if 'exec_error' not in list(dfentry.keys()):
-                datalist.append(dfentry)
-            else:
-                errorlist.append(dfentry['subject_id'])
-
-    dataframe = pd.DataFrame(datalist)
-    cols = dataframe.columns.tolist()  # pylint: disable=no-member
-
-    reorder = []
-    for field in ['run', 'session', 'subject']:
-        for col in cols:
-            if col.startswith(field):
-                reorder.append(col)
-
-    for col in reorder:
-        cols.remove(col)
-        cols.insert(0, col)
-
-    if 'mosaic_file' in cols:
-        cols.remove('mosaic_file')
-
-    # Sort the dataframe, with failsafe if pandas version is too old
-    try:
-        dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
-    except AttributeError:
-        #pylint: disable=E1101
-        dataframe = dataframe.sort(columns=['subject_id', 'session_id', 'run_id'])
-
-    # Drop duplicates
-    try:
-        #pylint: disable=E1101
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
-                                  inplace=True)
-    except TypeError:
-        #pylint: disable=E1101
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
-                                  inplace=True)
-
-    out_fname = op.join(settings['output_dir'], data_type + 'MRIQC.csv')
-    dataframe[cols].to_csv(out_fname, index=False)
-    return dataframe, errorlist
-
-
-def _read_and_save(in_file):
-    with open(in_file, 'r') as jsondata:
-        values = _flatten(json.load(jsondata))
-        return values
-    return None
-
-
-def _flatten(in_dict, parent_key='', sep='_'):
-    items = []
-    for k, val in list(in_dict.items()):
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(val, collections.MutableMapping):
-            items.extend(list(_flatten(val, new_key, sep=sep).items()))
-        else:
-            items.append((new_key, val))
-    return dict(items)
-
 
 class ConfigGen(object):
     """

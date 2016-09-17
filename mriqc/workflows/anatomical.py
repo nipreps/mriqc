@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-12 09:30:39
+# @Last Modified time: 2016-09-16 17:31:56
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function
 from __future__ import division
@@ -88,9 +88,21 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
                        'measures')
 
-    # Plot mosaic
-    plot = pe.Node(PlotMosaic(), name='plot_mosaic')
-    merg = pe.Node(niu.Merge(3), name='plot_metadata')
+    # Link images that should be reported
+    dsreport = pe.Node(nio.DataSink(
+        base_directory=op.join(settings['work_dir'], 'reports'),
+        parameterization=True), name='dsreport')
+    dsreport.inputs.container = 'anat'
+    dsreport.inputs.substitutions = [
+        ('_data', ''),
+        ('background_fit', 'plot_bgfit')
+    ]
+    dsreport.inputs.regexp_substitutions = [
+        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
+        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
+        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
+        ('sub-[^/.]*_T1w_out', 'mosaic_t1w')
+    ]
 
     # Connect all nodes
     workflow.connect([
@@ -124,44 +136,9 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
-        (arw, plot, [('out_file', 'in_file')]),
-        (inputnode, plot, [('subject_id', 'subject')]),
-        (inputnode, merg, [('session_id', 'in1'),
-                           ('run_id', 'in2')]),
-        (merg, plot, [('out', 'metadata')])
-    ])
-
-    if settings.get('mask_mosaic', False):
-        workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
-
-    # Save mosaic to well-formed path
-    mvplot = pe.Node(niu.Rename(
-        format_string='anatomical_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_plot')
-    dsplot = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
-    workflow.connect([
-        (inputnode, mvplot, [('subject_id', 'subject_id'),
-                             ('session_id', 'session_id'),
-                             ('run_id', 'run_id')]),
-        (plot, mvplot, [('out_file', 'in_file')]),
-        (mvplot, dsplot, [('out_file', '@mosaic')])
-    ])
-
-    # Save background-noise fitting plot
-    mvbgplot = pe.Node(niu.Rename(
-        format_string='anatomical_bgplot_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_bgplot')
-    dsbgplot = pe.Node(niu.Function(input_names=['in_file', 'base_directory'],
-        output_names=['out_file'], function=_bgplot), name='ds_bgplot')
-    dsbgplot.inputs.base_directory = settings['work_dir']
-
-    workflow.connect([
-        (inputnode, mvbgplot, [('subject_id', 'subject_id'),
-                               ('session_id', 'session_id'),
-                               ('run_id', 'run_id')]),
-        (measures, mvbgplot, [('out_noisefit', 'in_file')]),
-        (mvbgplot, dsbgplot, [('out_file', 'in_file')])
+        (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
+        (arw, dsreport, [('out_file', '@anat_t1w')]),
+        (asw, dsreport, [('outputnode.out_file', '@anat_t1_mask')])
     ])
 
     # Format name
@@ -184,7 +161,6 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
-        (plot, datasink, [('out_file', 'mosaic_file')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
