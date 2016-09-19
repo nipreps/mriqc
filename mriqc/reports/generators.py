@@ -72,7 +72,7 @@ class MRIQCReportPDF(object):
     Generates group and individual reports
     """
 
-    def __init__(self, qctype, settings, dpi=DEFAULT_DPI, figsize=DINA4_LANDSCAPE):
+    def __init__(self, qctype, settings, nproc=None, dpi=DEFAULT_DPI, figsize=DINA4_LANDSCAPE):
         if qctype[:4] == 'anat':
             qctype = 'anatomical'
         elif qctype[:4] == 'func':
@@ -93,6 +93,12 @@ class MRIQCReportPDF(object):
         out_csv = op.join(self.out_dir, qctype[:4] + 'MRIQC.csv')
         self.dataframe, self.failed = generate_csv(glob(qcjson), out_csv)
         self.result = {}
+
+        self.nproc = nproc
+        if self.nproc is None or self.nproc < 1:
+            from multiprocessing import cpu_count
+            self.nproc = cpu_count()
+
 
     def group_report(self):
         """ Generates the group report """
@@ -157,7 +163,30 @@ class MRIQCReportPDF(object):
                         subject_plots.append(fname)
 
         plt.close()
-        return subject_plots
+
+        # Summary cover
+        sfailed = []
+        if self.failed:
+            sfailed = ['%s (%s)' % (s[1], s[2])
+                       for s in self.failed if subid == s[0]]
+        out_sum = op.join(self.work_dir, '%s_summary_%s.pdf' % (self.qctype, subid))
+        self.summary_cover(sub_id=subid, out_file=out_sum)
+        subject_plots.insert(0, out_sum)
+
+        # Summary (violinplots) of QC measures
+        qc_ms = op.join(self.work_dir, '%s_measures_%s.pdf' % (self.qctype, subid))
+
+        func = getattr(self, '_report_' + self.qctype)
+        func(subject=subid, out_file=qc_ms)
+        subject_plots.append(qc_ms)
+
+        sub_path = None
+        if len(subject_plots) > 0:
+            # Generate final report with collected pdfs in plots
+            sub_path = op.join(self.out_dir, '{}_{}.pdf'.format(self.qctype, subid))
+            concat_pdf(subject_plots, sub_path)
+            self.result[subid] = {'success': True, 'path': sub_path}
+        return sub_path
 
     def individual_report(self, sub_list=None):
         if isinstance(sub_list, (str, bytes)):
@@ -170,35 +199,15 @@ class MRIQCReportPDF(object):
         if sub_list is None or not sub_list:
             sub_list = sorted(pd.unique(self.dataframe.subject_id.ravel())) #pylint: disable=E1101
 
-        func = getattr(self, '_report_' + self.qctype)
-
-        out_indiv_files = []
         # Generate individual reports for subjects
-        for subid in sub_list:
-            # Generate all mosaics (mosaic_*.nii.gz)
-            plots = self._subject_plots(subid)
+        out_indiv_files = [self._subject_plots(subid) for subid in sub_list]
 
-            # Summary cover
-            sfailed = []
-            if self.failed:
-                sfailed = ['%s (%s)' % (s[1], s[2])
-                           for s in self.failed if subid == s[0]]
-            out_sum = op.join(self.work_dir, '%s_summary_%s.pdf' % (self.qctype, subid))
-            self.summary_cover(sub_id=subid, out_file=out_sum)
-            plots.insert(0, out_sum)
-
-            # Summary (violinplots) of QC measures
-            qc_ms = op.join(self.work_dir, '%s_measures_%s.pdf' % (self.qctype, subid))
-
-            func(subject=subid, out_file=qc_ms)
-            plots.append(qc_ms)
-
-            if len(plots) > 0:
-                # Generate final report with collected pdfs in plots
-                sub_path = op.join(self.out_dir, '{}_{}.pdf'.format(self.qctype, subid))
-                concat_pdf(plots, sub_path)
-                out_indiv_files.append(sub_path)
-                self.result[subid] = {'success': True, 'path': sub_path}
+        # if self.nproc == 1:
+        #     out_indiv_files = [self._subject_plots(subid) for subid in sub_list]
+        # else:
+        #     from multiprocessing import Pool
+        #     pool = Pool(processes=self.nproc)
+        #     out_indiv_files = pool.map(getattr(self, '_subject_plots'), sub_list)
 
         return out_indiv_files
 
