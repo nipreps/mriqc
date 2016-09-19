@@ -103,7 +103,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     dsreport.inputs.substitutions = [
         ('_data', ''),
         ('fd_power_2012', 'plot_fd'),
-        ('tsnr.nii.gz', 'mosaic_tsnr.nii.gz')
+        ('tsnr.nii.gz', 'mosaic_TSNR.nii.gz'),
+        ('mean.nii.gz', 'mosaic_TSNR_mean.nii.gz'),
+        ('stdev.nii.gz', 'mosaic_TSNR_stdev.nii.gz')
     ]
     dsreport.inputs.regexp_substitutions = [
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
@@ -144,7 +146,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
-        (tsnr, dsreport, [('tsnr_file', '@tsnr')]),
+        (tsnr, dsreport, [('tsnr_file', '@tsnr'),
+                          ('stddev_file', '@tsnr_std'),
+                          ('mean_file', '@tsnr_mean')]),
         (bmw, dsreport, [('outputnode.out_file', '@mask')]),
         (fdnode, dsreport, [('out_figure', '@fdplot')]),
         (dvnode, dsreport, [('fig_std', '@dvars')]),
