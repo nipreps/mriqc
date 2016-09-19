@@ -25,11 +25,11 @@ test:
   override:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/func mriqc:py27 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${NIPYPE_NPROCS} --testing
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/func mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/anat mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${NIPYPE_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch/func:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${NIPYPE_NPROCS} --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${NIPYPE_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/anat mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch/anat:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
 
 general:
   artifacts:
