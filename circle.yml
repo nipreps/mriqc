@@ -3,7 +3,7 @@ machine:
     ANAT_NPROCS: 4
     FUNC_NPROCS: 8
     ANTS_NTHREADS: 4
-    SCRATCH: ~/scratch
+    SCRATCH: "$HOME/scratch"
   services:
     - docker
 
@@ -15,7 +15,7 @@ dependencies:
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker
-    - mkdir -p $SCRATCH/func $SCRATCH/anat
+    - mkdir -p $SCRATCH
     - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/host/0BxI12kyv2olZVUswazA3NkFvOXM/ds003_downsampled.tar.gz && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
     # - pip install coverage
   override:
@@ -34,6 +34,7 @@ test:
     #     timeout: 2600
     # - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
     - ls ~/scratch
+    - ls $SCRATCH
 
 general:
   artifacts:
