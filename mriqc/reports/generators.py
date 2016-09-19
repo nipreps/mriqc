@@ -116,11 +116,11 @@ class MRIQCReportPDF(object):
             concat_pdf(pdf_group, out_group_file)
             self.result['group'] = {'success': True, 'path': out_group_file}
 
-    def _individual_mosaics(self, subid):
+    def _subject_plots(self, subid):
         # Get subject-specific info
         subdf = self.dataframe.loc[self.dataframe['subject_id'] == subid]
         sessions = sorted(pd.unique(subdf.session_id.ravel()))
-        plots = []
+        subject_plots = []
 
         # Create figure here to avoid too many figures
         fig = plt.Figure(figsize=DINA4_LANDSCAPE)
@@ -141,15 +141,23 @@ class MRIQCReportPDF(object):
                         fname, _ = op.splitext(fname)
                     fname = fname[7:]
                     out_mosaic = op.join(
-                        self.report_dir, 'mosaic_{}_{}_ses-{}_run-{}_{}.pdf'.format(
+                        self.work_dir, 'mosaic_{}_{}_ses-{}_run-{}_{}.pdf'.format(
                             self.qctype[:4], subid, sesid, scanid, fname))
                     title = 'Filename: {}, session: {}, other: {}'.format(fname, sesid, scanid)
                     fig = plot_mosaic(mosaic, fig=fig, title=title)
                     fig.savefig(out_mosaic, dpi=self.dpi)
                     fig.clf()
-                    plots.append(out_mosaic)
-        plt.close('all')
-        return plots
+                    subject_plots.append(out_mosaic)
+
+                plots = op.join(self.report_dir, self.qctype[:4],
+                                '{}_ses-{}_{}/plot_*.pdf'.format(subid, sesid, scanid))
+
+                for fname in sorted(glob(plots)):
+                    if op.isfile(fname):
+                        subject_plots.append(fname)
+
+        plt.close()
+        return subject_plots
 
     def individual_report(self, sub_list=None):
         if isinstance(sub_list, (str, bytes)):
@@ -168,7 +176,7 @@ class MRIQCReportPDF(object):
         # Generate individual reports for subjects
         for subid in sub_list:
             # Generate all mosaics (mosaic_*.nii.gz)
-            plots = self._individual_mosaics(subid)
+            plots = self._subject_plots(subid)
 
             # Summary cover
             sfailed = []

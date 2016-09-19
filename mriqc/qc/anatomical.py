@@ -219,7 +219,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -241,7 +241,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
     # Write out figure of the fitting
-    out_file = op.abspath('background_fit.png')
+    out_file = op.abspath('background_fit.' + figformat)
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
@@ -258,7 +258,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
         sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='png', dpi=300)
+        fig.savefig(out_file, format='pdf', dpi=300)
         plt.close()
         return 0.0, out_file
 
@@ -280,7 +280,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
 
     sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
     ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.savefig(out_file, format='png', dpi=300)
+    fig.savefig(out_file, format=figformat, dpi=300)
     plt.close()
 
     # Find t2 (intensity at half width, right side)
