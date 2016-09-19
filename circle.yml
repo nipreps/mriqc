@@ -1,4 +1,7 @@
 machine:
+  environment:
+    NIPYPE_NPROCS: 4
+    ANTS_NTHREADS: 4
   services:
     - docker
 
@@ -22,16 +25,14 @@ test:
   override:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch mriqc:py27 /data/ds003_downsampled /scratch/func/out participant -d func -w /scratch/func/work --testing
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch mriqc:py35 /data/ds003_downsampled /scratch/func/out group -d func -w /scratch/func/work
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch mriqc:py35 /data/ds003_downsampled /scratch/anat/out participant -d anat -w /scratch/anat/work --nthreads 2 --testing --ants-nthreads 4:
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/func mriqc:py27 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${NIPYPE_NPROCS} --testing
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/func mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/anat mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${NIPYPE_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch mriqc:py27 /data/ds003_downsampled /scratch/anat/out group -d anat -w /scratch/anat/work
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v ~/scratch:/scratch -w /scratch/anat mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
 
 general:
   artifacts:
-    #- "~/scratch/outputs/ss-all/out"
-    #- "~/scratch/outputs/ss-all/work"
     - "~/scratch/func/out"
     - "~/scratch/func/work"
     - "~/scratch/anat/out"
