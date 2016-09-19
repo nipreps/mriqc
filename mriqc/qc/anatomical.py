@@ -232,7 +232,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     from matplotlib import rc
     import seaborn as sn
     import matplotlib.pyplot as plt
-    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
 
     if erodemask:
