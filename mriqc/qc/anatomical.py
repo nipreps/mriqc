@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-08-26 11:36:08
+# @Last Modified time: 2016-09-19 08:51:06
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -216,7 +216,7 @@ def art_qi1(airmask, artmask):
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
+    return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
 def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
@@ -241,7 +241,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
     # Write out figure of the fitting
-    out_file = op.abspath('background_fit.' + figformat)
+    out_file = op.abspath('background_fit.%s' % figformat)
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
