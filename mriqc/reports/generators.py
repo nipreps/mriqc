@@ -86,7 +86,7 @@ class MRIQCReportPDF(object):
 
         self.out_dir = settings.get('output_dir', os.getcwd())
         self.work_dir = settings.get('work_dir', op.abspath('work'))
-        self.report_dir = op.join(self.work_dir, 'reports')
+        self.report_dir = settings.get('report_dir', op.join(self.work_dir, 'reports'))
 
         # Generate csv table
         qcjson = op.join(self.out_dir, 'derivatives', '{}*.json'.format(self.qctype[:4]))

@@ -97,8 +97,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # Link images that should be reported
     dsreport = pe.Node(nio.DataSink(
-        base_directory=op.join(settings['work_dir'], 'reports'),
-        parameterization=True), name='dsreport')
+        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
     dsreport.inputs.container = 'func'
     dsreport.inputs.substitutions = [
         ('_data', ''),
