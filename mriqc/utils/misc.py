@@ -5,13 +5,11 @@
 """ Helper functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-from os import path as op
 import collections
-import glob
 import json
 import pandas as pd
-from io import open
-from builtins import next, range
+from io import open  # pylint: disable=W0622
+from builtins import next, range  # pylint: disable=W0622
 
 
 def bids_getfile(bids_dir, data_type, subject_id, session_id=None, run_id=None):

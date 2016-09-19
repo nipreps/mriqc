@@ -8,14 +8,12 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-16 17:58:39
+# @Last Modified time: 2016-09-19 08:43:47
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import sys
 import os
 import os.path as op
 from glob import glob
-import logging
 
 from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
 
@@ -103,7 +101,6 @@ class MRIQCReportPDF(object):
     def group_report(self):
         """ Generates the group report """
 
-        dframe = self.dataframe.copy()
         # Generate summary page
         out_sum = op.join(self.work_dir, 'summary_group.pdf')
         self.summary_cover(out_file=out_sum)
