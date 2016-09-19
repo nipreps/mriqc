@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-16 17:31:56
+# @Last Modified time: 2016-09-16 17:44:33
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function
 from __future__ import division
@@ -101,7 +101,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
         ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
         ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
-        ('sub-[^/.]*_T1w_out', 'mosaic_t1w')
+        ('sub-[^/.]*_T1w_out\\.', 'mosaic_t1w.')
     ]
 
     # Connect all nodes
@@ -138,7 +138,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (n4itk, measures, [('bias_image', 'in_bias')]),
         (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
         (arw, dsreport, [('out_file', '@anat_t1w')]),
-        (asw, dsreport, [('outputnode.out_file', '@anat_t1_mask')])
+        (asw, dsreport, [('outputnode.out_mask', '@anat_t1_mask')])
     ])
 
     # Format name

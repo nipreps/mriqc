@@ -20,7 +20,6 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     isdefined)
 
 from mriqc.interfaces.viz_utils import (plot_mosaic, plot_fd)
-from mriqc.reports import workflow_report
 
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
@@ -62,20 +61,18 @@ class PlotMosaic(BaseInterface):
         if isdefined(self.inputs.metadata):
             title += ' (' + '_'.join(self.inputs.metadata) + ')'
 
+        figsize = None
         if isdefined(self.inputs.figsize):
-            fig = plot_mosaic(
-                self.inputs.in_file,
-                title=title,
-                overlay_mask=mask,
-                figsize=self.inputs.figsize)
-        else:
-            fig = plot_mosaic(
-                self.inputs.in_file,
-                title=title,
-                overlay_mask=mask)
+            figsize = self.inputs.figsize
+
+        fig = plot_mosaic(
+            self.inputs.in_file,
+            title=title,
+            overlay_mask=mask,
+            figsize=figsize)
 
         fig.savefig(self.inputs.out_file, dpi=self.inputs.dpi)
-
+        fig.clf()
         return runtime
 
     def _list_outputs(self):
@@ -140,36 +137,36 @@ class PlotFD(BaseInterface):
         return outputs
 
 
-class ReportInputSpec(BaseInterfaceInputSpec):
-    in_csv = File(exists=True, mandatory=True, desc='File to be plotted')
-    qctype = traits.Enum('anatomical', 'functional', mandatory=True, desc='Type of report')
-    sub_list = traits.List([], traits.Tuple(traits.Str(), traits.Str(), traits.Str(), traits.Str()),
-                           usedefault=True, desc='List of subjects requested')
-    settings = traits.Dict(desc='Settings')
+# class ReportInputSpec(BaseInterfaceInputSpec):
+#     in_csv = File(exists=True, mandatory=True, desc='File to be plotted')
+#     qctype = traits.Enum('anatomical', 'functional', mandatory=True, desc='Type of report')
+#     sub_list = traits.List([], traits.Tuple(traits.Str(), traits.Str(), traits.Str(), traits.Str()),
+#                            usedefault=True, desc='List of subjects requested')
+#     settings = traits.Dict(desc='Settings')
 
 
-class ReportOutputSpec(TraitedSpec):
-    out_group = File(exists=True, desc='output pdf file, group report')
-    out_indiv = OutputMultiPath(File(exists=True), desc='individual reports')
+# class ReportOutputSpec(TraitedSpec):
+#     out_group = File(exists=True, desc='output pdf file, group report')
+#     out_indiv = OutputMultiPath(File(exists=True), desc='individual reports')
 
 
-class Report(BaseInterface):
-    input_spec = ReportInputSpec
-    output_spec = ReportOutputSpec
+# class Report(BaseInterface):
+#     input_spec = ReportInputSpec
+#     output_spec = ReportOutputSpec
 
-    def _run_interface(self, runtime):
-        settings = None
-        if isdefined(self.inputs.settings):
-            settings = self.inputs.settings
+#     def _run_interface(self, runtime):
+#         from mriqc.reports import workflow_report
+#         settings = None
+#         if isdefined(self.inputs.settings):
+#             settings = self.inputs.settings
+#         self._results = workflow_report(self.inputs.in_csv, self.inputs.qctype,
+#                                         self.inputs.sub_list, settings)
+#         return runtime
 
-        self._results = workflow_report(self.inputs.in_csv, self.inputs.qctype,
-                                        self.inputs.sub_list, settings)
-        return runtime
-
-    def _list_outputs(self):
-        outputs = self.output_spec().get()
-        outputs['out_group'] = self._results[0]
-        outputs['out_indiv'] = self._results[1]
-        return outputs
+#     def _list_outputs(self):
+#         outputs = self.output_spec().get()
+#         outputs['out_group'] = self._results[0]
+#         outputs['out_indiv'] = self._results[1]
+#         return outputs
 
 

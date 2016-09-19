@@ -300,17 +300,15 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
     return op.abspath(fname + '.' + ext)
 
 
-def generate_csv(data_type, settings):
+def generate_csv(jsonfiles, out_fname):
     """
     Generates a csv file from all json files in the derivatives directory
     """
     datalist = []
     errorlist = []
-    jsonfiles = glob.glob(op.join(settings['output_dir'], 'derivatives',
-                                  '{}*.json'.format(data_type)))
+
     if not jsonfiles:
-        raise RuntimeError('No individual QC files were found in the working directory \'{}\' for '
-                           'the \'{}\' data type.'.format(settings['work_dir'], data_type))
+        raise RuntimeError('No QC-json files found to generate QC table')
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
@@ -352,8 +350,6 @@ def generate_csv(data_type, settings):
         #pylint: disable=E1101
         dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                   inplace=True)
-
-    out_fname = op.join(settings['output_dir'], data_type + 'MRIQC.csv')
     dataframe[cols].to_csv(out_fname, index=False)
     return dataframe, errorlist
 

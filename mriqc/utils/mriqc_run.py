@@ -24,8 +24,6 @@ from lockfile import LockFile
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-
-from mriqc.reports.generators import workflow_report
 from mriqc.workflows import core as mwc
 from mriqc import __version__
 
@@ -172,8 +170,13 @@ def main():
 
     # Set up group level
     elif opts.analysis_level == 'group':
+        from mriqc.reports import MRIQCReportPDF
+
         for dtype in opts.data_type:
-            workflow_report(dtype, settings)
+            reporter = MRIQCReportPDF(dtype, settings)
+            reporter.group_report()
+            reporter.individual_report()
+
 
 
 if __name__ == '__main__':
