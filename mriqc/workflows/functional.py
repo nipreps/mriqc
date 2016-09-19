@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 11:34:13
+# @Last Modified time: 2016-09-16 16:28:38
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -79,10 +79,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True,
-                     save_plot=True, save_all=True), name='ComputeDVARS')
+    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True, save_plot=True,
+                     save_all=True, figdpi=200, figformat='pdf'), name='ComputeDVARS')
     fdnode = pe.Node(nac.FramewiseDisplacement(
-        normalize=True, save_plot=True, radius=fd_radius), name='ComputeFD')
+        normalize=True, save_plot=True, radius=fd_radius,
+        figdpi=200), name='ComputeFD')
 
     # AFNI quality measures
     fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -94,11 +95,23 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     measures = pe.Node(FunctionalQC(), name='measures')
 
-    # Plots
-    plot_mean = pe.Node(PlotMosaic(title='Mean fMRI'), name='plot_mean')
-    plot_tsnr = pe.Node(PlotMosaic(title='tSNR volume'), name='plot_tSNR')
-
-    merg = pe.Node(niu.Merge(3), name='plot_metadata')
+    # Link images that should be reported
+    dsreport = pe.Node(nio.DataSink(
+        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
+    dsreport.inputs.container = 'func'
+    dsreport.inputs.substitutions = [
+        ('_data', ''),
+        ('fd_power_2012', 'plot_fd'),
+        ('tsnr.nii.gz', 'mosaic_TSNR.nii.gz'),
+        ('mean.nii.gz', 'mosaic_TSNR_mean.nii.gz'),
+        ('stdev.nii.gz', 'mosaic_TSNR_stdev.nii.gz')
+    ]
+    dsreport.inputs.regexp_substitutions = [
+        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
+        ('sub-[^/.]*_dvars_std', 'plot_dvars'),
+        ('sub-[^/.]*_mask', 'mask'),
+        ('sub-[^/.]*_mcf_tstat', 'mosaic_epi_mean')
+    ]
 
     workflow.connect([
         (inputnode, datasource, [('bids_dir', 'bids_dir'),
@@ -108,22 +121,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, get_idx, [('start_idx', 'start_idx'),
                               ('stop_idx', 'stop_idx')]),
         (datasource, get_idx, [('out_file', 'in_file')]),
-        (inputnode, merg, [('session_id', 'in1'),
-                           ('run_id', 'in2'),
-                           ('site_name', 'in3')]),
         (datasource, hmcwf, [('out_file', 'inputnode.in_file')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
-        (mean, plot_mean, [('out_file', 'in_file')]),
-        (tsnr, plot_tsnr, [('tsnr_file', 'in_file')]),
         (hmcwf, fdnode, [('outputnode.out_movpar', 'in_plots')]),
-        (inputnode, plot_mean, [('subject_id', 'subject')]),
-        (inputnode, plot_tsnr, [('subject_id', 'subject')]),
-        (merg, plot_mean, [('out', 'metadata')]),
-        (merg, plot_tsnr, [('out', 'metadata')]),
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
         (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
@@ -140,50 +144,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (fdnode, outputnode, [('out_file', 'out_fd')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
-    ])
-
-    if settings.get('mosaic_mask', False):
-        workflow.connect(bmw, 'outputnode.out_file', plot_mean, 'in_mask')
-        workflow.connect(bmw, 'outputnode.out_file', plot_tsnr, 'in_mask')
-
-    # Save mean mosaic to well-formed path
-    mvmean = pe.Node(niu.Rename(
-        format_string='meanepi_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_mean_mosaic')
-    dsmean = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
-                     name='ds_mean')
-    workflow.connect([
-        (inputnode, mvmean, [('subject_id', 'subject_id'),
-                           ('session_id', 'session_id'),
-                           ('run_id', 'run_id')]),
-        (plot_mean, mvmean, [('out_file', 'in_file')]),
-        (mvmean, dsmean, [('out_file', '@mosaic')])
-    ])
-    # Save tSNR mosaic to well-formed path
-    mvtsnr = pe.Node(niu.Rename(
-        format_string='tsnr_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_tsnr_mosaic')
-    dstsnr = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
-                     name='ds_tsnr')
-    workflow.connect([
-        (inputnode, mvtsnr, [('subject_id', 'subject_id'),
-                           ('session_id', 'session_id'),
-                           ('run_id', 'run_id')]),
-        (plot_tsnr, mvtsnr, [('out_file', 'in_file')]),
-        (mvtsnr, dstsnr, [('out_file', '@mosaic')])
-    ])
-    # Save FD plot to well-formed path
-    mvfd = pe.Node(niu.Rename(
-        format_string='fd_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_fd_mosaic')
-    dsfd = pe.Node(nio.DataSink(base_directory=settings['work_dir'], parameterization=False),
-                   name='ds_fd')
-    workflow.connect([
-        (inputnode, mvfd, [('subject_id', 'subject_id'),
-                         ('session_id', 'session_id'),
-                         ('run_id', 'run_id')]),
-        (fdnode, mvfd, [('out_figure', 'in_file')]),
-        (mvfd, dsfd, [('out_file', '@mosaic')])
+        (mean, dsreport, [('out_file', '@meanepi')]),
+        (tsnr, dsreport, [('tsnr_file', '@tsnr'),
+                          ('stddev_file', '@tsnr_std'),
+                          ('mean_file', '@tsnr_mean')]),
+        (bmw, dsreport, [('outputnode.out_file', '@mask')]),
+        (fdnode, dsreport, [('out_figure', '@fdplot')]),
+        (dvnode, dsreport, [('fig_std', '@dvars')]),
     ])
 
     # Format name
@@ -204,9 +171,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
-        (plot_mean, datasink, [('out_file', 'mean_plot')]),
-        (plot_tsnr, datasink, [('out_file', 'tsnr_plot')]),
-        (fdnode, datasink, [('out_figure', 'fd_plot')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),

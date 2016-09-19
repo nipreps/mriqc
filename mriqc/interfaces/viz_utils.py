@@ -31,9 +31,13 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
+DEFAULT_DPI = 300
+DINA4_LANDSCAPE = (11.69, 8.27)
+DINA4_PORTRAIT = (8.27, 11.69)
+
 
 def plot_measures(df, measures, ncols=4, title='Group level report',
-                  subject=None, figsize=(8.27, 11.69)):
+                  subject=None, figsize=DINA4_PORTRAIT):
     import matplotlib.gridspec as gridspec
     nmeasures = len(measures)
     nrows = nmeasures // ncols
@@ -81,7 +85,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
     return fig
 
 
-def plot_all(df, groups, subject=None, figsize=(11.69, 5),
+def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
              strip_nsubj=10, title='Summary report'):
     import matplotlib.gridspec as gridspec
     # colnames = [v for gnames in groups for v in gnames]
@@ -155,7 +159,7 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
 
 
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
-                figsize=(11.7, 8.3)):
+                fig=None, figsize=DINA4_LANDSCAPE):
     from six import string_types
     from pylab import cm
 
@@ -183,7 +187,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
         overlay_data = nb.load(overlay_mask).get_data()
 
     # create figures
-    fig = plt.Figure(figsize=figsize)
+    if fig is None:
+        fig = plt.Figure(figsize=figsize)
+
     FigureCanvas(fig)
 
     fig.subplots_adjust(top=0.85)
@@ -223,7 +229,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     return fig
 
 
-def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.7, 8.3)):
+def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
 
     fd_power = _calc_fd(fd_file, fd_radius)
 
@@ -261,7 +267,7 @@ def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=(11.
 
 def plot_dist(
         main_file, mask_file, xlabel, distribution=None, xlabel2=None,
-        figsize=(11.7, 8.3)):
+        figsize=DINA4_LANDSCAPE):
     data = _get_values_inside_a_mask(main_file, mask_file)
 
     fig = plt.Figure(figsize=figsize)

@@ -3,12 +3,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # pylint: disable=no-member
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:29:40
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 15:27:03
+
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -216,10 +211,10 @@ def art_qi1(airmask, artmask):
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
+    return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -232,7 +227,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     from matplotlib import rc
     import seaborn as sn
     import matplotlib.pyplot as plt
-    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
 
     if erodemask:
@@ -241,7 +236,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
     # Write out figure of the fitting
-    out_file = op.abspath('background_fit.png')
+    out_file = op.abspath('background_fit.%s' % figformat)
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
@@ -264,7 +259,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
         sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='png', dpi=300)
+        fig.savefig(out_file, format='pdf', dpi=300)
         plt.close()
         return 0.0, out_file
 
@@ -286,7 +281,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True):
 
     sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
     ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.savefig(out_file, format='png', dpi=300)
+    fig.savefig(out_file, format=figformat, dpi=300)
     plt.close()
 
     # Find t2 (intensity at half width, right side)

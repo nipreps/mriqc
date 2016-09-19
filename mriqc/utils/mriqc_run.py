@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-31 14:09:05
+# @Last Modified time: 2016-09-16 11:47:50
 
 """
 =====
@@ -24,8 +24,6 @@ from lockfile import LockFile
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-
-from mriqc.reports.generators import workflow_report
 from mriqc.workflows import core as mwc
 from mriqc import __version__
 
@@ -114,8 +112,9 @@ def main():
         settings['ants_nthreads'] = opts.ants_nthreads
 
     log_dir = op.join(settings['output_dir'], 'logs')
+    settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
-    with LockFile('.mriqc-lock'):
+    with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
         if not op.exists(settings['output_dir']):
             os.makedirs(settings['output_dir'])
 
@@ -124,6 +123,9 @@ def main():
 
         if not op.exists(log_dir):
             os.makedirs(log_dir)
+
+        if not op.exists(settings['report_dir']):
+            os.makedirs(settings['report_dir'])
 
     # Set nipype config
     ncfg.update_config({
@@ -145,10 +147,9 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    LOGGER.info("""Running MRIQC version %s:
-            analysis_level=%s
-            participant_label=%s
-            settings=%s""", __version__, opts.analysis_level, opts.participant_label, settings)
+    LOGGER.info(
+        'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
+        __version__, opts.analysis_level, opts.participant_label, settings)
 
     # Set up participant level
     if opts.analysis_level == 'participant':
@@ -169,8 +170,13 @@ def main():
 
     # Set up group level
     elif opts.analysis_level == 'group':
+        from mriqc.reports import MRIQCReportPDF
+
         for dtype in opts.data_type:
-            workflow_report(dtype, settings)
+            reporter = MRIQCReportPDF(dtype, settings)
+            reporter.group_report()
+            reporter.individual_report()
+
 
 
 if __name__ == '__main__':
