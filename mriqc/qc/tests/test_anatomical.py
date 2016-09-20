@@ -7,85 +7,64 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-20 15:07:14
+# @Last Modified time: 2016-09-20 11:23:18
 """
 Anatomical tests
 """
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from past.utils import old_div
+from __future__ import division, print_function, absolute_import, unicode_literals
 import os.path as op
 import glob
 import nibabel as nb
+import pytest
 
+from math import sqrt
 from mriqc.data import get_brainweb_1mm_normal
-from mriqc.qc.anatomical import snr, cjv, art_qi1
+from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi1, art_qi2
 from mriqc.interfaces.anatomical import artifact_mask
 import numpy as np
 # from numpy.testing import allclose
 
-def test_snr():
-    data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
 
-    wmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_wht.nii.gz')
-    wmdata = nb.load(wmmask).get_data().astype(np.float32)
-    airmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_bck.nii.gz')
-    airdata = nb.load(airmask).get_data().astype(np.float32)
+class GroundTruth:
+    def __init__(self):
+        self.data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
+        self.wmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_wht.nii.gz')
+        self.wmdata = nb.load(self.wmmask).get_data().astype(np.float32)
+        self.airmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_bck.nii.gz')
+        self.airdata = nb.load(self.airmask).get_data().astype(np.float32)
 
-    ses = 'ses-pn0rf00'
-    im_file = op.join(data, ses, 'anat', 'sub-normal01_%s_T1w.nii.gz' % ses)
-    imdata = nb.load(im_file).get_data()
+        self.ses = 'ses-pn0rf00'
+        self.im_file = op.join(self.data, self.ses, 'anat', 'sub-normal01_%s_T1w.nii.gz' % self.ses)
+        self.imdata = nb.load(self.im_file).get_data()
+        self.fg_mean = np.median(self.imdata[self.wmdata > .99])
 
-    fg_mean = np.median(imdata[wmdata > .99])
+    def get_data(self, sigma, noise):
+        noisefunc = getattr(np.random, noise)
+        if noise == 'normal':
+            ndata = np.random.normal(0.0, scale=sigma*self.fg_mean, size=self.imdata.shape)
+        elif noise == 'rayleigh':
+            ndata = np.random.rayleigh(scale=sigma*self.fg_mean, size=self.imdata.shape)
 
-    snrs_bg = []
-    snrs_wm = []
-    sigmas = [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5]
-
-    for sigma_n in sigmas:
-        test_data = imdata + np.random.normal(0.0, scale=sigma_n*fg_mean, size=imdata.shape)
+        test_data = self.imdata + ndata
         test_data[test_data < 0] = 0
-        snrs_wm.append(snr(test_data, wmdata))
-        snrs_bg.append(snr(test_data, wmdata, airdata))
-
-    ref = old_div(1.,np.array(sigmas))
-    err1 = old_div(((np.array(snrs_wm) - ref) ** 2), ref)
-    err2 = old_div(((np.array(snrs_bg) - ref) ** 2), ref)
-    return [err < 6.0 for err in np.average([err1, err2], axis=1)]
+        return test_data, self.wmdata, self.airdata
 
 
-def test_snr_rayleigh():
-    data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
+@pytest.fixture
+def gtruth():
+    return GroundTruth()
 
-    wmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_wht.nii.gz')
-    wmdata = nb.load(wmmask).get_data().astype(np.float32)
-    airmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_bck.nii.gz')
-    airdata = nb.load(airmask).get_data().astype(np.float32)
 
-    ses = 'ses-pn0rf00'
-    im_file = op.join(data, ses, 'anat', 'sub-normal01_%s_T1w.nii.gz' % ses)
-    imdata = nb.load(im_file).get_data()
-
-    fg_mean = np.median(imdata[wmdata > .99])
-
-    snrs_bg = []
-    snrs_wm = []
-    sigmas = [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5]
-
-    for sigma_n in sigmas:
-        test_data = imdata + np.random.rayleigh(scale=sigma_n*fg_mean, size=imdata.shape)
-        test_data[test_data < 0] = 0
-        snrs_wm.append(snr(test_data, wmdata))
-        snrs_bg.append(snr(test_data, wmdata, airdata))
-
-    ref = old_div(1.,np.array(sigmas))
-    err1 = old_div(((np.array(snrs_wm) - ref) ** 2), ref)
-    err2 = old_div(((np.array(snrs_bg) - ref) ** 2), ref)
-    return [err < 2.0 for err in np.average([err1, err2], axis=1)]
-
-def test_cjv():
+@pytest.mark.parametrize("sigma,exp_cjv", [
+    (0.01, 0.45419429982401677),
+    (0.03, 0.5114948933353829),
+    (0.05, 0.6077553259357966),
+    (0.08, 0.7945079788409393),
+    (0.12, 1.0781050744254561),
+    (0.15, 1.3013580100905036),
+    (0.2, 1.6898180485107017)
+])
+def test_cjv(sigma, exp_cjv, rtol=0.1):
     data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
 
     wmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_wht.nii.gz')
@@ -98,34 +77,49 @@ def test_cjv():
     imdata = nb.load(im_file).get_data()
 
     fg_mean = np.mean(imdata[wmdata > .95])
-    cjvs = []
-    sigmas = [0.01, 0.03, 0.05, 0.08, 0.12, 0.15, 0.20]
-    exp_cjvs = [0.45419429982401677, 0.51149489333538289, 0.60775532593579662, 0.79450797884093927, 1.0781050744254561, 1.3013580100905036, 1.6898180485107017]
-
-    for sigma_n in sigmas:
-        test_data = imdata + np.random.normal(0.0, scale=sigma_n*fg_mean, size=imdata.shape)
-        test_data[test_data < 0] = 0
-        cjvs.append(cjv(test_data, wmmask=wmdata, gmmask=gmdata))
-
-    return np.allclose(cjvs, exp_cjvs, rtol=.01)
+    test_data = imdata + np.random.normal(0.0, scale=sigma*fg_mean, size=imdata.shape)
+    test_data[test_data < 0] = 0
+    assert abs(cjv(test_data, wmmask=wmdata, gmmask=gmdata) - exp_cjv) < rtol
 
 
-def test_artifacts():
+@pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
+@pytest.mark.parametrize("noise", ['normal', 'rayleigh'])
+def test_snr(gtruth, sigma, noise):
+    data = gtruth.get_data(sigma, noise)
+    error = abs(snr(*data[:2]) - (1 / sigma)) * sigma
+    assert  error < 6.0
+
+
+@pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
+@pytest.mark.parametrize("noise", ['normal', 'rayleigh'])
+def test_snr_dietrich(gtruth, sigma, noise):
+    data = gtruth.get_data(sigma, noise)
+    error = abs(snr_dietrich(*data) - (1 / sigma)) * sigma
+    assert  error < 6.0
+
+@pytest.mark.parametrize('brainweb', [
+    'sub-normal01_ses-pn1rf00_T1w.nii.gz',
+    'sub-normal01_ses-pn1rf20_T1w.nii.gz',
+    'sub-normal01_ses-pn1rf40_T1w.nii.gz',
+    'sub-normal01_ses-pn3rf00_T1w.nii.gz',
+    'sub-normal01_ses-pn3rf20_T1w.nii.gz',
+    'sub-normal01_ses-pn3rf40_T1w.nii.gz',
+    'sub-normal01_ses-pn5rf00_T1w.nii.gz',
+    'sub-normal01_ses-pn5rf20_T1w.nii.gz',
+    'sub-normal01_ses-pn5rf40_T1w.nii.gz',
+    'sub-normal01_ses-pn7rf00_T1w.nii.gz',
+    'sub-normal01_ses-pn7rf20_T1w.nii.gz',
+    'sub-normal01_ses-pn7rf40_T1w.nii.gz',
+    'sub-normal01_ses-pn9rf00_T1w.nii.gz',
+    'sub-normal01_ses-pn9rf20_T1w.nii.gz',
+    'sub-normal01_ses-pn9rf40_T1w.nii.gz'])
+def test_artifacts(brainweb):
     data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
     airdata = nb.load(op.join(get_brainweb_1mm_normal(), 'derivatives',
                               'volume_fraction_bck.nii.gz')).get_data()
 
-    files = glob.glob(op.join(data, '*', 'anat', 'sub-normal01_*_T1w.nii.gz'))
+    fname = op.join(data, brainweb.split('_')[1], 'anat', brainweb)
+    imdata = nb.load(fname).get_data().astype(np.float32)
 
-    delfiles = [f for f in files if 'ses-pn0' in f]
-    for fname in delfiles:
-        files.remove(fname)
-
-    values = []
-    for fname in files:
-        imdata = nb.load(fname).get_data().astype(np.float32)
-        artmask = artifact_mask(imdata, airdata)
-        airdata[artmask > 0] = 0
-        values.append(art_qi1(airdata, artmask))
-
-    return np.all(np.array(values) > .05)
+    value = art_qi2(imdata, airdata, save_figure=False)
+    assert value > .0 and value <= 1

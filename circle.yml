@@ -27,13 +27,15 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    # - docker run -i -v /etc/localtime:/etc/localtime:ro -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${FUNC_NPROCS} --testing
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${ANAT_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
 
+  post:
+    - mv /root/src/mriqc/tests.xml ${CIRCLE_TEST_REPORTS}/
 general:
   artifacts:
     - "~/scratch"

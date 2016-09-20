@@ -233,7 +233,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat='pdf'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -254,22 +254,25 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
         # Perform an opening operation on the background data.
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
-    # Write out figure of the fitting
-    out_file = op.abspath('background_fit.%s' % figformat)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
-    ax1.set_xlabel('Intensity')
-    ax1.set_ylabel('Frequency')
+    if save_figure:
+        # Write out figure of the fitting
+        out_file = op.abspath('background_fit.%s' % figformat)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(111)
+        fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+        ax1.set_xlabel('Intensity')
+        ax1.set_ylabel('Frequency')
 
     # Artifact-free air region
     data = img[airmask > 0]
 
     if np.all(data <= 0):
-        sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='png', dpi=300)
-        plt.close()
-        return 0.0, out_file
+        if save_figure:
+            sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
+            fig.savefig(out_file, format='png', dpi=300)
+            plt.close()
+            return 0.0, out_file
+        return 0.0
 
     # Compute an upper bound threshold
     thresh = np.percentile(data[data > 0], 99.5)
@@ -277,10 +280,12 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     # If thresh is too low, for some reason there is no noise
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
-        sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='pdf', dpi=300)
-        plt.close()
-        return 0.0, out_file
+        if save_figure:
+            sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
+            fig.savefig(out_file, format='pdf', dpi=300)
+            plt.close()
+            return 0.0, out_file
+        return 0.0
 
     # Threshold image
     data = data[data < thresh]
@@ -297,11 +302,11 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
 
-
-    sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
-    ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.savefig(out_file, format=figformat, dpi=300)
-    plt.close()
+    if save_figure:
+        sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
+        ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
+        fig.savefig(out_file, format=figformat, dpi=300)
+        plt.close()
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
@@ -318,7 +323,9 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     gof = 1.0 if gof > 1.0 else gof
     gof = 0.0 if gof < 0.0 else gof
 
-    return (gof, out_file)
+    if save_figure:
+        return (gof, out_file)
+    return gof
 
 
 def volume_fraction(pvms):

@@ -2,4 +2,5 @@
 
 source /etc/fsl/fsl.sh
 source /etc/afni/afni.sh
-nosetests -w /root/src/mriqc
+py.test -n 16 --junitxml=tests.xml
+chmod 777 tests.xml
