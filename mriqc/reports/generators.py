@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-20 08:46:17
+# @Last Modified time: 2016-09-20 15:25:21
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -28,6 +28,9 @@ import jinja2
 from mriqc.utils.misc import generate_csv
 from mriqc.interfaces.viz_utils import (
     plot_mosaic, plot_measures, plot_all, DINA4_LANDSCAPE, DEFAULT_DPI)
+
+import logging
+log = logging.getLogger('reports')
 
 STRUCTURAL_QCGROUPS = [
     ['cjv'],
@@ -88,7 +91,7 @@ class MRIQCReportPDF(object):
 
         self.out_dir = settings.get('output_dir', os.getcwd())
         self.work_dir = settings.get('work_dir', op.abspath('work'))
-        self.report_dir = settings.get('report_dir', op.join(self.work_dir, 'reports'))
+        self.report_dir = settings['report_dir']
 
         # Generate csv table
         qcjson = op.join(self.out_dir, 'derivatives', '{}*.json'.format(self.qctype[:4]))
@@ -139,8 +142,9 @@ class MRIQCReportPDF(object):
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
                 nii_paths = op.join(self.report_dir, self.qctype[:4],
-                                      '{}_ses-{}_{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
+                                      '{}_ses-[u]{}_[u]{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
                 nii_files = sorted(glob(nii_paths))
+                log.info('Found mosaic files: %s', nii_files)
 
                 for mosaic in nii_files:
                     fname, ext = op.splitext(op.basename(mosaic))
@@ -157,7 +161,7 @@ class MRIQCReportPDF(object):
                     subject_plots.append(out_mosaic)
 
                 plots = op.join(self.report_dir, self.qctype[:4],
-                                '{}_ses-{}_{}/plot_*.pdf'.format(subid, sesid, scanid))
+                                '{}_ses-[u]{}_[u]{}/plot_*.pdf'.format(subid, sesid, scanid))
 
                 for fname in sorted(glob(plots)):
                     if op.isfile(fname):
