@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-15 11:23:45
+# @Last Modified time: 2016-09-19 14:20:09
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -104,8 +104,7 @@ class StructuralQC(BaseInterface):
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(inudata, segdata, airdata, fglabel=tlabel,
-                               erode=erode))
+            snrvals.append(snr(inudata, segdata, fglabel=tlabel, erode=erode))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = float(np.mean(snrvals))
 

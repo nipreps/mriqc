@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-16 17:44:33
+# @Last Modified time: 2016-09-19 19:25:37
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function
 from __future__ import division
@@ -182,7 +182,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     return workflow
 
 
-def headmsk_wf(name='HeadMaskWorkflow'):
+def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     """Computes a head mask as in [Mortamet2009]_."""
 
     has_dipy = False
@@ -198,29 +198,40 @@ def headmsk_wf(name='HeadMaskWorkflow'):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
-    if not has_dipy:
+
+    enhance = pe.Node(niu.Function(
+        input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
+
+
+    if use_bet or not has_dipy:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
         workflow.connect([
-            (inputnode, bet, [('in_file', 'in_file')]),
+            (inputnode, enhance, [('in_file', 'in_file')]),
+            (enhance, bet, [('out_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
         return workflow
 
-    getwm = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=_get_wm), name='GetWM')
+    estsnr = pe.Node(niu.Function(
+        input_names=['in_file', 'seg_file'], output_names=['out_snr'],
+        function=_estimate_snr), name='EstimateSNR')
     denoise = pe.Node(Denoise(), name='Denoise')
     gradient = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=image_gradient), name='Grad')
+        input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
     thresh = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=gradient_threshold),
+        input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
                      name='GradientThreshold')
 
     workflow.connect([
-        (inputnode, getwm, [('in_segm', 'in_file')]),
-        (inputnode, denoise, [('in_file', 'in_file')]),
-        (getwm, denoise, [('out_file', 'noise_mask')]),
+        (inputnode, estsnr, [('in_file', 'in_file'),
+                             ('in_segm', 'seg_file')]),
+        (estsnr, denoise, [('out_snr', 'snr')]),
+        (inputnode, enhance, [('in_file', 'in_file')]),
+        (enhance, denoise, [('out_file', 'in_file')]),
+        (estsnr, gradient, [('out_snr', 'snr')]),
         (denoise, gradient, [('out_file', 'in_file')]),
+        (inputnode, thresh, [('in_segm', 'in_segm')]),
         (gradient, thresh, [('out_file', 'in_file')]),
         (thresh, outputnode, [('out_file', 'out_file')])
     ])
@@ -267,11 +278,6 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_template(), 'MNI152_T1_1mm_brain_bottom.nii.gz')
 
-    # Combine and invert mask
-    combine = pe.Node(niu.Function(
-        input_names=['head_mask', 'artifact_msk'], output_names=['out_file'],
-        function=combine_masks), name='combine_masks')
-
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
@@ -281,60 +287,48 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
         (norm, invt, [('reverse_transforms', 'transforms'),
                       ('reverse_invert_flags', 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, combine, [('head_mask', 'head_mask')]),
-        (invt, combine, [('output_image', 'artifact_msk')]),
-        (combine, qi1, [('out_file', 'air_msk')]),
+        (inputnode, qi1, [('head_mask', 'head_mask')]),
+        (invt, qi1, [('output_image', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
     ])
     return workflow
 
-def _get_wm(in_file, wm_val=3, out_file=None):
+def _estimate_snr(in_file, seg_file):
+    import nibabel as nb
+    from mriqc.qc.anatomical import snr
+    out_snr = snr(nb.load(in_file).get_data(), nb.load(seg_file).get_data(),
+                  fglabel='wm')
+    return out_snr
+
+def _enhance(in_file, out_file=None):
     import os.path as op
     import numpy as np
     import nibabel as nb
-    from scipy.ndimage import gaussian_gradient_magnitude as gradient
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('{}_wm{}'.format(fname, ext))
+        out_file = op.abspath('{}_enhanced{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
-    data = imnii.get_data().astype(np.uint8)
-    msk = np.zeros_like(data)
-    msk[data == wm_val] = 1
-    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
+    data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
+    range_max = np.percentile(data[data > 0], 99.98)
+    range_min = np.median(data[data > 0])
+
+    # Resample signal excess pixels
+    excess = np.where(data > range_max)
+    data[excess] = 0
+    data[excess] = np.random.choice(data[data > range_min], size=len(excess[0]))
+
+    nb.Nifti1Image(data, imnii.get_affine(), imnii.get_header()).to_filename(
+        out_file)
+
     return out_file
 
-def combine_masks(head_mask, artifact_msk, out_file=None):
-    """Computes an air mask from the head and artifact masks"""
-    import os.path as op
-    import numpy as np
-    import nibabel as nb
-    from scipy import ndimage as sim
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(head_mask))
-        if ext == '.gz':
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath('{}_combined{}'.format(fname, ext))
-
-    imnii = nb.load(head_mask)
-    hmdata = imnii.get_data()
-
-    msk = np.ones_like(hmdata, dtype=np.uint8)
-    msk[hmdata == 1] = 0
-
-    adata = nb.load(artifact_msk).get_data()
-    msk[adata == 1] = 0
-    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
-    return out_file
-
-def image_gradient(in_file, compute_abs=True, out_file=None):
+def image_gradient(in_file, snr, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
     import os.path as op
     import numpy as np
@@ -350,29 +344,25 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
-    range_max = np.percentile(data.reshape(-1), 90.)
-    data *= (100/range_max)
-    sigma = 1e-4 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
-    grad = gradient(data, sigma)
-
-    while grad.sum() < 1.e4:
-        sigma *= 1.5
-        grad = gradient(data, sigma)
-
-    if compute_abs:
-        grad = np.abs(grad)
+    datamax = np.percentile(data.reshape(-1), 99.5)
+    data *= 100 / datamax
+    grad = gradient(data, 3.0)
+    gradmax = np.percentile(grad.reshape(-1), 99.5)
+    grad *= 100.
+    grad /= gradmax
 
     nb.Nifti1Image(grad, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def gradient_threshold(in_file, thresh=1.0, out_file=None):
+def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     """ Compute a threshold from the histogram of the magnitude gradient image """
     import os.path as op
     import numpy as np
     import nibabel as nb
     from scipy import ndimage as sim
 
-    thresh *= 1e-2
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == '.gz':
@@ -380,36 +370,34 @@ def gradient_threshold(in_file, thresh=1.0, out_file=None):
             ext = ext2 + ext
         out_file = op.abspath('{}_gradmask{}'.format(fname, ext))
 
-
     imnii = nb.load(in_file)
-    data = imnii.get_data()
-    hist, bin_edges = np.histogram(data[data > 0], bins=128, density=True)  # pylint: disable=no-member
 
-    # Find threshold at 1% frequency
-    for i, freq in reversed(list(enumerate(hist))):
-        binw = bin_edges[i+1] - bin_edges[i]
-        if (freq * binw) >= thresh:
-            out_thresh = 0.5 * binw
-            break
+    hdr = imnii.get_header().copy()
+    hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
+
+    data = imnii.get_data().astype(np.float32)
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
-    mask[data > out_thresh] = 1
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
-    mask = sim.binary_opening(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+    mask[data > 15.] = 1
 
+    segdata = nb.load(in_segm).get_data().astype(np.uint8)
+    segdata[segdata > 0] = 1
+    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(np.uint8)  # pylint: disable=no-member
+    mask[segdata > 0] = 1
+
+    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)  # pylint: disable=no-member
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
+    artmsk = np.zeros_like(mask)
     if nb_labels > 2:
         sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
         ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
         for _, label in ordered[2:]:
             mask[label_im == label] = 0
+            artmsk[label_im == label] = 1
 
-    mask = sim.binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
     mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
-    hdr = imnii.get_header().copy()
-    hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
 
