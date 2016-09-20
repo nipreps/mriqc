@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-19 08:43:47
+# @Last Modified time: 2016-09-20 08:46:17
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -30,13 +30,17 @@ from mriqc.interfaces.viz_utils import (
     plot_mosaic, plot_measures, plot_all, DINA4_LANDSCAPE, DEFAULT_DPI)
 
 STRUCTURAL_QCGROUPS = [
+    ['cjv'],
+    ['cnr'],
+    ['efc'],
+    ['fber'],
+    ['wm2max'],
+    ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
+    ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+    ['qi1', 'qi2'],
+    ['inu_range', 'inu_med'],
     ['icvs_csf', 'icvs_gm', 'icvs_wm'],
     ['rpve_csf', 'rpve_gm', 'rpve_wm'],
-    ['inu_range', 'inu_med'],
-    ['cnr'], ['efc'], ['fber'], ['cjv'],
-    ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['qi1', 'qi2', 'wm2max'],
-    ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
      'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',
      'summary_mean_gm', 'summary_stdv_gm', 'summary_p05_gm', 'summary_p95_gm',
