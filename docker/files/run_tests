@@ -2,5 +2,5 @@
 
 source /etc/fsl/fsl.sh
 source /etc/afni/afni.sh
-py.test -n 16 --junitxml=tests.xml
-chmod 777 tests.xml
+py.test -n 16 --junitxml=/scratch/tests.xml
+chmod 777 /scratch/tests.xml

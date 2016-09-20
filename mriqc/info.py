@@ -63,7 +63,7 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/oesteban/nipype.git@master#egg=nipype',
+    'git+https://github.com/nipy/nipype.git@master#egg=nipype',
     'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf'
 ]
 
