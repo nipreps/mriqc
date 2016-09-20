@@ -7,19 +7,17 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-20 11:23:18
+# @Last Modified time: 2016-09-20 15:57:02
 """
 Anatomical tests
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 import os.path as op
-import glob
 import nibabel as nb
 import pytest
 
-from math import sqrt
 from mriqc.data import get_brainweb_1mm_normal
-from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi1, art_qi2
+from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi2
 from mriqc.interfaces.anatomical import artifact_mask
 import numpy as np
 # from numpy.testing import allclose
@@ -39,7 +37,6 @@ class GroundTruth:
         self.fg_mean = np.median(self.imdata[self.wmdata > .99])
 
     def get_data(self, sigma, noise):
-        noisefunc = getattr(np.random, noise)
         if noise == 'normal':
             ndata = np.random.normal(0.0, scale=sigma*self.fg_mean, size=self.imdata.shape)
         elif noise == 'rayleigh':
