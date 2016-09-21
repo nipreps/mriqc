@@ -11,7 +11,7 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import zip, range  # pylint: disable=W0622
+from builtins import zip, range, str, bytes  # pylint: disable=W0622
 import os.path as op
 from math import pi
 from six import string_types
@@ -21,7 +21,7 @@ from scipy.stats import chi  # pylint: disable=E0611
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
-def snr(img, smask, nmask=None, erode=True, fglabel=1):
+def snr(img, smask, erode=True, fglabel=1):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -33,7 +33,31 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1):
 
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
-    Alternatively, a background mask containing only noise can be provided.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param bool erode: erode masks before computations.
+    :param str fglabel: foreground label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
+    """
+    if isinstance(fglabel, (str, bytes)):
+        fglabel = FSL_FAST_LABELS[fglabel]
+
+    fgmask = _prepare_mask(smask, fglabel, erode)
+    fg_mean = np.median(img[fgmask > 0])
+    bgmask = fgmask
+    bg_mean = fg_mean
+    # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
+    bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
+
+    return float(fg_mean / bg_std)
+
+def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
+    r"""
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
+
     This must be an air mask around the head, and it should not contain artifacts.
     The computation is done following the eq. A.12 of [Dietrich2007]_, which
     includes a correction factor in the estimation of the standard deviation of
@@ -45,29 +69,24 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1):
 
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray fgmask: input foreground mask or segmentation
-    :param numpy.ndarray bgmask: input background mask or segmentation
+    :param numpy.ndarray smask: input foreground mask or segmentation
+    :param numpy.ndarray airmask: input background mask or segmentation
     :param bool erode: erode masks before computations.
     :param str fglabel: foreground label in the segmentation data.
-    :param str bglabel: background label in the segmentation data.
 
     :return: the computed SNR for the foreground segmentation
 
     """
+    if isinstance(fglabel, (str, bytes)):
+        fglabel = FSL_FAST_LABELS[fglabel]
+
     fgmask = _prepare_mask(smask, fglabel, erode)
-    bgmask = _prepare_mask(nmask, 1, erode) if nmask is not None else None
+    bgmask = _prepare_mask(airmask, 1, erode)
 
     fg_mean = np.median(img[fgmask > 0])
-    if bgmask is None:
-        bgmask = fgmask
-        bg_mean = fg_mean
-        # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
-        bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
-    else:
-        bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
+    bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
 
     return float(fg_mean / bg_std)
-
 
 def cnr(img, seg, lbl=None):
     r"""
@@ -214,7 +233,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat='pdf'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -235,22 +254,25 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
         # Perform an opening operation on the background data.
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
-    # Write out figure of the fitting
-    out_file = op.abspath('background_fit.%s' % figformat)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
-    ax1.set_xlabel('Intensity')
-    ax1.set_ylabel('Frequency')
+    if save_figure:
+        # Write out figure of the fitting
+        out_file = op.abspath('background_fit.%s' % figformat)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(111)
+        fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+        ax1.set_xlabel('Intensity')
+        ax1.set_ylabel('Frequency')
 
     # Artifact-free air region
     data = img[airmask > 0]
 
     if np.all(data <= 0):
-        sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='png', dpi=300)
-        plt.close()
-        return 0.0, out_file
+        if save_figure:
+            sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
+            fig.savefig(out_file, format='png', dpi=300)
+            plt.close()
+            return 0.0, out_file
+        return 0.0
 
     # Compute an upper bound threshold
     thresh = np.percentile(data[data > 0], 99.5)
@@ -258,10 +280,12 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     # If thresh is too low, for some reason there is no noise
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
-        sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
-        fig.savefig(out_file, format='pdf', dpi=300)
-        plt.close()
-        return 0.0, out_file
+        if save_figure:
+            sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
+            fig.savefig(out_file, format='pdf', dpi=300)
+            plt.close()
+            return 0.0, out_file
+        return 0.0
 
     # Threshold image
     data = data[data < thresh]
@@ -278,11 +302,11 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
 
-
-    sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
-    ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-    fig.savefig(out_file, format=figformat, dpi=300)
-    plt.close()
+    if save_figure:
+        sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
+        ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
+        fig.savefig(out_file, format=figformat, dpi=300)
+        plt.close()
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
@@ -299,7 +323,9 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, figformat='pdf'):
     gof = 1.0 if gof > 1.0 else gof
     gof = 0.0 if gof < 0.0 else gof
 
-    return (gof, out_file)
+    if save_figure:
+        return (gof, out_file)
+    return gof
 
 
 def volume_fraction(pvms):

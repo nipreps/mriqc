@@ -7,7 +7,7 @@ MRIQC
 
 """
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a4'
+__versionrev__ = 'a5'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -63,15 +63,14 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/oesteban/nipype.git@master#egg=nipype',
+    'git+https://github.com/nipy/nipype.git@master#egg=nipype',
     'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf'
 ]
 
 TESTS_REQUIRES = [
     'mock',
     'codecov',
-    'nose',
-    'doctest-ignore-unicode'
+    'pytest-xdist'
 ]
 
 EXTRA_REQUIRES = {

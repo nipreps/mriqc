@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-19 08:43:47
+# @Last Modified time: 2016-09-21 12:31:29
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -29,21 +29,29 @@ from mriqc.utils.misc import generate_csv
 from mriqc.interfaces.viz_utils import (
     plot_mosaic, plot_measures, plot_all, DINA4_LANDSCAPE, DEFAULT_DPI)
 
-STRUCTURAL_QCGROUPS = [
+import logging
+log = logging.getLogger('reports')
+
+STRUCTURAL_QCGROUPS = [[
+    ['cjv'],
+    ['cnr'],
+    ['efc'],
+    ['fber'],
+    ['wm2max'],
+    ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
+    ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+    ['qi1', 'qi2']
+], [
+    ['inu_range', 'inu_med'],
     ['icvs_csf', 'icvs_gm', 'icvs_wm'],
     ['rpve_csf', 'rpve_gm', 'rpve_wm'],
-    ['inu_range', 'inu_med'],
-    ['cnr'], ['efc'], ['fber'], ['cjv'],
-    ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-    ['qi1', 'qi2', 'wm2max'],
-    ['snr', 'snr_csf', 'snr_gm', 'snr_wm'],
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg',
      'summary_mean_csf', 'summary_stdv_csf', 'summary_p05_csf', 'summary_p95_csf',
      'summary_mean_gm', 'summary_stdv_gm', 'summary_p05_gm', 'summary_p95_gm',
      'summary_mean_wm', 'summary_stdv_wm', 'summary_p05_wm', 'summary_p95_wm']
-]
+]]
 
-FUNC_SPATIAL_QCGROUPS = [
+FUNCTIONAL_QCGROUPS = [[
     ['summary_mean_bg', 'summary_stdv_bg', 'summary_p05_bg', 'summary_p95_bg'],
     ['summary_mean_fg', 'summary_stdv_fg', 'summary_p05_fg', 'summary_p95_fg'],
     ['efc'],
@@ -51,9 +59,7 @@ FUNC_SPATIAL_QCGROUPS = [
     ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
     ['gsr_%s' % a for a in ['x', 'y']],
     ['snr']
-]
-
-FUNC_TEMPORAL_QCGROUPS = [
+], [
     ['dvars_std', 'dvars_vstd'],
     ['dvars_nstd'],
     ['fd_mean'],
@@ -63,7 +69,7 @@ FUNC_TEMPORAL_QCGROUPS = [
     ['m_tsnr'],
     ['outlier'],
     ['quality']
-]
+]]
 
 class MRIQCReportPDF(object):
     """
@@ -84,7 +90,7 @@ class MRIQCReportPDF(object):
 
         self.out_dir = settings.get('output_dir', os.getcwd())
         self.work_dir = settings.get('work_dir', op.abspath('work'))
-        self.report_dir = settings.get('report_dir', op.join(self.work_dir, 'reports'))
+        self.report_dir = settings['report_dir']
 
         # Generate csv table
         qcjson = op.join(self.out_dir, 'derivatives', '{}*.json'.format(self.qctype[:4]))
@@ -137,6 +143,7 @@ class MRIQCReportPDF(object):
                 nii_paths = op.join(self.report_dir, self.qctype[:4],
                                       '{}_ses-{}_{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
                 nii_files = sorted(glob(nii_paths))
+                log.info('Found mosaic files: %s', nii_files)
 
                 for mosaic in nii_files:
                     fname, ext = op.splitext(op.basename(mosaic))
@@ -213,26 +220,30 @@ class MRIQCReportPDF(object):
             self, subject=None, sc_split=False, condensed=True,
             out_file='anatomical.pdf'):
         """ Calls the report generator on the functional measures """
-        return _write_report(
-            self.dataframe, STRUCTURAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
-            condensed=condensed, out_file=out_file)
+        from tempfile import mkdtemp
+        wdir = mkdtemp()
+
+        out_files = []
+        for i, qc_group in enumerate(STRUCTURAL_QCGROUPS):
+            out_files.append(_write_report(
+                self.dataframe, qc_group, sub_id=subject, sc_split=sc_split,
+                condensed=condensed, out_file=op.join(wdir, 'agroup%04d.pdf' % i)))
+        concat_pdf(out_files, out_file)
+        return out_file
 
     def _report_functional(
             self, subject=None, sc_split=False, condensed=True,
             out_file='functional.pdf'):
         """ Calls the report generator on the functional measures """
         from tempfile import mkdtemp
-
         wdir = mkdtemp()
-        fspatial = _write_report(
-            self.dataframe, FUNC_TEMPORAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
-            condensed=condensed, out_file=op.join(wdir, 'fspatial.pdf'))
 
-        ftemporal = _write_report(
-            self.dataframe, FUNC_SPATIAL_QCGROUPS, sub_id=subject, sc_split=sc_split,
-            condensed=condensed, out_file=op.join(wdir, 'ftemporal.pdf'))
-
-        concat_pdf([fspatial, ftemporal], out_file)
+        out_files = []
+        for i, qc_group in enumerate(FUNCTIONAL_QCGROUPS):
+            out_files.append(_write_report(
+                self.dataframe, qc_group, sub_id=subject, sc_split=sc_split,
+                condensed=condensed, out_file=op.join(wdir, 'fgroup%04d.pdf' % i)))
+        concat_pdf(out_files, out_file)
         return out_file
 
     def summary_cover(self, sub_id=None, out_file=None):
