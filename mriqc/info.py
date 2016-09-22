@@ -6,6 +6,8 @@
 MRIQC
 
 """
+import sys
+
 __versionbase__ = '0.8.6'
 __versionrev__ = 'a6'
 __version__ = __versionbase__ + __versionrev__
@@ -67,8 +69,10 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/nipy/nipype.git#egg=nipype',
-    'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf',
 ]
+
+if sys.version_info[0] > 2:
+    LINKS_REQUIRES += ['git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf',]
 
 TESTS_REQUIRES = [
     'mock',
