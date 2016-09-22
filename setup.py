@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-29 18:40:10
+# @Last Modified time: 2016-09-21 16:53:15
 """ MRIQC setup script """
 
 import sys
@@ -41,9 +41,9 @@ def main():
         # Dependencies handling
         setup_requires=[],
         install_requires=ldict['REQUIRES'],
+        dependency_links=ldict['LINKS_REQUIRES'],
         tests_require=ldict['TESTS_REQUIRES'],
         extras_require=ldict['EXTRA_REQUIRES'],
-        dependency_links=ldict['LINKS_REQUIRES'],
         url=ldict['URL'],
         download_url=ldict['DOWNLOAD_URL'],
         entry_points={'console_scripts': ['mriqc=mriqc.utils.mriqc_run:main',

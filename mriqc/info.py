@@ -7,7 +7,7 @@ MRIQC
 
 """
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a5'
+__versionrev__ = 'a6'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -45,6 +45,7 @@ CLASSIFIERS = [
 REQUIRES = [
     'numpy',
     'future',
+    'scipy',
     'lockfile',
     'six',
     'matplotlib',
@@ -59,12 +60,14 @@ REQUIRES = [
     'nitime',
     'nilearn',
     'sklearn',
-    'scikit-learn'
+    'scikit-learn',
+    'nipype',
+    'rst2pdf',
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/nipy/nipype.git@master#egg=nipype',
-    'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf'
+    'git+https://github.com/nipy/nipype.git#egg=nipype',
+    'git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf',
 ]
 
 TESTS_REQUIRES = [
