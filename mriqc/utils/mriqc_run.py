@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-16 11:47:50
+# @Last Modified time: 2016-09-21 17:37:25
 
 """
 =====
@@ -82,6 +82,7 @@ def main():
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
+    g_outputs.add_argument('--report-dir', action='store')
 
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
@@ -112,7 +113,10 @@ def main():
         settings['ants_nthreads'] = opts.ants_nthreads
 
     log_dir = op.join(settings['output_dir'], 'logs')
-    settings['report_dir'] = op.join(settings['work_dir'], 'reports')
+
+    settings['report_dir'] = opts.report_dir
+    if not settings['report_dir']:
+        settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
     with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
         if not op.exists(settings['output_dir']):

@@ -9,7 +9,7 @@ MRIQC
 import sys
 
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a6'
+__versionrev__ = 'a7'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
