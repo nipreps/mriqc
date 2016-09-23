@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-23 09:19:52
+# @Last Modified time: 2016-09-23 09:39:02
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -29,9 +29,9 @@ from mriqc.utils.misc import generate_csv
 from mriqc.interfaces.viz_utils import (
     plot_mosaic, plot_measures, plot_all, DINA4_LANDSCAPE, DEFAULT_DPI)
 
-import logging
-log = logging.getLogger('mriqc.report')
-log.setLevel(logging.INFO)
+from mriqc import logging
+MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
+MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
 STRUCTURAL_QCGROUPS = [[
     ['cjv'],
@@ -104,7 +104,7 @@ class MRIQCReportPDF(object):
             from multiprocessing import cpu_count
             self.nproc = cpu_count()
 
-        log.info(
+        MRIQC_REPORT_LOG.info(
             'Report for %s QC initialized, found %d entries in the supporting csv '
             'file (%s)', qctype, len(self.dataframe[['subject_id']]),
             out_csv)
@@ -129,9 +129,9 @@ class MRIQCReportPDF(object):
             # Generate final report with collected pdfs in plots
             concat_pdf(pdf_group, out_group_file)
             self.result['group'] = {'success': True, 'path': out_group_file}
-            log.info('Generated group report %s', out_group_file)
+            MRIQC_REPORT_LOG.info('Generated group report %s', out_group_file)
         else:
-            log.warn('Group report was not generated')
+            MRIQC_REPORT_LOG.warn('Group report was not generated')
 
     def _subject_plots(self, subid):
         # Get subject-specific info
@@ -151,7 +151,7 @@ class MRIQCReportPDF(object):
                 nii_paths = op.join(self.report_dir, self.qctype[:4],
                                       '{}_ses-{}_{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
                 nii_files = sorted(glob(nii_paths))
-                log.info('Found mosaic files: %s', nii_files)
+                MRIQC_REPORT_LOG.info('Found mosaic files: %s', nii_files)
 
                 for mosaic in nii_files:
                     fname, ext = op.splitext(op.basename(mosaic))
@@ -177,7 +177,7 @@ class MRIQCReportPDF(object):
         plt.close()
 
         # Summary cover
-        sfailed = []
+        # sfailed = []
         if self.failed:
             sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in self.failed if subid == s[0]]
@@ -198,8 +198,9 @@ class MRIQCReportPDF(object):
             sub_path = op.join(self.out_dir, '{}_{}.pdf'.format(self.qctype, subid))
             concat_pdf(subject_plots, sub_path)
             self.result[subid] = {'success': True, 'path': sub_path}
-            log.info('Generated individual %s report (%s) for subject %s',
-                     self.qctype, sub_path, subid)
+            MRIQC_REPORT_LOG.info(
+                'Generated individual %s report (%s) for subject %s',
+                self.qctype, sub_path, subid)
         return sub_path
 
     def individual_report(self, sub_list=None):
@@ -261,7 +262,6 @@ class MRIQCReportPDF(object):
         from mriqc import __version__
         import datetime
         import numpy as np
-        from logging import CRITICAL
         from rst2pdf.createpdf import RstToPdf
         from rst2pdf.log import log
         import pkg_resources as pkgr
@@ -270,7 +270,7 @@ class MRIQCReportPDF(object):
         if failed is None:
             failed = []
 
-        log.setLevel(CRITICAL)
+        log.setLevel(logging.CRITICAL)
         newdf = self.dataframe.copy()
 
         # Format the size
