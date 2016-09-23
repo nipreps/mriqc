@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-21 12:31:29
+# @Last Modified time: 2016-09-23 09:19:52
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -30,7 +30,8 @@ from mriqc.interfaces.viz_utils import (
     plot_mosaic, plot_measures, plot_all, DINA4_LANDSCAPE, DEFAULT_DPI)
 
 import logging
-log = logging.getLogger('reports')
+log = logging.getLogger('mriqc.report')
+log.setLevel(logging.INFO)
 
 STRUCTURAL_QCGROUPS = [[
     ['cjv'],
@@ -103,6 +104,10 @@ class MRIQCReportPDF(object):
             from multiprocessing import cpu_count
             self.nproc = cpu_count()
 
+        log.info(
+            'Report for %s QC initialized, found %d entries in the supporting csv '
+            'file (%s)', qctype, len(self.dataframe[['subject_id']]),
+            out_csv)
 
     def group_report(self):
         """ Generates the group report """
@@ -124,6 +129,9 @@ class MRIQCReportPDF(object):
             # Generate final report with collected pdfs in plots
             concat_pdf(pdf_group, out_group_file)
             self.result['group'] = {'success': True, 'path': out_group_file}
+            log.info('Generated group report %s', out_group_file)
+        else:
+            log.warn('Group report was not generated')
 
     def _subject_plots(self, subid):
         # Get subject-specific info
@@ -190,6 +198,8 @@ class MRIQCReportPDF(object):
             sub_path = op.join(self.out_dir, '{}_{}.pdf'.format(self.qctype, subid))
             concat_pdf(subject_plots, sub_path)
             self.result[subid] = {'success': True, 'path': sub_path}
+            log.info('Generated individual %s report (%s) for subject %s',
+                     self.qctype, sub_path, subid)
         return sub_path
 
     def individual_report(self, sub_list=None):

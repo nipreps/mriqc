@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-21 17:37:25
+# @Last Modified time: 2016-09-23 09:16:35
 
 """
 =====
@@ -18,7 +18,7 @@ from __future__ import unicode_literals
 import os
 import os.path as op
 from multiprocessing import cpu_count
-from nipype import logging, config as ncfg
+import logging
 from lockfile import LockFile
 
 from argparse import ArgumentParser
@@ -27,10 +27,12 @@ from argparse import RawTextHelpFormatter
 from mriqc.workflows import core as mwc
 from mriqc import __version__
 
-LOGGER = logging.getLogger('workflow')
-
+LOGGER = logging.getLogger('mriqc')
+LOGGER.setLevel(logging.INFO)
 
 def main():
+    from nipype import config as ncfg
+
     """Entry point"""
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
