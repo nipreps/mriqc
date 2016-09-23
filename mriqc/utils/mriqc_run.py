@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-21 17:37:25
+# @Last Modified time: 2016-09-23 09:41:04
 
 """
 =====
@@ -18,19 +18,17 @@ from __future__ import unicode_literals
 import os
 import os.path as op
 from multiprocessing import cpu_count
-from nipype import logging, config as ncfg
 from lockfile import LockFile
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
 from mriqc.workflows import core as mwc
-from mriqc import __version__
-
-LOGGER = logging.getLogger('workflow')
-
+from mriqc import __version__, MRIQC_LOG
 
 def main():
+    from nipype import config as ncfg
+
     """Entry point"""
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -151,7 +149,7 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
-    LOGGER.info(
+    MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
         __version__, opts.analysis_level, opts.participant_label, settings)
 
@@ -162,7 +160,7 @@ def main():
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
-                LOGGER.warn('No scans were found for the given inputs')
+                MRIQC_LOG.warn('No scans were found for the given inputs')
                 continue
 
             workflow.base_dir = settings['work_dir']
