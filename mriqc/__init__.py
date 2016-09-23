@@ -12,6 +12,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
+import logging
+
 from .info import (
     __versionbase__,
     __versionrev__,
@@ -26,3 +28,6 @@ from .info import (
     __description__,
     __longdesc__
 )
+
+MRIQC_LOG = logging.getLogger('mriqc')
+MRIQC_LOG.setLevel(logging.INFO)
