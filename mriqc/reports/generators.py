@@ -8,7 +8,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-21 12:31:29
+# @Last Modified time: 2016-09-23 09:33:52
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -141,9 +141,17 @@ class MRIQCReportPDF(object):
             # Each scan has a volume and (optional) fd plot
             for scanid in scans:
                 nii_paths = op.join(self.report_dir, self.qctype[:4],
-                                      '{}_ses-{}_{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
+                                    '{}_ses-{}_{}/mosaic*.nii.gz'.format(subid, sesid, scanid))
                 nii_files = sorted(glob(nii_paths))
-                log.info('Found mosaic files: %s', nii_files)
+                if not nii_files:
+                    nii_paths = op.join(
+                        self.report_dir, self.qctype[:4], '{}_ses-[u]{}_[u]{}/mosaic*.nii.gz'.format(
+                            subid, sesid, scanid))
+                    nii_files = sorted(glob(nii_paths))
+
+                if not nii_files:
+                    log.warning('No mosaic files were found for subject %s, session %s',
+                                subid, sesid)
 
                 for mosaic in nii_files:
                     fname, ext = op.splitext(op.basename(mosaic))
@@ -161,15 +169,25 @@ class MRIQCReportPDF(object):
 
                 plots = op.join(self.report_dir, self.qctype[:4],
                                 '{}_ses-{}_{}/plot_*.pdf'.format(subid, sesid, scanid))
+                pdf_plots = sorted(glob(plots))
 
-                for fname in sorted(glob(plots)):
+                if not pdf_plots:
+                    plots = op.join(
+                        self.report_dir, self.qctype[:4],
+                        '{}_ses-[u]{}_[u]{}/plot_*.pdf'.format(subid, sesid, scanid))
+                    pdf_plots = sorted(glob(plots))
+
+                if not pdf_plots:
+                    log.warning('No PDF plots were found for subject %s, session %s',
+                                subid, sesid)
+                for fname in sorted(pdf_plots):
                     if op.isfile(fname):
                         subject_plots.append(fname)
 
         plt.close()
 
         # Summary cover
-        sfailed = []
+        # sfailed = []
         if self.failed:
             sfailed = ['%s (%s)' % (s[1], s[2])
                        for s in self.failed if subid == s[0]]
