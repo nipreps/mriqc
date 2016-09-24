@@ -7,14 +7,10 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-19 19:25:37
+# @Last Modified time: 2016-09-23 17:15:47
 """ A QC workflow for anatomical MRI """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from builtins import zip
-from builtins import range
+from __future__ import print_function, division, absolute_import, unicode_literals
+from builtins import zip, range
 import os
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -26,11 +22,10 @@ from nipype.interfaces.afni import preprocess as afp
 from nipype.interfaces.freesurfer import MRIConvert
 
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-
+from niworkflows.anat.mni import RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
-from mriqc.interfaces.viz import PlotMosaic
 from mriqc.interfaces.bids import ReadSidecarJSON
 
 from mriqc.utils.misc import bids_getfile, bids_path
@@ -247,32 +242,15 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
     if settings is None:
         settings = {}
 
-    testing = settings.get('testing', False)
-    defset = ('data/t1-mni_registration.json' if not testing else
-              'data/t1-mni_registration_testing.json')
-    ants_settings = settings.get('ants_settings', pkgr.resource_filename(
-        'mriqc', defset))
-
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    def _invt_flags(transforms):
-        return [True] * len(transforms)
-
     # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(num_threads=settings.get('ants_nthreads', 4),
-                   from_file=ants_settings), name='normalize')
-
-    if testing:
-        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
-        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
-                                               'MNI152_T1_2mm_brain_mask.nii.gz')
-    else:
-        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_1mm.nii.gz')
-        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
-                                               'MNI152_T1_1mm_brain_mask.nii.gz')
+    norm = pe.Node(RobustMNINormalization(num_threads=settings.get('ants_nthreads', 4)),
+                   name='normalize')
+    norm.inputs.testing = settings.get('testing', False)
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
@@ -283,7 +261,7 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
     workflow.connect([
         (inputnode, qi1, [('in_file', 'in_file')]),
         (inputnode, norm, [('in_noinu', 'moving_image'),
-                           ('in_mask', 'moving_image_mask')]),
+                           ('in_mask', 'moving_mask')]),
         (norm, invt, [('reverse_transforms', 'transforms'),
                       ('reverse_invert_flags', 'invert_transform_flags')]),
         (inputnode, invt, [('in_mask', 'reference_image')]),
