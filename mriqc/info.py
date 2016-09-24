@@ -9,7 +9,7 @@ MRIQC
 import sys
 
 __versionbase__ = '0.8.6'
-__versionrev__ = 'a7'
+__versionrev__ = 'a8'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -52,7 +52,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a5',
+    'niworkflows>=0.0.3a6',
     'pandas',
     'dipy',
     'jinja2',

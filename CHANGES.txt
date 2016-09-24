@@ -1,6 +1,8 @@
 Release 0.8.6
 =============
 
+* [ENH] Moved MNI spatial normalization to NIworkflows, and made robust.
+* [ENH] De-coupled participant and group (reports) levels
 * [ENH] Use new FD and DVARs calculations from nipype (#172)
 * [ENH] Started with python3 compatibility
 * [ENH] Added new M2WM measure #158
