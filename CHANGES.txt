@@ -1,6 +1,7 @@
 Release 0.8.6
 =============
 
+* [FIX] Error creating derivatives folder
 * [ENH] Moved MNI spatial normalization to NIworkflows, and made robust.
 * [ENH] De-coupled participant and group (reports) levels
 * [ENH] Use new FD and DVARs calculations from nipype (#172)
