@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-23 09:41:04
+# @Last Modified time: 2016-09-28 14:46:27
 
 """
 =====
@@ -17,6 +17,7 @@ from __future__ import unicode_literals
 
 import os
 import os.path as op
+from errno import EEXIST
 from multiprocessing import cpu_count
 from lockfile import LockFile
 
@@ -117,17 +118,10 @@ def main():
         settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
     with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
-        if not op.exists(settings['output_dir']):
-            os.makedirs(settings['output_dir'])
-
-        if not op.exists(settings['work_dir']):
-            os.makedirs(settings['work_dir'])
-
-        if not op.exists(log_dir):
-            os.makedirs(log_dir)
-
-        if not op.exists(settings['report_dir']):
-            os.makedirs(settings['report_dir'])
+        _check_folder(settings['output_dir'])
+        _check_folder(settings['work_dir'])
+        _check_folder(log_dir)
+        _check_folder(settings['report_dir'])
 
     # Set nipype config
     ncfg.update_config({
@@ -179,7 +173,13 @@ def main():
             reporter.group_report()
             reporter.individual_report()
 
-
+def _check_folder(folder):
+    if not op.exists(folder):
+        try:
+            os.makedirs(folder)
+        except OSError as exc:
+            if not exc.errno == EEXIST:
+                raise
 
 if __name__ == '__main__':
     main()
