@@ -7,11 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-<<<<<<< HEAD
-# @Last Modified time: 2016-10-04 14:52:47
-=======
-# @Last Modified time: 2016-10-04 12:20:50
->>>>>>> enh/RemoveDownloads
+# @Last Modified time: 2016-10-04 14:54:16
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
