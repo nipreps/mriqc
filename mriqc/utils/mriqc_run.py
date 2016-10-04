@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-28 14:46:27
+# @Last Modified time: 2016-10-04 14:47:31
 
 """
 =====
@@ -26,6 +26,7 @@ from argparse import RawTextHelpFormatter
 
 from mriqc.workflows import core as mwc
 from mriqc import __version__, MRIQC_LOG
+from mriqc.utils.misc import check_folder
 
 def main():
     from nipype import config as ncfg
@@ -118,10 +119,10 @@ def main():
         settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
     with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
-        _check_folder(settings['output_dir'])
-        _check_folder(settings['work_dir'])
-        _check_folder(log_dir)
-        _check_folder(settings['report_dir'])
+        check_folder(settings['output_dir'])
+        check_folder(settings['work_dir'])
+        check_folder(log_dir)
+        check_folder(settings['report_dir'])
 
     # Set nipype config
     ncfg.update_config({
@@ -172,14 +173,6 @@ def main():
             reporter = MRIQCReportPDF(dtype, settings)
             reporter.group_report()
             reporter.individual_report()
-
-def _check_folder(folder):
-    if not op.exists(folder):
-        try:
-            os.makedirs(folder)
-        except OSError as exc:
-            if not exc.errno == EEXIST:
-                raise
 
 if __name__ == '__main__':
     main()

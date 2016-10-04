@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-23 17:15:47
+# @Last Modified time: 2016-10-04 14:51:50
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -21,6 +21,7 @@ from nipype.interfaces import ants
 from nipype.interfaces.afni import preprocess as afp
 from nipype.interfaces.freesurfer import MRIConvert
 
+from niworkflows.data import get_mni_template
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.anat.mni import RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
@@ -28,8 +29,8 @@ from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
 
-from mriqc.utils.misc import bids_getfile, bids_path
-from mriqc.data.getters import get_mni_template
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder
+
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     """
@@ -40,10 +41,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
+    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
-    if not op.exists(deriv_dir):
-        os.makedirs(deriv_dir)
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['bids_dir', 'subject_id', 'session_id',
