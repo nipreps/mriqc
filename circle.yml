@@ -4,6 +4,7 @@ machine:
     FUNC_NPROCS: 8
     ANTS_NTHREADS: 4
     SCRATCH: "$HOME/scratch"
+    DS003_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f328f6b83f6901ef94cf70"
   services:
     - docker
 
@@ -16,7 +17,7 @@ dependencies:
     # Download test data
     - mkdir -p ~/data/ ~/docker
     - mkdir -p $SCRATCH
-    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q https://3552243d5be815c1b09152da6525cb8fe7b900a6.googledrive.com/host/0BxI12kyv2olZVUswazA3NkFvOXM/ds003_downsampled.tar.gz && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
+    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ds003_downsampled.tar.gz "${DS003_URL}" && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
     # - pip install coverage
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
