@@ -43,14 +43,14 @@ ENV PATH /usr/local/miniconda/bin:$PATH
 RUN conda config --add channels conda-forge && \
     conda install -y numpy scipy lockfile nipype matplotlib && \
     pip install -r requirements.txt && \
+    python -c "from niworkflows.data import get_mni_template; get_mni_template()" && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
 WORKDIR /root/src/mriqc
 COPY . /root/src/mriqc/
 
-RUN pip install -e .[all] && \
-    python -c "from mriqc.data import get_mni_template; get_mni_template()"
+RUN pip install -e .[all]
 
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
