@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-20 15:57:02
+# @Last Modified time: 2016-10-04 12:21:22
 """
 Anatomical tests
 """
@@ -16,7 +16,7 @@ import os.path as op
 import nibabel as nb
 import pytest
 
-from mriqc.data import get_brainweb_1mm_normal
+from niworkflows.data import get_brainweb_1mm_normal
 from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi2
 from mriqc.interfaces.anatomical import artifact_mask
 import numpy as np

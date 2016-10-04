@@ -7,7 +7,11 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-04 14:51:50
+<<<<<<< HEAD
+# @Last Modified time: 2016-10-04 14:52:47
+=======
+# @Last Modified time: 2016-10-04 12:20:50
+>>>>>>> enh/RemoveDownloads
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -28,7 +32,6 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
-
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder
 
 

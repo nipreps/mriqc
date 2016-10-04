@@ -30,7 +30,7 @@ def bids_getfile(bids_dir, data_type, subject_id, session_id=None, run_id=None):
 
     Example::
 
-    >>> from mriqc.data import get_ds003_downsampled
+    >>> from niworkflows.data import get_ds003_downsampled
     >>> bids_getfile(get_ds003_downsampled(), 'anat', '05') #doctest: +ELLIPSIS +IGNORE_UNICODE
     '...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
 

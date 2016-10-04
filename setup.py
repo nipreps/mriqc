@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-09-21 16:53:15
+# @Last Modified time: 2016-10-04 12:26:29
 """ MRIQC setup script """
 
 import sys
@@ -53,9 +53,7 @@ def main():
                                           'dfcheck=mriqc.utils.dfcheck:main',
                                           'participants=mriqc.utils.subject_wrangler:main']},
         packages=find_packages(),
-        package_data={'mriqc': ['data/t1-mni_registration.json',
-                                'data/t1-mni_registration_testing.json',
-                                'data/reports/*.rst',
+        package_data={'mriqc': ['data/reports/*.rst',
                                 'data/tests/*']},
         zip_safe=False,
     )
