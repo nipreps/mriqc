@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-16 16:28:38
+# @Last Modified time: 2016-10-04 14:49:29
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -26,7 +26,7 @@ from nipype.interfaces.afni import preprocess as afp
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
-from mriqc.utils.misc import bids_getfile, bids_path
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder
 
 
 def fmri_qc_workflow(name='fMRIQC', settings=None):
@@ -36,10 +36,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath(op.join(settings['output_dir'], 'derivatives'))
-
-    if not op.exists(deriv_dir):
-        os.makedirs(deriv_dir)
+    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Read FD radius, or default it
     fd_radius = settings.get('fd_radius', 50.)
