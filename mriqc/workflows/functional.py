@@ -23,7 +23,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces.afni import preprocess as afp
 
-from mriqc.workflows.utils import fmri_getidx, fwhm_dict
+from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder
@@ -274,10 +274,15 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
     hmc_A = hmc.clone('motion_correct_A')
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
 
+    movpar = pe.Node(niu.Function(
+        function=fd_jenkinson, input_names=['in_file', 'rmax'],
+        output_names=['out_file']), name='Mat2Movpar')
+
     workflow.connect([
         (inputnode, drop_trs, [('in_file', 'in_file_a'),
                                ('start_idx', 'start_idx'),
                                ('stop_idx', 'stop_idx')]),
+        (inputnode, movpar, [('fd_radius', 'rmax')]),
         (deoblique, reorient, [('out_file', 'in_file')]),
         (reorient, get_mean_RPI, [('out_file', 'in_file')]),
         (reorient, hmc, [('out_file', 'in_file')]),
@@ -285,8 +290,9 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
         (hmc, get_mean_motion, [('out_file', 'in_file')]),
         (reorient, hmc_A, [('out_file', 'in_file')]),
         (get_mean_motion, hmc_A, [('out_file', 'basefile')]),
-        (hmc_A, outputnode, [('out_file', 'out_file'),
-                             ('oned_file', 'out_movpar')])
+        (hmc_A, outputnode, [('out_file', 'out_file')]),
+        (hmc_A, movpar, [('oned_matrix_save', 'in_file')]),
+        (movpar, outputnode, [('out_file', 'out_movpar')])
     ])
 
     if st_correct:
