@@ -86,15 +86,11 @@ class PlotFDInputSpec(BaseInterfaceInputSpec):
                    desc='File to be plotted')
     fd_radius = traits.Float(80., mandatory=True, usedefault=True,
                              desc='Radius to compute power of FD')
-    title = traits.Str('FD', usedefault=True,
-                       desc='modality name to be prepended')
-    subject = traits.Str(desc='Subject id')
-    metadata = traits.List(traits.Str, desc='additional metadata')
     figsize = traits.Tuple(
         (8.27, 3.0), traits.Float, traits.Float, usedefault=True,
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
-    out_file = File('fd.pdf', usedefault=True, desc='output file name')
+    out_file = File('fd_power_2012.pdf', usedefault=True, desc='output file name')
 
 
 class PlotFDOutputSpec(TraitedSpec):
@@ -102,26 +98,19 @@ class PlotFDOutputSpec(TraitedSpec):
 
 
 class PlotFD(BaseInterface):
-
     """
     Plots the frame displacement of a dataset
     """
+
     input_spec = PlotFDInputSpec
     output_spec = PlotFDOutputSpec
 
     def _run_interface(self, runtime):
-        title = self.inputs.title
-        if isdefined(self.inputs.subject):
-            title += ', subject {}'.format(self.inputs.subject)
-
-        if isdefined(self.inputs.metadata):
-            title += ' (' + '_'.join(self.inputs.metadata) + ')'
 
         if isdefined(self.inputs.figsize):
             fig = plot_fd(
                 self.inputs.in_file,
                 self.inputs.fd_radius,
-                title=title,
                 figsize=self.inputs.figsize)
         else:
             fig = plot_fd(self.inputs.in_file,

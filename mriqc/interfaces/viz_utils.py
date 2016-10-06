@@ -229,7 +229,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     return fig
 
 
-def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
+def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
 
     fd_power = _calc_fd(fd_file, fd_radius)
 
@@ -261,7 +261,6 @@ def plot_fd(fd_file, fd_radius, title='FD plot', mean_fd_dist=None, figsize=DINA
         label = r'$\overline{{\text{{FD}}}}$ = {0:g}'.format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
-    fig.suptitle(title)
     return fig
 
 
