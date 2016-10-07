@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-04 14:49:29
+# @Last Modified time: 2016-10-07 14:29:01
 """ A QC workflow for fMRI data """
 from __future__ import print_function
 from __future__ import division
@@ -101,7 +101,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         ('fd_power_2012', 'plot_fd'),
         ('tsnr.nii.gz', 'mosaic_TSNR.nii.gz'),
         ('mean.nii.gz', 'mosaic_TSNR_mean.nii.gz'),
-        ('stdev.nii.gz', 'mosaic_TSNR_stdev.nii.gz')
+        ('stdev.nii.gz', 'mosaic_stdev.nii.gz')
     ]
     dsreport.inputs.regexp_substitutions = [
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
@@ -235,8 +235,8 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_movpar']), name='outputnode')
 
-    mcflirt = pe.Node(fsl.MCFLIRT(mean_vol=True, save_plots=True,
-                                  save_rms=True, save_mats=True), name="MCFLIRT")
+    mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, save_rms=True, save_mats=True),
+                      name="MCFLIRT")
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
