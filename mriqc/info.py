@@ -83,7 +83,8 @@ TESTS_REQUIRES = [
 EXTRA_REQUIRES = {
     'doc': ['sphinx'],
     'tests': TESTS_REQUIRES,
-    'duecredit': ['duecredit']
+    'duecredit': ['duecredit'],
+    'notebooks': ['ipython', 'jupyter']
 }
 
 # Enable a handle to install all extra dependencies at once
