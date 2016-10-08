@@ -10,6 +10,7 @@ import nibabel as nb
 
 from .base import MRIQCBaseInterface
 from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
+from nilearn.signal import clean
 
 
 class SpikesInputSpec(BaseInterfaceInputSpec):
@@ -17,11 +18,15 @@ class SpikesInputSpec(BaseInterfaceInputSpec):
     in_mask = File(exists=True, desc='brain mask')
     spike_thresh = traits.Float(6., usedefault=True,
                                 desc='z-score to call one timepoint of one axial slice a spike')
+    skip_frames = traits.Int(4, usedefault=True,
+                             desc='number of frames to skip in the beginning of the time series')
 
 
 class SpikesOutputSpec(TraitedSpec):
-    out_file = File(desc='slice-wise z-scored timeseries (Z x N)')
-
+    out_brain_tsz = File(desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
+    out_spikes = File(desc='indices of spikes')
+    out_bg_tsz = File(desc='slice-wise z-scored timeseries (Z x N), only background')
+    num_spikes = traits.Int(desc='number of spikes found (total)')
 
 class Spikes(MRIQCBaseInterface):
 
@@ -38,26 +43,49 @@ class Spikes(MRIQCBaseInterface):
         func_data = func_nii.get_data()
         func_shape = func_data.shape
         ntsteps = func_shape[-1]
+        tr = func_nii.get_header().get_zooms()[-1]
+        nskip = self.inputs.skip_frames
 
         background = None
         if isdefined(self.inputs.in_mask):
             mask_data = nb.load(self.inputs.in_mask).get_data()
+            mask_data[...,:nskip] = 0
+
+            data = func_data.reshape(-1, ntsteps)
+            clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
+            new_shape = (*func_shape[:-1], clean_data.shape[-1])
+            func_data = np.zeros(func_shape)
+            func_data[..., nskip:] = clean_data.reshape(new_shape)
             brain = np.ma.array(func_data,
                                 mask=np.stack([mask_data!=1] * ntsteps, axis=-1))
+
+            mask_data[...,:self.inputs.skip_frames] = 1
             background = np.ma.array(func_data, mask=np.stack([mask_data==1] * ntsteps,
                                      axis=-1))
         else:
-            brain, mask_data, _ = auto_mask(func_data, nskip=4)
+            brain, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
 
         global_ts = brain.mean(0).mean(0).mean(0)
-        fg_spikes, ts_z = find_spikes(brain - global_ts, self.inputs.spike_thresh)
+        total_spikes, ts_z = find_spikes(brain - global_ts, self.inputs.spike_thresh)
 
-        out_ts_z = op.abspath
-        np.savetxt()
+        out_brain_tsz = op.abspath('brain_tsz.txt')
+        self._results['out_brain_tsz'] = out_brain_tsz
+        np.savetxt(out_brain_tsz, ts_z)
 
         if not background is None:
             global_bg = background.mean(0).mean(0).mean(0)
-            spikes2, ts_z_bg = find_spikes(background - global_bg, self.inputs.spike_thresh)
+            bg_spikes, ts_z_bg = find_spikes(background - global_bg, self.inputs.spike_thresh)
+
+            out_bg_tsz = op.abspath('bg_tsz.txt')
+            self._results['out_bg_tsz'] = out_bg_tsz
+            np.savetxt(out_bg_tsz, ts_z_bg)
+            total_spikes += bg_spikes
+
+        total_spikes = list(set(total_spikes))
+        out_spikes = op.abspath('spike_index.txt')
+        self._results['out_spikes'] = out_spikes
+        np.savetxt(out_spikes, total_spikes)
+        self._results['num_spikes'] = len(total_spikes)
 
         return runtime
 
@@ -75,7 +103,7 @@ def find_spikes(data, spike_thresh):
     t_z = (slice_mean - np.atleast_2d(slice_mean.mean(axis=1)).T) / np.atleast_2d(
         slice_mean2.std(axis=1)).T
     spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
-    spike_inds = np.transpose(spikes.nonzero())
+    spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
     return spike_inds, t_z
 
 
@@ -106,7 +134,7 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
         mask_vols = np.array([np.all(bad[i:]) for i in range(bad.shape[0])])
     # Mask out the skip volumes at the beginning
     mask_vols[0:nskip] = True
-    mask[:, :, :, mask_vols] = True
+    mask[..., mask_vols] = True
     brain = np.ma.masked_array(data, mask=mask)
     good_vols = np.logical_not(mask_vols)
     return brain, mask, good_vols
