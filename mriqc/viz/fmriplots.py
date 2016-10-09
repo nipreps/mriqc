@@ -147,7 +147,7 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
     return [ax0, ax1], gs
 
-def spikesplot(tsz_file, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot',
+def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot',
                ax=None, cmap='viridis', hide_x=True, nskip=4):
     """
     A spikes plot. Thanks to Bob Dogherty (this docstring needs be improved with proper ack)
@@ -169,7 +169,6 @@ def spikesplot(tsz_file, outer_gs=None, tr=None, spike_thresh=6., title='Spike p
         tr = 1.
 
     # Load timeseries, zscored slice-wise
-    ts_z = np.loadtxt(tsz_file)
     nslices = ts_z.shape[0]
     ntsteps = ts_z.shape[1]
 
@@ -181,7 +180,7 @@ def spikesplot(tsz_file, outer_gs=None, tr=None, spike_thresh=6., title='Spike p
     ts_z[:, :nskip] = 0
     # Plot one line per axial slice timeseries
     for sl in range(nslices):
-        ax.plot(ts_z[sl,:].data, color=colors[sl], lw=3)
+        ax.plot(ts_z[sl,:], color=colors[sl], lw=3)
 
     # Handle X, Y axes
     ax.grid(False)
@@ -319,10 +318,8 @@ def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
     ax_ts.plot((0,ntsteps),[tseries.mean()] * 2, color=color, linestyle=':')
 
     if not gs_dist is None:
-        from seaborn import distplot
-
         ax_dist = plt.subplot(gs_dist)
-        displot(tseries, vertical=True, ax=ax_dist)
+        sns.displot(tseries, vertical=True, ax=ax_dist)
         ax_dist.set_xlabel('Timesteps')
         ax_dist.set_ylim(ax_ts.get_ylim())
         ax_dist.set_yticklabels([])

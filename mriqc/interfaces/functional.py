@@ -59,7 +59,7 @@ class Spikes(MRIQCBaseInterface):
         else:
             data = func_data.reshape(-1, ntsteps)
             clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
-            new_shape = (*func_shape[:-1], clean_data.shape[-1])
+            new_shape = (func_shape[0], func_shape[1], func_shape[2], clean_data.shape[-1])
             func_data = np.zeros(func_shape)
             func_data[..., nskip:] = clean_data.reshape(new_shape)
             mask_data = nb.load(self.inputs.in_mask).get_data()

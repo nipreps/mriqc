@@ -25,6 +25,7 @@ from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
 from mriqc.interfaces.qc import FunctionalQC
+from mriqc.interfaces.functional import Spikes
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder
 
@@ -90,6 +91,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     quality = pe.Node(afp.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
 
+    spikes = pe.Node(Spikes(), name='FindSpikes')
+    bigplot = pe.Node(niu.Function(
+        input_names=['in_func', 'in_mask', 'in_spikes', 'fd', 'dvars'], output_names=['out_file'],
+        function=_big_plot), name='BigPlot')
+
     measures = pe.Node(FunctionalQC(), name='measures')
 
     # Link images that should be reported
@@ -105,7 +111,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     ]
     dsreport.inputs.regexp_substitutions = [
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
-        ('sub-[^/.]*_dvars_std', 'plot_dvars'),
+        ('sub-[^/.]*_fmriplot', 'plot_fmri'),
         ('sub-[^/.]*_mask', 'mask'),
         ('sub-[^/.]*_mcf_tstat', 'mosaic_epi_mean')
     ]
@@ -119,6 +125,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                               ('stop_idx', 'stop_idx')]),
         (datasource, get_idx, [('out_file', 'in_file')]),
         (datasource, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (datasource, spikes, [('out_file', 'in_file')]),
+        (spikes, bigplot, [('out_tsz', 'in_spikes')]),
+        (datasource, bigplot, [('out_file', 'in_func')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
@@ -132,6 +141,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
         (hmcwf, dvnode, [('outputnode.out_file', 'in_file')]),
         (bmw, dvnode, [('outputnode.out_file', 'in_mask')]),
+        (bmw, spikes, [('outputnode.out_file', 'in_mask')]),
+        (bmw, bigplot, [('outputnode.out_file', 'in_mask')]),
         (mean, measures, [('out_file', 'in_epi')]),
         (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
         (bmw, measures, [('outputnode.out_file', 'in_mask')]),
@@ -139,15 +150,16 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (dvnode, measures, [('out_all', 'in_dvars')]),
         (fdnode, measures, [('out_file', 'in_fd')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (fdnode, bigplot, [('out_file', 'fd')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
+        (dvnode, bigplot, [('out_std', 'dvars')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std'),
                           ('mean_file', '@tsnr_mean')]),
         (bmw, dsreport, [('outputnode.out_file', '@mask')]),
-        (fdnode, dsreport, [('out_figure', '@fdplot')]),
-        (dvnode, dsreport, [('fig_std', '@dvars')]),
+        (bigplot, dsreport, [('out_file', '@fmriplot')]),
     ])
 
     # Format name
@@ -326,3 +338,22 @@ def _parse_tout(in_file):
     import numpy as np
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
+
+def _big_plot(in_func, in_mask, in_spikes, fd, dvars, out_file=None):
+    import os.path as op
+    import numpy as np
+    from mriqc.viz.fmriplots import fMRIPlot
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_func))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath('{}_fmriplot.pdf'.format(fname))
+
+    myplot = fMRIPlot(in_func, in_mask)
+    myplot.add_spikes(np.loadtxt(in_spikes), 'Spikes (brainmask)')
+    myplot.add_confounds(np.loadtxt(fd), 'FD')
+    myplot.add_confounds(np.loadtxt(dvars), 'DVARS')
+    myplot.plot()
+    myplot.fig.savefig(out_file, dpi=300, bbox_inches='tight')
+    myplot.fig.clf()
+    return out_file
