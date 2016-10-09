@@ -9,8 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib import gridspec as mgs
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm
 from matplotlib.colorbar import ColorbarBase
+from seaborn import color_palette
 
 import seaborn as sns
 sns.set_style("whitegrid")
@@ -57,7 +58,6 @@ class fMRIPlot(object):
             grid_id += 1
 
         if self.confounds:
-            from seaborn import color_palette
             palette = color_palette("husl", nconfounds)
 
 
@@ -85,13 +85,14 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
         tr = 1.
     ntsteps = func_data.shape[-1]
 
-    data = func_data[segmentation>1, :].reshape(-1, ntsteps)
+    data = func_data[segmentation > 0].reshape(-1, ntsteps)
     # Detrend data
     detrended = np.zeros_like(data)
     detrended[:, nskip:] = clean(data[:, nskip:].T, t_r=tr).T
 
     # Order following segmentation labels
-    seg = segmentation[segmentation>1].reshape(-1)
+    seg = segmentation[segmentation > 0].reshape(-1)
+    seg_labels = sorted(np.unique(seg).tolist())
     order = np.argsort(seg)
 
     # Define nested GridSpec
@@ -102,14 +103,20 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
     ax0 = plt.subplot(gs[0])
     ax0.set_yticks([])
     ax0.set_xticks([])
-    ax0.imshow(seg[order, np.newaxis], interpolation='nearest', aspect='auto')
+
+    cmap = ListedColormap(color_palette("Set2", len(seg_labels)))
+    bounds = (np.array(seg_labels, dtype=np.float32) - 0.5).tolist()
+    bounds += [seg_labels[-1] + 0.5]
+    norm = BoundaryNorm(bounds, cmap.N)
+    ax0.imshow(seg[order, np.newaxis], interpolation='nearest', aspect='auto',
+               cmap=cmap, norm=norm)
     ax0.grid(False)
     ax0.set_ylabel('voxels')
 
     # Carpet plot
     ax1 = plt.subplot(gs[1])
     theplot = ax1.imshow(detrended[order, :], interpolation='nearest',
-                        aspect='auto', cmap='gray', vmin=-2, vmax=2)
+                         aspect='auto', cmap='gray', vmin=-2, vmax=2)
 
     ax1.grid(False)
     ax1.set_yticks([])
