@@ -21,6 +21,7 @@ from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
+from nipype.interfaces import freesurfer as fs
 from nipype.interfaces.afni import preprocess as afp
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
@@ -55,11 +56,14 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
                 'out_fd']), name='outputnode')
 
 
-    # 0. Get data
+    # 0. Get data, put it in RAS orientation
     datasource = pe.Node(niu.Function(
         input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['out_file'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'func'
+
+    reorient = pe.Node(fs.MRIConvert(out_type='niigz', out_orientation='RAS'),
+                       name='EPIReorient')
 
     # Workflow --------------------------------------------------------
     # 1. HMC: head motion correct
@@ -124,10 +128,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, get_idx, [('start_idx', 'start_idx'),
                               ('stop_idx', 'stop_idx')]),
         (datasource, get_idx, [('out_file', 'in_file')]),
-        (datasource, hmcwf, [('out_file', 'inputnode.in_file')]),
-        (datasource, spikes, [('out_file', 'in_file')]),
+        (datasource, reorient, [('out_file', 'in_file')]),
+        (reorient, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (reorient, spikes, [('out_file', 'in_file')]),
         (spikes, bigplot, [('out_tsz', 'in_spikes')]),
-        (datasource, bigplot, [('out_file', 'in_func')]),
+        (reorient, bigplot, [('out_file', 'in_func')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
@@ -320,9 +325,80 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
 
     return workflow
 
+def epi_mni_align(name='SpatialNormalization', settings=None):
+    """
+    Uses FSL FLIRT with the BBR cost function to find the transform that
+    maps the EPI space into the MNI152-nonlinear-symmetric atlas.
+
+    The input epi_mean is the averaged and brain-masked EPI timeseries
+
+    Returns the EPI mean resampled in MNI space (for checking out registration) and
+    the associated "lobe" parcellation in EPI space.
+
+    """
+    from niworkflows.data import get_mni152_nlin_sym_ras
+    mni_template = get_mni152_nlin_sym_ras()
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=['epi_mean']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['epi_mni', 'parc_epi']),
+                         name='outputnode')
+
+    # Mask PD template image
+    brainmask = pe.Node(niu.ApplyMask(
+        in_file=op.join(mni_template, 'mni_icbm152_pd_tal_nlin_sym_09a.nii.gz'),
+        mask_file=op.join(mni_template, 'mni_icbm152_t1_tal_nlin_sym_09a_mask.nii.gz')),
+        name='MNIApplyMask')
+
+    # Extract wm mask from segmentation
+    wm_mask = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
+                      function=_threshold), name='WM_mask')
+    wm_mask.inputs.in_file = op.join(mni_template, 'mni_icbm152_wm_tal_nlin_sym_09a.nii.gz')
+
+    flt_bbr_init = pe.Node(fsl.FLIRT(dof=6, out_matrix_file='init.mat'),
+                           name='Flirt_BBR_init')
+    flt_bbr = pe.Node(fsl.FLIRT(dof=6, cost_func='bbr'), name='Flirt_BBR')
+    flt_bbr.inputs.schedule = op.join(os.getenv('FSLDIR'),
+                                      'etc/flirtsch/bbr.sch')
+
+    # make equivalent warp fields
+    invt_bbr = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='Flirt_BBR_Inv')
+
+    workflow.connect([
+        (inputnode, flt_bbr_init, [('epi_mean', 'in_file')]),
+        (inputnode, flt_bbr, [('epi_mean', 'in_file')]),
+        (brainmask, flt_bbr_init, [('out_file', 'reference')]),
+        (brainmask, flt_bbr, [('out_file', 'reference')]),
+        (wm_mask, flt_bbr, [('out_file', 'wm_seg')]),
+        (flt_bbr_init, flt_bbr, [('out_matrix_file', 'in_matrix_file')]),
+        (flt_bbr, invt_bbr, [('out_matrix_file', 'in_file')]),
+        (flt_bbr, outputnode, [('out_file', 'epi_mni')])
+    ])
+    return workflow
+
 def _mean(inlist):
     import numpy as np
     return np.mean(inlist)
+
+def _threshold(in_file, thres=0.5, out_file=None):
+    import os.path as op
+    import nibabel as nb
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+
+        out_file = op.abspath('{}_wm{}'.format(fname, ext))
+
+    im = nb.load(in_file)
+    data = im.get_data()
+    data[data < thres] = 0
+    data[data > 0] = 1
+    nb.Nifti1Image(data, im.get_affine(), im.get_header()).to_filename(out_file)
+    return out_file
+
 
 def _parse_tqual(in_file):
     import numpy as np
