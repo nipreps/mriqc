@@ -11,21 +11,26 @@ import nibabel as nb
 from .base import MRIQCBaseInterface
 from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
 from nilearn.signal import clean
+from scipy.stats.mstats import zscore
 
 
 class SpikesInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='input fMRI dataset')
     in_mask = File(exists=True, desc='brain mask')
+    invert_mask = traits.Bool(False, usedefault=True, desc='invert mask')
+    no_zscore = traits.Bool(False, usedefault=True, desc='do not zscore')
+    automask = traits.Enum('chris', 'bob', usedefault=True, desc='type of automatic mask')
     spike_thresh = traits.Float(6., usedefault=True,
                                 desc='z-score to call one timepoint of one axial slice a spike')
     skip_frames = traits.Int(4, usedefault=True,
                              desc='number of frames to skip in the beginning of the time series')
+    out_tsz = File('spikes_tsz.txt', usedefault=True, desc='output file name')
+    out_spikes = File('spikes_idx.txt', usedefault=True, desc='output file name')
 
 
 class SpikesOutputSpec(TraitedSpec):
-    out_brain_tsz = File(desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
+    out_tsz = File(desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
     out_spikes = File(desc='indices of spikes')
-    out_bg_tsz = File(desc='slice-wise z-scored timeseries (Z x N), only background')
     num_spikes = traits.Int(desc='number of spikes found (total)')
 
 class Spikes(MRIQCBaseInterface):
@@ -46,65 +51,89 @@ class Spikes(MRIQCBaseInterface):
         tr = func_nii.get_header().get_zooms()[-1]
         nskip = self.inputs.skip_frames
 
-        background = None
-        if isdefined(self.inputs.in_mask):
-            mask_data = nb.load(self.inputs.in_mask).get_data()
-            mask_data[...,:nskip] = 0
-
+        if not isdefined(self.inputs.in_mask):
+            if self.inputs.automask == 'chris':
+                mask_data = chris_mask(func_data)
+            else:
+                _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
+        else:
             data = func_data.reshape(-1, ntsteps)
             clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
             new_shape = (*func_shape[:-1], clean_data.shape[-1])
             func_data = np.zeros(func_shape)
             func_data[..., nskip:] = clean_data.reshape(new_shape)
-            brain = np.ma.array(func_data,
-                                mask=np.stack([mask_data!=1] * ntsteps, axis=-1))
+            mask_data = nb.load(self.inputs.in_mask).get_data()
+            mask_data[...,:nskip] = 0
 
-            mask_data[...,:self.inputs.skip_frames] = 1
-            background = np.ma.array(func_data, mask=np.stack([mask_data==1] * ntsteps,
-                                     axis=-1))
+        if not self.inputs.invert_mask:
+            brain = np.ma.array(
+                func_data, mask=np.stack([mask_data!=1] * ntsteps, axis=-1))
         else:
-            brain, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
+            mask_data[...,:self.inputs.skip_frames] = 1
+            brain = np.ma.array(
+                func_data, mask=np.stack([mask_data==1] * ntsteps, axis=-1))
 
         global_ts = brain.mean(0).mean(0).mean(0)
-        total_spikes, ts_z = find_spikes(brain - global_ts, self.inputs.spike_thresh)
-
-        out_brain_tsz = op.abspath('brain_tsz.txt')
-        self._results['out_brain_tsz'] = out_brain_tsz
-        np.savetxt(out_brain_tsz, ts_z)
-
-        if not background is None:
-            global_bg = background.mean(0).mean(0).mean(0)
-            bg_spikes, ts_z_bg = find_spikes(background - global_bg, self.inputs.spike_thresh)
-
-            out_bg_tsz = op.abspath('bg_tsz.txt')
-            self._results['out_bg_tsz'] = out_bg_tsz
-            np.savetxt(out_bg_tsz, ts_z_bg)
-            total_spikes += bg_spikes
-
+        total_spikes, ts_z = find_spikes(brain - global_ts, self.inputs.spike_thresh,
+                                         no_zscore=self.inputs.no_zscore)
         total_spikes = list(set(total_spikes))
-        out_spikes = op.abspath('spike_index.txt')
+
+        out_tsz = op.abspath(self.inputs.out_tsz)
+        self._results['out_tsz'] = out_tsz
+        np.savetxt(out_tsz, ts_z)
+
+        out_spikes = op.abspath(self.inputs.out_spikes)
         self._results['out_spikes'] = out_spikes
         np.savetxt(out_spikes, total_spikes)
         self._results['num_spikes'] = len(total_spikes)
-
         return runtime
 
 
-def find_spikes(data, spike_thresh):
-    slice_mean = data.mean(axis=0).mean(axis=0)
-    t_z = (slice_mean - np.atleast_2d(slice_mean.mean(axis=1)).T) / np.atleast_2d(
-        slice_mean.std(axis=1)).T
-    spikes = np.abs(t_z) > spike_thresh
-    spike_inds = np.transpose(spikes.nonzero())
-    # mask out the spikes and recompute z-scores using variance uncontaminated with spikes.
-    # This will catch smaller spikes that may have been swamped by big ones.
-    data.mask[:, :, spike_inds[:, 0], spike_inds[:, 1]] = True
-    slice_mean2 = data.mean(axis=0).mean(axis=0)
-    t_z = (slice_mean - np.atleast_2d(slice_mean.mean(axis=1)).T) / np.atleast_2d(
-        slice_mean2.std(axis=1)).T
-    spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
-    spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
+def find_spikes(data, spike_thresh, no_zscore=False):
+    if no_zscore:
+        slice_mean = data.mean(axis=0).mean(axis=0)
+        t_z = slice_mean - np.atleast_2d(slice_mean.mean(axis=1)).T
+        spike_inds = []
+    else:
+        slice_mean = data.mean(axis=0).mean(axis=0)
+        t_z = zscore(slice_mean, axis=1)
+
+        spikes = np.abs(t_z) > spike_thresh
+        spike_inds = np.transpose(spikes.nonzero())
+        # mask out the spikes and recompute z-scores using variance uncontaminated with spikes.
+        # This will catch smaller spikes that may have been swamped by big ones.
+        data.mask[:, :, spike_inds[:, 0], spike_inds[:, 1]] = True
+        slice_mean2 = data.mean(axis=0).mean(axis=0)
+        t_z = zscore(slice_mean, axis=1)
+
+        spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
+        spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
     return spike_inds, t_z
+
+def chris_mask(func):
+    from nipy.labs.mask import compute_mask
+    from nilearn.masking import compute_epi_mask
+    from nilearn.image import mean_img, new_img_like
+    from scipy import ndimage as nd
+
+    mean_data = func.mean(axis=-1)
+    mask_data = compute_mask(mean_data)
+    a = np.where(mask_data != 0)
+    bbox = np.max(a[0]) - np.min(a[0]), np.max(a[1]) - np.min(a[1]), np.max(a[2]) - np.min(a[2])
+    longest_axis = np.argmax(bbox)
+
+    # Input here is a binarized and intersected mask data from previous section
+    dil_mask = nd.binary_dilation(
+        mask_data, iterations=int(mask_data.shape[longest_axis]/8))
+
+    rep = list(mask_data.shape)
+    rep[longest_axis] = -1
+    new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
+
+    rep = [1,1,1]
+    rep[longest_axis] = mask_data.shape[longest_axis]
+    new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
+    return new_mask_3d
 
 
 def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
