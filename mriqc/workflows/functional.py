@@ -9,10 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-10-07 14:29:01
 """ A QC workflow for fMRI data """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 import os
 import os.path as op
 
@@ -98,7 +95,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     quality = pe.Node(afp.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
 
-    spikes = pe.Node(Spikes(), name='FindSpikes')
+    spmask = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
+                     function=spikes_mask), name='SpikesMask')
+    spikes = pe.Node(Spikes(), name='SpikesFinder')
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes', 'fd', 'dvars'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
@@ -120,7 +119,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
         ('sub-[^/.]*_fmriplot', 'plot_fmri'),
         ('sub-[^/.]*_mask', 'mask'),
-        ('sub-[^/.]*_mcf_tstat', 'mosaic_epi_mean')
+        ('sub-[^/.]*_mcf_tstat', 'mosaic_epi_mean'),
+        ('sub-[^/.]*_spmask', 'mosaic_spikes_mask'),
     ]
 
     workflow.connect([
@@ -142,6 +142,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (hmcwf, fdnode, [('outputnode.out_movpar', 'in_plots')]),
+        (hmcwf, spmask, [('outputnode.out_file', 'in_file')]),
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
@@ -166,6 +167,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (ema, bigplot, [('outputnode.epi_parc', 'in_segm')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
+        (spmask, dsreport, [('out_file', '@spmask')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std'),
                           ('mean_file', '@tsnr_mean')]),
@@ -394,6 +396,56 @@ def epi_mni_align(name='SpatialNormalization', settings=None):
 
     ])
     return workflow
+
+def spikes_mask(in_file, out_file=None):
+    import os.path as op
+    import nibabel as nb
+    import numpy as np
+    from nipy.labs.mask import compute_mask
+    from nilearn.masking import compute_epi_mask
+    from nilearn.image import mean_img, new_img_like
+    from scipy import ndimage as nd
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('{}_spmask{}'.format(fname, ext))
+
+    in_4d_nii = nb.load(in_file)
+    func = in_4d_nii.get_data()
+    orientation = nb.aff2axcodes(in_4d_nii.affine)
+
+    mean_data = func.mean(axis=-1)
+    mask_data = compute_mask(mean_data)
+    a = np.where(mask_data != 0)
+    bbox = np.max(a[0]) - np.min(a[0]), np.max(a[1]) - np.min(a[1]), np.max(a[2]) - np.min(a[2])
+    longest_axis = np.argmax(bbox)
+
+    # Input here is a binarized and intersected mask data from previous section
+    dil_mask = nd.binary_dilation(
+        mask_data, iterations=int(mask_data.shape[longest_axis]/9))
+
+    rep = list(mask_data.shape)
+    rep[longest_axis] = -1
+    new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
+
+    rep = [1,1,1]
+    rep[longest_axis] = mask_data.shape[longest_axis]
+    new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
+
+    if orientation[0] in ['L', 'R']:
+        new_mask_3d[0,:,:] = True
+        new_mask_3d[-1,:,:] = True
+    else:
+        new_mask_3d[:,0,:] = True
+        new_mask_3d[:,-1,:] = True
+
+    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.get_affine(),
+                              in_4d_nii.get_header())
+    mask_nii.to_filename(out_file)
+    return out_file
 
 def _mean(inlist):
     import numpy as np

@@ -110,32 +110,6 @@ def find_spikes(data, spike_thresh, no_zscore=False):
         spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
     return spike_inds, t_z
 
-def chris_mask(func):
-    from nipy.labs.mask import compute_mask
-    from nilearn.masking import compute_epi_mask
-    from nilearn.image import mean_img, new_img_like
-    from scipy import ndimage as nd
-
-    mean_data = func.mean(axis=-1)
-    mask_data = compute_mask(mean_data)
-    a = np.where(mask_data != 0)
-    bbox = np.max(a[0]) - np.min(a[0]), np.max(a[1]) - np.min(a[1]), np.max(a[2]) - np.min(a[2])
-    longest_axis = np.argmax(bbox)
-
-    # Input here is a binarized and intersected mask data from previous section
-    dil_mask = nd.binary_dilation(
-        mask_data, iterations=int(mask_data.shape[longest_axis]/8))
-
-    rep = list(mask_data.shape)
-    rep[longest_axis] = -1
-    new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
-
-    rep = [1,1,1]
-    rep[longest_axis] = mask_data.shape[longest_axis]
-    new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
-    return new_mask_3d
-
-
 def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     from dipy.segment.mask import median_otsu
     mn = data[:, :, :, nskip:].mean(3)
