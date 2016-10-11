@@ -8,8 +8,8 @@ MRIQC
 """
 import sys
 
-__versionbase__ = '0.8.6'
-__versionrev__ = 'a8'
+__versionbase__ = '0.8.7'
+__versionrev__ = 'a0'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
