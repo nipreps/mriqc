@@ -96,7 +96,7 @@ The :abbr:`IQMs (image quality metrics)` computed are as follows:
 #. **dvars** - Spatial standard deviation of the voxelwise temporal
    derivates
 #. **gcor** - Global Correlation
-#. **mean\_fd** - Mean Fractional Displacement
+#. **mean\_fd** - Mean Framewise Displacement
 #. **num\_fd** - Number of volumes with :abbr:`FD (frame displacement)` greater than 0.2mm
 #. **perc\_fd** - Percent of volumes with :abbr:`FD (frame displacement)` greater than 0.2mm
 #. **outlier** - Mean fraction of outliers per fMRI volume
