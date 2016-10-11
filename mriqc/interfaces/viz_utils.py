@@ -159,32 +159,47 @@ def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
 
 
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
-                fig=None, figsize=DINA4_LANDSCAPE):
+                fig=None, bbox_mask_file=None, only_plot_noise=False,
+                figsize=DINA4_LANDSCAPE):
     from six import string_types
     from pylab import cm
 
     if isinstance(nifti_file, string_types):
-        nii = nb.load(nifti_file)
+        nii = nb.as_closest_canonical(nb.load(nifti_file))
         mean_data = nii.get_data()
     else:
         mean_data = nifti_file
+
+    if bbox_mask_file:
+        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_data()
+        B = np.argwhere(bbox_data)
+        (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
+            0) + 1
+        mean_data = mean_data[ystart:ystop, xstart:xstop, zstart:zstop]
 
     z_vals = np.array(list(range(0, mean_data.shape[2])))
     # Reduce the number of slices shown
     if mean_data.shape[2] > 70:
         rem = 15
         # Crop inferior and posterior
-        mean_data = mean_data[..., rem:-rem]
-        z_vals = z_vals[rem:-rem]
+        if not bbox_mask_file:
+            mean_data = mean_data[..., rem:-rem]
+            z_vals = z_vals[rem:-rem]
+        else:
+            mean_data = mean_data[..., 2 * rem:]
+            z_vals = z_vals[2 * rem:]
+
+    if mean_data.shape[2] > 70:
         # Discard one every two slices
         mean_data = mean_data[..., ::2]
         z_vals = z_vals[::2]
 
     n_images = mean_data.shape[2]
-    row, col = _calc_rows_columns(figsize[0] / figsize[1], n_images)
+    row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
 
     if overlay_mask:
-        overlay_data = nb.load(overlay_mask).get_data()
+        overlay_data = nb.as_closest_canonical(
+            nb.load(overlay_mask)).get_data()
 
     # create figures
     if fig is None:
@@ -196,13 +211,21 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     for image, z_val in enumerate(z_vals):
         ax = fig.add_subplot(row, col, image + 1)
         data_mask = np.logical_not(np.isnan(mean_data))
+        if only_plot_noise:
+            data_mask = np.logical_and(data_mask, mean_data != 0)
         if overlay_mask:
             ax.set_rasterized(True)
 
-        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=np.percentile(
-            mean_data[data_mask], 0.5),
-            vmax=np.percentile(mean_data[data_mask], 99.5),
-            cmap=cm.Greys_r, interpolation='nearest', origin='lower')
+        if only_plot_noise:
+            vmin = np.percentile(mean_data[data_mask], 0)
+            vmax = np.percentile(mean_data[data_mask], 61)
+        else:
+            vmin = np.percentile(mean_data[data_mask], 0.5)
+            vmax = np.percentile(mean_data[data_mask], 99.5)
+
+        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=vmin,
+                  vmax=vmax,
+                  cmap=cm.Greys_r, interpolation='nearest', origin='lower')
 
         if overlay_mask:
             cmap = cm.Reds  # @UndefinedVariable
@@ -213,9 +236,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                       cmap=cmap, interpolation='nearest', origin='lower')
 
         ax.annotate(
-            str(z_val), xy=(.95, .015), xycoords='axes fraction',
-            fontsize=10, color='white', horizontalalignment='right',
-            verticalalignment='bottom')
+            str(z_val), xy=(.99, .99), xycoords='axes fraction',
+            fontsize=8, color='white', horizontalalignment='right',
+            verticalalignment='top')
 
         ax.axis('off')
 
@@ -224,8 +247,10 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     if not title:
         _, title = op.split(nifti_file)
-        title += " (last modified: {})".format(time.ctime(op.getmtime(nifti_file)))
+        title += " (last modified: {})".format(
+            time.ctime(op.getmtime(nifti_file)))
     fig.suptitle(title, fontsize='10')
+    fig.subplots_adjust(wspace=0.002, hspace=0.002)
     return fig
 
 
@@ -301,11 +326,6 @@ def _calc_rows_columns(ratio, n_images):
     rows = 1
     for _ in range(100):
         columns = math.floor(ratio * rows)
-        total = rows * columns
-        if total > n_images:
-            break
-
-        columns = math.ceil(ratio * rows)
         total = rows * columns
         if total > n_images:
             break
