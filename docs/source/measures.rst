@@ -94,7 +94,7 @@ The :abbr:`IQMs (image quality metrics)` computed are as follows:
 #. **ghost\_x** - Ghost to Signal Ratio
 #. **snr** - Signal to Noise Ratio
 #. **dvars** - Spatial standard deviation of the voxelwise temporal
-   derivates
+   derivatives
 #. **gcor** - Global Correlation
 #. **mean\_fd** - Mean Framewise Displacement
 #. **num\_fd** - Number of volumes with :abbr:`FD (frame displacement)` greater than 0.2mm
