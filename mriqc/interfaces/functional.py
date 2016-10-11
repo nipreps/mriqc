@@ -19,19 +19,22 @@ class SpikesInputSpec(BaseInterfaceInputSpec):
     in_mask = File(exists=True, desc='brain mask')
     invert_mask = traits.Bool(False, usedefault=True, desc='invert mask')
     no_zscore = traits.Bool(False, usedefault=True, desc='do not zscore')
-    automask = traits.Enum('chris', 'bob', usedefault=True, desc='type of automatic mask')
+    detrend = traits.Bool(True, usedefault=True, desc='do detrend')
     spike_thresh = traits.Float(6., usedefault=True,
                                 desc='z-score to call one timepoint of one axial slice a spike')
     skip_frames = traits.Int(4, usedefault=True,
                              desc='number of frames to skip in the beginning of the time series')
     out_tsz = File('spikes_tsz.txt', usedefault=True, desc='output file name')
-    out_spikes = File('spikes_idx.txt', usedefault=True, desc='output file name')
+    out_spikes = File(
+        'spikes_idx.txt', usedefault=True, desc='output file name')
 
 
 class SpikesOutputSpec(TraitedSpec):
-    out_tsz = File(desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
+    out_tsz = File(
+        desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
     out_spikes = File(desc='indices of spikes')
     num_spikes = traits.Int(desc='number of spikes found (total)')
+
 
 class Spikes(MRIQCBaseInterface):
 
@@ -51,31 +54,34 @@ class Spikes(MRIQCBaseInterface):
         tr = func_nii.get_header().get_zooms()[-1]
         nskip = self.inputs.skip_frames
 
-        if not isdefined(self.inputs.in_mask):
-            if self.inputs.automask == 'chris':
-                mask_data = chris_mask(func_data)
-            else:
-                _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
-        else:
+        if self.inputs.detrend:
             data = func_data.reshape(-1, ntsteps)
             clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
-            new_shape = (func_shape[0], func_shape[1], func_shape[2], clean_data.shape[-1])
+            new_shape = (
+                func_shape[0], func_shape[1], func_shape[2], clean_data.shape[-1])
             func_data = np.zeros(func_shape)
             func_data[..., nskip:] = clean_data.reshape(new_shape)
+
+        if not isdefined(self.inputs.in_mask):
+            _, mask_data, _ = auto_mask(
+                func_data, nskip=self.inputs.skip_frames)
+        else:
             mask_data = nb.load(self.inputs.in_mask).get_data()
-            mask_data[...,:nskip] = 0
+            mask_data[..., :nskip] = 0
+            mask_data = np.stack([mask_data] * ntsteps, axis=-1)
 
         if not self.inputs.invert_mask:
-            brain = np.ma.array(
-                func_data, mask=np.stack([mask_data!=1] * ntsteps, axis=-1))
+            brain = np.ma.array(func_data, mask=(mask_data != 1))
         else:
-            mask_data[...,:self.inputs.skip_frames] = 1
-            brain = np.ma.array(
-                func_data, mask=np.stack([mask_data==1] * ntsteps, axis=-1))
+            mask_data[..., :self.inputs.skip_frames] = 1
+            brain = np.ma.array(func_data, mask=(mask_data == 1))
 
-        global_ts = brain.mean(0).mean(0).mean(0)
-        total_spikes, ts_z = find_spikes(brain - global_ts, self.inputs.spike_thresh,
-                                         no_zscore=self.inputs.no_zscore)
+        if self.inputs.no_zscore:
+            ts_z = find_peaks(brain)
+            total_spikes = []
+        else:
+            total_spikes, ts_z = find_spikes(
+                brain, self.inputs.spike_thresh)
         total_spikes = list(set(total_spikes))
 
         out_tsz = op.abspath(self.inputs.out_tsz)
@@ -88,27 +94,27 @@ class Spikes(MRIQCBaseInterface):
         self._results['num_spikes'] = len(total_spikes)
         return runtime
 
+def find_peaks(data):
+    t_z = [data[:, :, i, :].mean(axis=0).mean(axis=0) for i in range(data.shape[2])]
+    return t_z
 
-def find_spikes(data, spike_thresh, no_zscore=False):
-    if no_zscore:
-        slice_mean = data.mean(axis=0).mean(axis=0)
-        t_z = slice_mean - np.atleast_2d(slice_mean.mean(axis=1)).T
-        spike_inds = []
-    else:
-        slice_mean = data.mean(axis=0).mean(axis=0)
-        t_z = zscore(slice_mean, axis=1)
+def find_spikes(data, spike_thresh):
+    data -= np.median(np.median(np.median(data, axis=0), axis=0), axis=0)
+    slice_mean = np.median(np.median(data, axis=0), axis=0)
+    t_z = _robust_zscore(slice_mean)
+    spikes = np.abs(t_z) > spike_thresh
+    spike_inds = np.transpose(spikes.nonzero())
+    # mask out the spikes and recompute z-scores using variance uncontaminated with spikes.
+    # This will catch smaller spikes that may have been swamped by big
+    # ones.
+    data.mask[:, :, spike_inds[:, 0], spike_inds[:, 1]] = True
+    slice_mean2 = np.median(np.median(data, axis=0), axis=0)
+    t_z = _robust_zscore(slice_mean2)
 
-        spikes = np.abs(t_z) > spike_thresh
-        spike_inds = np.transpose(spikes.nonzero())
-        # mask out the spikes and recompute z-scores using variance uncontaminated with spikes.
-        # This will catch smaller spikes that may have been swamped by big ones.
-        data.mask[:, :, spike_inds[:, 0], spike_inds[:, 1]] = True
-        slice_mean2 = data.mean(axis=0).mean(axis=0)
-        t_z = zscore(slice_mean, axis=1)
-
-        spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
-        spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
+    spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
+    spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
     return spike_inds, t_z
+
 
 def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     from dipy.segment.mask import median_otsu
@@ -141,3 +147,7 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     brain = np.ma.masked_array(data, mask=mask)
     good_vols = np.logical_not(mask_vols)
     return brain, mask, good_vols
+
+def _robust_zscore(data):
+    return ((data - np.atleast_2d(np.median(data, axis=1)).T) /
+            np.atleast_2d(data.std(axis=1)).T)

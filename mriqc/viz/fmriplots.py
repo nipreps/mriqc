@@ -16,7 +16,9 @@ from seaborn import color_palette
 import seaborn as sns
 sns.set_style("whitegrid")
 
+
 class fMRIPlot(object):
+
     def __init__(self, func, mask, seg=None, tr=None, figsize=(16, 10)):
         func_nii = nb.load(func)
         self.func_data = func_nii.get_data()
@@ -36,12 +38,11 @@ class fMRIPlot(object):
         self.confounds = []
         self.spikes = []
 
-
     def add_confounds(self, data, name):
         self.confounds.append((data, name))
 
-    def add_spikes(self, tsz, name):
-        self.spikes.append((tsz, name))
+    def add_spikes(self, tsz, title=None, zscored=True):
+        self.spikes.append((tsz, title, zscored))
 
     def plot(self):
         nconfounds = len(self.confounds)
@@ -49,20 +50,21 @@ class fMRIPlot(object):
         nrows = 1 + nconfounds + nspikes
 
         # Create grid
-        grid = mgs.GridSpec(nrows, 1, wspace=0.0, hspace=0.1,
-                                 height_ratios=[1] * (nrows - 1) + [5])
+        grid = mgs.GridSpec(nrows, 1, wspace=0.0, hspace=0.2,
+                            height_ratios=[1] * (nrows - 1) + [5])
 
         grid_id = 0
-        for tsz, name in self.spikes:
-            spikesplot(tsz, title=name, outer_gs=grid[grid_id], tr=self.tr)
+        for tsz, name, iszs in self.spikes:
+            spikesplot(tsz, title=name, outer_gs=grid[grid_id], tr=self.tr,
+                       zscored=iszs)
             grid_id += 1
 
         if self.confounds:
             palette = color_palette("husl", nconfounds)
 
-
         for i, (tseries, name) in enumerate(self.confounds):
-            confoundplot(tseries, name, grid[grid_id], tr=self.tr, color=palette[i])
+            confoundplot(
+                tseries, name, grid[grid_id], tr=self.tr, color=palette[i])
             grid_id += 1
 
         fmricarpetplot(self.func_data, self.seg_data,
@@ -79,7 +81,7 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
     from nilearn.signal import clean
 
     # Define TR and number of frames
-    notr=False
+    notr = False
     if tr is None:
         notr = True
         tr = 1.
@@ -124,7 +126,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
     # Set 10 frame markers in X axis
     interval = int(detrended.shape[-1] + 1) // 10
-    xticks = list(range(0, detrended.shape[-1])[::interval]) + [detrended.shape[-1]-1]
+    xticks = list(
+        range(0, detrended.shape[-1])[::interval]) + [detrended.shape[-1]-1]
     ax1.set_xticks(xticks)
 
     if notr:
@@ -154,8 +157,9 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
     return [ax0, ax1], gs
 
-def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot',
-               ax=None, cmap='viridis', hide_x=True, nskip=4):
+
+def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., title='Spike plot',
+               ax=None, cmap='viridis', hide_x=True):
     """
     A spikes plot. Thanks to Bob Dogherty (this docstring needs be improved with proper ack)
     """
@@ -168,9 +172,8 @@ def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot'
                                          width_ratios=[1, 100], wspace=0.0)
         ax = plt.subplot(gs[1])
 
-
     # Define TR and number of frames
-    notr=False
+    notr = False
     if tr is None:
         notr = True
         tr = 1.
@@ -184,10 +187,9 @@ def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot'
     norm = Normalize(vmin=0, vmax=float(nslices - 1))
     colors = [my_cmap(norm(sl)) for sl in range(nslices)]
 
-    ts_z[:, :nskip] = 0
     # Plot one line per axial slice timeseries
     for sl in range(nslices):
-        ax.plot(ts_z[sl,:], color=colors[sl], lw=3)
+        ax.plot(ts_z[sl, :], color=colors[sl], lw=1.5)
 
     # Handle X, Y axes
     ax.grid(False)
@@ -203,31 +205,39 @@ def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot'
             ax.set_xlabel('time (frame #)')
         else:
             ax.set_xlabel('time (s)')
-            ax.set_xticklabels(['%.02f' % t for t in (tr * np.array(xticks)).tolist()])
+            ax.set_xticklabels(
+                ['%.02f' % t for t in (tr * np.array(xticks)).tolist()])
 
     # Handle Y axis
-    ax.set_ylabel('z-score')
-    ax.set_ylim((-(np.abs(ts_z).max()) * 1.05, (np.abs(ts_z).max()) * 1.05))
-    zs_max = np.abs(ts_z).max()
-    ytick_vals = np.arange(0.0, zs_max, 2.0)
-    yticks = list(reversed((-1.0 * ytick_vals[ytick_vals > 0]).tolist())) + ytick_vals.tolist()
-    # TODO plot min/max or mark spikes
-    # yticks.insert(0, ts_z.min())
-    # yticks += [ts_z.max()]
-    ax.set_yticks(yticks)
-    ax.set_yticklabels(['%.02f' % y for y in yticks])
-    for val in ytick_vals:
-        ax.plot((0,ntsteps),(-val,-val),'k:', alpha=.2)
-        ax.plot((0,ntsteps),(val,val),'k:', alpha=.2)
+    if zscored:
+        ax.set_ylabel('z-score')
+        ax.set_ylim((-(np.abs(ts_z).max()) * 1.05, (np.abs(ts_z).max()) * 1.05))
+        zs_max = np.abs(ts_z).max()
+        ytick_vals = np.arange(0.0, zs_max, float(np.floor(zs_max / 2.)))
+        yticks = list(
+            reversed((-1.0 * ytick_vals[ytick_vals > 0]).tolist())) + ytick_vals.tolist()
+        # TODO plot min/max or mark spikes
+        # yticks.insert(0, ts_z.min())
+        # yticks += [ts_z.max()]
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(['%.02f' % y for y in yticks])
+        for val in ytick_vals:
+            ax.plot((0, ntsteps - 1), (-val, -val), 'k:', alpha=.2)
+            ax.plot((0, ntsteps - 1), (val, val), 'k:', alpha=.2)
 
-    # Plot maximum and minimum horizontal lines
-    ax.plot((0,ntsteps), (yticks[0],yticks[0]),'k:')
-    ax.plot((0,ntsteps), (yticks[-1],yticks[-1]),'k:')
+        # Plot maximum and minimum horizontal lines
+        if yticks:
+            ax.plot((0, ntsteps - 1), (yticks[0], yticks[0]), 'k:')
+            ax.plot((0, ntsteps - 1), (yticks[-1], yticks[-1]), 'k:')
 
-    # Plot spike threshold
-    if zs_max < spike_thresh:
-        ax.plot((0,ts_z.shape[1]),(-spike_thresh,-spike_thresh),'k:')
-        ax.plot((0,ts_z.shape[1]),(spike_thresh,spike_thresh),'k:')
+        # Plot spike threshold
+        if zs_max < spike_thresh:
+            ax.plot((0, ntsteps - 1), (-spike_thresh, -spike_thresh), 'k:')
+            ax.plot((0, ntsteps - 1), (spike_thresh, spike_thresh), 'k:')
+    else:
+        ax.set_ylabel('a.u.')
+        ax.set_yticks([0.0])
+        ax.set_ylim(ts_z.min() * 0.95, ts_z.max() * 1.05)
 
     for side in ["top", "right"]:
         ax.spines[side].set_color('none')
@@ -250,6 +260,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, spike_thresh=6., title='Spike plot'
     ax.set_title(title)
     return ax
 
+
 def spikesplot_cb(position, cmap='viridis', fig=None):
     # Add colorbar
     if fig is None:
@@ -269,7 +280,7 @@ def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
                  units='a.u.', tr=None, hide_x=True, color='b'):
 
     # Define TR and number of frames
-    notr=False
+    notr = False
     if tr is None:
         notr = True
         tr = 1.
@@ -322,7 +333,7 @@ def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
     ax_ts.yaxis.set_ticks_position('left')
 
     # Plot average
-    ax_ts.plot((0,ntsteps),[tseries.mean()] * 2, color=color, linestyle=':')
+    ax_ts.plot((0, ntsteps), [tseries.mean()] * 2, color=color, linestyle=':')
 
     if not gs_dist is None:
         ax_dist = plt.subplot(gs_dist)

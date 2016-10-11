@@ -7,13 +7,14 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:15:14
+# @Last Modified time: 2016-10-10 17:05:55
 """Helper functions for the workflows"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from builtins import range
+
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
@@ -30,11 +31,13 @@ def fmri_getidx(in_file, start_idx, stop_idx):
         stop_idx = max_idx
     return start_idx, stop_idx
 
+
 def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
     return {'x': fwhm[0], 'y': fwhm[1],
             'z': fwhm[2], 'avg': fwhm[3]}
+
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
     """
@@ -104,3 +107,102 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
         T_rb_prev = T_rb
     np.savetxt(out_file, X)
     return out_file
+
+
+def thresh_image(in_file, thres=0.5, out_file=None):
+    """Thresholds an image"""
+    import os.path as op
+    import nibabel as nb
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('{}_thresh{}'.format(fname, ext))
+
+    im = nb.load(in_file)
+    data = im.get_data()
+    data[data < thres] = 0
+    data[data > 0] = 1
+    nb.Nifti1Image(
+        data, im.get_affine(), im.get_header()).to_filename(out_file)
+    return out_file
+
+
+def spectrum_mask(size):
+    """Creates a mask to filter the image of size size"""
+    import numpy as np
+    from scipy.ndimage.morphology import distance_transform_edt as distance
+
+    ftmask = np.ones(size)
+
+    # Set zeros on corners
+    # ftmask[0, 0] = 0
+    # ftmask[size[0] - 1, size[1] - 1] = 0
+    # ftmask[0, size[1] - 1] = 0
+    # ftmask[size[0] - 1, 0] = 0
+    ftmask[size[0]/2, size[1]/2] = 0
+
+    # Distance transform
+    ftmask = distance(ftmask)
+    ftmask /= ftmask.max()
+
+    # Keep this just in case we want to switch to the opposite filter
+    ftmask *= -1.0
+    ftmask += 1.0
+
+    ftmask[ftmask >= 0.25] = 1
+    ftmask[ftmask < 1] = 0
+    return ftmask
+
+
+def slice_wise_fft(in_file, ftmask=None, out_prefix=None):
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from mriqc.workflows.utils import spectrum_mask
+    from scipy.ndimage.filters import median_filter
+
+    if out_prefix is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_prefix = op.abspath(fname)
+
+    func_data = nb.load(in_file).get_data()
+
+    if ftmask is None:
+        ftmask = spectrum_mask(tuple(func_data.shape[:2]))
+
+    fftvol = []
+    energysum = []
+    norm = func_data.shape[0] * func_data.shape[1]
+    for t in range(func_data.shape[-1]):
+        func_frame = func_data[..., t]
+        vals = []
+        fftvol.append([])
+        for sl in func_frame.T:
+            fftsl = median_filter(
+                np.absolute(np.fft.fft2(sl)), size=(5, 5), mode='constant')
+            fftvol[-1].append(np.fft.fftshift(fftsl))
+            energy = (fftsl ** 2 * ftmask)/norm
+            vals.append(energy.sum())
+        energysum.append(vals)
+
+    energysum = np.array(energysum)
+    energysum_zs = (energysum - np.median(energysum)) / energysum.std(ddof=1)
+    out_energy = out_prefix + '_energy.txt'
+    np.savetxt(out_energy, energysum_zs)
+
+    num_spikes = (energysum_zs > 4.0).astype(int).sum(axis=1)
+    idx_spikes = np.argwhere(num_spikes > 0)
+    out_spikes = out_prefix + '_spikes.txt'
+    np.savetxt(out_spikes, zip(idx_spikes, num_spikes[idx_spikes]))
+
+    out_fft = out_prefix + '_fft.nii.gz'
+    fftvol = np.array(fftvol).T
+    nii = nb.Nifti1Image(fftvol, nb.load(in_file).get_affine(), None)
+    nii.to_filename(out_fft)
+
+    return out_fft, out_energy, out_spikes
