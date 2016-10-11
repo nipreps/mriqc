@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-10 16:39:57
+# @Last Modified time: 2016-10-10 19:11:36
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -178,14 +178,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (ema, bigplot, [('outputnode.epi_parc', 'in_segm')]),
         (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
-        (spikes_fft, bigplot, [('out_energy', 'in_spikes_fft')]),
+        (spikes_fft, bigplot, [('out_spikes', 'in_spikes_fft')]),
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
         (spmask, dsreport, [('out_plot', '@spmaskplot')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
-                          ('stddev_file', '@tsnr_std'),
-                          ('mean_file', '@tsnr_mean')]),
+                          ('stddev_file', '@tsnr_std')]),
         (bmw, dsreport, [('outputnode.out_file', '@mask')]),
         (bigplot, dsreport, [('out_file', '@fmriplot')]),
     ])
@@ -503,13 +502,14 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
         out_file = op.abspath('{}_fmriplot.pdf'.format(fname))
 
     myplot = fMRIPlot(in_func, in_mask, in_segm)
-    myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
+    # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False, title='Axial slice homogeneity (air mask)')
-    myplot.add_spikes(np.loadtxt(in_spikes_fft),
-                      zscored=False, title='Energy of spectrum (axial slice -wise)')
-    myplot.add_confounds([0] + np.loadtxt(fd).tolist(), 'FD')
-    myplot.add_confounds([0] + np.loadtxt(dvars).tolist(), 'DVARS')
+    # myplot.add_spikes(np.loadtxt(in_spikes_fft),
+    #                   zscored=False, title='Spikes')
+    myplot.add_confounds([0] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
+    myplot.add_confounds([0] + np.loadtxt(dvars).tolist(),
+                         {'name': 'DVARS', 'units': None, 'normalize': False})
     myplot.plot()
     myplot.fig.savefig(out_file, dpi=300, bbox_inches='tight')
     myplot.fig.clf()

@@ -65,6 +65,7 @@ REQUIRES = [
     'scikit-learn',
     'nipype',
     'rst2pdf',
+    'nipy'
 ]
 
 LINKS_REQUIRES = [

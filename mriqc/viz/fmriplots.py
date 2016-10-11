@@ -38,8 +38,8 @@ class fMRIPlot(object):
         self.confounds = []
         self.spikes = []
 
-    def add_confounds(self, data, name):
-        self.confounds.append((data, name))
+    def add_confounds(self, data, kwargs):
+        self.confounds.append((data, kwargs))
 
     def add_spikes(self, tsz, title=None, zscored=True):
         self.spikes.append((tsz, title, zscored))
@@ -62,9 +62,10 @@ class fMRIPlot(object):
         if self.confounds:
             palette = color_palette("husl", nconfounds)
 
-        for i, (tseries, name) in enumerate(self.confounds):
+        for i, (tseries, kwargs) in enumerate(self.confounds):
             confoundplot(
-                tseries, name, grid[grid_id], tr=self.tr, color=palette[i])
+                tseries, grid[grid_id], tr=self.tr, color=palette[i],
+                **kwargs)
             grid_id += 1
 
         fmricarpetplot(self.func_data, self.seg_data,
@@ -187,9 +188,16 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     norm = Normalize(vmin=0, vmax=float(nslices - 1))
     colors = [my_cmap(norm(sl)) for sl in range(nslices)]
 
+    stem = len(np.unique(ts_z).tolist()) == 2
     # Plot one line per axial slice timeseries
     for sl in range(nslices):
-        ax.plot(ts_z[sl, :], color=colors[sl], lw=1.5)
+        if not stem:
+            ax.plot(ts_z[sl, :], color=colors[sl], lw=1.5)
+        else:
+            markerline, stemlines, baseline = ax.stem(ts_z[sl, :])
+            plt.setp(markerline, 'markerfacecolor', colors[sl])
+            plt.setp(baseline, 'color', colors[sl], 'linewidth', 1)
+            plt.setp(stemlines, 'color', colors[sl], 'linewidth', 1)
 
     # Handle X, Y axes
     ax.grid(False)
@@ -216,19 +224,13 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
         ytick_vals = np.arange(0.0, zs_max, float(np.floor(zs_max / 2.)))
         yticks = list(
             reversed((-1.0 * ytick_vals[ytick_vals > 0]).tolist())) + ytick_vals.tolist()
+
         # TODO plot min/max or mark spikes
         # yticks.insert(0, ts_z.min())
         # yticks += [ts_z.max()]
-        ax.set_yticks(yticks)
-        ax.set_yticklabels(['%.02f' % y for y in yticks])
         for val in ytick_vals:
             ax.plot((0, ntsteps - 1), (-val, -val), 'k:', alpha=.2)
             ax.plot((0, ntsteps - 1), (val, val), 'k:', alpha=.2)
-
-        # Plot maximum and minimum horizontal lines
-        if yticks:
-            ax.plot((0, ntsteps - 1), (yticks[0], yticks[0]), 'k:')
-            ax.plot((0, ntsteps - 1), (yticks[-1], yticks[-1]), 'k:')
 
         # Plot spike threshold
         if zs_max < spike_thresh:
@@ -236,8 +238,17 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
             ax.plot((0, ntsteps - 1), (spike_thresh, spike_thresh), 'k:')
     else:
         ax.set_ylabel('a.u.')
-        ax.set_yticks([0.0])
+        yticks = [0.0, np.median(ts_z), ts_z.max()]
+
         ax.set_ylim(ts_z.min() * 0.95, ts_z.max() * 1.05)
+
+    if yticks:
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(['%.02f' % y for y in yticks])
+        # Plot maximum and minimum horizontal lines
+        ax.plot((0, ntsteps - 1), (yticks[0], yticks[0]), 'k:')
+        ax.plot((0, ntsteps - 1), (yticks[-1], yticks[-1]), 'k:')
+
 
     for side in ["top", "right"]:
         ax.spines[side].set_color('none')
@@ -276,8 +287,8 @@ def spikesplot_cb(position, cmap='viridis', fig=None):
     return cax
 
 
-def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
-                 units='a.u.', tr=None, hide_x=True, color='b'):
+def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
+                 units=None, tr=None, hide_x=True, color='b'):
 
     # Define TR and number of frames
     notr = False
@@ -287,7 +298,9 @@ def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
     ntsteps = len(tseries)
 
     # Normalize time series
-    tseries /= tr
+    tseries = np.array(tseries)
+    if normalize:
+        tseries /= tr
 
     # Define nested GridSpec
     gs = mgs.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_ts,
@@ -313,10 +326,11 @@ def confoundplot(tseries, confound_name, gs_ts, gs_dist=None,
     else:
         ax_ts.set_xticklabels([])
 
-    if notr:
-        ax_ts.set_ylabel('{} [{}]'.format(confound_name, units))
-    else:
-        ax_ts.set_ylabel('{} [{}/s]'.format(confound_name, units))
+    if not name is None:
+        var_label = name
+        if not units is None:
+            var_label += (' [{}]' if notr else ' [{}/s]').format(units)
+        ax_ts.set_ylabel(var_label)
 
     for side in ["top", "right"]:
         ax_ts.spines[side].set_color('none')
