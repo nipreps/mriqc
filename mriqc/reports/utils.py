@@ -43,3 +43,18 @@ def find_failed(dframe, sub_list):
     success = [tuple(x) for x in dframe[['subject_id', 'session_id', 'run_id']].values]
     failed = list(set(sub_list) - set(success))
     return failed
+
+
+def plot_anat_mosaic_helper(in_file, subject_id, session_id,
+                            run_id, out_name, bbox_mask_file=None,
+                            title='T1w session: {session_id} run: {run_id}',
+                            only_plot_noise=False):
+    from mriqc.interfaces.viz_utils import plot_mosaic
+    import os
+    title = title.format(**{"session_id": session_id,
+                          "run_id": run_id})
+    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title,
+                      only_plot_noise=only_plot_noise)
+    fig.savefig(out_name, format='pdf', dpi=300)
+
+    return os.path.abspath(out_name)
