@@ -28,7 +28,8 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
+from ..reports.utils import plot_anat_mosaic_helper
 
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -58,7 +59,9 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    arw = pe.Node(MRIConvert(out_type='niigz', out_orientation='LAS'), name='Reorient')
+    arw = pe.Node(niu.Function(input_names=['in_file'],
+                               output_names=["out_file"],
+                               function=reorient), name='Reorient')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
@@ -81,6 +84,36 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
                        'measures')
 
+    # T1w mosaic plot
+    plot_anat_mosaic_zoomed = pe.Node(niu.Function(input_names=["in_file",
+                                                                'subject_id',
+                                                                'session_id',
+                                                                'run_id',
+                                                                "out_name",
+                                                                "title",
+                                                                "bbox_mask_file"],
+                                            output_names=["plot_file"],
+                                            function=plot_anat_mosaic_helper),
+                                            name="plot_anat_mosaic_zoomed"
+                                            )
+    plot_anat_mosaic_zoomed.inputs.out_name = "plot_anat_mosaic1_zoomed.pdf"
+    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
+
+    plot_anat_mosaic_noise = pe.Node(niu.Function(input_names=["in_file",
+                                                                'subject_id',
+                                                                'session_id',
+                                                                'run_id',
+                                                                "out_name",
+                                                                "title",
+                                                                "only_plot_noise"],
+                                            output_names=["plot_file"],
+                                            function=plot_anat_mosaic_helper),
+                                            name="plot_anat_mosaic_noise"
+                                            )
+    plot_anat_mosaic_noise.inputs.only_plot_noise = True
+    plot_anat_mosaic_noise.inputs.out_name = "plot_anat_mosaic2_noise.pdf"
+    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
+
     # Link images that should be reported
     dsreport = pe.Node(nio.DataSink(
         base_directory=settings['report_dir'], parameterization=True), name='dsreport')
@@ -93,7 +126,6 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
         ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
         ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
-        ('sub-[^/.]*_T1w_out\\.', 'mosaic_t1w.')
     ]
 
     # Connect all nodes
@@ -128,8 +160,21 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
         (n4itk, measures, [('bias_image', 'in_bias')]),
+
+        (arw, plot_anat_mosaic_zoomed, [('out_file', 'in_file')]),
+        (asw, plot_anat_mosaic_zoomed, [('outputnode.out_mask', 'bbox_mask_file')]),
+        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
+                                              ('session_id', 'session_id'),
+                                              ('run_id', 'run_id')]),
+
+        (arw, plot_anat_mosaic_noise, [('out_file', 'in_file')]),
+        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
+                                             ('session_id', 'session_id'),
+                                             ('run_id', 'run_id')]),
+
         (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
-        (arw, dsreport, [('out_file', '@anat_t1w')]),
+        (plot_anat_mosaic_zoomed, dsreport, [('plot_file', "@anat_mosaic_zoomed")]),
+        (plot_anat_mosaic_noise, dsreport, [('plot_file', "@anat_mosaic_noise")]),
         (asw, dsreport, [('outputnode.out_mask', '@anat_t1_mask')])
     ])
 
