@@ -3,5 +3,3 @@
 source /etc/fsl/fsl.sh
 source /etc/afni/afni.sh
 mriqc $@
-
-chmod 777 -R /scratch/*
