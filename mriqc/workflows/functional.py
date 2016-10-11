@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-10 19:11:36
+# @Last Modified time: 2016-10-11 09:08:35
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -25,7 +25,7 @@ from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_i
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.functional import Spikes
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
 
 def fmri_qc_workflow(name='fMRIQC', settings=None):
     """ The fMRI qc workflow """
@@ -59,8 +59,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         output_names=['out_file'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'func'
 
-    reorient = pe.Node(fs.MRIConvert(out_type='niigz', out_orientation='RAS'),
-                       name='EPIReorient')
+    to_ras = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
+                     function=reorient), name='EPIReorient')
 
     # Workflow --------------------------------------------------------
     # 1. HMC: head motion correct
@@ -82,10 +82,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
     # Compute DVARS
-    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True, save_plot=True,
-                                      save_all=True, figdpi=200, figformat='pdf'), name='ComputeDVARS')
+    dvnode = pe.Node(nac.ComputeDVARS(
+        remove_zerovariance=True, save_plot=True,
+        save_all=True, figdpi=200, figformat='pdf'), name='ComputeDVARS')
     fdnode = pe.Node(nac.FramewiseDisplacement(
-        normalize=True, save_plot=True, radius=fd_radius,
+        normalize=False, save_plot=False, radius=fd_radius,
         figdpi=200), name='ComputeFD')
 
     # AFNI quality measures
@@ -140,12 +141,12 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, get_idx, [('start_idx', 'start_idx'),
                               ('stop_idx', 'stop_idx')]),
         (datasource, get_idx, [('out_file', 'in_file')]),
-        (datasource, reorient, [('out_file', 'in_file')]),
-        (reorient, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (datasource, to_ras, [('out_file', 'in_file')]),
+        (to_ras, hmcwf, [('out_file', 'inputnode.in_file')]),
         (datasource, spikes, [('out_file', 'in_file')]),
         (datasource, spikes_fft, [('out_file', 'in_file')]),
         (datasource, spikes_bg, [('out_file', 'in_file')]),
-        (reorient, bigplot, [('out_file', 'in_func')]),
+        (to_ras, bigplot, [('out_file', 'in_func')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
@@ -348,7 +349,7 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
     return workflow
 
 
-def epi_mni_align(name='SpatialNormalization', settings=None):
+def epi_mni_align(name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
