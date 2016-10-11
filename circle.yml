@@ -16,7 +16,7 @@ dependencies:
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker
-    - mkdir -p $SCRATCH
+    - mkdir -p $SCRATCH/func $SCRATCH/anat
     - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ds003_downsampled.tar.gz "${DS003_URL}" && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
     # - pip install coverage
   override:

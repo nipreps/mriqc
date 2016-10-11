@@ -47,9 +47,8 @@ COPY requirements.txt /root/requirements.txt
 
 # Create conda environment, use nipype's conda-forge channel
 RUN conda config --add channels conda-forge && \
-    conda install -y numpy scipy lockfile nipype matplotlib && \
+    conda install -y numpy scipy lockfile matplotlib && \
     pip install -r requirements.txt && \
-    python -c "from niworkflows.data import get_mni_template; get_mni_template()" && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
