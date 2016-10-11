@@ -4,7 +4,7 @@ lockfile
 six
 matplotlib
 nibabel
-niworkflows>=0.0.3a5
+niworkflows>=0.0.3a7
 pandas
 dipy
 jinja2
