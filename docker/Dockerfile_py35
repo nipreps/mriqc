@@ -43,12 +43,11 @@ ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
 WORKDIR /root
-COPY requirements.txt /root/requirements.txt
 
 # Create conda environment, use nipype's conda-forge channel
 RUN conda config --add channels conda-forge && \
     conda install -y numpy scipy lockfile matplotlib && \
-    pip install -r requirements.txt && \
+    pip install -e git+https://github.com/nipy/nipype.git@master#egg=nipype && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
