@@ -95,21 +95,9 @@ def test_snr_dietrich(gtruth, sigma, noise):
     assert  error < 6.0
 
 @pytest.mark.parametrize('brainweb', [
-    'sub-normal01_ses-pn1rf00_T1w.nii.gz',
-    'sub-normal01_ses-pn1rf20_T1w.nii.gz',
-    'sub-normal01_ses-pn1rf40_T1w.nii.gz',
     'sub-normal01_ses-pn3rf00_T1w.nii.gz',
-    'sub-normal01_ses-pn3rf20_T1w.nii.gz',
-    'sub-normal01_ses-pn3rf40_T1w.nii.gz',
     'sub-normal01_ses-pn5rf00_T1w.nii.gz',
-    'sub-normal01_ses-pn5rf20_T1w.nii.gz',
-    'sub-normal01_ses-pn5rf40_T1w.nii.gz',
-    'sub-normal01_ses-pn7rf00_T1w.nii.gz',
-    'sub-normal01_ses-pn7rf20_T1w.nii.gz',
-    'sub-normal01_ses-pn7rf40_T1w.nii.gz',
-    'sub-normal01_ses-pn9rf00_T1w.nii.gz',
-    'sub-normal01_ses-pn9rf20_T1w.nii.gz',
-    'sub-normal01_ses-pn9rf40_T1w.nii.gz'])
+    'sub-normal01_ses-pn9rf00_T1w.nii.gz'])
 def test_artifacts(brainweb):
     data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
     airdata = nb.load(op.join(get_brainweb_1mm_normal(), 'derivatives',
@@ -118,5 +106,5 @@ def test_artifacts(brainweb):
     fname = op.join(data, brainweb.split('_')[1], 'anat', brainweb)
     imdata = nb.load(fname).get_data().astype(np.float32)
 
-    value = art_qi2(imdata, airdata, save_figure=False)
+    value = art_qi2(imdata[::4,::4,::4], airdata[::4,::4,::4], save_figure=False)
     assert value > .0 and value <= 1
