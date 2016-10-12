@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-FROM poldracklab/neuroimaging-core:freesurfer-0.0.1
+FROM poldracklab/neuroimaging-core:base-0.0.2
 
 COPY docker/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
