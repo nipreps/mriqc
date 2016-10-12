@@ -106,5 +106,5 @@ def test_artifacts(brainweb):
     fname = op.join(data, brainweb.split('_')[1], 'anat', brainweb)
     imdata = nb.load(fname).get_data().astype(np.float32)
 
-    value = art_qi2(imdata, airdata, save_figure=False)
+    value = art_qi2(imdata[::4,::4,::4], airdata[::4,::4,::4], save_figure=False)
     assert value > .0 and value <= 1
