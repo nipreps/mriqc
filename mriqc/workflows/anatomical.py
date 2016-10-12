@@ -18,8 +18,7 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import ants
-from nipype.interfaces.afni import preprocess as afp
-from nipype.interfaces.freesurfer import MRIConvert
+from nipype.interfaces import afni
 
 from niworkflows.data import get_mni_template
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
@@ -77,7 +76,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         img_type=1, segments=True, out_basename='segment'), name='segmentation')
 
     # AFNI check smoothing
-    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
 
     # Compute python-coded measures

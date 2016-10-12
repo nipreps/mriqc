@@ -12,14 +12,16 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
+    - "~/.cache/stanford-crn"
 
   pre:
     # Download test data
     - mkdir -p ~/data/ ~/docker
-    - mkdir -p $SCRATCH
+    - mkdir -p $SCRATCH/func $SCRATCH/anat
     - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ds003_downsampled.tar.gz "${DS003_URL}" && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
-    # - pip install coverage
+    - pip install "niworkflows>=0.0.3a11"
   override:
+    - python -c "from niworkflows import data as nwd; nwd.get_mni_template(); nwd.get_ds003_downsampled(); nwd.get_brainweb_1mm_normal()"
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker build -f docker/Dockerfile_py35 -t mriqc:py35 .
     - docker build -f docker/Dockerfile_py27 -t mriqc:py27 .
@@ -28,11 +30,12 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${FUNC_NPROCS} --testing :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ${CIRCLE_TEST_REPORTS}:/scratch -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35 :
+        timeout: 2600
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d func -w work/ --nthreads ${FUNC_NPROCS} --testing
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${ANAT_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --nthreads ${ANAT_NPROCS} --testing --ants-nthreads ${ANTS_NTHREADS}:
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
 
