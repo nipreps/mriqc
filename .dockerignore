@@ -1,0 +1,13 @@
+__pycache__/**/*
+__pycache__
+*.pyc
+build/**/*
+build
+.eggs/**/*
+.eggs
+agave/**/*
+agave
+notebooks/**/*
+notebooks
+mriqc.egg-info/**/*
+mriqc.egg-info

@@ -9,10 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-10-04 14:49:29
 """ A QC workflow for fMRI data """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 import os
 import os.path as op
 
@@ -21,7 +18,7 @@ from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
-from nipype.interfaces.afni import preprocess as afp
+from nipype.interfaces import afni
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson
 from mriqc.interfaces.qc import FunctionalQC
@@ -67,7 +64,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False))
     hmcwf.inputs.inputnode.fd_radius = fd_radius
 
-    mean = pe.Node(afp.TStat(                   # 2. Compute mean fmri
+    mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
@@ -83,11 +80,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         figdpi=200), name='ComputeFD')
 
     # AFNI quality measures
-    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
+    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(afp.OutlierCount(fraction=True, out_file='ouliers.out'),
+    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
                        name='outliers')
-    quality = pe.Node(afp.QualityIndex(automask=True), out_file='quality.out',
+    quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
 
     measures = pe.Node(FunctionalQC(), name='measures')
@@ -199,7 +196,7 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
                          name='outputnode')
 
     if not use_bet:
-        afni_msk = pe.Node(afp.Automask(
+        afni_msk = pe.Node(afni.Automask(
             outputtype='NIFTI_GZ'), name='afni_msk')
 
         # Connect brain mask extraction
@@ -257,17 +254,17 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_movpar']), name='outputnode')
 
-    drop_trs = pe.Node(afp.Calc(expr='a', outputtype='NIFTI_GZ'),
+    drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
                        name='drop_trs')
-    deoblique = pe.Node(afp.Refit(deoblique=True), name='deoblique')
-    reorient = pe.Node(afp.Resample(
+    deoblique = pe.Node(afni.Refit(deoblique=True), name='deoblique')
+    reorient = pe.Node(afni.Resample(
         orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
-    get_mean_RPI = pe.Node(afp.TStat(
+    get_mean_RPI = pe.Node(afni.TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='get_mean_RPI')
 
     # calculate hmc parameters
     hmc = pe.Node(
-        afp.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        afni.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct')
 
     get_mean_motion = get_mean_RPI.clone('get_mean_motion')
@@ -296,7 +293,7 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
     ])
 
     if st_correct:
-        st_corr = pe.Node(afp.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
+        st_corr = pe.Node(afni.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
             (st_corr, deoblique, [('out_file', 'in_file')])
