@@ -97,11 +97,11 @@ def main():
                         help='Deoblique the functional scans during head motion correction preprocessing')
     g_afni.add_argument('--despike', action='store_true', default=False,
                         help='Despike the functional scans during head motion correction preprocessing')
-    g_afni.add_argument('--start_idx', action='store', type=int, nargs=1,
+    g_afni.add_argument('--start-idx', action='store', type=int,
                         help='Initial volume in functional timeseries that should be considered for preprocessing')
-    g_afni.add_argument('--stop_idx', action='store', type=int, nargs=1,
+    g_afni.add_argument('--stop-idx', action='store', type=int,
                         help='Final volume in functional timeseries that should be considered for preprocessing')
-    g_afni.add_argument('--correct_slice_timing', action='store_true', default=False,
+    g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
                         help='Perform slice timing correction')
 
     opts = parser.parse_args()
@@ -117,6 +117,15 @@ def main():
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir)
     }
+
+    if opts.hmc_afni:
+        settings['deoblique'] = opts.deoblique
+        settings['despike'] = opts.despike
+        settings['correct_slice_timing'] = opts.correct_slice_timing
+        if opts.start_idx:
+            settings['start_idx'] = opts.start_idx
+        if opts. stop_idx:
+            settings['stop_idx'] = opts.stop_idx
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings

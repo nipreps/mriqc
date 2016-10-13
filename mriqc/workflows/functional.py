@@ -316,7 +316,7 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
 
     deoblique_node = pe.Node(afni.Refit(deoblique=True), name='deoblique')
 
-    despike_node = pe.Node(afni.Despike(), name='despike')
+    despike_node = pe.Node(afni.Despike(outputtype='NIFTI_GZ'), name='despike')
 
     if st_correct and despike and deoblique:
 
