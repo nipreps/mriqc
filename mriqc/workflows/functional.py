@@ -60,8 +60,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # 1. HMC: head motion correct
     hmcwf = hmc_mcflirt()
+
     if settings.get('hmc_afni', False):
-        hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False))
+
+        hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False),
+                         despike=settings.get('despike', False),
+                         deoblique=settings.get('deoblique', False))
+
     hmcwf.inputs.inputnode.fd_radius = fd_radius
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
@@ -245,24 +250,27 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
         (fdnode, outputnode, [('out_file', 'out_fd'),
                               ('out_figure', 'out_figure')]),
     ])
+
     return workflow
 
 
-def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
+def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=False):
     """A head motion correction (HMC) workflow for functional scans"""
 
     workflow = pe.Workflow(name=name)
+
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'fd_radius', 'start_idx', 'stop_idx']), name='inputnode')
+
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_fd', 'out_figure']), name='outputnode')
 
     drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
                        name='drop_trs')
 
-    deoblique = pe.Node(afni.Refit(deoblique=True), name='deoblique')
     reorient = pe.Node(afni.Resample(
         orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
+
     get_mean_RPI = pe.Node(afni.TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='get_mean_RPI')
 
@@ -288,7 +296,6 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
                                ('start_idx', 'start_idx'),
                                ('stop_idx', 'stop_idx')]),
         (inputnode, calc_fd, [('fd_radius', 'rmax')]),
-        (deoblique, reorient, [('out_file', 'in_file')]),
         (reorient, get_mean_RPI, [('out_file', 'in_file')]),
         (reorient, hmc, [('out_file', 'in_file')]),
         (get_mean_RPI, hmc, [('out_file', 'basefile')]),
@@ -303,15 +310,72 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False):
         (plot_fd, outputnode, [('out_file', 'out_figure')])
     ])
 
-    if st_correct:
-        st_corr = pe.Node(afni.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
+    # Slice timing correction, despiking, and deoblique
+
+    st_corr = pe.Node(afni.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
+
+    deoblique_node = pe.Node(afni.Refit(deoblique=True), name='deoblique')
+
+    despike_node = pe.Node(afni.Despike(), name='despike')
+
+    if st_correct and despike and deoblique:
+
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
-            (st_corr, deoblique, [('out_file', 'in_file')])
+            (st_corr, despike_node, [('out_file', 'in_file')]),
+            (despike_node, deoblique_node, [('out_file', 'in_file')]),
+            (deoblique_node, reorient, [('out_file', 'in_file')])
         ])
-    else:
+
+    elif st_correct and despike:
+
         workflow.connect([
-            (drop_trs, deoblique, [('out_file', 'in_file')])
+            (drop_trs, st_corr, [('out_file', 'in_file')]),
+            (st_corr, despike_node, [('out_file', 'in_file')]),
+            (despike_node, reorient, [('out_file', 'in_file')]),
+        ])
+
+    elif st_correct and deoblique:
+
+        workflow.connect([
+            (drop_trs, st_corr, [('out_file', 'in_file')]),
+            (st_corr, deoblique_node, [('out_file', 'in_file')]),
+            (deoblique_node, reorient, [('out_file', 'in_file')])
+        ])
+
+    elif st_correct:
+
+        workflow.connect([
+            (drop_trs, st_corr, [('out_file', 'in_file')]),
+            (st_corr, reorient, [('out_file', 'in_file')])
+        ])
+
+    elif despike and deoblique:
+
+        workflow.connect([
+            (drop_trs, despike_node, [('out_file', 'in_file')]),
+            (despike_node, deoblique_node, [('out_file', 'in_file')]),
+            (deoblique_node, reorient, [('out_file', 'in_file')])
+        ])
+
+    elif despike:
+
+        workflow.connect([
+            (drop_trs, despike_node, [('out_file', 'in_file')]),
+            (despike_node, reorient, [('out_file', 'in_file')]),
+        ])
+
+    elif deoblique:
+
+        workflow.connect([
+            (drop_trs, deoblique_node, [('out_file', 'in_file')]),
+            (deoblique_node, reorient, [('out_file', 'in_file')])
+        ])
+
+    else:
+
+        workflow.connect([
+            (drop_trs, reorient, [('out_file', 'in_file')]),
         ])
 
     return workflow
