@@ -28,6 +28,7 @@ from mriqc.workflows import core as mwc
 from mriqc import __version__, MRIQC_LOG
 from mriqc.utils.misc import check_folder
 
+
 def main():
     from nipype import config as ncfg
 
@@ -75,10 +76,6 @@ def main():
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
-    g_input.add_argument('--hmc-afni', action='store_true', default=False,
-                         help='Use ANFI 3dvolreg for head motion correction (HMC) and '
-                              'frame displacement (FD) estimation')
-
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
@@ -89,10 +86,25 @@ def main():
     g_ants.add_argument('--ants-nthreads', action='store', type=int,
                         help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
-                         help='path to JSON file with settings for ANTS')
+                        help='path to JSON file with settings for ANTS')
+
+    # AFNI head motion correction settings
+    g_afni = parser.add_argument_group('specific settings for AFNI head motion correction')
+    g_afni.add_argument('--hmc-afni', action='store_true', default=False,
+                        help='Use ANFI 3dvolreg for head motion correction (HMC) and '
+                             'frame displacement (FD) estimation')
+    g_afni.add_argument('--deoblique', action='store_true', default=False,
+                        help='Deoblique the functional scans during head motion correction preprocessing')
+    g_afni.add_argument('--despike', action='store_true', default=False,
+                        help='Despike the functional scans during head motion correction preprocessing')
+    g_afni.add_argument('--start-idx', action='store', type=int,
+                        help='Initial volume in functional timeseries that should be considered for preprocessing')
+    g_afni.add_argument('--stop-idx', action='store', type=int,
+                        help='Final volume in functional timeseries that should be considered for preprocessing')
+    g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
+                        help='Perform slice timing correction')
 
     opts = parser.parse_args()
-
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
@@ -105,6 +117,15 @@ def main():
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir)
     }
+
+    if opts.hmc_afni:
+        settings['deoblique'] = opts.deoblique
+        settings['despike'] = opts.despike
+        settings['correct_slice_timing'] = opts.correct_slice_timing
+        if opts.start_idx:
+            settings['start_idx'] = opts.start_idx
+        if opts. stop_idx:
+            settings['stop_idx'] = opts.stop_idx
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
