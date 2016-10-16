@@ -505,7 +505,7 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     myplot = fMRIPlot(in_func, in_mask, in_segm)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
-                      zscored=False, title='Axial slice homogeneity (air mask)')
+                      zscored=False)
     # myplot.add_spikes(np.loadtxt(in_spikes_fft),
     #                   zscored=False, title='Spikes')
     myplot.add_confounds([0] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})

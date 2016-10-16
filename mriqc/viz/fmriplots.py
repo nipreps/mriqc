@@ -51,7 +51,7 @@ class fMRIPlot(object):
 
         # Create grid
         grid = mgs.GridSpec(nrows, 1, wspace=0.0, hspace=0.2,
-                            height_ratios=[1] * (nrows - 1) + [5])
+                            height_ratios=[1] * (nrows - 1) + [3.5])
 
         grid_id = 0
         for tsz, name, iszs in self.spikes:
@@ -192,7 +192,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     # Plot one line per axial slice timeseries
     for sl in range(nslices):
         if not stem:
-            ax.plot(ts_z[sl, :], color=colors[sl], lw=1.5)
+            ax.plot(ts_z[sl, :], color=colors[sl], lw=0.5)
         else:
             markerline, stemlines, baseline = ax.stem(ts_z[sl, :])
             plt.setp(markerline, 'markerfacecolor', colors[sl])
@@ -237,7 +237,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
             ax.plot((0, ntsteps - 1), (-spike_thresh, -spike_thresh), 'k:')
             ax.plot((0, ntsteps - 1), (spike_thresh, spike_thresh), 'k:')
     else:
-        ax.set_ylabel('a.u.')
+        ax.set_ylabel('air sgn. intensity')
         yticks = [0.0, np.median(ts_z), ts_z.max()]
 
         ax.set_ylim(ts_z.min() * 0.95, ts_z.max() * 1.05)
