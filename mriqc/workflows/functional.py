@@ -100,7 +100,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
     spikes = pe.Node(Spikes(), name='SpikesFinder')
-    spikes_bg = pe.Node(Spikes(no_zscore=True), name='SpikesFinderBgMask')
+    spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
     spikes_fft = pe.Node(niu.Function(
         input_names=['in_file'], output_names=['out_fft', 'out_energy', 'out_spikes'],
         function=slice_wise_fft), name='SpikesFinderFFT')
