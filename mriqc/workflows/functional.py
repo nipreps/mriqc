@@ -181,7 +181,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
-        (spmask, dsreport, [('out_plot', '@spmaskplot')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std')]),
         (bmw, dsreport, [('outputnode.out_file', '@mask')]),
@@ -508,8 +507,8 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
                       zscored=False)
     # myplot.add_spikes(np.loadtxt(in_spikes_fft),
     #                   zscored=False, title='Spikes')
-    myplot.add_confounds([0] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
-    myplot.add_confounds([0] + np.loadtxt(dvars).tolist(),
+    myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
+    myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
     myplot.plot()
     myplot.fig.savefig(out_file, dpi=300, bbox_inches='tight')

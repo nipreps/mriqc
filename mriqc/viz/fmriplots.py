@@ -12,6 +12,7 @@ from matplotlib import gridspec as mgs
 from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm
 from matplotlib.colorbar import ColorbarBase
 from seaborn import color_palette
+from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
 
 import seaborn as sns
 sns.set_style("whitegrid")
@@ -19,7 +20,7 @@ sns.set_style("whitegrid")
 
 class fMRIPlot(object):
 
-    def __init__(self, func, mask, seg=None, tr=None, figsize=(16, 10)):
+    def __init__(self, func, mask, seg=None, tr=None, figsize=DINA4_LANDSCAPE):
         func_nii = nb.load(func)
         self.func_data = func_nii.get_data()
         self.mask_data = nb.load(mask).get_data()
@@ -90,8 +91,7 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
     data = func_data[segmentation > 0].reshape(-1, ntsteps)
     # Detrend data
-    detrended = np.zeros_like(data)
-    detrended[:, nskip:] = clean(data[:, nskip:].T, t_r=tr).T
+    detrended = clean(data.T, t_r=tr).T
 
     # Order following segmentation labels
     seg = segmentation[segmentation > 0].reshape(-1)
