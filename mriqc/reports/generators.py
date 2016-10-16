@@ -18,6 +18,7 @@ from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
 
 import pandas as pd
 import matplotlib
+import subprocess
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -369,20 +370,34 @@ class MRIQCReportPDF(object):
         RstToPdf().createPdf(
             text=template.compile(context), output=out_file)
 
-
 def concat_pdf(in_files, out_file='concatenated.pdf'):
     """ Concatenate PDF list (http://stackoverflow.com/a/3444735) """
-    from PyPDF2 import PdfFileWriter, PdfFileReader
 
-    with open(out_file, 'wb') as out_pdffile:
-        outpdf = PdfFileWriter()
+    # GhostScript produces much smaller PDFs - we should use it if we can
+    if subprocess.check_call("gs -v", shell=True):
+        cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/prepress -dNOPAUSE -dQUIET -dBATCH -dDetectDuplicateImages -dCompressFonts=true -dAutoFilterColorImages=false " \
+              "-dAutoFilterGrayImages=false " \
+              "-dColorImageFilter=/FlateEncode " \
+              "-dGrayImageFilter=/FlateEncode  " \
+              "-dColorConversionStrategy=/LeaveColorUnchanged " \
+              "-dDownsampleMonoImages=false " \
+              "-dDownsampleGrayImages=false " \
+              "-dDownsampleColorImages=false " \
+              "-sOutputFile={out_file} {in_files}"
+        subprocess.check_call(cmd.format(**{"out_file": out_file,
+                              "in_files": " ".join(in_files)}), shell=True)
+    else:
+        from PyPDF2 import PdfFileWriter, PdfFileReader
 
-        for in_file in in_files:
-            with open(in_file, 'rb') as in_pdffile:
-                inpdf = PdfFileReader(in_pdffile)
-                for fpdf in range(inpdf.numPages):
-                    outpdf.addPage(inpdf.getPage(fpdf))
-                outpdf.write(out_pdffile)
+        with open(out_file, 'wb') as out_pdffile:
+            outpdf = PdfFileWriter()
+
+            for in_file in in_files:
+                with open(in_file, 'rb') as in_pdffile:
+                    inpdf = PdfFileReader(in_pdffile)
+                    for fpdf in range(inpdf.numPages):
+                        outpdf.addPage(inpdf.getPage(fpdf))
+                    outpdf.write(out_pdffile)
 
     return out_file
 

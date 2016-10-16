@@ -100,7 +100,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
     spikes = pe.Node(Spikes(), name='SpikesFinder')
-    spikes_bg = pe.Node(Spikes(no_zscore=True), name='SpikesFinderBgMask')
+    spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
     spikes_fft = pe.Node(niu.Function(
         input_names=['in_file'], output_names=['out_fft', 'out_energy', 'out_spikes'],
         function=slice_wise_fft), name='SpikesFinderFFT')
@@ -155,7 +155,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, spmask, [('outputnode.out_file', 'in_file')]),
         (mean, fwhm, [('out_file', 'in_file')]),
         (bmw, fwhm, [('outputnode.out_file', 'mask')]),
-        (bmw, spmask, [('outputnode.out_file', 'in_mask')]),
         (bmw, spikes, [('outputnode.out_file', 'in_mask')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
         (bmw, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
@@ -182,7 +181,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, outputnode, [('outputnode.out_movpar', 'out_movpar')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
-        (spmask, dsreport, [('out_plot', '@spmaskplot')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std')]),
         (bmw, dsreport, [('outputnode.out_file', '@mask')]),
@@ -415,7 +413,7 @@ def epi_mni_align(name='SpatialNormalization'):
     return workflow
 
 
-def spikes_mask(in_file, in_mask, out_file=None):
+def spikes_mask(in_file, in_mask=None, out_file=None):
     import os.path as op
     import nibabel as nb
     import numpy as np
@@ -432,33 +430,35 @@ def spikes_mask(in_file, in_mask, out_file=None):
         out_plot = op.abspath('{}_spmask.pdf'.format(fname))
 
     in_4d_nii = nb.load(in_file)
-    func = in_4d_nii.get_data()
     orientation = nb.aff2axcodes(in_4d_nii.affine)
 
-    mask_data = nb.load(in_mask).get_data()
-    a = np.where(mask_data != 0)
-    bbox = np.max(a[0]) - np.min(a[0]), np.max(a[1]) - \
-        np.min(a[1]), np.max(a[2]) - np.min(a[2])
-    longest_axis = np.argmax(bbox)
+    if in_mask:
+        mask_data = nb.load(in_mask).get_data()
+        a = np.where(mask_data != 0)
+        bbox = np.max(a[0]) - np.min(a[0]), np.max(a[1]) - \
+            np.min(a[1]), np.max(a[2]) - np.min(a[2])
+        longest_axis = np.argmax(bbox)
 
-    # Input here is a binarized and intersected mask data from previous section
-    dil_mask = nd.binary_dilation(
-        mask_data, iterations=int(mask_data.shape[longest_axis]/9))
+        # Input here is a binarized and intersected mask data from previous section
+        dil_mask = nd.binary_dilation(
+            mask_data, iterations=int(mask_data.shape[longest_axis]/9))
 
-    rep = list(mask_data.shape)
-    rep[longest_axis] = -1
-    new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
+        rep = list(mask_data.shape)
+        rep[longest_axis] = -1
+        new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
 
-    rep = [1, 1, 1]
-    rep[longest_axis] = mask_data.shape[longest_axis]
-    new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
+        rep = [1, 1, 1]
+        rep[longest_axis] = mask_data.shape[longest_axis]
+        new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
+    else:
+        new_mask_3d = np.zeros(in_4d_nii.shape[:3]) == 1
 
     if orientation[0] in ['L', 'R']:
-        new_mask_3d[0, :, :] = True
-        new_mask_3d[-1, :, :] = True
+        new_mask_3d[0:2, :, :] = True
+        new_mask_3d[-3:-1, :, :] = True
     else:
-        new_mask_3d[:, 0, :] = True
-        new_mask_3d[:, -1, :] = True
+        new_mask_3d[:, 0:2, :] = True
+        new_mask_3d[:, -3:-1, :] = True
 
     mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.get_affine(),
                               in_4d_nii.get_header())
@@ -504,11 +504,11 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     myplot = fMRIPlot(in_func, in_mask, in_segm)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
-                      zscored=False, title='Axial slice homogeneity (air mask)')
+                      zscored=False)
     # myplot.add_spikes(np.loadtxt(in_spikes_fft),
     #                   zscored=False, title='Spikes')
-    myplot.add_confounds([0] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
-    myplot.add_confounds([0] + np.loadtxt(dvars).tolist(),
+    myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
+    myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
     myplot.plot()
     myplot.fig.savefig(out_file, dpi=300, bbox_inches='tight')

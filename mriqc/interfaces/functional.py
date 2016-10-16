@@ -22,7 +22,7 @@ class SpikesInputSpec(BaseInterfaceInputSpec):
     detrend = traits.Bool(True, usedefault=True, desc='do detrend')
     spike_thresh = traits.Float(6., usedefault=True,
                                 desc='z-score to call one timepoint of one axial slice a spike')
-    skip_frames = traits.Int(4, usedefault=True,
+    skip_frames = traits.Int(0, usedefault=True,
                              desc='number of frames to skip in the beginning of the time series')
     out_tsz = File('spikes_tsz.txt', usedefault=True, desc='output file name')
     out_spikes = File(
