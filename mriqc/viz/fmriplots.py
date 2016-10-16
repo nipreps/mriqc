@@ -160,7 +160,7 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
 
 def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., title='Spike plot',
-               ax=None, cmap='viridis', hide_x=True):
+               ax=None, cmap='viridis', hide_x=True, nskip=4):
     """
     A spikes plot. Thanks to Bob Dogherty (this docstring needs be improved with proper ack)
     """
@@ -219,8 +219,10 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     # Handle Y axis
     if zscored:
         ax.set_ylabel('z-score')
-        ax.set_ylim((-(np.abs(ts_z).max()) * 1.05, (np.abs(ts_z).max()) * 1.05))
         zs_max = np.abs(ts_z).max()
+        ax.set_ylim((-(np.abs(ts_z[:, nskip:]).max()) * 1.05,
+                     (np.abs(ts_z[:, nskip:]).max()) * 1.05))
+
         ytick_vals = np.arange(0.0, zs_max, float(np.floor(zs_max / 2.)))
         yticks = list(
             reversed((-1.0 * ytick_vals[ytick_vals > 0]).tolist())) + ytick_vals.tolist()
@@ -238,9 +240,12 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
             ax.plot((0, ntsteps - 1), (spike_thresh, spike_thresh), 'k:')
     else:
         ax.set_ylabel('air sgn. intensity')
-        yticks = [0.0, np.median(ts_z), ts_z.max()]
+        yticks = [ts_z[:, nskip:].min(),
+                  np.median(ts_z[:, nskip:]),
+                  ts_z[:, nskip:].max()]
 
-        ax.set_ylim(ts_z.min() * 0.95, ts_z.max() * 1.05)
+        ax.set_ylim(ts_z[:, nskip:].min() * 0.95,
+                    ts_z[:, nskip:].max() * 1.05)
 
     if yticks:
         ax.set_yticks(yticks)
@@ -267,8 +272,8 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     labels = [label for label in ax.yaxis.get_ticklabels()]
     # labels[0].set_weight('bold')
     # labels[-1].set_weight('bold')
-
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     return ax
 
 
@@ -288,7 +293,7 @@ def spikesplot_cb(position, cmap='viridis', fig=None):
 
 
 def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
-                 units=None, tr=None, hide_x=True, color='b'):
+                 units=None, tr=None, hide_x=True, color='b', nskip=4):
 
     # Define TR and number of frames
     notr = False
@@ -348,6 +353,8 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
 
     # Plot average
     ax_ts.plot((0, ntsteps), [tseries.mean()] * 2, color=color, linestyle=':')
+
+    ax_ts.set_ylim(tseries[nskip:].min(), tseries[nskip:].max())
 
     if not gs_dist is None:
         ax_dist = plt.subplot(gs_dist)
