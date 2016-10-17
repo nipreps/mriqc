@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-17 13:17:53
+# @Last Modified time: 2016-10-17 13:20:00
 
 """
 =====
@@ -95,13 +95,17 @@ def main():
                         help='Use ANFI 3dvolreg for head motion correction (HMC) and '
                              'frame displacement (FD) estimation')
     g_afni.add_argument('--deoblique', action='store_true', default=False,
-                        help='Deoblique the functional scans during head motion correction preprocessing')
+                        help='Deoblique the functional scans during head motion '
+                             'correction preprocessing')
     g_afni.add_argument('--despike', action='store_true', default=False,
-                        help='Despike the functional scans during head motion correction preprocessing')
+                        help='Despike the functional scans during head motion correction '
+                             'preprocessing')
     g_afni.add_argument('--start-idx', action='store', type=int,
-                        help='Initial volume in functional timeseries that should be considered for preprocessing')
+                        help='Initial volume in functional timeseries that should be '
+                             'considered for preprocessing')
     g_afni.add_argument('--stop-idx', action='store', type=int,
-                        help='Final volume in functional timeseries that should be considered for preprocessing')
+                        help='Final volume in functional timeseries that should be '
+                             'considered for preprocessing')
     g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
                         help='Perform slice timing correction')
 
