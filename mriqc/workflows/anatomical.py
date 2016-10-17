@@ -104,7 +104,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (n4itk, iqmswf, [('output_image', 'inputnode.inu_corrected'),
                          ('bias_image', 'inputnode.in_inu')]),
         (asw, iqmswf, [('outputnode.out_mask', 'inputnode.brainmask')]),
-        (amw, iqmswf, [('outputnode.out_file', 'inputnode.airmsk'),
+        (amw, iqmswf, [('outputnode.out_file', 'inputnode.airmask'),
                        ('outputnode.artifact_msk', 'inputnode.artmask')]),
         (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
                            ('partial_volume_files', 'inputnode.pvms')]),
