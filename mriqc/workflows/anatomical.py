@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-04 14:54:16
+# @Last Modified time: 2016-10-17 07:55:58
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -86,6 +86,12 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
+        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                             ('session_id', 'inputnode.session_id'),
+                             ('run_id', 'inputnode.run_id')]),
+        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
+                            ('session_id', 'inputnode.session_id'),
+                            ('run_id', 'inputnode.run_id')]),
         (datasource, to_ras, [('anatomical_scan', 'in_file')]),
         (datasource, meta, [('anatomical_scan', 'in_file')]),
         (to_ras, n4itk, [('out_file', 'input_image')]),
@@ -109,9 +115,6 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
                            ('partial_volume_files', 'inputnode.pvms')]),
         (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
-        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
-                            ('session_id', 'inputnode.session_id'),
-                            ('run_id', 'inputnode.run_id')]),
         (to_ras, repwf, [('out_file', 'inputnode.orig')]),
         (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
         (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
