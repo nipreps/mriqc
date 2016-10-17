@@ -58,20 +58,24 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    arw = pe.Node(niu.Function(input_names=['in_file'],
+    to_ras = pe.Node(niu.Function(input_names=['in_file'],
                                output_names=["out_file"],
                                function=reorient), name='Reorient')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf()
-    mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
-    # 4. Air mask (with and without artifacts)
+    # 4. Spatial Normalization, using ANTs
+    norm = pe.Node(RobustMNINormalization(
+        num_threads=settings.get('ants_nthreads', 6), # template='mni_asym_nonlin_2009c',
+        testing=settings.get('testing', False)), name='SpatialNormalization')
+
+    # 5. Air mask (with and without artifacts)
     amw = airmsk_wf(settings=settings)
 
-    # Brain tissue segmentation
+    # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
         img_type=1, segments=True, out_basename='segment'), name='segmentation')
 
@@ -133,40 +137,39 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
-        (datasource, arw, [('anatomical_scan', 'in_file')]),
+        (datasource, to_ras, [('anatomical_scan', 'in_file')]),
         (datasource, meta, [('anatomical_scan', 'in_file')]),
-        (arw, asw, [('out_file', 'inputnode.in_file')]),
-        (arw, n4itk, [('out_file', 'input_image')]),
-        # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
-        (n4itk, mask, [('output_image', 'in_file')]),
-        (asw, mask, [('outputnode.out_mask', 'mask_file')]),
-        (mask, segment, [('out_file', 'in_files')]),
+        (to_ras, n4itk, [('out_file', 'input_image')]),
+        (n4itk, asw, [('output_image', 'inputnode.in_file')]),
+        (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
-        (n4itk, measures, [('output_image', 'in_noinu')]),
-        (arw, measures, [('out_file', 'in_file')]),
-        (arw, fwhm, [('out_file', 'in_file')]),
-        (asw, fwhm, [('outputnode.out_mask', 'mask')]),
-
-        (arw, amw, [('out_file', 'inputnode.in_file')]),
-        (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
+        (n4itk, norm, [('output_image', 'moving_image')]),
+        (asw, norm, [('outputnode.out_mask', 'moving_mask')]),
+        (to_ras, amw, [('out_file', 'inputnode.in_file')]),
+        (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
+                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
 
-        (amw, measures, [('outputnode.out_file', 'air_msk')]),
-        (amw, measures, [('outputnode.artifact_msk', 'artifact_msk')]),
 
+        (n4itk, measures, [('output_image', 'in_noinu'),
+                            ('bias_image', 'in_bias')]),
+        (to_ras, measures, [('out_file', 'in_file')]),
+        (to_ras, fwhm, [('out_file', 'in_file')]),
+        (asw, fwhm, [('outputnode.out_mask', 'mask')]),
+        (amw, measures, [('outputnode.out_file', 'air_msk'),
+                         ('outputnode.artifact_msk', 'artifact_msk')]),
         (segment, measures, [('tissue_class_map', 'in_segm'),
                              ('partial_volume_files', 'in_pvms')]),
-        (n4itk, measures, [('bias_image', 'in_bias')]),
 
-        (arw, plot_anat_mosaic_zoomed, [('out_file', 'in_file')]),
+        (to_ras, plot_anat_mosaic_zoomed, [('out_file', 'in_file')]),
         (asw, plot_anat_mosaic_zoomed, [('outputnode.out_mask', 'bbox_mask_file')]),
         (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
                                               ('session_id', 'session_id'),
                                               ('run_id', 'run_id')]),
 
-        (arw, plot_anat_mosaic_noise, [('out_file', 'in_file')]),
+        (to_ras, plot_anat_mosaic_noise, [('out_file', 'in_file')]),
         (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
                                              ('session_id', 'session_id'),
                                              ('run_id', 'run_id')]),
@@ -285,14 +288,10 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
         settings = {}
 
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
+        fields=['in_file', 'in_mask', 'head_mask', 'reverse_transforms', 'reverse_invert_flags']),
+        name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
-
-    # Spatial normalization, using ANTs
-    norm = pe.Node(RobustMNINormalization(num_threads=settings.get('ants_nthreads', 4)),
-                   name='normalize')
-    norm.inputs.testing = settings.get('testing', False)
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
@@ -301,13 +300,11 @@ def airmsk_wf(name='AirMaskWorkflow', settings=None):
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
-        (inputnode, qi1, [('in_file', 'in_file')]),
-        (inputnode, norm, [('in_noinu', 'moving_image'),
-                           ('in_mask', 'moving_mask')]),
-        (norm, invt, [('reverse_transforms', 'transforms'),
-                      ('reverse_invert_flags', 'invert_transform_flags')]),
-        (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, qi1, [('head_mask', 'head_mask')]),
+        (inputnode, qi1, [('in_file', 'in_file'),
+                          ('head_mask', 'head_mask')]),
+        (inputnode, invt, [('in_mask', 'reference_image'),
+                           ('reverse_transforms', 'transforms'),
+                           ('reverse_invert_flags', 'invert_transform_flags')]),
         (invt, qi1, [('output_image', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
