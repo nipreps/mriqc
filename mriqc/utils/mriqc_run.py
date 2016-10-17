@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-04 14:47:31
+# @Last Modified time: 2016-10-17 12:03:04
 
 """
 =====
@@ -80,6 +80,7 @@ def main():
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
     g_outputs.add_argument('--report-dir', action='store')
+    g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
 
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
@@ -115,7 +116,8 @@ def main():
         'hmc_afni': opts.hmc_afni,
         'nthreads': opts.nthreads,
         'output_dir': op.abspath(opts.output_dir),
-        'work_dir': op.abspath(opts.work_dir)
+        'work_dir': op.abspath(opts.work_dir),
+        'verbose_reports': opts.verbose_reports
     }
 
     if opts.hmc_afni:

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 10:08:16
+# @Last Modified time: 2016-10-17 12:03:53
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -122,6 +122,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (amw, repwf, [('outputnode.out_file', 'inputnode.airmask'),
                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
+        (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
@@ -134,7 +135,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
         'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
         'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata']),
         name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
+                         name='outputnode')
 
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
@@ -206,7 +208,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                               ('cjv', 'cjv'),
                               ('wm2max', 'wm2max')]),
         (out_name, datasink, [('out_file', 'out_file')]),
-        (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
+        (measures, outputnode, [('out_noisefit', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
@@ -214,12 +216,11 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
-    from mriqc.interfaces.viz import PlotContours
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected']),
+        'segmentation', 'inu_corrected', 'noisefit']),
         name='inputnode')
 
     # T1w mosaic plot
@@ -261,18 +262,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3')
     ]
 
-    plot_segm = pe.Node(PlotContours(display_mode='z', levels=[.5, 1.5, 2.5],
-                        colors=['r', 'g', 'b']), name='PlotSegmentation')
-
-    plot_bmask = pe.Node(PlotContours(display_mode='z', levels=[.5], colors=['r'],
-                         out_file='bmask'), name='PlotBrainmask')
-    plot_airmask = pe.Node(PlotContours(display_mode='x', levels=[.5], colors=['r'],
-                           cut_coords=6, out_file='airmask'), name='PlotAirmask')
-    plot_headmask = pe.Node(PlotContours(display_mode='x', levels=[.5], colors=['r'],
-                            cut_coords=6, out_file='headmask'), name='PlotHeadmask')
-    plot_artmask = pe.Node(PlotContours(display_mode='z', levels=[.5], colors=['r'],
-                           out_file='artmask', saturate=True), name='PlotArtmask')
-
     workflow.connect([
         (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
                                               ('session_id', 'session_id'),
@@ -286,6 +275,36 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                              ('orig', 'in_file')]),
         (plot_anat_mosaic_zoomed, dsplots, [('plot_file', "@anat_mosaic_zoomed")]),
         (plot_anat_mosaic_noise, dsplots, [('plot_file', "@anat_mosaic_noise")]),
+    ])
+
+    if not settings.get('verbose_reports', False):
+        return workflow
+
+
+    from mriqc.interfaces.viz import PlotContours
+    from mriqc.interfaces.viz_utils import plot_bg_dist
+    plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
+                          function=plot_bg_dist), name='PlotBackground')
+
+    # If we want verbose reports
+    plot_segm = pe.Node(PlotContours(
+        display_mode='z', levels=[.5, 1.5, 2.5],
+        colors=['r', 'g', 'b']), name='PlotSegmentation')
+
+    plot_bmask = pe.Node(PlotContours(
+        display_mode='z', levels=[.5], colors=['r'],
+        out_file='bmask'), name='PlotBrainmask')
+    plot_airmask = pe.Node(PlotContours(
+        display_mode='x', levels=[.5], colors=['r'],
+        cut_coords=6, out_file='airmask'), name='PlotAirmask')
+    plot_headmask = pe.Node(PlotContours(
+        display_mode='x', levels=[.5], colors=['r'],
+        cut_coords=6, out_file='headmask'), name='PlotHeadmask')
+    plot_artmask = pe.Node(PlotContours(
+        display_mode='z', levels=[.5], colors=['r'],
+        out_file='artmask', saturate=True), name='PlotArtmask')
+
+    workflow.connect([
         (inputnode, plot_segm, [('orig', 'in_file'),
                                 ('segmentation', 'in_contours')]),
         (plot_segm, dsplots, [('out_file', '@plot_segmentation')]),
@@ -300,11 +319,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (plot_airmask, dsplots, [('out_file', '@plot_airmask')]),
         (inputnode, plot_artmask, [('orig', 'in_file'),
                                    ('artmask', 'in_contours')]),
-        (plot_artmask, dsplots, [('out_file', '@plot_artmask')])
+        (plot_artmask, dsplots, [('out_file', '@plot_artmask')]),
+
+        (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
+        (plot_bgdist, dsplots, [('out_file', '@plot_bgdist')]),
     ])
-
-
-
     return workflow
 
 def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):

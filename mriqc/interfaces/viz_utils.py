@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 10:13:56
+# @Last Modified time: 2016-10-17 12:11:59
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -400,3 +400,38 @@ def plot_segmentation(anat_file, segmentation, out_file,
     disp = None
     return out_file
 
+def plot_bg_dist(in_file):
+    import os.path as op
+    import numpy as np
+    import json
+    from io import open
+    from matplotlib import rc
+    import seaborn as sn
+    import matplotlib.pyplot as plt
+    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    # rc('text', usetex=True)
+
+    with open(in_file, 'r') as jsonf:
+        data = json.load(jsonf)
+
+    # Write out figure of the fitting
+    out_file = op.abspath('background_fit.svg')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+
+    width = (data['x'][1] - data['x'][0])
+    left = [v - 0.5 * width for v in data['x']]
+
+    ymax = np.max([np.array(data['y']).max(), np.array(data['y_hat']).max()])
+    ax1.set_ylim((0.0, 1.10 * ymax))
+
+    ax1.bar(left, data['y'], width)
+    ax1.plot(left, data['y_hat'], 'k--', linewidth=1.2)
+    ax1.plot((data['x_cutoff'], data['x_cutoff']), ax1.get_ylim(), 'k--')
+
+    fig.savefig(out_file, format='svg', dpi=300)
+    plt.close()
+    return out_file
