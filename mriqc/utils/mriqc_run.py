@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-17 12:03:04
+# @Last Modified time: 2016-10-17 13:17:53
 
 """
 =====
@@ -117,7 +117,7 @@ def main():
         'nthreads': opts.nthreads,
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
-        'verbose_reports': opts.verbose_reports
+        'verbose_reports': opts.verbose_reports or opts.testing
     }
 
     if opts.hmc_afni:
