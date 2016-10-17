@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 07:55:58
+# @Last Modified time: 2016-10-17 10:08:16
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -28,7 +28,7 @@ from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
-from ..reports.utils import plot_anat_mosaic_helper
+from mriqc.reports.utils import plot_anat_mosaic_helper
 
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -118,6 +118,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (to_ras, repwf, [('out_file', 'inputnode.orig')]),
         (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
         (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
         (amw, repwf, [('outputnode.out_file', 'inputnode.airmask'),
                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
@@ -213,10 +214,11 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
+    from mriqc.interfaces.viz import PlotContours
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
+        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
         'segmentation', 'inu_corrected']),
         name='inputnode')
 
@@ -231,7 +233,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
                      'bbox_mask_file'],
         output_names=['plot_file'], function=plot_anat_mosaic_helper),
         name='plot_anat_mosaic_zoomed')
-    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.pdf'
+    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.svg'
     plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
 
     plot_anat_mosaic_noise = pe.Node(niu.Function(
@@ -245,7 +247,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         output_names=['plot_file'], function=plot_anat_mosaic_helper),
         name='plot_anat_mosaic_noise')
     plot_anat_mosaic_noise.inputs.only_plot_noise = True
-    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.pdf'
+    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.svg'
     plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
 
     # Link images that should be reported
@@ -258,6 +260,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.regexp_substitutions = [
         ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3')
     ]
+
+    plot_segm = pe.Node(PlotContours(display_mode='z', levels=[.5, 1.5, 2.5],
+                        colors=['r', 'g', 'b']), name='PlotSegmentation')
+
+    plot_bmask = pe.Node(PlotContours(display_mode='z', levels=[.5], colors=['r'],
+                         out_file='bmask'), name='PlotBrainmask')
+    plot_airmask = pe.Node(PlotContours(display_mode='x', levels=[.5], colors=['r'],
+                           cut_coords=6, out_file='airmask'), name='PlotAirmask')
+    plot_headmask = pe.Node(PlotContours(display_mode='x', levels=[.5], colors=['r'],
+                            cut_coords=6, out_file='headmask'), name='PlotHeadmask')
+    plot_artmask = pe.Node(PlotContours(display_mode='z', levels=[.5], colors=['r'],
+                           out_file='artmask', saturate=True), name='PlotArtmask')
 
     workflow.connect([
         (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
@@ -272,7 +286,24 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                              ('orig', 'in_file')]),
         (plot_anat_mosaic_zoomed, dsplots, [('plot_file', "@anat_mosaic_zoomed")]),
         (plot_anat_mosaic_noise, dsplots, [('plot_file', "@anat_mosaic_noise")]),
+        (inputnode, plot_segm, [('orig', 'in_file'),
+                                ('segmentation', 'in_contours')]),
+        (plot_segm, dsplots, [('out_file', '@plot_segmentation')]),
+        (inputnode, plot_bmask, [('orig', 'in_file'),
+                                 ('brainmask', 'in_contours')]),
+        (plot_bmask, dsplots, [('out_file', '@plot_bmask')]),
+        (inputnode, plot_headmask, [('orig', 'in_file'),
+                                    ('headmask', 'in_contours')]),
+        (plot_headmask, dsplots, [('out_file', '@plot_headmask')]),
+        (inputnode, plot_airmask, [('orig', 'in_file'),
+                                   ('airmask', 'in_contours')]),
+        (plot_airmask, dsplots, [('out_file', '@plot_airmask')]),
+        (inputnode, plot_artmask, [('orig', 'in_file'),
+                                   ('artmask', 'in_contours')]),
+        (plot_artmask, dsplots, [('out_file', '@plot_artmask')])
     ])
+
+
 
     return workflow
 

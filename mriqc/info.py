@@ -63,6 +63,7 @@ REQUIRES = [
     'nilearn',
     'sklearn',
     'scikit-learn',
+    'svgutils',
     'nipype',
     'rst2pdf',
 ]

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-19 18:35:16
+# @Last Modified time: 2016-10-17 10:13:56
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -30,6 +30,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
+
+from mriqc.utils.misc import split_ext
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -370,3 +372,31 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
     data = main_data[np.logical_and(nan_mask, mask)]
     return data
+
+
+def plot_segmentation(anat_file, segmentation, out_file,
+                      **kwargs):
+    from nilearn.plotting import plot_anat
+
+    vmax = None
+    if kwargs.get('saturate', False):
+        import nibabel as nb
+        import numpy as np
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1),
+                             70)
+
+    disp = plot_anat(
+        anat_file,
+        display_mode=kwargs.get('display_mode', 'ortho'),
+        cut_coords=kwargs.get('cut_coords', 8),
+        title=kwargs.get('title'),
+        vmax=vmax)
+    disp.add_contours(
+        segmentation,
+        levels=kwargs.get('levels', [1]),
+        colors=kwargs.get('colors', 'r'))
+    disp.savefig(out_file)
+    disp.close()
+    disp = None
+    return out_file
+
