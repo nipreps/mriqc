@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 12:11:59
+# @Last Modified time: 2016-10-17 15:14:07
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -434,4 +434,60 @@ def plot_bg_dist(in_file):
 
     fig.savefig(out_file, format='svg', dpi=300)
     plt.close()
+    return out_file
+
+def combine_svg_verbose(
+        in_brainmask,
+        in_segmentation,
+        in_artmask,
+        in_headmask,
+        in_airmask,
+        in_bgplot):
+    import os.path as op
+    import svgutils.transform as svgt
+    import svgutils.compose as svgc
+    import sys
+    import numpy as np
+    from glob import glob
+
+    hspace = 10
+    wspace = 10
+    #create new SVG figure
+    in_mosaics = [in_brainmask,
+                  in_segmentation,
+                  in_artmask,
+                  in_headmask,
+                  in_airmask]
+    figs = [svgt.fromfile(f) for f in in_mosaics]
+
+    roots = [f.getroot() for f in figs]
+    nfigs = len(figs)
+
+    sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in figs]
+    maxsize = np.max(sizes, axis=0)
+    minsize = np.min(sizes, axis=0)
+
+    bgfile = svgt.fromfile(in_bgplot)
+    bgscale = (maxsize[1] * 2 + hspace)/int(bgfile.height[:-2])
+    bgsize = (int(bgfile.width[:-2]), int(bgfile.height[:-2]))
+    bgfileroot = bgfile.getroot()
+
+    totalsize = (minsize[0] + hspace + int(bgsize[0] * bgscale),
+                 nfigs * maxsize[1] + (nfigs - 1) * hspace)
+    fig = svgt.SVGFigure(svgc.Unit(totalsize[0]).to('cm'),
+                         svgc.Unit(totalsize[1]).to('cm'))
+
+    yoffset = 0
+    for i, r in enumerate(roots):
+        xoffset = 0
+        if sizes[i][0] == maxsize[0]:
+            xoffset = int(0.5 * (totalsize[0] - sizes[i][0]))
+        r.moveto(xoffset, yoffset)
+        yoffset += maxsize[1] + hspace
+
+    bgfileroot.moveto(minsize[0] + wspace, 3 * (maxsize[1] + hspace), scale=bgscale)
+
+    fig.append(roots + [bgfileroot])
+    out_file = op.abspath('fig_final.svg')
+    fig.save(out_file)
     return out_file

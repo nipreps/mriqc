@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 12:03:53
+# @Last Modified time: 2016-10-17 15:11:50
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -282,17 +282,17 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
 
     from mriqc.interfaces.viz import PlotContours
-    from mriqc.interfaces.viz_utils import plot_bg_dist
+    from mriqc.interfaces.viz_utils import plot_bg_dist, combine_svg_verbose
     plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
                           function=plot_bg_dist), name='PlotBackground')
 
     # If we want verbose reports
     plot_segm = pe.Node(PlotContours(
-        display_mode='z', levels=[.5, 1.5, 2.5],
+        display_mode='z', levels=[.5, 1.5, 2.5], cut_coords=10,
         colors=['r', 'g', 'b']), name='PlotSegmentation')
 
     plot_bmask = pe.Node(PlotContours(
-        display_mode='z', levels=[.5], colors=['r'],
+        display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
         out_file='bmask'), name='PlotBrainmask')
     plot_airmask = pe.Node(PlotContours(
         display_mode='x', levels=[.5], colors=['r'],
@@ -301,28 +301,41 @@ def individual_reports(settings, name='ReportsWorkflow'):
         display_mode='x', levels=[.5], colors=['r'],
         cut_coords=6, out_file='headmask'), name='PlotHeadmask')
     plot_artmask = pe.Node(PlotContours(
-        display_mode='z', levels=[.5], colors=['r'],
+        display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
         out_file='artmask', saturate=True), name='PlotArtmask')
+
+    combine = pe.Node(niu.Function(
+        input_names=[
+            'in_brainmask',
+            'in_segmentation',
+            'in_artmask',
+            'in_headmask',
+            'in_airmask',
+            'in_bgplot'
+        ], output_names=['out_file'],
+        function=combine_svg_verbose), name='CombineSVGs')
 
     workflow.connect([
         (inputnode, plot_segm, [('orig', 'in_file'),
                                 ('segmentation', 'in_contours')]),
-        (plot_segm, dsplots, [('out_file', '@plot_segmentation')]),
         (inputnode, plot_bmask, [('orig', 'in_file'),
                                  ('brainmask', 'in_contours')]),
-        (plot_bmask, dsplots, [('out_file', '@plot_bmask')]),
         (inputnode, plot_headmask, [('orig', 'in_file'),
                                     ('headmask', 'in_contours')]),
-        (plot_headmask, dsplots, [('out_file', '@plot_headmask')]),
         (inputnode, plot_airmask, [('orig', 'in_file'),
                                    ('airmask', 'in_contours')]),
-        (plot_airmask, dsplots, [('out_file', '@plot_airmask')]),
         (inputnode, plot_artmask, [('orig', 'in_file'),
                                    ('artmask', 'in_contours')]),
-        (plot_artmask, dsplots, [('out_file', '@plot_artmask')]),
-
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
-        (plot_bgdist, dsplots, [('out_file', '@plot_bgdist')]),
+
+
+        (plot_bmask, combine, [('out_file', 'in_brainmask')]),
+        (plot_segm, combine, [('out_file', 'in_segmentation')]),
+        (plot_artmask, combine, [('out_file', 'in_artmask')]),
+        (plot_headmask, combine, [('out_file', 'in_headmask')]),
+        (plot_airmask, combine, [('out_file', 'in_airmask')]),
+        (plot_bgdist, combine, [('out_file', 'in_bgplot')]),
+        (combine, dsplots, [('out_file', '@combined_plot')])
     ])
     return workflow
 
