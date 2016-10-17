@@ -40,7 +40,6 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
@@ -71,65 +70,15 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), # template='mni_asym_nonlin_2009c',
         testing=settings.get('testing', False)), name='SpatialNormalization')
-
     # 5. Air mask (with and without artifacts)
-    amw = airmsk_wf(settings=settings)
-
+    amw = airmsk_wf()
     # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
         img_type=1, segments=True, out_basename='segment'), name='segmentation')
-
-    # AFNI check smoothing
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
-
-    # Compute python-coded measures
-    measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
-                       'measures')
-
-    # T1w mosaic plot
-    plot_anat_mosaic_zoomed = pe.Node(niu.Function(input_names=["in_file",
-                                                                'subject_id',
-                                                                'session_id',
-                                                                'run_id',
-                                                                "out_name",
-                                                                "title",
-                                                                "bbox_mask_file"],
-                                            output_names=["plot_file"],
-                                            function=plot_anat_mosaic_helper),
-                                            name="plot_anat_mosaic_zoomed"
-                                            )
-    plot_anat_mosaic_zoomed.inputs.out_name = "plot_anat_mosaic1_zoomed.pdf"
-    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
-
-    plot_anat_mosaic_noise = pe.Node(niu.Function(input_names=["in_file",
-                                                                'subject_id',
-                                                                'session_id',
-                                                                'run_id',
-                                                                "out_name",
-                                                                "title",
-                                                                "only_plot_noise"],
-                                            output_names=["plot_file"],
-                                            function=plot_anat_mosaic_helper),
-                                            name="plot_anat_mosaic_noise"
-                                            )
-    plot_anat_mosaic_noise.inputs.only_plot_noise = True
-    plot_anat_mosaic_noise.inputs.out_name = "plot_anat_mosaic2_noise.pdf"
-    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
-
-    # Link images that should be reported
-    dsreport = pe.Node(nio.DataSink(
-        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
-    dsreport.inputs.container = 'anat'
-    dsreport.inputs.substitutions = [
-        ('_data', ''),
-        ('background_fit', 'plot_bgfit')
-    ]
-    dsreport.inputs.regexp_substitutions = [
-        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
-        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
-        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
-    ]
+    # 7. Compute IQMs
+    iqmswf = compute_iqms(settings)
+    # Reports
+    repwf = individual_reports(settings)
 
     # Connect all nodes
     workflow.connect([
@@ -151,34 +100,61 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
-
-
-        (n4itk, measures, [('output_image', 'in_noinu'),
-                            ('bias_image', 'in_bias')]),
-        (to_ras, measures, [('out_file', 'in_file')]),
-        (to_ras, fwhm, [('out_file', 'in_file')]),
-        (asw, fwhm, [('outputnode.out_mask', 'mask')]),
-        (amw, measures, [('outputnode.out_file', 'air_msk'),
-                         ('outputnode.artifact_msk', 'artifact_msk')]),
-        (segment, measures, [('tissue_class_map', 'in_segm'),
-                             ('partial_volume_files', 'in_pvms')]),
-
-        (to_ras, plot_anat_mosaic_zoomed, [('out_file', 'in_file')]),
-        (asw, plot_anat_mosaic_zoomed, [('outputnode.out_mask', 'bbox_mask_file')]),
-        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
-                                              ('session_id', 'session_id'),
-                                              ('run_id', 'run_id')]),
-
-        (to_ras, plot_anat_mosaic_noise, [('out_file', 'in_file')]),
-        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
-                                             ('session_id', 'session_id'),
-                                             ('run_id', 'run_id')]),
-
-        (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
-        (plot_anat_mosaic_zoomed, dsreport, [('plot_file', "@anat_mosaic_zoomed")]),
-        (plot_anat_mosaic_noise, dsreport, [('plot_file', "@anat_mosaic_noise")]),
-        (asw, dsreport, [('outputnode.out_mask', '@anat_t1_mask')])
+        (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
+        (n4itk, iqmswf, [('output_image', 'inputnode.inu_corrected'),
+                         ('bias_image', 'inputnode.in_inu')]),
+        (asw, iqmswf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (amw, iqmswf, [('outputnode.out_file', 'inputnode.airmsk'),
+                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
+        (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
+                           ('partial_volume_files', 'inputnode.pvms')]),
+        (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
+        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
+                            ('session_id', 'inputnode.session_id'),
+                            ('run_id', 'inputnode.run_id')]),
+        (to_ras, repwf, [('out_file', 'inputnode.orig')]),
+        (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
+        (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (amw, repwf, [('outputnode.out_file', 'inputnode.airmask'),
+                      ('outputnode.artifact_msk', 'inputnode.artmask')]),
+        (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
+        (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
+
+    return workflow
+
+def compute_iqms(settings, name='ComputeIQMs'):
+    """Workflow that actually computes the IQMs"""
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
+        'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata']),
+        name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
+
+    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
+
+    # AFNI check smoothing
+    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
+
+    # Compute python-coded measures
+    measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
+                       'measures')
+
+    # Link images that should be reported
+    dsreport = pe.Node(nio.DataSink(
+        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
+    dsreport.inputs.container = 'anat'
+    dsreport.inputs.substitutions = [
+        ('_data', ''),
+        ('background_fit', 'plot_bgfit')
+    ]
+    dsreport.inputs.regexp_substitutions = [
+        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
+        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
+        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
+    ]
 
     # Format name
     out_name = pe.Node(niu.Function(
@@ -199,7 +175,17 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
-                               ('run_id', 'run_id')]),
+                               ('run_id', 'run_id'),
+                               ('metadata', 'metadata')]),
+        (inputnode, measures, [('inu_corrected', 'in_noinu'),
+                               ('in_inu', 'in_bias'),
+                               ('orig', 'in_file'),
+                               ('airmask', 'air_msk'),
+                               ('artmask', 'artifact_msk'),
+                               ('segmentation', 'in_segm'),
+                               ('pvms', 'in_pvms')]),
+        (inputnode, fwhm, [('orig', 'in_file'),
+                           ('brainmask', 'mask')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
@@ -216,11 +202,76 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('cjv', 'cjv'),
                               ('wm2max', 'wm2max')]),
         (out_name, datasink, [('out_file', 'out_file')]),
-        (meta, datasink, [('out_dict', 'metadata')]),
+        (measures, dsreport, [('out_noisefit', '@anat_noiseplot')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
 
+
+def individual_reports(settings, name='ReportsWorkflow'):
+    """Encapsulates nodes writing plots"""
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
+        'segmentation', 'inu_corrected']),
+        name='inputnode')
+
+    # T1w mosaic plot
+    plot_anat_mosaic_zoomed = pe.Node(niu.Function(
+        input_names=['in_file',
+                     'subject_id',
+                     'session_id',
+                     'run_id',
+                     'out_name',
+                     'title',
+                     'bbox_mask_file'],
+        output_names=['plot_file'], function=plot_anat_mosaic_helper),
+        name='plot_anat_mosaic_zoomed')
+    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.pdf'
+    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
+
+    plot_anat_mosaic_noise = pe.Node(niu.Function(
+        input_names=['in_file',
+                     'subject_id',
+                     'session_id',
+                     'run_id',
+                     'out_name',
+                     'title',
+                     'only_plot_noise'],
+        output_names=['plot_file'], function=plot_anat_mosaic_helper),
+        name='plot_anat_mosaic_noise')
+    plot_anat_mosaic_noise.inputs.only_plot_noise = True
+    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.pdf'
+    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
+
+    # Link images that should be reported
+    dsplots = pe.Node(nio.DataSink(
+        base_directory=settings['report_dir'], parameterization=True), name='dsplots')
+    dsplots.inputs.container = 'anat'
+    dsplots.inputs.substitutions = [
+        ('_data', ''),
+    ]
+    dsplots.inputs.regexp_substitutions = [
+        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3')
+    ]
+
+    workflow.connect([
+        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
+                                              ('session_id', 'session_id'),
+                                              ('run_id', 'run_id'),
+                                              ('orig', 'in_file'),
+                                              ('brainmask', 'bbox_mask_file')]),
+
+        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
+                                             ('session_id', 'session_id'),
+                                             ('run_id', 'run_id'),
+                                             ('orig', 'in_file')]),
+        (plot_anat_mosaic_zoomed, dsplots, [('plot_file', "@anat_mosaic_zoomed")]),
+        (plot_anat_mosaic_noise, dsplots, [('plot_file', "@anat_mosaic_noise")]),
+    ])
+
+    return workflow
 
 def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     """Computes a head mask as in [Mortamet2009]_."""
@@ -279,13 +330,10 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', settings=None):
+def airmsk_wf(name='AirMaskWorkflow'):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
-
-    if settings is None:
-        settings = {}
 
     inputnode = pe.Node(niu.IdentityInterface(
         fields=['in_file', 'in_mask', 'head_mask', 'reverse_transforms', 'reverse_invert_flags']),
@@ -418,11 +466,3 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
 
-def _bgplot(in_file, base_directory):
-    from nipype.interfaces.io import DataSink
-    if not in_file:
-        return ''
-
-    ds = DataSink(base_directory=base_directory, parameterization=False)
-    setattr(ds.inputs, '@bg_fitting', in_file)
-    return ds.run().outputs.out_file
