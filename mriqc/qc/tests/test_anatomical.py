@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-04 12:21:22
+# @Last Modified time: 2016-10-17 13:10:56
 """
 Anatomical tests
 """
@@ -106,5 +106,5 @@ def test_artifacts(brainweb):
     fname = op.join(data, brainweb.split('_')[1], 'anat', brainweb)
     imdata = nb.load(fname).get_data().astype(np.float32)
 
-    value = art_qi2(imdata[::4,::4,::4], airdata[::4,::4,::4], save_figure=False)
+    value, _ = art_qi2(imdata[::4,::4,::4], airdata[::4,::4,::4])
     assert value > .0 and value <= 1
