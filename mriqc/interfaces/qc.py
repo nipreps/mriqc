@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 10:58:28
+# @Last Modified time: 2016-10-19 12:55:33
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -34,6 +34,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
+    head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
@@ -101,6 +102,7 @@ class StructuralQC(BaseInterface):
 
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
+        headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
@@ -114,7 +116,7 @@ class StructuralQC(BaseInterface):
         self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(inudata, segdata, airdata)
+        self._results['fber'] = fber(inudata, segdata, headdata)
 
         # EFC
         self._results['efc'] = efc(inudata)

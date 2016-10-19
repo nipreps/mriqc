@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 10:59:29
+# @Last Modified time: 2016-10-19 12:54:42
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -117,6 +117,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
                            ('partial_volume_files', 'inputnode.pvms')]),
         (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
+        (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
         (to_ras, repwf, [('out_file', 'inputnode.orig')]),
         (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
         (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
@@ -136,7 +137,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
+        'headmask', 'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
         'reverse_transforms', 'reverse_invert_flags']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
@@ -197,6 +198,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('in_inu', 'in_bias'),
                                ('orig', 'in_file'),
                                ('airmask', 'air_msk'),
+                               ('headmask', 'head_msk'),
                                ('artmask', 'artifact_msk'),
                                ('segmentation', 'in_segm'),
                                ('pvms', 'in_pvms')]),

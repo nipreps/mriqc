@@ -159,7 +159,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
-def fber(img, seg, air=None):
+def fber(img, air):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
     defined as the mean energy of image values within the head relative
@@ -174,12 +174,9 @@ def fber(img, seg, air=None):
     :param numpy.ndarray seg: input segmentation
 
     """
-    if air is None:
-        air = np.zeros_like(seg)
-        air[seg == 0] = 1
 
-    fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
-    bg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    fg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    bg_mu = (np.abs(img[air < 1]) ** 2).mean()
     return float(fg_mu / bg_mu)
 
 
