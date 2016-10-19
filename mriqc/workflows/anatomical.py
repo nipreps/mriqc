@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-18 17:44:20
+# @Last Modified time: 2016-10-19 09:33:43
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -20,7 +20,7 @@ from nipype.interfaces import fsl
 from nipype.interfaces import ants
 from nipype.interfaces import afni
 
-from niworkflows.data import get_mni_template
+from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.anat.mni import RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
@@ -415,7 +415,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     invt = pe.Node(ants.ApplyTransforms(
         dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
-    invt.inputs.input_image = op.join(get_mni_template(), 'MNI152_T1_1mm_brain_bottom.nii.gz')
+    invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 

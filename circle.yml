@@ -20,7 +20,7 @@ dependencies:
     # Create scratch folder and force group permissions
     - mkdir -p $SCRATCH && sudo setfacl -d -m group:ubuntu:rwx $SCRATCH && sudo setfacl -m group:ubuntu:rwx $SCRATCH
     - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ds003_downsampled.tar.gz "${DS003_URL}" && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
-    - pip install "niworkflows>=0.0.3a13"
+    - pip install "niworkflows>=0.0.3a14"
   override:
     - python -c "from niworkflows import data as nwd; nwd.get_mni_icbm152_nlin_asym_09c(); nwd.get_ds003_downsampled(); nwd.get_brainweb_1mm_normal()"
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
