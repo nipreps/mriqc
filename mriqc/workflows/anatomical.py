@@ -68,7 +68,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
-        num_threads=settings.get('ants_nthreads', 6), # template='mni_asym_nonlin_2009c',
+        num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
         testing=settings.get('testing', False)), name='SpatialNormalization')
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
