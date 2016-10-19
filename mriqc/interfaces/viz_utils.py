@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 14:20:46
+# @Last Modified time: 2016-10-19 14:41:21
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -30,8 +30,6 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
-
-from mriqc.utils.misc import split_ext
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
