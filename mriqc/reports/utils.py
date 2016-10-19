@@ -58,3 +58,39 @@ def plot_anat_mosaic_helper(in_file, subject_id, session_id,
     fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
 
     return os.path.abspath(out_name)
+
+def iqms2html(indict):
+    tmp_qc = {}
+    for k, value in sorted(list(indict.items())):
+        if not isinstance(value, dict):
+            tmp_qc[k] = value
+        else:
+            for subk, subval in sorted(list(value.items())):
+                if not isinstance(subval, dict):
+                    tmp_qc[','.join([k, subk])] = subval
+                else:
+                    for ssubk, ssubval in sorted(list(subval.items())):
+                        tmp_qc[','.join([k, subk, ssubk])] = ssubval
+    out_qc = []
+    depth = 0
+    for k, v in list(tmp_qc.items()):
+        out_qc.append(k.split(',') + [v])
+        if len(out_qc[-1]) > depth:
+            depth = len(out_qc[-1])
+
+    result_str = '<table id="iqms-table">\n'
+    td = lambda v, cols: '<td colspan={1}>{0}</td>'.format(v, cols) if cols > 0 else '<td>{}</td>'.format(v)
+    for line in sorted(out_qc):
+        result_str += '<tr>'
+        ncols = len(line)
+        for i, col in enumerate(line):
+            colspan = 0
+            if (depth - ncols) > 0 and i == ncols - 2:
+                colspan =  (depth - ncols) + 1
+            result_str += td(col, colspan)
+
+        result_str += '</tr>\n'
+
+    result_str += '</table>\n'
+    return result_str
+

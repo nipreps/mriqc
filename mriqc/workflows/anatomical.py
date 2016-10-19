@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 15:11:50
+# @Last Modified time: 2016-10-18 17:44:20
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -123,6 +123,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
+        (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
@@ -216,11 +217,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
+    verbose = settings.get('verbose_reports', False)
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected', 'noisefit']),
+        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
         name='inputnode')
 
     # T1w mosaic plot
@@ -251,6 +253,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
     plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.svg'
     plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
 
+    mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
+    rnode = pe.Node(niu.Function(
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        function=gen_report), name='GenerateReport')
+
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
         base_directory=settings['report_dir'], parameterization=True), name='dsplots')
@@ -263,6 +270,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     ]
 
     workflow.connect([
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
         (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
                                               ('session_id', 'session_id'),
                                               ('run_id', 'run_id'),
@@ -273,11 +281,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                              ('session_id', 'session_id'),
                                              ('run_id', 'run_id'),
                                              ('orig', 'in_file')]),
-        (plot_anat_mosaic_zoomed, dsplots, [('plot_file', "@anat_mosaic_zoomed")]),
-        (plot_anat_mosaic_noise, dsplots, [('plot_file', "@anat_mosaic_noise")]),
+        (plot_anat_mosaic_zoomed, mplots, [('plot_file', "in1")]),
+        (plot_anat_mosaic_noise, mplots, [('plot_file', "in2")]),
+        (mplots, rnode, [('out', 'in_plots')]),
+        (rnode, dsplots, [('out_file', "@html_report")]),
     ])
 
-    if not settings.get('verbose_reports', False):
+    if not verbose:
         return workflow
 
 
@@ -335,7 +345,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (plot_headmask, combine, [('out_file', 'in_headmask')]),
         (plot_airmask, combine, [('out_file', 'in_airmask')]),
         (plot_bgdist, combine, [('out_file', 'in_bgplot')]),
-        (combine, dsplots, [('out_file', '@combined_plot')])
+        (combine, mplots, [('out_file', 'in3')])
     ])
     return workflow
 
@@ -532,3 +542,6 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
 
+def gen_report(in_iqms, in_plots):
+  from mriqc.reports.generators import individual_html
+  return individual_html(in_iqms, in_plots)

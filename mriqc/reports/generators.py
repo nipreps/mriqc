@@ -72,6 +72,44 @@ FUNCTIONAL_QCGROUPS = [[
     ['quality']
 ]]
 
+def individual_html(in_iqms, in_plots=[]):
+    import os.path as op
+    import datetime
+    from mriqc import __version__ as ver
+    from mriqc.reports.utils import iqms2html
+    from mriqc.data import IndividualTemplate
+    from json import load
+    from io import open
+    with open(in_iqms) as f:
+        iqms_dict = load(f)
+
+    svg_files = []
+    for pfile in in_plots:
+        with open(pfile) as f:
+            svg_files.append('\n'.join(f.read().split('\n')[1:]))
+
+    qctype = iqms_dict.pop('qc_type')
+    if qctype == 'anat':
+        qctype = 'anatomical'
+    sub_id = iqms_dict.pop('subject_id')
+    ses_id = iqms_dict.pop('session_id')
+    run_id = iqms_dict.pop('run_id')
+
+    out_file = op.abspath('sub-{}_ses-{}_run-{}_report.html'.format(
+        sub_id, ses_id, run_id))
+
+    tpl = IndividualTemplate()
+    tpl.generate_conf({
+            'qctype': qctype,
+            'sub_id': sub_id,
+            'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+            'version': ver,
+            'imparams': iqms2html(iqms_dict),
+            'svg_files': svg_files
+
+        }, out_file)
+    return out_file
+
 class MRIQCReportPDF(object):
     """
     Generates group and individual reports

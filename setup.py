@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-04 12:26:29
+# @Last Modified time: 2016-10-18 08:56:53
 """ MRIQC setup script """
 
 import sys
@@ -54,6 +54,7 @@ def main():
                                           'participants=mriqc.utils.subject_wrangler:main']},
         packages=find_packages(),
         package_data={'mriqc': ['data/reports/*.rst',
+                                'data/reports/*.html',
                                 'data/tests/*']},
         zip_safe=False,
     )
