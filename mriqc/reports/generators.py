@@ -95,8 +95,9 @@ def individual_html(in_iqms, in_plots=[]):
     ses_id = iqms_dict.pop('session_id')
     run_id = iqms_dict.pop('run_id')
 
-    out_file = op.abspath('sub-{}_ses-{}_run-{}_report.html'.format(
-        sub_id, ses_id, run_id))
+    out_file = op.abspath('sub-{}_ses-{}_run-{}_T1w-report.html'.format(
+        sub_id[4:] if sub_id.startswith('sub-') else sub_id,
+        ses_id, run_id))
 
     tpl = IndividualTemplate()
     tpl.generate_conf({

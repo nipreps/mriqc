@@ -217,6 +217,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
+    from mriqc.reports.generators import individual_html
+
     verbose = settings.get('verbose_reports', False)
 
     workflow = pe.Workflow(name=name)
@@ -256,18 +258,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
     mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
-        function=gen_report), name='GenerateReport')
+        function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['report_dir'], parameterization=True), name='dsplots')
-    dsplots.inputs.container = 'anat'
-    dsplots.inputs.substitutions = [
-        ('_data', ''),
-    ]
-    dsplots.inputs.regexp_substitutions = [
-        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3')
-    ]
+        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
+    dsplots.inputs.container = 'reports'
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
@@ -541,7 +537,3 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file
-
-def gen_report(in_iqms, in_plots):
-  from mriqc.reports.generators import individual_html
-  return individual_html(in_iqms, in_plots)
