@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 15:14:07
+# @Last Modified time: 2016-10-19 14:20:46
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -404,9 +404,7 @@ def plot_bg_dist(in_file):
     import os.path as op
     import numpy as np
     import json
-    from io import open
-    from matplotlib import rc
-    import seaborn as sn
+    from io import open # pylint: disable=W0622
     import matplotlib.pyplot as plt
     # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
@@ -446,9 +444,7 @@ def combine_svg_verbose(
     import os.path as op
     import svgutils.transform as svgt
     import svgutils.compose as svgc
-    import sys
     import numpy as np
-    from glob import glob
 
     hspace = 10
     wspace = 10

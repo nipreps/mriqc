@@ -72,16 +72,19 @@ FUNCTIONAL_QCGROUPS = [[
     ['quality']
 ]]
 
-def individual_html(in_iqms, in_plots=[]):
-    import os.path as op
+def individual_html(in_iqms, in_plots=None):
+    import os.path as op  #pylint: disable=W0404
     import datetime
     from mriqc import __version__ as ver
     from mriqc.reports.utils import iqms2html
     from mriqc.data import IndividualTemplate
     from json import load
-    from io import open
+    from io import open  #pylint: disable=W0622
     with open(in_iqms) as f:
         iqms_dict = load(f)
+
+    if in_plots is None:
+        in_plots = []
 
     svg_files = []
     for pfile in in_plots:

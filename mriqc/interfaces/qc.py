@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 12:55:33
+# @Last Modified time: 2016-10-19 14:07:40
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -116,7 +116,7 @@ class StructuralQC(BaseInterface):
         self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(inudata, segdata, headdata)
+        self._results['fber'] = fber(inudata, headdata)
 
         # EFC
         self._results['efc'] = efc(inudata)
