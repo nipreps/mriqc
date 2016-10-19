@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 09:33:43
+# @Last Modified time: 2016-10-19 10:59:29
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -104,6 +104,8 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         (to_ras, amw, [('out_file', 'inputnode.in_file')]),
         (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+        (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
+                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -134,8 +136,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata']),
-        name='inputnode')
+        'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
+        'reverse_transforms', 'reverse_invert_flags']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
 
@@ -148,6 +150,13 @@ def compute_iqms(settings, name='ComputeIQMs'):
     # Compute python-coded measures
     measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
                        'measures')
+
+    # Project MNI segmentation to T1 space
+    invt = pe.MapNode(ants.ApplyTransforms(
+        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        iterfield=['input_image'], name='MNItpms2t1')
+    invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
+                               for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
     # Link images that should be reported
     dsreport = pe.Node(nio.DataSink(
@@ -193,6 +202,10 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('pvms', 'in_pvms')]),
         (inputnode, fwhm, [('orig', 'in_file'),
                            ('brainmask', 'mask')]),
+        (inputnode, invt, [('orig', 'reference_image'),
+                           ('reverse_transforms', 'transforms'),
+                           ('reverse_invert_flags', 'invert_transform_flags')]),
+        (invt, measures, [('output_image', 'mni_tpms')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
@@ -207,7 +220,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
                               ('qi1', 'qi1'),
                               ('qi2', 'qi2'),
                               ('cjv', 'cjv'),
-                              ('wm2max', 'wm2max')]),
+                              ('wm2max', 'wm2max'),
+                              ('tpm_overlap', 'tpm_overlap')]),
         (out_name, datasink, [('out_file', 'out_file')]),
         (measures, outputnode, [('out_noisefit', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
