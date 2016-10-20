@@ -52,7 +52,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a12',
+    'niworkflows>=0.0.3a14',
     'pandas',
     'dipy',
     'jinja2',
@@ -63,6 +63,7 @@ REQUIRES = [
     'nilearn',
     'sklearn',
     'scikit-learn',
+    'svgutils',
     'nipype',
     'rst2pdf',
 ]

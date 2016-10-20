@@ -11,15 +11,20 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
 import os.path as op
+from sys import version_info
+import json
 from math import pi
-from six import string_types
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi  # pylint: disable=E0611
 
+from io import open  # pylint: disable=W0622
+from builtins import zip, range, str, bytes  # pylint: disable=W0622
+from six import string_types
+
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
+PY3 = version_info[0] > 2
 
 def snr(img, smask, erode=True, fglabel=1):
     r"""
@@ -154,7 +159,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
-def fber(img, seg, air=None):
+def fber(img, air):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
     defined as the mean energy of image values within the head relative
@@ -169,12 +174,9 @@ def fber(img, seg, air=None):
     :param numpy.ndarray seg: input segmentation
 
     """
-    if air is None:
-        air = np.zeros_like(seg)
-        air[seg == 0] = 1
 
-    fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
-    bg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    fg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    bg_mu = (np.abs(img[air < 1]) ** 2).mean()
     return float(fg_mu / bg_mu)
 
 
@@ -233,7 +235,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat='pdf'):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, out_file='qi2_fitting.txt'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -243,36 +245,19 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat
     :param numpy.ndarray airmask: input air mask without artifacts
 
     """
-    from matplotlib import rc
-    import seaborn as sn
-    import matplotlib.pyplot as plt
-    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-    # rc('text', usetex=True)
+    out_file = op.abspath(out_file)
+    open(out_file, 'a').close()
 
     if erodemask:
         struc = nd.generate_binary_structure(3, 2)
         # Perform an opening operation on the background data.
         airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
-    if save_figure:
-        # Write out figure of the fitting
-        out_file = op.abspath('background_fit.%s' % figformat)
-        fig = plt.figure()
-        ax1 = fig.add_subplot(111)
-        fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
-        ax1.set_xlabel('Intensity')
-        ax1.set_ylabel('Frequency')
-
     # Artifact-free air region
     data = img[airmask > 0]
 
     if np.all(data <= 0):
-        if save_figure:
-            sn.distplot(data, norm_hist=True, kde=False, ax=ax1)
-            fig.savefig(out_file, format='png', dpi=300)
-            plt.close()
-            return 0.0, out_file
-        return 0.0
+        return 0.0, out_file
 
     # Compute an upper bound threshold
     thresh = np.percentile(data[data > 0], 99.5)
@@ -280,12 +265,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat
     # If thresh is too low, for some reason there is no noise
     # in the background image (image was preprocessed, etc)
     if thresh < 1.0:
-        if save_figure:
-            sn.distplot(data[data > 0], norm_hist=True, kde=False, ax=ax1)
-            fig.savefig(out_file, format='pdf', dpi=300)
-            plt.close()
-            return 0.0, out_file
-        return 0.0
+        return 0.0, out_file
 
     # Threshold image
     data = data[data < thresh]
@@ -295,18 +275,17 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat
 
     # Estimate data pdf
     hist, bin_edges = np.histogram(data, density=True, bins=nbins)
-    bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
+    bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
     max_pos = np.argmax(hist)
+    json_out = {
+        'x': bin_centers,
+        'y': [float(v) for v in hist]
+    }
 
     # Fit central chi distribution
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
-
-    if save_figure:
-        sn.distplot(data, bins=nbins, norm_hist=True, kde=False, ax=ax1)
-        ax1.plot(bin_centers, pdf_fitted, 'k--', linewidth=1.2)
-        fig.savefig(out_file, format=figformat, dpi=300)
-        plt.close()
+    json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
@@ -316,16 +295,20 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, save_figure=True, figformat
             t2idx = i
             break
 
+    json_out['x_cutoff'] = float(bin_centers[t2idx])
+
     # Compute goodness-of-fit (gof)
     gof = float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / len(pdf_fitted[t2idx:]))
 
     # Clip values for sanity
     gof = 1.0 if gof > 1.0 else gof
     gof = 0.0 if gof < 0.0 else gof
+    json_out['gof'] = gof
 
-    if save_figure:
-        return (gof, out_file)
-    return gof
+    with open(out_file, 'w' if PY3 else 'wb') as ofd:
+        json.dump(json_out, ofd)
+
+    return gof, out_file
 
 
 def volume_fraction(pvms):

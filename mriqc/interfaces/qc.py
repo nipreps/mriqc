@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-19 14:20:09
+# @Last Modified time: 2016-10-19 14:07:40
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -34,11 +34,13 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
+    head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
     ncoils = traits.Int(12, usedefault=True, desc='number of coils')
     testing = traits.Bool(False, usedefault=True, desc='use test configuration')
 
@@ -60,6 +62,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
     out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
+    tpm_overlap = traits.Dict
 
 
 class StructuralQC(BaseInterface):
@@ -99,6 +102,7 @@ class StructuralQC(BaseInterface):
 
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
+        headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
@@ -112,7 +116,7 @@ class StructuralQC(BaseInterface):
         self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(inudata, segdata, airdata)
+        self._results['fber'] = fber(inudata, headdata)
 
         # EFC
         self._results['efc'] = efc(inudata)
@@ -169,6 +173,14 @@ class StructuralQC(BaseInterface):
             'range': float(np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.))),
             'med': float(np.median(bias))}  #pylint: disable=E1101
 
+        mni_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.mni_tpms]
+        in_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.in_pvms]
+        overlap = fuzzy_jaccard(in_tpms, mni_tpms)
+        self._results['tpm_overlap'] = {
+            'csf': overlap[0],
+            'gm': overlap[1],
+            'wm': overlap[2]
+        }
 
         # Flatten the dictionary
         self._results['out_qc'] = _flatten_dict(self._results)
@@ -320,3 +332,17 @@ def _flatten_dict(indict):
                     for ssubk, ssubval in list(subval.items()):
                         out_qc['_'.join([k, subk, ssubk])] = ssubval
     return out_qc
+
+
+def fuzzy_jaccard(in_tpms, in_mni_tpms):
+    import numpy as np
+    overlaps = []
+    for tpm, mni_tpm in zip(in_tpms, in_mni_tpms):
+        tpm = tpm.reshape(-1)
+        mni_tpm = mni_tpm.reshape(-1)
+
+        num = np.min([tpm, mni_tpm], axis=0).sum()
+        den = np.max([tpm, mni_tpm], axis=0).sum()
+        overlaps.append(float(num/den))
+    return overlaps
+

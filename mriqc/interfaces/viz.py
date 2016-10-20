@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-11 11:37:27
+# @Last Modified time: 2016-10-17 10:02:48
 """ Visualization interfaces """
 from __future__ import print_function
 from __future__ import division
@@ -18,9 +18,59 @@ import os.path as op
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
+from mriqc.utils.misc import split_ext
+from mriqc.interfaces.viz_utils import (plot_mosaic, plot_fd, plot_segmentation)
 
-from mriqc.interfaces.viz_utils import (plot_mosaic, plot_fd)
+class PlotContoursInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True,
+                   desc='File to be plotted')
+    in_contours = File(exists=True, mandatory=True,
+                       desc='file to pick the contours from')
+    cut_coords = traits.Int(8, usedefault=True, desc='number of slices')
+    levels = traits.List([.5], traits.Float, usedefault=True,
+                         desc='add a contour per level')
+    colors = traits.List(['r'], traits.Str, usedefault=True,
+                         desc='colors to be used for contours')
+    display_mode = traits.Enum('ortho', 'x', 'y', 'z', 'yx', 'xz', 'yz', usedefault=True,
+                               desc='visualization mode')
+    saturate = traits.Bool(False, usedefault=True, desc='saturate background')
+    out_file = traits.File(exists=False, desc='output file name')
 
+class PlotContoursOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='output svg file')
+
+class PlotContours(BaseInterface):
+    """ Plot contours """
+    input_spec = PlotContoursInputSpec
+    output_spec = PlotContoursOutputSpec
+
+    def __init__(self, **inputs):
+        self._results = {}
+        super(PlotContours, self).__init__(**inputs)
+
+    def _list_outputs(self):
+        return self._results
+
+    def _run_interface(self, runtime):
+        out_file = None
+        if isdefined(self.inputs.out_file):
+            out_file = self.inputs.out_file
+
+        fname, _ = split_ext(self.inputs.in_file, out_file)
+        out_file = op.abspath('plot_' + fname + '_contours.svg')
+        self._results['out_file'] = out_file
+
+        plot_segmentation(
+            self.inputs.in_file,
+            self.inputs.in_contours,
+            out_file=out_file,
+            cut_coords=self.inputs.cut_coords,
+            display_mode=self.inputs.display_mode,
+            levels=self.inputs.levels,
+            colors=self.inputs.colors,
+            saturate=self.inputs.saturate)
+
+        return runtime
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,

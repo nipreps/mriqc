@@ -1,2 +1,14 @@
 [pre-commit-hook]
 limit=8.1
+
+
+[MESSAGES CONTROL]
+# Disable the following PyLint messages:
+# W0621: Redefining name %r from outer scope (line %s)
+# W0622: Redefining built-in %r
+disable-msg=W0621,W0622
+
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=99

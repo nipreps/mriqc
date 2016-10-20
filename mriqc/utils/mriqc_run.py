@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-04 14:47:31
+# @Last Modified time: 2016-10-17 13:20:00
 
 """
 =====
@@ -80,6 +80,7 @@ def main():
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
     g_outputs.add_argument('--report-dir', action='store')
+    g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
 
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
@@ -94,13 +95,17 @@ def main():
                         help='Use ANFI 3dvolreg for head motion correction (HMC) and '
                              'frame displacement (FD) estimation')
     g_afni.add_argument('--deoblique', action='store_true', default=False,
-                        help='Deoblique the functional scans during head motion correction preprocessing')
+                        help='Deoblique the functional scans during head motion '
+                             'correction preprocessing')
     g_afni.add_argument('--despike', action='store_true', default=False,
-                        help='Despike the functional scans during head motion correction preprocessing')
+                        help='Despike the functional scans during head motion correction '
+                             'preprocessing')
     g_afni.add_argument('--start-idx', action='store', type=int,
-                        help='Initial volume in functional timeseries that should be considered for preprocessing')
+                        help='Initial volume in functional timeseries that should be '
+                             'considered for preprocessing')
     g_afni.add_argument('--stop-idx', action='store', type=int,
-                        help='Final volume in functional timeseries that should be considered for preprocessing')
+                        help='Final volume in functional timeseries that should be '
+                             'considered for preprocessing')
     g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
                         help='Perform slice timing correction')
 
@@ -115,7 +120,8 @@ def main():
         'hmc_afni': opts.hmc_afni,
         'nthreads': opts.nthreads,
         'output_dir': op.abspath(opts.output_dir),
-        'work_dir': op.abspath(opts.work_dir)
+        'work_dir': op.abspath(opts.work_dir),
+        'verbose_reports': opts.verbose_reports or opts.testing
     }
 
     if opts.hmc_afni:

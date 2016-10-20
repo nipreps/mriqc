@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-07-19 18:35:16
+# @Last Modified time: 2016-10-19 14:41:21
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -370,3 +370,118 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
     data = main_data[np.logical_and(nan_mask, mask)]
     return data
+
+
+def plot_segmentation(anat_file, segmentation, out_file,
+                      **kwargs):
+    from nilearn.plotting import plot_anat
+
+    vmax = None
+    if kwargs.get('saturate', False):
+        import nibabel as nb
+        import numpy as np
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1),
+                             70)
+
+    disp = plot_anat(
+        anat_file,
+        display_mode=kwargs.get('display_mode', 'ortho'),
+        cut_coords=kwargs.get('cut_coords', 8),
+        title=kwargs.get('title'),
+        vmax=vmax)
+    disp.add_contours(
+        segmentation,
+        levels=kwargs.get('levels', [1]),
+        colors=kwargs.get('colors', 'r'))
+    disp.savefig(out_file)
+    disp.close()
+    disp = None
+    return out_file
+
+def plot_bg_dist(in_file):
+    import os.path as op
+    import numpy as np
+    import json
+    from io import open # pylint: disable=W0622
+    import matplotlib.pyplot as plt
+    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    # rc('text', usetex=True)
+
+    with open(in_file, 'r') as jsonf:
+        data = json.load(jsonf)
+
+    # Write out figure of the fitting
+    out_file = op.abspath('background_fit.svg')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+
+    width = (data['x'][1] - data['x'][0])
+    left = [v - 0.5 * width for v in data['x']]
+
+    ymax = np.max([np.array(data['y']).max(), np.array(data['y_hat']).max()])
+    ax1.set_ylim((0.0, 1.10 * ymax))
+
+    ax1.bar(left, data['y'], width)
+    ax1.plot(left, data['y_hat'], 'k--', linewidth=1.2)
+    ax1.plot((data['x_cutoff'], data['x_cutoff']), ax1.get_ylim(), 'k--')
+
+    fig.savefig(out_file, format='svg', dpi=300)
+    plt.close()
+    return out_file
+
+def combine_svg_verbose(
+        in_brainmask,
+        in_segmentation,
+        in_artmask,
+        in_headmask,
+        in_airmask,
+        in_bgplot):
+    import os.path as op
+    import svgutils.transform as svgt
+    import svgutils.compose as svgc
+    import numpy as np
+
+    hspace = 10
+    wspace = 10
+    #create new SVG figure
+    in_mosaics = [in_brainmask,
+                  in_segmentation,
+                  in_artmask,
+                  in_headmask,
+                  in_airmask]
+    figs = [svgt.fromfile(f) for f in in_mosaics]
+
+    roots = [f.getroot() for f in figs]
+    nfigs = len(figs)
+
+    sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in figs]
+    maxsize = np.max(sizes, axis=0)
+    minsize = np.min(sizes, axis=0)
+
+    bgfile = svgt.fromfile(in_bgplot)
+    bgscale = (maxsize[1] * 2 + hspace)/int(bgfile.height[:-2])
+    bgsize = (int(bgfile.width[:-2]), int(bgfile.height[:-2]))
+    bgfileroot = bgfile.getroot()
+
+    totalsize = (minsize[0] + hspace + int(bgsize[0] * bgscale),
+                 nfigs * maxsize[1] + (nfigs - 1) * hspace)
+    fig = svgt.SVGFigure(svgc.Unit(totalsize[0]).to('cm'),
+                         svgc.Unit(totalsize[1]).to('cm'))
+
+    yoffset = 0
+    for i, r in enumerate(roots):
+        xoffset = 0
+        if sizes[i][0] == maxsize[0]:
+            xoffset = int(0.5 * (totalsize[0] - sizes[i][0]))
+        r.moveto(xoffset, yoffset)
+        yoffset += maxsize[1] + hspace
+
+    bgfileroot.moveto(minsize[0] + wspace, 3 * (maxsize[1] + hspace), scale=bgscale)
+
+    fig.append(roots + [bgfileroot])
+    out_file = op.abspath('fig_final.svg')
+    fig.save(out_file)
+    return out_file
