@@ -20,7 +20,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image, slice_wise_fft
+from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.functional import Spikes
 from mriqc.interfaces.viz import PlotMosaic, PlotFD
@@ -101,13 +101,10 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         function=spikes_mask), name='SpikesMask')
     spikes = pe.Node(Spikes(), name='SpikesFinder')
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
-    spikes_fft = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_fft', 'out_energy', 'out_spikes'],
-        function=slice_wise_fft), name='SpikesFinderFFT')
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes',
-                     'in_spikes_bg', 'in_spikes_fft', 'fd', 'dvars'],
+                     'in_spikes_bg', 'fd', 'dvars'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
 
     measures = pe.Node(FunctionalQC(), name='measures')
@@ -143,7 +140,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (datasource, to_ras, [('out_file', 'in_file')]),
         (to_ras, hmcwf, [('out_file', 'inputnode.in_file')]),
         (datasource, spikes, [('out_file', 'in_file')]),
-        (datasource, spikes_fft, [('out_file', 'in_file')]),
         (datasource, spikes_bg, [('out_file', 'in_file')]),
         (to_ras, dvnode, [('out_file', 'in_file')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
@@ -175,7 +171,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (ema, bigplot, [('outputnode.epi_parc', 'in_segm')]),
         (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
-        (spikes_fft, bigplot, [('out_spikes', 'in_spikes_fft')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std')]),
@@ -551,7 +546,7 @@ def _parse_tout(in_file):
 
 
 def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
-              in_spikes_fft, fd, dvars, out_file=None):
+              fd, dvars, out_file=None):
     import os.path as op
     import numpy as np
     from mriqc.viz.fmriplots import fMRIPlot
@@ -565,8 +560,6 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
-    # myplot.add_spikes(np.loadtxt(in_spikes_fft),
-    #                   zscored=False, title='Spikes')
     myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
     myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
