@@ -61,6 +61,8 @@ requested participants have the corresponding folder in the bids_dir.
                         help='do not randomize participants list before grouping')
     parser.add_argument('--log-groups', default=False, action='store_true',
                         help='append logging output')
+    parser.add_argument('--multiple-workdir', default=False, action='store_true',
+                        help='split work directories by jobs')
     parser.add_argument('--bids-app-name', default='mriqc', action='store',
                         help='BIDS app to call')
     parser.add_argument('--args', default='', action='store', help='append arguments')
@@ -104,10 +106,16 @@ requested participants have the corresponding folder in the bids_dir.
     if opts.log_groups:
         log_arg = '>> log/mriqc-{:04d}.log'.format
 
+    cmdline = ('{exec} {bids_dir} {out_dir} participant --participant_label {labels}'
+               '{work_dir} {arguments} {logfile}').format
     for i, part_group in enumerate(groups):
-        print('{} {} {} participant --participant_label {} {} {} {}'.format(
-            opts.bids_app_name, bids_dir, opts.output_dir, ' '.join(part_group),
-            '-w work/sjob-{:04d}'.format(i), opts.args, log_arg(i)))
+        workdir = ''
+        if opts.multiple_workdir:
+            workdir = ' -w work/sjob-{:04d}'.format(i)
+        print(cmdline(**{
+            'exec': opts.bids_app_name, 'bids_dir': bids_dir, 'out_dir': opts.output_dir,
+            'labels': ' '.join(part_group), 'work_dir': workdir, 'arguments': opts.args,
+            'logfile': log_arg(i)}))
 
 
 if __name__ == '__main__':

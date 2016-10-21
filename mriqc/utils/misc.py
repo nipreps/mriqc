@@ -15,6 +15,18 @@ import pandas as pd
 from io import open  # pylint: disable=W0622
 from builtins import next, range  # pylint: disable=W0622
 
+def split_ext(in_file, out_file=None):
+    import os.path as op
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        return fname, ext
+    else:
+        return split_ext(out_file)
+
+
 def reorient(in_file):
     import nibabel as nb
     import os
