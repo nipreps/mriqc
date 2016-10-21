@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-09-19 18:03:07
+# @Last Modified time: 2016-10-07 14:37:52
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function
 from __future__ import division
@@ -43,6 +43,9 @@ class ArtifactMask(BaseInterface):
     def __init__(self, **inputs):
         self._results = {}
         super(ArtifactMask, self).__init__(**inputs)
+
+    def _list_outputs(self):
+        return self._results
 
     def _run_interface(self, runtime):
         imnii = nb.load(self.inputs.in_file)
@@ -87,8 +90,6 @@ class ArtifactMask(BaseInterface):
             self._results['out_air_msk'])
         return runtime
 
-    def _list_outputs(self):
-        return self._results
 
 def artifact_mask(imdata, airdata, distance):
     """Computes a mask of artifacts found in the air region"""

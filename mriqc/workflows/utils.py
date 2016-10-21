@@ -7,13 +7,14 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:15:14
+# @Last Modified time: 2016-10-10 18:45:19
 """Helper functions for the workflows"""
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from builtins import range
+
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
@@ -30,11 +31,13 @@ def fmri_getidx(in_file, start_idx, stop_idx):
         stop_idx = max_idx
     return start_idx, stop_idx
 
+
 def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
     return {'x': fwhm[0], 'y': fwhm[1],
             'z': fwhm[2], 'avg': fwhm[3]}
+
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
     """
@@ -104,3 +107,51 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
         T_rb_prev = T_rb
     np.savetxt(out_file, X)
     return out_file
+
+
+def thresh_image(in_file, thres=0.5, out_file=None):
+    """Thresholds an image"""
+    import os.path as op
+    import nibabel as nb
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('{}_thresh{}'.format(fname, ext))
+
+    im = nb.load(in_file)
+    data = im.get_data()
+    data[data < thres] = 0
+    data[data > 0] = 1
+    nb.Nifti1Image(
+        data, im.get_affine(), im.get_header()).to_filename(out_file)
+    return out_file
+
+
+def spectrum_mask(size):
+    """Creates a mask to filter the image of size size"""
+    import numpy as np
+    from scipy.ndimage.morphology import distance_transform_edt as distance
+
+    ftmask = np.ones(size)
+
+    # Set zeros on corners
+    # ftmask[0, 0] = 0
+    # ftmask[size[0] - 1, size[1] - 1] = 0
+    # ftmask[0, size[1] - 1] = 0
+    # ftmask[size[0] - 1, 0] = 0
+    ftmask[size[0]/2, size[1]/2] = 0
+
+    # Distance transform
+    ftmask = distance(ftmask)
+    ftmask /= ftmask.max()
+
+    # Keep this just in case we want to switch to the opposite filter
+    ftmask *= -1.0
+    ftmask += 1.0
+
+    ftmask[ftmask >= 0.4] = 1
+    ftmask[ftmask < 1] = 0
+    return ftmask

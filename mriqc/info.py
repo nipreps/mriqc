@@ -9,7 +9,7 @@ MRIQC
 import sys
 
 __versionbase__ = '0.8.7'
-__versionrev__ = 'a0'
+__versionrev__ = 'a1'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -52,7 +52,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a14',
+    'niworkflows>=0.0.3a15',
     'pandas',
     'dipy',
     'jinja2',
@@ -66,6 +66,7 @@ REQUIRES = [
     'svgutils',
     'nipype',
     'rst2pdf',
+    'nipy'
 ]
 
 LINKS_REQUIRES = [
@@ -84,7 +85,8 @@ TESTS_REQUIRES = [
 EXTRA_REQUIRES = {
     'doc': ['sphinx'],
     'tests': TESTS_REQUIRES,
-    'duecredit': ['duecredit']
+    'duecredit': ['duecredit'],
+    'notebooks': ['ipython', 'jupyter']
 }
 
 # Enable a handle to install all extra dependencies at once
