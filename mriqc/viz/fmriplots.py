@@ -9,14 +9,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib import gridspec as mgs
-from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm
+from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm, LinearSegmentedColormap
 from matplotlib.colorbar import ColorbarBase
 from seaborn import color_palette
 from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
 
 import seaborn as sns
 sns.set_style("whitegrid")
-
 
 class fMRIPlot(object):
 
@@ -95,8 +94,21 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
     # Order following segmentation labels
     seg = segmentation[segmentation > 0].reshape(-1)
-    seg_labels = sorted(np.unique(seg).tolist())
-    order = np.argsort(seg)
+    seg_labels = np.unique(seg)
+
+    # Labels meaning
+    cort_gm = seg_labels[(seg_labels > 100) & (seg_labels < 200)].tolist()
+    deep_gm = seg_labels[(seg_labels > 30) & (seg_labels < 100)].tolist()
+    cerebellum = [255]
+    wm_csf = seg_labels[seg_labels < 10].tolist()
+    seg_labels = cort_gm + deep_gm + cerebellum + wm_csf
+
+    label_id = 0
+    newsegm = np.zeros_like(seg)
+    for _lab in seg_labels:
+        newsegm[seg == _lab] = label_id
+        label_id += 1
+    order = np.argsort(newsegm)
 
     # Define nested GridSpec
     gs = mgs.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs,
@@ -107,12 +119,16 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
     ax0.set_yticks([])
     ax0.set_xticks([])
 
-    cmap = ListedColormap(color_palette("Set2", len(seg_labels)))
-    bounds = (np.array(seg_labels, dtype=np.float32) - 0.5).tolist()
-    bounds += [seg_labels[-1] + 0.5]
+    colors1 = plt.cm.summer(np.linspace(0., 1., len(cort_gm)))
+    colors2 = plt.cm.autumn(np.linspace(0., 1., len(deep_gm) + 1))[::-1,...]
+    colors3 = plt.cm.winter(np.linspace(0., .5, len(wm_csf)))[::-1,...]
+    cmap = LinearSegmentedColormap.from_list('my_colormap', np.vstack((colors1, colors2, colors3)))
+
+    # cmap = ListedColormap(color_palette("Set2", len(seg_labels)))
+    bounds = np.linspace(0., len(seg_labels) - 1, len(seg_labels)).tolist()
     norm = BoundaryNorm(bounds, cmap.N)
-    ax0.imshow(seg[order, np.newaxis], interpolation='nearest', aspect='auto',
-               cmap=cmap, norm=norm)
+    ax0.imshow(newsegm[order, np.newaxis], interpolation='nearest', aspect='auto',
+               cmap=cmap, vmax=len(seg_labels) - 1, vmin=0)
     ax0.grid(False)
     ax0.set_ylabel('voxels')
 
