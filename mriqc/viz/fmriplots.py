@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib import gridspec as mgs
-from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm, LinearSegmentedColormap
+from matplotlib.colors import Normalize, LinearSegmentedColormap
 from matplotlib.colorbar import ColorbarBase
 from seaborn import color_palette
 from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
@@ -124,9 +124,6 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
     colors3 = plt.cm.winter(np.linspace(0., .5, len(wm_csf)))[::-1,...]
     cmap = LinearSegmentedColormap.from_list('my_colormap', np.vstack((colors1, colors2, colors3)))
 
-    # cmap = ListedColormap(color_palette("Set2", len(seg_labels)))
-    bounds = np.linspace(0., len(seg_labels) - 1, len(seg_labels)).tolist()
-    norm = BoundaryNorm(bounds, cmap.N)
     ax0.imshow(newsegm[order, np.newaxis], interpolation='nearest', aspect='auto',
                cmap=cmap, vmax=len(seg_labels) - 1, vmin=0)
     ax0.grid(False)
