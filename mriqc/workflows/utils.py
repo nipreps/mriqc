@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-10 18:45:19
+# @Last Modified time: 2016-10-24 10:48:55
 """Helper functions for the workflows"""
 from __future__ import print_function
 from __future__ import division
@@ -155,3 +155,54 @@ def spectrum_mask(size):
     ftmask[ftmask >= 0.4] = 1
     ftmask[ftmask < 1] = 0
     return ftmask
+
+def slice_wise_fft(in_file, ftmask=None, spike_thres=5., out_prefix=None):
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from mriqc.workflows.utils import spectrum_mask
+    from scipy.ndimage.filters import median_filter
+    from scipy.stats import zscore
+
+    if out_prefix is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_prefix = op.abspath(fname)
+
+    func_data = nb.load(in_file).get_data()
+
+    if ftmask is None:
+        ftmask = spectrum_mask(tuple(func_data.shape[:2]))
+
+    fftvol = []
+    energysum = []
+    norm = func_data.shape[0] * func_data.shape[1]
+    for t in range(func_data.shape[-1]):
+        func_frame = func_data[..., t]
+        vals = []
+        fftvol.append([])
+        for sl in func_frame.T:
+            fftsl = median_filter(
+                np.absolute(np.fft.fft2(sl)), size=(5, 5), mode='constant')
+            fftvol[-1].append(np.fft.fftshift(fftsl))
+            energy = (fftsl * ftmask) ** 2
+            vals.append(energy.sum())
+        energysum.append(vals)
+
+    # energysum is Z x Nt
+    energysum = np.array(energysum).T
+    e_std = energysum.std(axis=0, ddof=1)
+    energy_zs = energysum / np.array([e_std] * energysum.shape[0])
+    out_energy = out_prefix + '_energy.txt'
+    np.savetxt(out_energy, energy_zs)
+
+    out_spikes = out_prefix + '_spikes.txt'
+    np.savetxt(out_spikes, (energy_zs > spike_thres).astype(int), fmt=b'%d')
+
+    out_fft = out_prefix + '_fft.nii.gz'
+    fftvol = np.array(fftvol).T
+    nii = nb.Nifti1Image(fftvol, nb.load(in_file).get_affine(), None)
+    nii.to_filename(out_fft)
+
+    return out_fft, out_energy, out_spikes
