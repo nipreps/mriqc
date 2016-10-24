@@ -1,6 +1,7 @@
 Release 0.8.7
 =============
 
+* [ENH] Add kurtosis to summary statistics
 * [ENH] New report layout for fMRI, added carpetplot (#198)
 * [ENH] Anatomical workflow refactor (#219).
 

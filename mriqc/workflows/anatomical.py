@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 12:54:42
+# @Last Modified time: 2016-10-19 16:02:39
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -430,7 +430,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
                          name='outputnode')
 
     invt = pe.Node(ants.ApplyTransforms(
-        dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
+        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
