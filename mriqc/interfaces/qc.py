@@ -145,9 +145,9 @@ class StructuralQC(BaseInterface):
         self._results['rpve'] = rpve(pvmdata, segdata)
 
         # Summary stats
-        mean, stdv, p95, p05 = summary_stats(imdata, pvmdata)
-        self._results['summary'] = {'mean': mean, 'stdv': stdv,
-                                    'p95': p95, 'p05': p05}
+        mean, stdv, p95, p05, kurt = summary_stats(imdata, pvmdata, airdata)
+        self._results['summary'] = {
+            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt}
 
         # Image specs
         self._results['size'] = {'x': int(imdata.shape[0]),
@@ -269,11 +269,10 @@ class FunctionalQC(BaseInterface):
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
         # Summary stats
-        mean, stdv, p95, p05 = summary_stats(epidata, mskdata)
-        self._results['summary'] = {'mean': mean,
-                                    'stdv': stdv,
-                                    'p95': p95,
-                                    'p05': p05}
+        mean, stdv, p95, p05, kurt = summary_stats(epidata, mskdata)
+        self._results['summary'] = {
+            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt
+        }
 
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)

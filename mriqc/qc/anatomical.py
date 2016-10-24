@@ -17,7 +17,7 @@ import json
 from math import pi
 import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import chi  # pylint: disable=E0611
+from scipy.stats import chi, kurtosis  # pylint: disable=E0611
 
 from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
@@ -350,7 +350,7 @@ def rpve(pvms, seg):
         pvfs[k] = pvmap[pvmap > 0].sum()
     return {k: float(v) for k, v in list(pvfs.items())}
 
-def summary_stats(img, pvms):
+def summary_stats(img, pvms, bgdata=None):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
@@ -359,15 +359,20 @@ def summary_stats(img, pvms):
     stdv = {}
     p95 = {}
     p05 = {}
+    kurt = {}
 
-    if np.array(pvms).ndim == 4:
+    dims = np.squeeze(np.array(pvms)).ndim
+    if dims == 4:
         pvms.insert(0, np.array(pvms).sum(axis=0))
-    elif np.array(pvms).ndim == 3:
+    elif dims == 3:
         bgpvm = np.ones_like(pvms)
         pvms = [bgpvm - pvms, pvms]
     else:
         raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
+
+    if bgdata is not None:
+        pvms[0] = bgdata
 
     if len(pvms) == 4:
         labels = list(FSL_FAST_LABELS.items())
@@ -375,13 +380,13 @@ def summary_stats(img, pvms):
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
     for k, lid in labels:
-        im_lid = pvms[lid] * img
-        mean[k] = float(im_lid[im_lid > 0].mean())
-        stdv[k] = float(im_lid[im_lid > 0].std())
-        p95[k] = float(np.percentile(im_lid[im_lid > 0], 95))
-        p05[k] = float(np.percentile(im_lid[im_lid > 0], 5))
-
-    return mean, stdv, p95, p05
+        mask = np.where(pvms[lid] > 0.5)
+        mean[k] = float(img[mask].mean())
+        stdv[k] = float(img[mask].std())
+        p95[k] = float(np.percentile(img[mask], 95))
+        p05[k] = float(np.percentile(img[mask], 5))
+        kurt[k] = float(kurtosis(img[mask]))
+    return mean, stdv, p95, p05, kurt
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
