@@ -177,8 +177,8 @@ def main():
 
     # Set up participant level
     if opts.analysis_level == 'participant':
-        for dtype in opts.data_type:
-            ms_func = getattr(mwc, 'ms_' + dtype)
+        for qctype in opts.data_type:
+            ms_func = getattr(mwc, 'ms_' + qctype)
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
@@ -194,12 +194,23 @@ def main():
 
     # Set up group level
     elif opts.analysis_level == 'group':
+        from glob import glob
         from mriqc.reports import MRIQCReportPDF
+        from mriqc.reports.group import gen_html
+        from mriqc.utils.misc import generate_csv
 
-        for dtype in opts.data_type:
-            reporter = MRIQCReportPDF(dtype, settings)
-            reporter.group_report()
-            reporter.individual_report()
+        for qctype in opts.data_type:
+            reporter = MRIQCReportPDF(qctype, settings)
+            if qctype[:4] == 'anat':
+                qcjson = op.join(settings['output_dir'], 'derivatives',
+                                 '{}*.json'.format(qctype[:4]))
+                out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
+                generate_csv(glob(qcjson), out_csv)
+                gen_html(out_csv, out_file=op.join(settings['output_dir'],
+                                                   qctype[:4] + '_group.html'))
+            else:
+                reporter.group_report()
+                reporter.individual_report()
 
 if __name__ == '__main__':
     main()

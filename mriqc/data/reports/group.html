@@ -10,39 +10,72 @@
 report</title>
 </head>
 <body>
-<div class="chart-wrapper" id="chart-distro1"></div>
+    <h1>MRIQC: group {{ qctype }}
+report</h1>
+<h2>Summary</h2>
+<ul class="simple">
+<li>Date and time: {{ timestamp }}.</li>
+<li>MRIQC version: {{ version }}.</li>
+</ul>
 
 <script src="resources/boxplots.js" charset="utf-8"></script>
+{% for data_csv in csv_groups %}
+<div class="chart-wrapper" id="chart-group{{ loop.index0 }}"></div>
+<pre class="csvdata" id="data-csv{{ loop.index0 }}" style="display: none">
+{{ data_csv }}</pre>
+{% endfor %}
+
+
 <script type="text/javascript">
     var chart1;
+    function add(a, b) {
+        return a + b;
+    };
 
-    function plotData(error, data) {
-        data.forEach(function (d) {d.value = +d.value;});
+    function plotData(group) {
+        data = d3.csv.parse(d3.select("#data-csv" + group).text(), function(d) {
+        return {
+            iqm: d.iqm,
+            value: +d.value,
+            label: d.label
+        }
+        });
+
+        var a = {};
+        var nIQMs = 0;
+        data.forEach(function(d) {
+            if(!a.hasOwnProperty(d.iqm)){
+                a[d.iqm] = 1
+                nIQMs += 1
+            }
+
+        });
 
         chart1 = makeDistroChart({
             data:data,
             xName:'iqm',
             yName:'value',
-            axisLabels: {xAxis: null, yAxis: 'Values'},
-            selector:"#chart-distro1",
-            chartSize:{height:460, width:960},
+            axisLabels: {xAxis: null, yAxis: null},
+            selector:"#chart-group" + group,
+            chartSize:{height:300, width:100 + 60 * nIQMs},
             constrainExtremes:true
         });
         chart1.renderDataPlots();
-        chart1.dataPlots.change({showPlot:true, plotType:7, showBeanLines:false});
+        chart1.dataPlots.change({showPlot:true, plotType:35, showBeanLines:false});
         chart1.renderBoxPlot();
-        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:3,lineWidth:5,colors:['#555']});
+        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,colors:['#555']});
         chart1.renderNotchBoxes({showNotchBox:false});
         // chart1.renderViolinPlot({showViolinPlot:false});
         // chart1.violinPlots.show({reset:true,clamp:0});
         // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})
 
         //chart1.notchBoxes.hide();
-        //chart1.boxPlots.hide();        
+        //chart1.boxPlots.hide();
     }
 
-    data = d3.csv('mriqc2.csv', plotData);
-    
+    {% for data_csv in csv_groups %}
+    plotData({{ loop.index0 }});
+    {% endfor %}
 </script>
 </body>
 </html>

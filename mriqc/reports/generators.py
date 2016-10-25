@@ -524,3 +524,44 @@ f11fd0bd84342d604/endofday/core/template.py
         output = self.compile(configs)
         with open(path, 'w+') as output_file:
             output_file.write(output)
+
+
+"""
+data = pd.DataFrame.from_csv('mriqc.csv', index_col=False)
+formatter = lambda row: '{subject_id}-ses_{session_id}_run-{run_id}'.format(**row)
+data[['subject_id', 'session_id', 'run_id']].apply(formatter, axis=1)
+data['label'] = data[['subject_id', 'session_id', 'run_id']].apply(formatter, axis=1)
+data
+newdata = pd.DataFrame({
+    'iqm': ['cjv'] * len(data) + ['efc'],
+    'value': data[['cjv']].tolist() + data[['efc']].tolist(),
+    'label': data[['label']].tolist() * 2
+})
+newdata = pd.DataFrame({
+    'iqm': ['cjv'] * len(data) + ['efc'],
+    'value': data[['cjv']].ravel().tolist() + data[['efc']].ravel().tolist(),
+    'label': data[['label']].ravel().tolist() * 2
+})
+data[['cjf']].values.tolist()
+data[['cjf']].values
+data[['cjv']]
+data[['cjv']].values
+data[['cjv']].values.tolist()
+data[['cjv']].values.ravel().tolist()
+data[['cjv']].ravel().tolist()
+newdata = pd.DataFrame({
+    'iqm': ['cjv'] * len(data) + ['efc'],
+    'value': data[['cjv']].values.ravel().tolist() + data[['efc']].values.ravel().tolist(),
+    'label': data[['label']].values.ravel().tolist() * 2
+})
+newdata = pd.DataFrame({
+    'iqm': ['cjv'] * len(data) + ['efc'] * len(data),
+    'value': data[['cjv']].values.ravel().tolist() + data[['efc']].values.ravel().tolist(),
+    'label': data[['label']].values.ravel().tolist() * 2
+})
+newdata
+newdata[['iqm', 'value', 'label']].to_csv('mriqc2.csv', no_index=True)
+newdata[['iqm', 'value', 'label']].to_csv('mriqc2.csv', index_label=False)
+newdata[['iqm', 'value', 'label']].to_csv('mriqc2.csv', index=False)
+history
+"""

@@ -1,10 +1,15 @@
+/* Hide data table */
+.csvdata {
+    display: none;
+}
+
 /*Primary Chart*/
 
 /*Nested divs for responsiveness*/
 .chart-wrapper {
     max-width: 800px;  /*Overwritten by the JS*/
-    min-width: 304px;
-    margin-bottom: 8px;
+    min-width: 160px;
+    margin-bottom: 20px;
     background-color: #FAF7F7;
 }
 .chart-wrapper .inner-wrapper {
