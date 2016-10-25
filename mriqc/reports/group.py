@@ -51,7 +51,7 @@ def gen_html(csv_file, out_file=None):
         ['summary_mean_wm', 'summary_stdv_wm', 'summary_k_wm', 'summary_p05_wm', 'summary_p95_wm']
     ]
 
-    dataframe = pd.DataFrame.from_csv(csv_file, index_col=False)
+    dataframe = pd.read_csv(csv_file, index_col=False)
 
     # format participant labels
     formatter = lambda row: '{subject_id}-ses_{session_id}_run-{run_id}'.format(**row)
