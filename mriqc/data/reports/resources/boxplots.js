@@ -1527,7 +1527,10 @@ function makeDistroChart(settings) {
                     cPlot.objs.points = {g: null, pts: []};
                     cPlot.objs.points.g = cPlot.objs.g.append("g").attr("class", "points-plot");
                     for (var pt = 0; pt < chart.groupObjs[cName].values.length; pt++) {
-                        cPlot.objs.points.pts.push(cPlot.objs.points.g.append("circle")
+                        cPlot.objs.points.pts.push(cPlot.objs.points.g
+                            .append("a")
+                            .attr("xlink:href", function(d) { return chart.groupObjs[cName].labels[pt] + "_T1w-report.html"})
+                            .append("circle")
                             .attr("class", "point")
                             .attr('r', dOpts.pointSize / 2)// Options is diameter, r takes radius so divide by 2
                             .style("fill", chart.dataPlots.colorFunct(cName))

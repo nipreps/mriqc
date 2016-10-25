@@ -54,7 +54,7 @@ def gen_html(csv_file, out_file=None):
     dataframe = pd.read_csv(csv_file, index_col=False)
 
     # format participant labels
-    formatter = lambda row: '{subject_id}-ses_{session_id}_run-{run_id}'.format(**row)
+    formatter = lambda row: '{subject_id}_ses-{session_id}_run-{run_id}'.format(**row)
     dataframe['label'] = dataframe[['subject_id', 'session_id', 'run_id']].apply(formatter, axis=1)
     nPart = len(dataframe)
 

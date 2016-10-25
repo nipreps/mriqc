@@ -202,6 +202,7 @@ def main():
         for qctype in opts.data_type:
             reporter = MRIQCReportPDF(qctype, settings)
             if qctype[:4] == 'anat':
+                check_folder(op.join(settings['output_dir'], 'reports'))
                 qcjson = op.join(settings['output_dir'], 'derivatives',
                                  '{}*.json'.format(qctype[:4]))
                 out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
