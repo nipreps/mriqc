@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-17 13:20:00
+# @Last Modified time: 2016-10-25 08:53:06
 
 """
 =====
@@ -204,10 +204,13 @@ def main():
             if qctype[:4] == 'anat':
                 qcjson = op.join(settings['output_dir'], 'derivatives',
                                  '{}*.json'.format(qctype[:4]))
-                out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
+                out_csv = op.join(settings['output_dir'], 'reports',
+                                  qctype[:4] + 'MRIQC.csv')
+                out_html = op.join(settings['output_dir'], qctype[:4] + '_group.html')
                 generate_csv(glob(qcjson), out_csv)
-                gen_html(out_csv, out_file=op.join(settings['output_dir'],
-                                                   qctype[:4] + '_group.html'))
+                MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
+                gen_html(out_csv, out_file=out_html)
+                MRIQC_LOG.info('Group HTML report has been written to %s', out_html)
             else:
                 reporter.group_report()
                 reporter.individual_report()
