@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="resources/boxplots.css">
+    <script src="resources/d3.min.js" charset="utf-8"></script>
+    <title>MRIQC: group {{ qctype }}
+report</title>
+</head>
+<body>
+<div class="chart-wrapper" id="chart-distro1"></div>
+
+<script src="resources/boxplots.js" charset="utf-8"></script>
+<script type="text/javascript">
+    var chart1;
+
+    function plotData(error, data) {
+        data.forEach(function (d) {d.value = +d.value;});
+
+        chart1 = makeDistroChart({
+            data:data,
+            xName:'iqm',
+            yName:'value',
+            axisLabels: {xAxis: null, yAxis: 'Values'},
+            selector:"#chart-distro1",
+            chartSize:{height:460, width:960},
+            constrainExtremes:true
+        });
+        chart1.renderDataPlots();
+        chart1.dataPlots.change({showPlot:true, plotType:7, showBeanLines:false});
+        chart1.renderBoxPlot();
+        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:3,lineWidth:5,colors:['#555']});
+        chart1.renderNotchBoxes({showNotchBox:false});
+        // chart1.renderViolinPlot({showViolinPlot:false});
+        // chart1.violinPlots.show({reset:true,clamp:0});
+        // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})
+
+        //chart1.notchBoxes.hide();
+        //chart1.boxPlots.hide();        
+    }
+
+    data = d3.csv('mriqc2.csv', plotData);
+    
+</script>
+</body>
+</html>
