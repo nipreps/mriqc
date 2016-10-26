@@ -51,7 +51,7 @@ def main():
                                           'fs2gif=mriqc.utils.fs2gif:main',
                                           'dfcheck=mriqc.utils.dfcheck:main',
                                           'participants=mriqc.utils.subject_wrangler:main',
-                                          'mriqc_fit=mriqc.classifier.cv:main']},
+                                          'mriqc_fit=mriqc.classifier.cli:main']},
         packages=find_packages(),
         package_data={'mriqc': ['data/reports/*.rst',
                                 'data/reports/*.html',
