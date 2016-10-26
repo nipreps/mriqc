@@ -3,11 +3,6 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-<<<<<<< HEAD
-# @Last Modified time: 2016-10-25 17:09:15
-=======
-# @Last Modified time: 2016-10-18 08:56:53
->>>>>>> master
 """ MRIQC setup script """
 
 import sys
