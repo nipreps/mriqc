@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-17 13:20:00
+# @Last Modified time: 2016-10-25 12:09:18
 
 """
 =====
@@ -177,8 +177,8 @@ def main():
 
     # Set up participant level
     if opts.analysis_level == 'participant':
-        for dtype in opts.data_type:
-            ms_func = getattr(mwc, 'ms_' + dtype)
+        for qctype in opts.data_type:
+            ms_func = getattr(mwc, 'ms_' + qctype)
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
@@ -194,12 +194,27 @@ def main():
 
     # Set up group level
     elif opts.analysis_level == 'group':
+        from glob import glob
         from mriqc.reports import MRIQCReportPDF
+        from mriqc.reports.group import gen_html
+        from mriqc.utils.misc import generate_csv
 
-        for dtype in opts.data_type:
-            reporter = MRIQCReportPDF(dtype, settings)
-            reporter.group_report()
-            reporter.individual_report()
+        for qctype in opts.data_type:
+            reporter = MRIQCReportPDF(qctype, settings)
+            if qctype[:4] == 'anat':
+                check_folder(op.join(settings['output_dir'], 'reports'))
+                qcjson = op.join(settings['output_dir'], 'derivatives',
+                                 '{}*.json'.format(qctype[:4]))
+                out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
+                out_html = op.join(settings['output_dir'], 'reports',
+                                   qctype[:4] + '_group.html')
+                generate_csv(glob(qcjson), out_csv)
+                MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
+                gen_html(out_csv, out_file=out_html)
+                MRIQC_LOG.info('Group HTML report has been written to %s', out_html)
+            else:
+                reporter.group_report()
+                reporter.individual_report()
 
 if __name__ == '__main__':
     main()
