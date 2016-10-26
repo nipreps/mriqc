@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-26 16:56:00
+# @Last Modified time: 2016-10-26 09:39:47
 
 """
 MRIQC Cross-validation
@@ -11,51 +11,59 @@ MRIQC Cross-validation
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
-from scipy.stats.mstats import zscore
+from scipy.stats import zscore
 import pandas as pd
-
-from io import open
 
 def read_dataset(feat_file, label_file):
     """ Reads in the features and labels """
 
-    with open(feat_file, 'r') as in_file_x:
-        X_df = pd.read_csv(in_file_x).sort_values(by=['subject_id'])
-
-    with open(label_file, 'r') as in_file_y:
-        y_df = pd.read_csv(in_file_y).sort_values(by=['subject_id'])
+    x_df = pd.read_csv(feat_file, index_col=False).sort_values(
+        by=['subject_id'])
 
     # Remove columns that are not IQMs
-    colnames = list(X_df.columns.ravel())
-    colnames.remove('subject_id')
-    colnames.remove('session_id')
-    colnames.remove('run_id')
+    feat_names = list(x_df.columns.ravel())
+    feat_names.remove('subject_id')
+    feat_names.remove('session_id')
+    feat_names.remove('run_id')
     for axis in ['x', 'y', 'z']:
-        colnames.remove('size_' + axis)
-        colnames.remove('spacing_' + axis)
+        feat_names.remove('size_' + axis)
+        feat_names.remove('spacing_' + axis)
+
+    # Massage labels table to have the appropriate format
+    y_df = pd.read_csv(label_file, index_col=False).sort_values(
+        by=['subject_id'])
+    # Remove participants without rating
+    y_df = y_df.loc[y_df.rate != 'no anatomical images']
+
+    # Replace "ok" label by 0, "reject" by 1
+    y_df.loc[(y_df.rate == 'good') | (y_df.rate == 'ok'), 'rate'] = 0
+    y_df.loc[y_df.rate != 0, 'rate'] = 1
+    y_df.index = range(1, len(y_df)+1)
 
     # Remove failed cases from Y, append new columns to X
-    y_df = y_df[y_df['subject_id'].isin(X_df.subject_id)]
-    X_df['rate'] = y_df.rate.values
-    X_df['site'] = y_df.site.values
+    y_df = y_df[y_df['subject_id'].isin(x_df.subject_id)]
 
-    return X_df, y_df, feat_names
+    # Merge Y dataframe into X
+    pd.merge(x_df, y_df[['subject_id', 'rate', 'site']],
+             on='subject_id', how='left')
+
+    return x_df, feat_names
 
 
-def zscore_dataset(features, column):
+def zscore_dataset(dataframe, excl_columns=None, by='site'):
     """ Returns a dataset zscored by the column given as argument """
 
-    sites = list(y_df.site.values)
-    for site in sites:
-        for col in colnames:
-            X_df.loc[X_df.site == site, col] = zscore(
-                X_df.loc[X_df.site == site, col].values.tolist(), ddof=1)
-    # Z-Scoring voxnum and voxsize will fail for sites with homogeneous
-    # acquisition matrix or resolution across all subjects (sigma is 0).
-    X_df['voxnum'] = np.array(
-        X_df.size_x.values * X_df.size_y.values * X_df.size_z.values, dtype=np.uint32)
-    X_df['voxsize'] = np.array(
-        X_df.spacing_x.values * X_df.spacing_y.values * X_df.spacing_z.values, dtype=np.float32)
+    sites = list(dataframe[[by]].values.ravel())
+    columns = list(dataframe.columns.ravel())
+    columns.remove(by)
 
-    return feat_zscored
+    if excl_columns:
+        for col in excl_columns:
+            columns.remove(col)
+
+    zs_df = dataframe.copy()
+    for site in sites:
+        site_df = zs_df.loc[zs_df.site == site, columns]
+        zs_df.loc[zs_df.site == site, columns] = zscore(site_df, ddof=1, axis=0)
+
+    return zs_df
