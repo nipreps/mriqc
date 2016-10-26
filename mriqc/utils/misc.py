@@ -3,16 +3,56 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
+from __future__ import print_function, division, absolute_import, unicode_literals
 
-def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None):
+import os
+from os import path as op
+from errno import EEXIST
+
+import collections
+import json
+import pandas as pd
+from io import open  # pylint: disable=W0622
+from builtins import next, range  # pylint: disable=W0622
+
+def split_ext(in_file, out_file=None):
+    import os.path as op
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        return fname, ext
+    else:
+        return split_ext(out_file)
+
+
+def reorient(in_file):
+    import nibabel as nb
+    import os
+    _, outfile = os.path.split(in_file)
+    nii = nb.as_closest_canonical(nb.load(in_file))
+    nii.to_filename(outfile)
+    return os.path.abspath(outfile)
+
+def check_folder(folder):
+    if not op.exists(folder):
+        try:
+            os.makedirs(folder)
+        except OSError as exc:
+            if not exc.errno == EEXIST:
+                raise
+    return folder
+
+def bids_getfile(bids_dir, data_type, subject_id, session_id=None, run_id=None):
     """
     A simple function to select files from a BIDS structure
 
     Example::
 
-    >>> from mriqc.data import get_ds003_downsampled
-    >>> bids_getfile(get_ds003_downsampled(), 'anat', '05') #doctest: +ELLIPSIS
-    u'...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
+    >>> from niworkflows.data import get_ds003_downsampled
+    >>> bids_getfile(get_ds003_downsampled(), 'anat', '05') #doctest: +ELLIPSIS +IGNORE_UNICODE
+    '...ds003_downsampled/sub-05/anat/sub-05_T1w.nii.gz'
 
     """
     import os.path as op
@@ -24,27 +64,31 @@ def bids_getfile(bids_root, data_type, subject_id, session_id=None, run_id=None)
     if data_type == 'func':
         scan_type = 'bold'
 
-    out_file = op.join(bids_root, subject_id)
+    out_file = op.join(bids_dir, subject_id)
 
-    onesession = (session_id is None or session_id == 'single_session')
-    onerun = (run_id is None or run_id == 'single_run')
+    onesession = (session_id is None or session_id == '0')
+    onerun = (run_id is None or run_id == '0')
 
-    if onesession and onerun:
-        pattern = op.join(out_file, data_type, '%s_*%s.nii*' % (subject_id, scan_type))
+    if onesession:
+        if onerun:
+            pattern = op.join(out_file, data_type, '{}_*{}.nii*'.format(subject_id, scan_type))
+        else:
+            pattern = op.join(out_file, data_type, '{}_*{}_{}.nii*'.format(subject_id, run_id, scan_type))
 
-    elif not onesession and onerun:
-        pattern = op.join(out_file, session_id, data_type,
-                          '%s_%s_*%s.nii*' % (subject_id, session_id, scan_type))
-    elif onesession and not onerun:
-        pattern = op.join(out_file, data_type, '%s_%s*%s.nii*' % (subject_id, run_id, scan_type))
     else:
-        pattern = op.join(out_file, session_id, data_type,
-                          '%s_%s_%s*%s.nii*' % (subject_id, session_id, run_id, scan_type))
+        if onerun:
+            pattern = op.join(out_file, session_id, data_type,
+                              '{}_{}_*{}.nii*'.format(subject_id, session_id, scan_type))
+        else:
+            pattern = op.join(out_file, session_id, data_type,
+                              '{}_{}*_{}_{}.nii*'.format(subject_id, session_id, run_id, scan_type))
 
     results = glob.glob(pattern)
 
     if not results:
-        raise RuntimeError('No file found with this pattern: "%s"' % pattern)
+        raise RuntimeError(
+            'No file found with this pattern: "{}", finding '
+            'BIDS dataset coordinates are ({}, {}, {})'.format(pattern, subject_id, session_id, run_id))
 
     return results[0]
 
@@ -82,8 +126,8 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
     def _no_files_warning(folder):
         if not warn_no_files:
             return
-        warn("No files of requested type(s) found in scan folder: %s"
-             % folder, RuntimeWarning, stacklevel=1)
+        warn("No files of requested type(s) found in scan folder: {}"
+            .format(folder), RuntimeWarning, stacklevel=1)
 
     def _walk_dir_for_prefix(target_dir, prefix):
         return [x for x in next(os.walk(target_dir))[1]
@@ -96,14 +140,14 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
         file_bits = scan_basename.split('_')
 
         # BIDS with non ses-* subfolders given default
-        # "single_session" ses.
+        # "0" ses.
         file_tokens = {'scanfile': scanfile,
-                       'sub': None, 'ses': 'single_session',
+                       'sub': None, 'ses': '0',
                        'acq': None, 'rec': None,
                        'run': None, 'task': None,
                        'modality': file_bits[-1]}
         for bit in file_bits:
-            for key in file_tokens.keys():
+            for key in list(file_tokens.keys()):
                 if bit.startswith(key):
                     file_tokens[key] = bit
 
@@ -120,7 +164,7 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
         raise GeneratorExit("No BIDS subjects found to examine.")
 
     # for each subject folder, look for scans considering explicitly
-    # defined sessions or the implicit "single_session" case.
+    # defined sessions or the implicit "0" case.
     for subject in subjects:
         subj_dir = op.join(dataset, subject)
 
@@ -190,20 +234,22 @@ def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None)
         # implies that other anatomical modalities might be
         # analyzed down the road.
         if bidsfile['modality'] in ['T1w']:  # ie, anatomical
-            scan_key = 'single_run'
+            scan_key = '0'
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
-                scan_key += '_' + bidsfile['run']
+                scan_key = bidsfile['run']
             sub_dict['anat'].append(
                 (bidsfile['sub'], bidsfile['ses'], scan_key))
 
         elif bidsfile['modality'] in ['bold']:  # ie, functional
             scan_key = bidsfile['task']
+            if bidsfile['acq'] is not None:
+                scan_key += '_' + bidsfile['acq']
             if bidsfile['run'] is not None:
                 # TODO: consider multiple acq/recs
                 scan_key += '_' + bidsfile['run']
             if scan_key is None:
-                scan_key = 'func_1'
+                scan_key = 'func0'
             sub_dict['func'].append(
                 (bidsfile['sub'], bidsfile['ses'], scan_key))
 
@@ -224,7 +270,6 @@ def reorder_csv(csv_file, out_file=None):
 
 
     """
-    import pandas as pd
     if isinstance(csv_file, list):
         csv_file = csv_file[-1]
 
@@ -261,25 +306,97 @@ def rotate_files(fname):
     if not op.isfile(fname):
         return
 
-    prev = glob.glob('%s.*%s' % (name, ext))
+    prev = glob.glob('{}.*{}'.format(name, ext))
     prev.insert(0, fname)
-    prev.append('%s.%d%s' % (name, len(prev) - 1, ext))
-    for i in reversed(range(1, len(prev))):
+    prev.append('{0}.{1:d}{2}'.format(name, len(prev) - 1, ext))
+    for i in reversed(list(range(1, len(prev)))):
         os.rename(prev[i-1], prev[i])
 
 
 def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
     import os.path as op
-    fname = '%s' % subid
+    fname = '{}'.format(subid)
     if prefix is not None:
         if not prefix.endswith('_'):
             prefix += '_'
         fname = prefix + fname
     if sesid is not None:
-        fname += '_ses-%s' % sesid
+        fname += '_ses-{}'.format(sesid)
     if runid is not None:
-        fname += '_run-%s' % runid
+        fname += '_run-{}'.format(runid)
 
     if out_path is not None:
         fname = op.join(out_path, fname)
     return op.abspath(fname + '.' + ext)
+
+
+def generate_csv(jsonfiles, out_fname):
+    """
+    Generates a csv file from all json files in the derivatives directory
+    """
+    datalist = []
+    errorlist = []
+
+    if not jsonfiles:
+        raise RuntimeError('No QC-json files found to generate QC table')
+
+    for jsonfile in jsonfiles:
+        dfentry = _read_and_save(jsonfile)
+        if dfentry is not None:
+            if 'exec_error' not in list(dfentry.keys()):
+                datalist.append(dfentry)
+            else:
+                errorlist.append(dfentry['subject_id'])
+
+    dataframe = pd.DataFrame(datalist)
+    cols = dataframe.columns.tolist()  # pylint: disable=no-member
+
+    reorder = []
+    for field in ['run', 'session', 'subject']:
+        for col in cols:
+            if col.startswith(field):
+                reorder.append(col)
+
+    for col in reorder:
+        cols.remove(col)
+        cols.insert(0, col)
+
+    if 'mosaic_file' in cols:
+        cols.remove('mosaic_file')
+
+    # Sort the dataframe, with failsafe if pandas version is too old
+    try:
+        dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
+    except AttributeError:
+        #pylint: disable=E1101
+        dataframe = dataframe.sort(columns=['subject_id', 'session_id', 'run_id'])
+
+    # Drop duplicates
+    try:
+        #pylint: disable=E1101
+        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
+                                  inplace=True)
+    except TypeError:
+        #pylint: disable=E1101
+        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
+                                  inplace=True)
+    dataframe[cols].to_csv(out_fname, index=False)
+    return dataframe, errorlist
+
+
+def _read_and_save(in_file):
+    with open(in_file, 'r') as jsondata:
+        values = _flatten(json.load(jsondata))
+        return values
+    return None
+
+
+def _flatten(in_dict, parent_key='', sep='_'):
+    items = []
+    for k, val in list(in_dict.items()):
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(val, collections.MutableMapping):
+            items.extend(list(_flatten(val, new_key, sep=sep).items()))
+        else:
+            items.append((new_key, val))
+    return dict(items)

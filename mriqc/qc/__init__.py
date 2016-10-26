@@ -8,10 +8,10 @@ metrics)` included within MRIQC.
 
 .. note ::
 
-  Most of the :abbr:`IQMs (image quality metrics)` in this module are adapted, derived or reproduced
-  from the :abbr:`QAP (quality assessment protocols)` project [QAP]_.
+  Most of the :abbr:`IQMs (image quality metrics)` in this module are adapted, derived or
+  reproduced from the :abbr:`QAP (quality assessment protocols)` project [QAP]_.
+  We particularly thank Steve Giavasis (@sgiavasis) and Krishna Somandepali for their
+  original implementations of the code in this module that we took from the [QAP]_.
+
 
 """
-
-from .anatomical import *  # pylint: disable=wildcard-import
-from .functional import *  # pylint: disable=wildcard-import

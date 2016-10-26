@@ -3,12 +3,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # pylint: disable=no-member
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:29:40
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-05-03 11:29:22
+
 """
 Computation of the quality assessment measures on structural MRI
 
@@ -16,15 +11,22 @@ Computation of the quality assessment measures on structural MRI
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import os.path as op
+from sys import version_info
+import json
 from math import pi
-from six import string_types
 import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import chi  # pylint: disable=E0611
+from scipy.stats import chi, kurtosis  # pylint: disable=E0611
+
+from io import open  # pylint: disable=W0622
+from builtins import zip, range, str, bytes  # pylint: disable=W0622
+from six import string_types
 
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
+PY3 = version_info[0] > 2
 
-def snr(img, smask, nmask=None, erode=True, fglabel=1):
+def snr(img, smask, erode=True, fglabel=1):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -36,7 +38,31 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1):
 
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
-    Alternatively, a background mask containing only noise can be provided.
+
+    :param numpy.ndarray img: input data
+    :param numpy.ndarray fgmask: input foreground mask or segmentation
+    :param bool erode: erode masks before computations.
+    :param str fglabel: foreground label in the segmentation data.
+
+    :return: the computed SNR for the foreground segmentation
+
+    """
+    if isinstance(fglabel, (str, bytes)):
+        fglabel = FSL_FAST_LABELS[fglabel]
+
+    fgmask = _prepare_mask(smask, fglabel, erode)
+    fg_mean = np.median(img[fgmask > 0])
+    bgmask = fgmask
+    bg_mean = fg_mean
+    # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
+    bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
+
+    return float(fg_mean / bg_std)
+
+def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
+    r"""
+    Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
+
     This must be an air mask around the head, and it should not contain artifacts.
     The computation is done following the eq. A.12 of [Dietrich2007]_, which
     includes a correction factor in the estimation of the standard deviation of
@@ -48,29 +74,24 @@ def snr(img, smask, nmask=None, erode=True, fglabel=1):
 
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray fgmask: input foreground mask or segmentation
-    :param numpy.ndarray bgmask: input background mask or segmentation
+    :param numpy.ndarray smask: input foreground mask or segmentation
+    :param numpy.ndarray airmask: input background mask or segmentation
     :param bool erode: erode masks before computations.
     :param str fglabel: foreground label in the segmentation data.
-    :param str bglabel: background label in the segmentation data.
 
     :return: the computed SNR for the foreground segmentation
 
     """
+    if isinstance(fglabel, (str, bytes)):
+        fglabel = FSL_FAST_LABELS[fglabel]
+
     fgmask = _prepare_mask(smask, fglabel, erode)
-    bgmask = _prepare_mask(nmask, 1, erode) if nmask is not None else None
+    bgmask = _prepare_mask(airmask, 1, erode)
 
     fg_mean = np.median(img[fgmask > 0])
-    if bgmask is None:
-        bgmask = fgmask
-        bg_mean = fg_mean
-        # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
-        bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
-    else:
-        bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
+    bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
 
     return float(fg_mean / bg_std)
-
 
 def cnr(img, seg, lbl=None):
     r"""
@@ -138,7 +159,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
-def fber(img, seg, air=None):
+def fber(img, air):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
     defined as the mean energy of image values within the head relative
@@ -153,12 +174,9 @@ def fber(img, seg, air=None):
     :param numpy.ndarray seg: input segmentation
 
     """
-    if air is None:
-        air = np.zeros_like(seg)
-        air[seg == 0] = 1
 
-    fg_mu = (np.abs(img[seg > 0]) ** 2).mean()
-    bg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    fg_mu = (np.abs(img[air > 0]) ** 2).mean()
+    bg_mu = (np.abs(img[air < 1]) ** 2).mean()
     return float(fg_mu / bg_mu)
 
 
@@ -189,6 +207,18 @@ def efc(img):
     return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
 
 
+def wm2max(img, seg):
+    r"""
+    Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
+    defined as the maximum intensity found in the volume w.r.t. the
+    mean value of the white matter tissue. Values close to 1.0 are
+    better.
+
+    """
+    wmmask = np.zeros_like(seg)
+    wmmask[seg == FSL_FAST_LABELS['wm']] = 1
+    return np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95)
+
 def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
@@ -202,10 +232,10 @@ def art_qi1(airmask, artmask):
 
     # Count the number of voxels that remain after the opening operation.
     # These are artifacts.
-    return float(artmask.sum() / float(airmask.sum() + artmask.sum()))
+    return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, artmask, ncoils=1):
+def art_qi2(img, airmask, ncoils=12, erodemask=True, out_file='qi2_fitting.txt'):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -215,17 +245,47 @@ def art_qi2(img, airmask, artmask, ncoils=1):
     :param numpy.ndarray airmask: input air mask without artifacts
 
     """
+    out_file = op.abspath(out_file)
+    open(out_file, 'a').close()
+
+    if erodemask:
+        struc = nd.generate_binary_structure(3, 2)
+        # Perform an opening operation on the background data.
+        airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
 
     # Artifact-free air region
     data = img[airmask > 0]
+
+    if np.all(data <= 0):
+        return 0.0, out_file
+
+    # Compute an upper bound threshold
+    thresh = np.percentile(data[data > 0], 99.5)
+
+    # If thresh is too low, for some reason there is no noise
+    # in the background image (image was preprocessed, etc)
+    if thresh < 1.0:
+        return 0.0, out_file
+
+    # Threshold image
+    data = data[data < thresh]
+
+    maxvalue = int(data.max())
+    nbins = maxvalue if maxvalue < 100 else 100
+
     # Estimate data pdf
-    hist, bin_edges = np.histogram(data, density=True, bins=128)
-    bin_centers = [np.mean(bin_edges[i:i+1]) for i in range(len(bin_edges)-1)]
+    hist, bin_edges = np.histogram(data, density=True, bins=nbins)
+    bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
     max_pos = np.argmax(hist)
+    json_out = {
+        'x': bin_centers,
+        'y': [float(v) for v in hist]
+    }
 
     # Fit central chi distribution
     param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+    json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
     # Find t2 (intensity at half width, right side)
     ihw = 0.5 * hist[max_pos]
@@ -235,9 +295,20 @@ def art_qi2(img, airmask, artmask, ncoils=1):
             t2idx = i
             break
 
+    json_out['x_cutoff'] = float(bin_centers[t2idx])
+
     # Compute goodness-of-fit (gof)
-    gof = np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / airmask.sum()
-    return float(art_qi1(airmask, artmask) + gof)
+    gof = float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / len(pdf_fitted[t2idx:]))
+
+    # Clip values for sanity
+    gof = 1.0 if gof > 1.0 else gof
+    gof = 0.0 if gof < 0.0 else gof
+    json_out['gof'] = gof
+
+    with open(out_file, 'w' if PY3 else 'wb') as ofd:
+        json.dump(json_out, ofd)
+
+    return gof, out_file
 
 
 def volume_fraction(pvms):
@@ -256,7 +327,7 @@ def volume_fraction(pvms):
         tissue_vfs[k] = pvms[lid - 1].sum()
         total += tissue_vfs[k]
 
-    for k in tissue_vfs.keys():
+    for k in list(tissue_vfs.keys()):
         tissue_vfs[k] /= total
     return {k: float(v) for k, v in list(tissue_vfs.items())}
 
@@ -279,7 +350,7 @@ def rpve(pvms, seg):
         pvfs[k] = pvmap[pvmap > 0].sum()
     return {k: float(v) for k, v in list(pvfs.items())}
 
-def summary_stats(img, pvms):
+def summary_stats(img, pvms, bgdata=None):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
@@ -288,29 +359,34 @@ def summary_stats(img, pvms):
     stdv = {}
     p95 = {}
     p05 = {}
+    kurt = {}
 
-    if np.array(pvms).ndim == 4:
+    dims = np.squeeze(np.array(pvms)).ndim
+    if dims == 4:
         pvms.insert(0, np.array(pvms).sum(axis=0))
-    elif np.array(pvms).ndim == 3:
+    elif dims == 3:
         bgpvm = np.ones_like(pvms)
         pvms = [bgpvm - pvms, pvms]
     else:
-        raise RuntimeError('Incorrect image dimensions (%d)' %
-            np.array(pvms).ndim)
+        raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
+            np.array(pvms).ndim))
+
+    if bgdata is not None:
+        pvms[0] = bgdata
 
     if len(pvms) == 4:
         labels = list(FSL_FAST_LABELS.items())
     elif len(pvms) == 2:
-        labels = zip(['bg', 'fg'], range(2))
+        labels = list(zip(['bg', 'fg'], list(range(2))))
 
     for k, lid in labels:
-        im_lid = pvms[lid] * img
-        mean[k] = float(im_lid[im_lid > 0].mean())
-        stdv[k] = float(im_lid[im_lid > 0].std())
-        p95[k] = float(np.percentile(im_lid[im_lid > 0], 95))
-        p05[k] = float(np.percentile(im_lid[im_lid > 0], 5))
-
-    return mean, stdv, p95, p05
+        mask = np.where(pvms[lid] > 0.5)
+        mean[k] = float(img[mask].mean())
+        stdv[k] = float(img[mask].std())
+        p95[k] = float(np.percentile(img[mask], 95))
+        p05[k] = float(np.percentile(img[mask], 5))
+        kurt[k] = float(kurtosis(img[mask]))
+    return mean, stdv, p95, p05, kurt
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()

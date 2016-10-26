@@ -7,8 +7,10 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-06 12:11:18
+# @Last Modified time: 2016-10-19 16:02:39
 """ A QC workflow for anatomical MRI """
+from __future__ import print_function, division, absolute_import, unicode_literals
+from builtins import zip, range
 import os
 import os.path as op
 from nipype.pipeline import engine as pe
@@ -16,14 +18,18 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import ants
-from nipype.interfaces.afni import preprocess as afp
+from nipype.interfaces import afni
 
-from .utils import fwhm_dict
-from ..interfaces.qc import StructuralQC
-from ..interfaces.anatomical import ArtifactMask
-from ..interfaces.viz import PlotMosaic
-from ..utils.misc import bids_getfile, bids_path
-from ..data.getters import get_mni_template
+from niworkflows.data import get_mni_icbm152_nlin_asym_09c
+from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+from niworkflows.anat.mni import RobustMNINormalization
+from mriqc.workflows.utils import fwhm_dict
+from mriqc.interfaces.qc import StructuralQC
+from mriqc.interfaces.anatomical import ArtifactMask
+from mriqc.interfaces.bids import ReadSidecarJSON
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
+from mriqc.reports.utils import plot_anat_mosaic_helper
+
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     """
@@ -34,108 +40,138 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = op.abspath('./derivatives')
-    if 'work_dir' in settings.keys():
-        deriv_dir = op.abspath(op.join(settings['work_dir'], 'derivatives'))
 
-    if not op.exists(deriv_dir):
-        os.makedirs(deriv_dir)
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_root', 'subject_id', 'session_id',
+        fields=['bids_dir', 'subject_id', 'session_id',
                 'run_id']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
 
     # 0. Get data
     datasource = pe.Node(niu.Function(
-        input_names=['bids_root', 'data_type', 'subject_id', 'session_id', 'run_id'],
+        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
         output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'anat'
 
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    arw = mri_reorient_wf()
+    to_ras = pe.Node(niu.Function(input_names=['in_file'],
+                               output_names=["out_file"],
+                               function=reorient), name='Reorient')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf()
-    mask = pe.Node(fsl.ApplyMask(), name='MaskAnatomical')
     # 3. Head mask (including nasial-cerebelum mask)
     hmsk = headmsk_wf()
-    # 4. Air mask (with and without artifacts)
-    amw = airmsk_wf(save_memory=settings.get('save_memory', False),
-                    ants_settings=settings.get('ants_settings', None))
-
-    # Brain tissue segmentation
+    # 4. Spatial Normalization, using ANTs
+    norm = pe.Node(RobustMNINormalization(
+        num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
+        testing=settings.get('testing', False)), name='SpatialNormalization')
+    # 5. Air mask (with and without artifacts)
+    amw = airmsk_wf()
+    # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
         img_type=1, segments=True, out_basename='segment'), name='segmentation')
-
-    # AFNI check smoothing
-    fwhm = pe.Node(afp.FWHMx(combine=True, detrend=True), name='smoothness')
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
-
-    # Compute python-coded measures
-    measures = pe.Node(StructuralQC(), 'measures')
-
-    # Plot mosaic
-    plot = pe.Node(PlotMosaic(), name='plot_mosaic')
-    merg = pe.Node(niu.Merge(3), name='plot_metadata')
+    # 7. Compute IQMs
+    iqmswf = compute_iqms(settings)
+    # Reports
+    repwf = individual_reports(settings)
 
     # Connect all nodes
     workflow.connect([
-        (inputnode, datasource, [('bids_root', 'bids_root'),
+        (inputnode, datasource, [('bids_dir', 'bids_dir'),
                                  ('subject_id', 'subject_id'),
                                  ('session_id', 'session_id'),
                                  ('run_id', 'run_id')]),
-        (datasource, arw, [('anatomical_scan', 'inputnode.in_file')]),
-        (arw, asw, [('outputnode.out_file', 'inputnode.in_file')]),
-        (arw, n4itk, [('outputnode.out_file', 'input_image')]),
-        # (asw, n4itk, [('outputnode.out_mask', 'mask_image')]),
-        (n4itk, mask, [('output_image', 'in_file')]),
-        (asw, mask, [('outputnode.out_mask', 'mask_file')]),
-        (mask, segment, [('out_file', 'in_files')]),
+        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                             ('session_id', 'inputnode.session_id'),
+                             ('run_id', 'inputnode.run_id')]),
+        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
+                            ('session_id', 'inputnode.session_id'),
+                            ('run_id', 'inputnode.run_id')]),
+        (datasource, to_ras, [('anatomical_scan', 'in_file')]),
+        (datasource, meta, [('anatomical_scan', 'in_file')]),
+        (to_ras, n4itk, [('out_file', 'input_image')]),
+        (n4itk, asw, [('output_image', 'inputnode.in_file')]),
+        (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
-        (n4itk, measures, [('output_image', 'in_noinu')]),
-        (arw, measures, [('outputnode.out_file', 'in_file')]),
-        (arw, fwhm, [('outputnode.out_file', 'in_file')]),
-        (asw, fwhm, [('outputnode.out_mask', 'mask')]),
-
-        (arw, amw, [('outputnode.out_file', 'inputnode.in_file')]),
-        (n4itk, amw, [('output_image', 'inputnode.in_noinu')]),
+        (n4itk, norm, [('output_image', 'moving_image')]),
+        (asw, norm, [('outputnode.out_mask', 'moving_mask')]),
+        (to_ras, amw, [('out_file', 'inputnode.in_file')]),
+        (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
+                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+        (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
+                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
-
-        (amw, measures, [('outputnode.out_file', 'air_msk')]),
-        (amw, measures, [('outputnode.artifact_msk', 'artifact_msk')]),
-
-        (segment, measures, [('tissue_class_map', 'in_segm'),
-                             ('partial_volume_files', 'in_pvms')]),
-        (n4itk, measures, [('bias_image', 'in_bias')]),
-        (arw, plot, [('outputnode.out_file', 'in_file')]),
-        (inputnode, plot, [('subject_id', 'subject')]),
-        (inputnode, merg, [('session_id', 'in1'),
-                           ('run_id', 'in2')]),
-        (merg, plot, [('out', 'metadata')])
+        (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
+        (n4itk, iqmswf, [('output_image', 'inputnode.inu_corrected'),
+                         ('bias_image', 'inputnode.in_inu')]),
+        (asw, iqmswf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (amw, iqmswf, [('outputnode.out_file', 'inputnode.airmask'),
+                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
+        (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
+                           ('partial_volume_files', 'inputnode.pvms')]),
+        (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
+        (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
+        (to_ras, repwf, [('out_file', 'inputnode.orig')]),
+        (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
+        (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
+        (amw, repwf, [('outputnode.out_file', 'inputnode.airmask'),
+                      ('outputnode.artifact_msk', 'inputnode.artmask')]),
+        (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
+        (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
+        (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
+        (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
-    if settings.get('mask_mosaic', False):
-        workflow.connect(asw, 'outputnode.out_file', plot, 'in_mask')
+    return workflow
 
-    # Save mosaic to well-formed path
-    mvplot = pe.Node(niu.Rename(
-        format_string='anatomical_%(subject_id)s_%(session_id)s_%(run_id)s',
-        keep_ext=True), name='rename_plot')
-    dsplot = pe.Node(nio.DataSink(
-        base_directory=settings['work_dir'], parameterization=False), name='ds_plot')
-    workflow.connect([
-        (inputnode, mvplot, [('subject_id', 'subject_id'),
-                             ('session_id', 'session_id'),
-                             ('run_id', 'run_id')]),
-        (plot, mvplot, [('out_file', 'in_file')]),
-        (mvplot, dsplot, [('out_file', '@mosaic')])
-    ])
+def compute_iqms(settings, name='ComputeIQMs'):
+    """Workflow that actually computes the IQMs"""
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
+        'headmask', 'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
+        'reverse_transforms', 'reverse_invert_flags']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
+                         name='outputnode')
+
+    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
+
+    # AFNI check smoothing
+    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
+
+    # Compute python-coded measures
+    measures = pe.Node(StructuralQC(testing=settings.get('testing', False)),
+                       'measures')
+
+    # Project MNI segmentation to T1 space
+    invt = pe.MapNode(ants.ApplyTransforms(
+        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        iterfield=['input_image'], name='MNItpms2t1')
+    invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
+                               for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
+
+    # Link images that should be reported
+    dsreport = pe.Node(nio.DataSink(
+        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
+    dsreport.inputs.container = 'anat'
+    dsreport.inputs.substitutions = [
+        ('_data', ''),
+        ('background_fit', 'plot_bgfit')
+    ]
+    dsreport.inputs.regexp_substitutions = [
+        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
+        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
+        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
+    ]
 
     # Format name
     out_name = pe.Node(niu.Function(
@@ -145,7 +181,9 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     out_name.inputs.prefix = 'anat'
 
     # Save to JSON file
-    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
+    jfs_if = nio.JSONFileSink()
+    setattr(jfs_if, '_always_run', settings.get('force_run', False))
+    datasink = pe.Node(jfs_if, name='datasink')
     datasink.inputs.qc_type = 'anat'
 
     workflow.connect([
@@ -154,8 +192,22 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                                ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
-                               ('run_id', 'run_id')]),
-        (plot, datasink, [('out_file', 'mosaic_file')]),
+                               ('run_id', 'run_id'),
+                               ('metadata', 'metadata')]),
+        (inputnode, measures, [('inu_corrected', 'in_noinu'),
+                               ('in_inu', 'in_bias'),
+                               ('orig', 'in_file'),
+                               ('airmask', 'air_msk'),
+                               ('headmask', 'head_msk'),
+                               ('artmask', 'artifact_msk'),
+                               ('segmentation', 'in_segm'),
+                               ('pvms', 'in_pvms')]),
+        (inputnode, fwhm, [('orig', 'in_file'),
+                           ('brainmask', 'mask')]),
+        (inputnode, invt, [('orig', 'reference_image'),
+                           ('reverse_transforms', 'transforms'),
+                           ('reverse_invert_flags', 'invert_transform_flags')]),
+        (invt, measures, [('output_image', 'mni_tpms')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
@@ -169,34 +221,147 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
                               ('efc', 'efc'),
                               ('qi1', 'qi1'),
                               ('qi2', 'qi2'),
-                              ('cjv', 'cjv')]),
+                              ('cjv', 'cjv'),
+                              ('wm2max', 'wm2max'),
+                              ('tpm_overlap', 'tpm_overlap')]),
         (out_name, datasink, [('out_file', 'out_file')]),
+        (measures, outputnode, [('out_noisefit', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
 
 
-def mri_reorient_wf(name='ReorientWorkflow'):
-    """A workflow to reorient images to 'RPI' orientation"""
+def individual_reports(settings, name='ReportsWorkflow'):
+    """Encapsulates nodes writing plots"""
+    from mriqc.reports.generators import individual_html
+
+    verbose = settings.get('verbose_reports', False)
+
     workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
+        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
+        name='inputnode')
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
-                        name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['out_file']), name='outputnode')
+    # T1w mosaic plot
+    plot_anat_mosaic_zoomed = pe.Node(niu.Function(
+        input_names=['in_file',
+                     'subject_id',
+                     'session_id',
+                     'run_id',
+                     'out_name',
+                     'title',
+                     'bbox_mask_file'],
+        output_names=['plot_file'], function=plot_anat_mosaic_helper),
+        name='plot_anat_mosaic_zoomed')
+    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.svg'
+    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
 
-    deoblique = pe.Node(afp.Refit(deoblique=True), name='deoblique')
-    reorient = pe.Node(afp.Resample(
-        orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
+    plot_anat_mosaic_noise = pe.Node(niu.Function(
+        input_names=['in_file',
+                     'subject_id',
+                     'session_id',
+                     'run_id',
+                     'out_name',
+                     'title',
+                     'only_plot_noise'],
+        output_names=['plot_file'], function=plot_anat_mosaic_helper),
+        name='plot_anat_mosaic_noise')
+    plot_anat_mosaic_noise.inputs.only_plot_noise = True
+    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.svg'
+    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
+
+    mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
+    rnode = pe.Node(niu.Function(
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        function=individual_html), name='GenerateReport')
+
+    # Link images that should be reported
+    dsplots = pe.Node(nio.DataSink(
+        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
+    dsplots.inputs.container = 'reports'
+
     workflow.connect([
-        (inputnode, deoblique, [('in_file', 'in_file')]),
-        (deoblique, reorient, [('out_file', 'in_file')]),
-        (reorient, outputnode, [('out_file', 'out_file')])
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
+                                              ('session_id', 'session_id'),
+                                              ('run_id', 'run_id'),
+                                              ('orig', 'in_file'),
+                                              ('brainmask', 'bbox_mask_file')]),
+
+        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
+                                             ('session_id', 'session_id'),
+                                             ('run_id', 'run_id'),
+                                             ('orig', 'in_file')]),
+        (plot_anat_mosaic_zoomed, mplots, [('plot_file', "in1")]),
+        (plot_anat_mosaic_noise, mplots, [('plot_file', "in2")]),
+        (mplots, rnode, [('out', 'in_plots')]),
+        (rnode, dsplots, [('out_file', "@html_report")]),
+    ])
+
+    if not verbose:
+        return workflow
+
+
+    from mriqc.interfaces.viz import PlotContours
+    from mriqc.interfaces.viz_utils import plot_bg_dist, combine_svg_verbose
+    plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
+                          function=plot_bg_dist), name='PlotBackground')
+
+    # If we want verbose reports
+    plot_segm = pe.Node(PlotContours(
+        display_mode='z', levels=[.5, 1.5, 2.5], cut_coords=10,
+        colors=['r', 'g', 'b']), name='PlotSegmentation')
+
+    plot_bmask = pe.Node(PlotContours(
+        display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
+        out_file='bmask'), name='PlotBrainmask')
+    plot_airmask = pe.Node(PlotContours(
+        display_mode='x', levels=[.5], colors=['r'],
+        cut_coords=6, out_file='airmask'), name='PlotAirmask')
+    plot_headmask = pe.Node(PlotContours(
+        display_mode='x', levels=[.5], colors=['r'],
+        cut_coords=6, out_file='headmask'), name='PlotHeadmask')
+    plot_artmask = pe.Node(PlotContours(
+        display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
+        out_file='artmask', saturate=True), name='PlotArtmask')
+
+    combine = pe.Node(niu.Function(
+        input_names=[
+            'in_brainmask',
+            'in_segmentation',
+            'in_artmask',
+            'in_headmask',
+            'in_airmask',
+            'in_bgplot'
+        ], output_names=['out_file'],
+        function=combine_svg_verbose), name='CombineSVGs')
+
+    workflow.connect([
+        (inputnode, plot_segm, [('orig', 'in_file'),
+                                ('segmentation', 'in_contours')]),
+        (inputnode, plot_bmask, [('orig', 'in_file'),
+                                 ('brainmask', 'in_contours')]),
+        (inputnode, plot_headmask, [('orig', 'in_file'),
+                                    ('headmask', 'in_contours')]),
+        (inputnode, plot_airmask, [('orig', 'in_file'),
+                                   ('airmask', 'in_contours')]),
+        (inputnode, plot_artmask, [('orig', 'in_file'),
+                                   ('artmask', 'in_contours')]),
+        (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
+
+
+        (plot_bmask, combine, [('out_file', 'in_brainmask')]),
+        (plot_segm, combine, [('out_file', 'in_segmentation')]),
+        (plot_artmask, combine, [('out_file', 'in_artmask')]),
+        (plot_headmask, combine, [('out_file', 'in_headmask')]),
+        (plot_airmask, combine, [('out_file', 'in_airmask')]),
+        (plot_bgdist, combine, [('out_file', 'in_bgplot')]),
+        (combine, mplots, [('out_file', 'in3')])
     ])
     return workflow
 
-
-def headmsk_wf(name='HeadMaskWorkflow'):
+def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     """Computes a head mask as in [Mortamet2009]_."""
 
     has_dipy = False
@@ -212,29 +377,40 @@ def headmsk_wf(name='HeadMaskWorkflow'):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
-    if not has_dipy:
+
+    enhance = pe.Node(niu.Function(
+        input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
+
+
+    if use_bet or not has_dipy:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
         workflow.connect([
-            (inputnode, bet, [('in_file', 'in_file')]),
+            (inputnode, enhance, [('in_file', 'in_file')]),
+            (enhance, bet, [('out_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
         return workflow
 
-    getwm = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=_get_wm), name='GetWM')
+    estsnr = pe.Node(niu.Function(
+        input_names=['in_file', 'seg_file'], output_names=['out_snr'],
+        function=_estimate_snr), name='EstimateSNR')
     denoise = pe.Node(Denoise(), name='Denoise')
     gradient = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=image_gradient), name='Grad')
+        input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
     thresh = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=gradient_threshold),
+        input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
                      name='GradientThreshold')
 
     workflow.connect([
-        (inputnode, getwm, [('in_segm', 'in_file')]),
-        (inputnode, denoise, [('in_file', 'in_file')]),
-        (getwm, denoise, [('out_file', 'noise_mask')]),
+        (inputnode, estsnr, [('in_file', 'in_file'),
+                             ('in_segm', 'seg_file')]),
+        (estsnr, denoise, [('out_snr', 'snr')]),
+        (inputnode, enhance, [('in_file', 'in_file')]),
+        (enhance, denoise, [('out_file', 'in_file')]),
+        (estsnr, gradient, [('out_snr', 'snr')]),
         (denoise, gradient, [('out_file', 'in_file')]),
+        (inputnode, thresh, [('in_segm', 'in_segm')]),
         (gradient, thresh, [('out_file', 'in_file')]),
         (thresh, outputnode, [('out_file', 'out_file')])
     ])
@@ -242,155 +418,70 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     return workflow
 
 
-def airmsk_wf(name='AirMaskWorkflow', save_memory=False, ants_settings=None):
+def airmsk_wf(name='AirMaskWorkflow'):
     """Implements the Step 1 of [Mortamet2009]_."""
     import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_noinu', 'in_mask', 'head_mask']), name='inputnode')
+        fields=['in_file', 'in_mask', 'head_mask', 'reverse_transforms', 'reverse_invert_flags']),
+        name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    antsparms = pe.Node(nio.JSONFileGrabber(), name='ants_settings')
-    antsparms.inputs.in_file = (
-        ants_settings if ants_settings is not None else pkgr.resource_filename(
-            'mriqc', 'data/ants_settings.json'))
-
-    def _invt_flags(transforms):
-        return [True] * len(transforms)
-
-    # Spatial normalization, using ANTs
-    norm = pe.Node(ants.Registration(dimension=3), name='normalize')
-
-    if save_memory:
-        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_2mm.nii.gz')
-        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
-                                               'MNI152_T1_2mm_brain_mask.nii.gz')
-    else:
-        norm.inputs.fixed_image = op.join(get_mni_template(), 'MNI152_T1_1mm.nii.gz')
-        norm.inputs.fixed_image_mask = op.join(get_mni_template(),
-                                               'MNI152_T1_1mm_brain_mask.nii.gz')
-
     invt = pe.Node(ants.ApplyTransforms(
-        dimension=3, default_value=1, interpolation='NearestNeighbor'), name='invert_xfm')
-    invt.inputs.input_image = op.join(get_mni_template(), 'MNI152_T1_1mm_brain_bottom.nii.gz')
-
-    # Combine and invert mask
-    combine = pe.Node(niu.Function(
-        input_names=['head_mask', 'artifact_msk'], output_names=['out_file'],
-        function=combine_masks), name='combine_masks')
+        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
+    invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
-        (antsparms, norm, [
-            ('initial_moving_transform_com', 'initial_moving_transform_com'),
-            ('winsorize_lower_quantile', 'winsorize_lower_quantile'),
-            ('winsorize_upper_quantile', 'winsorize_upper_quantile'),
-            ('float', 'float'),
-            ('transforms', 'transforms'),
-            ('transform_parameters', 'transform_parameters'),
-            ('number_of_iterations', 'number_of_iterations'),
-            ('convergence_window_size', 'convergence_window_size'),
-            ('metric', 'metric'),
-            ('metric_weight', 'metric_weight'),
-            ('radius_or_number_of_bins', 'radius_or_number_of_bins'),
-            ('sampling_strategy', 'sampling_strategy'),
-            ('sampling_percentage', 'sampling_percentage'),
-            ('smoothing_sigmas', 'smoothing_sigmas'),
-            ('shrink_factors', 'shrink_factors'),
-            ('convergence_threshold', 'convergence_threshold'),
-            ('sigma_units', 'sigma_units'),
-            ('use_estimate_learning_rate_once', 'use_estimate_learning_rate_once'),
-            ('use_histogram_matching', 'use_histogram_matching')
-        ]),
-        (inputnode, qi1, [('in_file', 'in_file')]),
-        (inputnode, norm, [('in_noinu', 'moving_image'),
-                           ('in_mask', 'moving_image_mask')]),
-        (norm, invt, [('forward_transforms', 'transforms'),
-                      (('forward_transforms', _invt_flags), 'invert_transform_flags')]),
-        (inputnode, invt, [('in_mask', 'reference_image')]),
-        (inputnode, combine, [('head_mask', 'head_mask')]),
-        (invt, combine, [('output_image', 'artifact_msk')]),
-        (combine, qi1, [('out_file', 'air_msk')]),
+        (inputnode, qi1, [('in_file', 'in_file'),
+                          ('head_mask', 'head_mask')]),
+        (inputnode, invt, [('in_mask', 'reference_image'),
+                           ('reverse_transforms', 'transforms'),
+                           ('reverse_invert_flags', 'invert_transform_flags')]),
+        (invt, qi1, [('output_image', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
-
     ])
     return workflow
 
+def _estimate_snr(in_file, seg_file):
+    import nibabel as nb
+    from mriqc.qc.anatomical import snr
+    out_snr = snr(nb.load(in_file).get_data(), nb.load(seg_file).get_data(),
+                  fglabel='wm')
+    return out_snr
 
-def skullstrip_wf(name='SkullStripWorkflow'):
-    """ Skull-stripping workflow """
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
-                        name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_mask', 'head_mask']),
-                         name='outputnode')
-
-    sstrip = pe.Node(afp.SkullStrip(outputtype='NIFTI_GZ'), name='skullstrip')
-    sstrip_orig_vol = pe.Node(afp.Calc(
-        expr='a*step(b)', outputtype='NIFTI_GZ'), name='sstrip_orig_vol')
-    binarize = pe.Node(fsl.Threshold(args='-bin', thresh=1.e-3), name='binarize')
-
-    workflow.connect([
-        (inputnode, sstrip, [('in_file', 'in_file')]),
-        (inputnode, sstrip_orig_vol, [('in_file', 'in_file_a')]),
-        (sstrip, sstrip_orig_vol, [('out_file', 'in_file_b')]),
-        (sstrip_orig_vol, binarize, [('out_file', 'in_file')]),
-        (sstrip_orig_vol, outputnode, [('out_file', 'out_file')]),
-        (binarize, outputnode, [('out_file', 'out_mask')])
-    ])
-    return workflow
-
-def _get_wm(in_file, wm_val=3, out_file=None):
+def _enhance(in_file, out_file=None):
     import os.path as op
     import numpy as np
     import nibabel as nb
-    from scipy.ndimage import gaussian_gradient_magnitude as gradient
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_wm%s' % (fname, ext))
+        out_file = op.abspath('{}_enhanced{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
-    data = imnii.get_data().astype(np.uint8)
-    msk = np.zeros_like(data)
-    msk[data == wm_val] = 1
-    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
+    data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
+    range_max = np.percentile(data[data > 0], 99.98)
+    range_min = np.median(data[data > 0])
+
+    # Resample signal excess pixels
+    excess = np.where(data > range_max)
+    data[excess] = 0
+    data[excess] = np.random.choice(data[data > range_min], size=len(excess[0]))
+
+    nb.Nifti1Image(data, imnii.get_affine(), imnii.get_header()).to_filename(
+        out_file)
+
     return out_file
 
-def combine_masks(head_mask, artifact_msk, out_file=None):
-    """Computes an air mask from the head and artifact masks"""
-    import os.path as op
-    import numpy as np
-    import nibabel as nb
-    from scipy import ndimage as sim
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(head_mask))
-        if ext == '.gz':
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath('%s_combined%s' % (fname, ext))
-
-    imnii = nb.load(head_mask)
-    hmdata = imnii.get_data()
-
-    msk = np.ones_like(hmdata, dtype=np.uint8)
-    msk[hmdata == 1] = 0
-
-    adata = nb.load(artifact_msk).get_data()
-    msk[adata == 1] = 0
-    nb.Nifti1Image(msk, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
-    return out_file
-
-def image_gradient(in_file, compute_abs=True, out_file=None):
+def image_gradient(in_file, snr, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
     import os.path as op
     import numpy as np
@@ -402,69 +493,63 @@ def image_gradient(in_file, compute_abs=True, out_file=None):
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_grad%s' % (fname, ext))
+        out_file = op.abspath('{}_grad{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
-    range_max = np.percentile(data.reshape(-1), 90.)
-    data *= (100/range_max)
-    sigma = 1e-4 * data[data > 0].std(ddof=1)  # pylint: disable=no-member
-    grad = gradient(data, sigma)
-
-    while grad.sum() < 1.e4:
-        sigma *= 1.5
-        grad = gradient(data, sigma)
-
-    if compute_abs:
-        grad = np.abs(grad)
+    datamax = np.percentile(data.reshape(-1), 99.5)
+    data *= 100 / datamax
+    grad = gradient(data, 3.0)
+    gradmax = np.percentile(grad.reshape(-1), 99.5)
+    grad *= 100.
+    grad /= gradmax
 
     nb.Nifti1Image(grad, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
 
-def gradient_threshold(in_file, thresh=1.0, out_file=None):
+def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     """ Compute a threshold from the histogram of the magnitude gradient image """
     import os.path as op
     import numpy as np
     import nibabel as nb
     from scipy import ndimage as sim
 
-    thresh *= 1e-2
+    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('%s_gradmask%s' % (fname, ext))
-
+        out_file = op.abspath('{}_gradmask{}'.format(fname, ext))
 
     imnii = nb.load(in_file)
-    data = imnii.get_data()
-    hist, bin_edges = np.histogram(data[data > 0], bins=128, density=True)  # pylint: disable=no-member
-
-    # Find threshold at 1% frequency
-    for i, freq in reversed(list(enumerate(hist))):
-        binw = bin_edges[i+1] - bin_edges[i]
-        if (freq * binw) >= thresh:
-            out_thresh = 0.5 * binw
-            break
-
-    mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
-    mask[data > out_thresh] = 1
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
-    mask = sim.binary_opening(mask, struc).astype(np.uint8)  # pylint: disable=no-member
-
-    # Remove small objects
-    label_im, nb_labels = sim.label(mask)
-    if nb_labels > 2:
-        sizes = sim.sum(mask, label_im, range(nb_labels + 1))
-        ordered = list(reversed(sorted(zip(sizes, range(nb_labels + 1)))))
-        for _, label in ordered[2:]:
-            mask[label_im == label] = 0
-
-    mask = sim.binary_closing(mask, struc).astype(np.uint8)  # pylint: disable=no-member
-    mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
     hdr = imnii.get_header().copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
+
+    data = imnii.get_data().astype(np.float32)
+
+    mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
+    mask[data > 15.] = 1
+
+    segdata = nb.load(in_segm).get_data().astype(np.uint8)
+    segdata[segdata > 0] = 1
+    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(np.uint8)  # pylint: disable=no-member
+    mask[segdata > 0] = 1
+
+    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)  # pylint: disable=no-member
+    # Remove small objects
+    label_im, nb_labels = sim.label(mask)
+    artmsk = np.zeros_like(mask)
+    if nb_labels > 2:
+        sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
+        ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+        for _, label in ordered[2:]:
+            mask[label_im == label] = 0
+            artmsk[label_im == label] = 1
+
+    mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
+
     nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
     return out_file

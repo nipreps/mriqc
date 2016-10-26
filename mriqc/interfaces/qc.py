@@ -7,30 +7,42 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-05-04 15:30:56
+# @Last Modified time: 2016-10-19 14:07:40
 """ Nipype interfaces to quality control measures """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import zip
 
 import numpy as np
 import nibabel as nb
-from ..qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                             volume_fraction, rpve, summary_stats, cjv)
-from ..qc.functional import (gsr, dvars, fd_jenkinson, gcor)
+
+from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
+                                 volume_fraction, rpve, summary_stats, cjv,
+                                 wm2max)
+from mriqc.qc.functional import (gsr, gcor)
+
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
-
 from nipype import logging
 IFLOGGER = logging.getLogger('interface')
+
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='file to be plotted')
     in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
     in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
+    head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    ncoils = traits.Int(12, usedefault=True, desc='number of coils')
+    testing = traits.Bool(False, usedefault=True, desc='use test configuration')
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -46,8 +58,11 @@ class StructuralQCOutputSpec(TraitedSpec):
     efc = traits.Float
     qi1 = traits.Float
     qi2 = traits.Float
+    wm2max = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
+    out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
+    tpm_overlap = traits.Dict
 
 
 class StructuralQC(BaseInterface):
@@ -87,13 +102,13 @@ class StructuralQC(BaseInterface):
 
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
+        headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(inudata, segdata, airdata, fglabel=tlabel,
-                               erode=erode))
+            snrvals.append(snr(inudata, segdata, fglabel=tlabel, erode=erode))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = float(np.mean(snrvals))
 
@@ -101,14 +116,20 @@ class StructuralQC(BaseInterface):
         self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(inudata, segdata, airdata)
+        self._results['fber'] = fber(inudata, headdata)
 
         # EFC
         self._results['efc'] = efc(inudata)
 
+        # M2WM
+        self._results['wm2max'] = wm2max(imdata, segdata)
+
         # Artifacts
         self._results['qi1'] = art_qi1(airdata, artdata)
-        self._results['qi2'] = art_qi2(imdata, airdata, artdata)
+        qi2, bg_plot = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils,
+                               erodemask=not self.inputs.testing)
+        self._results['qi2'] = qi2
+        self._results['out_noisefit'] = bg_plot
 
         # CJV
         self._results['cjv'] = cjv(inudata, seg=segdata)
@@ -124,9 +145,9 @@ class StructuralQC(BaseInterface):
         self._results['rpve'] = rpve(pvmdata, segdata)
 
         # Summary stats
-        mean, stdv, p95, p05 = summary_stats(imdata, pvmdata)
-        self._results['summary'] = {'mean': mean, 'stdv': stdv,
-                                    'p95': p95, 'p05': p05}
+        mean, stdv, p95, p05, kurt = summary_stats(imdata, pvmdata, airdata)
+        self._results['summary'] = {
+            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt}
 
         # Image specs
         self._results['size'] = {'x': int(imdata.shape[0]),
@@ -152,6 +173,14 @@ class StructuralQC(BaseInterface):
             'range': float(np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.))),
             'med': float(np.median(bias))}  #pylint: disable=E1101
 
+        mni_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.mni_tpms]
+        in_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.in_pvms]
+        overlap = fuzzy_jaccard(in_tpms, mni_tpms)
+        self._results['tpm_overlap'] = {
+            'csf': overlap[0],
+            'gm': overlap[1],
+            'wm': overlap[2]
+        }
 
         # Flatten the dictionary
         self._results['out_qc'] = _flatten_dict(self._results)
@@ -165,6 +194,10 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_mask = File(exists=True, mandatory=True, desc='input mask')
     direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
                             desc='direction for GSR computation')
+    in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
+    fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+    in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
+
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -173,8 +206,9 @@ class FunctionalQCOutputSpec(TraitedSpec):
     snr = traits.Float
     gsr = traits.Dict
     m_tsnr = traits.Float
-    dvars = traits.Float
+    dvars = traits.Dict
     gcor = traits.Float
+    fd = traits.Dict
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
@@ -235,14 +269,17 @@ class FunctionalQC(BaseInterface):
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
         # Summary stats
-        mean, stdv, p95, p05 = summary_stats(epidata, mskdata)
-        self._results['summary'] = {'mean': mean,
-                                    'stdv': stdv,
-                                    'p95': p95,
-                                    'p05': p05}
+        mean, stdv, p95, p05, kurt = summary_stats(epidata, mskdata)
+        self._results['summary'] = {
+            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt
+        }
 
         # DVARS
-        self._results['dvars'] = float(np.mean(dvars(hmcdata, mskdata), axis=0)[0])
+        dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)
+        dvars_col = ['std', 'nstd', 'vstd']
+        self._results['dvars'] = {
+            dvars_col[i]: float(val) for i, val in enumerate(dvars_avg)
+        }
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
@@ -250,6 +287,15 @@ class FunctionalQC(BaseInterface):
 
         # GCOR
         self._results['gcor'] = gcor(hmcdata, mskdata)
+
+        # FD
+        fd_data = np.loadtxt(self.inputs.in_fd)
+        num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
+        self._results['fd'] = {
+            'mean': float(fd_data.mean()),
+            'num': int(num_fd),
+            'perc': float(num_fd * 100 / (len(fd_data) + 1))
+        }
 
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),
@@ -280,50 +326,22 @@ def _flatten_dict(indict):
         else:
             for subk, subval in list(value.items()):
                 if not isinstance(subval, dict):
-                    out_qc['%s_%s' % (k, subk)] = subval
+                    out_qc['_'.join([k, subk])] = subval
                 else:
                     for ssubk, ssubval in list(subval.items()):
-                        out_qc['%s_%s_%s' % (k, subk, ssubk)] = ssubval
+                        out_qc['_'.join([k, subk, ssubk])] = ssubval
     return out_qc
 
 
-class FramewiseDisplacementInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True,
-                   desc='input file generated with FSL 3dvolreg')
-    rmax = traits.Float(80., usedefault=True, desc='default brain radius')
-    threshold = traits.Float(1., usedefault=True, desc='motion threshold')
+def fuzzy_jaccard(in_tpms, in_mni_tpms):
+    import numpy as np
+    overlaps = []
+    for tpm, mni_tpm in zip(in_tpms, in_mni_tpms):
+        tpm = tpm.reshape(-1)
+        mni_tpm = mni_tpm.reshape(-1)
 
+        num = np.min([tpm, mni_tpm], axis=0).sum()
+        den = np.max([tpm, mni_tpm], axis=0).sum()
+        overlaps.append(float(num/den))
+    return overlaps
 
-class FramewiseDisplacementOutputSpec(TraitedSpec):
-    out_file = File(desc='output file')
-    fd_stats = traits.Dict
-
-class FramewiseDisplacement(BaseInterface):
-    """
-    Computes anatomical :abbr:`QC (Quality Control)` measures on the
-    structural image given as input
-
-    """
-    input_spec = FramewiseDisplacementInputSpec
-    output_spec = FramewiseDisplacementOutputSpec
-
-    def __init__(self, **inputs):
-        self._results = {}
-        super(FramewiseDisplacement, self).__init__(**inputs)
-
-    def _list_outputs(self):
-        return self._results
-
-    def _run_interface(self, runtime):
-        out_file = fd_jenkinson(self.inputs.in_file,
-                                self.inputs.rmax)
-        self._results['out_file'] = out_file
-
-        fddata = np.loadtxt(out_file)
-        num_fd = np.float((fddata > self.inputs.threshold).sum())
-        self._results['fd_stats'] = {
-            'mean_fd': fddata.mean(),
-            'num_fd': num_fd,
-            'perc_fd': num_fd * 100 / (len(fddata) + 1)
-        }
-        return runtime

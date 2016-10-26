@@ -7,10 +7,18 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-04-21 15:08:22
+# @Last Modified time: 2016-10-19 14:41:21
 """ Visualization utilities """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from builtins import str
+from builtins import zip
+from builtins import range
 
 import math
+import time
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -23,9 +31,13 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
+DEFAULT_DPI = 300
+DINA4_LANDSCAPE = (11.69, 8.27)
+DINA4_PORTRAIT = (8.27, 11.69)
+
 
 def plot_measures(df, measures, ncols=4, title='Group level report',
-                  subject=None, figsize=(8.27, 11.69)):
+                  subject=None, figsize=DINA4_PORTRAIT):
     import matplotlib.gridspec as gridspec
     nmeasures = len(measures)
     nrows = nmeasures // ncols
@@ -65,7 +77,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
                 for sc in scans:
                     scndf = subdf.loc[sesdf['run_id'] == sc]
                     plot_vline(
-                        scndf.iloc[0][mname], '%s_%s' % (ss, sc), axes[-1])
+                        scndf.iloc[0][mname], '_'.join([ss, sc]), axes[-1])
 
     fig.suptitle(title)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -73,7 +85,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
     return fig
 
 
-def plot_all(df, groups, subject=None, figsize=(11.69, 5),
+def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
              strip_nsubj=10, title='Summary report'):
     import matplotlib.gridspec as gridspec
     # colnames = [v for gnames in groups for v in gnames]
@@ -147,48 +159,73 @@ def plot_all(df, groups, subject=None, figsize=(11.69, 5),
 
 
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
-                figsize=(11.7, 8.3)):
+                fig=None, bbox_mask_file=None, only_plot_noise=False,
+                figsize=DINA4_LANDSCAPE):
     from six import string_types
     from pylab import cm
 
     if isinstance(nifti_file, string_types):
-        nii = nb.load(nifti_file)
+        nii = nb.as_closest_canonical(nb.load(nifti_file))
         mean_data = nii.get_data()
     else:
         mean_data = nifti_file
 
-    z_vals = np.array(range(0, mean_data.shape[2]))
+    if bbox_mask_file:
+        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_data()
+        B = np.argwhere(bbox_data)
+        (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
+            0) + 1
+        mean_data = mean_data[ystart:ystop, xstart:xstop, zstart:zstop]
+
+    z_vals = np.array(list(range(0, mean_data.shape[2])))
     # Reduce the number of slices shown
     if mean_data.shape[2] > 70:
         rem = 15
         # Crop inferior and posterior
-        mean_data = mean_data[..., rem:-rem]
-        z_vals = z_vals[rem:-rem]
+        if not bbox_mask_file:
+            mean_data = mean_data[..., rem:-rem]
+            z_vals = z_vals[rem:-rem]
+        else:
+            mean_data = mean_data[..., 2 * rem:]
+            z_vals = z_vals[2 * rem:]
+
+    if mean_data.shape[2] > 70:
         # Discard one every two slices
         mean_data = mean_data[..., ::2]
         z_vals = z_vals[::2]
 
     n_images = mean_data.shape[2]
-    row, col = _calc_rows_columns(figsize[0] / figsize[1], n_images)
+    row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
 
     if overlay_mask:
-        overlay_data = nb.load(overlay_mask).get_data()
+        overlay_data = nb.as_closest_canonical(
+            nb.load(overlay_mask)).get_data()
 
     # create figures
-    fig = plt.Figure(figsize=figsize)
+    if fig is None:
+        fig = plt.Figure(figsize=figsize)
+
     FigureCanvas(fig)
 
     fig.subplots_adjust(top=0.85)
     for image, z_val in enumerate(z_vals):
         ax = fig.add_subplot(row, col, image + 1)
         data_mask = np.logical_not(np.isnan(mean_data))
+        if only_plot_noise:
+            data_mask = np.logical_and(data_mask, mean_data != 0)
         if overlay_mask:
             ax.set_rasterized(True)
 
-        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=np.percentile(
-            mean_data[data_mask], 0.5),
-            vmax=np.percentile(mean_data[data_mask], 99.5),
-            cmap=cm.Greys_r, interpolation='nearest', origin='lower')
+        if only_plot_noise:
+            vmin = np.percentile(mean_data[data_mask], 0)
+            vmax = np.percentile(mean_data[data_mask], 61)
+        else:
+            vmin = np.percentile(mean_data[data_mask], 0.5)
+            vmax = np.percentile(mean_data[data_mask], 99.5)
+
+        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=vmin,
+                  vmax=vmax,
+                  cmap=cm.Greys_r, interpolation='nearest', origin='lower')
 
         if overlay_mask:
             cmap = cm.Reds  # @UndefinedVariable
@@ -199,9 +236,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                       cmap=cmap, interpolation='nearest', origin='lower')
 
         ax.annotate(
-            str(z_val), xy=(.95, .015), xycoords='axes fraction',
-            fontsize=10, color='white', horizontalalignment='right',
-            verticalalignment='bottom')
+            str(z_val), xy=(.99, .99), xycoords='axes fraction',
+            fontsize=8, color='white', horizontalalignment='right',
+            verticalalignment='top')
 
         ax.axis('off')
 
@@ -210,15 +247,16 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     if not title:
         _, title = op.split(nifti_file)
-        title += " (last modified: %s)" % time.ctime(
-            op.getmtime(nifti_file))
+        title += " (last modified: {})".format(
+            time.ctime(op.getmtime(nifti_file)))
     fig.suptitle(title, fontsize='10')
+    fig.subplots_adjust(wspace=0.002, hspace=0.002)
     return fig
 
 
-def plot_fd(fd_file, title='FD plot', mean_fd_dist=None, figsize=(11.7, 8.3)):
+def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
 
-    fd_power = _calc_fd(fd_file)
+    fd_power = _calc_fd(fd_file, fd_radius)
 
     fig = plt.Figure(figsize=figsize)
     FigureCanvas(fig)
@@ -245,16 +283,15 @@ def plot_fd(fd_file, title='FD plot', mean_fd_dist=None, figsize=(11.7, 8.3)):
         sns.distplot(mean_fd_dist, ax=ax)
         ax.set_xlabel("Mean Frame Displacement (over all subjects) [mm]")
         mean_fd = fd_power.mean()
-        label = r'$\overline{\text{FD}}$ = %g' % mean_fd
+        label = r'$\overline{{\text{{FD}}}}$ = {0:g}'.format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
-    fig.suptitle(title)
     return fig
 
 
 def plot_dist(
         main_file, mask_file, xlabel, distribution=None, xlabel2=None,
-        figsize=(11.7, 8.3)):
+        figsize=DINA4_LANDSCAPE):
     data = _get_values_inside_a_mask(main_file, mask_file)
 
     fig = plt.Figure(figsize=figsize)
@@ -268,7 +305,7 @@ def plot_dist(
     ax = fig.add_subplot(gsp[1, 0])
     sns.distplot(np.array(distribution).astype(np.double), ax=ax)
     cur_val = np.median(data)
-    label = "%g" % cur_val
+    label = "{0!g}".format(cur_val)
     plot_vline(cur_val, label, ax=ax)
     ax.set_xlabel(xlabel2)
 
@@ -292,16 +329,12 @@ def _calc_rows_columns(ratio, n_images):
         total = rows * columns
         if total > n_images:
             break
-
-        columns = math.ceil(ratio * rows)
-        total = rows * columns
-        if total > n_images:
-            break
         rows += 1
     return rows, columns
 
 
-def _calc_fd(fd_file):
+def _calc_fd(fd_file, fd_radius):
+    from math import pi
     lines = open(fd_file, 'r').readlines()
     rows = [[float(x) for x in line.split()] for line in lines]
     cols = np.array([list(col) for col in zip(*rows)])
@@ -310,7 +343,7 @@ def _calc_fd(fd_file):
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
     fd_power = np.sum(translations, axis=1) + \
-        (50 * 3.141 / 180) * np.sum(rotations, axis=1)
+        (fd_radius * pi / 180) * np.sum(rotations, axis=1)
 
     # FD is zero for the first time point
     fd_power = np.insert(fd_power, 0, 0)
@@ -318,11 +351,11 @@ def _calc_fd(fd_file):
     return fd_power
 
 
-def _get_mean_fd_distribution(fd_files):
+def _get_mean_fd_distribution(fd_files, fd_radius):
     mean_fds = []
     max_fds = []
     for fd_file in fd_files:
-        fd_power = _calc_fd(fd_file)
+        fd_power = _calc_fd(fd_file, fd_radius)
         mean_fds.append(fd_power.mean())
         max_fds.append(fd_power.max())
 
@@ -337,3 +370,118 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
     data = main_data[np.logical_and(nan_mask, mask)]
     return data
+
+
+def plot_segmentation(anat_file, segmentation, out_file,
+                      **kwargs):
+    from nilearn.plotting import plot_anat
+
+    vmax = None
+    if kwargs.get('saturate', False):
+        import nibabel as nb
+        import numpy as np
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1),
+                             70)
+
+    disp = plot_anat(
+        anat_file,
+        display_mode=kwargs.get('display_mode', 'ortho'),
+        cut_coords=kwargs.get('cut_coords', 8),
+        title=kwargs.get('title'),
+        vmax=vmax)
+    disp.add_contours(
+        segmentation,
+        levels=kwargs.get('levels', [1]),
+        colors=kwargs.get('colors', 'r'))
+    disp.savefig(out_file)
+    disp.close()
+    disp = None
+    return out_file
+
+def plot_bg_dist(in_file):
+    import os.path as op
+    import numpy as np
+    import json
+    from io import open # pylint: disable=W0622
+    import matplotlib.pyplot as plt
+    # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    # rc('text', usetex=True)
+
+    with open(in_file, 'r') as jsonf:
+        data = json.load(jsonf)
+
+    # Write out figure of the fitting
+    out_file = op.abspath('background_fit.svg')
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
+    ax1.set_xlabel('Intensity')
+    ax1.set_ylabel('Frequency')
+
+    width = (data['x'][1] - data['x'][0])
+    left = [v - 0.5 * width for v in data['x']]
+
+    ymax = np.max([np.array(data['y']).max(), np.array(data['y_hat']).max()])
+    ax1.set_ylim((0.0, 1.10 * ymax))
+
+    ax1.bar(left, data['y'], width)
+    ax1.plot(left, data['y_hat'], 'k--', linewidth=1.2)
+    ax1.plot((data['x_cutoff'], data['x_cutoff']), ax1.get_ylim(), 'k--')
+
+    fig.savefig(out_file, format='svg', dpi=300)
+    plt.close()
+    return out_file
+
+def combine_svg_verbose(
+        in_brainmask,
+        in_segmentation,
+        in_artmask,
+        in_headmask,
+        in_airmask,
+        in_bgplot):
+    import os.path as op
+    import svgutils.transform as svgt
+    import svgutils.compose as svgc
+    import numpy as np
+
+    hspace = 10
+    wspace = 10
+    #create new SVG figure
+    in_mosaics = [in_brainmask,
+                  in_segmentation,
+                  in_artmask,
+                  in_headmask,
+                  in_airmask]
+    figs = [svgt.fromfile(f) for f in in_mosaics]
+
+    roots = [f.getroot() for f in figs]
+    nfigs = len(figs)
+
+    sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in figs]
+    maxsize = np.max(sizes, axis=0)
+    minsize = np.min(sizes, axis=0)
+
+    bgfile = svgt.fromfile(in_bgplot)
+    bgscale = (maxsize[1] * 2 + hspace)/int(bgfile.height[:-2])
+    bgsize = (int(bgfile.width[:-2]), int(bgfile.height[:-2]))
+    bgfileroot = bgfile.getroot()
+
+    totalsize = (minsize[0] + hspace + int(bgsize[0] * bgscale),
+                 nfigs * maxsize[1] + (nfigs - 1) * hspace)
+    fig = svgt.SVGFigure(svgc.Unit(totalsize[0]).to('cm'),
+                         svgc.Unit(totalsize[1]).to('cm'))
+
+    yoffset = 0
+    for i, r in enumerate(roots):
+        xoffset = 0
+        if sizes[i][0] == maxsize[0]:
+            xoffset = int(0.5 * (totalsize[0] - sizes[i][0]))
+        r.moveto(xoffset, yoffset)
+        yoffset += maxsize[1] + hspace
+
+    bgfileroot.moveto(minsize[0] + wspace, 3 * (maxsize[1] + hspace), scale=bgscale)
+
+    fig.append(roots + [bgfileroot])
+    out_file = op.abspath('fig_final.svg')
+    fig.save(out_file)
+    return out_file

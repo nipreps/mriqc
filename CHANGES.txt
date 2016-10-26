@@ -1,33 +1,70 @@
+Release 0.8.7
+=============
+
+* [ENH] Add kurtosis to summary statistics
+* [ENH] New report layout for fMRI, added carpetplot (#198)
+* [ENH] Anatomical workflow refactor (#219).
+
+Release 0.8.6
+=============
+
+* [FIX, CRITICAL] Do not chmod in Docker internal scripts
+* [FIX] Error creating derivatives folder
+* [ENH] Moved MNI spatial normalization to NIworkflows, and made robust.
+* [ENH] De-coupled participant and group (reports) levels
+* [ENH] Use new FD and DVARs calculations from nipype (#172)
+* [ENH] Started with python3 compatibility
+* [ENH] Added new M2WM measure #158
+* [FIX] QI2 is skipped if background intensity is not appropriate (#147)
+
+Release 0.8.5
+=============
+
+* [FIX] Error inverting the T1w-to-MNI warping (#146)
+* [FIX] TypeError computing DVARS (#145)
+* [ENH] Plot figure of fitted background chi for QI2 (#143)
+* [ENH] Move skull-stripping and reorient to NIworkflows (#142)
+* [FIX] mriqc crashes if no anatomical scans are found (#141)
+* [DOC] Added acknowledgments to CPAC team members (#134)
+* [ENH] Use absolute imports (#133)
+* [FIX] VisibleDeprecationWarning (#132)
+* [ENH] Provide full FD/DVARS files (#128)
+* [ENH] Use MCFLIRT to compute motion parameters. AFNI's 3dvolreg now is optional (#121)
+* [FIX] BIDS trees with anatomical images with different acquisition tokens (#116)
+* [FIX] BIDS trees with anatomical images with several runs (#112)
+* [ENH] Options for ANTs normalization: reduced test times (#124),
+  and updated options (#115)
+
 Release 0.8.4
 =============
 
-* [ENH] PDF reports now use RST templates and jinja2 (https://github.com/poldracklab/mriqc/pull/109)
+* [ENH] PDF reports now use RST templates and jinja2 (#109)
+* [FIX] Single-session-multiple-run anatomical files were not correctly located (#112)
 
 Release 0.8.3
 =============
 
-* [DOC] Added examples of the PDF reports (https://github.com/poldracklab/mriqc/pull/107)
+* [DOC] Added examples of the PDF reports (#107)
 * [FIX] Fixed problems with Python 3 when generating reports.
 
 Release 0.8.2
 =============
 
-* [ENH] Python 3 compatibility (https://github.com/poldracklab/mriqc/issues/99)
-* [ENH] Add JSON settings file for ANTS (https://github.com/poldracklab/mriqc/issues/95)
-* [ENH] Generate reports automatically if mriqc is run without the -S flag (https://github.com/poldracklab/mriqc/issues/93)
-* [FIX] Revised implementation of QI2 measure (https://github.com/poldracklab/mriqc/issues/90)
-* [AGAVE] Fixed docker image for agave (https://github.com/poldracklab/mriqc/issues/89)
-* [FIX] Problem when generating the air mask with dipy installed (https://github.com/poldracklab/mriqc/issues/88)
-* [ENH] One-session-one-run execution mode (https://github.com/poldracklab/mriqc/issues/85)
-* [AGAVE] Added an agave app description generator (https://github.com/poldracklab/mriqc/issues/84)
+* [ENH] Python 3 compatibility (#99)
+* [ENH] Add JSON settings file for ANTS (#95)
+* [ENH] Generate reports automatically if mriqc is run without the -S flag (#93)
+* [FIX] Revised implementation of QI2 measure (#90)
+* [AGAVE] Fixed docker image for agave (#89)
+* [FIX] Problem when generating the air mask with dipy installed (#88)
+* [ENH] One-session-one-run execution mode (#85)
+* [AGAVE] Added an agave app description generator (#84)
 
 Release 0.3.0
 =============
 
 * [ENH] Updated CircleCI and Docker to use the version 2.1.0 of ANTs
   compiled by their developers.
-* [ENH] New anatomical workflows to compute the air mask
-  (https://github.com/poldracklab/mriqc/issues/56)
+* [ENH] New anatomical workflows to compute the air mask (#56)
 
 Release 0.2.0
 =============
@@ -35,7 +72,7 @@ Release 0.2.0
 Release 0.1.0
 =============
 
-* [FIX] https://github.com/poldracklab/mriqc/issues/55
+* [FIX] #55
 * [ENH] Added rotation of output csv files if they exist
 
 
