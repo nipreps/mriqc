@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-26 10:22:23
+# @Last Modified time: 2016-10-26 11:05:17
 
 """
 MRIQC Cross-validation
@@ -63,11 +63,3 @@ def zscore_dataset(dataframe, excl_columns=None, by='site'):
         zs_df.loc[zs_df.site == site, columns] = zscore(site_df, ddof=1, axis=0)
 
     return zs_df
-
-
-    # Remove participants without rating
-    #y_df = y_df.loc[y_df.rate != 'no anatomical images']
-    # Replace "ok" label by 0, "reject" by 1
-    # y_df.loc[(y_df.rate == 'good') | (y_df.rate == 'ok'), 'rate'] = 0
-    # y_df.loc[y_df.rate != 0, 'rate'] = 1
-    # y_df.index = range(1, len(y_df)+1)
