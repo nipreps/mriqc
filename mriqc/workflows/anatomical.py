@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 16:02:39
+# @Last Modified time: 2016-10-27 15:06:05
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -158,20 +158,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
         iterfield=['input_image'], name='MNItpms2t1')
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
-
-    # Link images that should be reported
-    dsreport = pe.Node(nio.DataSink(
-        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
-    dsreport.inputs.container = 'anat'
-    dsreport.inputs.substitutions = [
-        ('_data', ''),
-        ('background_fit', 'plot_bgfit')
-    ]
-    dsreport.inputs.regexp_substitutions = [
-        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
-        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
-        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
-    ]
 
     # Format name
     out_name = pe.Node(niu.Function(
