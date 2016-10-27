@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-26 11:05:17
+# @Last Modified time: 2016-10-26 14:22:48
 
 """
 MRIQC Cross-validation
@@ -23,14 +23,17 @@ def read_dataset(feat_file, label_file):
     x_df['subject_id'] = x_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Remove columns that are not IQMs
-    feat_names = list(x_df.columns.ravel())
-    feat_names.remove('subject_id')
-    feat_names.remove('session_id')
-    feat_names.remove('run_id')
-    feat_names.remove('qc_type')
-    for axis in ['x', 'y', 'z']:
-        feat_names.remove('size_' + axis)
-        feat_names.remove('spacing_' + axis)
+    feat_names = list(x_df._get_numeric_data().columns.ravel())
+
+    for col in ['subject_id', 'session_id', 'run_id', 'qc_type']:
+        try:
+            feat_names.remove(col)
+        except ValueError:
+            pass
+
+    for col in feat_names:
+        if col.startswith(('size_', 'spacing_', 'Unnamed')):
+            feat_names.remove(col)
 
     # Massage labels table to have the appropriate format
     y_df = pd.read_csv(label_file, index_col=False, dtype={'subject_id': object}).sort_values(
@@ -50,12 +53,14 @@ def zscore_dataset(dataframe, excl_columns=None, by='site'):
     """ Returns a dataset zscored by the column given as argument """
 
     sites = list(dataframe[[by]].values.ravel())
-    columns = list(dataframe.columns.ravel())
-    columns.remove(by)
+    columns = list(dataframe._get_numeric_data().columns.ravel())
 
     if excl_columns:
         for col in excl_columns:
-            columns.remove(col)
+            try:
+                columns.remove(col)
+            except ValueError:
+                pass
 
     zs_df = dataframe.copy()
     for site in sites:

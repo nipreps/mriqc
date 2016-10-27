@@ -29,5 +29,6 @@ from .info import (
     __longdesc__
 )
 
+logging.basicConfig()
 MRIQC_LOG = logging.getLogger('mriqc')
 MRIQC_LOG.setLevel(logging.INFO)

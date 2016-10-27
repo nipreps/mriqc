@@ -3,21 +3,40 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-26 16:56:00
+# @Last Modified time: 2016-10-27 10:08:52
 
 """
 MRIQC Cross-validation
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import warnings
+
+
+from sklearn.metrics.base import UndefinedMetricWarning
+warnings.simplefilter("once", UndefinedMetricWarning)
+
+cached_warnings = []
+def warn_redirect(message, category, filename, lineno, file=None, line=None):
+    from mriqc import logging
+    LOG = logging.getLogger('mriqc.classifier')
+
+    if category not in cached_warnings:
+        LOG.warn('%s: %s', category, message)
+        cached_warnings.append(category)
+
+
 
 def main():
     """Entry point"""
-    import json
+    import yaml
     from io import open
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
+    from pkg_resources import resource_filename as pkgrf
     from .cv import CVHelper
+
+    warnings.showwarning = warn_redirect
 
     parser = ArgumentParser(description='MRIQC Cross-validation',
                             formatter_class=RawTextHelpFormatter)
@@ -28,7 +47,8 @@ def main():
     parser.add_argument('--test-labels', help='test labels')
 
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-P', '--parameters', action='store')
+    g_input.add_argument('-P', '--parameters', action='store',
+                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
     g_input.add_argument('-C', '--classifier', action='store', nargs='*',
                          choices=['svc_linear', 'svc_rbf', 'rfc', 'all'],
                          default=['svc_rbf'])
@@ -46,7 +66,7 @@ def main():
     parameters = None
     if opts.parameters is not None:
         with open(opts.parameters) as paramfile:
-            parameters = json.load(paramfile)
+            parameters = yaml.load(paramfile)
 
     cvhelper = CVHelper(opts.training_data, opts.training_labels,
                         scores=opts.score_types, param=parameters)
@@ -56,6 +76,8 @@ def main():
 
     if opts.test_data is not None:
         cvhelper.set_heldout_dataset(opts.test_data, opts.test_labels)
+
+    print(cvhelper.get_best(refit=False))
 
 
 if __name__ == '__main__':
