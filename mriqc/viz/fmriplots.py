@@ -306,7 +306,8 @@ def spikesplot_cb(position, cmap='viridis', fig=None):
 
 
 def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
-                 units=None, tr=None, hide_x=True, color='b', nskip=4):
+                 units=None, tr=None, hide_x=True, color='b', nskip=4,
+                 cutoff=None):
 
     # Define TR and number of frames
     notr = False
@@ -365,7 +366,14 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
     ax_ts.yaxis.set_ticks_position('left')
 
     # Plot average
-    ax_ts.plot((0, ntsteps), [tseries.mean()] * 2, color=color, linestyle=':')
+    if cutoff is None:
+        cutoff = [tseries.mean()]
+    else:
+        cutoff.append(tseries.mean())
+
+    for i, thr in enumerate(cutoff):
+        ax_ts.plot((0, ntsteps), [thr] * 2, linestyle=':',
+                   color=color if i == 0 else 'k')
 
     ax_ts.set_ylim(tseries[nskip:].min(), tseries[nskip:].max())
 

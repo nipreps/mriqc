@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-11 09:08:35
+# @Last Modified time: 2016-10-27 14:47:15
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -560,7 +560,9 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
-    myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
+    myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(),
+                         {'name': 'FD', 'units': 'mm', 'normalize': False,
+                          'cutoff': [0.5]})
     myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
     myplot.plot()
