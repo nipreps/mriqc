@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:03:13
+# @Last Modified time: 2016-10-27 16:26:45
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -28,7 +28,6 @@ from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
-from mriqc.reports.utils import plot_anat_mosaic_helper
 
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
