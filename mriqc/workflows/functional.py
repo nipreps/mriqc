@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-11 09:08:35
+# @Last Modified time: 2016-10-27 14:11:06
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -104,7 +104,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes',
-                     'in_spikes_bg', 'fd', 'dvars'],
+                     'in_spikes_bg', 'fd', 'dvars', 'outlier_count'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
 
     measures = pe.Node(FunctionalQC(), name='measures')
@@ -171,6 +171,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (ema, bigplot, [('outputnode.epi_parc', 'in_segm')]),
         (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
+        (outliers, bigplot, [('out_file', 'outlier_count')]),
         (mean, dsreport, [('out_file', '@meanepi')]),
         (tsnr, dsreport, [('tsnr_file', '@tsnr'),
                           ('stddev_file', '@tsnr_std')]),
@@ -546,7 +547,7 @@ def _parse_tout(in_file):
 
 
 def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
-              fd, dvars, out_file=None):
+              fd, dvars, outlier_count, out_file=None):
     import os.path as op
     import numpy as np
     from mriqc.viz.fmriplots import fMRIPlot
@@ -560,6 +561,8 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
+    myplot.add_confounds([np.nan] + np.loadtxt(outlier_count).tolist(),
+                         {'name': 'outliers', 'units': '%', 'normalize': False})
     myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
     myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
