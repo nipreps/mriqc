@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 14:41:21
+# @Last Modified time: 2016-10-27 16:02:42
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -245,11 +245,8 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     fig.subplots_adjust(
         left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01, hspace=0.1)
 
-    if not title:
-        _, title = op.split(nifti_file)
-        title += " (last modified: {})".format(
-            time.ctime(op.getmtime(nifti_file)))
-    fig.suptitle(title, fontsize='10')
+    if title:
+        fig.suptitle(title, fontsize='10')
     fig.subplots_adjust(wspace=0.002, hspace=0.002)
     return fig
 
@@ -431,6 +428,21 @@ def plot_bg_dist(in_file):
     fig.savefig(out_file, format='svg', dpi=300)
     plt.close()
     return out_file
+
+
+def plot_mosaic_helper(in_file, subject_id, session_id,
+                       run_id, out_name, bbox_mask_file=None,
+                       title=None,
+                       only_plot_noise=False):
+    if title is not None:
+        title = title.format(**{"session_id": session_id,
+                              "run_id": run_id})
+    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title,
+                      only_plot_noise=only_plot_noise)
+    fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
+    fig.close()
+    fig = None
+    return op.abspath(out_name)
 
 def combine_svg_verbose(
         in_brainmask,

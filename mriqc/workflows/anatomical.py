@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 15:06:05
+# @Last Modified time: 2016-10-27 16:03:13
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -219,6 +219,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
+    from mriqc.interfaces import PlotMosaic
     from mriqc.reports.generators import individual_html
 
     verbose = settings.get('verbose_reports', False)
@@ -230,32 +231,14 @@ def individual_reports(settings, name='ReportsWorkflow'):
         name='inputnode')
 
     # T1w mosaic plot
-    plot_anat_mosaic_zoomed = pe.Node(niu.Function(
-        input_names=['in_file',
-                     'subject_id',
-                     'session_id',
-                     'run_id',
-                     'out_name',
-                     'title',
-                     'bbox_mask_file'],
-        output_names=['plot_file'], function=plot_anat_mosaic_helper),
-        name='plot_anat_mosaic_zoomed')
-    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.svg'
-    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
+    mosaic_zoom = pe.Node(PlotMosaic(
+        out_name='plot_anat_mosaic1_zoomed.svg',
+        title='T1w (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
 
-    plot_anat_mosaic_noise = pe.Node(niu.Function(
-        input_names=['in_file',
-                     'subject_id',
-                     'session_id',
-                     'run_id',
-                     'out_name',
-                     'title',
-                     'only_plot_noise'],
-        output_names=['plot_file'], function=plot_anat_mosaic_helper),
-        name='plot_anat_mosaic_noise')
-    plot_anat_mosaic_noise.inputs.only_plot_noise = True
-    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.svg'
-    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
+    mosaic_noise = pe.Node(PlotMosaic(
+        out_name='plot_anat_mosaic2_noise.svg',
+        title='T1w (noise) session: {session_id} run: {run_id}',
+        only_noise=True), name='PlotMosaicNoise')
 
     mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -269,18 +252,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
-        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
-                                              ('session_id', 'session_id'),
-                                              ('run_id', 'run_id'),
-                                              ('orig', 'in_file'),
-                                              ('brainmask', 'bbox_mask_file')]),
+        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
+                                  ('session_id', 'session_id'),
+                                  ('run_id', 'run_id'),
+                                  ('orig', 'in_file'),
+                                  ('brainmask', 'bbox_mask_file')]),
 
-        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
-                                             ('session_id', 'session_id'),
-                                             ('run_id', 'run_id'),
-                                             ('orig', 'in_file')]),
-        (plot_anat_mosaic_zoomed, mplots, [('plot_file', "in1")]),
-        (plot_anat_mosaic_noise, mplots, [('plot_file', "in2")]),
+        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
+                                   ('session_id', 'session_id'),
+                                   ('run_id', 'run_id'),
+                                   ('orig', 'in_file')]),
+        (mosaic_zoom, mplots, [('out_file', "in1")]),
+        (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
