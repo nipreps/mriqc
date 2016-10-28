@@ -36,7 +36,8 @@ function makeDistroChart(settings) {
         chartSize: {width: 800, height: 400},
         margin: {top: 15, right: 60, bottom: 40, left: 50},
         constrainExtremes: false,
-        color: d3.scale.category10()
+        color: d3.scale.category10(),
+        qctype: null
     };
     for (var setting in settings) {
         chart.settings[setting] = settings[setting]
@@ -1529,7 +1530,9 @@ function makeDistroChart(settings) {
                     for (var pt = 0; pt < chart.groupObjs[cName].values.length; pt++) {
                         cPlot.objs.points.pts.push(cPlot.objs.points.g
                             .append("a")
-                            .attr("xlink:href", function(d) { return chart.groupObjs[cName].labels[pt] + "_T1w-report.html"})
+                            .attr("xlink:href", function(d) {
+                                return chart.settings["qctype"] + "_" + chart.groupObjs[cName].labels[pt] + "_report.html"
+                            })
                             .append("circle")
                             .attr("class", "point")
                             .attr('r', dOpts.pointSize / 2)// Options is diameter, r takes radius so divide by 2

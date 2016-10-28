@@ -195,26 +195,20 @@ def main():
     # Set up group level
     elif opts.analysis_level == 'group':
         from glob import glob
-        from mriqc.reports import MRIQCReportPDF
-        from mriqc.reports.group import gen_html
+        from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv
 
         for qctype in opts.data_type:
-            reporter = MRIQCReportPDF(qctype, settings)
-            if qctype[:4] == 'anat':
-                check_folder(op.join(settings['output_dir'], 'reports'))
-                qcjson = op.join(settings['output_dir'], 'derivatives',
-                                 '{}*.json'.format(qctype[:4]))
-                out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
-                out_html = op.join(settings['output_dir'], 'reports',
-                                   qctype[:4] + '_group.html')
-                generate_csv(glob(qcjson), out_csv)
-                MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
-                gen_html(out_csv, out_file=out_html)
-                MRIQC_LOG.info('Group HTML report has been written to %s', out_html)
-            else:
-                reporter.group_report()
-                reporter.individual_report()
+            check_folder(op.join(settings['output_dir'], 'reports'))
+            qcjson = op.join(settings['output_dir'], 'derivatives',
+                             '{}*.json'.format(qctype[:4]))
+            out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
+            out_html = op.join(settings['output_dir'], 'reports',
+                               qctype[:4] + '_group.html')
+            generate_csv(glob(qcjson), out_csv)
+            MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
+            group_html(out_csv, qctype, out_file=out_html)
+            MRIQC_LOG.info('Group HTML report has been written to %s', out_html)
 
 if __name__ == '__main__':
     main()

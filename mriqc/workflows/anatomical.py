@@ -219,9 +219,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
     from mriqc.interfaces import PlotMosaic
-    from mriqc.reports.generators import individual_html
+    from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
+    pages = 2
+    if verbose:
+        pages += 1
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -239,7 +242,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='T1w (noise) session: {session_id} run: {run_id}',
         only_noise=True), name='PlotMosaicNoise')
 
-    mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')

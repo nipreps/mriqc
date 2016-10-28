@@ -14,12 +14,11 @@ import os
 import os.path as op
 from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
 
-
 from mriqc import logging
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
-def gen_html(csv_file, out_file=None):
+def gen_html(csv_file, qctype, out_file=None):
     import os.path as op
     from os import remove
     from shutil import copy, rmtree
@@ -32,24 +31,46 @@ def gen_html(csv_file, out_file=None):
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
 
-    STRUCTURAL_QCGROUPS = [
-        ['cjv'],
-        ['cnr'],
-        ['efc'],
-        ['fber'],
-        ['wm2max'],
-        ['snr_csf', 'snr_gm', 'snr_wm'],
-        ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-        ['qi1', 'qi2'],
-        ['inu_range', 'inu_med'],
-        ['icvs_csf', 'icvs_gm', 'icvs_wm'],
-        ['rpve_csf', 'rpve_gm', 'rpve_wm'],
-        ['summary_mean_bg', 'summary_stdv_bg', 'summary_k_bg', 'summary_p05_bg', 'summary_p95_bg'],
-        ['summary_mean_csf', 'summary_stdv_csf', 'summary_k_csf',
-         'summary_p05_csf', 'summary_p95_csf'],
-        ['summary_mean_gm', 'summary_stdv_gm', 'summary_k_gm', 'summary_p05_gm', 'summary_p95_gm'],
-        ['summary_mean_wm', 'summary_stdv_wm', 'summary_k_wm', 'summary_p05_wm', 'summary_p95_wm']
-    ]
+    QCGROUPS = {
+        'anat': [
+            ['cjv'],
+            ['cnr'],
+            ['efc'],
+            ['fber'],
+            ['wm2max'],
+            ['snr_csf', 'snr_gm', 'snr_wm'],
+            ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+            ['qi1', 'qi2'],
+            ['inu_range', 'inu_med'],
+            ['icvs_csf', 'icvs_gm', 'icvs_wm'],
+            ['rpve_csf', 'rpve_gm', 'rpve_wm'],
+            ['summary_mean_bg', 'summary_stdv_bg', 'summary_k_bg', 'summary_p05_bg', 'summary_p95_bg'],
+            ['summary_mean_csf', 'summary_stdv_csf', 'summary_k_csf',
+             'summary_p05_csf', 'summary_p95_csf'],
+            ['summary_mean_gm', 'summary_stdv_gm', 'summary_k_gm', 'summary_p05_gm', 'summary_p95_gm'],
+            ['summary_mean_wm', 'summary_stdv_wm', 'summary_k_wm', 'summary_p05_wm', 'summary_p95_wm']
+        ],
+        'func': [
+            ['efc'],
+            ['fber'],
+            ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
+            ['gsr_%s' % a for a in ['x', 'y']],
+            ['snr'],
+            ['dvars_std', 'dvars_vstd'],
+            ['dvars_nstd'],
+            ['fd_mean'],
+            ['fd_num'],
+            ['fd_perc'],
+            ['gcor'],
+            ['m_tsnr'],
+            ['outlier'],
+            ['quality'],
+            ['summary_mean_bg', 'summary_stdv_bg', 'summary_k_bg',
+             'summary_p05_bg', 'summary_p95_bg'],
+            ['summary_mean_fg', 'summary_stdv_fg', 'summary_k_fg',
+             'summary_p05_fg', 'summary_p95_fg'],
+        ]
+    }
 
     dataframe = pd.read_csv(csv_file, index_col=False)
 
@@ -59,7 +80,7 @@ def gen_html(csv_file, out_file=None):
     nPart = len(dataframe)
 
     csv_groups = []
-    for group in STRUCTURAL_QCGROUPS:
+    for group in QCGROUPS[qctype]:
         dfdict = {'iqm': [], 'value': [], 'label': []}
 
         for iqm in group:
@@ -78,7 +99,7 @@ def gen_html(csv_file, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'qctype': 'anatomical',
+            'qctype': 'anatomical' if qctype == 'anat' else 'functional',
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
@@ -94,4 +115,5 @@ def gen_html(csv_file, out_file=None):
 
         copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
 
+    MRIQC_REPORT_LOG.info('Generated group-level report (%s)', out_file)
     return out_file
