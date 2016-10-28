@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:26:45
+# @Last Modified time: 2016-10-27 16:29:06
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -231,11 +231,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # T1w mosaic plot
     mosaic_zoom = pe.Node(PlotMosaic(
-        out_name='plot_anat_mosaic1_zoomed.svg',
+        out_file='plot_anat_mosaic1_zoomed.svg',
         title='T1w (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
-        out_name='plot_anat_mosaic2_noise.svg',
+        out_file='plot_anat_mosaic2_noise.svg',
         title='T1w (noise) session: {session_id} run: {run_id}',
         only_noise=True), name='PlotMosaicNoise')
 

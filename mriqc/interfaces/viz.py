@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:02:05
+# @Last Modified time: 2016-10-27 16:39:32
 """ Visualization interfaces """
 from __future__ import print_function
 from __future__ import division
@@ -115,7 +115,7 @@ class PlotMosaic(BaseInterface):
             self.inputs.run_id,
             self.inputs.out_file,
             title=self.inputs.title,
-            only_plot_noise=self.inputs.only_plot_noise,
+            only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask)
 
         return runtime
