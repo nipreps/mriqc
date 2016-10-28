@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-17 10:02:48
+# @Last Modified time: 2016-10-27 16:39:32
 """ Visualization interfaces """
 from __future__ import print_function
 from __future__ import division
@@ -19,7 +19,7 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
 from mriqc.utils.misc import split_ext
-from mriqc.interfaces.viz_utils import (plot_mosaic, plot_fd, plot_segmentation)
+from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -75,16 +75,20 @@ class PlotContours(BaseInterface):
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
                    desc='File to be plotted')
-    in_mask = File(exists=True, desc='Overlay mask')
+    subject_id = traits.Str(mandatory=True, desc='subject id')
+    session_id = traits.Str(mandatory=True, desc='session id')
+    run_id = traits.Str(mandatory=True, desc='run id')
+    task_id = traits.Str(desc='task id')
     title = traits.Str('Volume', usedefault=True,
                        desc='modality name to be prepended')
-    subject = traits.Str(desc='Subject id')
-    metadata = traits.List(traits.Str, desc='additional metadata')
+    bbox_mask_file = File(exists=True, desc='brain mask')
+    only_noise = traits.Bool(False, desc='plot only noise')
+
     figsize = traits.Tuple(
         (11.69, 8.27), traits.Float, traits.Float, usedefault=True,
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
-    out_file = File('mosaic.pdf', usedefault=True, desc='output file name')
+    out_file = File('mosaic.svg', usedefault=True, desc='output file name')
 
 
 class PlotMosaicOutputSpec(TraitedSpec):
@@ -101,28 +105,19 @@ class PlotMosaic(BaseInterface):
 
     def _run_interface(self, runtime):
         mask = None
-        if isdefined(self.inputs.in_mask):
-            mask = self.inputs.in_mask
+        if isdefined(self.inputs.bbox_mask_file):
+            mask = self.inputs.bbox_mask_file
 
-        title = self.inputs.title
-        if isdefined(self.inputs.subject):
-            title += ', subject {}'.format(self.inputs.subject)
-
-        if isdefined(self.inputs.metadata):
-            title += ' (' + '_'.join(self.inputs.metadata) + ')'
-
-        figsize = None
-        if isdefined(self.inputs.figsize):
-            figsize = self.inputs.figsize
-
-        fig = plot_mosaic(
+        plot_mosaic_helper(
             self.inputs.in_file,
-            title=title,
-            overlay_mask=mask,
-            figsize=figsize)
+            self.inputs.subject_id,
+            self.inputs.session_id,
+            self.inputs.run_id,
+            self.inputs.out_file,
+            title=self.inputs.title,
+            only_plot_noise=self.inputs.only_noise,
+            bbox_mask_file=mask)
 
-        fig.savefig(self.inputs.out_file, dpi=self.inputs.dpi)
-        fig.clf()
         return runtime
 
     def _list_outputs(self):

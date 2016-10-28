@@ -307,7 +307,7 @@ def spikesplot_cb(position, cmap='viridis', fig=None):
 
 def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
                  units=None, tr=None, hide_x=True, color='b', nskip=4,
-                 cutoff=None):
+                 cutoff=None, ylims=None):
 
     # Define TR and number of frames
     notr = False
@@ -345,10 +345,11 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
     else:
         ax_ts.set_xticklabels([])
 
+    no_scale = notr or not normalize
     if not name is None:
         var_label = name
         if not units is None:
-            var_label += (' [{}]' if notr else ' [{}/s]').format(units)
+            var_label += (' [{}]' if no_scale else ' [{}/s]').format(units)
         ax_ts.set_ylabel(var_label)
 
     for side in ["top", "right"]:
@@ -375,7 +376,14 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
         ax_ts.plot((0, ntsteps), [thr] * 2, linestyle=':',
                    color=color if i == 0 else 'k')
 
-    ax_ts.set_ylim(tseries[nskip:].min(), tseries[nskip:].max())
+    def_ylims = (tseries[nskip:].min(), tseries[nskip:].max())
+    if ylims is not None:
+        if ylims[0] is not None:
+            def_ylims[0] = min([def_ylims[0], ylims[0]])
+        if ylims[1] is not None:
+            def_ylims[1] = max([def_ylims[1], ylims[1]])
+
+    ax_ts.set_ylim(def_ylims)
 
     if not gs_dist is None:
         ax_dist = plt.subplot(gs_dist)

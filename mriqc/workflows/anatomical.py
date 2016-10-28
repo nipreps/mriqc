@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 16:02:39
+# @Last Modified time: 2016-10-27 16:29:06
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -28,7 +28,6 @@ from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
-from mriqc.reports.utils import plot_anat_mosaic_helper
 
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -159,20 +158,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    # Link images that should be reported
-    dsreport = pe.Node(nio.DataSink(
-        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
-    dsreport.inputs.container = 'anat'
-    dsreport.inputs.substitutions = [
-        ('_data', ''),
-        ('background_fit', 'plot_bgfit')
-    ]
-    dsreport.inputs.regexp_substitutions = [
-        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+', '\\1_ses-\\2_\\3'),
-        ('anatomical_bgplotsub-[^/.]*_dvars_std', 'plot_dvars'),
-        ('sub-[^/.]*_T1w_out_calc_thresh', 'mask'),
-    ]
-
     # Format name
     out_name = pe.Node(niu.Function(
         input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
@@ -233,9 +218,13 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """Encapsulates nodes writing plots"""
-    from mriqc.reports.generators import individual_html
+    from mriqc.interfaces import PlotMosaic
+    from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
+    pages = 2
+    if verbose:
+        pages += 1
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -244,34 +233,16 @@ def individual_reports(settings, name='ReportsWorkflow'):
         name='inputnode')
 
     # T1w mosaic plot
-    plot_anat_mosaic_zoomed = pe.Node(niu.Function(
-        input_names=['in_file',
-                     'subject_id',
-                     'session_id',
-                     'run_id',
-                     'out_name',
-                     'title',
-                     'bbox_mask_file'],
-        output_names=['plot_file'], function=plot_anat_mosaic_helper),
-        name='plot_anat_mosaic_zoomed')
-    plot_anat_mosaic_zoomed.inputs.out_name = 'plot_anat_mosaic1_zoomed.svg'
-    plot_anat_mosaic_zoomed.inputs.title = 'T1w (zoomed) session: {session_id} run: {run_id}'
+    mosaic_zoom = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic1_zoomed.svg',
+        title='T1w (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
 
-    plot_anat_mosaic_noise = pe.Node(niu.Function(
-        input_names=['in_file',
-                     'subject_id',
-                     'session_id',
-                     'run_id',
-                     'out_name',
-                     'title',
-                     'only_plot_noise'],
-        output_names=['plot_file'], function=plot_anat_mosaic_helper),
-        name='plot_anat_mosaic_noise')
-    plot_anat_mosaic_noise.inputs.only_plot_noise = True
-    plot_anat_mosaic_noise.inputs.out_name = 'plot_anat_mosaic2_noise.svg'
-    plot_anat_mosaic_noise.inputs.title = 'T1w (noise) session: {session_id} run: {run_id}'
+    mosaic_noise = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic2_noise.svg',
+        title='T1w (noise) session: {session_id} run: {run_id}',
+        only_noise=True), name='PlotMosaicNoise')
 
-    mplots = pe.Node(niu.Merge(3 if verbose else 2), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
@@ -283,18 +254,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
-        (inputnode, plot_anat_mosaic_zoomed, [('subject_id', 'subject_id'),
-                                              ('session_id', 'session_id'),
-                                              ('run_id', 'run_id'),
-                                              ('orig', 'in_file'),
-                                              ('brainmask', 'bbox_mask_file')]),
+        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
+                                  ('session_id', 'session_id'),
+                                  ('run_id', 'run_id'),
+                                  ('orig', 'in_file'),
+                                  ('brainmask', 'bbox_mask_file')]),
 
-        (inputnode, plot_anat_mosaic_noise, [('subject_id', 'subject_id'),
-                                             ('session_id', 'session_id'),
-                                             ('run_id', 'run_id'),
-                                             ('orig', 'in_file')]),
-        (plot_anat_mosaic_zoomed, mplots, [('plot_file', "in1")]),
-        (plot_anat_mosaic_noise, mplots, [('plot_file', "in2")]),
+        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
+                                   ('session_id', 'session_id'),
+                                   ('run_id', 'run_id'),
+                                   ('orig', 'in_file')]),
+        (mosaic_zoom, mplots, [('out_file', "in1")]),
+        (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])

@@ -7,4 +7,5 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
-from mriqc.reports.generators import MRIQCReportPDF
+from mriqc.reports.individual import individual_html
+from mriqc.reports.group import gen_html as group_html
