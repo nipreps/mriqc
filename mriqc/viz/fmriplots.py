@@ -368,16 +368,17 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
 
     # Plot average
     if cutoff is None:
-        cutoff = [tseries.mean()]
+        cutoff = [tseries[nskip:].mean()]
     else:
-        cutoff.insert(0, tseries.mean())
-        cutoff = list(set(cutoff))
+        cutoff.insert(0, tseries[nskip:].mean())
 
     for i, thr in enumerate(cutoff):
-        ax_ts.plot((0, ntsteps), [thr] * 2, linestyle=':',
+        ax_ts.plot((0, ntsteps - 1), [thr] * 2,
+                   linewidth=.75,
+                   linestyle='-' if i == 0 else ':',
                    color=color if i == 0 else 'k')
 
-    def_ylims = (tseries[nskip:].min(), tseries[nskip:].max())
+    def_ylims = [0.95 * tseries[nskip:].min(), 1.1 * tseries[nskip:].max()]
     if ylims is not None:
         if ylims[0] is not None:
             def_ylims[0] = min([def_ylims[0], ylims[0]])
