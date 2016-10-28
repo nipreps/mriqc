@@ -6,8 +6,6 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 14:11:06
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -23,8 +21,9 @@ from nipype.interfaces import afni
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.functional import Spikes
-from mriqc.interfaces.viz import PlotMosaic, PlotFD
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
+
+DEFAULT_FD_RADIUS = 50.
 
 def fmri_qc_workflow(name='fMRIQC', settings=None):
     """ The fMRI qc workflow """
@@ -35,9 +34,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     workflow = pe.Workflow(name=name)
     deriv_dir = check_folder(
         op.abspath(op.join(settings['output_dir'], 'derivatives')))
-
-    # Read FD radius, or default it
-    fd_radius = settings.get('fd_radius', 50.)
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
@@ -65,13 +61,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
 
     # 1. HMC: head motion correct
     hmcwf = hmc_mcflirt()
-
     if settings.get('hmc_afni', False):
         hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False),
                          despike=settings.get('despike', False),
                          deoblique=settings.get('deoblique', False))
-
-    hmcwf.inputs.inputnode.fd_radius = fd_radius
+    hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
@@ -84,50 +78,10 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
-    # Compute DVARS
-    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True, save_plot=False,
-                     save_all=True), name='ComputeDVARS')
-
-    # AFNI quality measures
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
-                       name='outliers')
-    quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
-                      name='quality')
-
-    spmask = pe.Node(niu.Function(
-        input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
-        function=spikes_mask), name='SpikesMask')
-    spikes = pe.Node(Spikes(), name='SpikesFinder')
-    spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
-
-    bigplot = pe.Node(niu.Function(
-        input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes',
-                     'in_spikes_bg', 'fd', 'dvars', 'outlier_count'],
-        output_names=['out_file'], function=_big_plot), name='BigPlot')
-
-    measures = pe.Node(FunctionalQC(), name='measures')
-
-    # Link images that should be reported
-    dsreport = pe.Node(nio.DataSink(
-        base_directory=settings['report_dir'], parameterization=True), name='dsreport')
-    dsreport.inputs.container = 'func'
-    dsreport.inputs.substitutions = [
-        ('_data', ''),
-        ('tsnr.nii.gz', 'mosaic_TSNR.nii.gz'),
-        ('mean.nii.gz', 'mosaic_TSNR_mean.nii.gz'),
-        ('stdev.nii.gz', 'mosaic_stdev.nii.gz')
-    ]
-    dsreport.inputs.regexp_substitutions = [
-        ('_u?(sub-[\\w\\d]*)\\.([\\w\\d_]*)(?:\\.([\\w\\d_-]*))+',
-         '\\1_ses-\\2_\\3'),
-        ('sub-[^/.]*_fmriplot', 'plot_fmri'),
-        ('sub-[^/.]*_mask', 'mask'),
-        ('sub-[^/.]*_mcf_tstat', 'mosaic_epi_mean'),
-        ('sub-[^/.]*_spmask', 'plot_spikes_mask'),
-        ('sub-[^/.]*_volreg_tstat', 'mosaic_epi_mean')
-    ]
+    # 7. Compute IQMs
+    iqmswf = compute_iqms(settings)
+    # Reports
+    repwf = individual_reports(settings)
 
     workflow.connect([
         (inputnode, datasource, [('bids_dir', 'bids_dir'),
@@ -139,46 +93,83 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (datasource, get_idx, [('out_file', 'in_file')]),
         (datasource, to_ras, [('out_file', 'in_file')]),
         (to_ras, hmcwf, [('out_file', 'inputnode.in_file')]),
-        (datasource, spikes, [('out_file', 'in_file')]),
-        (datasource, spikes_bg, [('out_file', 'in_file')]),
-        (to_ras, dvnode, [('out_file', 'in_file')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
-        (hmcwf, spmask, [('outputnode.out_file', 'in_file')]),
-        (mean, fwhm, [('out_file', 'in_file')]),
-        (bmw, fwhm, [('outputnode.out_file', 'mask')]),
-        (bmw, spikes, [('outputnode.out_file', 'in_mask')]),
-        (spmask, spikes_bg, [('out_file', 'in_mask')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
         (bmw, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
-        (hmcwf, outliers, [('outputnode.out_file', 'in_file')]),
-        (bmw, outliers, [('outputnode.out_file', 'mask')]),
-        (hmcwf, quality, [('outputnode.out_file', 'in_file')]),
-        (bmw, dvnode, [('outputnode.out_file', 'in_mask')]),
-        (mean, measures, [('out_file', 'in_epi')]),
-        (hmcwf, measures, [('outputnode.out_file', 'in_hmc')]),
-        (bmw, measures, [('outputnode.out_file', 'in_mask')]),
-        (tsnr, measures, [('tsnr_file', 'in_tsnr')]),
-        (dvnode, measures, [('out_all', 'in_dvars')]),
-        (hmcwf, measures, [('outputnode.out_fd', 'in_fd')]),
-        (to_ras, bigplot, [('out_file', 'in_func')]),
-        (bmw, bigplot, [('outputnode.out_file', 'in_mask')]),
-        (hmcwf, bigplot, [('outputnode.out_fd', 'fd')]),
-        (dvnode, bigplot, [('out_std', 'dvars')]),
-        (ema, bigplot, [('outputnode.epi_parc', 'in_segm')]),
-        (spikes, bigplot, [('out_tsz', 'in_spikes')]),
-        (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
-        (outliers, bigplot, [('out_file', 'outlier_count')]),
-        (mean, dsreport, [('out_file', '@meanepi')]),
-        (tsnr, dsreport, [('tsnr_file', '@tsnr'),
-                          ('stddev_file', '@tsnr_std')]),
-        (bmw, dsreport, [('outputnode.out_file', '@mask')]),
-        (bigplot, dsreport, [('out_file', '@fmriplot')]),
+
+        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                             ('session_id', 'inputnode.session_id'),
+                             ('run_id', 'inputnode.run_id')]),
+        (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
+        (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
+        (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
+                         ('outputnode.out_fd', 'inputnode.hmc_fd')]),
+        (bmw, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
+        (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
+
+        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
+                            ('session_id', 'inputnode.session_id'),
+                            ('run_id', 'inputnode.run_id')]),
+        (to_ras, repwf, [('out_file', 'inputnode.orig')]),
+        (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
+        (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
+        (bmw, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
+        (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
+        (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc')]),
+        (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
+                         ('outputnode.out_dvars', 'inputnode.in_dvars'),
+                         ('outputnode.outliers', 'inputnode.outliers')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
+    ])
+
+    return workflow
+
+def compute_iqms(settings, name='ComputeIQMs'):
+    """Workflow that actually computes the IQMs"""
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'orig', 'epi_mean',
+        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(
+        fields=['out_file', 'out_dvars', 'outliers']),
+                         name='outputnode')
+
+    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
+
+    # Compute DVARS
+    dvnode = pe.Node(nac.ComputeDVARS(remove_zerovariance=True, save_plot=False,
+                                      save_all=True), name='ComputeDVARS')
+
+    # AFNI quality measures
+    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
+    # fwhm.inputs.acf = True  # add when AFNI >= 16
+    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
+                       name='outliers')
+    quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
+                      name='quality')
+
+    measures = pe.Node(FunctionalQC(), name='measures')
+
+    workflow.connect([
+        (inputnode, dvnode, [('orig', 'in_file'),
+                             ('brainmask', 'in_mask')]),
+        (inputnode, measures, [('epi_mean', 'in_epi'),
+                               ('brainmask', 'in_mask'),
+                               ('hmc_epi', 'in_hmc'),
+                               ('hmc_fd', 'in_fd'),
+                               ('in_tsnr', 'in_tsnr')]),
+        (inputnode, fwhm, [('epi_mean', 'in_file'),
+                           ('brainmask', 'mask')]),
+        (inputnode, quality, [('hmc_epi', 'in_file')]),
+        (inputnode, outliers, [('hmc_epi', 'in_file'),
+                               ('brainmask', 'mask')]),
+        (dvnode, measures, [('out_all', 'in_dvars')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
+        (outliers, outputnode, [('out_file', 'outliers')])
     ])
 
     # Format name
@@ -216,7 +207,103 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (out_name, datasink, [('out_file', 'out_file')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
+    return workflow
 
+
+def individual_reports(settings, name='ReportsWorkflow'):
+    """Encapsulates nodes writing plots"""
+    from mriqc.interfaces import PlotMosaic
+    from mriqc.reports import individual_html
+
+    verbose = settings.get('verbose_reports', False)
+    pages = 4
+    # if verbose:
+    #     pages += 1
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'subject_id', 'session_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
+        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers']),
+        name='inputnode')
+
+    spmask = pe.Node(niu.Function(
+        input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
+        function=spikes_mask), name='SpikesMask')
+    spikes = pe.Node(Spikes(), name='SpikesFinder')
+    spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
+
+    bigplot = pe.Node(niu.Function(
+        input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes',
+                     'in_spikes_bg', 'fd', 'dvars', 'outliers'],
+        output_names=['out_file'], function=_big_plot), name='BigPlot')
+
+    workflow.connect([
+        (inputnode, spikes_bg, [('orig', 'in_file')]),
+        (inputnode, spikes, [('orig', 'in_file'),
+                             ('brainmask', 'in_mask')]),
+        (inputnode, spmask, [('orig', 'in_file')]),
+        (inputnode, bigplot, [('orig', 'in_func'),
+                              ('brainmask', 'in_mask'),
+                              ('hmc_fd', 'fd'),
+                              ('in_dvars', 'dvars'),
+                              ('epi_parc', 'in_segm'),
+                              ('outliers', 'outliers')]),
+        (spikes, bigplot, [('out_tsz', 'in_spikes')]),
+        (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
+        (spmask, spikes_bg, [('out_file', 'in_mask')]),
+    ])
+
+
+    mosaic_zoom = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic1_zoomed.svg',
+        title='EPI mean (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
+
+    mosaic_noise = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic2_noise.svg',
+        title='EPI mean (noise) session: {session_id} run: {run_id}',
+        only_noise=True), name='PlotMosaicNoise')
+
+    mosaic_stddev = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic3_stddev.svg',
+        title='EPI SD session: {session_id} run: {run_id}'), name='PlotMosaicSD')
+
+    mplots = pe.Node(niu.Merge(pages), name='MergePlots')
+    rnode = pe.Node(niu.Function(
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        function=individual_html), name='GenerateReport')
+
+    # Link images that should be reported
+    dsplots = pe.Node(nio.DataSink(
+        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
+    dsplots.inputs.container = 'reports'
+
+    workflow.connect([
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
+                                  ('session_id', 'session_id'),
+                                  ('run_id', 'run_id'),
+                                  ('epi_mean', 'in_file'),
+                                  ('brainmask', 'bbox_mask_file')]),
+        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
+                                   ('session_id', 'session_id'),
+                                   ('run_id', 'run_id'),
+                                   ('epi_mean', 'in_file')]),
+        (inputnode, mosaic_stddev, [('subject_id', 'subject_id'),
+                                    ('session_id', 'session_id'),
+                                    ('run_id', 'run_id'),
+                                    ('in_stddev', 'in_file')]),
+        (mosaic_zoom, mplots, [('out_file', "in1")]),
+        (mosaic_noise, mplots, [('out_file', "in2")]),
+        (mosaic_stddev, mplots, [('out_file', "in3")]),
+        (bigplot, mplots, [('out_file', "in4")]),
+        (mplots, rnode, [('out', 'in_plots')]),
+        (rnode, dsplots, [('out_file', "@html_report")]),
+    ])
+
+    if not verbose:
+        return workflow
+
+    # Verbose-reporting goes here
     return workflow
 
 
@@ -547,7 +634,7 @@ def _parse_tout(in_file):
 
 
 def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
-              fd, dvars, outlier_count, out_file=None):
+              fd, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
     from mriqc.viz.fmriplots import fMRIPlot
@@ -555,18 +642,21 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
         fname, ext = op.splitext(op.basename(in_func))
         if ext == '.gz':
             fname, _ = op.splitext(fname)
-        out_file = op.abspath('{}_fmriplot.pdf'.format(fname))
+        out_file = op.abspath('{}_fmriplot.svg'.format(fname))
 
     myplot = fMRIPlot(in_func, in_mask, in_segm)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
-    myplot.add_confounds([np.nan] + np.loadtxt(outlier_count).tolist(),
-                         {'name': 'outliers', 'units': '%', 'normalize': False})
+    myplot.add_confounds([np.nan] + np.loadtxt(outliers).tolist(),
+                         {'name': 'ouliers', 'units': None, 'normalize': False})
+
     myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
-    myplot.add_confounds([np.nan] + np.loadtxt(dvars).tolist(),
+
+    # Pick non-standardize dvars
+    myplot.add_confounds([np.nan] + np.loadtxt(dvars)[:, 1].tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
     myplot.plot()
-    myplot.fig.savefig(out_file, dpi=300, bbox_inches='tight')
+    myplot.fig.savefig(out_file, bbox_inches='tight')
     myplot.fig.clf()
     return out_file
