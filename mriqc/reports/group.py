@@ -11,6 +11,7 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
+from sys import version_info
 import os.path as op
 from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
 
@@ -26,10 +27,14 @@ def gen_html(csv_file, qctype, out_file=None):
     from pkg_resources import resource_filename as pkgrf
     import pandas as pd
     import numpy as np
-    from io import BytesIO
     from mriqc import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
+
+    if version_info[0] > 2:
+        from io import StringIO as TextIO
+    else:
+        from io import BytesIO as TextIO
 
     QCGROUPS = {
         'anat': [
@@ -91,7 +96,7 @@ def gen_html(csv_file, qctype, out_file=None):
                 dfdict['label'] += dataframe[['label']].values.ravel().tolist()
 
         csv_df = pd.DataFrame(dfdict)
-        csv_str = BytesIO()
+        csv_str = TextIO()
         csv_df.to_csv(csv_str, index=False)
         csv_groups.append(csv_str.getvalue())
 
