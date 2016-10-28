@@ -48,7 +48,6 @@ REQUIRES = [
     'numpy',
     'future',
     'scipy',
-    'lockfile',
     'six',
     'matplotlib',
     'nibabel',
@@ -57,24 +56,17 @@ REQUIRES = [
     'dipy',
     'jinja2',
     'seaborn',
-    'pyPdf2',
     'PyYAML',
     'nitime',
     'nilearn',
-    'sklearn',
-    'scikit-learn',
     'svgutils',
     'nipype',
-    'rst2pdf',
     'nipy'
 ]
 
 LINKS_REQUIRES = [
     'git+https://github.com/nipy/nipype.git#egg=nipype',
 ]
-
-if sys.version_info[0] > 2:
-    LINKS_REQUIRES += ['git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf',]
 
 TESTS_REQUIRES = [
     'mock',
@@ -86,7 +78,8 @@ EXTRA_REQUIRES = {
     'doc': ['sphinx'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
-    'notebooks': ['ipython', 'jupyter']
+    'notebooks': ['ipython', 'jupyter'],
+    'classifier': ['scikit-learn', 'sklearn']
 }
 
 # Enable a handle to install all extra dependencies at once
