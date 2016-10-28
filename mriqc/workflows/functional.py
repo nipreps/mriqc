@@ -6,11 +6,6 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-<<<<<<< HEAD
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-10-28 08:50:05
-=======
->>>>>>> master
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
