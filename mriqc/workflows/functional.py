@@ -6,8 +6,6 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 17:08:47
 """ A QC workflow for fMRI data """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
@@ -123,7 +121,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
-                         ('outputnode.out_dvars', 'inputnode.in_dvars')]),
+                         ('outputnode.out_dvars', 'inputnode.in_dvars'),
+                         ('outputnode.outliers', 'inputnode.outliers')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 
@@ -135,7 +134,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'orig', 'epi_mean',
         'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_dvars']),
+    outputnode = pe.Node(niu.IdentityInterface(
+        fields=['out_file', 'out_dvars', 'outliers']),
                          name='outputnode')
 
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
@@ -169,6 +169,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('brainmask', 'mask')]),
         (dvnode, measures, [('out_all', 'in_dvars')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
+        (outliers, outputnode, [('out_file', 'outliers')])
     ])
 
     # Format name
@@ -222,7 +223,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
-        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev']),
+        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -233,7 +234,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes',
-                     'in_spikes_bg', 'fd', 'dvars'],
+                     'in_spikes_bg', 'fd', 'dvars', 'outliers'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
 
     workflow.connect([
@@ -245,7 +246,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
                               ('brainmask', 'in_mask'),
                               ('hmc_fd', 'fd'),
                               ('in_dvars', 'dvars'),
-                              ('epi_parc', 'in_segm')]),
+                              ('epi_parc', 'in_segm'),
+                              ('outliers', 'outliers')]),
         (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
@@ -632,7 +634,7 @@ def _parse_tout(in_file):
 
 
 def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
-              fd, dvars, out_file=None):
+              fd, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
     from mriqc.viz.fmriplots import fMRIPlot
@@ -646,6 +648,9 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
+    myplot.add_confounds([np.nan] + np.loadtxt(outliers).tolist(),
+                         {'name': 'ouliers', 'units': None, 'normalize': False})
+
     myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(), {'name': 'FD', 'units': 'mm'})
 
     # Pick non-standardize dvars
