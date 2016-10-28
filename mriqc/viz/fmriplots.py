@@ -370,7 +370,8 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
     if cutoff is None:
         cutoff = [tseries.mean()]
     else:
-        cutoff.append(tseries.mean())
+        cutoff.insert(0, tseries.mean())
+        cutoff = list(set(cutoff))
 
     for i, thr in enumerate(cutoff):
         ax_ts.plot((0, ntsteps), [thr] * 2, linestyle=':',
