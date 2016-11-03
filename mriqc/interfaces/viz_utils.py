@@ -30,6 +30,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
+from pylab import cm
+from six import string_types
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
