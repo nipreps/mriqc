@@ -395,6 +395,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
     disp = None
     return out_file
 
+
 def plot_bg_dist(in_file):
     import os.path as op
     import numpy as np
