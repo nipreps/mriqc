@@ -223,7 +223,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
             vmin = np.percentile(mean_data[data_mask], 0.5)
             vmax = np.percentile(mean_data[data_mask], 99.5)
 
-        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=vmin,
+        ax.imshow(np.fliplr(mean_data[:, :, z_val].T), vmin=vmin,
                   vmax=vmax,
                   cmap=cm.Greys_r, interpolation='nearest', origin='lower')
 
@@ -232,7 +232,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
             cmap._init()
             alphas = np.linspace(0, 0.75, cmap.N + 3)
             cmap._lut[:, -1] = alphas
-            ax.imshow(np.fliplr(overlay_data[:, :, image].T), vmin=0, vmax=1,
+            ax.imshow(np.fliplr(overlay_data[:, :, z_val].T), vmin=0, vmax=1,
                       cmap=cmap, interpolation='nearest', origin='lower')
 
         ax.annotate(
