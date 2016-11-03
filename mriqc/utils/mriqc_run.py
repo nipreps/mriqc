@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-25 12:09:18
+# @Last Modified time: 2016-11-03 13:21:22
 
 """
 =====
@@ -193,18 +193,26 @@ def main():
                 workflow.run(**plugin_settings)
 
     # Set up group level
-    elif opts.analysis_level == 'group':
+    if opts.analysis_level == 'group' or opts.participant_label is None:
         from glob import glob
         from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv
 
+        reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
+
+        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
         for qctype in opts.data_type:
-            check_folder(op.join(settings['output_dir'], 'reports'))
-            qcjson = op.join(settings['output_dir'], 'derivatives',
-                             '{}*.json'.format(qctype[:4]))
+
+            qcjson = op.join(derivatives_dir, '{}*.json'.format(qctype[:4]))
+
+            if not qcjson:
+                MRIQC_LOG.warn(
+                    'Generating group-level report for the "%s" data type - '
+                    'no IQM-JSON files were found in "%s"', qctype, derivatives_dir)
+                continue
+
             out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
-            out_html = op.join(settings['output_dir'], 'reports',
-                               qctype[:4] + '_group.html')
+            out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             generate_csv(glob(qcjson), out_csv)
             MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
             group_html(out_csv, qctype, out_file=out_html)
