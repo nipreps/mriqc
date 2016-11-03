@@ -217,8 +217,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     verbose = settings.get('verbose_reports', False)
     pages = 4
-    # if verbose:
-    #     pages += 1
+    if verbose:
+        pages += 1
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -304,6 +304,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
         return workflow
 
     # Verbose-reporting goes here
+    from mriqc.interfaces.viz import PlotContours
+    from mriqc.interfaces.viz_utils import plot_bg_dist, combine_svg_verbose
+
+    plot_bmask = pe.Node(PlotContours(
+        display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
+        out_file='bmask'), name='PlotBrainmask')
+
+    workflow.connect([
+        (inputnode, plot_bmask, [('epi_mean', 'in_file'),
+                                 ('brainmask', 'in_contours')]),
+        (plot_bmask, mplots, [('out_file', 'in%d' % pages)])
+    ])
     return workflow
 
 
