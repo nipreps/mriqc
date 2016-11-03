@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-03 13:21:22
+# @Last Modified time: 2016-11-03 13:38:45
 
 """
 =====
@@ -17,9 +17,7 @@ from __future__ import unicode_literals
 
 import os
 import os.path as op
-from errno import EEXIST
 from multiprocessing import cpu_count
-from lockfile import LockFile
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -145,11 +143,10 @@ def main():
     if not settings['report_dir']:
         settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
-    with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
-        check_folder(settings['output_dir'])
-        check_folder(settings['work_dir'])
-        check_folder(log_dir)
-        check_folder(settings['report_dir'])
+    check_folder(settings['output_dir'])
+    check_folder(settings['work_dir'])
+    check_folder(log_dir)
+    check_folder(settings['report_dir'])
 
     # Set nipype config
     ncfg.update_config({
@@ -202,15 +199,16 @@ def main():
 
         derivatives_dir = op.join(settings['output_dir'], 'derivatives')
         for qctype in opts.data_type:
-
             qcjson = op.join(derivatives_dir, '{}*.json'.format(qctype[:4]))
 
+            # If there are no iqm.json files, nothing to do.
             if not qcjson:
                 MRIQC_LOG.warn(
                     'Generating group-level report for the "%s" data type - '
                     'no IQM-JSON files were found in "%s"', qctype, derivatives_dir)
                 continue
 
+            # If some were found, generate the CSV file and group report
             out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
             out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             generate_csv(glob(qcjson), out_csv)
