@@ -11,7 +11,7 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-def individual_html(in_iqms, in_plots=None):
+def individual_html(in_iqms, exclude_index, in_plots=None):
     import os.path as op  #pylint: disable=W0404
     import datetime
     from json import load
@@ -54,8 +54,8 @@ def individual_html(in_iqms, in_plots=None):
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'imparams': iqms2html(iqms_dict),
-            'svg_files': svg_files
-
+            'svg_files': svg_files,
+            'exclude_index': exclude_index
         }, out_file)
 
     MRIQC_REPORT_LOG.info('Generated individual log "%s"', out_file)
