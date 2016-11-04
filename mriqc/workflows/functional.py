@@ -257,7 +257,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
-        title='EPI mean session: {session_id} run: {run_id}'), name='PlotMosaicMean')
+        title='EPI mean session: {session_id} run: {run_id}',
+        cmap=cm.Greys_r),
+        name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
@@ -296,12 +298,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='EPI mean (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
+        title='EPI mean (zoomed) session: {session_id} run: {run_id}',
+        cmap=cm.Greys_r), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
         title='EPI mean (noise) session: {session_id} run: {run_id}',
-        only_noise=True), name='PlotMosaicNoise')
+        only_noise=True, cmap=cm.viridis_r), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
     from mriqc.interfaces.viz import PlotContours

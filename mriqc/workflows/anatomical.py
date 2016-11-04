@@ -13,6 +13,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os
 import os.path as op
+from plt import cm
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -235,12 +236,14 @@ def individual_reports(settings, name='ReportsWorkflow'):
     # T1w mosaic plot
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='T1w (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
+        title='T1w (zoomed) session: {session_id} run: {run_id}',
+        cmap=cm.Greys_r), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
         title='T1w (noise) session: {session_id} run: {run_id}',
-        only_noise=True), name='PlotMosaicNoise')
+        only_noise=True,
+        cmap=cm.viridis_r), name='PlotMosaicNoise')
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
