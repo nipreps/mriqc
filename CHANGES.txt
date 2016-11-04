@@ -1,6 +1,7 @@
 Release 0.8.8
 =============
 
+* [ENH] Units in group plots (#242)
 * [FIX] More reliable group level (#238)
 * [ENH] Add --verbose-reports for fMRI (#236)
 * [ENH] Migrate functional reports to html (#232)

@@ -38,42 +38,45 @@ def gen_html(csv_file, qctype, out_file=None):
 
     QCGROUPS = {
         'anat': [
-            ['cjv'],
-            ['cnr'],
-            ['efc'],
-            ['fber'],
-            ['wm2max'],
-            ['snr_csf', 'snr_gm', 'snr_wm'],
-            ['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-            ['qi1', 'qi2'],
-            ['inu_range', 'inu_med'],
-            ['icvs_csf', 'icvs_gm', 'icvs_wm'],
-            ['rpve_csf', 'rpve_gm', 'rpve_wm'],
-            ['summary_mean_bg', 'summary_stdv_bg', 'summary_k_bg', 'summary_p05_bg', 'summary_p95_bg'],
-            ['summary_mean_csf', 'summary_stdv_csf', 'summary_k_csf',
-             'summary_p05_csf', 'summary_p95_csf'],
-            ['summary_mean_gm', 'summary_stdv_gm', 'summary_k_gm', 'summary_p05_gm', 'summary_p95_gm'],
-            ['summary_mean_wm', 'summary_stdv_wm', 'summary_k_wm', 'summary_p05_wm', 'summary_p95_wm']
+            (['cjv'], None),
+            (['cnr'], None),
+            (['efc'], None),
+            (['fber'], None),
+            (['wm2max'], None),
+            (['snr_csf', 'snr_gm', 'snr_wm'], None),
+            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['qi1', 'qi2'], None),
+            (['inu_range', 'inu_med'], None),
+            (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
+            (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
+            (['summary_bg_mean', 'summary_bg_stdv', 'summary_bg_k',
+              'summary_bg_p05', 'summary_bg_p95'], None),
+            (['summary_csf_mean', 'summary_csf_stdv', 'summary_csf_k',
+              'summary_csf_p05', 'summary_csf_p95'], None),
+            (['summary_gm_mean', 'summary_gm_stdv', 'summary_gm_k',
+              'summary_gm_p05', 'summary_gm_p95'], None),
+            (['summary_wm_mean', 'summary_wm_stdv', 'summary_wm_k',
+              'summary_wm_p05', 'summary_wm_p95'], None)
         ],
         'func': [
-            ['efc'],
-            ['fber'],
-            ['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'],
-            ['gsr_%s' % a for a in ['x', 'y']],
-            ['snr'],
-            ['dvars_std', 'dvars_vstd'],
-            ['dvars_nstd'],
-            ['fd_mean'],
-            ['fd_num'],
-            ['fd_perc'],
-            ['gcor'],
-            ['m_tsnr'],
-            ['outlier'],
-            ['quality'],
-            ['summary_mean_bg', 'summary_stdv_bg', 'summary_k_bg',
-             'summary_p05_bg', 'summary_p95_bg'],
-            ['summary_mean_fg', 'summary_stdv_fg', 'summary_k_fg',
-             'summary_p05_fg', 'summary_p95_fg'],
+            (['efc'], None),
+            (['fber'], None),
+            (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['gsr_%s' % a for a in ['x', 'y']], None),
+            (['snr'], None),
+            (['dvars_std', 'dvars_vstd'], None),
+            (['dvars_nstd'], None),
+            (['fd_mean'], 'mm'),
+            (['fd_num'], '# timepoints'),
+            (['fd_perc'], '% timepoints'),
+            (['gcor'], None),
+            (['tsnr'], None),
+            (['aor'], None),
+            (['aqi'], None),
+            (['summary_bg_mean', 'summary_bg_stdv', 'summary_bg_k',
+              'summary_bg_p05', 'summary_bg_p95'], None),
+            (['summary_fg_mean', 'summary_fg_stdv', 'summary_fg_k',
+              'summary_fg_p05', 'summary_fg_p95'], None),
         ]
     }
 
@@ -85,19 +88,20 @@ def gen_html(csv_file, qctype, out_file=None):
     nPart = len(dataframe)
 
     csv_groups = []
-    for group in QCGROUPS[qctype]:
-        dfdict = {'iqm': [], 'value': [], 'label': []}
+    for group, units in QCGROUPS[qctype]:
+        dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
         for iqm in group:
             if iqm in dataframe.columns.ravel().tolist():
                 values = dataframe[[iqm]].values.ravel().tolist()
                 dfdict['iqm'] += [iqm] * nPart
+                dfdict['units'] += [units] * nPart
                 dfdict['value'] += values
                 dfdict['label'] += dataframe[['label']].values.ravel().tolist()
 
         csv_df = pd.DataFrame(dfdict)
         csv_str = TextIO()
-        csv_df.to_csv(csv_str, index=False)
+        csv_df[['iqm', 'value', 'label', 'units']].to_csv(csv_str, index=False)
         csv_groups.append(csv_str.getvalue())
 
     if out_file is None:

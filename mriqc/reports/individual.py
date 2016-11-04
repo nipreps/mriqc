@@ -58,5 +58,5 @@ def individual_html(in_iqms, in_plots=None):
 
         }, out_file)
 
-    MRIQC_REPORT_LOG.info('Generated individual log "%s"', out_file)
+    MRIQC_REPORT_LOG.info('Generated individual log (%s)', out_file)
     return out_file
