@@ -18,9 +18,9 @@ from builtins import zip
 import numpy as np
 import nibabel as nb
 
-from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                                 volume_fraction, rpve, summary_stats, cjv,
-                                 wm2max)
+from mriqc.qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
+                                 art_qi2, volume_fraction, rpve, summary_stats,
+                                 cjv, wm2max)
 from mriqc.qc.functional import (gsr, gcor)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -111,6 +111,13 @@ class StructuralQC(BaseInterface):
             snrvals.append(snr(inudata, segdata, fglabel=tlabel, erode=erode))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = float(np.mean(snrvals))
+
+        snrvals = []
+        for tlabel in ['d_csf', 'd_wm', 'd_gm']:
+            snrvals.append(snr_dietrich(inudata, segdata, airdata,
+                                        fglabel=tlabel[2:], erode=erode))
+            self._results['snr'][tlabel] = snrvals[-1]
+        self._results['snr']['d_total'] = float(np.mean(snrvals))
 
         # CNR
         self._results['cnr'] = cnr(inudata, segdata)
