@@ -13,7 +13,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os
 import os.path as op
-from pylab import cm
+
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -29,7 +29,7 @@ from mriqc.interfaces.qc import StructuralQC
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.bids import ReadSidecarJSON
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
-
+from pylab import cm
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     """
