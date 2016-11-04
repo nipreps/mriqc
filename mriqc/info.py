@@ -60,7 +60,8 @@ REQUIRES = [
     'nilearn',
     'svgutils',
     'nipype',
-    'nipy'
+    'nipy',
+    'statsmodels'
 ]
 
 LINKS_REQUIRES = [
