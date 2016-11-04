@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:29:06
+# @Last Modified time: 2016-11-04 15:23:58
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -24,10 +24,10 @@ from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.anat.mni import RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
-from mriqc.interfaces.qc import StructuralQC
-from mriqc.interfaces.anatomical import ArtifactMask
-from mriqc.interfaces.bids import ReadSidecarJSON
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
+from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
+                              ConformImage)
+
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder
 
 
 def anat_qc_workflow(name='MRIQC_Anat', settings=None):
@@ -56,9 +56,7 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     # 1a. Reorient anatomical image
-    to_ras = pe.Node(niu.Function(input_names=['in_file'],
-                               output_names=["out_file"],
-                               function=reorient), name='Reorient')
+    to_ras = pe.Node(ConformImage(), name='conform')
     # 1b. Estimate bias
     n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
