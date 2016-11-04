@@ -13,7 +13,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os
 import os.path as op
-from plt import cm
+from pylab import cm
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
