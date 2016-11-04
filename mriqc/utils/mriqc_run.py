@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-03 13:38:45
+# @Last Modified time: 2016-11-04 11:01:57
 
 """
 =====
@@ -65,6 +65,8 @@ def main():
     g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('--nthreads', action='store', default=0,
                          type=int, help='number of threads')
+    g_input.add_argument('--n_procs', action='store', default=0,
+                         type=int, help='number of threads')
     g_input.add_argument('--write-graph', action='store_true', default=False,
                          help='Write workflow graph.')
     g_input.add_argument('--dry-run', action='store_true', default=False,
@@ -111,16 +113,27 @@ def main():
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
+
+    # Number of processes
+    n_procs = 0
+    if opts.nthreads is not None:
+        MRIQC_LOG.warn('Option --nthreads has been deprecated in mriqc 0.8.8. '
+                       'Please use --n_procs instead.')
+        n_procs = opts.nthreads
+    if opts.n_procs is not None:
+        n_procs = opts.n_procs
+
     settings = {
         'bids_dir': bids_dir,
         'write_graph': opts.write_graph,
         'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
-        'nthreads': opts.nthreads,
+        'n_procs': n_procs,
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing
     }
+
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -161,12 +174,12 @@ def main():
             plugin_settings = loadyml(pfile)
     else:
         # Setup multiprocessing
-        if settings['nthreads'] == 0:
-            settings['nthreads'] = cpu_count()
+        if settings['n_procs'] == 0:
+            settings['n_procs'] = cpu_count()
 
-        if settings['nthreads'] > 1:
+        if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
+            plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
@@ -179,7 +192,9 @@ def main():
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
-                MRIQC_LOG.warn('No scans were found for the given inputs')
+                MRIQC_LOG.warn(
+                    '%s QC workflow - no scans were found for the given inputs',
+                    'Anatomical' if qctype[:4] == 'anat' else 'Functional')
                 continue
 
             workflow.base_dir = settings['work_dir']
