@@ -31,8 +31,6 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         settings = {}
 
     workflow = pe.Workflow(name=name)
-    deriv_dir = check_folder(
-        op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Define workflow, inputs and outputs
     inputnode = pe.Node(niu.IdentityInterface(
