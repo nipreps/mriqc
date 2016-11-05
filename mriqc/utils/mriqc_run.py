@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-17 13:20:00
+# @Last Modified time: 2016-11-03 13:38:45
 
 """
 =====
@@ -17,9 +17,7 @@ from __future__ import unicode_literals
 
 import os
 import os.path as op
-from errno import EEXIST
 from multiprocessing import cpu_count
-from lockfile import LockFile
 
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
@@ -145,11 +143,10 @@ def main():
     if not settings['report_dir']:
         settings['report_dir'] = op.join(settings['work_dir'], 'reports')
 
-    with LockFile(op.join(os.getenv('HOME'), '.mriqc-lock')):
-        check_folder(settings['output_dir'])
-        check_folder(settings['work_dir'])
-        check_folder(log_dir)
-        check_folder(settings['report_dir'])
+    check_folder(settings['output_dir'])
+    check_folder(settings['work_dir'])
+    check_folder(log_dir)
+    check_folder(settings['report_dir'])
 
     # Set nipype config
     ncfg.update_config({
@@ -177,8 +174,8 @@ def main():
 
     # Set up participant level
     if opts.analysis_level == 'participant':
-        for dtype in opts.data_type:
-            ms_func = getattr(mwc, 'ms_' + dtype)
+        for qctype in opts.data_type:
+            ms_func = getattr(mwc, 'ms_' + qctype)
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
@@ -193,13 +190,31 @@ def main():
                 workflow.run(**plugin_settings)
 
     # Set up group level
-    elif opts.analysis_level == 'group':
-        from mriqc.reports import MRIQCReportPDF
+    if opts.analysis_level == 'group' or opts.participant_label is None:
+        from glob import glob
+        from mriqc.reports import group_html
+        from mriqc.utils.misc import generate_csv
 
-        for dtype in opts.data_type:
-            reporter = MRIQCReportPDF(dtype, settings)
-            reporter.group_report()
-            reporter.individual_report()
+        reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
+
+        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
+        for qctype in opts.data_type:
+            qcjson = op.join(derivatives_dir, '{}*.json'.format(qctype[:4]))
+
+            # If there are no iqm.json files, nothing to do.
+            if not qcjson:
+                MRIQC_LOG.warn(
+                    'Generating group-level report for the "%s" data type - '
+                    'no IQM-JSON files were found in "%s"', qctype, derivatives_dir)
+                continue
+
+            # If some were found, generate the CSV file and group report
+            out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
+            out_html = op.join(reports_dir, qctype[:4] + '_group.html')
+            generate_csv(glob(qcjson), out_csv)
+            MRIQC_LOG.info('Summary CSV table has been written to %s', out_csv)
+            group_html(out_csv, qctype, out_file=out_html)
+            MRIQC_LOG.info('Group HTML report has been written to %s', out_html)
 
 if __name__ == '__main__':
     main()

@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 14:41:21
+# @Last Modified time: 2016-10-27 16:41:53
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -30,6 +30,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
+from pylab import cm
+from six import string_types
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -158,9 +160,30 @@ def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
     return fig
 
 
+def get_limits(nifti_file, only_plot_noise=False):
+    if isinstance(nifti_file, string_types):
+        nii = nb.as_closest_canonical(nb.load(nifti_file))
+        data = nii.get_data()
+    else:
+        data = nifti_file
+
+    data_mask = np.logical_not(np.isnan(data))
+
+    if only_plot_noise:
+        data_mask = np.logical_and(data_mask, data != 0)
+        vmin = np.percentile(data[data_mask], 0)
+        vmax = np.percentile(data[data_mask], 61)
+    else:
+        vmin = np.percentile(data[data_mask], 0.5)
+        vmax = np.percentile(data[data_mask], 99.5)
+
+    return vmin, vmax
+
+
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
-                figsize=DINA4_LANDSCAPE):
+                vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
+                cmap=cm.Greys_r):
     from six import string_types
     from pylab import cm
 
@@ -171,7 +194,8 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
         mean_data = nifti_file
 
     if bbox_mask_file:
-        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_data()
+        bbox_data = nb.as_closest_canonical(
+            nb.load(bbox_mask_file)).get_data()
         B = np.argwhere(bbox_data)
         (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
             0) + 1
@@ -179,23 +203,38 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     z_vals = np.array(list(range(0, mean_data.shape[2])))
     # Reduce the number of slices shown
-    if mean_data.shape[2] > 70:
+    if len(z_vals) > 70:
         rem = 15
         # Crop inferior and posterior
         if not bbox_mask_file:
-            mean_data = mean_data[..., rem:-rem]
+            # mean_data = mean_data[..., rem:-rem]
             z_vals = z_vals[rem:-rem]
         else:
-            mean_data = mean_data[..., 2 * rem:]
+            # mean_data = mean_data[..., 2 * rem:]
             z_vals = z_vals[2 * rem:]
 
-    if mean_data.shape[2] > 70:
+    while len(z_vals) > 70:
         # Discard one every two slices
-        mean_data = mean_data[..., ::2]
+        # mean_data = mean_data[..., ::2]
         z_vals = z_vals[::2]
 
-    n_images = mean_data.shape[2]
+    n_images = len(z_vals)
     row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
+
+    end = "pre"
+    z_vals = list(z_vals)
+    while (row - 1) * col > len(z_vals) and (
+            z_vals[0] != 0 or z_vals[-1] != mean_data.shape[2] - 1):
+        if end == "pre":
+            if z_vals[0] != 0:
+                z_vals = [z_vals[0] - 1] + z_vals
+            end = "post"
+        else:
+            if z_vals[-1] != mean_data.shape[2] - 1:
+                z_vals = z_vals + [z_vals[-1] + 1]
+            end = "pre"
+        if (row - 1) * col < len(z_vals):
+            break
 
     if overlay_mask:
         overlay_data = nb.as_closest_canonical(
@@ -207,32 +246,29 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
     FigureCanvas(fig)
 
+    est_vmin, est_vmax = get_limits(mean_data,
+                                    only_plot_noise=only_plot_noise)
+    if not vmin:
+        vmin = est_vmin
+    if not vmax:
+        vmax = est_vmax
+
     fig.subplots_adjust(top=0.85)
     for image, z_val in enumerate(z_vals):
         ax = fig.add_subplot(row, col, image + 1)
-        data_mask = np.logical_not(np.isnan(mean_data))
-        if only_plot_noise:
-            data_mask = np.logical_and(data_mask, mean_data != 0)
         if overlay_mask:
             ax.set_rasterized(True)
-
-        if only_plot_noise:
-            vmin = np.percentile(mean_data[data_mask], 0)
-            vmax = np.percentile(mean_data[data_mask], 61)
-        else:
-            vmin = np.percentile(mean_data[data_mask], 0.5)
-            vmax = np.percentile(mean_data[data_mask], 99.5)
-
-        ax.imshow(np.fliplr(mean_data[:, :, image].T), vmin=vmin,
+        ax.imshow(np.fliplr(mean_data[:, :, z_val].T), vmin=vmin,
                   vmax=vmax,
-                  cmap=cm.Greys_r, interpolation='nearest', origin='lower')
+                  cmap=cmap, interpolation='nearest', origin='lower')
 
         if overlay_mask:
             cmap = cm.Reds  # @UndefinedVariable
             cmap._init()
             alphas = np.linspace(0, 0.75, cmap.N + 3)
             cmap._lut[:, -1] = alphas
-            ax.imshow(np.fliplr(overlay_data[:, :, image].T), vmin=0, vmax=1,
+            ax.imshow(np.fliplr(overlay_data[:, :, z_val].T), vmin=0,
+                      vmax=1,
                       cmap=cmap, interpolation='nearest', origin='lower')
 
         ax.annotate(
@@ -242,14 +278,29 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
         ax.axis('off')
 
-    fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01, hspace=0.1)
+    start = int(mean_data.shape[0] / 5)
+    stop = mean_data.shape[0] - start
+    step = int((stop - start) / (col))
+    x_vals = range(start, stop, step)
+    x_vals = np.array(x_vals[:col])
+    x_vals += int((stop - x_vals[-1]) / 2)
+    for image, x_val in enumerate(x_vals):
+        ax = fig.add_subplot(row, col, image + (row - 1) * col + 1)
+        ax.imshow(mean_data[x_val, :, :].T, vmin=vmin,
+                  vmax=vmax,
+                  cmap=cmap, interpolation='nearest', origin='lower')
+        ax.annotate(
+            str(x_val), xy=(.99, .99), xycoords='axes fraction',
+            fontsize=8, color='white', horizontalalignment='right',
+            verticalalignment='top')
+        ax.axis('off')
 
-    if not title:
-        _, title = op.split(nifti_file)
-        title += " (last modified: {})".format(
-            time.ctime(op.getmtime(nifti_file)))
-    fig.suptitle(title, fontsize='10')
+    fig.subplots_adjust(
+        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01,
+        hspace=0.1)
+
+    if title:
+        fig.suptitle(title, fontsize='10')
     fig.subplots_adjust(wspace=0.002, hspace=0.002)
     return fig
 
@@ -323,11 +374,12 @@ def plot_vline(cur_val, label, ax):
 
 
 def _calc_rows_columns(ratio, n_images):
-    rows = 1
+    rows = 2
     for _ in range(100):
         columns = math.floor(ratio * rows)
-        total = rows * columns
+        total = (rows - 1) * columns
         if total > n_images:
+            rows = np.ceil(n_images / columns) + 1
             break
         rows += 1
     return rows, columns
@@ -398,6 +450,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
     disp = None
     return out_file
 
+
 def plot_bg_dist(in_file):
     import os.path as op
     import numpy as np
@@ -431,6 +484,21 @@ def plot_bg_dist(in_file):
     fig.savefig(out_file, format='svg', dpi=300)
     plt.close()
     return out_file
+
+
+def plot_mosaic_helper(in_file, subject_id, session_id,
+                       run_id, out_name, bbox_mask_file=None,
+                       title=None,
+                       only_plot_noise=False):
+    if title is not None:
+        title = title.format(**{"session_id": session_id,
+                              "run_id": run_id})
+    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title,
+                      only_plot_noise=only_plot_noise)
+    fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
+    fig.clf()
+    fig = None
+    return op.abspath(out_name)
 
 def combine_svg_verbose(
         in_brainmask,

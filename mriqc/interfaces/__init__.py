@@ -11,3 +11,4 @@ from __future__ import unicode_literals
 from mriqc.interfaces.anatomical import ArtifactMask
 from mriqc.interfaces.qc import StructuralQC, FunctionalQC
 from mriqc.interfaces.bids import ReadSidecarJSON
+from mriqc.interfaces.viz import PlotMosaic, PlotContours

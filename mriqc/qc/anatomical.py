@@ -379,14 +379,15 @@ def summary_stats(img, pvms, bgdata=None):
     elif len(pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
+    output = {k: {} for k, _ in labels}
     for k, lid in labels:
         mask = np.where(pvms[lid] > 0.5)
-        mean[k] = float(img[mask].mean())
-        stdv[k] = float(img[mask].std())
-        p95[k] = float(np.percentile(img[mask], 95))
-        p05[k] = float(np.percentile(img[mask], 5))
-        kurt[k] = float(kurtosis(img[mask]))
-    return mean, stdv, p95, p05, kurt
+        output[k]['mean'] = float(img[mask].mean())
+        output[k]['stdv'] = float(img[mask].std())
+        output[k]['p95'] = float(np.percentile(img[mask], 95))
+        output[k]['p05'] = float(np.percentile(img[mask], 5))
+        output[k]['k'] = float(kurtosis(img[mask]))
+    return output
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
