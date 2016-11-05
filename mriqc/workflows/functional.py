@@ -21,8 +21,8 @@ from nipype.interfaces import afni
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image
 from mriqc.interfaces.qc import FunctionalQC
 from mriqc.interfaces.functional import Spikes
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient
 from pylab import cm
+from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
 
@@ -55,8 +55,11 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         output_names=['out_file'], function=bids_getfile), name='datasource')
     datasource.inputs.data_type = 'func'
 
-    to_ras = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
-                     function=reorient), name='EPIReorient')
+    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file'],
+                                                output_names=['exclude_index',
+                                                              'out_file'],
+                                                function=reorient_and_discard_non_steady),
+                                   name='reorient_and_discard')
 
     # Workflow --------------------------------------------------------
 
@@ -92,8 +95,8 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, get_idx, [('start_idx', 'start_idx'),
                               ('stop_idx', 'stop_idx')]),
         (datasource, get_idx, [('out_file', 'in_file')]),
-        (datasource, to_ras, [('out_file', 'in_file')]),
-        (to_ras, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (datasource, reorient_and_discard, [('out_file', 'in_file')]),
+        (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
                           ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
@@ -105,7 +108,7 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
                              ('session_id', 'inputnode.session_id'),
                              ('run_id', 'inputnode.run_id')]),
-        (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
+        (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
@@ -115,12 +118,13 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
                             ('session_id', 'inputnode.session_id'),
                             ('run_id', 'inputnode.run_id')]),
-        (to_ras, repwf, [('out_file', 'inputnode.orig')]),
+        (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
         (bmw, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc')]),
+        (reorient_and_discard, repwf, [('exclude_index', 'inputnode.exclude_index')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
@@ -192,8 +196,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
-        (outliers, datasink, [(('out_file', _parse_tout), 'outlier')]),
-        (quality, datasink, [(('out_file', _parse_tqual), 'quality')]),
+        (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
+        (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('summary', 'summary'),
                               ('spacing', 'spacing'),
                               ('size', 'size'),
@@ -201,7 +205,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                               ('efc', 'efc'),
                               ('snr', 'snr'),
                               ('gsr', 'gsr'),
-                              ('m_tsnr', 'm_tsnr'),
+                              ('tsnr', 'tsnr'),
                               ('fd', 'fd'),
                               ('dvars', 'dvars'),
                               ('gcor', 'gcor')]),
@@ -224,7 +228,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
-        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers']),
+        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers',
+        'exclude_index']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -268,7 +273,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        input_names=['in_iqms', 'in_plots', 'exclude_index'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
@@ -277,7 +282,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, rnode, [('in_iqms', 'in_iqms'),
+                            ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
                                   ('run_id', 'run_id'),

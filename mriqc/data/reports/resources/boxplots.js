@@ -28,21 +28,23 @@ function makeDistroChart(settings) {
         data: null,
         xName: null,
         yName: null,
+        axisLabels: {xAxis: null, yAxis: null},
         labelName: "label",
+        unitsName: "units",
         selector: null,
         axisLables: null,
         yTicks: 1,
         scale: 'linear',
         chartSize: {width: 800, height: 400},
-        margin: {top: 15, right: 60, bottom: 40, left: 50},
+        margin: {top: 15, right: 10, bottom: 50, left: 50},
         constrainExtremes: false,
         color: d3.scale.category10(),
         qctype: null
     };
+
     for (var setting in settings) {
         chart.settings[setting] = settings[setting]
     }
-
 
     function formatAsFloat(d) {
         if (d % 1 !== 0) {
@@ -60,6 +62,17 @@ function makeDistroChart(settings) {
     chart.yFormatter = formatAsFloat;
 
     chart.data = chart.settings.data;
+
+    iqmName = chart.data[0][chart.settings.xName]
+    if (iqmName.lastIndexOf('_') > 0) {
+        iqmName = iqmName.substr(0, iqmName.lastIndexOf('_'))
+    }
+    chart.settings.axisLabels.yAxis = iqmName.toUpperCase()
+    units = chart.data[0][chart.settings.unitsName]
+    if (units) {
+        chart.settings.axisLabels.yAxis += ' (' + units + ')'
+    }
+    
 
     chart.groupObjs = {}; //The data organized by grouping and sorted as well as any metadata for the groups
     chart.objs = {mainDiv: null, chartDiv: null, g: null, xAxis: null, yAxis: null};
@@ -171,7 +184,8 @@ function makeDistroChart(settings) {
      */
     !function prepareData() {
         function calcMetrics(values) {
-            values.sort(d3.ascending)
+            // Do not reorder in-place
+            values = values.slice(0).sort(d3.ascending)
 
             var metrics = { //These are the original non�scaled values
                 max: null,
@@ -266,9 +280,6 @@ function makeDistroChart(settings) {
         if (chart.settings.axisLabels) {
             chart.xAxisLable = chart.settings.axisLabels.xAxis;
             chart.yAxisLable = chart.settings.axisLabels.yAxis;
-        } else {
-            chart.xAxisLable = chart.settings.xName;
-            chart.yAxisLable = chart.settings.yName;
         }
 
         if (chart.settings.scale === 'log') {
@@ -378,12 +389,14 @@ function makeDistroChart(settings) {
             .attr("class", "y axis")
             .call(chart.objs.yAxis)
             .append("text")
-            .attr("class", "label")
+            //.attr("class", "label")
             .attr("transform", "rotate(-90)")
-            .attr("y", -42)
-            .attr("x", -chart.height / 2)
+            //.attr("y", -42)
+            .attr("y", 6)
             .attr("dy", ".71em")
-            .style("text-anchor", "middle")
+            //.attr("x", -chart.height / 2)
+            .style("text-anchor", "end")
+            .style("font-size", "16px")
             .text(chart.yAxisLable);
 
         // Create tooltip div

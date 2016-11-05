@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-19 14:07:40
+# @Last Modified time: 2016-11-03 16:20:43
 """ Nipype interfaces to quality control measures """
 from __future__ import print_function
 from __future__ import division
@@ -18,9 +18,9 @@ from builtins import zip
 import numpy as np
 import nibabel as nb
 
-from mriqc.qc.anatomical import (snr, cnr, fber, efc, art_qi1, art_qi2,
-                                 volume_fraction, rpve, summary_stats, cjv,
-                                 wm2max)
+from mriqc.qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
+                                 art_qi2, volume_fraction, rpve, summary_stats,
+                                 cjv, wm2max)
 from mriqc.qc.functional import (gsr, gcor)
 
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -112,6 +112,13 @@ class StructuralQC(BaseInterface):
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = float(np.mean(snrvals))
 
+        snrvals = []
+        for tlabel in ['d_csf', 'd_wm', 'd_gm']:
+            snrvals.append(snr_dietrich(inudata, segdata, airdata,
+                                        fglabel=tlabel[2:], erode=erode))
+            self._results['snr'][tlabel] = snrvals[-1]
+        self._results['snr']['d_total'] = float(np.mean(snrvals))
+
         # CNR
         self._results['cnr'] = cnr(inudata, segdata)
 
@@ -145,9 +152,7 @@ class StructuralQC(BaseInterface):
         self._results['rpve'] = rpve(pvmdata, segdata)
 
         # Summary stats
-        mean, stdv, p95, p05, kurt = summary_stats(imdata, pvmdata, airdata)
-        self._results['summary'] = {
-            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt}
+        self._results['summary'] = summary_stats(imdata, pvmdata, airdata)
 
         # Image specs
         self._results['size'] = {'x': int(imdata.shape[0]),
@@ -205,7 +210,7 @@ class FunctionalQCOutputSpec(TraitedSpec):
     efc = traits.Float
     snr = traits.Float
     gsr = traits.Dict
-    m_tsnr = traits.Float
+    tsnr = traits.Float
     dvars = traits.Dict
     gcor = traits.Float
     fd = traits.Dict
@@ -269,10 +274,7 @@ class FunctionalQC(BaseInterface):
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
         # Summary stats
-        mean, stdv, p95, p05, kurt = summary_stats(epidata, mskdata)
-        self._results['summary'] = {
-            'mean': mean, 'stdv': stdv, 'p95': p95, 'p05': p05, 'k': kurt
-        }
+        self._results['summary'] = summary_stats(epidata, mskdata)
 
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)
@@ -283,7 +285,7 @@ class FunctionalQC(BaseInterface):
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
-        self._results['m_tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
+        self._results['tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
 
         # GCOR
         self._results['gcor'] = gcor(hmcdata, mskdata)

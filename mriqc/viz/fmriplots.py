@@ -75,7 +75,7 @@ class fMRIPlot(object):
         # spikesplot_cb([0.7, 0.78, 0.2, 0.008])
 
 
-def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
+def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
     """
     Plot "the plot"
     """
@@ -173,7 +173,7 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=4):
 
 
 def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., title='Spike plot',
-               ax=None, cmap='viridis', hide_x=True, nskip=4):
+               ax=None, cmap='viridis', hide_x=True, nskip=0):
     """
     A spikes plot. Thanks to Bob Dogherty (this docstring needs be improved with proper ack)
     """
@@ -306,7 +306,7 @@ def spikesplot_cb(position, cmap='viridis', fig=None):
 
 
 def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
-                 units=None, tr=None, hide_x=True, color='b', nskip=4,
+                 units=None, tr=None, hide_x=True, color='b', nskip=0,
                  cutoff=None, ylims=None):
 
     # Define TR and number of frames
