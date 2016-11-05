@@ -235,7 +235,8 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True, out_file='qi2_fitting.txt'):
+def art_qi2(img, airmask, ncoils=12, erodemask=True,
+            out_file='qi2_fitting.txt', min_voxels=1e3):
     """
     Calculates **qi2**, the distance between the distribution
     of noise voxel (non-artifact background voxels) intensities, and a
@@ -256,25 +257,14 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, out_file='qi2_fitting.txt')
     # Artifact-free air region
     data = img[airmask > 0]
 
-    if np.all(data <= 0):
+    dmax = np.percentile(data[data > 0], 99.9)
+
+    if len(data[data > 0]) < min_voxels:
         return 0.0, out_file
-
-    # Compute an upper bound threshold
-    thresh = np.percentile(data[data > 0], 99.5)
-
-    # If thresh is too low, for some reason there is no noise
-    # in the background image (image was preprocessed, etc)
-    if thresh < 1.0:
-        return 0.0, out_file
-
-    # Threshold image
-    data = data[data < thresh]
-
-    maxvalue = int(data.max())
-    nbins = maxvalue if maxvalue < 100 else 100
 
     # Estimate data pdf
-    hist, bin_edges = np.histogram(data, density=True, bins=nbins)
+    hist, bin_edges = np.histogram(data[data > 0], density=True,
+                                   range=(0.0, dmax), bins='doane')
     bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
     max_pos = np.argmax(hist)
     json_out = {
@@ -283,7 +273,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True, out_file='qi2_fitting.txt')
     }
 
     # Fit central chi distribution
-    param = chi.fit(data, 2*ncoils, loc=bin_centers[max_pos])
+    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
     json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
