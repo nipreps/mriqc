@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:41:53
+# @Last Modified time: 2016-11-04 15:35:50
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -55,7 +55,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
         axes.append(plt.subplot(gsp[i]))
         axes[-1].set_xlabel(mname)
         sns.distplot(
-            df[[mname]], ax=axes[-1], color="b", rug=True,  norm_hist=True)
+            df[[mname]], ax=axes[-1], color="b", rug=True, norm_hist=True)
 
         # labels = np.array(axes[-1].get_xticklabels())
         # labels[2:-2] = ''
@@ -382,7 +382,7 @@ def _calc_rows_columns(ratio, n_images):
             rows = np.ceil(n_images / columns) + 1
             break
         rows += 1
-    return rows, columns
+    return int(rows), int(columns)
 
 
 def _calc_fd(fd_file, fd_radius):
