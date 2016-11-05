@@ -20,6 +20,7 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     isdefined)
 from mriqc.utils.misc import split_ext
 from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
+from pylab import cm
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -89,6 +90,7 @@ class PlotMosaicInputSpec(BaseInterfaceInputSpec):
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
     out_file = File('mosaic.svg', usedefault=True, desc='output file name')
+    cmap = traits.Any(default=cm.Greys_r, usedefault=True)
 
 
 class PlotMosaicOutputSpec(TraitedSpec):
@@ -116,7 +118,8 @@ class PlotMosaic(BaseInterface):
             self.inputs.out_file,
             title=self.inputs.title,
             only_plot_noise=self.inputs.only_noise,
-            bbox_mask_file=mask)
+            bbox_mask_file=mask,
+            cmap=self.inputs.cmap)
 
         return runtime
 

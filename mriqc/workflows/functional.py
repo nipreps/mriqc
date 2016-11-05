@@ -20,6 +20,7 @@ from nipype.interfaces import afni
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image
 from mriqc.interfaces.functional import FunctionalQC, Spikes
+from pylab import cm
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
@@ -221,7 +222,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     verbose = settings.get('verbose_reports', False)
     pages = 4
     if verbose:
-        pages += 1
+        pages += 3
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -258,18 +259,16 @@ def individual_reports(settings, name='ReportsWorkflow'):
     ])
 
 
-    mosaic_zoom = pe.Node(PlotMosaic(
-        out_file='plot_anat_mosaic1_zoomed.svg',
-        title='EPI mean (zoomed) session: {session_id} run: {run_id}'), name='PlotMosaicZoomed')
-
-    mosaic_noise = pe.Node(PlotMosaic(
-        out_file='plot_anat_mosaic2_noise.svg',
-        title='EPI mean (noise) session: {session_id} run: {run_id}',
-        only_noise=True), name='PlotMosaicNoise')
+    mosaic_mean = pe.Node(PlotMosaic(
+        out_file='plot_func_mean_mosaic1.svg',
+        title='EPI mean session: {session_id} run: {run_id}',
+        cmap=cm.Greys_r),
+        name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
-        out_file='plot_anat_mosaic3_stddev.svg',
-        title='EPI SD session: {session_id} run: {run_id}'), name='PlotMosaicSD')
+        out_file='plot_func_stddev_mosaic2_stddev.svg',
+        title='EPI SD session: {session_id} run: {run_id}',
+        cmap=cm.viridis), name='PlotMosaicSD')
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -284,29 +283,33 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms'),
                             ('exclude_index', 'exclude_index')]),
-        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
+        (inputnode, mosaic_mean, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
                                   ('run_id', 'run_id'),
-                                  ('epi_mean', 'in_file'),
-                                  ('brainmask', 'bbox_mask_file')]),
-        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
-                                   ('session_id', 'session_id'),
-                                   ('run_id', 'run_id'),
-                                   ('epi_mean', 'in_file')]),
+                                  ('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('subject_id', 'subject_id'),
                                     ('session_id', 'session_id'),
                                     ('run_id', 'run_id'),
                                     ('in_stddev', 'in_file')]),
-        (mosaic_zoom, mplots, [('out_file', "in1")]),
-        (mosaic_noise, mplots, [('out_file', "in2")]),
-        (mosaic_stddev, mplots, [('out_file', "in3")]),
-        (bigplot, mplots, [('out_file', "in4")]),
+        (mosaic_mean, mplots, [('out_file', "in1")]),
+        (mosaic_stddev, mplots, [('out_file', "in2")]),
+        (bigplot, mplots, [('out_file', "in3")]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
 
     if not verbose:
         return workflow
+
+    mosaic_zoom = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic1_zoomed.svg',
+        title='EPI mean (zoomed) session: {session_id} run: {run_id}',
+        cmap=cm.Greys_r), name='PlotMosaicZoomed')
+
+    mosaic_noise = pe.Node(PlotMosaic(
+        out_file='plot_anat_mosaic2_noise.svg',
+        title='EPI mean (noise) session: {session_id} run: {run_id}',
+        only_noise=True, cmap=cm.viridis_r), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
     from mriqc.interfaces.viz import PlotContours
@@ -319,7 +322,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow.connect([
         (inputnode, plot_bmask, [('epi_mean', 'in_file'),
                                  ('brainmask', 'in_contours')]),
-        (plot_bmask, mplots, [('out_file', 'in%d' % pages)])
+        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
+                                  ('session_id', 'session_id'),
+                                  ('run_id', 'run_id'),
+                                  ('epi_mean', 'in_file'),
+                                  ('brainmask', 'bbox_mask_file')]),
+        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
+                                   ('session_id', 'session_id'),
+                                   ('run_id', 'run_id'),
+                                   ('epi_mean', 'in_file')]),
+        (mosaic_zoom, mplots, [('out_file', "in4")]),
+        (mosaic_noise, mplots, [('out_file', "in5")]),
+        (plot_bmask, mplots, [('out_file', 'in6')])
     ])
     return workflow
 
