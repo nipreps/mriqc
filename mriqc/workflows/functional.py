@@ -20,7 +20,6 @@ from nipype.interfaces import afni
 
 from mriqc.workflows.utils import fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image
 from mriqc.interfaces.functional import FunctionalQC, Spikes
-from pylab import cm
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
@@ -262,13 +261,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
         title='EPI mean session: {session_id} run: {run_id}',
-        cmap=cm.Greys_r),
+        cmap='Greys_r'),
         name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
         title='EPI SD session: {session_id} run: {run_id}',
-        cmap=cm.viridis), name='PlotMosaicSD')
+        cmap='viridis'), name='PlotMosaicSD')
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -304,12 +303,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
         title='EPI mean (zoomed) session: {session_id} run: {run_id}',
-        cmap=cm.Greys_r), name='PlotMosaicZoomed')
+        cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
         title='EPI mean (noise) session: {session_id} run: {run_id}',
-        only_noise=True, cmap=cm.viridis_r), name='PlotMosaicNoise')
+        only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
     from mriqc.interfaces.viz import PlotContours
