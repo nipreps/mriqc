@@ -37,8 +37,8 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None):
             svg_lines_corrected = []
             for line in svg_content_lines:
                 if "<svg " in line:
-                    line = re.sub(' height="[0-9]+[a-z]*"', '', line)
-                    line = re.sub(' width="[0-9]+[a-z]*"', '', line)
+                    line = re.sub(' height="[0-9.]+[a-z]*"', '', line)
+                    line = re.sub(' width="[0-9.]+[a-z]*"', '', line)
                 svg_lines_corrected.append(line)
 
             svg_files.append('\n'.join(svg_lines_corrected))
