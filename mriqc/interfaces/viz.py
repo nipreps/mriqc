@@ -9,10 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-10-27 16:39:32
 """ Visualization interfaces """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 
 import os.path as op
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
@@ -20,6 +17,7 @@ from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     isdefined)
 from mriqc.utils.misc import split_ext
 from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
+from matplotlib.cm import get_cmap
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -89,6 +87,7 @@ class PlotMosaicInputSpec(BaseInterfaceInputSpec):
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
     out_file = File('mosaic.svg', usedefault=True, desc='output file name')
+    cmap = traits.Str('Greys_r', usedefault=True)
 
 
 class PlotMosaicOutputSpec(TraitedSpec):
@@ -116,7 +115,8 @@ class PlotMosaic(BaseInterface):
             self.inputs.out_file,
             title=self.inputs.title,
             only_plot_noise=self.inputs.only_noise,
-            bbox_mask_file=mask)
+            bbox_mask_file=mask,
+            cmap=get_cmap(self.inputs.cmap))
 
         return runtime
 

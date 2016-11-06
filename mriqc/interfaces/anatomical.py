@@ -7,18 +7,174 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-07 14:37:52
+# @Last Modified time: 2016-11-04 16:38:33
 """ Nipype interfaces to support anatomical workflow """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
 import nibabel as nb
 import scipy.ndimage as nd
+from builtins import zip
 
-from nipype.interfaces.base import TraitedSpec, BaseInterface, BaseInterfaceInputSpec, File
+from nipype import logging
+from nipype.interfaces.base import (traits, TraitedSpec, File,
+                                    InputMultiPath, BaseInterfaceInputSpec)
+
+from mriqc.utils.misc import _flatten_dict
+from mriqc.interfaces.base import MRIQCBaseInterface
+from mriqc.qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
+                                 art_qi2, volume_fraction, rpve, summary_stats,
+                                 cjv, wm2max)
+IFLOGGER = logging.getLogger('interface')
+
+
+class StructuralQCInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='file to be plotted')
+    in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
+    in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
+    in_bias = File(exists=True, mandatory=True, desc='bias file')
+    head_msk = File(exists=True, mandatory=True, desc='head mask')
+    air_msk = File(exists=True, mandatory=True, desc='air mask')
+    artifact_msk = File(exists=True, mandatory=True, desc='air mask')
+    in_pvms = InputMultiPath(File(exists=True), mandatory=True,
+                             desc='partial volume maps from FSL FAST')
+    in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+
+
+class StructuralQCOutputSpec(TraitedSpec):
+    summary = traits.Dict(desc='summary statistics per tissue')
+    icvs = traits.Dict(desc='intracranial volume (ICV) fractions')
+    rpve = traits.Dict(desc='partial volume fractions')
+    size = traits.Dict(desc='image sizes')
+    spacing = traits.Dict(desc='image sizes')
+    inu = traits.Dict(desc='summary statistics of the bias field')
+    snr = traits.Dict
+    cnr = traits.Float
+    fber = traits.Float
+    efc = traits.Float
+    qi1 = traits.Float
+    wm2max = traits.Float
+    cjv = traits.Float
+    out_qc = traits.Dict(desc='output flattened dictionary with all measures')
+    out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
+    tpm_overlap = traits.Dict
+
+
+class StructuralQC(MRIQCBaseInterface):
+    """
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
+    structural image given as input
+
+    """
+    input_spec = StructuralQCInputSpec
+    output_spec = StructuralQCOutputSpec
+
+    def _run_interface(self, runtime):  # pylint: disable=R0914
+        imnii = nb.load(self.inputs.in_file)
+        imdata = np.nan_to_num(imnii.get_data())
+        erode = np.all(np.array(imnii.get_header().get_zooms()[:3],
+                                dtype=np.float32) < 1.2)
+
+        # Cast to float32
+        imdata = imdata.astype(np.float32)
+
+        # Remove negative values
+        imdata[imdata < 0] = 0
+
+        # Load image corrected for INU
+        inudata = np.nan_to_num(nb.load(self.inputs.in_noinu).get_data())
+        inudata[inudata < 0] = 0
+
+        segnii = nb.load(self.inputs.in_segm)
+        segdata = segnii.get_data().astype(np.uint8)
+
+        airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
+        artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
+        headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
+
+        # SNR
+        snrvals = []
+        self._results['snr'] = {}
+        for tlabel in ['csf', 'wm', 'gm']:
+            snrvals.append(snr(inudata, segdata, fglabel=tlabel, erode=erode))
+            self._results['snr'][tlabel] = snrvals[-1]
+        self._results['snr']['total'] = float(np.mean(snrvals))
+
+        snrvals = []
+        for tlabel in ['d_csf', 'd_wm', 'd_gm']:
+            snrvals.append(snr_dietrich(inudata, segdata, airdata,
+                                        fglabel=tlabel[2:], erode=erode))
+            self._results['snr'][tlabel] = snrvals[-1]
+        self._results['snr']['d_total'] = float(np.mean(snrvals))
+
+        # CNR
+        self._results['cnr'] = cnr(inudata, segdata)
+
+        # FBER
+        self._results['fber'] = fber(inudata, headdata)
+
+        # EFC
+        self._results['efc'] = efc(inudata)
+
+        # M2WM
+        self._results['wm2max'] = wm2max(imdata, segdata)
+
+        # Artifacts
+        self._results['qi1'] = art_qi1(airdata, artdata)
+
+        # CJV
+        self._results['cjv'] = cjv(inudata, seg=segdata)
+
+        pvmdata = []
+        for fname in self.inputs.in_pvms:
+            pvmdata.append(nb.load(fname).get_data().astype(np.float32))
+
+        # ICVs
+        self._results['icvs'] = volume_fraction(pvmdata)
+
+        # RPVE
+        self._results['rpve'] = rpve(pvmdata, segdata)
+
+        # Summary stats
+        self._results['summary'] = summary_stats(imdata, pvmdata, airdata)
+
+        # Image specs
+        self._results['size'] = {'x': int(imdata.shape[0]),
+                                 'y': int(imdata.shape[1]),
+                                 'z': int(imdata.shape[2])}
+        self._results['spacing'] = {
+            i: float(v) for i, v in zip(
+                ['x', 'y', 'z'], imnii.get_header().get_zooms()[:3])}
+
+        try:
+            self._results['size']['t'] = int(imdata.shape[3])
+        except IndexError:
+            pass
+
+        try:
+            self._results['spacing']['tr'] = float(imnii.get_header().get_zooms()[3])
+        except IndexError:
+            pass
+
+        # Bias
+        bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
+        self._results['inu'] = {
+            'range': float(np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.))),
+            'med': float(np.median(bias))}  #pylint: disable=E1101
+
+        mni_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.mni_tpms]
+        in_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.in_pvms]
+        overlap = fuzzy_jaccard(in_tpms, mni_tpms)
+        self._results['tpm_overlap'] = {
+            'csf': overlap[0],
+            'gm': overlap[1],
+            'wm': overlap[2]
+        }
+
+        # Flatten the dictionary
+        self._results['out_qc'] = _flatten_dict(self._results)
+        return runtime
 
 
 class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
@@ -33,19 +189,12 @@ class ArtifactMaskOutputSpec(TraitedSpec):
     out_air_msk = File(exists=True, desc='output artifacts mask, without artifacts')
 
 
-class ArtifactMask(BaseInterface):
+class ArtifactMask(MRIQCBaseInterface):
     """
     Computes the artifact mask using the method described in [Mortamet2009]_.
     """
     input_spec = ArtifactMaskInputSpec
     output_spec = ArtifactMaskOutputSpec
-
-    def __init__(self, **inputs):
-        self._results = {}
-        super(ArtifactMask, self).__init__(**inputs)
-
-    def _list_outputs(self):
-        return self._results
 
     def _run_interface(self, runtime):
         imnii = nb.load(self.inputs.in_file)
@@ -91,10 +240,36 @@ class ArtifactMask(BaseInterface):
         return runtime
 
 
+class ComputeQI2InputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
+    air_msk = File(exists=True, mandatory=True, desc='air (without artifacts) mask')
+    erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
+    ncoils = traits.Int(12, usedefault=True, desc='number of coils')
+
+class ComputeQI2OutputSpec(TraitedSpec):
+    qi2 = traits.Float(desc='computed QI2 value')
+    out_file = File(desc='output plot: noise fit')
+
+
+class ComputeQI2(MRIQCBaseInterface):
+    """
+    Computes the artifact mask using the method described in [Mortamet2009]_.
+    """
+    input_spec = ComputeQI2InputSpec
+    output_spec = ComputeQI2OutputSpec
+
+    def _run_interface(self, runtime):
+        imdata = nb.load(self.inputs.in_file).get_data()
+        airdata = nb.load(self.inputs.air_msk).get_data()
+        qi2, out_file = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils,
+                                erodemask=self.inputs.erodemsk)
+        self._results['qi2'] = qi2
+        self._results['out_file'] = out_file
+        return runtime
+
+
 def artifact_mask(imdata, airdata, distance):
     """Computes a mask of artifacts found in the air region"""
-    import nibabel as nb
-
     if not np.issubdtype(airdata.dtype, np.integer):
         airdata[airdata < .95] = 0
         airdata[airdata > 0.] = 1
@@ -117,3 +292,15 @@ def artifact_mask(imdata, airdata, distance):
     qi1_img[airdata <= 0] = 0
 
     return qi1_img
+
+
+def fuzzy_jaccard(in_tpms, in_mni_tpms):
+    overlaps = []
+    for tpm, mni_tpm in zip(in_tpms, in_mni_tpms):
+        tpm = tpm.reshape(-1)
+        mni_tpm = mni_tpm.reshape(-1)
+
+        num = np.min([tpm, mni_tpm], axis=0).sum()
+        den = np.max([tpm, mni_tpm], axis=0).sum()
+        overlaps.append(float(num/den))
+    return overlaps

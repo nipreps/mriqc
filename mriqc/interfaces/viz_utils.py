@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:41:53
+# @Last Modified time: 2016-11-04 15:35:50
 """ Visualization utilities """
 from __future__ import print_function
 from __future__ import division
@@ -55,7 +55,7 @@ def plot_measures(df, measures, ncols=4, title='Group level report',
         axes.append(plt.subplot(gsp[i]))
         axes[-1].set_xlabel(mname)
         sns.distplot(
-            df[[mname]], ax=axes[-1], color="b", rug=True,  norm_hist=True)
+            df[[mname]], ax=axes[-1], color="b", rug=True, norm_hist=True)
 
         # labels = np.array(axes[-1].get_xticklabels())
         # labels[2:-2] = ''
@@ -382,7 +382,7 @@ def _calc_rows_columns(ratio, n_images):
             rows = np.ceil(n_images / columns) + 1
             break
         rows += 1
-    return rows, columns
+    return int(rows), int(columns)
 
 
 def _calc_fd(fd_file, fd_radius):
@@ -489,12 +489,12 @@ def plot_bg_dist(in_file):
 def plot_mosaic_helper(in_file, subject_id, session_id,
                        run_id, out_name, bbox_mask_file=None,
                        title=None,
-                       only_plot_noise=False):
+                       only_plot_noise=False, cmap=cm.Greys_r):
     if title is not None:
         title = title.format(**{"session_id": session_id,
                               "run_id": run_id})
     fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title,
-                      only_plot_noise=only_plot_noise)
+                      only_plot_noise=only_plot_noise, cmap=cmap)
     fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
     fig.clf()
     fig = None
