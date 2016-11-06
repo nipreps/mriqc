@@ -224,7 +224,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     verbose = settings.get('verbose_reports', False)
     pages = 2
     if verbose:
-        pages += 1
+        pages += 6
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -273,13 +273,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
     if not verbose:
         return workflow
 
-
     from mriqc.interfaces.viz import PlotContours
-    from mriqc.interfaces.viz_utils import plot_bg_dist, combine_svg_verbose
+    from mriqc.interfaces.viz_utils import plot_bg_dist
     plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
                           function=plot_bg_dist), name='PlotBackground')
 
-    # If we want verbose reports
     plot_segm = pe.Node(PlotContours(
         display_mode='z', levels=[.5, 1.5, 2.5], cut_coords=10,
         colors=['r', 'g', 'b']), name='PlotSegmentation')
@@ -297,17 +295,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
         out_file='artmask', saturate=True), name='PlotArtmask')
 
-    combine = pe.Node(niu.Function(
-        input_names=[
-            'in_brainmask',
-            'in_segmentation',
-            'in_artmask',
-            'in_headmask',
-            'in_airmask',
-            'in_bgplot'
-        ], output_names=['out_file'],
-        function=combine_svg_verbose), name='CombineSVGs')
-
     workflow.connect([
         (inputnode, plot_segm, [('orig', 'in_file'),
                                 ('segmentation', 'in_contours')]),
@@ -321,14 +308,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                    ('artmask', 'in_contours')]),
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
 
-
-        (plot_bmask, combine, [('out_file', 'in_brainmask')]),
-        (plot_segm, combine, [('out_file', 'in_segmentation')]),
-        (plot_artmask, combine, [('out_file', 'in_artmask')]),
-        (plot_headmask, combine, [('out_file', 'in_headmask')]),
-        (plot_airmask, combine, [('out_file', 'in_airmask')]),
-        (plot_bgdist, combine, [('out_file', 'in_bgplot')]),
-        (combine, mplots, [('out_file', 'in3')])
+        (plot_bmask, mplots, [('out_file', 'in3')]),
+        (plot_segm, mplots, [('out_file', 'in4')]),
+        (plot_artmask, mplots, [('out_file', 'in5')]),
+        (plot_headmask, mplots, [('out_file', 'in6')]),
+        (plot_airmask, mplots, [('out_file', 'in7')]),
+        (plot_bgdist, mplots, [('out_file', 'in8')])
     ])
     return workflow
 
