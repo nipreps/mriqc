@@ -142,7 +142,7 @@ def spectrum_mask(size):
     # ftmask[size[0] - 1, size[1] - 1] = 0
     # ftmask[0, size[1] - 1] = 0
     # ftmask[size[0] - 1, 0] = 0
-    ftmask[size[0]/2, size[1]/2] = 0
+    ftmask[size[0]//2, size[1]//2] = 0
 
     # Distance transform
     ftmask = distance(ftmask)
@@ -156,13 +156,15 @@ def spectrum_mask(size):
     ftmask[ftmask < 1] = 0
     return ftmask
 
-def slice_wise_fft(in_file, ftmask=None, spike_thres=5., out_prefix=None):
+def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
+    """Search for spikes in slices using the 2D FFT"""
     import os.path as op
     import numpy as np
     import nibabel as nb
     from mriqc.workflows.utils import spectrum_mask
     from scipy.ndimage.filters import median_filter
-    from scipy.stats import zscore
+    from statsmodels.robust.scale import mad
+
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -175,34 +177,42 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=5., out_prefix=None):
     if ftmask is None:
         ftmask = spectrum_mask(tuple(func_data.shape[:2]))
 
-    fftvol = []
-    energysum = []
-    norm = func_data.shape[0] * func_data.shape[1]
+    fft_data = []
     for t in range(func_data.shape[-1]):
         func_frame = func_data[..., t]
-        vals = []
-        fftvol.append([])
+        fft_data.append([])
         for sl in func_frame.T:
-            fftsl = median_filter(
-                np.absolute(np.fft.fft2(sl)), size=(5, 5), mode='constant')
-            fftvol[-1].append(np.fft.fftshift(fftsl))
-            energy = (fftsl * ftmask) ** 2
-            vals.append(energy.sum())
-        energysum.append(vals)
+            fftsl = median_filter(np.absolute(np.fft.fft2(sl)),
+                                  size=(5, 5), mode='constant') * ftmask
+            fft_data[-1].append(fftsl)
 
-    # energysum is Z x Nt
-    energysum = np.array(energysum).T
-    e_std = energysum.std(axis=0, ddof=1)
-    energy_zs = energysum / np.array([e_std] * energysum.shape[0])
-    out_energy = out_prefix + '_energy.txt'
-    np.savetxt(out_energy, energy_zs)
+    # Recompose the 4D FFT timeseries
+    fft_data = np.array(fft_data).T
 
-    out_spikes = out_prefix + '_spikes.txt'
-    np.savetxt(out_spikes, (energy_zs > spike_thres).astype(int), fmt=b'%d')
+    # Z-score across t, using robust statistics
+    mu = np.median(fft_data, axis=3)
+    sigma = np.stack([mad(fft_data, axis=3)] * fft_data.shape[-1], -1)
+    idxs = np.where(np.abs(sigma) > 1e-4)
+    fft_zscored = fft_data - mu[..., np.newaxis]
+    fft_zscored[idxs] /= sigma[idxs]
 
-    out_fft = out_prefix + '_fft.nii.gz'
-    fftvol = np.array(fftvol).T
-    nii = nb.Nifti1Image(fftvol, nb.load(in_file).get_affine(), None)
+    # Find peaks
+    spikes_list = []
+    for t in range(fft_data.shape[-1]):
+        fft_frame = fft_zscored[..., t]
+
+        for z in range(fft_frame.shape[-1]):
+            sl = fft_frame[..., z]
+
+            # Any zscore over spike_thres will be called a spike
+            if np.any(sl > spike_thres):
+                spikes_list.append((t, z))
+
+    out_spikes = op.abspath(out_prefix + '_spikes.tsv')
+    np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
+
+    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
+    nii = nb.Nifti1Image(fft_zscored, nb.load(in_file).get_affine(), None)
     nii.to_filename(out_fft)
 
-    return out_fft, out_energy, out_spikes
+    return len(spikes_list), out_spikes, out_fft

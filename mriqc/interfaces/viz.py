@@ -12,11 +12,15 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import os.path as op
+import nibabel as nb
+import numpy as np
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
+from io import open
 from mriqc.utils.misc import split_ext
 from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
+from mriqc.interfaces.base import MRIQCBaseInterface
 from matplotlib.cm import get_cmap
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -124,6 +128,58 @@ class PlotMosaic(BaseInterface):
         outputs = self.output_spec().get()
         outputs['out_file'] = op.abspath(self.inputs.out_file)
         return outputs
+
+class PlotSpikesInputSpec(PlotMosaicInputSpec):
+    in_spikes = File(exists=True, mandatory=True, desc='tsv file of spikes')
+
+
+class PlotSpikesOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='output svg file')
+
+
+class PlotSpikes(MRIQCBaseInterface):
+    """
+    Plot slices of a dataset with spikes
+    """
+    input_spec = PlotSpikesInputSpec
+    output_spec = PlotSpikesOutputSpec
+
+    def _run_interface(self, runtime):
+        out_file = op.abspath(self.inputs.out_file)
+        self._results['out_file'] = out_file
+
+        spikes_list = [tuple(i) for i in np.loadtxt(self.inputs.in_spikes, dtype=int)]
+
+        # No spikes
+        if len(spikes_list) == 0:
+            with open(out_file, 'w') as f:
+                f.write('<p>No high-frequency spikes were found in this dataset</p>')
+            return runtime
+
+        # Spikes found
+        nii = nb.load(self.inputs.in_file)
+        data = nii.get_data()
+
+        slices = []
+        for t, z in spikes_list:
+            slices.append(data[..., z, t])
+
+        spikes_data = np.stack(slices, axis=-1)
+        nb.Nifti1Image(spikes_data, nii.get_affine(),
+                       nii.get_header()).to_filename('spikes.nii.gz')
+
+        plot_mosaic_helper(
+            op.abspath('spikes.nii.gz'),
+            self.inputs.subject_id,
+            self.inputs.session_id,
+            self.inputs.run_id,
+            out_file,
+            title=self.inputs.title,
+            cmap=get_cmap(self.inputs.cmap),
+            plot_sagittal=False,
+            only_plot_noise=True,
+            labels=spikes_list)
+        return runtime
 
 
 class PlotFDInputSpec(BaseInterfaceInputSpec):

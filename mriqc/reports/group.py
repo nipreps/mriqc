@@ -71,6 +71,7 @@ def gen_html(csv_file, qctype, out_file=None):
             (['fd_mean'], 'mm'),
             (['fd_num'], '# timepoints'),
             (['fd_perc'], '% timepoints'),
+            (['spikes_num'], '# slices'),
             (['gcor'], None),
             (['tsnr'], None),
             (['aor'], None),
