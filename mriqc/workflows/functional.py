@@ -702,7 +702,7 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
 
     # Add AFNI ouliers plot
     myplot.add_confounds([np.nan] + np.loadtxt(outliers).tolist(),
-                         {'name': 'ouliers', 'units': None, 'normalize': False,
+                         {'name': 'ouliers', 'units': '%', 'normalize': False,
                           'ylims': (0.0, None)})
 
     # Pick non-standardize dvars
