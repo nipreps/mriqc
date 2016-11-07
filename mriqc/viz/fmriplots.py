@@ -14,9 +14,7 @@ from matplotlib.colorbar import ColorbarBase
 import seaborn as sns
 from seaborn import color_palette
 
-from mriqc import __version__, MRIQC_LOG
 from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
-
 sns.set_style("whitegrid")
 
 class fMRIPlot(object):
@@ -133,8 +131,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
 
     # Carpet plot
     ax1 = plt.subplot(gs[1])
-    theplot = ax1.imshow(detrended[order, :], interpolation='nearest',
-                         aspect='auto', cmap='gray', vmin=-2, vmax=2)
+    ax1.imshow(detrended[order, :], interpolation='nearest',
+               aspect='auto', cmap='gray', vmin=-2, vmax=2)
 
     ax1.grid(False)
     ax1.set_yticks([])
@@ -189,9 +187,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
         ax = plt.subplot(gs[1])
 
     # Define TR and number of frames
-    notr = False
     if tr is None:
-        notr = True
         tr = 1.
 
     # Load timeseries, zscored slice-wise
@@ -284,7 +280,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     ax.spines["left"].set_position(('outward', 30))
     ax.yaxis.set_ticks_position('left')
 
-    labels = [label for label in ax.yaxis.get_ticklabels()]
+    # labels = [label for label in ax.yaxis.get_ticklabels()]
     # labels[0].set_weight('bold')
     # labels[-1].set_weight('bold')
     if title:
