@@ -1,7 +1,20 @@
+Release 0.8.8
+=============
+
+* [ENH] FFT detection of spikes (#253)
+* [FIX] Labels and links of samples in group plots (#249)
+* [ENH] Units in group plots (#242)
+* [FIX] More reliable group level (#238)
+* [ENH] Add --verbose-reports for fMRI (#236)
+* [ENH] Migrate functional reports to html (#232)
+* [ENH] Add 0.2 FD cutoff line (#231)
+* [ENH] Add AFNI's outlier count to carpet plot confound charts (#230)
+
 Release 0.8.7
 =============
 
-* [ENH] Add kurtosis to summary statistics
+* [ENH] Anatomical Group reports in html (#227)
+* [ENH] Add kurtosis to summary statistics (#224)
 * [ENH] New report layout for fMRI, added carpetplot (#198)
 * [ENH] Anatomical workflow refactor (#219).
 

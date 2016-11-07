@@ -34,11 +34,12 @@ report</h1>
 
     function plotData(group) {
         data = d3.csv.parse(d3.select("#data-csv" + group).text(), function(d) {
-        return {
-            iqm: d.iqm,
-            value: +d.value,
-            label: d.label
-        }
+            return {
+                iqm: d.iqm,
+                value: +d.value,
+                label: d.label,
+                units: d.units
+            }
         });
 
         var a = {};
@@ -55,10 +56,10 @@ report</h1>
             data:data,
             xName:'iqm',
             yName:'value',
-            axisLabels: {xAxis: null, yAxis: null},
             selector:"#chart-group" + group,
             chartSize:{height:300, width:100 + 60 * nIQMs},
-            constrainExtremes:true
+            constrainExtremes:true,
+            qctype: '{{ qctype }}'
         });
         chart1.renderDataPlots();
         chart1.dataPlots.change({showPlot:true, plotType:35, showBeanLines:false});

@@ -336,7 +336,10 @@ h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
 ul.auto-toc {
   list-style-type: none }
 
-svg, object { page-break-before:always }
+svg {
+  page-break-before:always;
+  width: 100%;
+ }
 
 </style>
 </head>
@@ -346,6 +349,10 @@ svg, object { page-break-before:always }
 
 <h1>MRIQC: individual {{ qctype }}
 report</h1>
+
+{% if exclude_index > 0 %}
+    <h3><span style="color:red">Non-steady state (strong T1 contrast) has been detected in the first {{ exclude_index }} volumes. They were excluded before generating any QC measures and plots.</span></h3>
+{% endif %}
 
 <h2>Summary</h2>
 <ul class="simple">

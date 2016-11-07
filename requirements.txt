@@ -1,7 +1,5 @@
 numpy
 future
-lockfile
-six
 matplotlib
 nibabel
 niworkflows>=0.0.3a15
@@ -9,7 +7,6 @@ pandas
 dipy
 jinja2
 seaborn
-pyPdf2
 PyYAML
 nitime
 nilearn
@@ -22,4 +19,3 @@ doctest-ignore-unicode
 sphinx
 svgutils
 -e git+https://github.com/nipy/nipype.git@master#egg=nipype
--e git+https://github.com/oesteban/rst2pdf.git@futurize/stage2#egg=rst2pdf
