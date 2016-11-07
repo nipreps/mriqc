@@ -41,17 +41,10 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
 class PlotContoursOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
 
-class PlotContours(BaseInterface):
+class PlotContours(MRIQCBaseInterface):
     """ Plot contours """
     input_spec = PlotContoursInputSpec
     output_spec = PlotContoursOutputSpec
-
-    def __init__(self, **inputs):
-        self._results = {}
-        super(PlotContours, self).__init__(**inputs)
-
-    def _list_outputs(self):
-        return self._results
 
     def _run_interface(self, runtime):
         out_file = None
@@ -71,8 +64,8 @@ class PlotContours(BaseInterface):
             levels=self.inputs.levels,
             colors=self.inputs.colors,
             saturate=self.inputs.saturate)
-
         return runtime
+
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -98,7 +91,7 @@ class PlotMosaicOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotMosaic(BaseInterface):
+class PlotMosaic(MRIQCBaseInterface):
 
     """
     Plots slices of a 3D volume into a pdf file
@@ -121,13 +114,9 @@ class PlotMosaic(BaseInterface):
             only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask,
             cmap=get_cmap(self.inputs.cmap))
-
+        self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
 
-    def _list_outputs(self):
-        outputs = self.output_spec().get()
-        outputs['out_file'] = op.abspath(self.inputs.out_file)
-        return outputs
 
 class PlotSpikesInputSpec(PlotMosaicInputSpec):
     in_spikes = File(exists=True, mandatory=True, desc='tsv file of spikes')
@@ -201,7 +190,7 @@ class PlotFDOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotFD(BaseInterface):
+class PlotFD(MRIQCBaseInterface):
     """
     Plots the frame displacement of a dataset
     """
@@ -222,44 +211,5 @@ class PlotFD(BaseInterface):
 
         fig.savefig(self.inputs.out_file, dpi=float(self.inputs.dpi))
 
+        self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
-
-    def _list_outputs(self):
-        outputs = self.output_spec().get()
-        outputs['out_file'] = op.abspath(self.inputs.out_file)
-        return outputs
-
-
-# class ReportInputSpec(BaseInterfaceInputSpec):
-#     in_csv = File(exists=True, mandatory=True, desc='File to be plotted')
-#     qctype = traits.Enum('anatomical', 'functional', mandatory=True, desc='Type of report')
-#     sub_list = traits.List([], traits.Tuple(traits.Str(), traits.Str(), traits.Str(), traits.Str()),
-#                            usedefault=True, desc='List of subjects requested')
-#     settings = traits.Dict(desc='Settings')
-
-
-# class ReportOutputSpec(TraitedSpec):
-#     out_group = File(exists=True, desc='output pdf file, group report')
-#     out_indiv = OutputMultiPath(File(exists=True), desc='individual reports')
-
-
-# class Report(BaseInterface):
-#     input_spec = ReportInputSpec
-#     output_spec = ReportOutputSpec
-
-#     def _run_interface(self, runtime):
-#         from mriqc.reports import workflow_report
-#         settings = None
-#         if isdefined(self.inputs.settings):
-#             settings = self.inputs.settings
-#         self._results = workflow_report(self.inputs.in_csv, self.inputs.qctype,
-#                                         self.inputs.sub_list, settings)
-#         return runtime
-
-#     def _list_outputs(self):
-#         outputs = self.output_spec().get()
-#         outputs['out_group'] = self._results[0]
-#         outputs['out_indiv'] = self._results[1]
-#         return outputs
-
-
