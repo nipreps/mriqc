@@ -221,8 +221,6 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
             z_vals = z_vals[::2]
 
         labels = ['%d' % z for z in z_vals]
-    else:
-        labels = ['t=%d, z=%d' % l for l in labels]
 
     n_images = len(z_vals)
     row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
@@ -279,7 +277,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
 
         ax.annotate(
             z_label, xy=(.99, .99), xycoords='axes fraction',
-            fontsize=8, color='white', horizontalalignment='right',
+            fontsize=8, color='k', backgroundcolor='white', horizontalalignment='right',
             verticalalignment='top')
 
         ax.axis('off')

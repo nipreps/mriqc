@@ -148,13 +148,14 @@ class PlotSpikes(MRIQCBaseInterface):
         out_file = op.abspath(self.inputs.out_file)
         self._results['out_file'] = out_file
 
-        spikes_list = [tuple(i) for i in np.loadtxt(self.inputs.in_spikes, dtype=int)]
-
+        spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int)
         # No spikes
         if len(spikes_list) == 0:
             with open(out_file, 'w') as f:
                 f.write('<p>No high-frequency spikes were found in this dataset</p>')
             return runtime
+
+        spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).reshape(-1, 2)]
 
         # Spikes found
         nii = nb.load(self.inputs.in_file)
@@ -168,6 +169,8 @@ class PlotSpikes(MRIQCBaseInterface):
         nb.Nifti1Image(spikes_data, nii.get_affine(),
                        nii.get_header()).to_filename('spikes.nii.gz')
 
+        tr = nii.get_header().get_zooms()[-1]
+        labels = ['t=%.3fs (z=%d)' % (tr * l[0], l[1]) for l in spikes_list]
         plot_mosaic_helper(
             op.abspath('spikes.nii.gz'),
             self.inputs.subject_id,
@@ -178,7 +181,7 @@ class PlotSpikes(MRIQCBaseInterface):
             cmap=get_cmap(self.inputs.cmap),
             plot_sagittal=False,
             only_plot_noise=True,
-            labels=spikes_list)
+            labels=labels)
         return runtime
 
 
