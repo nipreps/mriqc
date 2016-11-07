@@ -183,7 +183,7 @@ def get_limits(nifti_file, only_plot_noise=False):
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
-                cmap=cm.Greys_r):
+                cmap=cm.Greys_r, plot_sagittal=True, labels=None):
     from six import string_types
     from pylab import cm
 
@@ -202,21 +202,25 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
         mean_data = mean_data[ystart:ystop, xstart:xstop, zstart:zstop]
 
     z_vals = np.array(list(range(0, mean_data.shape[2])))
-    # Reduce the number of slices shown
-    if len(z_vals) > 70:
-        rem = 15
-        # Crop inferior and posterior
-        if not bbox_mask_file:
-            # mean_data = mean_data[..., rem:-rem]
-            z_vals = z_vals[rem:-rem]
-        else:
-            # mean_data = mean_data[..., 2 * rem:]
-            z_vals = z_vals[2 * rem:]
 
-    while len(z_vals) > 70:
-        # Discard one every two slices
-        # mean_data = mean_data[..., ::2]
-        z_vals = z_vals[::2]
+    if labels is None:
+        # Reduce the number of slices shown
+        if len(z_vals) > 70:
+            rem = 15
+            # Crop inferior and posterior
+            if not bbox_mask_file:
+                # mean_data = mean_data[..., rem:-rem]
+                z_vals = z_vals[rem:-rem]
+            else:
+                # mean_data = mean_data[..., 2 * rem:]
+                z_vals = z_vals[2 * rem:]
+
+        while len(z_vals) > 70:
+            # Discard one every two slices
+            # mean_data = mean_data[..., ::2]
+            z_vals = z_vals[::2]
+
+        labels = ['%d' % z for z in z_vals]
 
     n_images = len(z_vals)
     row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
@@ -254,7 +258,7 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
         vmax = est_vmax
 
     fig.subplots_adjust(top=0.85)
-    for image, z_val in enumerate(z_vals):
+    for image, (z_val, z_label) in enumerate(zip(z_vals, labels)):
         ax = fig.add_subplot(row, col, image + 1)
         if overlay_mask:
             ax.set_rasterized(True)
@@ -272,28 +276,29 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                       cmap=cmap, interpolation='nearest', origin='lower')
 
         ax.annotate(
-            str(z_val), xy=(.99, .99), xycoords='axes fraction',
-            fontsize=8, color='white', horizontalalignment='right',
+            z_label, xy=(.99, .99), xycoords='axes fraction',
+            fontsize=8, color='k', backgroundcolor='white', horizontalalignment='right',
             verticalalignment='top')
 
         ax.axis('off')
 
-    start = int(mean_data.shape[0] / 5)
-    stop = mean_data.shape[0] - start
-    step = int((stop - start) / (col))
-    x_vals = range(start, stop, step)
-    x_vals = np.array(x_vals[:col])
-    x_vals += int((stop - x_vals[-1]) / 2)
-    for image, x_val in enumerate(x_vals):
-        ax = fig.add_subplot(row, col, image + (row - 1) * col + 1)
-        ax.imshow(mean_data[x_val, :, :].T, vmin=vmin,
-                  vmax=vmax,
-                  cmap=cmap, interpolation='nearest', origin='lower')
-        ax.annotate(
-            str(x_val), xy=(.99, .99), xycoords='axes fraction',
-            fontsize=8, color='white', horizontalalignment='right',
-            verticalalignment='top')
-        ax.axis('off')
+    if plot_sagittal:
+        start = int(mean_data.shape[0] / 5)
+        stop = mean_data.shape[0] - start
+        step = int((stop - start) / (col))
+        x_vals = range(start, stop, step)
+        x_vals = np.array(x_vals[:col])
+        x_vals += int((stop - x_vals[-1]) / 2)
+        for image, x_val in enumerate(x_vals):
+            ax = fig.add_subplot(row, col, image + (row - 1) * col + 1)
+            ax.imshow(mean_data[x_val, :, :].T, vmin=vmin,
+                      vmax=vmax,
+                      cmap=cmap, interpolation='nearest', origin='lower')
+            ax.annotate(
+                str(x_val), xy=(.99, .99), xycoords='axes fraction',
+                fontsize=8, color='white', horizontalalignment='right',
+                verticalalignment='top')
+            ax.axis('off')
 
     fig.subplots_adjust(
         left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01,
@@ -488,13 +493,13 @@ def plot_bg_dist(in_file):
 
 def plot_mosaic_helper(in_file, subject_id, session_id,
                        run_id, out_name, bbox_mask_file=None,
-                       title=None,
+                       title=None, plot_sagittal=True, labels=None,
                        only_plot_noise=False, cmap=cm.Greys_r):
     if title is not None:
         title = title.format(**{"session_id": session_id,
                               "run_id": run_id})
-    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title,
-                      only_plot_noise=only_plot_noise, cmap=cmap)
+    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
+                      only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
     fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
     fig.clf()
     fig = None

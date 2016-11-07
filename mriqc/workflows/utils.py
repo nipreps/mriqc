@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-10 18:45:19
+# @Last Modified time: 2016-10-24 10:48:55
 """Helper functions for the workflows"""
 from __future__ import print_function
 from __future__ import division
@@ -142,7 +142,7 @@ def spectrum_mask(size):
     # ftmask[size[0] - 1, size[1] - 1] = 0
     # ftmask[0, size[1] - 1] = 0
     # ftmask[size[0] - 1, 0] = 0
-    ftmask[size[0]/2, size[1]/2] = 0
+    ftmask[size[0]//2, size[1]//2] = 0
 
     # Distance transform
     ftmask = distance(ftmask)
@@ -155,3 +155,64 @@ def spectrum_mask(size):
     ftmask[ftmask >= 0.4] = 1
     ftmask[ftmask < 1] = 0
     return ftmask
+
+def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
+    """Search for spikes in slices using the 2D FFT"""
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+    from mriqc.workflows.utils import spectrum_mask
+    from scipy.ndimage.filters import median_filter
+    from statsmodels.robust.scale import mad
+
+
+    if out_prefix is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_prefix = op.abspath(fname)
+
+    func_data = nb.load(in_file).get_data()
+
+    if ftmask is None:
+        ftmask = spectrum_mask(tuple(func_data.shape[:2]))
+
+    fft_data = []
+    for t in range(func_data.shape[-1]):
+        func_frame = func_data[..., t]
+        fft_data.append([])
+        for sl in func_frame.T:
+            fftsl = median_filter(np.absolute(np.fft.fft2(sl)),
+                                  size=(5, 5), mode='constant') * ftmask
+            fft_data[-1].append(fftsl)
+
+    # Recompose the 4D FFT timeseries
+    fft_data = np.array(fft_data).T
+
+    # Z-score across t, using robust statistics
+    mu = np.median(fft_data, axis=3)
+    sigma = np.stack([mad(fft_data, axis=3)] * fft_data.shape[-1], -1)
+    idxs = np.where(np.abs(sigma) > 1e-4)
+    fft_zscored = fft_data - mu[..., np.newaxis]
+    fft_zscored[idxs] /= sigma[idxs]
+
+    # Find peaks
+    spikes_list = []
+    for t in range(fft_data.shape[-1]):
+        fft_frame = fft_zscored[..., t]
+
+        for z in range(fft_frame.shape[-1]):
+            sl = fft_frame[..., z]
+
+            # Any zscore over spike_thres will be called a spike
+            if np.any(sl > spike_thres):
+                spikes_list.append((t, z))
+
+    out_spikes = op.abspath(out_prefix + '_spikes.tsv')
+    np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
+
+    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
+    nii = nb.Nifti1Image(fft_zscored, nb.load(in_file).get_affine(), None)
+    nii.to_filename(out_fft)
+
+    return len(spikes_list), out_spikes, out_fft
