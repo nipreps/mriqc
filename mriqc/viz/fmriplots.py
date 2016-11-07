@@ -11,10 +11,12 @@ from matplotlib.cm import get_cmap
 from matplotlib import gridspec as mgs
 from matplotlib.colors import Normalize, LinearSegmentedColormap
 from matplotlib.colorbar import ColorbarBase
+import seaborn as sns
 from seaborn import color_palette
+
+from mriqc import __version__, MRIQC_LOG
 from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
 
-import seaborn as sns
 sns.set_style("whitegrid")
 
 class fMRIPlot(object):
@@ -368,9 +370,9 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
 
     # Plot average
     if cutoff is None:
-        cutoff = [tseries[nskip:].mean()]
-    else:
-        cutoff.insert(0, tseries[nskip:].mean())
+        cutoff = []
+
+    cutoff.insert(0, tseries[~np.isnan(tseries)].mean())
 
     for i, thr in enumerate(cutoff):
         ax_ts.plot((0, ntsteps - 1), [thr] * 2,
@@ -378,7 +380,20 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
                    linestyle='-' if i == 0 else ':',
                    color=color if i == 0 else 'k')
 
-    def_ylims = [0.95 * tseries[nskip:].min(), 1.1 * tseries[nskip:].max()]
+        if i == 0:
+            mean_label = r'$\mu$=%.3f%s' % (thr, units if units is not None else '')
+            ax_ts.annotate(
+                mean_label, xy=(ntsteps - 1, thr), xytext=(11, 0),
+                textcoords='offset points', va='center',
+                color='w', fontsize='small',
+                bbox=dict(boxstyle='round', fc=color, ec=color, color='w', lw=1),
+                arrowprops=dict(arrowstyle='wedge,tail_width=0.6', lw=0,
+                                fc=color, ec=color, relpos=(0.5, 0.5),
+                                ))
+
+
+    def_ylims = [0.95 * tseries[~np.isnan(tseries)].min(),
+                 1.1 * tseries[~np.isnan(tseries)].max()]
     if ylims is not None:
         if ylims[0] is not None:
             def_ylims[0] = min([def_ylims[0], ylims[0]])
@@ -386,6 +401,9 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
             def_ylims[1] = max([def_ylims[1], ylims[1]])
 
     ax_ts.set_ylim(def_ylims)
+    yticks = sorted(def_ylims)
+    ax_ts.set_yticks(yticks)
+    ax_ts.set_yticklabels(['%.02f' % y for y in yticks])
 
     if not gs_dist is None:
         ax_dist = plt.subplot(gs_dist)
