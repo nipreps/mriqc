@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-24 10:48:55
+# @Last Modified time: 2016-11-07 11:35:58
 """Helper functions for the workflows"""
 from __future__ import print_function
 from __future__ import division
@@ -180,14 +180,15 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
     fft_data = []
     for t in range(func_data.shape[-1]):
         func_frame = func_data[..., t]
-        fft_data.append([])
+        fft_slices = []
         for sl in func_frame.T:
             fftsl = median_filter(np.absolute(np.fft.fft2(sl)),
                                   size=(5, 5), mode='constant') * ftmask
-            fft_data[-1].append(fftsl)
+            fft_slices.append(fftsl)
+        fft_data.append(np.stack(fft_slices, axis=-1))
 
     # Recompose the 4D FFT timeseries
-    fft_data = np.array(fft_data).T
+    fft_data = np.stack(fft_data, -1)
 
     # Z-score across t, using robust statistics
     mu = np.median(fft_data, axis=3)
