@@ -195,9 +195,9 @@ def main():
             if max_parallel_ants > 1:
                 settings['n_procs'] = max_parallel_ants
 
-        if settings['nthreads'] > 1:
+        if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
+            plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
