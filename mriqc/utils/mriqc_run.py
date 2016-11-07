@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-07 11:17:23
 
 """
 =====
@@ -197,9 +195,9 @@ def main():
             if max_parallel_ants > 1:
                 settings['n_procs'] = max_parallel_ants
 
-        if settings['n_procs'] > 1:
+        if settings['nthreads'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
+            plugin_settings['plugin_args'] = {'n_procs': settings['nthreads']}
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
@@ -212,9 +210,7 @@ def main():
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
             if workflow is None:
-                MRIQC_LOG.warn(
-                    '%s QC workflow - no scans were found for the given inputs',
-                    'Anatomical' if qctype[:4] == 'anat' else 'Functional')
+                MRIQC_LOG.warn('No scans were found for the given inputs')
                 continue
 
             workflow.base_dir = settings['work_dir']

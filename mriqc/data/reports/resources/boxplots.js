@@ -184,7 +184,8 @@ function makeDistroChart(settings) {
      */
     !function prepareData() {
         function calcMetrics(values) {
-            values.sort(d3.ascending)
+            // Do not reorder in-place
+            values = values.slice(0).sort(d3.ascending)
 
             var metrics = { //These are the original non�scaled values
                 max: null,

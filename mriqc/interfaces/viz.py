@@ -9,17 +9,19 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-10-27 16:39:32
 """ Visualization interfaces """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 
 import os.path as op
+import nibabel as nb
+import numpy as np
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
+from io import open
 from mriqc.utils.misc import split_ext
 from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
+from mriqc.interfaces.base import MRIQCBaseInterface
+from matplotlib.cm import get_cmap
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -39,17 +41,10 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
 class PlotContoursOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
 
-class PlotContours(BaseInterface):
+class PlotContours(MRIQCBaseInterface):
     """ Plot contours """
     input_spec = PlotContoursInputSpec
     output_spec = PlotContoursOutputSpec
-
-    def __init__(self, **inputs):
-        self._results = {}
-        super(PlotContours, self).__init__(**inputs)
-
-    def _list_outputs(self):
-        return self._results
 
     def _run_interface(self, runtime):
         out_file = None
@@ -69,8 +64,8 @@ class PlotContours(BaseInterface):
             levels=self.inputs.levels,
             colors=self.inputs.colors,
             saturate=self.inputs.saturate)
-
         return runtime
+
 
 class PlotMosaicInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
@@ -89,13 +84,14 @@ class PlotMosaicInputSpec(BaseInterfaceInputSpec):
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
     out_file = File('mosaic.svg', usedefault=True, desc='output file name')
+    cmap = traits.Str('Greys_r', usedefault=True)
 
 
 class PlotMosaicOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotMosaic(BaseInterface):
+class PlotMosaic(MRIQCBaseInterface):
 
     """
     Plots slices of a 3D volume into a pdf file
@@ -116,14 +112,66 @@ class PlotMosaic(BaseInterface):
             self.inputs.out_file,
             title=self.inputs.title,
             only_plot_noise=self.inputs.only_noise,
-            bbox_mask_file=mask)
-
+            bbox_mask_file=mask,
+            cmap=get_cmap(self.inputs.cmap))
+        self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
 
-    def _list_outputs(self):
-        outputs = self.output_spec().get()
-        outputs['out_file'] = op.abspath(self.inputs.out_file)
-        return outputs
+
+class PlotSpikesInputSpec(PlotMosaicInputSpec):
+    in_spikes = File(exists=True, mandatory=True, desc='tsv file of spikes')
+
+
+class PlotSpikesOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='output svg file')
+
+
+class PlotSpikes(MRIQCBaseInterface):
+    """
+    Plot slices of a dataset with spikes
+    """
+    input_spec = PlotSpikesInputSpec
+    output_spec = PlotSpikesOutputSpec
+
+    def _run_interface(self, runtime):
+        out_file = op.abspath(self.inputs.out_file)
+        self._results['out_file'] = out_file
+
+        spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int)
+        # No spikes
+        if len(spikes_list) == 0:
+            with open(out_file, 'w') as f:
+                f.write('<p>No high-frequency spikes were found in this dataset</p>')
+            return runtime
+
+        spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).reshape(-1, 2)]
+
+        # Spikes found
+        nii = nb.load(self.inputs.in_file)
+        data = nii.get_data()
+
+        slices = []
+        for t, z in spikes_list:
+            slices.append(data[..., z, t])
+
+        spikes_data = np.stack(slices, axis=-1)
+        nb.Nifti1Image(spikes_data, nii.get_affine(),
+                       nii.get_header()).to_filename('spikes.nii.gz')
+
+        tr = nii.get_header().get_zooms()[-1]
+        labels = ['t=%.3fs (z=%d)' % (tr * l[0], l[1]) for l in spikes_list]
+        plot_mosaic_helper(
+            op.abspath('spikes.nii.gz'),
+            self.inputs.subject_id,
+            self.inputs.session_id,
+            self.inputs.run_id,
+            out_file,
+            title=self.inputs.title,
+            cmap=get_cmap(self.inputs.cmap),
+            plot_sagittal=False,
+            only_plot_noise=True,
+            labels=labels)
+        return runtime
 
 
 class PlotFDInputSpec(BaseInterfaceInputSpec):
@@ -142,7 +190,7 @@ class PlotFDOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotFD(BaseInterface):
+class PlotFD(MRIQCBaseInterface):
     """
     Plots the frame displacement of a dataset
     """
@@ -163,44 +211,5 @@ class PlotFD(BaseInterface):
 
         fig.savefig(self.inputs.out_file, dpi=float(self.inputs.dpi))
 
+        self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
-
-    def _list_outputs(self):
-        outputs = self.output_spec().get()
-        outputs['out_file'] = op.abspath(self.inputs.out_file)
-        return outputs
-
-
-# class ReportInputSpec(BaseInterfaceInputSpec):
-#     in_csv = File(exists=True, mandatory=True, desc='File to be plotted')
-#     qctype = traits.Enum('anatomical', 'functional', mandatory=True, desc='Type of report')
-#     sub_list = traits.List([], traits.Tuple(traits.Str(), traits.Str(), traits.Str(), traits.Str()),
-#                            usedefault=True, desc='List of subjects requested')
-#     settings = traits.Dict(desc='Settings')
-
-
-# class ReportOutputSpec(TraitedSpec):
-#     out_group = File(exists=True, desc='output pdf file, group report')
-#     out_indiv = OutputMultiPath(File(exists=True), desc='individual reports')
-
-
-# class Report(BaseInterface):
-#     input_spec = ReportInputSpec
-#     output_spec = ReportOutputSpec
-
-#     def _run_interface(self, runtime):
-#         from mriqc.reports import workflow_report
-#         settings = None
-#         if isdefined(self.inputs.settings):
-#             settings = self.inputs.settings
-#         self._results = workflow_report(self.inputs.in_csv, self.inputs.qctype,
-#                                         self.inputs.sub_list, settings)
-#         return runtime
-
-#     def _list_outputs(self):
-#         outputs = self.output_spec().get()
-#         outputs['out_group'] = self._results[0]
-#         outputs['out_indiv'] = self._results[1]
-#         return outputs
-
-

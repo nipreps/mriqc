@@ -7,11 +7,139 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from os import path as op
 import numpy as np
 import nibabel as nb
-
-from .base import MRIQCBaseInterface
-from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
 from nilearn.signal import clean
-from scipy.stats.mstats import zscore
+from builtins import zip
+
+from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
+                                    InputMultiPath, BaseInterfaceInputSpec)
+from nipype import logging
+
+from mriqc.utils.misc import _flatten_dict
+from mriqc.qc.anatomical import snr, fber, efc, summary_stats
+from mriqc.qc.functional import (gsr, gcor)
+from .base import MRIQCBaseInterface
+IFLOGGER = logging.getLogger('interface')
+
+
+class FunctionalQCInputSpec(BaseInterfaceInputSpec):
+    in_epi = File(exists=True, mandatory=True, desc='input EPI file')
+    in_hmc = File(exists=True, mandatory=True, desc='input motion corrected file')
+    in_tsnr = File(exists=True, mandatory=True, desc='input tSNR volume')
+    in_mask = File(exists=True, mandatory=True, desc='input mask')
+    direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
+                            desc='direction for GSR computation')
+    in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
+    fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+    in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
+
+
+class FunctionalQCOutputSpec(TraitedSpec):
+    fber = traits.Float
+    efc = traits.Float
+    snr = traits.Float
+    gsr = traits.Dict
+    tsnr = traits.Float
+    dvars = traits.Dict
+    gcor = traits.Float
+    fd = traits.Dict
+    size = traits.Dict
+    spacing = traits.Dict
+    summary = traits.Dict
+
+    out_qc = traits.Dict(desc='output flattened dictionary with all measures')
+
+
+class FunctionalQC(MRIQCBaseInterface):
+    """
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
+    structural image given as input
+
+    """
+    input_spec = FunctionalQCInputSpec
+    output_spec = FunctionalQCOutputSpec
+
+    def _run_interface(self, runtime):
+        # Get the mean EPI data and get it ready
+        epinii = nb.load(self.inputs.in_epi)
+        epidata = np.nan_to_num(epinii.get_data())
+        epidata = epidata.astype(np.float32)
+        epidata[epidata < 0] = 0
+
+        # Get EPI data (with mc done) and get it ready
+        hmcnii = nb.load(self.inputs.in_hmc)
+        hmcdata = np.nan_to_num(hmcnii.get_data())
+        hmcdata = hmcdata.astype(np.float32)
+        hmcdata[hmcdata < 0] = 0
+
+        # Get EPI data (with mc done) and get it ready
+        msknii = nb.load(self.inputs.in_mask)
+        mskdata = np.nan_to_num(msknii.get_data())
+        mskdata = mskdata.astype(np.uint8)
+        mskdata[mskdata < 0] = 0
+        mskdata[mskdata > 0] = 1
+
+        # SNR
+        self._results['snr'] = float(snr(epidata, mskdata, fglabel=1))
+        # FBER
+        self._results['fber'] = fber(epidata, mskdata)
+        # EFC
+        self._results['efc'] = efc(epidata)
+        # GSR
+        self._results['gsr'] = {}
+        if self.inputs.direction == 'all':
+            epidir = ['x', 'y']
+        else:
+            epidir = [self.inputs.direction]
+
+        for axis in epidir:
+            self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
+
+        # Summary stats
+        self._results['summary'] = summary_stats(epidata, mskdata)
+
+        # DVARS
+        dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)
+        dvars_col = ['std', 'nstd', 'vstd']
+        self._results['dvars'] = {
+            dvars_col[i]: float(val) for i, val in enumerate(dvars_avg)
+        }
+
+        # tSNR
+        tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
+        self._results['tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
+
+        # GCOR
+        self._results['gcor'] = gcor(hmcdata, mskdata)
+
+        # FD
+        fd_data = np.loadtxt(self.inputs.in_fd)
+        num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
+        self._results['fd'] = {
+            'mean': float(fd_data.mean()),
+            'num': int(num_fd),
+            'perc': float(num_fd * 100 / (len(fd_data) + 1))
+        }
+
+        # Image specs
+        self._results['size'] = {'x': int(hmcdata.shape[0]),
+                                 'y': int(hmcdata.shape[1]),
+                                 'z': int(hmcdata.shape[2])}
+        self._results['spacing'] = {
+            i: float(v) for i, v in zip(['x', 'y', 'z'],
+                                        hmcnii.get_header().get_zooms()[:3])}
+
+        try:
+            self._results['size']['t'] = int(hmcdata.shape[3])
+        except IndexError:
+            pass
+
+        try:
+            self._results['spacing']['tr'] = float(hmcnii.get_header().get_zooms()[3])
+        except IndexError:
+            pass
+
+        self._results['out_qc'] = _flatten_dict(self._results)
+        return runtime
 
 
 class SpikesInputSpec(BaseInterfaceInputSpec):

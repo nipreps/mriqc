@@ -46,7 +46,7 @@ WORKDIR /root
 
 # Create conda environment, use nipype's conda-forge channel
 RUN conda config --add channels conda-forge && \
-    conda install -y numpy scipy matplotlib && \
+    conda install -y numpy scipy statsmodels matplotlib && \
     pip install -e git+https://github.com/nipy/nipype.git@master#egg=nipype && \
     python -c "from matplotlib import font_manager"
 

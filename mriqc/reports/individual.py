@@ -11,9 +11,10 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-def individual_html(in_iqms, in_plots=None):
+def individual_html(in_iqms, exclude_index=0, in_plots=None):
     import os.path as op  #pylint: disable=W0404
     import datetime
+    import re
     from json import load
     from mriqc import __version__ as ver
     from mriqc.reports.utils import iqms2html
@@ -32,7 +33,15 @@ def individual_html(in_iqms, in_plots=None):
     svg_files = []
     for pfile in in_plots:
         with open(pfile) as f:
-            svg_files.append('\n'.join(f.read().split('\n')[1:]))
+            svg_content_lines = f.read().split('\n')
+            svg_lines_corrected = []
+            for line in svg_content_lines:
+                if "<svg " in line:
+                    line = re.sub(' height="[0-9.]+[a-z]*"', '', line)
+                    line = re.sub(' width="[0-9.]+[a-z]*"', '', line)
+                svg_lines_corrected.append(line)
+
+            svg_files.append('\n'.join(svg_lines_corrected))
 
     qctype = iqms_dict.pop('qc_type')
     if qctype == 'anat':
@@ -54,8 +63,8 @@ def individual_html(in_iqms, in_plots=None):
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'imparams': iqms2html(iqms_dict),
-            'svg_files': svg_files
-
+            'svg_files': svg_files,
+            'exclude_index': exclude_index
         }, out_file)
 
     MRIQC_REPORT_LOG.info('Generated individual log (%s)', out_file)
