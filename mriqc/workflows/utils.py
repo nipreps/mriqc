@@ -160,6 +160,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
     import nibabel as nb
     from mriqc.workflows.utils import spectrum_mask
     from scipy.ndimage.filters import median_filter
+    from scipy.ndimage import generate_binary_structure, binary_erosion
     from statsmodels.robust.scale import mad
 
 
@@ -202,8 +203,17 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
 
         for z in range(fft_frame.shape[-1]):
             sl = fft_frame[..., z]
+            if not np.any(sl > spike_thres):
+                continue
 
             # Any zscore over spike_thres will be called a spike
+            sl[sl <= spike_thres] = 0
+            sl[sl > 0] = 1
+
+            # Erode peaks and see how many survive
+            struc = generate_binary_structure(3, 2)
+            sl = binary_erosion(sl.astype(np.uint8), structure=struc).astype(np.uint8)
+
             if np.any(sl > spike_thres):
                 spikes_list.append((t, z))
 
