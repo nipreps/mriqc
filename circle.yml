@@ -41,6 +41,9 @@ test:
 general:
   artifacts:
     - "~/scratch"
+  branches:
+    ignore:
+      - gh-pages # ignore gh-pages
 
 # deployment:
 #   codecov:
