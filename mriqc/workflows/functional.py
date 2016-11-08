@@ -286,8 +286,15 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots', 'exclude_index'], output_names=['out_file'],
-        function=individual_html), name='GenerateReport')
+        input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
+        output_names=['out_file'], function=individual_html), name='GenerateReport')
+    wf_details = []
+    if settings.get('hmc_afni', False):
+        wf_details.append('Framewise Displacement was computed using AFNI <code>3dvolreg</code>')
+    else:
+        wf_details.append('Framewise Displacement was computed using FSL <code>mcflirt</code>')
+
+    rnode.inputs.wf_details = wf_details
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
