@@ -151,15 +151,24 @@ class PlotSpikes(MRIQCBaseInterface):
         data = nii.get_data()
 
         slices = []
+        labels = []
+        labelfmt = 't={0:.3f}s (z={1:d})'.format
         for t, z in spikes_list:
+            if t > 0:
+                slices.append(data[..., z, t - 1])
+                labels.append(labelfmt(t - 1, z))
             slices.append(data[..., z, t])
+            labels.append(labelfmt(t, z))
+
+            if t < (len(spikes_list) - 1):
+                slices.append(data[..., z, t + 1])
+                labels.append(labelfmt(t + 1, z))
 
         spikes_data = np.stack(slices, axis=-1)
         nb.Nifti1Image(spikes_data, nii.get_affine(),
                        nii.get_header()).to_filename('spikes.nii.gz')
 
         tr = nii.get_header().get_zooms()[-1]
-        labels = ['t=%.3fs (z=%d)' % (tr * l[0], l[1]) for l in spikes_list]
         plot_mosaic_helper(
             op.abspath('spikes.nii.gz'),
             self.inputs.subject_id,
@@ -169,7 +178,7 @@ class PlotSpikes(MRIQCBaseInterface):
             title=self.inputs.title,
             cmap=get_cmap(self.inputs.cmap),
             plot_sagittal=False,
-            only_plot_noise=True,
+            only_plot_noise=False,
             labels=labels)
         return runtime
 

@@ -280,7 +280,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         cmap='viridis'), name='PlotMosaicSD')
 
     mosaic_spikes = pe.Node(PlotSpikes(
-        out_file='plot_spikes.svg', cmap='viridis_r',
+        out_file='plot_spikes.svg', cmap='viridis',
         title='High-Frequency spikes (session: {session_id}, run: {run_id})'),
                             name='PlotSpikes')
 
