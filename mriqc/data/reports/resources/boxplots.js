@@ -165,6 +165,14 @@ function makeDistroChart(settings) {
         };
     }
 
+    function axislabelHover(groupName) {
+        var tooltipString = "Go to definition of " + groupName;
+        return function () {
+            chart.objs.tooltip.transition().duration(200).style("opacity", 1.0);
+            chart.objs.tooltip.html(tooltipString)
+        };
+    }
+
     /**
      * Closure that creates the tooltip hover function
      * @param groupName Name of the x group
@@ -174,7 +182,7 @@ function makeDistroChart(settings) {
     function pointHover(label, value) {
         var tooltipString = "Subject: " + label + "<br\>Measure: " + value
         return function () {
-            chart.objs.tooltip.transition().duration(200).style("opacity", 0.9);
+            chart.objs.tooltip.transition().duration(200).style("opacity", 1.0);
             chart.objs.tooltip.html(tooltipString)
         };
     }
@@ -398,20 +406,24 @@ function makeDistroChart(settings) {
             //.attr("x", -chart.height / 2)
             .style("text-anchor", "end")
             .style("font-size", "16px")
-            .text(chart.yAxisLable);
+            .append("a")
+            .attr("xlink:href", function(d) {
+                return "http://mriqc.readthedocs.io/en/latest/measures.html"
+            })
+            .text(chart.yAxisLable)
+            .on("mouseover", function () {
+                chart.objs.tooltip
+                    .style("display", null)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+            }).on("mouseout", function () {
+                chart.objs.tooltip.style("display", "none");
+            }).on("mousemove", axislabelHover(chart.yAxisLable));
 
         // Create tooltip div
         chart.objs.tooltip = chart.objs.mainDiv.append('div').attr('class', 'tooltip');
         for (var cName in chart.groupObjs) {
             chart.groupObjs[cName].g = chart.objs.g.append("g").attr("class", "group");
-            // chart.groupObjs[cName].g.on("mouseover", function () {
-            //     chart.objs.tooltip
-            //         .style("display", null)
-            //         .style("left", (d3.event.pageX) + "px")
-            //         .style("top", (d3.event.pageY - 28) + "px");
-            // }).on("mouseout", function () {
-            //     chart.objs.tooltip.style("display", "none");
-            // }).on("mousemove", tooltipHover(cName, chart.groupObjs[cName].metrics))
         }
         chart.update();
     }();
