@@ -153,7 +153,7 @@ def spectrum_mask(size):
     ftmask[ftmask < 1] = 0
     return ftmask
 
-def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
+def slice_wise_fft(in_file, ftmask=None, spike_thres=10., out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
     import numpy as np
@@ -196,14 +196,19 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
     fft_zscored = fft_data - mu[..., np.newaxis]
     fft_zscored[idxs] /= sigma[idxs]
 
+    # save fft z-scored
+    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
+    nii = nb.Nifti1Image(fft_zscored, nb.load(in_file).get_affine(), None)
+    nii.to_filename(out_fft)
+
     # Find peaks
     spikes_list = []
-    for t in range(fft_data.shape[-1]):
+    for t in range(fft_zscored.shape[-1]):
         fft_frame = fft_zscored[..., t]
 
         for z in range(fft_frame.shape[-1]):
             sl = fft_frame[..., z]
-            if not np.any(sl > spike_thres):
+            if np.all(sl < spike_thres):
                 continue
 
             # Any zscore over spike_thres will be called a spike
@@ -211,17 +216,14 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
             sl[sl > 0] = 1
 
             # Erode peaks and see how many survive
-            struc = generate_binary_structure(3, 2)
+            struc = generate_binary_structure(2, 2)
             sl = binary_erosion(sl.astype(np.uint8), structure=struc).astype(np.uint8)
 
-            if np.any(sl > spike_thres):
+            if sl.sum() > 10:
                 spikes_list.append((t, z))
 
     out_spikes = op.abspath(out_prefix + '_spikes.tsv')
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
-    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
-    nii = nb.Nifti1Image(fft_zscored, nb.load(in_file).get_affine(), None)
-    nii.to_filename(out_fft)
 
     return len(spikes_list), out_spikes, out_fft
