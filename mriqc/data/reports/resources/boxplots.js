@@ -72,7 +72,7 @@ function makeDistroChart(settings) {
     if (units) {
         chart.settings.axisLabels.yAxis += ' (' + units + ')'
     }
-    
+
 
     chart.groupObjs = {}; //The data organized by grouping and sorted as well as any metadata for the groups
     chart.objs = {mainDiv: null, chartDiv: null, g: null, xAxis: null, yAxis: null};
@@ -1345,7 +1345,8 @@ function makeDistroChart(settings) {
             showLines: false,//['median'],
             showBeanLines: false,
             beanWidth: 20,
-            colors: null
+            colors: null,
+            padding: 0
         };
         chart.dataPlots.options = shallowCopy(defaultOptions);
         for (var option in options) {
@@ -1471,6 +1472,9 @@ function makeDistroChart(settings) {
                         }
 
                         plotBounds = getObjWidth(scatterWidth, cName);
+                        plotBounds.middle += chart.dataPlots.options.padding
+                        plotBounds.right += chart.dataPlots.options.padding
+                        plotBounds.left += chart.dataPlots.options.padding
                         width = plotBounds.right - plotBounds.left;
 
                         for (var pt = 0; pt < cGroup.values.length; pt++) {
