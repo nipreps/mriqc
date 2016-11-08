@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-07 15:23:18
 """ Visualization utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -460,11 +459,16 @@ def plot_bg_dist(in_file):
     # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
 
-    with open(in_file, 'r') as jsonf:
-        data = json.load(jsonf)
-
     # Write out figure of the fitting
     out_file = op.abspath('background_fit.svg')
+    try:
+        with open(in_file, 'r') as jsonf:
+            data = json.load(jsonf)
+    except ValueError:
+        with open(out_file, 'w') as ofh:
+            ofh.write('<p>Background noise fitting could not be plotted.</p>')
+        return out_file
+
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')

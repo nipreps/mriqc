@@ -257,12 +257,12 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     # Artifact-free air region
     data = img[airmask > 0]
 
-    dmax = np.percentile(data[data > 0], 99.9)
-
+    # Background can only be fit if we have a min number of voxels
     if len(data[data > 0]) < min_voxels:
         return 0.0, out_file
 
     # Estimate data pdf
+    dmax = np.percentile(data[data > 0], 99.9)
     hist, bin_edges = np.histogram(data[data > 0], density=True,
                                    range=(0.0, dmax), bins='doane')
     bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
