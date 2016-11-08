@@ -10,7 +10,7 @@
     max-width: 800px;  /*Overwritten by the JS*/
     min-width: 160px;
     margin-bottom: 20px;
-    background-color: #FAF7F7;
+    /*background-color: #FAF7F7;*/
 }
 .chart-wrapper .inner-wrapper {
     position: relative;

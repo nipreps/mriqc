@@ -359,7 +359,8 @@ function makeDistroChart(settings) {
     !function prepareChart() {
         // Build main div and chart div
         chart.objs.mainDiv = d3.select(chart.settings.selector)
-            .style("max-width", chart.divWidth + "px");
+            .style("width", chart.divWidth + "px")
+            .style("display", "inline-block");
         // Add all the divs to make it centered and responsive
         chart.objs.mainDiv.append("div")
             .attr("class", "inner-wrapper")
