@@ -51,7 +51,7 @@ def main():
         packages=find_packages(),
         package_data={'mriqc': ['data/reports/*.rst',
                                 'data/reports/*.html',
-                                'data/reports/reports/*'
+                                'data/reports/resources/*'
                                 'data/tests/*']},
         zip_safe=False,
     )
