@@ -7,18 +7,11 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-07 12:48:17
 """ Visualization utilities """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from builtins import str
-from builtins import zip
-from builtins import range
+from __future__ import print_function, division, absolute_import, unicode_literals
+from builtins import zip, range
 
 import math
-import time
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -31,7 +24,6 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 from pylab import cm
-from six import string_types
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -161,7 +153,9 @@ def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
 
 
 def get_limits(nifti_file, only_plot_noise=False):
-    if isinstance(nifti_file, string_types):
+    from builtins import bytes, str   # pylint: disable=W0622
+
+    if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         data = nii.get_data()
     else:
@@ -184,10 +178,10 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
                 cmap=cm.Greys_r, plot_sagittal=True, labels=None):
-    from six import string_types
-    from pylab import cm
+    from builtins import bytes, str  # pylint: disable=W0622
+    from matplotlib import cm
 
-    if isinstance(nifti_file, string_types):
+    if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         mean_data = nii.get_data()
     else:
@@ -295,9 +289,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                       vmax=vmax,
                       cmap=cmap, interpolation='nearest', origin='lower')
             ax.annotate(
-                str(x_val), xy=(.99, .99), xycoords='axes fraction',
-                fontsize=8, color='white', horizontalalignment='right',
-                verticalalignment='top')
+                '%d' % x_val, xy=(.99, .99), xycoords='axes fraction',
+                fontsize=8, color='k', backgroundcolor='white',
+                horizontalalignment='right', verticalalignment='top')
             ax.axis('off')
 
     fig.subplots_adjust(
@@ -457,7 +451,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
 
 
 def plot_bg_dist(in_file):
-    import os.path as op
+    import os.path as op  # pylint: disable=W0621
     import numpy as np
     import json
     from io import open # pylint: disable=W0622

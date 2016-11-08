@@ -345,11 +345,6 @@ def summary_stats(img, pvms, bgdata=None):
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
     """
-    mean = {}
-    stdv = {}
-    p95 = {}
-    p05 = {}
-    kurt = {}
 
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:

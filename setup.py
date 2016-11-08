@@ -3,17 +3,13 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-18 08:56:53
+# @Last Modified time: 2016-11-07 15:17:32
 """ MRIQC setup script """
-
-import sys
-
 PACKAGE_NAME = 'mriqc'
 
 def main():
     """ Install entry-point """
     from os import path as op
-    from glob import glob
     from inspect import getfile, currentframe
     from setuptools import setup, find_packages
     from io import open  # pylint: disable=W0622

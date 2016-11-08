@@ -220,7 +220,6 @@ ocol/blob/master/scripts/qap_bids_data_sublist_generator.py
 
 def gather_bids_data(dataset_folder, subject_inclusion=None, include_types=None):
     """ Extract data from BIDS root folder """
-    import os
     import os.path as op
     from six import string_types
     import yaml

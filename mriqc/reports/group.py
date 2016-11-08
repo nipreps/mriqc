@@ -10,10 +10,9 @@
 # @Last modified by:   oesteban
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os
+
 from sys import version_info
-import os.path as op
-from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
+from builtins import zip, object, str, bytes  # pylint: disable=W0622
 
 from mriqc import logging
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
@@ -26,7 +25,6 @@ def gen_html(csv_file, qctype, out_file=None):
     import datetime
     from pkg_resources import resource_filename as pkgrf
     import pandas as pd
-    import numpy as np
     from mriqc import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
