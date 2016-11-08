@@ -9,10 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-11-07 11:35:58
 """Helper functions for the workflows"""
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
 
 
@@ -181,7 +178,8 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=12., out_prefix=None):
     for t in range(func_data.shape[-1]):
         func_frame = func_data[..., t]
         fft_slices = []
-        for sl in func_frame.T:
+        for z in range(func_frame.shape[2]):
+            sl = func_frame[..., z]
             fftsl = median_filter(np.absolute(np.fft.fft2(sl)),
                                   size=(5, 5), mode='constant') * ftmask
             fft_slices.append(fftsl)
