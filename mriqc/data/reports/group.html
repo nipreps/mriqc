@@ -64,8 +64,10 @@ report</h1>
         chart1.renderDataPlots();
         chart1.dataPlots.change({showPlot:true, plotType:35, showBeanLines:false});
         chart1.renderBoxPlot();
-        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,colors:['#555']});
-        chart1.renderNotchBoxes({showNotchBox:false});
+        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,
+            padding: -20, colors:['#555']});
+
+        // chart1.renderNotchBoxes({showNotchBox:false});
         // chart1.renderViolinPlot({showViolinPlot:false});
         // chart1.violinPlots.show({reset:true,clamp:0});
         // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})

@@ -752,7 +752,8 @@ function makeDistroChart(settings) {
             lineWidth: null,
             scatterOutliers: false,
             outlierCSize: 2.5,
-            colors: chart.colorFunct
+            colors: chart.colorFunct,
+            padding: 0
         };
         chart.boxPlots.options = shallowCopy(defaultOptions);
         for (var option in options) {
@@ -863,6 +864,9 @@ function makeDistroChart(settings) {
 
                 // Get the box width
                 var objBounds = getObjWidth(bOpts.boxWidth, cName);
+                objBounds.middle += chart.boxPlots.options.padding
+                objBounds.right += chart.boxPlots.options.padding
+                objBounds.left += chart.boxPlots.options.padding
                 var width = (objBounds.right - objBounds.left);
 
                 var sMetrics = {}; //temp var for scaled (plottable) metric values
@@ -889,6 +893,12 @@ function makeDistroChart(settings) {
                 } else {
                     lineBounds = objBounds
                 }
+
+                // Apply padding
+                lineBounds.middle += chart.boxPlots.options.padding
+                lineBounds.right += chart.boxPlots.options.padding
+                lineBounds.left += chart.boxPlots.options.padding
+
                 // --Whiskers
                 if (cBoxPlot.objs.upperWhisker) {
                     cBoxPlot.objs.upperWhisker.fence
