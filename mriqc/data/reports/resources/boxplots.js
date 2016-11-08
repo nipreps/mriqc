@@ -994,7 +994,15 @@ function makeDistroChart(settings) {
                     cBoxPlot.objs.box = cBoxPlot.objs.g.append("rect")
                         .attr("class", "box")
                         .style("fill", chart.boxPlots.colorFunct(cName))
-                        .style("stroke", chart.boxPlots.colorFunct(cName));
+                        .style("stroke", chart.boxPlots.colorFunct(cName))
+                        .on("mouseover", function () {
+                            chart.objs.tooltip
+                                .style("display", null)
+                                .style("left", (d3.event.pageX) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px");
+                        }).on("mouseout", function () {
+                            chart.objs.tooltip.style("display", "none");
+                        }).on("mousemove", tooltipHover(cName, chart.groupObjs[cName].metrics));
                     //A stroke is added to the box with the group color, it is
                     // hidden by default and can be shown through css with stroke-width
                 }
