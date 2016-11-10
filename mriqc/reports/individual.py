@@ -60,13 +60,23 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
         qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
         ses_id, run_id))
 
+
+    msk_vals = []
     for k in ['snr_d_csf', 'snr_d_gm', 'snr_d_wm', 'fber']:
-        try:
-            if iqms_dict[k] < 0.:
-                wf_details.append('<span class="red-flag">The file seems to be masked</span>')
-                break
-        except KeyError:
-            pass
+        elements = k.split('_')
+        iqm = iqms_dict[elements[0]]
+        if len(elements) == 1:
+            msk_vals.append(iqm < 0.)
+        else:
+            msk_vals.append(iqm['_'.join(elements[1:])] < 0.)
+
+    if any(msk_vals):
+        wf_details.append('Noise variance in the background is very low')
+        if all(msk_vals):
+            wf_details[-1] += (' for all measures: <span class="problematic">'
+                               'the original file could be masked</span>.')
+        else:
+            wf_details[-1] += '.'
 
     tpl = IndividualTemplate()
     tpl.generate_conf({
