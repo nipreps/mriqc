@@ -60,6 +60,9 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
         qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
         ses_id, run_id))
 
+    if any([iqms_dict[k] < 0. for k in ['snr_d_csf', 'snr_d_gm', 'snr_d_wm', 'fber']]):
+        wf_details.append('<span class="red-flag">The file seems to be masked</span>')
+
     tpl = IndividualTemplate()
     tpl.generate_conf({
             'qctype': qctype,
