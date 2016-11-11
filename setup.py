@@ -99,7 +99,7 @@ class BuildWithCommitInfoCommand(build_py):
         if version:
             out_path = pjoin(self.build_lib, PACKAGE_NAME, 'VERSION')
             with open(out_path, 'wt' if PY3 else 'wb') as cfile:
-                cfile.write()
+                cfile.write(version)
 
 def _get_dev_version():
     def _git(cmd):
