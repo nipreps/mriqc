@@ -3,7 +3,7 @@ TEST_PATH=./
 VERSION := $(shell python version.py)
 $( eval VERSION := $( shell python version.py ))
 
-.PHONY: clean-pyc clean-build tag docker-build docker-push
+.PHONY: clean-pyc clean-build docker-build docker-push
 
 clean-pyc:
 		find . -name '__pycache__' -type d -exec rm -r {} +
@@ -30,7 +30,7 @@ test: clean-pyc
 dist: clean-build clean-pyc
 		python setup.py sdist
 
-docker-build: tag
+docker-build:
 		docker build \
 			-f ./docker/Dockerfile_py27 \
 			-t poldracklab/mriqc:$(VERSION)-python27 .
