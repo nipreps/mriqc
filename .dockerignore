@@ -1,8 +1,11 @@
+.gitignore
 __pycache__/**/*
 __pycache__
 *.pyc
 build/**/*
 build
+.git/**/*
+.git
 .eggs/**/*
 .eggs
 agave/**/*
@@ -11,3 +14,7 @@ notebooks/**/*
 notebooks
 mriqc.egg-info/**/*
 mriqc.egg-info
+Makefile
+docs/**/*
+docs/
+

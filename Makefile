@@ -33,13 +33,10 @@ dist: clean-build clean-pyc
 docker-build:
 		docker build \
 			-f ./docker/Dockerfile_py27 \
-			-t poldracklab/mriqc:$(VERSION)-python27 .
+			-t poldracklab/mriqc:$(VERSION)-python27 -t poldracklab/mriqc:latest .
 		docker build \
 			-f ./docker/Dockerfile_py35 \
 			-t poldracklab/mriqc:$(VERSION)-python35 .
-		docker build \
-			-f ./docker/Dockerfile_py27 \
-			-t poldracklab/mriqc:latest .
 
 docker: docker-build
 		docker push poldracklab/mriqc:$(VERSION)-python27
