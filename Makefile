@@ -52,3 +52,11 @@ docker: docker-build
 release: clean-build tag docker
 		python setup.py sdist
 		twine upload dist/*
+
+singularity: release
+	mkdir -p ./build/singularity
+	docker run --privileged -ti --rm  \
+    	-v /var/run/docker.sock:/var/run/docker.sock \
+    	-v ./build/singularity:/output \
+    	filo/docker2singularity \
+    	bids/mriqc:$(VERSION)
