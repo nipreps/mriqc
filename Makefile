@@ -1,5 +1,5 @@
-HOST=127.0.0.1
 TEST_PATH=./
+DOCKER_IMAGE=poldracklab/mriqc
 VERSION := $(shell python version.py)
 $( eval VERSION := $( shell python version.py ))
 
@@ -37,27 +37,28 @@ dist: clean-build clean-pyc
 docker-build:
 		docker build \
 			-f ./docker/Dockerfile_py27 \
-			-t poldracklab/mriqc:$(VERSION)-python27 -t poldracklab/mriqc:latest .
+			-t $(DOCKER_IMAGE):$(VERSION)-python27 -t $(DOCKER_IMAGE):latest -t $(DOCKER_IMAGE):$(VERSION) .
 		docker build \
 			-f ./docker/Dockerfile_py35 \
-			-t poldracklab/mriqc:$(VERSION)-python35 .
+			-t $(DOCKER_IMAGE):$(VERSION)-python35 .
 
 .PHONY: docker
 docker: docker-build
-		docker push poldracklab/mriqc:$(VERSION)-python27
-		docker push poldracklab/mriqc:latest
-		docker push poldracklab/mriqc:$(VERSION)-python35
+		docker push $(DOCKER_IMAGE):$(VERSION)-python27
+		docker push $(DOCKER_IMAGE):$(VERSION)
+		docker push $(DOCKER_IMAGE):latest
+		docker push $(DOCKER_IMAGE):$(VERSION)-python35
 
 .PHONY: release
 release: clean-build tag docker
 		python setup.py sdist
 		twine upload dist/*
 
-singularity: release
-	mkdir -p ./build/singularity
+singularity: docker
+	mkdir -p build/singularity
 	docker run --privileged -ti --rm  \
     	-v /var/run/docker.sock:/var/run/docker.sock \
-    	-v ./build/singularity:/output \
+    	-v $(shell pwd)/build/singularity:/output \
     	singularityware/docker2singularity \
-    	poldracklab/mriqc:$(VERSION)
+    	$(DOCKER_IMAGE):$(VERSION)
 
