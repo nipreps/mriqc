@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-07 15:24:35
+# @Last Modified time: 2016-11-10 17:14:23
 """
 Anatomical tests
 """
@@ -16,7 +16,7 @@ import os.path as op
 import numpy as np
 import nibabel as nb
 import pytest
-
+from scipy.stats import rice
 from niworkflows.data import get_brainweb_1mm_normal
 from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi2
 
@@ -52,31 +52,26 @@ def gtruth():
     return GroundTruth()
 
 
-@pytest.mark.parametrize("sigma,exp_cjv", [
-    (0.01, 0.45419429982401677),
-    (0.03, 0.5114948933353829),
-    (0.05, 0.6077553259357966),
-    (0.08, 0.7945079788409393),
-    (0.12, 1.0781050744254561),
-    (0.15, 1.3013580100905036),
-    (0.2, 1.6898180485107017)
-])
-def test_cjv(sigma, exp_cjv, rtol=0.1):
-    data = op.join(get_brainweb_1mm_normal(), 'sub-normal01')
+@pytest.mark.parametrize("sigma", [0.01, 0.03, 0.05, 0.08, 0.12, 0.15, 0.20])
+def test_cjv(sigma, rtol=0.1):
+    size = (50, 50)
+    test_data = np.ones(size)
+    wmdata = np.zeros(size)
+    gmdata = np.zeros(size)
+    gmdata[:, :25] = 1
+    wmdata[gmdata == 0] = 1
 
-    wmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_wht.nii.gz')
-    wmdata = nb.load(wmmask).get_data().astype(np.float32)
-    gmmask = op.join(get_brainweb_1mm_normal(), 'derivatives', 'volume_fraction_gry.nii.gz')
-    gmdata = nb.load(gmmask).get_data().astype(np.float32)
+    gm_mean = 200
+    wm_mean = 600
+    test_data[gmdata > 0] = gm_mean
+    test_data[wmdata > 0] = wm_mean
 
-    ses = 'ses-pn0rf00'
-    im_file = op.join(data, ses, 'anat', 'sub-normal01_%s_T1w.nii.gz' % ses)
-    imdata = nb.load(im_file).get_data()
+    test_data[wmdata > .5] += np.random.normal(0.0, scale=sigma*wm_mean, size=test_data[wmdata > .5].shape)
+    test_data[gmdata > .5] += np.random.normal(0.0, scale=sigma*gm_mean, size=test_data[gmdata > .5].shape)
 
-    fg_mean = np.mean(imdata[wmdata > .95])
-    test_data = imdata + np.random.normal(0.0, scale=sigma*fg_mean, size=imdata.shape)
-    test_data[test_data < 0] = 0
-    assert abs(cjv(test_data, wmmask=wmdata, gmmask=gmdata) - exp_cjv) < rtol
+    exp_cjv = sigma * (wm_mean + gm_mean) / (wm_mean - gm_mean)
+
+    assert np.isclose(cjv(test_data, wmmask=wmdata, gmmask=gmdata), exp_cjv, rtol=rtol)
 
 
 @pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
@@ -88,11 +83,26 @@ def test_snr(gtruth, sigma, noise):
 
 
 @pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
-@pytest.mark.parametrize("noise", ['normal', 'rayleigh'])
-def test_snr_dietrich(gtruth, sigma, noise):
-    data = gtruth.get_data(sigma, noise)
-    error = abs(snr_dietrich(*data) - (1 / sigma)) * sigma
-    assert  error < 6.0
+@pytest.mark.parametrize("noise", ['rice', 'rayleigh'])
+def test_snr_dietrich(sigma, noise):
+    size = (50, 50, 50)
+    test_data = np.ones(size)
+    wmdata = np.zeros(size)
+    bgdata = np.zeros(size)
+    bgdata[:, :25, :] = 1
+    wmdata[bgdata == 0] = 1
+
+    bg_mean = 0
+    wm_mean = 600
+    test_data[bgdata > 0] = bg_mean
+    test_data[wmdata > 0] = wm_mean
+
+    if noise == 'rice':
+        test_data += rice.rvs(0.77, scale=sigma*wm_mean, size=test_data.shape)
+    elif noise == 'rayleigh':
+        test_data += np.random.rayleigh(scale=sigma*wm_mean, size=test_data.shape)
+
+    assert abs(snr_dietrich(test_data, wmdata, bgdata) - (1/sigma)) < 10
 
 @pytest.mark.parametrize('brainweb', [
     'sub-normal01_ses-pn3rf00_T1w.nii.gz',
