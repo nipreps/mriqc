@@ -49,6 +49,6 @@ docker: docker-build
 		docker push poldracklab/mriqc:$(VERSION)-python35
 
 .PHONY: release
-release: tag docker
+release: clean-build tag docker
 		python setup.py sdist
 		twine upload dist/*
