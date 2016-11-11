@@ -50,9 +50,6 @@ COPY . /root/src/mriqc/
 RUN pip install -r requirements.txt && \
     pip install -e .[all]
 
-# Cache template
-RUN python -c "from niworkflows import data; data.get_mni_icbm152_nlin_asym_09c()"
-
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]

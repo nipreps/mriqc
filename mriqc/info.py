@@ -50,7 +50,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a17',
+    'niworkflows>=0.0.3a18',
     'pandas',
     'dipy',
     'jinja2',
