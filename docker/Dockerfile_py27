@@ -42,13 +42,13 @@ ENV PATH /usr/local/miniconda/bin:$PATH
 # Create conda environment
 RUN conda config --add channels conda-forge && \
     conda install -y numpy scipy statsmodels matplotlib && \
-    pip install -e git+https://github.com/nipy/nipype.git@master#egg=nipype && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
 WORKDIR /root/src/mriqc
 COPY . /root/src/mriqc/
-RUN pip install -e .[all]
+RUN pip install -r requirements.txt && \
+    pip install -e .[all]
 
 # Cache template
 RUN python -c "from niworkflows import data; data.get_mni_icbm152_nlin_asym_09c()"
