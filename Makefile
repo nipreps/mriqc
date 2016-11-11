@@ -15,6 +15,7 @@ clean-build:
 		rm --force --recursive build/
 		rm --force --recursive dist/
 		rm --force --recursive *.egg-info
+		rm --force --recursive src/
 
 tag:
 		git tag -a $(VERSION) -m "Version ${VERSION}"
@@ -25,7 +26,7 @@ lint:
 		pylint ./mriqc/
 
 test: clean-pyc
-		py.test --verbose $(TEST_PATH)
+		py.test --ignore=src/ --verbose $(TEST_PATH)
 
 dist: clean-build clean-pyc
 		python setup.py sdist

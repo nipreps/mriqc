@@ -1,4 +1,4 @@
 #!/bin/bash
 source /etc/fsl/fsl.sh
 source /etc/afni/afni.sh
-py.test -n 16 --junitxml=/scratch/tests.xml
+py.test --ignore=src/ -n 16 --junitxml=/scratch/tests.xml
