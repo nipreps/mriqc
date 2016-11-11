@@ -1,6 +1,9 @@
 HOST=127.0.0.1
 TEST_PATH=./
-VERSION=0.0.3
+VERSION := $(shell python version.py)
+$( eval VERSION := $( shell python version.py ))
+
+.PHONY: clean-pyc clean-build tag docker-build docker-push
 
 clean-pyc:
 		find . -name '__pycache__' -type d -exec rm -r {} +
@@ -12,6 +15,10 @@ clean-build:
 		rm --force --recursive build/
 		rm --force --recursive dist/
 		rm --force --recursive *.egg-info
+
+tag:
+		git tag -a $(VERSION) -m "Version ${VERSION}"
+		git push $(VERSION) upstream
 
 lint:
 		pylint ./mriqc/
@@ -29,6 +36,9 @@ docker-build:
 		docker build \
 			-f ./docker/Dockerfile_py35 \
 			-t poldracklab/mriqc:$(VERSION)-python35 .
+		docker build \
+			-f ./docker/Dockerfile_py27 \
+			-t poldracklab/mriqc:latest .
 
 docker-push:
 		docker push poldracklab/mriqc:$(VERSION)-python27
