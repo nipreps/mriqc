@@ -1,6 +1,5 @@
 machine:
   environment:
-    ANTS_NTHREADS: 6
     SCRATCH: "$HOME/scratch"
     DS003_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f328f6b83f6901ef94cf70"
   services:
@@ -31,10 +30,10 @@ test:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ${CIRCLE_TEST_REPORTS}:/scratch -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35 :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d func -w work/ --testing --verbose-reports :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d func -w work/ --n_procs 12 --testing --verbose-reports :
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --testing --ants-nthreads ${ANTS_NTHREADS} --verbose-reports :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/.cache/stanford-crn:/root/.cache/stanford-crn -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -d anat -w work/ --testing --verbose-reports :
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py27 /data/ds003_downsampled out/ group -d anat -w work/
 

@@ -47,14 +47,31 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
 
             svg_files.append('\n'.join(svg_lines_corrected))
 
-    qctype = iqms_dict.pop('qc_type')
-    if qctype == 'anat':
-        qctype = 'anatomical'
-    if qctype == 'func':
-        qctype = 'functional'
     sub_id = iqms_dict.pop('subject_id')
     ses_id = iqms_dict.pop('session_id')
     run_id = iqms_dict.pop('run_id')
+    qctype = iqms_dict.pop('qc_type')
+    if qctype == 'anat':
+        qctype = 'anatomical'
+        msk_vals = []
+        for k in ['snr_d_csf', 'snr_d_gm', 'snr_d_wm', 'fber']:
+            elements = k.split('_')
+            iqm = iqms_dict[elements[0]]
+            if len(elements) == 1:
+                msk_vals.append(iqm < 0.)
+            else:
+                msk_vals.append(iqm['_'.join(elements[1:])] < 0.)
+
+        if any(msk_vals):
+            wf_details.append('Noise variance in the background is very low')
+            if all(msk_vals):
+                wf_details[-1] += (' for all measures: <span class="problematic">'
+                                   'the original file could be masked</span>.')
+            else:
+                wf_details[-1] += '.'
+
+    if qctype == 'func':
+        qctype = 'functional'
 
     out_file = op.abspath('{}_sub-{}_ses-{}_run-{}_report.html'.format(
         qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
