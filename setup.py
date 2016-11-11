@@ -94,7 +94,7 @@ class BuildWithCommitInfoCommand(build_py):
 
         build_py.run(self)
 
-        out_path = pjoin(self.build_lib, PACKAGE_NAME, 'COMMIT_INFO.txt')
+        out_path = pjoin(self.build_lib, PACKAGE_NAME, 'VERSION')
         with open(out_path, 'wt' if PY3 else 'wb') as cfile:
             cfile.write(_get_dev_version())
 
@@ -105,9 +105,7 @@ def _get_dev_version():
         out_val, _ = proc.communicate()
         return out_val.decode() if PY3 else out_val
 
-    version = _git('git describe').strip()
-    repo_commit = _git('git rev-parse --short HEAD').strip()
-    return '{}.dev-{}'.format(version, repo_commit)
+    return _git('git describe').strip()
 
 
 
