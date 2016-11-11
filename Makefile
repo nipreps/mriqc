@@ -18,7 +18,8 @@ clean-build:
 
 tag:
 		git tag -a $(VERSION) -m "Version ${VERSION}"
-		git push $(VERSION) upstream
+		git push origin $(VERSION)
+		git push upstream $(VERSION)
 
 lint:
 		pylint ./mriqc/
@@ -29,7 +30,7 @@ test: clean-pyc
 dist: clean-build clean-pyc
 		python setup.py sdist
 
-docker-build:
+docker-build: tag
 		docker build \
 			-f ./docker/Dockerfile_py27 \
 			-t poldracklab/mriqc:$(VERSION)-python27 .
@@ -40,6 +41,7 @@ docker-build:
 			-f ./docker/Dockerfile_py27 \
 			-t poldracklab/mriqc:latest .
 
-docker-push:
+docker: docker-build
 		docker push poldracklab/mriqc:$(VERSION)-python27
+		docker push poldracklab/mriqc:latest
 		docker push poldracklab/mriqc:$(VERSION)-python35
