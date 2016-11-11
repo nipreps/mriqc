@@ -58,5 +58,6 @@ singularity: release
 	docker run --privileged -ti --rm  \
     	-v /var/run/docker.sock:/var/run/docker.sock \
     	-v ./build/singularity:/output \
-    	filo/docker2singularity \
-    	bids/mriqc:$(VERSION)
+    	singularityware/docker2singularity \
+    	poldracklab/mriqc:$(VERSION)
+

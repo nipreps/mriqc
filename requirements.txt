@@ -1,2 +1,2 @@
-niworkflows>=0.0.3a15
+niworkflows>=0.0.3a16
 -e git+https://github.com/nipy/nipype.git@master#egg=nipype
