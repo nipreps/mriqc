@@ -89,7 +89,7 @@ def gen_html(csv_file, qctype, out_file=None):
     nPart = len(dataframe)
 
     csv_groups = []
-    for group, units in QCGROUPS[qctype]:
+    for group, units in QCGROUPS[qctype[:4]]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
         for iqm in group:
@@ -124,6 +124,4 @@ def gen_html(csv_file, qctype, out_file=None):
             remove(dstpath)
 
         copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
-
-    MRIQC_REPORT_LOG.info('Generated group-level report (%s)', out_file)
     return out_file

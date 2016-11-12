@@ -363,7 +363,7 @@ def generate_csv(jsonfiles, out_fname):
     errorlist = []
 
     if not jsonfiles:
-        raise RuntimeError('No QC-json files found to generate QC table')
+        return None
 
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
