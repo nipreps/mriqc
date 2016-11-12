@@ -51,7 +51,7 @@ def main():
                                           'fs2gif=mriqc.utils.fs2gif:main',
                                           'dfcheck=mriqc.utils.dfcheck:main',
                                           'participants=mriqc.utils.subject_wrangler:main']},
-        packages=find_packages(),
+        packages=find_packages(exclude=['*.tests']),
         package_data={'mriqc': ['data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',
