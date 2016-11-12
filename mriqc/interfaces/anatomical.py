@@ -277,7 +277,6 @@ def artifact_mask(imdata, airdata, distance, zscore=10.):
         airdata[airdata > 0.] = 1
 
     bg_img = imdata * airdata
-
     if np.sum((bg_img > 0).astype(np.uint8)) < 100:
         return np.zeros_like(airdata)
 
