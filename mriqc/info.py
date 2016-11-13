@@ -61,11 +61,13 @@ REQUIRES = [
     'svgutils',
     'nipype',
     'nipy',
-    'statsmodels'
+    'statsmodels',
+    'pybids'
 ]
 
 LINKS_REQUIRES = [
     'git+https://github.com/nipy/nipype.git#egg=nipype',
+    'git+https://github.com/incf/pybids.git@master#egg=pybids',
 ]
 
 TESTS_REQUIRES = [

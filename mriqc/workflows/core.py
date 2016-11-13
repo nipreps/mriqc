@@ -9,10 +9,7 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2016-08-19 10:40:21
 """ The core module combines the existing workflows """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 from six import string_types
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
@@ -24,6 +21,9 @@ from mriqc.utils.misc import gather_bids_data
 
 def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
     """ Multi-subject anatomical workflow wrapper """
+
+    workflow = pe.Workflow(name='anatMRIQC')
+    workflow.base_dir = settings['work_dir']
     # Run single subject mode if only one subject id is provided
     if subject_id is not None and isinstance(subject_id, string_types):
         subject_id = [subject_id]
@@ -48,7 +48,6 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
 
     dsplit = pe.Node(niu.Split(splits=[1, 1, 1], squeeze=True),
                      name='datasplit')
-    workflow = pe.Workflow(name='anatMRIQC')
     workflow.connect([
         (inputnode, dsplit, [('data', 'inlist')]),
         (dsplit, anat_qc, [('out1', 'inputnode.subject_id'),
@@ -56,11 +55,17 @@ def ms_anat(settings=None, subject_id=None, session_id=None, run_id=None):
                            ('out3', 'inputnode.run_id')])
     ])
 
+    if settings.get('write_graph', False):
+                workflow.write_graph()
+
     return workflow
 
 
 def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
     """ Multi-subject functional workflow wrapper """
+
+    workflow = pe.Workflow(name='funcMRIQC')
+    workflow.base_dir = settings['work_dir']
     # Run single subject mode if only one subject id is provided
     if subject_id is not None and isinstance(subject_id, string_types):
         subject_id = [subject_id]
@@ -87,7 +92,6 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
 
     dsplit = pe.Node(niu.Split(splits=[1, 1, 1], squeeze=True),
                      name='datasplit')
-    workflow = pe.Workflow(name='funcMRIQC')
     workflow.connect([
         (inputnode, dsplit, [('data', 'inlist')]),
         (dsplit, func_qc, [('out1', 'inputnode.subject_id'),
@@ -95,4 +99,6 @@ def ms_func(settings=None, subject_id=None, session_id=None, run_id=None):
                            ('out3', 'inputnode.run_id')])
     ])
 
+    if settings.get('write_graph', False):
+                    workflow.write_graph()
     return workflow

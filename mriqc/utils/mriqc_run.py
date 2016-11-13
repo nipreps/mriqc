@@ -24,9 +24,9 @@ from mriqc.utils.misc import check_folder
 DEFAULT_MEM_GB = 8
 
 def main():
-    from nipype import config as ncfg
-
     """Entry point"""
+    from nipype import config as ncfg
+    from mriqc.utils.bids import collect_bids_data
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
@@ -204,26 +204,30 @@ def main():
         'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
         __version__, opts.analysis_level, opts.participant_label, settings)
 
-    qc_types = []
-    for qcdt in opts.data_type:
+    # Process data types
+    qc_types = sorted(list(set([qcdt[:4] for qcdt in opts_data_type])))
+    modalities = []
+    for qcdt in qc_types:
         if qcdt.startswith('anat'):
-            qc_types.append('anatomical')
+            qcdt += 'omical'
+            modalities.append('t1w')
         if qcdt.startswith('func'):
-            qc_types.append('functional')
-    qc_types = sorted(list(set(qc_types)))
+            qcdt += 'tional'
+            modalities.append('func')
+
+    dataset = collect_bids_data(settings['bids_dir'],
+                                participant_label=opts.participant_label)
+
     # Set up participant level
     if opts.analysis_level == 'participant':
-        for qctype in qc_types:
+        for qctype, mod in zip(qc_types, modalities):
+            if not dataset[mod]:
+                MRIQC_LOG.warn('No %s scans were found in %s', qctype, settings['bids_dir'])
+                continue
+
             ms_func = getattr(mwc, 'ms_' + qctype[:4])
             workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
                                run_id=opts.run_id, settings=settings)
-            if workflow is None:
-                MRIQC_LOG.warn('No scans were found for the given inputs')
-                continue
-
-            workflow.base_dir = settings['work_dir']
-            if settings.get('write_graph', False):
-                workflow.write_graph()
 
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
