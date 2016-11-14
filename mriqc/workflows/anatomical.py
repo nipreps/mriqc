@@ -31,28 +31,20 @@ from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder
 
 
-def anat_qc_workflow(name='MRIQC_Anat', settings=None):
+def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
     One-subject-one-session-one-run pipeline to extract the NR-IQMs from
     anatomical images
     """
-    if settings is None:
-        settings = {}
 
     workflow = pe.Workflow(name=name)
 
     # Define workflow, inputs and outputs
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_dir', 'subject_id', 'session_id',
-                'run_id']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
-
-
     # 0. Get data
-    datasource = pe.Node(niu.Function(
-        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
-        output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
-    datasource.inputs.data_type = 'anat'
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
+    inputnode.iterables = [('in_file', dataset)]
+
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
@@ -80,19 +72,15 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     # Connect all nodes
     workflow.connect([
-        (inputnode, datasource, [('bids_dir', 'bids_dir'),
-                                 ('subject_id', 'subject_id'),
-                                 ('session_id', 'session_id'),
-                                 ('run_id', 'run_id')]),
-        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
-                             ('session_id', 'inputnode.session_id'),
-                             ('run_id', 'inputnode.run_id')]),
-        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
-                            ('session_id', 'inputnode.session_id'),
-                            ('run_id', 'inputnode.run_id')]),
-        (datasource, to_ras, [('anatomical_scan', 'in_file')]),
-        (datasource, meta, [('anatomical_scan', 'in_file')]),
+        (inputnode, to_ras, [('in_file', 'in_file')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
         (to_ras, n4itk, [('out_file', 'input_image')]),
+        (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                        ('session_id', 'inputnode.session_id'),
+                        ('run_id', 'inputnode.run_id')]),
+        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
+                       ('session_id', 'inputnode.session_id'),
+                       ('run_id', 'inputnode.run_id')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),

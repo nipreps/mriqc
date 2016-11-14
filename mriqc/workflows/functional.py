@@ -20,38 +20,27 @@ from nipype.interfaces import afni
 
 from mriqc.workflows.utils import (fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image,
                                    slice_wise_fft)
-from mriqc.interfaces.functional import FunctionalQC, Spikes
+from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes
 from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
 
 
-def fmri_qc_workflow(name='fMRIQC', settings=None):
+def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     """ The fMRI qc workflow """
-
-    if settings is None:
-        settings = {}
 
     workflow = pe.Workflow(name=name)
 
     # Define workflow, inputs and outputs
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_dir', 'subject_id', 'session_id', 'run_id',
-                'site_name', 'start_idx', 'stop_idx']), name='inputnode')
-    get_idx = pe.Node(niu.Function(
-        input_names=['in_file', 'start_idx', 'stop_idx'], function=fmri_getidx,
-        output_names=['start_idx', 'stop_idx']), name='get_idx')
+    # 0. Get data, put it in RAS orientation
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
+    inputnode.iterables = [('in_file', dataset)]
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group', 'out_dvars',
                 'out_fd']), name='outputnode')
 
-    # 0. Get data, put it in RAS orientation
-    datasource = pe.Node(niu.Function(
-        input_names=[
-            'bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
-        output_names=['out_file'], function=bids_getfile), name='datasource')
-    datasource.inputs.data_type = 'func'
 
     reorient_and_discard = pe.Node(niu.Function(input_names=['in_file'],
                                                 output_names=['exclude_index',
@@ -67,7 +56,14 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False),
                          despike=settings.get('despike', False),
                          deoblique=settings.get('deoblique', False))
+
+    # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
+    if settings.get('start_idx'):
+        hmcwf.inputs.inputnode.start_idx = settings['start_idx']
+    if settings.get('stop_idx'):
+        hmcwf.inputs.inputnode.stop_idx = settings['stop_idx']
+
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
@@ -86,25 +82,17 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
     repwf = individual_reports(settings)
 
     workflow.connect([
-        (inputnode, datasource, [('bids_dir', 'bids_dir'),
-                                 ('subject_id', 'subject_id'),
-                                 ('session_id', 'session_id'),
-                                 ('run_id', 'run_id')]),
-        (inputnode, get_idx, [('start_idx', 'start_idx'),
-                              ('stop_idx', 'stop_idx')]),
-        (datasource, get_idx, [('out_file', 'in_file')]),
-        (datasource, reorient_and_discard, [('out_file', 'in_file')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
+        (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
-        (get_idx, hmcwf, [('start_idx', 'inputnode.start_idx'),
-                          ('stop_idx', 'inputnode.stop_idx')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
         (bmw, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
-        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
-                             ('session_id', 'inputnode.session_id'),
-                             ('run_id', 'inputnode.run_id')]),
+        (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                        ('session_id', 'inputnode.session_id'),
+                        ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
@@ -112,9 +100,9 @@ def fmri_qc_workflow(name='fMRIQC', settings=None):
         (bmw, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
 
-        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
-                            ('session_id', 'inputnode.session_id'),
-                            ('run_id', 'inputnode.run_id')]),
+        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
+                       ('session_id', 'inputnode.session_id'),
+                       ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),

@@ -17,7 +17,6 @@ from multiprocessing import cpu_count
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-from mriqc.workflows import core as mwc
 from mriqc import __version__, MRIQC_LOG
 from mriqc.utils.misc import check_folder
 
@@ -27,6 +26,8 @@ def main():
     """Entry point"""
     from nipype import config as ncfg
     from mriqc.utils.bids import collect_bids_data
+    from mriqc.workflows.core import build_workflow
+
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
@@ -205,7 +206,7 @@ def main():
         __version__, opts.analysis_level, opts.participant_label, settings)
 
     # Process data types
-    qc_types = sorted(list(set([qcdt[:4] for qcdt in opts_data_type])))
+    qc_types = sorted(list(set([qcdt[:4] for qcdt in opts.data_type])))
     modalities = []
     for qcdt in qc_types:
         if qcdt.startswith('anat'):
@@ -225,10 +226,7 @@ def main():
                 MRIQC_LOG.warn('No %s scans were found in %s', qctype, settings['bids_dir'])
                 continue
 
-            ms_func = getattr(mwc, 'ms_' + qctype[:4])
-            workflow = ms_func(subject_id=opts.participant_label, session_id=opts.session_id,
-                               run_id=opts.run_id, settings=settings)
-
+            workflow = build_workflow(dataset[mod], qctype, settings=settings)
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
 
