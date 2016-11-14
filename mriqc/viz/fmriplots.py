@@ -19,7 +19,8 @@ sns.set_style("whitegrid")
 
 class fMRIPlot(object):
 
-    def __init__(self, func, mask, seg=None, tr=None, figsize=DINA4_LANDSCAPE):
+    def __init__(self, func, mask, seg=None, tr=None,
+                 title=None, figsize=DINA4_LANDSCAPE):
         func_nii = nb.load(func)
         self.func_data = func_nii.get_data()
         self.mask_data = nb.load(mask).get_data()
@@ -35,6 +36,9 @@ class fMRIPlot(object):
             self.seg_data = nb.load(seg).get_data()
 
         self.fig = plt.figure(figsize=figsize)
+        if title is not None:
+            self.fig.suptitle(title, fontsize=20)
+
         self.confounds = []
         self.spikes = []
 

@@ -11,8 +11,8 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-def individual_html(in_iqms, exclude_index=0, in_plots=None,
-                    wf_details=None):
+def individual_html(in_iqms, in_metadata=None, in_plots=None, exclude_index=0,
+                    wf_details=None, metadata=None):
     import os.path as op  #pylint: disable=W0404
     import datetime
     import re
@@ -49,6 +49,7 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
 
     sub_id = iqms_dict.pop('subject_id')
     ses_id = iqms_dict.pop('session_id')
+    task_id = iqms_dict.pop('task_id', None)
     run_id = iqms_dict.pop('run_id')
     qctype = iqms_dict.pop('qc_type')
     if qctype == 'anat':
@@ -69,13 +70,16 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
                                    'the original file could be masked</span>.')
             else:
                 wf_details[-1] += '.'
+        out_file = op.abspath('{}_sub-{}_ses-{}_run-{}_report.html'.format(
+            qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
+            ses_id, run_id))
 
     if qctype == 'func':
         qctype = 'functional'
 
-    out_file = op.abspath('{}_sub-{}_ses-{}_run-{}_report.html'.format(
-        qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
-        ses_id, run_id))
+        out_file = op.abspath('{}_sub-{}_ses-{}_task-{}_run-{}_report.html'.format(
+            qctype, sub_id[4:] if sub_id.startswith('sub-') else sub_id,
+            ses_id, task_id, run_id))
 
     tpl = IndividualTemplate()
     tpl.generate_conf({
@@ -86,7 +90,8 @@ def individual_html(in_iqms, exclude_index=0, in_plots=None,
             'imparams': iqms2html(iqms_dict),
             'svg_files': svg_files,
             'exclude_index': exclude_index,
-            'workflow_details': wf_details
+            'workflow_details': wf_details,
+            'metadata': iqms2html(in_metadata),
         }, out_file)
 
     MRIQC_REPORT_LOG.info('Generated individual log (%s)', out_file)
