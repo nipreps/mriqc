@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 16:39:32
+# @Last Modified time: 2016-11-14 10:15:37
 """ Visualization interfaces """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
@@ -37,6 +37,8 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
                                desc='visualization mode')
     saturate = traits.Bool(False, usedefault=True, desc='saturate background')
     out_file = traits.File(exists=False, desc='output file name')
+    vmin = traits.Float(desc='minimum intensity')
+    vmax = traits.Float(desc='maximum intensity')
 
 class PlotContoursOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
@@ -55,6 +57,9 @@ class PlotContours(MRIQCBaseInterface):
         out_file = op.abspath('plot_' + fname + '_contours.svg')
         self._results['out_file'] = out_file
 
+        vmax = None if not isdefined(self.inputs.vmax) else self.inputs.vmax
+        vmin = None if not isdefined(self.inputs.vmin) else self.inputs.vmin
+
         plot_segmentation(
             self.inputs.in_file,
             self.inputs.in_contours,
@@ -63,7 +68,9 @@ class PlotContours(MRIQCBaseInterface):
             display_mode=self.inputs.display_mode,
             levels=self.inputs.levels,
             colors=self.inputs.colors,
-            saturate=self.inputs.saturate)
+            saturate=self.inputs.saturate,
+            vmin=vmin, vmax=vmax)
+
         return runtime
 
 
