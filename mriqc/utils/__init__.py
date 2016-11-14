@@ -4,5 +4,5 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Module utils.misc contains utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from mriqc.utils.misc import gather_bids_data, reorder_csv
+from mriqc.utils.misc import reorder_csv
 from mriqc.utils.bids import collect_bids_data
