@@ -85,7 +85,13 @@ def gen_html(csv_file, qctype, out_file=None):
 
     # format participant labels
     formatter = lambda row: '{subject_id}_ses-{session_id}_run-{run_id}'.format(**row)
-    dataframe['label'] = dataframe[['subject_id', 'session_id', 'run_id']].apply(formatter, axis=1)
+    id_labels = ['subject_id', 'session_id', 'run_id']
+    if qctype.startswith('func'):
+        formatter = lambda row: ('{subject_id}_ses-{session_id}_task-{task_id}'
+                                 '_run-{run_id}').format(**row)
+        id_labels.insert(2, 'task_id')
+
+    dataframe['label'] = dataframe[id_labels].apply(formatter, axis=1)
     nPart = len(dataframe)
 
     csv_groups = []
@@ -109,7 +115,7 @@ def gen_html(csv_file, qctype, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'qctype': 'anatomical' if qctype == 'anat' else 'functional',
+            'qctype': qctype,
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,

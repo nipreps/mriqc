@@ -350,6 +350,11 @@ report</h1>
 <h2>Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
+{% if metadata %}
+<li>Dataset metadata:
+{{ metadata }}
+</li>
+{% endif %}
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
 <li>Sessions and (scans) failed: {{ failed or 'none'}}.</li>

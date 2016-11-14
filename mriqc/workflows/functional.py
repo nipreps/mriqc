@@ -104,7 +104,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, repwf, [('subject_id', 'inputnode.subject_id'),
                        ('session_id', 'inputnode.session_id'),
                        ('task_id', 'inputnode.task_id'),
-                       ('run_id', 'inputnode.run_id')]),
+                       ('run_id', 'inputnode.run_id'),
+                       ('out_dict', 'inputnode.in_metadata')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
@@ -225,9 +226,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
-        'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers',
-        'in_spikes', 'exclude_index']),
+        'subject_id', 'session_id', 'task_id', 'run_id', 'in_metadata', 'in_iqms',
+        'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev',
+        'outliers', 'in_spikes', 'exclude_index']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -276,7 +277,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
+        input_names=['in_iqms', 'in_metadata', 'in_plots', 'exclude_index', 'wf_details'],
         output_names=['out_file'], function=individual_html), name='GenerateReport')
     wf_details = []
     if settings.get('hmc_afni', False):
@@ -293,6 +294,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms'),
+                            ('in_metadata', 'in_metadata'),
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),

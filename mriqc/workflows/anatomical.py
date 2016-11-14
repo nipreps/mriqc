@@ -80,7 +80,8 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
                         ('run_id', 'inputnode.run_id')]),
         (meta, repwf, [('subject_id', 'inputnode.subject_id'),
                        ('session_id', 'inputnode.session_id'),
-                       ('run_id', 'inputnode.run_id')]),
+                       ('run_id', 'inputnode.run_id'),
+                       ('out_dict', 'inputnode.in_metadata')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
@@ -220,7 +221,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
+        'subject_id', 'session_id', 'run_id', 'in_metadata',
+        'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
         name='inputnode')
 
@@ -238,7 +240,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        input_names=['in_iqms', 'in_metadata', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
@@ -247,7 +249,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, rnode, [('in_iqms', 'in_iqms'),
+                            ('in_metadata', 'in_metadata')]),
         (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
                                   ('run_id', 'run_id'),
@@ -261,6 +264,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
+        (meta, rnode, [('out_dict', 'in_metadata')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
 

@@ -45,6 +45,9 @@ def find_failed(dframe, sub_list):
     return failed
 
 def iqms2html(indict):
+    if indict is None:
+        return None
+
     tmp_qc = {}
     for k, value in sorted(list(indict.items())):
         if not isinstance(value, dict):
