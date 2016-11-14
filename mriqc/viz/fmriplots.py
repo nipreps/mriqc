@@ -386,7 +386,26 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
                 arrowprops=dict(arrowstyle='wedge,tail_width=0.6', lw=0,
                                 fc=color, ec=color, relpos=(0.5, 0.5),
                                 ))
+        else:
+            y_off = [0.0, 0.0]
+            for pth in cutoff[:i]:
+                if abs(thr - pth) < 0.1:
+                    if (thr - pth) < 0.0:
+                        y_off[0] -= 0.1
+                    else:
+                        y_off[1] += 0.1
 
+            offset = y_off[0] if abs(y_off[0]) > y_off[1] else y_off[1]
+
+            a_label = '%.3f%s' % (thr, units if units is not None else '')
+            ax_ts.annotate(
+                a_label, xy=(ntsteps - 1, thr + offset), xytext=(11, 0),
+                textcoords='offset points', va='center',
+                color='w', fontsize='small',
+                bbox=dict(boxstyle='round', fc='k', ec='k', color='w', lw=1),
+                arrowprops=dict(arrowstyle='wedge,tail_width=0.6', lw=0,
+                                fc='k', ec='k', relpos=(0.5, 0.5),
+                                ))
 
     def_ylims = [0.95 * tseries[~np.isnan(tseries)].min(),
                  1.1 * tseries[~np.isnan(tseries)].max()]
