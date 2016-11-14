@@ -184,12 +184,14 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
     if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         mean_data = nii.get_data()
+        mean_data = mean_data[::-1, ...]
     else:
         mean_data = nifti_file
 
     if bbox_mask_file:
         bbox_data = nb.as_closest_canonical(
             nb.load(bbox_mask_file)).get_data()
+        bbox_data = bbox_data[::-1, ...]
         B = np.argwhere(bbox_data)
         (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
             0) + 1
