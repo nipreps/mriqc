@@ -264,7 +264,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
-        (meta, rnode, [('out_dict', 'in_metadata')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
 
