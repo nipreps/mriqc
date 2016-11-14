@@ -427,17 +427,18 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
 def plot_segmentation(anat_file, segmentation, out_file,
                       **kwargs):
+    import nibabel as nb
+    import numpy as np
     from nilearn.plotting import plot_anat
 
     vmax = kwargs.get('vmax')
     vmin = kwargs.get('vmin')
 
     if kwargs.get('saturate', False):
-        import nibabel as nb
-        import numpy as np
         vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 70)
 
     if vmax is None and vmin is None:
+
         vmin = np.percentile(nb.load(anat_file).get_data().reshape(-1), 10)
         vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 95)
 
