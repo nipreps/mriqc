@@ -25,6 +25,7 @@ DEFAULT_MEM_GB = 8
 def main():
     """Entry point"""
     from nipype import config as ncfg
+    from nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
 
@@ -221,12 +222,20 @@ def main():
 
     # Set up participant level
     if opts.analysis_level == 'participant':
+        workflow = Workflow(name='workflow_enumerator')
+        workflow.base_dir = settings['work_dir']
+
+        wf_list = []
         for qctype, mod in zip(qc_types, modalities):
             if not dataset[mod]:
                 MRIQC_LOG.warn('No %s scans were found in %s', qctype, settings['bids_dir'])
                 continue
 
-            workflow = build_workflow(dataset[mod], qctype, settings=settings)
+            wf_list.append(build_workflow(dataset[mod], qctype, settings=settings))
+
+        if wf_list:
+            workflow.add_nodes(wf_list)
+
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
 
