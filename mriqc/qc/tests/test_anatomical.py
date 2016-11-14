@@ -98,4 +98,4 @@ def test_qi2(gtruth, sigma):
     data, wmdata, bgdata = gtruth.get_data(sigma, rice)
     value, _ = art_qi2(data, bgdata, out_file=op.join(tmpdir, 'qi2.txt'))
     rmtree(tmpdir)
-    assert value > .0 and value < 0.002
+    assert value > .0 and value < 0.003
