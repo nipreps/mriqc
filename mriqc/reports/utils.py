@@ -45,7 +45,7 @@ def find_failed(dframe, sub_list):
     return failed
 
 def iqms2html(indict):
-    if indict is None:
+    if indict is None or not indict:
         return None
 
     tmp_qc = {}

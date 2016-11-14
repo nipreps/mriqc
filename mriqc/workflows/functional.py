@@ -190,7 +190,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
-                               ('task_id', 'inputnode.task_id'),
+                               ('task_id', 'task_id'),
                                ('run_id', 'run_id')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),

@@ -64,7 +64,7 @@ def get_metadata_for_nifti(in_file):
         ext = ext2 + ext
 
     side_json = fname + '.json'
-    fname_comps = side_json.split('/')[-1].split("_")
+    fname_comps = op.basename(side_json).split("_")
 
     session_comp_list = []
     subject_comp_list = []
@@ -84,15 +84,19 @@ def get_metadata_for_nifti(in_file):
                 else:
                     top_comp_list.append(comp)
 
+    if any([comp.startswith('ses') for comp in fname_comps]):
+        bids_dir = '/'.join(op.dirname(in_file).split('/')[:-3])
+    else:
+        bids_dir = '/'.join(op.dirname(in_file).split('/')[:-2])
 
-    top_json = "/" + "_".join(top_comp_list)
+    top_json = op.join(bids_dir, "_".join(top_comp_list))
     potential_json = [top_json]
 
-    subject_json = "/" + sub + "/" + "_".join(subject_comp_list)
+    subject_json = op.join(bids_dir, sub, "_".join(subject_comp_list))
     potential_json.append(subject_json)
 
     if ses:
-        session_json = "/" + sub + "/" + ses + "/" + "_".join(session_comp_list)
+        session_json = op.join(bids_dir, sub, ses, "_".join(session_comp_list))
         potential_json.append(session_json)
 
     potential_json.append(side_json)
