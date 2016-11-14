@@ -8,10 +8,6 @@
 # @Email:  code@oscaresteban.es
 """ The core module combines the existing workflows """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from six import string_types
-from nipype.pipeline import engine as pe
-from nipype.interfaces import utility as niu
-
 from mriqc.workflows.anatomical import anat_qc_workflow
 from mriqc.workflows.functional import fmri_qc_workflow
 

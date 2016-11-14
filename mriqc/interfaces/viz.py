@@ -72,6 +72,7 @@ class PlotMosaicInputSpec(BaseInterfaceInputSpec):
                    desc='File to be plotted')
     subject_id = traits.Str(mandatory=True, desc='subject id')
     session_id = traits.Str(mandatory=True, desc='session id')
+    task_id = traits.Str(desc='task id')
     run_id = traits.Str(mandatory=True, desc='run id')
     task_id = traits.Str(desc='task id')
     title = traits.Str('Volume', usedefault=True,
@@ -107,9 +108,10 @@ class PlotMosaic(MRIQCBaseInterface):
         plot_mosaic_helper(
             self.inputs.in_file,
             self.inputs.subject_id,
-            self.inputs.session_id,
-            self.inputs.run_id,
-            self.inputs.out_file,
+            session_id=self.inputs.session_id,
+            task_id=self.inputs.task_id,
+            run_id=self.inputs.run_id,
+            out_file=self.inputs.out_file,
             title=self.inputs.title,
             only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask,

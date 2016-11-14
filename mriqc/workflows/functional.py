@@ -92,6 +92,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (bmw, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
+                        ('task_id', 'inputnode.task_id'),
                         ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
@@ -102,6 +103,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
         (meta, repwf, [('subject_id', 'inputnode.subject_id'),
                        ('session_id', 'inputnode.session_id'),
+                       ('task_id', 'inputnode.task_id'),
                        ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
@@ -123,7 +125,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'orig', 'epi_mean',
+        'subject_id', 'session_id', 'task_id', 'run_id', 'orig', 'epi_mean',
         'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
@@ -187,6 +189,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
+                               ('task_id', 'inputnode.task_id'),
                                ('run_id', 'run_id')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -222,7 +225,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
+        'subject_id', 'session_id', 'task_id', 'run_id', 'in_iqms', 'orig', 'epi_mean',
         'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev', 'outliers',
         'in_spikes', 'exclude_index']),
         name='inputnode')
@@ -257,18 +260,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
-        title='EPI mean session: {session_id} run: {run_id}',
+        title='EPI mean session: {session_id}, task_id: {task_id}, run: {run_id}',
         cmap='Greys_r'),
         name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
-        title='EPI SD session: {session_id} run: {run_id}',
+        title='EPI SD session: {session_id}, task_id: {task_id}, run: {run_id}',
         cmap='viridis'), name='PlotMosaicSD')
 
     mosaic_spikes = pe.Node(PlotSpikes(
         out_file='plot_spikes.svg', cmap='viridis',
-        title='High-Frequency spikes (session: {session_id}, run: {run_id})'),
+        title='High-Frequency spikes (session: {session_id}, task_id: {task_id}, run: {run_id})'),
                             name='PlotSpikes')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
@@ -293,14 +296,17 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
+                                  ('task_id', 'task_id'),
                                   ('run_id', 'run_id'),
                                   ('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('subject_id', 'subject_id'),
                                     ('session_id', 'session_id'),
+                                    ('task_id', 'task_id'),
                                     ('run_id', 'run_id'),
                                     ('in_stddev', 'in_file')]),
         (inputnode, mosaic_spikes, [('subject_id', 'subject_id'),
                                     ('session_id', 'session_id'),
+                                    ('task_id', 'task_id'),
                                     ('run_id', 'run_id'),
                                     ('orig', 'in_file'),
                                     ('in_spikes', 'in_spikes')]),
@@ -317,12 +323,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='EPI mean (zoomed) session: {session_id} run: {run_id}',
+        title='EPI mean (zoomed) - Session: {session_id}, task: {task_id}, run: {run_id}',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='EPI mean (noise) session: {session_id} run: {run_id}',
+        title='EPI mean (noise) - Session: {session_id}, task: {task_id}, run: {run_id}',
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
@@ -338,11 +344,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                  ('brainmask', 'in_contours')]),
         (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
+                                  ('task_id', 'task_id'),
                                   ('run_id', 'run_id'),
                                   ('epi_mean', 'in_file'),
                                   ('brainmask', 'bbox_mask_file')]),
         (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
                                    ('session_id', 'session_id'),
+                                   ('task_id', 'task_id'),
                                    ('run_id', 'run_id'),
                                    ('epi_mean', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', 'in%d' % (pages + 1))]),
