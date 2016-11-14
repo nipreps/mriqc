@@ -207,14 +207,14 @@ def main():
         __version__, opts.analysis_level, opts.participant_label, settings)
 
     # Process data types
-    qc_types = sorted(list(set([qcdt[:4] for qcdt in opts.data_type])))
+    qc_types = []
     modalities = []
-    for qcdt in qc_types:
+    for qcdt in sorted(list(set([qcdt[:4] for qcdt in opts.data_type]))):
         if qcdt.startswith('anat'):
-            qcdt += 'omical'
+            qc_types.append('anatomical')
             modalities.append('t1w')
         if qcdt.startswith('func'):
-            qcdt += 'tional'
+            qc_types.append('functional')
             modalities.append('func')
 
     dataset = collect_bids_data(settings['bids_dir'],
