@@ -399,7 +399,7 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
 
             a_label = '%.3f%s' % (thr, units if units is not None else '')
             ax_ts.annotate(
-                a_label, xy=(ntsteps - 1, thr), xytext=(11, y_off),
+                a_label, xy=(ntsteps - 1, thr), xytext=(11, offset),
                 textcoords='offset points', va='center',
                 color='w', fontsize='small',
                 bbox=dict(boxstyle='round', fc='darkgray', ec='darkgray', color='w', lw=1),
