@@ -21,7 +21,7 @@ from nipype.interfaces import afni
 from mriqc.workflows.utils import (fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image,
                                    slice_wise_fft)
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder, reorient_and_discard_non_steady
+from mriqc.utils.misc import bids_path, check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
 

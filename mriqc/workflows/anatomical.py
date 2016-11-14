@@ -28,7 +28,7 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2)
 
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder
+from mriqc.utils.misc import bids_path, check_folder
 
 
 def anat_qc_workflow(dataset, settings, name='anatMRIQC'):

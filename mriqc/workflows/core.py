@@ -14,7 +14,6 @@ from nipype.interfaces import utility as niu
 
 from mriqc.workflows.anatomical import anat_qc_workflow
 from mriqc.workflows.functional import fmri_qc_workflow
-from mriqc.utils.misc import gather_bids_data
 
 
 def build_workflow(dataset, qctype, settings=None):
