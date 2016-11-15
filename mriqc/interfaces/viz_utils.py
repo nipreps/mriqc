@@ -440,7 +440,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
     if vmax is None and vmin is None:
 
         vmin = np.percentile(nb.load(anat_file).get_data().reshape(-1), 10)
-        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 95)
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 99)
 
     disp = plot_anat(
         anat_file,
