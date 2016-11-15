@@ -8,16 +8,9 @@
 report</title>
 <style type="text/css">
 
-/*
-:Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
-:Copyright: This stylesheet has been placed in the public domain.
-
-Default cascading style sheet for the HTML output of Docutils.
-
-See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
-customize this style sheet.
-*/
+body {
+  font-family: helvetica;
+}
 
 /* used to remove borders from tables and images */
 .borderless, table.borderless td, table.borderless th {
@@ -357,9 +350,23 @@ report</h1>
 <h2>Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
+{% if metadata %}
+<li>Dataset metadata:
+{{ metadata }}
+</li>
+{% endif %}
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
 <li>Sessions and (scans) failed: {{ failed or 'none'}}.</li>
+{% if workflow_details %}
+<li>Workflow details:
+  <ul class="sub-simple">
+  {% for detail in workflow_details %}
+  <li>{{ detail }}</li>
+  {% endfor %}
+  </ul>
+</li>
+{% endif %}
 <li>Image parameters:
 {{ imparams }}
 </li>

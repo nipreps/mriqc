@@ -28,31 +28,23 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2)
 
-from mriqc.utils.misc import bids_getfile, bids_path, check_folder
+from mriqc.utils.misc import bids_path, check_folder
 
 
-def anat_qc_workflow(name='MRIQC_Anat', settings=None):
+def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
     One-subject-one-session-one-run pipeline to extract the NR-IQMs from
     anatomical images
     """
-    if settings is None:
-        settings = {}
 
     workflow = pe.Workflow(name=name)
 
     # Define workflow, inputs and outputs
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['bids_dir', 'subject_id', 'session_id',
-                'run_id']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
-
-
     # 0. Get data
-    datasource = pe.Node(niu.Function(
-        input_names=['bids_dir', 'data_type', 'subject_id', 'session_id', 'run_id'],
-        output_names=['anatomical_scan'], function=bids_getfile), name='datasource')
-    datasource.inputs.data_type = 'anat'
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
+    inputnode.iterables = [('in_file', dataset)]
+
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
@@ -80,19 +72,16 @@ def anat_qc_workflow(name='MRIQC_Anat', settings=None):
 
     # Connect all nodes
     workflow.connect([
-        (inputnode, datasource, [('bids_dir', 'bids_dir'),
-                                 ('subject_id', 'subject_id'),
-                                 ('session_id', 'session_id'),
-                                 ('run_id', 'run_id')]),
-        (inputnode, iqmswf, [('subject_id', 'inputnode.subject_id'),
-                             ('session_id', 'inputnode.session_id'),
-                             ('run_id', 'inputnode.run_id')]),
-        (inputnode, repwf, [('subject_id', 'inputnode.subject_id'),
-                            ('session_id', 'inputnode.session_id'),
-                            ('run_id', 'inputnode.run_id')]),
-        (datasource, to_ras, [('anatomical_scan', 'in_file')]),
-        (datasource, meta, [('anatomical_scan', 'in_file')]),
+        (inputnode, to_ras, [('in_file', 'in_file')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
         (to_ras, n4itk, [('out_file', 'input_image')]),
+        (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
+                        ('session_id', 'inputnode.session_id'),
+                        ('run_id', 'inputnode.run_id')]),
+        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
+                       ('session_id', 'inputnode.session_id'),
+                       ('run_id', 'inputnode.run_id'),
+                       ('out_dict', 'inputnode.in_metadata')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
@@ -232,7 +221,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
+        'subject_id', 'session_id', 'run_id', 'in_metadata',
+        'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
         name='inputnode')
 
@@ -250,7 +240,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        input_names=['in_iqms', 'in_metadata', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
@@ -259,7 +249,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, rnode, [('in_iqms', 'in_iqms'),
+                            ('in_metadata', 'in_metadata')]),
         (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
                                   ('session_id', 'session_id'),
                                   ('run_id', 'run_id'),

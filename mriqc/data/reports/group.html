@@ -16,6 +16,13 @@ report</h1>
 <ul class="simple">
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
+{% if failed %}
+<li><span class="text-warning">Some individual reports failed</span>:
+{% for f in failed %}
+<span class="text-warning">{{ f }}</span>{% if loop.last %}.{% else %}, {% endif %}
+{% endfor %}
+</li>
+{% endif %}
 </ul>
 
 <script src="resources/boxplots.js" charset="utf-8"></script>
@@ -62,10 +69,12 @@ report</h1>
             qctype: '{{ qctype }}'
         });
         chart1.renderDataPlots();
-        chart1.dataPlots.change({showPlot:true, plotType:35, showBeanLines:false});
+        chart1.dataPlots.change({showPlot:true, plotType:20, padding: 20, showBeanLines:false});
         chart1.renderBoxPlot();
-        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,colors:['#555']});
-        chart1.renderNotchBoxes({showNotchBox:false});
+        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,
+            padding: -10, colors:['#555']});
+
+        // chart1.renderNotchBoxes({showNotchBox:false});
         // chart1.renderViolinPlot({showViolinPlot:false});
         // chart1.violinPlots.show({reset:true,clamp:0});
         // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})

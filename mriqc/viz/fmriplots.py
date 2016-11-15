@@ -14,14 +14,13 @@ from matplotlib.colorbar import ColorbarBase
 import seaborn as sns
 from seaborn import color_palette
 
-from mriqc import __version__, MRIQC_LOG
 from mriqc.interfaces.viz_utils import DINA4_LANDSCAPE
-
 sns.set_style("whitegrid")
 
 class fMRIPlot(object):
 
-    def __init__(self, func, mask, seg=None, tr=None, figsize=DINA4_LANDSCAPE):
+    def __init__(self, func, mask, seg=None, tr=None,
+                 title=None, figsize=DINA4_LANDSCAPE):
         func_nii = nb.load(func)
         self.func_data = func_nii.get_data()
         self.mask_data = nb.load(mask).get_data()
@@ -37,6 +36,9 @@ class fMRIPlot(object):
             self.seg_data = nb.load(seg).get_data()
 
         self.fig = plt.figure(figsize=figsize)
+        if title is not None:
+            self.fig.suptitle(title, fontsize=20)
+
         self.confounds = []
         self.spikes = []
 
@@ -133,8 +135,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
 
     # Carpet plot
     ax1 = plt.subplot(gs[1])
-    theplot = ax1.imshow(detrended[order, :], interpolation='nearest',
-                         aspect='auto', cmap='gray', vmin=-2, vmax=2)
+    ax1.imshow(detrended[order, :], interpolation='nearest',
+               aspect='auto', cmap='gray', vmin=-2, vmax=2)
 
     ax1.grid(False)
     ax1.set_yticks([])
@@ -189,9 +191,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
         ax = plt.subplot(gs[1])
 
     # Define TR and number of frames
-    notr = False
     if tr is None:
-        notr = True
         tr = 1.
 
     # Load timeseries, zscored slice-wise
@@ -284,7 +284,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     ax.spines["left"].set_position(('outward', 30))
     ax.yaxis.set_ticks_position('left')
 
-    labels = [label for label in ax.yaxis.get_ticklabels()]
+    # labels = [label for label in ax.yaxis.get_ticklabels()]
     # labels[0].set_weight('bold')
     # labels[-1].set_weight('bold')
     if title:
@@ -368,6 +368,21 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
     ax_ts.spines["left"].set_position(('outward', 30))
     ax_ts.yaxis.set_ticks_position('left')
 
+    # Calculate Y limits
+    def_ylims = [0.95 * tseries[~np.isnan(tseries)].min(),
+                 1.1 * tseries[~np.isnan(tseries)].max()]
+    if ylims is not None:
+        if ylims[0] is not None:
+            def_ylims[0] = min([def_ylims[0], ylims[0]])
+        if ylims[1] is not None:
+            def_ylims[1] = max([def_ylims[1], ylims[1]])
+
+    ax_ts.set_ylim(def_ylims)
+    yticks = sorted(def_ylims)
+    ax_ts.set_yticks(yticks)
+    ax_ts.set_yticklabels(['%.02f' % y for y in yticks])
+    yrange = def_ylims[1] - def_ylims[0]
+
     # Plot average
     if cutoff is None:
         cutoff = []
@@ -384,26 +399,33 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
             mean_label = r'$\mu$=%.3f%s' % (thr, units if units is not None else '')
             ax_ts.annotate(
                 mean_label, xy=(ntsteps - 1, thr), xytext=(11, 0),
+                textcoords='offset points', va='center', color='w', size=10,
+                bbox=dict(boxstyle='round', fc=color, ec='none', color='none', lw=0),
+                arrowprops=dict(
+                    arrowstyle='wedge,tail_width=0.8', lw=0, patchA=None, patchB=None,
+                    fc=color, ec='none', relpos=(0.01, 0.5)))
+        else:
+            y_off = [0.0, 0.0]
+            for pth in cutoff[:i]:
+                inc = abs(thr - pth)
+                if inc < yrange:
+                    factor = (- (inc / yrange) + 1) ** 2
+                    if (thr - pth) < 0.0:
+                        y_off[0] -= factor * 20
+                    else:
+                        y_off[1] += factor * 20
+
+            offset = y_off[0] if abs(y_off[0]) > y_off[1] else y_off[1]
+
+            a_label = '%.2f%s' % (thr, units if units is not None else '')
+            ax_ts.annotate(
+                a_label, xy=(ntsteps - 1, thr), xytext=(11, offset),
                 textcoords='offset points', va='center',
-                color='w', fontsize='small',
-                bbox=dict(boxstyle='round', fc=color, ec=color, color='w', lw=1),
-                arrowprops=dict(arrowstyle='wedge,tail_width=0.6', lw=0,
-                                fc=color, ec=color, relpos=(0.5, 0.5),
-                                ))
-
-
-    def_ylims = [0.95 * tseries[~np.isnan(tseries)].min(),
-                 1.1 * tseries[~np.isnan(tseries)].max()]
-    if ylims is not None:
-        if ylims[0] is not None:
-            def_ylims[0] = min([def_ylims[0], ylims[0]])
-        if ylims[1] is not None:
-            def_ylims[1] = max([def_ylims[1], ylims[1]])
-
-    ax_ts.set_ylim(def_ylims)
-    yticks = sorted(def_ylims)
-    ax_ts.set_yticks(yticks)
-    ax_ts.set_yticklabels(['%.02f' % y for y in yticks])
+                color='w', size=10,
+                bbox=dict(boxstyle='round', fc='dimgray', ec='none', color='none', lw=0),
+                arrowprops=dict(
+                    arrowstyle='wedge,tail_width=.9', lw=0, patchA=None, patchB=None,
+                    fc='dimgray', ec='none', relpos=(.1, .5)))
 
     if not gs_dist is None:
         ax_dist = plt.subplot(gs_dist)

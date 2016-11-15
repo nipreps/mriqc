@@ -7,18 +7,11 @@
 # @Date:   2016-01-05 11:32:01
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-04 15:35:50
 """ Visualization utilities """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from builtins import str
-from builtins import zip
-from builtins import range
+from __future__ import print_function, division, absolute_import, unicode_literals
+from builtins import zip, range
 
 import math
-import time
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -31,7 +24,6 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 from pylab import cm
-from six import string_types
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -161,7 +153,9 @@ def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
 
 
 def get_limits(nifti_file, only_plot_noise=False):
-    if isinstance(nifti_file, string_types):
+    from builtins import bytes, str   # pylint: disable=W0622
+
+    if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         data = nii.get_data()
     else:
@@ -184,18 +178,20 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
                 cmap=cm.Greys_r, plot_sagittal=True, labels=None):
-    from six import string_types
-    from pylab import cm
+    from builtins import bytes, str  # pylint: disable=W0622
+    from matplotlib import cm
 
-    if isinstance(nifti_file, string_types):
+    if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         mean_data = nii.get_data()
+        mean_data = mean_data[::-1, ...]
     else:
         mean_data = nifti_file
 
     if bbox_mask_file:
         bbox_data = nb.as_closest_canonical(
             nb.load(bbox_mask_file)).get_data()
+        bbox_data = bbox_data[::-1, ...]
         B = np.argwhere(bbox_data)
         (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
             0) + 1
@@ -295,9 +291,9 @@ def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                       vmax=vmax,
                       cmap=cmap, interpolation='nearest', origin='lower')
             ax.annotate(
-                str(x_val), xy=(.99, .99), xycoords='axes fraction',
-                fontsize=8, color='white', horizontalalignment='right',
-                verticalalignment='top')
+                '%d' % x_val, xy=(.99, .99), xycoords='axes fraction',
+                fontsize=8, color='k', backgroundcolor='white',
+                horizontalalignment='right', verticalalignment='top')
             ax.axis('off')
 
     fig.subplots_adjust(
@@ -431,21 +427,27 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
 def plot_segmentation(anat_file, segmentation, out_file,
                       **kwargs):
+    import nibabel as nb
+    import numpy as np
     from nilearn.plotting import plot_anat
 
-    vmax = None
+    vmax = kwargs.get('vmax')
+    vmin = kwargs.get('vmin')
+
     if kwargs.get('saturate', False):
-        import nibabel as nb
-        import numpy as np
-        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1),
-                             70)
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 70)
+
+    if vmax is None and vmin is None:
+
+        vmin = np.percentile(nb.load(anat_file).get_data().reshape(-1), 10)
+        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 99)
 
     disp = plot_anat(
         anat_file,
         display_mode=kwargs.get('display_mode', 'ortho'),
         cut_coords=kwargs.get('cut_coords', 8),
         title=kwargs.get('title'),
-        vmax=vmax)
+        vmax=vmax, vmin=vmin)
     disp.add_contours(
         segmentation,
         levels=kwargs.get('levels', [1]),
@@ -457,7 +459,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
 
 
 def plot_bg_dist(in_file):
-    import os.path as op
+    import os.path as op  # pylint: disable=W0621
     import numpy as np
     import json
     from io import open # pylint: disable=W0622
@@ -465,11 +467,16 @@ def plot_bg_dist(in_file):
     # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
 
-    with open(in_file, 'r') as jsonf:
-        data = json.load(jsonf)
-
     # Write out figure of the fitting
     out_file = op.abspath('background_fit.svg')
+    try:
+        with open(in_file, 'r') as jsonf:
+            data = json.load(jsonf)
+    except ValueError:
+        with open(out_file, 'w') as ofh:
+            ofh.write('<p>Background noise fitting could not be plotted.</p>')
+        return out_file
+
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     fig.suptitle('Noise distribution on the air mask, and fitted chi distribution')
@@ -491,19 +498,20 @@ def plot_bg_dist(in_file):
     return out_file
 
 
-def plot_mosaic_helper(in_file, subject_id, session_id,
-                       run_id, out_name, bbox_mask_file=None,
+def plot_mosaic_helper(in_file, subject_id, session_id=None,
+                       task_id=None, run_id=None, out_file=None, bbox_mask_file=None,
                        title=None, plot_sagittal=True, labels=None,
                        only_plot_noise=False, cmap=cm.Greys_r):
     if title is not None:
         title = title.format(**{"session_id": session_id,
-                              "run_id": run_id})
+                                "task_id": task_id,
+                                "run_id": run_id})
     fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
                       only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
-    fig.savefig(out_name, format=out_name.split('.')[-1], dpi=300)
+    fig.savefig(out_file, format=out_file.split('.')[-1], dpi=300)
     fig.clf()
     fig = None
-    return op.abspath(out_name)
+    return op.abspath(out_file)
 
 def combine_svg_verbose(
         in_brainmask,

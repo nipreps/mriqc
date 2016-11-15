@@ -1,13 +1,32 @@
+# python cache
 __pycache__/**/*
 __pycache__
 *.pyc
+
+# python distribution
 build/**/*
 build
+dist/**/*
+dist
+mriqc.egg-info/**/*
+mriqc.egg-info
 .eggs/**/*
 .eggs
+src/**/*
+src/
+
+# releasing
+Makefile
+
+# git
+.gitignore
+.git/**/*
+.git
+
+# other
 agave/**/*
 agave
 notebooks/**/*
 notebooks
-mriqc.egg-info/**/*
-mriqc.egg-info
+docs/**/*
+docs/

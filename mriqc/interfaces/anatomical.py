@@ -268,22 +268,29 @@ class ComputeQI2(MRIQCBaseInterface):
         return runtime
 
 
-def artifact_mask(imdata, airdata, distance):
+def artifact_mask(imdata, airdata, distance, zscore=10.):
     """Computes a mask of artifacts found in the air region"""
+    from statsmodels.robust.scale import mad
+
     if not np.issubdtype(airdata.dtype, np.integer):
         airdata[airdata < .95] = 0
         airdata[airdata > 0.] = 1
 
     bg_img = imdata * airdata
+    if np.sum((bg_img > 0).astype(np.uint8)) < 100:
+        return np.zeros_like(airdata)
+
     # Find the background threshold (the most frequently occurring value
     # excluding 0)
-    # CHANGED - to the 75 percentile
-    bg_threshold = np.percentile(bg_img[airdata > 0], 75)
+    bg_location = np.median(bg_img[bg_img > 0])
+    bg_spread = mad(bg_img[bg_img > 0])
+    bg_img[bg_img > 0] -= bg_location
+    bg_img[bg_img > 0] /= bg_spread
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
     qi1_img = np.zeros_like(bg_img)
-    qi1_img[bg_img > bg_threshold] = 1
+    qi1_img[bg_img > zscore] = 1
     qi1_img[distance < .10] = 0
 
     # Create a structural element to be used in an opening operation.

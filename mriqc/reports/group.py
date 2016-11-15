@@ -10,23 +10,21 @@
 # @Last modified by:   oesteban
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os
+
 from sys import version_info
-import os.path as op
-from builtins import zip, range, object, str, bytes  # pylint: disable=W0622
+from builtins import zip, object, str, bytes  # pylint: disable=W0622
 
 from mriqc import logging
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
-def gen_html(csv_file, qctype, out_file=None):
+def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
     from shutil import copy, rmtree
     import datetime
     from pkg_resources import resource_filename as pkgrf
     import pandas as pd
-    import numpy as np
     from mriqc import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
@@ -86,12 +84,33 @@ def gen_html(csv_file, qctype, out_file=None):
     dataframe = pd.read_csv(csv_file, index_col=False)
 
     # format participant labels
-    formatter = lambda row: '{subject_id}_ses-{session_id}_run-{run_id}'.format(**row)
-    dataframe['label'] = dataframe[['subject_id', 'session_id', 'run_id']].apply(formatter, axis=1)
+    id_labels = ['subject_id', 'session_id', 'run_id']
+    if qctype.startswith('func'):
+        id_labels.insert(2, 'task_id')
+
+    def myfmt(row, cols):
+        crow = [row[k] for k in cols if pd.notnull(row[k])]
+        return '_'.join(crow)
+
+    dataframe['label'] = dataframe[id_labels].apply(myfmt, args=(id_labels,), axis=1)
     nPart = len(dataframe)
 
+    failed = None
+    if csv_failed is not None and op.isfile(csv_failed):
+        MRIQC_REPORT_LOG.warn('Found failed-workflows table "%s"', csv_failed)
+        failed_df = pd.read_csv(csv_failed, index_col=False)
+        cols = list(set(id_labels) & set(failed_df.columns.ravel().tolist()))
+
+        try:
+            failed_df = failed_df.sort_values(by=cols)
+        except AttributeError:
+            #pylint: disable=E1101
+            failed_df = failed_df.sort(columns=cols)
+
+        failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
+
     csv_groups = []
-    for group, units in QCGROUPS[qctype]:
+    for group, units in QCGROUPS[qctype[:4]]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
         for iqm in group:
@@ -111,11 +130,11 @@ def gen_html(csv_file, qctype, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'qctype': 'anatomical' if qctype == 'anat' else 'functional',
+            'qctype': qctype,
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
-
+            'failed': failed
         }, out_file)
 
     res_folder = op.join(op.dirname(out_file), 'resources')
@@ -126,6 +145,4 @@ def gen_html(csv_file, qctype, out_file=None):
             remove(dstpath)
 
         copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
-
-    MRIQC_REPORT_LOG.info('Generated group-level report (%s)', out_file)
     return out_file

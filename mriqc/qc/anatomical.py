@@ -18,6 +18,8 @@ from math import pi
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi, kurtosis  # pylint: disable=E0611
+from statsmodels.robust.scale import mad
+
 
 from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
@@ -89,7 +91,10 @@ def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
     bgmask = _prepare_mask(airmask, 1, erode)
 
     fg_mean = np.median(img[fgmask > 0])
-    bg_std = np.sqrt(2.0/(4.0 - pi)) * img[bgmask > 0].std(ddof=1)
+    bg_std = mad(img[bgmask > 0])
+    bg_std *= np.sqrt(2.0/(4.0 - pi))
+    if bg_std < 1.0e-3:
+        return -1.0
 
     return float(fg_mean / bg_std)
 
@@ -114,8 +119,14 @@ def cnr(img, seg, lbl=None):
     if lbl is None:
         lbl = FSL_FAST_LABELS
 
-    return float(np.abs(img[seg == lbl['gm']].mean() - img[seg == lbl['wm']].mean()) / \
-                 img[seg == lbl['bg']].std())
+    noise_std = mad(img[seg == lbl['bg']])
+    if noise_std < 1.0:
+        noise_std = np.average(mad(img[seg == lbl['gm']]) +
+                               mad(img[seg == lbl['wm']]) +
+                               mad(img[seg == lbl['csf']]))
+
+    return float(np.abs(np.median(img[seg == lbl['gm']]) - np.median(img[seg == lbl['wm']])) / \
+                 noise_std)
 
 
 def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
@@ -152,10 +163,10 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
         gmmask = np.zeros_like(seg)
         gmmask[seg == gmlabel] = 1
 
-    mu_wm = img[wmmask > .5].mean()
-    mu_gm = img[gmmask > .5].mean()
-    sigma_wm = img[wmmask > .5].std(ddof=1)
-    sigma_gm = img[gmmask > .5].std(ddof=1)
+    mu_wm = np.median(img[wmmask > .5])
+    mu_gm = np.median(img[gmmask > .5])
+    sigma_wm = mad(img[wmmask > .5])
+    sigma_gm = mad(img[gmmask > .5])
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
@@ -177,6 +188,8 @@ def fber(img, air):
 
     fg_mu = (np.abs(img[air > 0]) ** 2).mean()
     bg_mu = (np.abs(img[air < 1]) ** 2).mean()
+    if bg_mu < 1.0e-3:
+        return -1.0
     return float(fg_mu / bg_mu)
 
 
@@ -257,12 +270,12 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     # Artifact-free air region
     data = img[airmask > 0]
 
-    dmax = np.percentile(data[data > 0], 99.9)
-
+    # Background can only be fit if we have a min number of voxels
     if len(data[data > 0]) < min_voxels:
         return 0.0, out_file
 
     # Estimate data pdf
+    dmax = np.percentile(data[data > 0], 99.9)
     hist, bin_edges = np.histogram(data[data > 0], density=True,
                                    range=(0.0, dmax), bins='doane')
     bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
@@ -345,11 +358,6 @@ def summary_stats(img, pvms, bgdata=None):
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
     """
-    mean = {}
-    stdv = {}
-    p95 = {}
-    p05 = {}
-    kurt = {}
 
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:

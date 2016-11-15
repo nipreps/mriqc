@@ -7,12 +7,11 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-10-27 15:50:11
+# @Last Modified time: 2016-11-14 17:13:42
 """ Helpers in report generation """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
+import os.path as op
+import re
 import pandas as pd
 
 def read_csv(in_csv):
@@ -44,7 +43,10 @@ def find_failed(dframe, sub_list):
     failed = list(set(sub_list) - set(success))
     return failed
 
-def iqms2html(indict):
+def iqms2html(indict, table_id):
+    if indict is None or not indict:
+        return None
+
     tmp_qc = {}
     for k, value in sorted(list(indict.items())):
         if not isinstance(value, dict):
@@ -63,7 +65,7 @@ def iqms2html(indict):
         if len(out_qc[-1]) > depth:
             depth = len(out_qc[-1])
 
-    result_str = '<table id="iqms-table">\n'
+    result_str = '<table id="%s">\n' % table_id
     td = lambda v, cols: '<td colspan={1}>{0}</td>'.format(v, cols) if cols > 0 else '<td>{}</td>'.format(v)
     for line in sorted(out_qc):
         result_str += '<tr>'
@@ -71,7 +73,7 @@ def iqms2html(indict):
         for i, col in enumerate(line):
             colspan = 0
             if (depth - ncols) > 0 and i == ncols - 2:
-                colspan =  (depth - ncols) + 1
+                colspan = (depth - ncols) + 1
             result_str += td(col, colspan)
 
         result_str += '</tr>\n'
@@ -79,3 +81,40 @@ def iqms2html(indict):
     result_str += '</table>\n'
     return result_str
 
+def check_reports(dataset, settings, save_failed=True):
+
+    supported_components = ['subject_id', 'session_id', 'task_id', 'run_id']
+    expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
+                      '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
+                      '(_(?P<rec_id>rec-[a-zA-Z0-9]+))?(_(?P<run_id>run-[a-zA-Z0-9]+))?')
+
+    reports_missed = False
+    missing = {}
+    for mod, files in list(dataset.items()):
+        missing[mod] = []
+        qctype = 'anatomical' if mod == 't1w' else 'functional'
+
+        for fname in files:
+            m = expr.search(op.basename(fname)).groupdict()
+            components = [m.get(key) for key in supported_components if m.get(key)]
+            components.insert(0, qctype)
+
+            report_fname = op.join(
+                settings['report_dir'], '_'.join(components) + '_report.html')
+
+            if not op.isfile(report_fname):
+                missing[mod].append(
+                    {key: m.get(key) for key in supported_components if m.get(key)})
+
+        mod_missing = missing[mod]
+        if mod_missing:
+            reports_missed = True
+
+        if mod_missing and save_failed:
+            out_file = op.join(settings['output_dir'], 'failed_%s.csv' % qctype)
+            miss_cols = list(set(supported_components) & set(list(mod_missing[0].keys())))
+            dframe = pd.DataFrame.from_dict(mod_missing).sort_values(
+                by=miss_cols)
+            dframe[miss_cols].to_csv(out_file, index=False)
+
+    return reports_missed

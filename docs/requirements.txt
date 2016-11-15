@@ -1,2 +1,20 @@
 mock
--r ../requirements.txt
+numpy
+future
+matplotlib
+nibabel
+niworkflows>=0.0.3a15
+pandas
+dipy
+jinja2
+seaborn
+PyYAML
+nitime
+nilearn
+sklearn
+scikit-learn
+nose
+doctest-ignore-unicode
+sphinx
+svgutils
+-e git+https://github.com/nipy/nipype.git@master#egg=nipype

@@ -5,52 +5,51 @@
 #
 # @Author: oesteban
 # @Date:   2016-06-03 09:35:13
-# @Last Modified by:   oesteban
-# @Last Modified time: 2016-06-03 10:06:55
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
+import re
 import simplejson as json
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec, BaseInterface,
-                                    BaseInterfaceInputSpec, File)
-
+from nipype.interfaces.base import (traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File)
+from mriqc.interfaces.base import MRIQCBaseInterface
 
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='the input nifti file')
     fields = traits.List(traits.Str, desc='get only certain fields')
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
+    subject_id = traits.Str()
+    session_id = traits.Either(None, traits.Str())
+    task_id = traits.Either(None, traits.Str())
+    acq_id = traits.Either(None, traits.Str())
+    rec_id = traits.Either(None, traits.Str())
+    run_id = traits.Either(None, traits.Str())
     out_dict = traits.Dict()
 
-class ReadSidecarJSON(BaseInterface):
+class ReadSidecarJSON(MRIQCBaseInterface):
     """
     An utility to find and read JSON sidecar files of a BIDS tree
     """
-
+    expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
+                      '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
+                      '(_(?P<rec_id>rec-[a-zA-Z0-9]+))?(_(?P<run_id>run-[a-zA-Z0-9]+))?')
     input_spec = ReadSidecarJSONInputSpec
     output_spec = ReadSidecarJSONOutputSpec
 
-    def __init__(self, **inputs):
-        self._results = {}
-        super(ReadSidecarJSON, self).__init__(**inputs)
-
     def _run_interface(self, runtime):
         metadata = get_metadata_for_nifti(self.inputs.in_file)
+        output_keys = [key for key in list(self.output_spec().get().keys()) if key.endswith('_id')]
+        outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
+
+        for key in output_keys:
+            self._results[key] = outputs.get(key)
 
         if isdefined(self.inputs.fields) and self.inputs.fields:
             for fname in self.inputs.fields:
                 self._results[fname] = metadata[fname]
         else:
-            self._results = metadata
-
+            self._results['out_dict'] = metadata
         return runtime
 
-    def _list_outputs(self):
-        out = self.output_spec().get()
-        out['out_dict'] = self._results
-        return out
 
 def get_metadata_for_nifti(in_file):
     """Fetchs metadata for a given nifi file"""
@@ -62,7 +61,7 @@ def get_metadata_for_nifti(in_file):
         ext = ext2 + ext
 
     side_json = fname + '.json'
-    fname_comps = side_json.split('/')[-1].split("_")
+    fname_comps = op.basename(side_json).split("_")
 
     session_comp_list = []
     subject_comp_list = []
@@ -82,15 +81,19 @@ def get_metadata_for_nifti(in_file):
                 else:
                     top_comp_list.append(comp)
 
+    if any([comp.startswith('ses') for comp in fname_comps]):
+        bids_dir = '/'.join(op.dirname(in_file).split('/')[:-3])
+    else:
+        bids_dir = '/'.join(op.dirname(in_file).split('/')[:-2])
 
-    top_json = "/" + "_".join(top_comp_list)
+    top_json = op.join(bids_dir, "_".join(top_comp_list))
     potential_json = [top_json]
 
-    subject_json = "/" + sub + "/" + "_".join(subject_comp_list)
+    subject_json = op.join(bids_dir, sub, "_".join(subject_comp_list))
     potential_json.append(subject_json)
 
     if ses:
-        session_json = "/" + sub + "/" + ses + "/" + "_".join(session_comp_list)
+        session_json = op.join(bids_dir, sub, ses, "_".join(session_comp_list))
         potential_json.append(session_json)
 
     potential_json.append(side_json)

@@ -72,7 +72,7 @@ function makeDistroChart(settings) {
     if (units) {
         chart.settings.axisLabels.yAxis += ' (' + units + ')'
     }
-    
+
 
     chart.groupObjs = {}; //The data organized by grouping and sorted as well as any metadata for the groups
     chart.objs = {mainDiv: null, chartDiv: null, g: null, xAxis: null, yAxis: null};
@@ -165,6 +165,14 @@ function makeDistroChart(settings) {
         };
     }
 
+    function axislabelHover(groupName) {
+        var tooltipString = "Go to definition of " + groupName;
+        return function () {
+            chart.objs.tooltip.transition().duration(200).style("opacity", 1.0);
+            chart.objs.tooltip.html(tooltipString)
+        };
+    }
+
     /**
      * Closure that creates the tooltip hover function
      * @param groupName Name of the x group
@@ -174,7 +182,7 @@ function makeDistroChart(settings) {
     function pointHover(label, value) {
         var tooltipString = "Subject: " + label + "<br\>Measure: " + value
         return function () {
-            chart.objs.tooltip.transition().duration(200).style("opacity", 0.9);
+            chart.objs.tooltip.transition().duration(200).style("opacity", 1.0);
             chart.objs.tooltip.html(tooltipString)
         };
     }
@@ -359,7 +367,8 @@ function makeDistroChart(settings) {
     !function prepareChart() {
         // Build main div and chart div
         chart.objs.mainDiv = d3.select(chart.settings.selector)
-            .style("max-width", chart.divWidth + "px");
+            .style("width", chart.divWidth + "px")
+            .style("display", "inline-block");
         // Add all the divs to make it centered and responsive
         chart.objs.mainDiv.append("div")
             .attr("class", "inner-wrapper")
@@ -397,20 +406,24 @@ function makeDistroChart(settings) {
             //.attr("x", -chart.height / 2)
             .style("text-anchor", "end")
             .style("font-size", "16px")
-            .text(chart.yAxisLable);
+            .append("a")
+            .attr("xlink:href", function(d) {
+                return "http://mriqc.readthedocs.io/en/latest/measures.html"
+            })
+            .text(chart.yAxisLable)
+            .on("mouseover", function () {
+                chart.objs.tooltip
+                    .style("display", null)
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+            }).on("mouseout", function () {
+                chart.objs.tooltip.style("display", "none");
+            }).on("mousemove", axislabelHover(chart.yAxisLable));
 
         // Create tooltip div
         chart.objs.tooltip = chart.objs.mainDiv.append('div').attr('class', 'tooltip');
         for (var cName in chart.groupObjs) {
             chart.groupObjs[cName].g = chart.objs.g.append("g").attr("class", "group");
-            // chart.groupObjs[cName].g.on("mouseover", function () {
-            //     chart.objs.tooltip
-            //         .style("display", null)
-            //         .style("left", (d3.event.pageX) + "px")
-            //         .style("top", (d3.event.pageY - 28) + "px");
-            // }).on("mouseout", function () {
-            //     chart.objs.tooltip.style("display", "none");
-            // }).on("mousemove", tooltipHover(cName, chart.groupObjs[cName].metrics))
         }
         chart.update();
     }();
@@ -752,7 +765,8 @@ function makeDistroChart(settings) {
             lineWidth: null,
             scatterOutliers: false,
             outlierCSize: 2.5,
-            colors: chart.colorFunct
+            colors: chart.colorFunct,
+            padding: 0
         };
         chart.boxPlots.options = shallowCopy(defaultOptions);
         for (var option in options) {
@@ -863,6 +877,9 @@ function makeDistroChart(settings) {
 
                 // Get the box width
                 var objBounds = getObjWidth(bOpts.boxWidth, cName);
+                objBounds.middle += chart.boxPlots.options.padding
+                objBounds.right += chart.boxPlots.options.padding
+                objBounds.left += chart.boxPlots.options.padding
                 var width = (objBounds.right - objBounds.left);
 
                 var sMetrics = {}; //temp var for scaled (plottable) metric values
@@ -889,6 +906,12 @@ function makeDistroChart(settings) {
                 } else {
                     lineBounds = objBounds
                 }
+
+                // Apply padding
+                lineBounds.middle += chart.boxPlots.options.padding
+                lineBounds.right += chart.boxPlots.options.padding
+                lineBounds.left += chart.boxPlots.options.padding
+
                 // --Whiskers
                 if (cBoxPlot.objs.upperWhisker) {
                     cBoxPlot.objs.upperWhisker.fence
@@ -984,7 +1007,15 @@ function makeDistroChart(settings) {
                     cBoxPlot.objs.box = cBoxPlot.objs.g.append("rect")
                         .attr("class", "box")
                         .style("fill", chart.boxPlots.colorFunct(cName))
-                        .style("stroke", chart.boxPlots.colorFunct(cName));
+                        .style("stroke", chart.boxPlots.colorFunct(cName))
+                        .on("mouseover", function () {
+                            chart.objs.tooltip
+                                .style("display", null)
+                                .style("left", (d3.event.pageX) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px");
+                        }).on("mouseout", function () {
+                            chart.objs.tooltip.style("display", "none");
+                        }).on("mousemove", tooltipHover(cName, chart.groupObjs[cName].metrics));
                     //A stroke is added to the box with the group color, it is
                     // hidden by default and can be shown through css with stroke-width
                 }
@@ -1335,7 +1366,8 @@ function makeDistroChart(settings) {
             showLines: false,//['median'],
             showBeanLines: false,
             beanWidth: 20,
-            colors: null
+            colors: null,
+            padding: 0
         };
         chart.dataPlots.options = shallowCopy(defaultOptions);
         for (var option in options) {
@@ -1461,6 +1493,9 @@ function makeDistroChart(settings) {
                         }
 
                         plotBounds = getObjWidth(scatterWidth, cName);
+                        plotBounds.middle += chart.dataPlots.options.padding
+                        plotBounds.right += chart.dataPlots.options.padding
+                        plotBounds.left += chart.dataPlots.options.padding
                         width = plotBounds.right - plotBounds.left;
 
                         for (var pt = 0; pt < cGroup.values.length; pt++) {

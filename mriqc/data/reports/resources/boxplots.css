@@ -3,6 +3,14 @@
     display: none;
 }
 
+body {
+    font-family: helvetica;
+}
+
+.text-warning {
+    font-weight: bold;
+    color: red;
+}
 /*Primary Chart*/
 
 /*Nested divs for responsiveness*/
@@ -10,7 +18,7 @@
     max-width: 800px;  /*Overwritten by the JS*/
     min-width: 160px;
     margin-bottom: 20px;
-    background-color: #FAF7F7;
+    font-family: helvetica;
 }
 .chart-wrapper .inner-wrapper {
     position: relative;
@@ -30,7 +38,7 @@
 }
 
 .chart-wrapper text {
-  font-family: sans-serif;
+  font-family: helvetica;
   font-size: 13px;
 }
 
@@ -59,12 +67,13 @@
     position: absolute;
     text-align: left;
     padding: 3px;
-    font: 12px sans-serif;
-    background: lightcyan;
+    font-size: 12px;
+    background: #eee;
     border: 0px;
     border-radius: 1px;
     pointer-events: none;
-    opacity: 0.7;
+    opacity: .7;
+    z-index: 10;
 }
 
 /*Box Plot*/
@@ -133,7 +142,7 @@
 .chart-options  {
     min-width: 200px;
     font-size: 13px;
-    font-family: sans-serif;
+    font-family: helvetica;
 }
 .chart-options button {
     margin: 3px;

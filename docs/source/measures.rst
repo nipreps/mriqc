@@ -151,7 +151,7 @@ References
   .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
       <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
 
-  .. [Power2012] Poweret al., *Spurious but systematic correlations in
+  .. [Power2012] Power et al., *Spurious but systematic correlations in
     functional connectivity MRI networks arise from subject motion*,
     NeuroImage 59(3):2142-2154,
     2012, doi:`10.1016/j.neuroimage.2011.10.018
@@ -159,6 +159,11 @@ References
 
   .. [QAP] `The QAP project
     <https://github.com/oesteban/quality-assessment-protocol/blob/enh/SmartQCWorkflow/qap/temporal_qc.py#L16>`_.
+
+  .. [Saad2013] Saad et al. *Correcting Brain-Wide Correlation Differences
+     in Resting-State FMRI*, Brain Conn 3(4):339-352,
+     2013, doi:`10.1089/brain.2013.0156
+     <http://dx.doi.org/10.1089/brain.2013.0156>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
     2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_
