@@ -84,14 +84,15 @@ def gen_html(csv_file, qctype, out_file=None):
     dataframe = pd.read_csv(csv_file, index_col=False)
 
     # format participant labels
-    formatter = lambda row: '{subject_id}_ses-{session_id}_run-{run_id}'.format(**row)
     id_labels = ['subject_id', 'session_id', 'run_id']
     if qctype.startswith('func'):
-        formatter = lambda row: ('{subject_id}_ses-{session_id}_task-{task_id}'
-                                 '_run-{run_id}').format(**row)
         id_labels.insert(2, 'task_id')
 
-    dataframe['label'] = dataframe[id_labels].apply(formatter, axis=1)
+    def myfmt(row):
+        crow = [row[k] for k in id_labels if pd.notnull(row[k])]
+        return '_'.join(crow)
+
+    dataframe['label'] = dataframe[id_labels].apply(myfmt, axis=1)
     nPart = len(dataframe)
 
     csv_groups = []

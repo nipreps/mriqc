@@ -28,6 +28,7 @@ def main():
     from nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
+    from mriqc.reports.utils import check_reports
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -238,6 +239,8 @@ def main():
 
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
+                if check_reports(dataset, settings):
+                    MRIQC_LOG.warn('Some reports were not generated')
 
     # Set up group level
     if opts.analysis_level == 'group' or opts.participant_label is None:
