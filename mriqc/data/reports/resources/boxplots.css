@@ -6,6 +6,11 @@
 body {
     font-family: helvetica;
 }
+
+.text-warning {
+    font-weight: bold;
+    color: red;
+}
 /*Primary Chart*/
 
 /*Nested divs for responsiveness*/
@@ -137,7 +142,7 @@ body {
 .chart-options  {
     min-width: 200px;
     font-size: 13px;
-    font-family: sans-serif;
+    font-family: helvetica;
 }
 .chart-options button {
     margin: 3px;

@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-07 15:17:32
+# @Last Modified time: 2016-11-14 11:03:27
 """ MRIQC setup script """
 from setuptools.command.build_py import build_py
 from sys import version_info

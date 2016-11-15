@@ -28,6 +28,7 @@ def main():
     from nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
+    from mriqc.reports.utils import check_reports
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -238,6 +239,8 @@ def main():
 
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
+                if check_reports(dataset, settings):
+                    MRIQC_LOG.warn('Some reports were not generated')
 
     # Set up group level
     if opts.analysis_level == 'group' or opts.participant_label is None:
@@ -263,7 +266,9 @@ def main():
 
             out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', qctype, out_csv)
-            group_html(out_csv, qctype, out_file=out_html)
+            group_html(out_csv, qctype,
+                       csv_failed=op.join(settings['output_dir'], 'failed_' + qctype + '.csv'),
+                       out_file=out_html)
             MRIQC_LOG.info('Group-%s report generated (%s)', qctype, out_html)
 
 if __name__ == '__main__':

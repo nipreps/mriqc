@@ -18,7 +18,7 @@ from mriqc import logging
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
-def gen_html(csv_file, qctype, out_file=None):
+def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
     from shutil import copy, rmtree
@@ -84,15 +84,30 @@ def gen_html(csv_file, qctype, out_file=None):
     dataframe = pd.read_csv(csv_file, index_col=False)
 
     # format participant labels
-    formatter = lambda row: '{subject_id}_ses-{session_id}_run-{run_id}'.format(**row)
     id_labels = ['subject_id', 'session_id', 'run_id']
     if qctype.startswith('func'):
-        formatter = lambda row: ('{subject_id}_ses-{session_id}_task-{task_id}'
-                                 '_run-{run_id}').format(**row)
         id_labels.insert(2, 'task_id')
 
-    dataframe['label'] = dataframe[id_labels].apply(formatter, axis=1)
+    def myfmt(row, cols):
+        crow = [row[k] for k in cols if pd.notnull(row[k])]
+        return '_'.join(crow)
+
+    dataframe['label'] = dataframe[id_labels].apply(myfmt, args=(id_labels,), axis=1)
     nPart = len(dataframe)
+
+    failed = None
+    if csv_failed is not None and op.isfile(csv_failed):
+        MRIQC_REPORT_LOG.warn('Found failed-workflows table "%s"', csv_failed)
+        failed_df = pd.read_csv(csv_failed, index_col=False)
+        cols = list(set(id_labels) & set(failed_df.columns.ravel().tolist()))
+
+        try:
+            failed_df = failed_df.sort_values(by=cols)
+        except AttributeError:
+            #pylint: disable=E1101
+            failed_df = failed_df.sort(columns=cols)
+
+        failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
 
     csv_groups = []
     for group, units in QCGROUPS[qctype[:4]]:
@@ -119,7 +134,7 @@ def gen_html(csv_file, qctype, out_file=None):
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
-
+            'failed': failed
         }, out_file)
 
     res_folder = op.join(op.dirname(out_file), 'resources')

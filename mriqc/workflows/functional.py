@@ -265,18 +265,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
-        title='EPI mean session: {session_id}, task_id: {task_id}, run: {run_id}',
+        title='EPI mean session',
         cmap='Greys_r'),
         name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
-        title='EPI SD session: {session_id}, task_id: {task_id}, run: {run_id}',
+        title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
     mosaic_spikes = pe.Node(PlotSpikes(
         out_file='plot_spikes.svg', cmap='viridis',
-        title='High-Frequency spikes (session: {session_id}, task_id: {task_id}, run: {run_id})'),
+        title='High-Frequency spikes'),
                             name='PlotSpikes')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
@@ -329,12 +329,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='EPI mean (zoomed) - Session: {session_id}, task: {task_id}, run: {run_id}',
+        title='Zoomed-in EPI mean',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='EPI mean (noise) - Session: {session_id}, task: {task_id}, run: {run_id}',
+        title='Enhanced noise in EPI mean',
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
@@ -703,9 +703,20 @@ def _big_plot(session_id, task_id, run_id, in_func, in_mask, in_segm, in_spikes,
             fname, _ = op.splitext(fname)
         out_file = op.abspath('{}_fmriplot.svg'.format(fname))
 
+    title = 'fMRI Summary plot.'
+    title_extra = []
+    if session_id is not None and session_id:
+        title_extra.append(session_id)
+    if task_id is not None and task_id:
+        title_extra.append(task_id)
+    if run_id is not None and run_id:
+        title_extra.append(run_id)
+
+    if title_extra:
+        title = title[:-1] + ' (%s).' % ', '.join(title_extra)
+
     myplot = fMRIPlot(
-        in_func, in_mask, in_segm,
-        title='fMRI Summary plot ({}, task: {}, run: {})'.format(session_id, task_id, run_id))
+        in_func, in_mask, in_segm, title=title)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg),
                       zscored=False)
