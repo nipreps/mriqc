@@ -16,6 +16,13 @@ report</h1>
 <ul class="simple">
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
+{% if failed %}
+<li><span class="text-warning">Some individual reports failed</span>:
+{% for f in failed %}
+<span class="text-warning">{{ f }}</span>{% if loop.last %}.{% else %}, {% endif %}
+{% endfor %}
+</li>
+{% endif %}
 </ul>
 
 <script src="resources/boxplots.js" charset="utf-8"></script>

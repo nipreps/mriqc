@@ -99,13 +99,12 @@ class PlotBase(MRIQCBaseInterface):
             elements = []
             for k in ['session_id', 'task_id', 'run_id']:
                 value = getattr(self.inputs, k, None)
-                if isdefined(value) and value is not None:
-                    elements.append('%s: %s' % (k, value))
+                if isdefined(value) and value is not None and value.lower() != 'none':
+                    elements.append(value)
 
             if elements:
                 title += ' (%s).' % ', '.join(elements)
-            else:
-                title += '.'
+
         return title
 
 
@@ -203,7 +202,7 @@ class PlotSpikes(PlotBase):
             self.inputs.session_id,
             self.inputs.run_id,
             out_file,
-            title=self.inputs.title,
+            title=self._get_title(),
             cmap=get_cmap(self.inputs.cmap),
             plot_sagittal=False,
             only_plot_noise=False,

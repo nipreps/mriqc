@@ -266,7 +266,9 @@ def main():
 
             out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', qctype, out_csv)
-            group_html(out_csv, qctype, out_file=out_html)
+            group_html(out_csv, qctype,
+                       csv_failed=op.join(settings['output_dir'], 'failed_' + qctype + '.csv'),
+                       out_file=out_html)
             MRIQC_LOG.info('Group-%s report generated (%s)', qctype, out_html)
 
 if __name__ == '__main__':

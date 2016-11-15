@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-14 15:18:19
+# @Last Modified time: 2016-11-14 17:13:42
 """ Helpers in report generation """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -92,14 +92,15 @@ def check_reports(dataset, settings, save_failed=True):
     missing = {}
     for mod, files in list(dataset.items()):
         missing[mod] = []
+        qctype = 'anatomical' if mod == 't1w' else 'functional'
 
         for fname in files:
             m = expr.search(op.basename(fname)).groupdict()
             components = [m.get(key) for key in supported_components if m.get(key)]
+            components.insert(0, qctype)
 
             report_fname = op.join(
-                settings['report_dir'],
-                'functional_' + '_'.join(components) + '_report.html')
+                settings['report_dir'], '_'.join(components) + '_report.html')
 
             if not op.isfile(report_fname):
                 missing[mod].append(
@@ -110,7 +111,7 @@ def check_reports(dataset, settings, save_failed=True):
             reports_missed = True
 
         if mod_missing and save_failed:
-            out_file = op.join(settings['output_dir'], 'failed_%s.csv' % mod)
+            out_file = op.join(settings['output_dir'], 'failed_%s.csv' % qctype)
             miss_cols = list(set(supported_components) & set(list(mod_missing[0].keys())))
             dframe = pd.DataFrame.from_dict(mod_missing).sort_values(
                 by=miss_cols)

@@ -713,7 +713,7 @@ def _big_plot(session_id, task_id, run_id, in_func, in_mask, in_segm, in_spikes,
         title_extra.append(run_id)
 
     if title_extra:
-        title = title[:-1] + '(%s).' % ', '.format(title_extra)
+        title = title[:-1] + ' (%s).' % ', '.join(title_extra)
 
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
