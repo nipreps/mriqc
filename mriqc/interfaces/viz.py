@@ -13,14 +13,12 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os.path as op
 import nibabel as nb
 import numpy as np
-from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
-                                    OutputMultiPath, BaseInterfaceInputSpec,
-                                    isdefined)
+from nipype.interfaces.base import (traits, TraitedSpec, File,
+                                    BaseInterfaceInputSpec, isdefined)
 from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
 from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_segmentation)
 from mriqc.interfaces.base import MRIQCBaseInterface
-from matplotlib.cm import get_cmap
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -140,7 +138,7 @@ class PlotMosaic(PlotBase):
             title=self._get_title(),
             only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask,
-            cmap=get_cmap(self.inputs.cmap))
+            cmap=self.inputs.cmap)
         self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
 
@@ -195,7 +193,7 @@ class PlotSpikes(PlotBase):
         nb.Nifti1Image(spikes_data, nii.get_affine(),
                        nii.get_header()).to_filename('spikes.nii.gz')
 
-        tr = nii.get_header().get_zooms()[-1]
+        # tr = nii.get_header().get_zooms()[-1]
         plot_mosaic_helper(
             op.abspath('spikes.nii.gz'),
             self.inputs.subject_id,
@@ -203,7 +201,7 @@ class PlotSpikes(PlotBase):
             self.inputs.run_id,
             out_file,
             title=self._get_title(),
-            cmap=get_cmap(self.inputs.cmap),
+            cmap=self.inputs.cmap,
             plot_sagittal=False,
             only_plot_noise=False,
             labels=labels)

@@ -3,16 +3,13 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-16 15:12:13
+# @Last Modified time: 2016-11-15 09:30:00
 
 """
 ABIDE2BIDS downloader tool
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
 import os.path as op
@@ -25,7 +22,6 @@ from xml.etree import ElementTree as et
 from multiprocessing import Pool
 from argparse import ArgumentParser, RawTextHelpFormatter
 import numpy as np
-import pandas as pd
 
 def main():
     """Entry point"""
@@ -131,14 +127,13 @@ def fetch(args):
                     raise exc
             shutil.copy(i, op.join(bids_dir, subject_id + '_rest_bold' + ext))
 
-    try:
-        shutil.rmtree(tmpdir)
-    except:
-        pass
+    shutil.rmtree(tmpdir, ignore_errors=True, onerror=_myerror)
 
     print('Successfully processed subject %s from site %s' % (subject_id[4:], site_name))
     return subject_id[4:], site_name
 
+def _myerror(msg):
+    print('WARNING: Error deleting temporal files: %s' % msg)
 
 if __name__ == '__main__':
     main()

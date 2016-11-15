@@ -46,8 +46,12 @@ class ConformImage(MRIQCBaseInterface):
             changed = True
             datatype = int(hdr['datatype'])
 
-            # Signed char, int to uint16
-            if datatype == 4 or datatype == 2 or datatype == 256:
+            # signed char and bool to uint8
+            if datatype == 4 or datatype == 2:
+                dtype = np.uint8
+
+            # int to uint16
+            elif datatype == 256:
                 dtype = np.uint16
 
             # Signed long, long long, etc to uint32

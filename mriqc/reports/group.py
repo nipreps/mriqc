@@ -12,7 +12,7 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 from sys import version_info
-from builtins import zip, object, str, bytes  # pylint: disable=W0622
+from builtins import zip, object, str  # pylint: disable=W0622
 
 from mriqc import logging
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
@@ -21,7 +21,7 @@ MRIQC_REPORT_LOG.setLevel(logging.INFO)
 def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
-    from shutil import copy, rmtree
+    from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
     import pandas as pd

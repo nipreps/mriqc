@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-07 11:35:58
+# @Last Modified time: 2016-11-15 09:28:44
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
@@ -66,7 +66,6 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
 
     """
 
-    import sys
     import math
     import os.path as op
     import numpy as np

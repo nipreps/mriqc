@@ -3,19 +3,15 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-08-24 17:45:06
+# @Last Modified time: 2016-11-15 09:23:35
 
 """
 BIDS-Apps subject wrangler
 
 """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
+from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range  # pylint: disable=W0622
 
-import os
 import os.path as op
 import glob
 from random import shuffle

@@ -13,7 +13,7 @@ import collections
 import json
 import pandas as pd
 from io import open  # pylint: disable=W0622
-from builtins import next, range  # pylint: disable=W0622
+from builtins import range  # pylint: disable=W0622
 
 def split_ext(in_file, out_file=None):
     import os.path as op
@@ -25,15 +25,6 @@ def split_ext(in_file, out_file=None):
         return fname, ext
     else:
         return split_ext(out_file)
-
-
-def reorient(in_file):
-    import nibabel as nb
-    import os
-    _, outfile = os.path.split(in_file)
-    nii = nb.as_closest_canonical(nb.load(in_file))
-    nii.to_filename(outfile)
-    return os.path.abspath(outfile)
 
 
 def reorient_and_discard_non_steady(in_file):

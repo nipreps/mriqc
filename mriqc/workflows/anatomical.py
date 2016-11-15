@@ -7,11 +7,10 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-04 16:32:36
+# @Last Modified time: 2016-11-15 09:50:23
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
-import os
 import os.path as op
 
 from nipype.pipeline import engine as pe
@@ -320,7 +319,6 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     has_dipy = False
     try:
         from dipy.denoise import nlmeans
-        from nipype.interfaces.dipy import Denoise
         has_dipy = True
     except ImportError:
         pass
@@ -343,37 +341,37 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
             (enhance, bet, [('out_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
-        return workflow
 
-    estsnr = pe.Node(niu.Function(
-        input_names=['in_file', 'seg_file'], output_names=['out_snr'],
-        function=_estimate_snr), name='EstimateSNR')
-    denoise = pe.Node(Denoise(), name='Denoise')
-    gradient = pe.Node(niu.Function(
-        input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
-    thresh = pe.Node(niu.Function(
-        input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
-                     name='GradientThreshold')
+    else:
+        from nipype.interfaces.dipy import Denoise
+        estsnr = pe.Node(niu.Function(
+            input_names=['in_file', 'seg_file'], output_names=['out_snr'],
+            function=_estimate_snr), name='EstimateSNR')
+        denoise = pe.Node(Denoise(), name='Denoise')
+        gradient = pe.Node(niu.Function(
+            input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
+        thresh = pe.Node(niu.Function(
+            input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
+                         name='GradientThreshold')
 
-    workflow.connect([
-        (inputnode, estsnr, [('in_file', 'in_file'),
-                             ('in_segm', 'seg_file')]),
-        (estsnr, denoise, [('out_snr', 'snr')]),
-        (inputnode, enhance, [('in_file', 'in_file')]),
-        (enhance, denoise, [('out_file', 'in_file')]),
-        (estsnr, gradient, [('out_snr', 'snr')]),
-        (denoise, gradient, [('out_file', 'in_file')]),
-        (inputnode, thresh, [('in_segm', 'in_segm')]),
-        (gradient, thresh, [('out_file', 'in_file')]),
-        (thresh, outputnode, [('out_file', 'out_file')])
-    ])
+        workflow.connect([
+            (inputnode, estsnr, [('in_file', 'in_file'),
+                                 ('in_segm', 'seg_file')]),
+            (estsnr, denoise, [('out_snr', 'snr')]),
+            (inputnode, enhance, [('in_file', 'in_file')]),
+            (enhance, denoise, [('out_file', 'in_file')]),
+            (estsnr, gradient, [('out_snr', 'snr')]),
+            (denoise, gradient, [('out_file', 'in_file')]),
+            (inputnode, thresh, [('in_segm', 'in_segm')]),
+            (gradient, thresh, [('out_file', 'in_file')]),
+            (thresh, outputnode, [('out_file', 'out_file')])
+        ])
 
     return workflow
 
 
 def airmsk_wf(name='AirMaskWorkflow'):
     """Implements the Step 1 of [Mortamet2009]_."""
-    import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(

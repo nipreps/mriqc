@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-04-04 13:50:50
+# @Last Modified time: 2016-11-15 09:23:13
 
 """
 Batch export freesurfer results to animated gifs
@@ -173,10 +173,10 @@ set i 0
 
 
         if not opts.keep_temp:
-            try:
-                rmtree(tmp_sub)
-            except:
-                pass
+            rmtree(tmp_sub, ignore_errors=True, onerror=_myerror)
+
+def _myerror(msg):
+    print('WARNING: Error deleting temporal files: %s' % msg)
 
 
 if __name__ == '__main__':

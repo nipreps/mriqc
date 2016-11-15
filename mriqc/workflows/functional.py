@@ -18,7 +18,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc.workflows.utils import (fmri_getidx, fwhm_dict, fd_jenkinson, thresh_image,
+from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, thresh_image,
                                    slice_wise_fft)
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes
 from mriqc.utils.misc import bids_path, check_folder, reorient_and_discard_non_steady
@@ -339,7 +339,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Verbose-reporting goes here
     from mriqc.interfaces.viz import PlotContours
-    from mriqc.interfaces.viz_utils import plot_bg_dist, combine_svg_verbose
+    from mriqc.interfaces.viz_utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
