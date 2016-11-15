@@ -1,6 +1,16 @@
 Release 0.8.8
 =============
 
+* [FIX] Singularity: user-environment leaking into container
+* [ENH] Report failed cases in group report (#291)
+* [FIX] Brighter anatomical --verbose-reports (#290)
+* [FIX] X-flip in the mosaics (#289)
+* [ENH] Show metadata in the individual report (#288)
+* [ENH] Label in the cutoff threshold - fmriplot (#287)
+* [ENH] PyBIDS (#286)
+* [ENH] Simplify tests (#284)
+* [FIX] MRIQC crashed generating csv files (#283)
+* [FIX] Bug in setup.py (#281)
 * [ENH] Makefile (#280)
 * [FIX] Revision of IQMs (#266, #272, #279)
 * [ENH] Deprecation of --nthreads, new flags (#260)
