@@ -16,9 +16,9 @@ import numpy as np
 from nipype.interfaces.base import (BaseInterface, traits, TraitedSpec, File,
                                     OutputMultiPath, BaseInterfaceInputSpec,
                                     isdefined)
-from io import open
+from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
-from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_fd, plot_segmentation)
+from mriqc.interfaces.viz_utils import (plot_mosaic_helper, plot_segmentation)
 from mriqc.interfaces.base import MRIQCBaseInterface
 from matplotlib.cm import get_cmap
 

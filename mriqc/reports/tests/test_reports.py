@@ -10,9 +10,8 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import pytest
-from io import open
+from io import open # pylint: disable=W0622
 from mriqc.reports.utils import check_reports
-
 
 
 @pytest.fixture(scope='session')
