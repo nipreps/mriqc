@@ -610,44 +610,6 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     return workflow
 
 
-
-    # # Extract wm mask from segmentation
-    # wm_mask = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
-    #                                function=thresh_image), name='WM_mask')
-    # wm_mask.inputs.in_file = op.join(mni_template, '1mm_tpm_wm.nii.gz')
-
-    # flt_bbr_init = pe.Node(fsl.FLIRT(dof=6, out_matrix_file='init.mat'),
-    #                        name='Flirt_BBR_init')
-    # flt_bbr = pe.Node(fsl.FLIRT(dof=12, cost_func='bbr'), name='Flirt_BBR')
-    # flt_bbr.inputs.schedule = op.join(os.getenv('FSLDIR'),
-    #                                   'etc/flirtsch/bbr.sch')
-
-    # # make equivalent warp fields
-    # invt_bbr = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='Flirt_BBR_Inv')
-    # # Warp segmentation into EPI space
-    # segm_xfm = pe.Node(fsl.ApplyXfm(
-    #     in_file=op.join(mni_template, '1mm_parc.nii.gz'),
-    #     interp='nearestneighbour'), name='ResampleSegmentation')
-
-    # workflow.connect([
-    #     (inputnode, epimask, [('epi_mean', 'in_file'),
-    #                           ('epi_mask', 'mask_file')]),
-    #     (epimask, flt_bbr_init, [('out_file', 'in_file')]),
-    #     (epimask, flt_bbr, [('out_file', 'in_file')]),
-    #     (brainmask, flt_bbr_init, [('out_file', 'reference')]),
-    #     (brainmask, flt_bbr, [('out_file', 'reference')]),
-    #     (wm_mask, flt_bbr, [('out_file', 'wm_seg')]),
-    #     (flt_bbr_init, flt_bbr, [('out_matrix_file', 'in_matrix_file')]),
-    #     (flt_bbr, invt_bbr, [('out_matrix_file', 'in_file')]),
-    #     (invt_bbr, segm_xfm, [('out_file', 'in_matrix_file')]),
-    #     (inputnode, segm_xfm, [('epi_mean', 'reference')]),
-    #     (segm_xfm, outputnode, [('out_file', 'epi_parc')]),
-    #     (flt_bbr, outputnode, [('out_file', 'epi_mni')]),
-
-    # ])
-    # return workflow
-
-
 def spikes_mask(in_file, in_mask=None, out_file=None):
     import os.path as op
     import nibabel as nb
