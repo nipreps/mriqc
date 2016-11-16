@@ -575,23 +575,32 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False):
 
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
+    # Mask PD template image
+    brainmask = pe.Node(fsl.ApplyMask(
+        in_file=op.join(mni_template, '1mm_PD.nii.gz'),
+        mask_file=op.join(mni_template, '1mm_brainmask.nii.gz')),
+        name='MNIApplyMask')
+
     if testing:
+        resolution = 2
         norm = pe.Node(RobustMNINormalization(
             num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-            testing=testing, reference='T2', moving='EPI', template_resolution=2),
+            testing=testing, reference='T2', moving='EPI',
+            template_resolution=resolution),
                        name='EPI2MNI')
 
         # Warp segmentation into EPI space
-        invt = pe.Node(ApplyTransforms(dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        invt = pe.Node(ApplyTransforms(
+            input_image=op.join(mni_template, '%dmm_parc.nii.gz' % resolution),
+            dimension=3, default_value=0, interpolation='NearestNeighbor'),
                        name='ResampleSegmentation')
-        invt.inputs.input_image = op.join(mni_template, '1mm_parc.nii.gz')
 
         workflow.connect([
+            (inputnode, invt, [('epi_mean', 'reference_image')]),
             (inputnode, epimask, [('epi_mean', 'in_file'),
                                   ('epi_mask', 'mask_file')]),
-            (inputnode, norm, [('epi_mean', 'moving_image')]),
-            (inputnode, invt, [('epi_mean', 'reference_image')]),
-            (epimask, norm, [('out_file', 'moving_mask')]),
+            (brainmask, norm, [('out_file', 'reference_image')]),
+            (epimask, norm, [('out_file', 'moving_image')]),
             (norm, invt, [
                 ('reverse_transforms', 'transforms'),
                 ('reverse_invert_flags', 'invert_transform_flags')]),
@@ -602,11 +611,6 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False):
         return workflow
 
 
-    # Mask PD template image
-    brainmask = pe.Node(fsl.ApplyMask(
-        in_file=op.join(mni_template, '1mm_PD.nii.gz'),
-        mask_file=op.join(mni_template, '1mm_brainmask.nii.gz')),
-        name='MNIApplyMask')
 
     # Extract wm mask from segmentation
     wm_mask = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
