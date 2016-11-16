@@ -510,6 +510,13 @@ def plot_mosaic_helper(in_file, subject_id, session_id=None,
                                 "run_id": run_id})
     fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
                       only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == ".gz":
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath(fname + '_mosaic.svg')
+
     fig.savefig(out_file, format=out_file.split('.')[-1], dpi=300)
     fig.clf()
     fig = None
