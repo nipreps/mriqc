@@ -8,7 +8,7 @@ MRIQC
 """
 
 __versionbase__ = '0.8.8'
-__versionrev__ = 'rc14'
+__versionrev__ = 'rc15'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -50,7 +50,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a19',
+    'niworkflows>=0.0.3a20',
     'pandas',
     'dipy',
     'jinja2',

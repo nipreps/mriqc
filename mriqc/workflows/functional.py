@@ -551,7 +551,7 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
 
     return workflow
 
-def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False):
+def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, resolution=2):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
@@ -562,7 +562,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False):
     the associated "lobe" parcellation in EPI space.
 
     """
-    from nipype.interfaces.ants import ApplyTransforms
+    from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
     from niworkflows.anat.mni import RobustMNINormalization
     mni_template = get_template()
@@ -575,71 +575,36 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False):
 
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
-    if testing:
-        norm = pe.Node(RobustMNINormalization(
-            num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-            testing=testing, reference='T2', moving='EPI', template_resolution=2),
-                       name='EPI2MNI')
-
-        # Warp segmentation into EPI space
-        invt = pe.Node(ApplyTransforms(dimension=3, default_value=0, interpolation='NearestNeighbor'),
-                       name='ResampleSegmentation')
-        invt.inputs.input_image = op.join(mni_template, '1mm_parc.nii.gz')
-
-        workflow.connect([
-            (inputnode, epimask, [('epi_mean', 'in_file'),
-                                  ('epi_mask', 'mask_file')]),
-            (inputnode, norm, [('epi_mean', 'moving_image')]),
-            (inputnode, invt, [('epi_mean', 'reference_image')]),
-            (epimask, norm, [('out_file', 'moving_mask')]),
-            (norm, invt, [
-                ('reverse_transforms', 'transforms'),
-                ('reverse_invert_flags', 'invert_transform_flags')]),
-            (invt, outputnode, [('output_image', 'epi_parc')]),
-            (norm, outputnode, [('warped_image', 'epi_mni')]),
-
-        ])
-        return workflow
-
-
-    # Mask PD template image
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
+    # Mask T2 template image
     brainmask = pe.Node(fsl.ApplyMask(
-        in_file=op.join(mni_template, '1mm_PD.nii.gz'),
-        mask_file=op.join(mni_template, '1mm_brainmask.nii.gz')),
+        in_file=op.join(mni_template, '%dmm_T2.nii.gz' % resolution),
+        mask_file=op.join(mni_template, '%dmm_brainmask.nii.gz' % resolution)),
         name='MNIApplyMask')
 
-    # Extract wm mask from segmentation
-    wm_mask = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
-                                   function=thresh_image), name='WM_mask')
-    wm_mask.inputs.in_file = op.join(mni_template, '1mm_tpm_wm.nii.gz')
+    norm = pe.Node(RobustMNINormalization(
+        num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
+        testing=testing, moving='EPI'),
+                   name='EPI2MNI')
 
-    flt_bbr_init = pe.Node(fsl.FLIRT(dof=6, out_matrix_file='init.mat'),
-                           name='Flirt_BBR_init')
-    flt_bbr = pe.Node(fsl.FLIRT(dof=12, cost_func='bbr'), name='Flirt_BBR')
-    flt_bbr.inputs.schedule = op.join(os.getenv('FSLDIR'),
-                                      'etc/flirtsch/bbr.sch')
-
-    # make equivalent warp fields
-    invt_bbr = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='Flirt_BBR_Inv')
     # Warp segmentation into EPI space
-    segm_xfm = pe.Node(fsl.ApplyXfm(
-        in_file=op.join(mni_template, '1mm_parc.nii.gz'),
-        interp='nearestneighbour'), name='ResampleSegmentation')
+    invt = pe.Node(ApplyTransforms(
+        input_image=op.join(mni_template, '%dmm_parc.nii.gz' % resolution),
+        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+                   name='ResampleSegmentation')
 
     workflow.connect([
-        (inputnode, epimask, [('epi_mean', 'in_file'),
-                              ('epi_mask', 'mask_file')]),
-        (epimask, flt_bbr_init, [('out_file', 'in_file')]),
-        (epimask, flt_bbr, [('out_file', 'in_file')]),
-        (brainmask, flt_bbr_init, [('out_file', 'reference')]),
-        (brainmask, flt_bbr, [('out_file', 'reference')]),
-        (wm_mask, flt_bbr, [('out_file', 'wm_seg')]),
-        (flt_bbr_init, flt_bbr, [('out_matrix_file', 'in_matrix_file')]),
-        (flt_bbr, invt_bbr, [('out_matrix_file', 'in_file')]),
-        (invt_bbr, segm_xfm, [('out_file', 'in_matrix_file')]),
-        (inputnode, segm_xfm, [('epi_mean', 'reference')]),
-        (segm_xfm, outputnode, [('out_file', 'epi_parc')]),
-        (flt_bbr, outputnode, [('out_file', 'epi_mni')]),
+        (inputnode, invt, [('epi_mean', 'reference_image')]),
+        (inputnode, n4itk, [('epi_mean', 'input_image')]),
+        (inputnode, epimask, [('epi_mask', 'mask_file')]),
+        (n4itk, epimask, [('output_image', 'in_file')]),
+        (brainmask, norm, [('out_file', 'reference_image')]),
+        (epimask, norm, [('out_file', 'moving_image')]),
+        (norm, invt, [
+            ('reverse_transforms', 'transforms'),
+            ('reverse_invert_flags', 'invert_transform_flags')]),
+        (invt, outputnode, [('output_image', 'epi_parc')]),
+        (norm, outputnode, [('warped_image', 'epi_mni')]),
 
     ])
     return workflow

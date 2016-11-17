@@ -197,9 +197,10 @@ class PlotSpikes(PlotBase):
         plot_mosaic_helper(
             op.abspath('spikes.nii.gz'),
             self.inputs.subject_id,
-            self.inputs.session_id,
-            self.inputs.run_id,
-            out_file,
+            session_id=self.inputs.session_id,
+            task_id=self.inputs.task_id,
+            run_id=self.inputs.run_id,
+            out_file=out_file,
             title=self._get_title(),
             cmap=self.inputs.cmap,
             plot_sagittal=False,
