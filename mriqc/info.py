@@ -50,7 +50,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.3a20',
+    'niworkflows',
     'pandas',
     'dipy',
     'jinja2',
@@ -67,6 +67,7 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/nipy/nipype.git#egg=nipype',
+    'git+https://github.com/poldracklab/niworkflows.git@enh/SingleSVGReports#egg=niworkflows',
     'git+https://github.com/incf/pybids.git@master#egg=pybids',
 ]
 
