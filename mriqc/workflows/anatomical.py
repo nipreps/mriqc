@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-16 18:20:08
+# @Last Modified time: 2016-11-18 11:23:31
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -215,9 +215,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 3
+    pages = 2
+    extra_pages = 0
     if verbose:
-        pages += 6
+        extra_pages = 7
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -239,7 +240,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         only_noise=True,
         cmap='viridis_r'), name='PlotMosaicNoise')
 
-    mplots = pe.Node(niu.Merge(pages), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_metadata', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
@@ -264,7 +265,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                    ('orig', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
-        (inputnode, mplots, [('mni_report', "in3")]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
@@ -306,12 +306,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, plot_artmask, [('orig', 'in_file'),
                                    ('artmask', 'in_contours')]),
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
-        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 1))]),
-        (plot_segm, mplots, [('out_file', 'in%d' % (pages + 2))]),
-        (plot_artmask, mplots, [('out_file', 'in%d' % (pages + 3))]),
-        (plot_headmask, mplots, [('out_file', 'in%d' % (pages + 4))]),
-        (plot_airmask, mplots, [('out_file', 'in%d' % (pages + 5))]),
-        (plot_bgdist, mplots, [('out_file', 'in%d' % (pages + 6))])
+        (inputnode, mplots, [('mni_report', "in%d" % (pages + 1))]),
+        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 2))]),
+        (plot_segm, mplots, [('out_file', 'in%d' % (pages + 3))]),
+        (plot_artmask, mplots, [('out_file', 'in%d' % (pages + 4))]),
+        (plot_headmask, mplots, [('out_file', 'in%d' % (pages + 5))]),
+        (plot_airmask, mplots, [('out_file', 'in%d' % (pages + 6))]),
+        (plot_bgdist, mplots, [('out_file', 'in%d' % (pages + 7))])
     ])
     return workflow
 
