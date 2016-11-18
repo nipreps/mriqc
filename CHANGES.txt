@@ -1,8 +1,8 @@
 Release 0.8.8
 =============
 
-* [ENH] Added registration svg panel to reports
-* [FIX] Error in ConformImage interface
+* [ENH] Added registration svg panel to reports (#297)
+* [FIX] Error in ConformImage interface (#297)
 * [ENH] Replace BBR by ANTs (#295, #296)
 * [FIX] Singularity: user-environment leaking into container (#293)
 * [ENH] Report failed cases in group report (#291)
