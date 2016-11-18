@@ -8,10 +8,11 @@ from os import path as op
 import numpy as np
 import nibabel as nb
 
-from .base import MRIQCBaseInterface
+from nipype import logging
 from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File
+from .base import MRIQCBaseInterface
 
-
+IFLOGGER = logging.getLogger('interface')
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='input image')
@@ -46,12 +47,16 @@ class ConformImage(MRIQCBaseInterface):
             changed = True
             datatype = int(hdr['datatype'])
 
+            if datatype == 1:
+                IFLOGGER.warn('Input image %s has a suspicious data type "%s"',
+                              self.inputs.in_file, hdr.get_data_dtype())
+
             # signed char and bool to uint8
-            if datatype == 4 or datatype == 2:
+            if datatype == 1 or datatype == 256:
                 dtype = np.uint8
 
-            # int to uint16
-            elif datatype == 256:
+            # signed short to uint16
+            elif datatype == 4:
                 dtype = np.uint16
 
             # Signed long, long long, etc to uint32
