@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:50:23
+# @Last Modified time: 2016-11-16 18:20:08
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -58,7 +58,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
-        testing=settings.get('testing', False)), name='SpatialNormalization')
+        testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
@@ -92,6 +92,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+        (norm, repwf, ([('html_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -214,7 +215,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 2
+    pages = 3
     if verbose:
         pages += 6
 
@@ -222,7 +223,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'run_id', 'in_metadata',
         'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
+        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
+        'mni_report']),
         name='inputnode')
 
     # T1w mosaic plot
@@ -262,6 +264,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                    ('orig', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
+        (inputnode, mplots, [('mni_report', "in3")]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', "@html_report")]),
     ])
@@ -303,13 +306,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, plot_artmask, [('orig', 'in_file'),
                                    ('artmask', 'in_contours')]),
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
-
-        (plot_bmask, mplots, [('out_file', 'in3')]),
-        (plot_segm, mplots, [('out_file', 'in4')]),
-        (plot_artmask, mplots, [('out_file', 'in5')]),
-        (plot_headmask, mplots, [('out_file', 'in6')]),
-        (plot_airmask, mplots, [('out_file', 'in7')]),
-        (plot_bgdist, mplots, [('out_file', 'in8')])
+        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 1))]),
+        (plot_segm, mplots, [('out_file', 'in%d' % (pages + 2))]),
+        (plot_artmask, mplots, [('out_file', 'in%d' % (pages + 3))]),
+        (plot_headmask, mplots, [('out_file', 'in%d' % (pages + 4))]),
+        (plot_airmask, mplots, [('out_file', 'in%d' % (pages + 5))]),
+        (plot_bgdist, mplots, [('out_file', 'in%d' % (pages + 6))])
     ])
     return workflow
 

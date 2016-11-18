@@ -112,7 +112,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
         (bmw, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
-        (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc')]),
+        (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
+                      ('outputnode.report', 'inputnode.mni_report')]),
         (reorient_and_discard, repwf, [('exclude_index', 'inputnode.exclude_index')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
@@ -220,7 +221,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 4
+    pages = 5
     extra_pages = 0
     if verbose:
         extra_pages = 3
@@ -229,7 +230,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'run_id', 'in_metadata', 'in_iqms',
         'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev',
-        'outliers', 'in_spikes', 'exclude_index']),
+        'outliers', 'in_spikes', 'exclude_index', 'mni_report']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -321,6 +322,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
         (mosaic_spikes, mplots, [('out_file', 'in4')]),
+        (inputnode, mplots, [('mni_report', 'in5')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
@@ -570,8 +572,8 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['epi_mean', 'epi_mask']),
                         name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['epi_mni', 'epi_parc']),
-                         name='outputnode')
+    outputnode = pe.Node(niu.IdentityInterface(
+        fields=['epi_mni', 'epi_parc', 'report']), name='outputnode')
 
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
@@ -584,7 +586,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-        testing=testing, moving='EPI'),
+        testing=testing, moving='EPI', generate_report=True),
                    name='EPI2MNI')
 
     # Warp segmentation into EPI space
@@ -604,7 +606,8 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
             ('reverse_transforms', 'transforms'),
             ('reverse_invert_flags', 'invert_transform_flags')]),
         (invt, outputnode, [('output_image', 'epi_parc')]),
-        (norm, outputnode, [('warped_image', 'epi_mni')]),
+        (norm, outputnode, [('warped_image', 'epi_mni'),
+                            ('html_report', 'report')]),
 
     ])
     return workflow
