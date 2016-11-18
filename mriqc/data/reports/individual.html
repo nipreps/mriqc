@@ -373,11 +373,12 @@ report</h1>
 </ul>
 
 <h2>Visual reports</h2>
-<div>
 {% for svg in svg_files %}
+<div class="embeded-report">
 {{ svg }}
-{% endfor %}
 </div>
+{% endfor %}
+
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
 <a class="reference external" href="http://mriqc.readthedocs.org/en/latest/userguide.html">user guide</a>.</p>
