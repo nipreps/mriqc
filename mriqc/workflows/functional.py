@@ -18,10 +18,9 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, thresh_image,
-                                   slice_wise_fft)
-from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes
-from mriqc.utils.misc import bids_path, check_folder, reorient_and_discard_non_steady
+from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, slice_wise_fft)
+from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
 
@@ -174,41 +173,20 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                   ('out_fft', 'out_fft')])
     ])
 
-    # Format name
-    out_name = pe.Node(niu.Function(
-        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
-        function=bids_path), name='FormatName')
-    out_name.inputs.out_path = deriv_dir
-    out_name.inputs.prefix = 'func'
-
     # Save to JSON file
-    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
-    datasink.inputs.qc_type = 'func'
+    datasink = pe.Node(IQMFileSink(
+        modality='bold', out_dir=deriv_dir), name='datasink')
 
     workflow.connect([
-        (inputnode, out_name, [('subject_id', 'subid'),
-                               ('session_id', 'sesid'),
-                               ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('task_id', 'task_id'),
                                ('run_id', 'run_id')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
-        (measures, datasink, [('summary', 'summary'),
-                              ('spacing', 'spacing'),
-                              ('size', 'size'),
-                              ('fber', 'fber'),
-                              ('efc', 'efc'),
-                              ('snr', 'snr'),
-                              ('gsr', 'gsr'),
-                              ('tsnr', 'tsnr'),
-                              ('fd', 'fd'),
-                              ('dvars', 'dvars'),
-                              ('gcor', 'gcor')]),
+        (measures, datasink, [('out_dict', 'root')]),
         (spikes_fft, datasink, [('n_spikes', 'spikes_num')]),
-        (out_name, datasink, [('out_file', 'out_file')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
