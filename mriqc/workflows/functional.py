@@ -184,7 +184,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('run_id', 'run_id')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
-        (measures, datasink, [('out_dict', 'root')]),
+        (measures, datasink, [('out_qc', 'root')]),
         (spikes_fft, datasink, [('n_spikes', 'spikes_num')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
