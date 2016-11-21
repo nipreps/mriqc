@@ -179,7 +179,7 @@ class IQMFileSink(MRIQCBaseInterface):
         elif self.inputs.modality == 'T1w':
             self._out_dict['qc_type'] = 'anat'
 
-        with open(out_file, 'wb') as f:
+        with open(out_file, 'w') as f:
             f.write(json.dumps(self._out_dict, ensure_ascii=False))
 
         return runtime
