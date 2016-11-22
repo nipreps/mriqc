@@ -115,18 +115,6 @@ class IQMFileSink(MRIQCBaseInterface):
         self.inputs._outputs[name] = value
         return value
 
-    def _process_name(self, name, val):
-        if '.' in name:
-            newkeys = name.split('.')
-            name = newkeys.pop(0)
-            nested_dict = {newkeys.pop(): val}
-
-            for nk in reversed(newkeys):
-                nested_dict = {nk: nested_dict}
-            val = nested_dict
-
-        return name, val
-
     def _gen_outfile(self):
         out_dir = getcwd()
         if isdefined(self.inputs.out_dir):
@@ -161,7 +149,7 @@ class IQMFileSink(MRIQCBaseInterface):
                 root_adds.append(key)
                 continue
 
-            key, val = self._process_name(key, val)
+            key, val = _process_name(key, val)
             self._out_dict[key] = val
 
         for root_key in root_adds:
@@ -252,3 +240,15 @@ def get_metadata_for_nifti(in_file):
                 merged_param_dict.update(param_dict)
 
     return merged_param_dict
+
+def _process_name(name, val):
+    if '.' in name:
+        newkeys = name.split('.')
+        name = newkeys.pop(0)
+        nested_dict = {newkeys.pop(): val}
+
+        for nk in reversed(newkeys):
+            nested_dict = {nk: nested_dict}
+        val = nested_dict
+
+    return name, val
