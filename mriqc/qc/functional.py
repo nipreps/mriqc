@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-10 12:43:01
+# @Last Modified time: 2016-11-22 12:24:28
 """
 Computation of the quality assessment measures on functional MRI
 
@@ -20,6 +20,7 @@ import os.path as op
 import numpy as np
 import nibabel as nb
 
+RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
@@ -68,41 +69,19 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
                            ref_file=ref_file, out_file=ofile)]
         return result
 
-    # Step 1
-    n2_mask = np.zeros_like(mask)
+    # Roll data of mask through the appropriate axis
+    axis = RAS_AXIS_ORDER[direction]
+    n2_mask = np.roll(mask, mask.shape[axis]//2, axis=axis)
 
-    # Step 2
-    if direction == "x":
-        n2max = mask.shape[0]
-        n2lim = int(np.floor(n2max/2))
-        n2_mask[:n2lim, :, :] = mask[n2lim:n2max, :, :]
-        n2_mask[n2lim:n2max, :, :] = mask[:n2lim, :, :]
-    elif direction == "y":
-        n2max = mask.shape[1]
-        n2lim = int(np.floor(n2max/2))
-        n2_mask[:, :n2lim, :] = mask[:, n2lim:n2max, :]
-        n2_mask[:, n2lim:n2max, :] = mask[:, :n2lim, :]
-    elif direction == "z":
-        n2max = mask.shape[2]
-        n2lim = int(np.floor(n2max/2))
-        n2_mask[:, :, :n2lim] = mask[:, :, n2lim:n2max]
-        n2_mask[:, :, n2lim:n2max] = mask[:, :, :n2lim]
-
-    # Step 3
+    # Step 3: remove from n2_mask pixels inside the brain
     n2_mask = n2_mask * (1-mask)
 
     # Step 4: non-ghost background region is labeled as 2
     n2_mask = n2_mask + 2 * (1 - n2_mask - mask)
 
-    # Save mask
-    if ref_file is not None and out_file is not None:
-        ref = nb.load(ref_file)
-        out = nb.Nifti1Image(n2_mask, ref.get_affine(), ref.get_header())
-        out.to_filename(out_file)
-
     # Step 5: signal is the entire foreground image
-    ghost = epi_data[n2_mask == 1].mean() - epi_data[n2_mask == 2].mean()
-    signal = epi_data[n2_mask == 0].mean()
+    ghost = np.mean(epi_data[n2_mask == 1]) - np.mean(epi_data[n2_mask == 2])
+    signal = np.median(epi_data[n2_mask == 0])
     return float(ghost/signal)
 
 
