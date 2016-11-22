@@ -239,12 +239,9 @@ def main():
 
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
-                if check_reports(dataset, settings):
-                    MRIQC_LOG.warn('Some reports were not generated')
 
     # Set up group level
     if opts.analysis_level == 'group' or opts.participant_label is None:
-        from glob import glob
         from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv
 
@@ -252,10 +249,7 @@ def main():
 
         derivatives_dir = op.join(settings['output_dir'], 'derivatives')
         for qctype in qc_types:
-            qcjson = op.join(derivatives_dir, '{}*.json'.format(qctype[:4]))
-            # If some were found, generate the CSV file and group report
-            out_csv = op.join(settings['output_dir'], qctype[:4] + 'MRIQC.csv')
-            dataframe = generate_csv(glob(qcjson), out_csv)
+            dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], qctype)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:

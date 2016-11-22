@@ -35,9 +35,9 @@ class ReadSidecarJSON(MRIQCBaseInterface):
     """
     An utility to find and read JSON sidecar files of a BIDS tree
     """
-    expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
-                      '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
-                      '(_(?P<rec_id>rec-[a-zA-Z0-9]+))?(_(?P<run_id>run-[a-zA-Z0-9]+))?')
+    expr = re.compile('^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?'
+                      '(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?'
+                      '(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?')
     input_spec = ReadSidecarJSONInputSpec
     output_spec = ReadSidecarJSONOutputSpec
 
@@ -89,6 +89,8 @@ class IQMFileSink(MRIQCBaseInterface):
     output_spec = IQMFileSinkOutputSpec
     BIDS_COMPONENTS = ['subject_id', 'session_id', 'task_id',
                        'acq_id', 'rec_id', 'run_id']
+    BIDS_PREFIXES = ['sub', 'ses', 'task', 'acq', 'rec', 'run']
+
     expr = re.compile('^root[0-9]+$')
 
     def __init__(self, fields=None, force_run=True, **inputs):
@@ -130,16 +132,18 @@ class IQMFileSink(MRIQCBaseInterface):
         if isdefined(self.inputs.out_dir):
             out_dir = self.inputs.out_dir
 
-        comp_ids = self.BIDS_COMPONENTS[1:]
-        fname_comps = ['sub-%s' % self.inputs.subject_id]
-        for comp in comp_ids:
+        fname_comps = []
+        for comp, cpre in zip(self.BIDS_COMPONENTS, self.BIDS_PREFIXES):
+            comp_fmt = '{}-{}'.format
             comp_val = getattr(self.inputs, comp, None)
-            if isdefined(comp_val) and comp_val is not None:
-                fname_comps.append('_%s-%s' % (comp[:3], comp_val))
-        fname = (''.join(fname_comps).replace('_tas-', '_task-') +
-                 '_%s.json' % self.inputs.modality)
-        self._results['out_file'] = op.join(out_dir, fname)
 
+            if isdefined(comp_val) and comp_val is not None:
+                if comp_val.startswith(cpre + '-'):
+                    comp_val = comp_val.split('-', 1)[-1]
+                fname_comps.append(comp_fmt(cpre, comp_val))
+
+        fname_comps.append('%s.json' % self.inputs.modality)
+        self._results['out_file'] = op.join(out_dir, '_'.join(fname_comps))
         return self._results['out_file']
 
     def _run_interface(self, runtime):
@@ -169,18 +173,25 @@ class IQMFileSink(MRIQCBaseInterface):
                     'Output "%s" is not a dictionary (value="%s"), '
                     'discarding output.', root_key, str(val))
 
+        id_dict = {}
         for comp in self.BIDS_COMPONENTS:
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
-                self._out_dict[comp] = comp_val
+                id_dict[comp] = comp_val
 
         if self.inputs.modality == 'bold':
-            self._out_dict['qc_type'] = 'func'
+            id_dict['qc_type'] = 'func'
         elif self.inputs.modality == 'T1w':
-            self._out_dict['qc_type'] = 'anat'
+            id_dict['qc_type'] = 'anat'
+
+        if self._out_dict.get('metadata', None) is None:
+            self._out_dict['metadata'] = {}
+
+        self._out_dict['metadata'].update(id_dict)
 
         with open(out_file, 'w') as f:
-            f.write(json.dumps(self._out_dict, ensure_ascii=False))
+            f.write(json.dumps(self._out_dict, sort_keys=True, indent=2,
+                               ensure_ascii=False))
 
         return runtime
 

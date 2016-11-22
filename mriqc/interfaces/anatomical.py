@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-04 16:38:33
+# @Last Modified time: 2016-11-21 18:59:13
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -50,10 +50,11 @@ class StructuralQCOutputSpec(TraitedSpec):
     spacing = traits.Dict(desc='image sizes')
     inu = traits.Dict(desc='summary statistics of the bias field')
     snr = traits.Dict
+    snrd = traits.Dict
     cnr = traits.Float
     fber = traits.Float
     efc = traits.Float
-    qi1 = traits.Float
+    qi_1 = traits.Float
     wm2max = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
@@ -102,11 +103,11 @@ class StructuralQC(MRIQCBaseInterface):
         self._results['snr']['total'] = float(np.mean(snrvals))
 
         snrvals = []
-        for tlabel in ['d_csf', 'd_wm', 'd_gm']:
-            snrvals.append(snr_dietrich(inudata, segdata, airdata,
-                                        fglabel=tlabel[2:], erode=erode))
-            self._results['snr'][tlabel] = snrvals[-1]
-        self._results['snr']['d_total'] = float(np.mean(snrvals))
+        self._results['snrd'] = {
+            tlabel: snr_dietrich(inudata, segdata, airdata, fglabel=tlabel, erode=erode)
+            for tlabel in ['csf', 'wm', 'gm']}
+        self._results['snrd']['total'] = float(
+            np.mean([val for _, val in list(self._results['snrd'].items())]))
 
         # CNR
         self._results['cnr'] = cnr(inudata, segdata)
@@ -121,7 +122,7 @@ class StructuralQC(MRIQCBaseInterface):
         self._results['wm2max'] = wm2max(imdata, segdata)
 
         # Artifacts
-        self._results['qi1'] = art_qi1(airdata, artdata)
+        self._results['qi_1'] = art_qi1(airdata, artdata)
 
         # CJV
         self._results['cjv'] = cjv(inudata, seg=segdata)
