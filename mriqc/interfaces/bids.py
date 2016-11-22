@@ -54,6 +54,10 @@ class ReadSidecarJSON(MRIQCBaseInterface):
                 self._results[fname] = metadata[fname]
         else:
             self._results['out_dict'] = metadata
+
+        # Cast run_id to int
+        if self._results['out_dict'].get('run_id') is not None:
+            self._results['out_dict']['run_id'] = int(self._results['out_dict']['run_id'])
         return runtime
 
 
