@@ -15,7 +15,6 @@ import json
 import pandas as pd
 from io import open  # pylint: disable=W0622
 from builtins import range  # pylint: disable=W0622
-from mriqc import MRIQC_LOG
 
 BIDS_COMPONENTS = {
     'subject_id': 'sub',

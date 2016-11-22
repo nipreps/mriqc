@@ -10,38 +10,7 @@
 # @Last Modified time: 2016-11-21 19:27:22
 """ Helpers in report generation """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os.path as op
-import re
-import pandas as pd
 
-def read_csv(in_csv):
-    """ Read csv file, sort and drop duplicates """
-    dframe = pd.read_csv(in_csv, dtype={'subject_id': str})
-    try:
-        dframe = dframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
-    except AttributeError:
-        #pylint: disable=E1101
-        dframe = dframe.sort(columns=['subject_id', 'session_id', 'run_id'])
-
-    try:
-        #pylint: disable=E1101
-        dframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
-                               inplace=True)
-    except TypeError:
-        #pylint: disable=E1101
-        dframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
-                               inplace=True)
-    #pylint: disable=E1101
-    subject_list = sorted(pd.unique(dframe.subject_id.ravel()))
-    return dframe, subject_list
-
-
-def find_failed(dframe, sub_list):
-    """ Identify failed subjects """
-    sub_list = [(s[0], s[1], s[2]) for s in sub_list]
-    success = [tuple(x) for x in dframe[['subject_id', 'session_id', 'run_id']].values]
-    failed = list(set(sub_list) - set(success))
-    return failed
 
 def iqms2html(indict, table_id):
     """Converts a dictionary into an HTML table"""
@@ -139,6 +108,8 @@ def read_report_snippet(in_file):
 
 def check_reports(dataset, settings, save_failed=True):
     """Check if reports have been created"""
+    import os.path as op
+    import pandas as pd
     supported_components = ['subject_id', 'session_id', 'task_id', 'run_id']
     expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
                       '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
