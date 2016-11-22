@@ -75,35 +75,13 @@ class PlotContours(MRIQCBaseInterface):
 class PlotBaseInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
                    desc='File to be plotted')
-    subject_id = traits.Str(mandatory=True, desc='subject id')
-    session_id = traits.Either(None, traits.Str(desc='session id'))
-    task_id = traits.Either(None, traits.Str(desc='task id'))
-    run_id = traits.Either(None, traits.Str(desc='run id'))
     title = traits.Str(desc='a title string for the plot')
-
     figsize = traits.Tuple(
         (11.69, 8.27), traits.Float, traits.Float, usedefault=True,
         desc='Figure size')
     dpi = traits.Int(300, usedefault=True, desc='Desired DPI of figure')
     out_file = File('mosaic.svg', usedefault=True, desc='output file name')
     cmap = traits.Str('Greys_r', usedefault=True)
-
-class PlotBase(MRIQCBaseInterface):
-    def _get_title(self):
-        title = None
-        if isdefined(self.inputs.title):
-            title = self.inputs.title
-
-            elements = []
-            for k in ['session_id', 'task_id', 'run_id']:
-                value = getattr(self.inputs, k, None)
-                if isdefined(value) and value is not None and value.lower() != 'none':
-                    elements.append(value)
-
-            if elements:
-                title += ' (%s).' % ', '.join(elements)
-
-        return title
 
 
 class PlotMosaicInputSpec(PlotBaseInputSpec):
@@ -115,7 +93,7 @@ class PlotMosaicOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotMosaic(PlotBase):
+class PlotMosaic(MRIQCBaseInterface):
 
     """
     Plots slices of a 3D volume into a pdf file
@@ -128,14 +106,14 @@ class PlotMosaic(PlotBase):
         if isdefined(self.inputs.bbox_mask_file):
             mask = self.inputs.bbox_mask_file
 
+        title = None
+        if isdefined(self.inputs.title):
+            title = self.inputs.title
+
         plot_mosaic_helper(
             self.inputs.in_file,
-            self.inputs.subject_id,
-            session_id=self.inputs.session_id,
-            task_id=self.inputs.task_id,
-            run_id=self.inputs.run_id,
             out_file=self.inputs.out_file,
-            title=self._get_title(),
+            title=title,
             only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask,
             cmap=self.inputs.cmap)
@@ -151,7 +129,7 @@ class PlotSpikesOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
 
 
-class PlotSpikes(PlotBase):
+class PlotSpikes(MRIQCBaseInterface):
     """
     Plot slices of a dataset with spikes
     """
@@ -193,15 +171,15 @@ class PlotSpikes(PlotBase):
         nb.Nifti1Image(spikes_data, nii.get_affine(),
                        nii.get_header()).to_filename('spikes.nii.gz')
 
+        title = None
+        if isdefined(self.inputs.title):
+            title = self.inputs.title
+
         # tr = nii.get_header().get_zooms()[-1]
         plot_mosaic_helper(
             op.abspath('spikes.nii.gz'),
-            self.inputs.subject_id,
-            session_id=self.inputs.session_id,
-            task_id=self.inputs.task_id,
-            run_id=self.inputs.run_id,
             out_file=out_file,
-            title=self._get_title(),
+            title=title,
             cmap=self.inputs.cmap,
             plot_sagittal=False,
             only_plot_noise=False,

@@ -273,7 +273,7 @@ span.option {
 span.pre {
   white-space: pre }
 
-span.problematic {
+span.warning {
   color: red }
 
 span.section-subtitle {
@@ -351,13 +351,12 @@ report</h1>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
 {% if metadata %}
+<li>Date and time: {{ timestamp }}.</li>
+<li>MRIQC version: {{ version }}.</li>
 <li>Dataset metadata:
 {{ metadata }}
 </li>
 {% endif %}
-<li>Date and time: {{ timestamp }}.</li>
-<li>MRIQC version: {{ version }}.</li>
-<li>Sessions and (scans) failed: {{ failed or 'none'}}.</li>
 {% if workflow_details %}
 <li>Workflow details:
   <ul class="sub-simple">

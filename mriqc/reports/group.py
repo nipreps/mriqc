@@ -15,6 +15,8 @@ from sys import version_info
 from builtins import zip, object, str  # pylint: disable=W0622
 
 from mriqc import logging
+from mriqc.utils.misc import BIDS_COMPONENTS
+
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
@@ -42,9 +44,9 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
             (['fber'], None),
             (['wm2max'], None),
             (['snr_csf', 'snr_gm', 'snr_wm'], None),
-            (['snr_d_csf', 'snr_d_gm', 'snr_d_wm'], None),
+            (['snrd_csf', 'snrd_gm', 'snrd_wm'], None),
             (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
-            (['qi1', 'qi2'], None),
+            (['qi_1', 'qi_2'], None),
             (['inu_range', 'inu_med'], None),
             (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
             (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
@@ -81,15 +83,14 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         ]
     }
 
-    dataframe = pd.read_csv(csv_file, index_col=False)
+    def_comps = list(BIDS_COMPONENTS.keys())
+    dataframe = pd.read_csv(csv_file, index_col=False,
+                            dtype={comp: object for comp in def_comps})
 
     # format participant labels
-    id_labels = ['subject_id', 'session_id', 'run_id']
-    if qctype.startswith('func'):
-        id_labels.insert(2, 'task_id')
-
+    id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
     def myfmt(row, cols):
-        crow = [row[k] for k in cols if pd.notnull(row[k])]
+        crow = ['%s-%s' % (BIDS_COMPONENTS[k], row[k]) for k in cols if pd.notnull(row[k])]
         return '_'.join(crow)
 
     dataframe['label'] = dataframe[id_labels].apply(myfmt, args=(id_labels,), axis=1)
