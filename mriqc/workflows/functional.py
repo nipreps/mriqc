@@ -18,10 +18,9 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, thresh_image,
-                                   slice_wise_fft)
-from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes
-from mriqc.utils.misc import bids_path, check_folder, reorient_and_discard_non_steady
+from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, slice_wise_fft)
+from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
 
@@ -94,7 +93,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
-                        ('run_id', 'inputnode.run_id')]),
+                        ('run_id', 'inputnode.run_id'),
+                       ('out_dict', 'inputnode.metadata')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
@@ -105,8 +105,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, repwf, [('subject_id', 'inputnode.subject_id'),
                        ('session_id', 'inputnode.session_id'),
                        ('task_id', 'inputnode.task_id'),
-                       ('run_id', 'inputnode.run_id'),
-                       ('out_dict', 'inputnode.in_metadata')]),
+                       ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
@@ -129,7 +128,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'run_id', 'orig', 'epi_mean',
-        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr']), name='inputnode')
+        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
@@ -175,41 +174,21 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                   ('out_fft', 'out_fft')])
     ])
 
-    # Format name
-    out_name = pe.Node(niu.Function(
-        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
-        function=bids_path), name='FormatName')
-    out_name.inputs.out_path = deriv_dir
-    out_name.inputs.prefix = 'func'
-
     # Save to JSON file
-    datasink = pe.Node(nio.JSONFileSink(), name='datasink')
-    datasink.inputs.qc_type = 'func'
+    datasink = pe.Node(IQMFileSink(
+        modality='bold', out_dir=deriv_dir), name='datasink')
 
     workflow.connect([
-        (inputnode, out_name, [('subject_id', 'subid'),
-                               ('session_id', 'sesid'),
-                               ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('task_id', 'task_id'),
-                               ('run_id', 'run_id')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
+                               ('run_id', 'run_id'),
+                               ('metadata', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
-        (measures, datasink, [('summary', 'summary'),
-                              ('spacing', 'spacing'),
-                              ('size', 'size'),
-                              ('fber', 'fber'),
-                              ('efc', 'efc'),
-                              ('snr', 'snr'),
-                              ('gsr', 'gsr'),
-                              ('tsnr', 'tsnr'),
-                              ('fd', 'fd'),
-                              ('dvars', 'dvars'),
-                              ('gcor', 'gcor')]),
+        (measures, datasink, [('out_qc', 'root')]),
         (spikes_fft, datasink, [('n_spikes', 'spikes_num')]),
-        (out_name, datasink, [('out_file', 'out_file')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
@@ -228,7 +207,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'in_metadata', 'in_iqms',
+        'subject_id', 'session_id', 'task_id', 'run_id', 'in_iqms',
         'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev',
         'outliers', 'in_spikes', 'exclude_index', 'mni_report']),
         name='inputnode')
@@ -283,7 +262,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_metadata', 'in_plots', 'exclude_index', 'wf_details'],
+        input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
         output_names=['out_file'], function=individual_html), name='GenerateReport')
     wf_details = []
     if settings.get('hmc_afni', False):
@@ -300,23 +279,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms'),
-                            ('in_metadata', 'in_metadata'),
                             ('exclude_index', 'exclude_index')]),
-        (inputnode, mosaic_mean, [('subject_id', 'subject_id'),
-                                  ('session_id', 'session_id'),
-                                  ('task_id', 'task_id'),
-                                  ('run_id', 'run_id'),
-                                  ('epi_mean', 'in_file')]),
-        (inputnode, mosaic_stddev, [('subject_id', 'subject_id'),
-                                    ('session_id', 'session_id'),
-                                    ('task_id', 'task_id'),
-                                    ('run_id', 'run_id'),
-                                    ('in_stddev', 'in_file')]),
-        (inputnode, mosaic_spikes, [('subject_id', 'subject_id'),
-                                    ('session_id', 'session_id'),
-                                    ('task_id', 'task_id'),
-                                    ('run_id', 'run_id'),
-                                    ('orig', 'in_file'),
+        (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
+        (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
+        (inputnode, mosaic_spikes, [('orig', 'in_file'),
                                     ('in_spikes', 'in_spikes')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
@@ -351,17 +317,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow.connect([
         (inputnode, plot_bmask, [('epi_mean', 'in_file'),
                                  ('brainmask', 'in_contours')]),
-        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
-                                  ('session_id', 'session_id'),
-                                  ('task_id', 'task_id'),
-                                  ('run_id', 'run_id'),
-                                  ('epi_mean', 'in_file'),
+        (inputnode, mosaic_zoom, [('epi_mean', 'in_file'),
                                   ('brainmask', 'bbox_mask_file')]),
-        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
-                                   ('session_id', 'session_id'),
-                                   ('task_id', 'task_id'),
-                                   ('run_id', 'run_id'),
-                                   ('epi_mean', 'in_file')]),
+        (inputnode, mosaic_noise, [('epi_mean', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', 'in%d' % (pages + 1))]),
         (mosaic_noise, mplots, [('out_file', 'in%d' % (pages + 2))]),
         (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))])

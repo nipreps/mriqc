@@ -6,11 +6,17 @@
 # @Author: oesteban
 # @Date:   2016-06-03 09:35:13
 from __future__ import print_function, division, absolute_import, unicode_literals
+from os import getcwd
 import os.path as op
 import re
+from io import open
 import simplejson as json
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File)
+from nipype import logging
+from nipype.interfaces.base import (traits, isdefined, TraitedSpec,DynamicTraitedSpec,
+                                    BaseInterfaceInputSpec, File, Undefined)
 from mriqc.interfaces.base import MRIQCBaseInterface
+
+IFLOGGER = logging.getLogger('interface')
 
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='the input nifti file')
@@ -29,9 +35,9 @@ class ReadSidecarJSON(MRIQCBaseInterface):
     """
     An utility to find and read JSON sidecar files of a BIDS tree
     """
-    expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
-                      '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
-                      '(_(?P<rec_id>rec-[a-zA-Z0-9]+))?(_(?P<run_id>run-[a-zA-Z0-9]+))?')
+    expr = re.compile('^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?'
+                      '(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?'
+                      '(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?')
     input_spec = ReadSidecarJSONInputSpec
     output_spec = ReadSidecarJSONOutputSpec
 
@@ -49,6 +55,146 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         else:
             self._results['out_dict'] = metadata
         return runtime
+
+
+class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
+    subject_id = traits.Str(mandatory=True, desc='the subject id')
+    modality = traits.Str(mandatory=True, desc='the qc type')
+    session_id = traits.Either(None, traits.Str, traits.Int, usedefault=True)
+    task_id = traits.Either(None, traits.Str, usedefault=True)
+    acq_id = traits.Either(None, traits.Str, usedefault=True)
+    rec_id = traits.Either(None, traits.Str, usedefault=True)
+    run_id = traits.Either(None, traits.Int, usedefault=True)
+
+    root = traits.Dict(desc='output root dictionary')
+    out_dir = File(desc='the output directory')
+    _outputs = traits.Dict(value={}, usedefault=True)
+
+    def __setattr__(self, key, value):
+        if key not in self.copyable_trait_names():
+            if not isdefined(value):
+                super(IQMFileSinkInputSpec, self).__setattr__(key, value)
+            self._outputs[key] = value
+        else:
+            if key in self._outputs:
+                self._outputs[key] = value
+            super(IQMFileSinkInputSpec, self).__setattr__(key, value)
+
+
+class IQMFileSinkOutputSpec(TraitedSpec):
+    out_file = File(desc='the output JSON file containing the IQMs')
+
+class IQMFileSink(MRIQCBaseInterface):
+    input_spec = IQMFileSinkInputSpec
+    output_spec = IQMFileSinkOutputSpec
+    BIDS_COMPONENTS = ['subject_id', 'session_id', 'task_id',
+                       'acq_id', 'rec_id', 'run_id']
+    BIDS_PREFIXES = ['sub', 'ses', 'task', 'acq', 'rec', 'run']
+
+    expr = re.compile('^root[0-9]+$')
+
+    def __init__(self, fields=None, force_run=True, **inputs):
+        super(IQMFileSink, self).__init__(**inputs)
+
+        if fields is None:
+            fields = []
+
+        self._out_dict = {}
+
+        # Initialize fields
+        fields = list(set(fields) - set(self.inputs.copyable_trait_names()))
+        self._input_names = fields
+        undefined_traits = {key: self._add_field(key) for key in fields}
+        self.inputs.trait_set(trait_change_notify=False, **undefined_traits)
+
+        if force_run:
+            self._always_run = True
+
+    def _add_field(self, name, value=Undefined):
+        self.inputs.add_trait(name, traits.Any)
+        self.inputs._outputs[name] = value
+        return value
+
+    def _process_name(self, name, val):
+        if '.' in name:
+            newkeys = name.split('.')
+            name = newkeys.pop(0)
+            nested_dict = {newkeys.pop(): val}
+
+            for nk in reversed(newkeys):
+                nested_dict = {nk: nested_dict}
+            val = nested_dict
+
+        return name, val
+
+    def _gen_outfile(self):
+        out_dir = getcwd()
+        if isdefined(self.inputs.out_dir):
+            out_dir = self.inputs.out_dir
+
+        fname_comps = []
+        for comp, cpre in zip(self.BIDS_COMPONENTS, self.BIDS_PREFIXES):
+            comp_fmt = '{}-{}'.format
+            comp_val = getattr(self.inputs, comp, None)
+
+            if isdefined(comp_val) and comp_val is not None:
+                if comp_val.startswith(cpre + '-'):
+                    comp_val = comp_val.split('-', 1)[-1]
+                fname_comps.append(comp_fmt(cpre, comp_val))
+
+        fname_comps.append('%s.json' % self.inputs.modality)
+        self._results['out_file'] = op.join(out_dir, '_'.join(fname_comps))
+        return self._results['out_file']
+
+    def _run_interface(self, runtime):
+        out_file = self._gen_outfile()
+
+        if isdefined(self.inputs.root):
+            self._out_dict = self.inputs.root
+
+        root_adds = []
+        for key, val in list(self.inputs._outputs.items()):
+            if not isdefined(val) or key == 'trait_added':
+                continue
+
+            if not self.expr.match(key) is None:
+                root_adds.append(key)
+                continue
+
+            key, val = self._process_name(key, val)
+            self._out_dict[key] = val
+
+        for root_key in root_adds:
+            val = self.inputs._outputs.get(root_key, None)
+            if isinstance(val, dict):
+                self._out_dict.update(val)
+            else:
+                IFLOGGER.warn(
+                    'Output "%s" is not a dictionary (value="%s"), '
+                    'discarding output.', root_key, str(val))
+
+        id_dict = {}
+        for comp in self.BIDS_COMPONENTS:
+            comp_val = getattr(self.inputs, comp, None)
+            if isdefined(comp_val) and comp_val is not None:
+                id_dict[comp] = comp_val
+
+        if self.inputs.modality == 'bold':
+            id_dict['qc_type'] = 'func'
+        elif self.inputs.modality == 'T1w':
+            id_dict['qc_type'] = 'anat'
+
+        if self._out_dict.get('metadata', None) is None:
+            self._out_dict['metadata'] = {}
+
+        self._out_dict['metadata'].update(id_dict)
+
+        with open(out_file, 'w') as f:
+            f.write(json.dumps(self._out_dict, sort_keys=True, indent=2,
+                               ensure_ascii=False))
+
+        return runtime
+
 
 
 def get_metadata_for_nifti(in_file):

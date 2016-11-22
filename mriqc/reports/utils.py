@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-14 17:13:42
+# @Last Modified time: 2016-11-21 19:27:22
 """ Helpers in report generation """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -44,45 +44,101 @@ def find_failed(dframe, sub_list):
     return failed
 
 def iqms2html(indict, table_id):
-    if indict is None or not indict:
-        return None
-
-    tmp_qc = {}
-    for k, value in sorted(list(indict.items())):
-        if not isinstance(value, dict):
-            tmp_qc[k] = value
-        else:
-            for subk, subval in sorted(list(value.items())):
-                if not isinstance(subval, dict):
-                    tmp_qc[','.join([k, subk])] = subval
-                else:
-                    for ssubk, ssubval in sorted(list(subval.items())):
-                        tmp_qc[','.join([k, subk, ssubk])] = ssubval
-    out_qc = []
-    depth = 0
-    for k, v in list(tmp_qc.items()):
-        out_qc.append(k.split(',') + [v])
-        if len(out_qc[-1]) > depth:
-            depth = len(out_qc[-1])
+    """Converts a dictionary into an HTML table"""
+    columns = sorted(unfold_columns(indict))
+    depth = max([len(col) for col in columns])
 
     result_str = '<table id="%s">\n' % table_id
-    td = lambda v, cols: '<td colspan={1}>{0}</td>'.format(v, cols) if cols > 0 else '<td>{}</td>'.format(v)
-    for line in sorted(out_qc):
+    td = '<td{1}>{0}</td>'.format
+    for line in columns:
         result_str += '<tr>'
         ncols = len(line)
         for i, col in enumerate(line):
             colspan = 0
+            colstring = ''
             if (depth - ncols) > 0 and i == ncols - 2:
                 colspan = (depth - ncols) + 1
-            result_str += td(col, colspan)
-
+                colstring = ' colspan=%d' % colspan
+            result_str += td(col, colstring)
         result_str += '</tr>\n'
-
     result_str += '</table>\n'
     return result_str
 
-def check_reports(dataset, settings, save_failed=True):
+def unfold_columns(indict, prefix=None):
+    """Converts an input dict with flattened keys to an array of columns"""
+    if prefix is None:
+        prefix = []
+    keys = sorted(set(list(indict.keys())))
 
+    data = []
+    subdict = {}
+    for key in keys:
+        col = key.split('_', 1)
+        if len(col) == 1:
+            value = indict[col[0]]
+            data.append(prefix + [col[0], value])
+        else:
+            if subdict.get(col[0]) is None:
+                subdict[col[0]] = {}
+            subdict[col[0]][col[1]] = indict[key]
+
+    if subdict:
+        for skey in sorted(list(subdict.keys())):
+            sskeys = list(subdict[skey].keys())
+            if len(sskeys) == 1:
+                value = subdict[skey][sskeys[0]]
+                newkey = '_'.join([skey] + sskeys)
+                data.append(prefix + [newkey, value])
+            else:
+                data += unfold_columns(
+                    subdict[skey], prefix=prefix + [skey])
+
+    return data
+
+def anat_flags(iqms_dict):
+    """Anatomical flags"""
+    msk_vals = []
+    for k in ['snrd_csf', 'snrd_gm', 'snrd_wm', 'fber']:
+        iqm = iqms_dict[k]
+        msk_vals.append(iqm < 0.)
+
+    flag = ''
+    if any(msk_vals):
+        flag = 'Noise variance in the background is very low'
+        if all(msk_vals):
+            flag += (' for all measures: <span class="warning">'
+                     'the original file could be masked</span>.')
+        else:
+            flag += '.'
+    return flag
+
+
+def read_report_snippet(in_file):
+    """Add a snippet into the report"""
+    import os.path as op
+    import re
+    from io import open  #pylint: disable=W0622
+
+    is_svg = (op.splitext(op.basename(in_file))[1] == '.svg')
+
+    with open(in_file) as thisfile:
+        if not is_svg:
+            return thisfile.read()
+
+        svg_tag_line = 0
+        content = thisfile.read().split('\n')
+        corrected = []
+        for i, line in enumerate(content):
+            if "<svg " in line:
+                line = re.sub(' height="[0-9.]+[a-z]*"', '', line)
+                line = re.sub(' width="[0-9.]+[a-z]*"', '', line)
+                if svg_tag_line == 0:
+                    svg_tag_line = i
+            corrected.append(line)
+        return '\n'.join(corrected[svg_tag_line:])
+
+def check_reports(dataset, settings, save_failed=True):
+    """Check if reports have been created"""
     supported_components = ['subject_id', 'session_id', 'task_id', 'run_id']
     expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
                       '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'

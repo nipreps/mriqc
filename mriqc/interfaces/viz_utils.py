@@ -500,14 +500,9 @@ def plot_bg_dist(in_file):
     return out_file
 
 
-def plot_mosaic_helper(in_file, subject_id, session_id=None,
-                       task_id=None, run_id=None, out_file=None, bbox_mask_file=None,
+def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
                        title=None, plot_sagittal=True, labels=None,
                        only_plot_noise=False, cmap='Greys_r'):
-    if title is not None:
-        title = title.format(**{"session_id": session_id,
-                                "task_id": task_id,
-                                "run_id": run_id})
     fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
                       only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
 

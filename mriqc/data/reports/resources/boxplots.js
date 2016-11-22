@@ -1579,7 +1579,12 @@ function makeDistroChart(settings) {
                         cPlot.objs.points.pts.push(cPlot.objs.points.g
                             .append("a")
                             .attr("xlink:href", function(d) {
-                                return chart.settings["qctype"] + "_" + chart.groupObjs[cName].labels[pt] + "_report.html"
+                                if (chart.settings["qctype"].startsWith('anat')) {
+                                    return chart.groupObjs[cName].labels[pt] + "_T1w.html"
+                                } else if (chart.settings["qctype"].startsWith('func')) {
+                                    return chart.groupObjs[cName].labels[pt] + "_bold.html"
+                                }
+
                             })
                             .append("circle")
                             .attr("class", "point")

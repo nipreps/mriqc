@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-18 11:23:31
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
@@ -25,7 +24,7 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.anat.mni import RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                              ConformImage, ComputeQI2)
+                              ConformImage, ComputeQI2, IQMFileSink)
 
 from mriqc.utils.misc import bids_path, check_folder
 
@@ -77,10 +76,6 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('run_id', 'inputnode.run_id')]),
-        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
-                       ('session_id', 'inputnode.session_id'),
-                       ('run_id', 'inputnode.run_id'),
-                       ('out_dict', 'inputnode.in_metadata')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
@@ -149,23 +144,10 @@ def compute_iqms(settings, name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    # Format name
-    out_name = pe.Node(niu.Function(
-        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
-        function=bids_path), name='FormatName')
-    out_name.inputs.out_path = deriv_dir
-    out_name.inputs.prefix = 'anat'
-
-    # Save to JSON file
-    jfs_if = nio.JSONFileSink()
-    setattr(jfs_if, '_always_run', settings.get('force_run', False))
-    datasink = pe.Node(jfs_if, name='datasink')
-    datasink.inputs.qc_type = 'anat'
+    datasink = pe.Node(IQMFileSink(modality='T1w', out_dir=deriv_dir),
+                       name='datasink')
 
     workflow.connect([
-        (inputnode, out_name, [('subject_id', 'subid'),
-                               ('session_id', 'sesid'),
-                               ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id'),
@@ -186,23 +168,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
                            ('reverse_transforms', 'transforms'),
                            ('reverse_invert_flags', 'invert_transform_flags')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
-        (getqi2, datasink, [('qi2', 'qi2')]),
-        (measures, datasink, [('summary', 'summary'),
-                              ('spacing', 'spacing'),
-                              ('size', 'size'),
-                              ('icvs', 'icvs'),
-                              ('rpve', 'rpve'),
-                              ('inu', 'inu'),
-                              ('snr', 'snr'),
-                              ('cnr', 'cnr'),
-                              ('fber', 'fber'),
-                              ('efc', 'efc'),
-                              ('qi1', 'qi1'),
-                              ('cjv', 'cjv'),
-                              ('wm2max', 'wm2max'),
-                              ('tpm_overlap', 'tpm_overlap')]),
-        (out_name, datasink, [('out_file', 'out_file')]),
+        (measures, datasink, [('out_qc', 'root')]),
+        (getqi2, datasink, [('qi2', 'qi_2')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
@@ -222,7 +190,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'in_metadata',
         'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
         'mni_report']),
@@ -231,18 +198,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
     # T1w mosaic plot
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='T1w (zoomed) session: {session_id} run: {run_id}',
+        title='T1w - zoomed',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='T1w (noise) session: {session_id} run: {run_id}',
+        title='T1w - noise enhanced',
         only_noise=True,
         cmap='viridis_r'), name='PlotMosaicNoise')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_metadata', 'in_plots'], output_names=['out_file'],
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
@@ -251,18 +218,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms'),
-                            ('in_metadata', 'in_metadata')]),
-        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
-                                  ('session_id', 'session_id'),
-                                  ('run_id', 'run_id'),
-                                  ('orig', 'in_file'),
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, mosaic_zoom, [('orig', 'in_file'),
                                   ('brainmask', 'bbox_mask_file')]),
-
-        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
-                                   ('session_id', 'session_id'),
-                                   ('run_id', 'run_id'),
-                                   ('orig', 'in_file')]),
+        (inputnode, mosaic_noise, [('orig', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
