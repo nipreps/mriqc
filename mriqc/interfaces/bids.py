@@ -28,7 +28,7 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     task_id = traits.Either(None, traits.Str())
     acq_id = traits.Either(None, traits.Str())
     rec_id = traits.Either(None, traits.Str())
-    run_id = traits.Either(None, traits.Str())
+    run_id = traits.Either(None, traits.Int())
     out_dict = traits.Dict()
 
 class ReadSidecarJSON(MRIQCBaseInterface):
