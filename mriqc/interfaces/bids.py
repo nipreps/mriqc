@@ -47,7 +47,7 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
         for key in output_keys:
-            self._results[key] = outputs.get(key)
+            self._results[key] = '%s' % outputs.get(key)
 
         if isdefined(self.inputs.fields) and self.inputs.fields:
             for fname in self.inputs.fields:
