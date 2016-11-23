@@ -11,6 +11,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os
 import os.path as op
 
+from nipype import logging
 from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
@@ -23,7 +24,7 @@ from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 
 DEFAULT_FD_RADIUS = 50.
-
+WFLOGGER = logging.getLogger('workflow')
 
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     """ The fMRI qc workflow """
@@ -33,7 +34,11 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
+    WFLOGGER.info('Building fMRI QC workflows, datasets list: %s',
+                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
     inputnode.iterables = [('in_file', dataset)]
+
+
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     outputnode = pe.Node(niu.IdentityInterface(

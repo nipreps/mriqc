@@ -9,10 +9,11 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from os import getcwd
 import os.path as op
 import re
-from io import open
 import simplejson as json
+from io import open
+from builtins import bytes, str
 from nipype import logging
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec,DynamicTraitedSpec,
+from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
                                     BaseInterfaceInputSpec, File, Undefined)
 from mriqc.interfaces.base import MRIQCBaseInterface
 
@@ -61,7 +62,7 @@ class ReadSidecarJSON(MRIQCBaseInterface):
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     subject_id = traits.Str(mandatory=True, desc='the subject id')
     modality = traits.Str(mandatory=True, desc='the qc type')
-    session_id = traits.Either(None, traits.Str, traits.Int, usedefault=True)
+    session_id = traits.Either(None, traits.Str, usedefault=True)
     task_id = traits.Either(None, traits.Str, usedefault=True)
     acq_id = traits.Either(None, traits.Str, usedefault=True)
     rec_id = traits.Either(None, traits.Str, usedefault=True)
@@ -123,12 +124,15 @@ class IQMFileSink(MRIQCBaseInterface):
 
         fname_comps = []
         for comp, cpre in zip(self.BIDS_COMPONENTS, self.BIDS_PREFIXES):
-            comp_fmt = '{}-{}'.format
-            comp_val = getattr(self.inputs, comp, None)
+            comp_val = None
+            if isdefined(getattr(self.inputs, comp)):
+                comp_val = getattr(self.inputs, comp)
+                if comp_val == "None":
+                    comp_val = None
 
-            if isdefined(comp_val) and comp_val is not None:
-                comp_val = '%s' % comp_val
-                if comp_val.startswith(cpre + '-'):
+            comp_fmt = '{}-{}'.format
+            if comp_val is not None:
+                if isinstance(comp_val, (bytes, str)) and comp_val.startswith(cpre + '-'):
                     comp_val = comp_val.split('-', 1)[-1]
                 fname_comps.append(comp_fmt(cpre, comp_val))
 
