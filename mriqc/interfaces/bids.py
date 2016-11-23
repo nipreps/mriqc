@@ -28,7 +28,7 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     task_id = traits.Either(None, traits.Str())
     acq_id = traits.Either(None, traits.Str())
     rec_id = traits.Either(None, traits.Str())
-    run_id = traits.Either(None, traits.Int())
+    run_id = traits.Either(None, traits.Str())
     out_dict = traits.Dict()
 
 class ReadSidecarJSON(MRIQCBaseInterface):
@@ -55,9 +55,6 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         else:
             self._results['out_dict'] = metadata
 
-        # Cast run_id to int
-        if self._results.get('run_id') is not None:
-            self._results['run_id'] = int(self._results['run_id'])
         return runtime
 
 
@@ -68,7 +65,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     task_id = traits.Either(None, traits.Str, usedefault=True)
     acq_id = traits.Either(None, traits.Str, usedefault=True)
     rec_id = traits.Either(None, traits.Str, usedefault=True)
-    run_id = traits.Either(None, traits.Int, usedefault=True)
+    run_id = traits.Either(None, traits.Str, usedefault=True)
 
     root = traits.Dict(desc='output root dictionary')
     out_dir = File(desc='the output directory')
@@ -130,6 +127,7 @@ class IQMFileSink(MRIQCBaseInterface):
             comp_val = getattr(self.inputs, comp, None)
 
             if isdefined(comp_val) and comp_val is not None:
+                comp_val = '%s' % comp_val
                 if comp_val.startswith(cpre + '-'):
                     comp_val = comp_val.split('-', 1)[-1]
                 fname_comps.append(comp_fmt(cpre, comp_val))

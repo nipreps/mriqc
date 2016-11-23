@@ -94,18 +94,13 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
                         ('run_id', 'inputnode.run_id'),
-                       ('out_dict', 'inputnode.metadata')]),
+                        ('out_dict', 'inputnode.metadata')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
         (bmw, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
-
-        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
-                       ('session_id', 'inputnode.session_id'),
-                       ('task_id', 'inputnode.task_id'),
-                       ('run_id', 'inputnode.run_id')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
@@ -206,9 +201,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'in_iqms',
-        'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc', 'in_dvars', 'in_stddev',
-        'outliers', 'in_spikes', 'exclude_index']),
+        'in_iqms', 'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
+        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'exclude_index']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -218,8 +212,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
 
     bigplot = pe.Node(niu.Function(
-        input_names=['session_id', 'task_id', 'run_id',
-                     'in_func', 'in_mask', 'in_segm', 'in_spikes', 'in_spikes_bg',
+        input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes', 'in_spikes_bg',
                      'fd', 'dvars', 'outliers'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
 
@@ -228,10 +221,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, spikes, [('orig', 'in_file'),
                              ('brainmask', 'in_mask')]),
         (inputnode, spmask, [('orig', 'in_file')]),
-        (inputnode, bigplot, [('session_id', 'session_id'),
-                              ('task_id', 'task_id'),
-                              ('run_id', 'run_id'),
-                              ('orig', 'in_func'),
+        (inputnode, bigplot, [('orig', 'in_func'),
                               ('brainmask', 'in_mask'),
                               ('hmc_fd', 'fd'),
                               ('in_dvars', 'dvars'),
@@ -645,7 +635,7 @@ def _parse_tout(in_file):
     return data.mean()
 
 
-def _big_plot(session_id, task_id, run_id, in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
+def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
               fd, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
@@ -656,17 +646,7 @@ def _big_plot(session_id, task_id, run_id, in_func, in_mask, in_segm, in_spikes,
             fname, _ = op.splitext(fname)
         out_file = op.abspath('{}_fmriplot.svg'.format(fname))
 
-    title = 'fMRI Summary plot.'
-    title_extra = []
-    if session_id is not None and session_id:
-        title_extra.append(session_id)
-    if task_id is not None and task_id:
-        title_extra.append(task_id)
-    if run_id is not None and run_id:
-        title_extra.append(run_id)
-
-    if title_extra:
-        title = title[:-1] + ' (%s).' % ', '.join(title_extra)
+    title = 'fMRI Summary plot'
 
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
