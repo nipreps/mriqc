@@ -25,11 +25,11 @@ class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
     subject_id = traits.Str()
-    session_id = traits.Either(None, traits.Str())
-    task_id = traits.Either(None, traits.Str())
-    acq_id = traits.Either(None, traits.Str())
-    rec_id = traits.Either(None, traits.Str())
-    run_id = traits.Either(None, traits.Str())
+    session_id = traits.Str()
+    task_id = traits.Str()
+    acq_id = traits.Str()
+    rec_id = traits.Str()
+    run_id = traits.Str()
     out_dict = traits.Dict()
 
 class ReadSidecarJSON(MRIQCBaseInterface):
@@ -48,7 +48,9 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
         for key in output_keys:
-            self._results[key] = '%s' % outputs.get(key)
+            id_value = outputs.get(key)
+            if id_value is not None:
+                self._results[key] = outputs.get(key)
 
         if isdefined(self.inputs.fields) and self.inputs.fields:
             for fname in self.inputs.fields:
