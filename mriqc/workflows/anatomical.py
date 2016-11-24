@@ -12,6 +12,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os.path as op
 
+from nipype import logging
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -26,8 +27,8 @@ from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
 
-from mriqc.utils.misc import bids_path, check_folder
-
+from mriqc.utils.misc import check_folder
+WFLOGGER = logging.getLogger('workflow')
 
 def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
@@ -36,6 +37,8 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
 
     workflow = pe.Workflow(name=name)
+    WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
+                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
     # Define workflow, inputs and outputs
     # 0. Get data

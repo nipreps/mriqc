@@ -12,6 +12,7 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 from sys import version_info
+import pandas as pd
 from builtins import zip, object, str  # pylint: disable=W0622
 
 from mriqc import logging
@@ -26,7 +27,6 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
     from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
-    import pandas as pd
     from mriqc import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
@@ -83,17 +83,12 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         ]
     }
 
-    def_comps = list(BIDS_COMPONENTS.keys())
+    def_comps = [key for key, _ in BIDS_COMPONENTS]
     dataframe = pd.read_csv(csv_file, index_col=False,
                             dtype={comp: object for comp in def_comps})
 
-    # format participant labels
     id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
-    def myfmt(row, cols):
-        crow = ['%s-%s' % (BIDS_COMPONENTS[k], row[k]) for k in cols if pd.notnull(row[k])]
-        return '_'.join(crow)
-
-    dataframe['label'] = dataframe[id_labels].apply(myfmt, args=(id_labels,), axis=1)
+    dataframe['label'] = dataframe[id_labels].apply(_format_labels, axis=1)
     nPart = len(dataframe)
 
     failed = None
@@ -147,3 +142,13 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
 
         copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
     return out_file
+
+
+def _format_labels(row):
+    """format participant labels"""
+    crow = []
+
+    for col_id, prefix in BIDS_COMPONENTS:
+        if pd.notnull(row[[col_id]])[0]:
+            crow.append('%s-%s' % (prefix, row[[col_id]].values[0]))
+    return '_'.join(crow)

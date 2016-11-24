@@ -9,12 +9,14 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from os import getcwd
 import os.path as op
 import re
-from io import open
 import simplejson as json
+from io import open
+from builtins import bytes, str
 from nipype import logging
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec,DynamicTraitedSpec,
+from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
                                     BaseInterfaceInputSpec, File, Undefined)
 from mriqc.interfaces.base import MRIQCBaseInterface
+from mriqc.utils.misc import BIDS_COMPONENTS
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -24,11 +26,11 @@ class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
     subject_id = traits.Str()
-    session_id = traits.Either(None, traits.Str())
-    task_id = traits.Either(None, traits.Str())
-    acq_id = traits.Either(None, traits.Str())
-    rec_id = traits.Either(None, traits.Str())
-    run_id = traits.Either(None, traits.Str())
+    session_id = traits.Str()
+    task_id = traits.Str()
+    acq_id = traits.Str()
+    rec_id = traits.Str()
+    run_id = traits.Str()
     out_dict = traits.Dict()
 
 class ReadSidecarJSON(MRIQCBaseInterface):
@@ -47,24 +49,27 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
         for key in output_keys:
-            self._results[key] = outputs.get(key)
+            id_value = outputs.get(key)
+            if id_value is not None:
+                self._results[key] = outputs.get(key)
 
         if isdefined(self.inputs.fields) and self.inputs.fields:
             for fname in self.inputs.fields:
                 self._results[fname] = metadata[fname]
         else:
             self._results['out_dict'] = metadata
+
         return runtime
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     subject_id = traits.Str(mandatory=True, desc='the subject id')
     modality = traits.Str(mandatory=True, desc='the qc type')
-    session_id = traits.Either(None, traits.Str, traits.Int, usedefault=True)
+    session_id = traits.Either(None, traits.Str, usedefault=True)
     task_id = traits.Either(None, traits.Str, usedefault=True)
     acq_id = traits.Either(None, traits.Str, usedefault=True)
     rec_id = traits.Either(None, traits.Str, usedefault=True)
-    run_id = traits.Either(None, traits.Int, usedefault=True)
+    run_id = traits.Either(None, traits.Str, usedefault=True)
 
     root = traits.Dict(desc='output root dictionary')
     out_dir = File(desc='the output directory')
@@ -87,10 +92,6 @@ class IQMFileSinkOutputSpec(TraitedSpec):
 class IQMFileSink(MRIQCBaseInterface):
     input_spec = IQMFileSinkInputSpec
     output_spec = IQMFileSinkOutputSpec
-    BIDS_COMPONENTS = ['subject_id', 'session_id', 'task_id',
-                       'acq_id', 'rec_id', 'run_id']
-    BIDS_PREFIXES = ['sub', 'ses', 'task', 'acq', 'rec', 'run']
-
     expr = re.compile('^root[0-9]+$')
 
     def __init__(self, fields=None, force_run=True, **inputs):
@@ -121,12 +122,16 @@ class IQMFileSink(MRIQCBaseInterface):
             out_dir = self.inputs.out_dir
 
         fname_comps = []
-        for comp, cpre in zip(self.BIDS_COMPONENTS, self.BIDS_PREFIXES):
-            comp_fmt = '{}-{}'.format
-            comp_val = getattr(self.inputs, comp, None)
+        for comp, cpre in BIDS_COMPONENTS:
+            comp_val = None
+            if isdefined(getattr(self.inputs, comp)):
+                comp_val = getattr(self.inputs, comp)
+                if comp_val == "None":
+                    comp_val = None
 
-            if isdefined(comp_val) and comp_val is not None:
-                if comp_val.startswith(cpre + '-'):
+            comp_fmt = '{}-{}'.format
+            if comp_val is not None:
+                if isinstance(comp_val, (bytes, str)) and comp_val.startswith(cpre + '-'):
                     comp_val = comp_val.split('-', 1)[-1]
                 fname_comps.append(comp_fmt(cpre, comp_val))
 
@@ -162,7 +167,7 @@ class IQMFileSink(MRIQCBaseInterface):
                     'discarding output.', root_key, str(val))
 
         id_dict = {}
-        for comp in self.BIDS_COMPONENTS:
+        for comp, _ in BIDS_COMPONENTS:
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
