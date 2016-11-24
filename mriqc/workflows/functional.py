@@ -34,7 +34,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    WFLOGGER.info('Building fMRI QC workflows, datasets list: %s',
+    WFLOGGER.info('Building fMRI QC workflow, datasets list: %s',
                   sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
     inputnode.iterables = [('in_file', dataset)]
 

@@ -16,6 +16,7 @@ from nipype import logging
 from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
                                     BaseInterfaceInputSpec, File, Undefined)
 from mriqc.interfaces.base import MRIQCBaseInterface
+from mriqc.utils.misc import BIDS_COMPONENTS
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -91,10 +92,6 @@ class IQMFileSinkOutputSpec(TraitedSpec):
 class IQMFileSink(MRIQCBaseInterface):
     input_spec = IQMFileSinkInputSpec
     output_spec = IQMFileSinkOutputSpec
-    BIDS_COMPONENTS = ['subject_id', 'session_id', 'task_id',
-                       'acq_id', 'rec_id', 'run_id']
-    BIDS_PREFIXES = ['sub', 'ses', 'task', 'acq', 'rec', 'run']
-
     expr = re.compile('^root[0-9]+$')
 
     def __init__(self, fields=None, force_run=True, **inputs):
@@ -125,7 +122,7 @@ class IQMFileSink(MRIQCBaseInterface):
             out_dir = self.inputs.out_dir
 
         fname_comps = []
-        for comp, cpre in zip(self.BIDS_COMPONENTS, self.BIDS_PREFIXES):
+        for comp, cpre in BIDS_COMPONENTS:
             comp_val = None
             if isdefined(getattr(self.inputs, comp)):
                 comp_val = getattr(self.inputs, comp)
@@ -170,7 +167,7 @@ class IQMFileSink(MRIQCBaseInterface):
                     'discarding output.', root_key, str(val))
 
         id_dict = {}
-        for comp in self.BIDS_COMPONENTS:
+        for comp, _ in BIDS_COMPONENTS:
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
