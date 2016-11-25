@@ -55,9 +55,7 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
     else:
         RuntimeError('Unknown QC type "%s"' % qctype)
 
-
-    tpl = IndividualTemplate()
-    tpl.generate_conf({
+    config = {
         'qctype': qctype,
         'sub_id': '_'.join(file_id),
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
@@ -67,7 +65,15 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
         'exclude_index': exclude_index,
         'workflow_details': wf_details,
         'metadata': iqms2html(metadata, 'metadata-table'),
-    }, out_file)
+    }
+
+    if config['metadata'] is None:
+        config['workflow_details'].append(
+            '<span class="warning">File has no metadata</span> '
+            '<span>(sidecar JSON file missing or empty)</span>')
+
+    tpl = IndividualTemplate()
+    tpl.generate_conf(config, out_file)
 
     report_log.info('Generated individual log (%s)', out_file)
     return out_file

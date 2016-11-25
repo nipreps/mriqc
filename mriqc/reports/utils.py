@@ -15,6 +15,9 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 def iqms2html(indict, table_id):
     """Converts a dictionary into an HTML table"""
     columns = sorted(unfold_columns(indict))
+    if not columns:
+        return None
+
     depth = max([len(col) for col in columns])
 
     result_str = '<table id="%s">\n' % table_id
