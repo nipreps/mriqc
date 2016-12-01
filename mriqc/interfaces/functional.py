@@ -29,7 +29,7 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
                             desc='direction for GSR computation')
     in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
-    fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+    fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
     in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
 
 
