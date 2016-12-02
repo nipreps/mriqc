@@ -1,6 +1,7 @@
 Release 0.8.8
 =============
 
+* [FIX] Bug translating int16 to uint8 in conform image.
 * [ENH] Replace BBR by ANTs (#295, #296)
 * [FIX] Singularity: user-environment leaking into container (#293)
 * [ENH] Report failed cases in group report (#291)
