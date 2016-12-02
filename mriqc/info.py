@@ -7,8 +7,8 @@ MRIQC
 
 """
 
-__versionbase__ = '0.8.8'
-__versionrev__ = '-4'
+__versionbase__ = '0.8.9'
+__versionrev__ = '-0'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -67,7 +67,7 @@ REQUIRES = [
 
 LINKS_REQUIRES = [
     'git+https://github.com/nipy/nipype.git#egg=nipype',
-    'git+https://github.com/poldracklab/niworkflows.git@enh/SingleSVGReports#egg=niworkflows',
+    'git+https://github.com/poldracklab/niworkflows.git@master#egg=niworkflows',
     'git+https://github.com/incf/pybids.git@master#egg=pybids',
 ]
 

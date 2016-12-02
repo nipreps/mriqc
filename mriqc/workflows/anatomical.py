@@ -22,7 +22,7 @@ from nipype.interfaces import afni
 
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-from niworkflows.anat.mni import RobustMNINormalization
+from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
@@ -90,7 +90,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
-        (norm, repwf, ([('html_report', 'inputnode.mni_report')])),
+        (norm, repwf, ([('out_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),

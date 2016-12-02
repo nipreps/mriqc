@@ -208,7 +208,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_iqms', 'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
-        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'exclude_index']),
+        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'exclude_index',
+        'mni_report']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -519,7 +520,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
-    from niworkflows.anat.mni import RobustMNINormalization
+    from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
     mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
@@ -560,7 +561,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
             ('reverse_invert_flags', 'invert_transform_flags')]),
         (invt, outputnode, [('output_image', 'epi_parc')]),
         (norm, outputnode, [('warped_image', 'epi_mni'),
-                            ('html_report', 'report')]),
+                            ('out_report', 'report')]),
 
     ])
     return workflow
