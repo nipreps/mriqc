@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-07 11:35:58
+# @Last Modified time: 2016-11-21 18:41:13
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
@@ -32,8 +32,8 @@ def fmri_getidx(in_file, start_idx, stop_idx):
 def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
-    return {'x': fwhm[0], 'y': fwhm[1],
-            'z': fwhm[2], 'avg': fwhm[3]}
+    return {'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1],
+            'fwhm_z': fwhm[2], 'fwhm_avg': fwhm[3]}
 
 
 def fd_jenkinson(in_file, rmax=80., out_file=None):
@@ -66,7 +66,6 @@ def fd_jenkinson(in_file, rmax=80., out_file=None):
 
     """
 
-    import sys
     import math
     import os.path as op
     import numpy as np

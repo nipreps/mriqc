@@ -7,13 +7,17 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os
 from os import path as op
+from glob import glob
 from errno import EEXIST
 
 import collections
 import json
 import pandas as pd
 from io import open  # pylint: disable=W0622
-from builtins import next, range  # pylint: disable=W0622
+from builtins import range  # pylint: disable=W0622
+
+BIDS_COMPONENTS = [('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
+                   ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')]
 
 def split_ext(in_file, out_file=None):
     import os.path as op
@@ -25,15 +29,6 @@ def split_ext(in_file, out_file=None):
         return fname, ext
     else:
         return split_ext(out_file)
-
-
-def reorient(in_file):
-    import nibabel as nb
-    import os
-    _, outfile = os.path.split(in_file)
-    nii = nb.as_closest_canonical(nb.load(in_file))
-    nii.to_filename(outfile)
-    return os.path.abspath(outfile)
 
 
 def reorient_and_discard_non_steady(in_file):
@@ -141,65 +136,63 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
     return op.abspath(fname + '.' + ext)
 
 
-def generate_csv(jsonfiles, out_fname):
+def generate_csv(derivatives_dir, output_dir, qctype):
     """
     Generates a csv file from all json files in the derivatives directory
     """
-    datalist = []
     errorlist = []
 
+    # If some were found, generate the CSV file and group report
+    out_csv = op.join(output_dir, qctype[:4] + 'MRIQC.csv')
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*.json'))
     if not jsonfiles:
-        return None
+        return None, out_csv
 
+    all_id_fields = []
+    datalist = []
+    comps = set([key for key, _ in BIDS_COMPONENTS])
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
-        if dfentry is not None:
-            if 'exec_error' not in list(dfentry.keys()):
-                datalist.append(dfentry)
-            else:
-                errorlist.append(dfentry['subject_id'])
+
+        if (dfentry is not None and dfentry['metadata'].get(
+            'qc_type', 'unknown').startswith(qctype[:4])):
+            metadata = dfentry.pop('metadata')
+            id_fields = list(comps & set(list(metadata.keys())))
+            for field in id_fields:
+                dfentry[field] = metadata[field]
+            datalist.append(dfentry)
+            all_id_fields += id_fields
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    reorder = []
-    for field in ['run', 'session', 'subject']:
-        for col in cols:
-            if col.startswith(field):
-                reorder.append(col)
-
-    for col in reorder:
-        cols.remove(col)
-        cols.insert(0, col)
-
-    if 'mosaic_file' in cols:
-        cols.remove('mosaic_file')
+    all_id_fields = list(set(all_id_fields))
 
     # Sort the dataframe, with failsafe if pandas version is too old
     try:
-        dataframe = dataframe.sort_values(by=['subject_id', 'session_id', 'run_id'])
+        dataframe = dataframe.sort_values(by=all_id_fields)
     except AttributeError:
         #pylint: disable=E1101
-        dataframe = dataframe.sort(columns=['subject_id', 'session_id', 'run_id'])
+        dataframe = dataframe.sort(columns=all_id_fields)
 
     # Drop duplicates
     try:
         #pylint: disable=E1101
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], keep='last',
-                                  inplace=True)
+        dataframe.drop_duplicates(all_id_fields, keep='last', inplace=True)
     except TypeError:
         #pylint: disable=E1101
         dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                   inplace=True)
-    dataframe[cols].to_csv(out_fname, index=False)
-    return dataframe, errorlist
+
+    ordercols = all_id_fields + sorted(list(set(cols) - set(all_id_fields)))
+    dataframe[ordercols].to_csv(out_csv, index=False)
+    return dataframe, out_csv
 
 
 def _read_and_save(in_file):
     with open(in_file, 'r') as jsondata:
-        values = _flatten(json.load(jsondata))
-        return values
-    return None
+        data = json.load(jsondata)
+    return data if data else None
 
 
 def _flatten(in_dict, parent_key='', sep='_'):

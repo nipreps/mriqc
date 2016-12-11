@@ -12,19 +12,21 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 from sys import version_info
-from builtins import zip, object, str, bytes  # pylint: disable=W0622
+import pandas as pd
+from builtins import zip, object, str  # pylint: disable=W0622
 
 from mriqc import logging
+from mriqc.utils.misc import BIDS_COMPONENTS
+
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
 def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
-    from shutil import copy, rmtree
+    from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
-    import pandas as pd
     from mriqc import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
@@ -42,9 +44,9 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
             (['fber'], None),
             (['wm2max'], None),
             (['snr_csf', 'snr_gm', 'snr_wm'], None),
-            (['snr_d_csf', 'snr_d_gm', 'snr_d_wm'], None),
+            (['snrd_csf', 'snrd_gm', 'snrd_wm'], None),
             (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
-            (['qi1', 'qi2'], None),
+            (['qi_1', 'qi_2'], None),
             (['inu_range', 'inu_med'], None),
             (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
             (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
@@ -81,18 +83,12 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         ]
     }
 
-    dataframe = pd.read_csv(csv_file, index_col=False)
+    def_comps = [key for key, _ in BIDS_COMPONENTS]
+    dataframe = pd.read_csv(csv_file, index_col=False,
+                            dtype={comp: object for comp in def_comps})
 
-    # format participant labels
-    id_labels = ['subject_id', 'session_id', 'run_id']
-    if qctype.startswith('func'):
-        id_labels.insert(2, 'task_id')
-
-    def myfmt(row, cols):
-        crow = [row[k] for k in cols if pd.notnull(row[k])]
-        return '_'.join(crow)
-
-    dataframe['label'] = dataframe[id_labels].apply(myfmt, args=(id_labels,), axis=1)
+    id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
+    dataframe['label'] = dataframe[id_labels].apply(_format_labels, axis=1)
     nPart = len(dataframe)
 
     failed = None
@@ -146,3 +142,13 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
 
         copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
     return out_file
+
+
+def _format_labels(row):
+    """format participant labels"""
+    crow = []
+
+    for col_id, prefix in BIDS_COMPONENTS:
+        if pd.notnull(row[[col_id]])[0]:
+            crow.append('%s-%s' % (prefix, row[[col_id]].values[0]))
+    return '_'.join(crow)

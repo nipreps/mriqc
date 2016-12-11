@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-10 17:14:23
+# @Last Modified time: 2016-11-15 09:44:02
 """
 Anatomical tests
 """
@@ -16,11 +16,9 @@ import os.path as op
 from tempfile import mkdtemp
 from shutil import rmtree
 import numpy as np
-import nibabel as nb
 import pytest
 from scipy.stats import rice
 from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi2
-from mriqc.interfaces.anatomical import artifact_mask
 from builtins import object
 # from numpy.testing import allclose
 
@@ -81,7 +79,7 @@ def test_cjv(sigma, rtol=0.1):
 @pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
 @pytest.mark.parametrize("noise", ['normal', 'rice'])
 def test_snr(gtruth, sigma, noise):
-    data, wmdata, bgdata = gtruth.get_data(sigma, noise)
+    data, wmdata, _ = gtruth.get_data(sigma, noise)
     assert abs(snr(data, wmdata) - (1/sigma)) < 20
 
 
@@ -95,7 +93,7 @@ def test_snr_dietrich(gtruth, sigma, noise):
 @pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
 def test_qi2(gtruth, sigma):
     tmpdir = mkdtemp()
-    data, wmdata, bgdata = gtruth.get_data(sigma, rice)
+    data, _, bgdata = gtruth.get_data(sigma, rice)
     value, _ = art_qi2(data, bgdata, out_file=op.join(tmpdir, 'qi2.txt'))
     rmtree(tmpdir)
     assert value > .0 and value < 0.003

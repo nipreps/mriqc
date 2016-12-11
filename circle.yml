@@ -1,7 +1,8 @@
 machine:
   environment:
     SCRATCH: "$HOME/scratch"
-    DS003_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f328f6b83f6901ef94cf70"
+    TEST_DATA_NAME: "circle-tests"
+    TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5835f77c594d9000421f69ae"
   services:
     - docker
 
@@ -15,7 +16,7 @@ dependencies:
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions
     - mkdir -p $SCRATCH && sudo setfacl -d -m group:ubuntu:rwx $SCRATCH && sudo setfacl -m group:ubuntu:rwx $SCRATCH
-    - if [[ ! -d ~/data/ds003_downsampled ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ds003_downsampled.tar.gz "${DS003_URL}" && tar xzf ds003_downsampled.tar.gz -C ~/data/; fi
+    - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - docker build -f docker/Dockerfile_py35 -t mriqc:py35 .
@@ -26,10 +27,10 @@ test:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /root/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35 :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ participant -w work/ --testing --verbose-reports :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ participant -w work/ --testing --verbose-reports :
         timeout: 3200
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d func -w work/
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/ds003_downsampled out/ group -d anat -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -d func -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -d anat -w work/
 
 general:
   artifacts:

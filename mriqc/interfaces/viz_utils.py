@@ -23,7 +23,6 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
-from pylab import cm
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -177,9 +176,12 @@ def get_limits(nifti_file, only_plot_noise=False):
 def plot_mosaic(nifti_file, title=None, overlay_mask=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
-                cmap=cm.Greys_r, plot_sagittal=True, labels=None):
+                cmap='Greys_r', plot_sagittal=True, labels=None):
     from builtins import bytes, str  # pylint: disable=W0622
     from matplotlib import cm
+
+    if isinstance(cmap, (str, bytes)):
+        cmap = cm.get_cmap(cmap)
 
     if isinstance(nifti_file, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
@@ -498,16 +500,18 @@ def plot_bg_dist(in_file):
     return out_file
 
 
-def plot_mosaic_helper(in_file, subject_id, session_id=None,
-                       task_id=None, run_id=None, out_file=None, bbox_mask_file=None,
+def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
                        title=None, plot_sagittal=True, labels=None,
-                       only_plot_noise=False, cmap=cm.Greys_r):
-    if title is not None:
-        title = title.format(**{"session_id": session_id,
-                                "task_id": task_id,
-                                "run_id": run_id})
+                       only_plot_noise=False, cmap='Greys_r'):
     fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
                       only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == ".gz":
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath(fname + '_mosaic.svg')
+
     fig.savefig(out_file, format=out_file.split('.')[-1], dpi=300)
     fig.clf()
     fig = None

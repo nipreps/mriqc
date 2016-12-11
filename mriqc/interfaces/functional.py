@@ -11,7 +11,7 @@ from nilearn.signal import clean
 from builtins import zip
 
 from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
-                                    InputMultiPath, BaseInterfaceInputSpec)
+                                    BaseInterfaceInputSpec)
 from nipype import logging
 
 from mriqc.utils.misc import _flatten_dict
@@ -29,7 +29,7 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     direction = traits.Enum('all', 'x', 'y', '-x', '-y', usedefault=True,
                             desc='direction for GSR computation')
     in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
-    fd_thres = traits.Float(1., usedefault=True, desc='motion threshold for FD computation')
+    fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
     in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
 
 
@@ -247,7 +247,7 @@ def find_spikes(data, spike_thresh):
 def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     from dipy.segment.mask import median_otsu
     mn = data[:, :, :, nskip:].mean(3)
-    masked_data, mask = median_otsu(mn, 3, 2)
+    _, mask = median_otsu(mn, 3, 2) # oesteban: masked_data was not used
     mask = np.concatenate((
         np.tile(True, (data.shape[0], data.shape[1], data.shape[2], nskip)),
         np.tile(np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3]-nskip))),

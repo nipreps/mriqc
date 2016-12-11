@@ -7,13 +7,12 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-04 16:32:36
 """ A QC workflow for anatomical MRI """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
-import os
 import os.path as op
 
+from nipype import logging
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -23,13 +22,13 @@ from nipype.interfaces import afni
 
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-from niworkflows.anat.mni import RobustMNINormalization
+from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                              ConformImage, ComputeQI2)
+                              ConformImage, ComputeQI2, IQMFileSink)
 
-from mriqc.utils.misc import bids_path, check_folder
-
+from mriqc.utils.misc import check_folder
+WFLOGGER = logging.getLogger('workflow')
 
 def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
@@ -38,6 +37,8 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     """
 
     workflow = pe.Workflow(name=name)
+    WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
+                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
     # Define workflow, inputs and outputs
     # 0. Get data
@@ -59,7 +60,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
-        testing=settings.get('testing', False)), name='SpatialNormalization')
+        testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
@@ -78,10 +79,6 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('run_id', 'inputnode.run_id')]),
-        (meta, repwf, [('subject_id', 'inputnode.subject_id'),
-                       ('session_id', 'inputnode.session_id'),
-                       ('run_id', 'inputnode.run_id'),
-                       ('out_dict', 'inputnode.in_metadata')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
@@ -93,6 +90,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+        (norm, repwf, ([('out_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -149,23 +147,10 @@ def compute_iqms(settings, name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    # Format name
-    out_name = pe.Node(niu.Function(
-        input_names=['subid', 'sesid', 'runid', 'prefix', 'out_path'], output_names=['out_file'],
-        function=bids_path), name='FormatName')
-    out_name.inputs.out_path = deriv_dir
-    out_name.inputs.prefix = 'anat'
-
-    # Save to JSON file
-    jfs_if = nio.JSONFileSink()
-    setattr(jfs_if, '_always_run', settings.get('force_run', False))
-    datasink = pe.Node(jfs_if, name='datasink')
-    datasink.inputs.qc_type = 'anat'
+    datasink = pe.Node(IQMFileSink(modality='T1w', out_dir=deriv_dir),
+                       name='datasink')
 
     workflow.connect([
-        (inputnode, out_name, [('subject_id', 'subid'),
-                               ('session_id', 'sesid'),
-                               ('run_id', 'runid')]),
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('run_id', 'run_id'),
@@ -186,23 +171,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
                            ('reverse_transforms', 'transforms'),
                            ('reverse_invert_flags', 'invert_transform_flags')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'fwhm')]),
-        (getqi2, datasink, [('qi2', 'qi2')]),
-        (measures, datasink, [('summary', 'summary'),
-                              ('spacing', 'spacing'),
-                              ('size', 'size'),
-                              ('icvs', 'icvs'),
-                              ('rpve', 'rpve'),
-                              ('inu', 'inu'),
-                              ('snr', 'snr'),
-                              ('cnr', 'cnr'),
-                              ('fber', 'fber'),
-                              ('efc', 'efc'),
-                              ('qi1', 'qi1'),
-                              ('cjv', 'cjv'),
-                              ('wm2max', 'wm2max'),
-                              ('tpm_overlap', 'tpm_overlap')]),
-        (out_name, datasink, [('out_file', 'out_file')]),
+        (measures, datasink, [('out_qc', 'root')]),
+        (getqi2, datasink, [('qi2', 'qi_2')]),
+        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
@@ -216,31 +187,32 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
+    extra_pages = 0
     if verbose:
-        pages += 6
+        extra_pages = 7
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'in_metadata',
         'orig', 'brainmask', 'headmask', 'airmask', 'artmask',
-        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms']),
+        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
+        'mni_report']),
         name='inputnode')
 
     # T1w mosaic plot
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='T1w (zoomed) session: {session_id} run: {run_id}',
+        title='T1w - zoomed',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='T1w (noise) session: {session_id} run: {run_id}',
+        title='T1w - noise enhanced',
         only_noise=True,
         cmap='viridis_r'), name='PlotMosaicNoise')
 
-    mplots = pe.Node(niu.Merge(pages), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_metadata', 'in_plots'], output_names=['out_file'],
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
@@ -249,18 +221,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms'),
-                            ('in_metadata', 'in_metadata')]),
-        (inputnode, mosaic_zoom, [('subject_id', 'subject_id'),
-                                  ('session_id', 'session_id'),
-                                  ('run_id', 'run_id'),
-                                  ('orig', 'in_file'),
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
+        (inputnode, mosaic_zoom, [('orig', 'in_file'),
                                   ('brainmask', 'bbox_mask_file')]),
-
-        (inputnode, mosaic_noise, [('subject_id', 'subject_id'),
-                                   ('session_id', 'session_id'),
-                                   ('run_id', 'run_id'),
-                                   ('orig', 'in_file')]),
+        (inputnode, mosaic_noise, [('orig', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
@@ -304,13 +268,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, plot_artmask, [('orig', 'in_file'),
                                    ('artmask', 'in_contours')]),
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
-
-        (plot_bmask, mplots, [('out_file', 'in3')]),
-        (plot_segm, mplots, [('out_file', 'in4')]),
-        (plot_artmask, mplots, [('out_file', 'in5')]),
-        (plot_headmask, mplots, [('out_file', 'in6')]),
-        (plot_airmask, mplots, [('out_file', 'in7')]),
-        (plot_bgdist, mplots, [('out_file', 'in8')])
+        (inputnode, mplots, [('mni_report', "in%d" % (pages + 1))]),
+        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 2))]),
+        (plot_segm, mplots, [('out_file', 'in%d' % (pages + 3))]),
+        (plot_artmask, mplots, [('out_file', 'in%d' % (pages + 4))]),
+        (plot_headmask, mplots, [('out_file', 'in%d' % (pages + 5))]),
+        (plot_airmask, mplots, [('out_file', 'in%d' % (pages + 6))]),
+        (plot_bgdist, mplots, [('out_file', 'in%d' % (pages + 7))])
     ])
     return workflow
 
@@ -320,7 +284,6 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     has_dipy = False
     try:
         from dipy.denoise import nlmeans
-        from nipype.interfaces.dipy import Denoise
         has_dipy = True
     except ImportError:
         pass
@@ -343,37 +306,37 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
             (enhance, bet, [('out_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
-        return workflow
 
-    estsnr = pe.Node(niu.Function(
-        input_names=['in_file', 'seg_file'], output_names=['out_snr'],
-        function=_estimate_snr), name='EstimateSNR')
-    denoise = pe.Node(Denoise(), name='Denoise')
-    gradient = pe.Node(niu.Function(
-        input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
-    thresh = pe.Node(niu.Function(
-        input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
-                     name='GradientThreshold')
+    else:
+        from nipype.interfaces.dipy import Denoise
+        estsnr = pe.Node(niu.Function(
+            input_names=['in_file', 'seg_file'], output_names=['out_snr'],
+            function=_estimate_snr), name='EstimateSNR')
+        denoise = pe.Node(Denoise(), name='Denoise')
+        gradient = pe.Node(niu.Function(
+            input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
+        thresh = pe.Node(niu.Function(
+            input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
+                         name='GradientThreshold')
 
-    workflow.connect([
-        (inputnode, estsnr, [('in_file', 'in_file'),
-                             ('in_segm', 'seg_file')]),
-        (estsnr, denoise, [('out_snr', 'snr')]),
-        (inputnode, enhance, [('in_file', 'in_file')]),
-        (enhance, denoise, [('out_file', 'in_file')]),
-        (estsnr, gradient, [('out_snr', 'snr')]),
-        (denoise, gradient, [('out_file', 'in_file')]),
-        (inputnode, thresh, [('in_segm', 'in_segm')]),
-        (gradient, thresh, [('out_file', 'in_file')]),
-        (thresh, outputnode, [('out_file', 'out_file')])
-    ])
+        workflow.connect([
+            (inputnode, estsnr, [('in_file', 'in_file'),
+                                 ('in_segm', 'seg_file')]),
+            (estsnr, denoise, [('out_snr', 'snr')]),
+            (inputnode, enhance, [('in_file', 'in_file')]),
+            (enhance, denoise, [('out_file', 'in_file')]),
+            (estsnr, gradient, [('out_snr', 'snr')]),
+            (denoise, gradient, [('out_file', 'in_file')]),
+            (inputnode, thresh, [('in_segm', 'in_segm')]),
+            (gradient, thresh, [('out_file', 'in_file')]),
+            (thresh, outputnode, [('out_file', 'out_file')])
+        ])
 
     return workflow
 
 
 def airmsk_wf(name='AirMaskWorkflow'):
     """Implements the Step 1 of [Mortamet2009]_."""
-    import pkg_resources as pkgr
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
