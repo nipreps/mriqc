@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-26 14:22:48
+# @Last Modified time: 2016-12-12 16:50:17
 
 """
 MRIQC Cross-validation
@@ -11,15 +11,25 @@ MRIQC Cross-validation
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import numpy as np
 from scipy.stats import zscore
 import pandas as pd
 from builtins import str
 
+from mriqc import logging
+LOG = logging.getLogger('mriqc.classifier')
+
 def read_dataset(feat_file, label_file):
     """ Reads in the features and labels """
 
-    x_df = pd.read_csv(feat_file, index_col=False).sort_values(
-        by=['subject_id'])
+    bids_comps = ['subject_id', 'session_id', 'task_id', 'run_id']
+
+    x_df = pd.read_csv(feat_file, index_col=False,
+        dtype={col: str for col in bids_comps})
+
+    bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
+    x_df = x_df.sort_values(by=bids_comps_present)
+
     x_df['subject_id'] = x_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Remove columns that are not IQMs
@@ -55,6 +65,13 @@ def zscore_dataset(dataframe, excl_columns=None, by='site'):
     sites = list(dataframe[[by]].values.ravel())
     columns = list(dataframe._get_numeric_data().columns.ravel())
 
+    if excl_columns is None:
+        excl_columns = []
+
+    for col in columns:
+        if not np.isfinite(np.sum(dataframe[[col]].values.ravel())):
+            excl_columns.append(col)
+
     if excl_columns:
         for col in excl_columns:
             try:
@@ -65,6 +82,15 @@ def zscore_dataset(dataframe, excl_columns=None, by='site'):
     zs_df = dataframe.copy()
     for site in sites:
         site_df = zs_df.loc[zs_df.site == site, columns]
-        zs_df.loc[zs_df.site == site, columns] = zscore(site_df, ddof=1, axis=0)
+        zscored = zscore(site_df, ddof=1, axis=0)
+        for i, col in enumerate(columns):
+            if not np.isnan(zscored[:, i]).any():
+                zs_df.loc[zs_df.site == site, col] = zscored[:, i]
+
+            if not np.isfinite(zs_df.loc[zs_df.site == site, col].sum()):
+                LOG.warn('Sum of measure %s of %s\'s sample is infinite',
+                         col, site)
+                zs_df.drop(col, axis=1, inplace=True)
+                break
 
     return zs_df

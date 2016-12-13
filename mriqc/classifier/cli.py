@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-10-27 10:08:52
+# @Last Modified time: 2016-12-12 16:27:15
 
 """
 MRIQC Cross-validation
@@ -52,6 +52,11 @@ def main():
     g_input.add_argument('-C', '--classifier', action='store', nargs='*',
                          choices=['svc_linear', 'svc_rbf', 'rfc', 'all'],
                          default=['svc_rbf'])
+
+    g_input.add_argument('--create-split', action='store_true', default=False,
+                         help='create a data split for the validation set')
+    g_input.add_argument('--nfolds', action='store', type=int, default=0,
+                         help='create a data split for the validation set')
     g_input.add_argument(
         '-S', '--score-types', action='store', nargs='*', default=['f1_weighted', 'accuracy'],
         choices=[
@@ -71,8 +76,21 @@ def main():
     cvhelper = CVHelper(opts.training_data, opts.training_labels,
                         scores=opts.score_types, param=parameters)
 
+    if opts.test_data is None and opts.create_split:
+        cvhelper.create_test_split(rate_column='rate',
+                                   frac=.1, random_state=31051852)
+
+    cvhelper.to_csv('training_set.csv')
+    cvhelper.to_csv('evaluation_set.csv', output_set='evaluation')
+
+    folds = None
+    folds_params = None
+
+    if opts.nfolds > 0:
+        folds = {'type': 'kfold', 'n_splits': opts.nfolds}
+
     # Run inner loop before setting held-out data, for hygene
-    cvhelper.inner_loop()
+    cvhelper.inner_loop(folds=folds)
 
     if opts.test_data is not None:
         cvhelper.set_heldout_dataset(opts.test_data, opts.test_labels)
