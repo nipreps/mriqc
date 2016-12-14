@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-12-12 16:51:47
+# @Last Modified time: 2016-12-13 17:38:45
 
 """
 MRIQC Cross-validation
@@ -13,6 +13,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import pandas as pd
+import simplejson as json
+
 from pprint import pformat as pf
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -23,13 +25,15 @@ from .data import read_dataset, zscore_dataset
 from mriqc import __version__, logging
 
 try:
-    from sklearn.model_selection import (LeaveOneGroupOut, KFold, GridSearchCV,
-                                         permutation_test_score)
+    from sklearn.model_selection import (LeaveOneGroupOut, StratifiedKFold, GridSearchCV,
+                                         permutation_test_score, PredefinedSplit, cross_val_score)
 except ImportError:
     from sklearn.cross_validation import (
-        permutation_test_score, KFold,
-        LeaveOneLabelOut as LeaveOneGroupOut)
+        permutation_test_score, StratifiedKFold,
+        LeaveOneLabelOut as LeaveOneGroupOut,
+        PredefinedSplit, cross_val_score)
     from sklearn.grid_search import GridSearchCV
+
 
 LOG = logging.getLogger('mriqc.classifier')
 
@@ -73,36 +77,29 @@ class CVHelper(object):
         if param is not None:
             self.param = param
 
-        self._models = []
+        self._models = {}
         self.Xtest = None
         self.n_jobs = n_jobs
         self._rate_column = 'rate'
         LOG.info('Created CV object for dataset "%s" with labels "%s"', X, Y)
+
+        nan_labels = self.X[np.isnan(self.X[self._rate_column])].index.ravel().tolist()
+        if nan_labels:
+            LOG.info('Dropping %d samples for having non-numerical '
+                     'labels', len(nan_labels))
+            self.X = self.X.drop(nan_labels)
+
         self.sites = list(set(self.X.site.values.ravel()))
         self.Xzscored = zscore_dataset(
-            X, excl_columns=[self._rate_column, 'size_x', 'size_y', 'size_z',
-                             'spacing_x', 'spacing_y', 'spacing_z'])
+            self.X, excl_columns=[self._rate_column, 'size_x', 'size_y', 'size_z',
+                                  'spacing_x', 'spacing_y', 'spacing_z'])
 
 
     @property
     def rate_column(self):
         return self._rate_column
 
-    @rate_column.setter
-    def rate_column(self, value):
-        self._rate_column = value
-
-    def create_test_split(self, split_type='sample', rate_column=None,
-                          **sample_args):
-
-        if rate_column is not None:
-            self.rate_column = rate_column
-            nan_labels = self.X[np.isnan(self.X[rate_column])].index.ravel().tolist()
-            if nan_labels:
-                LOG.info('Dropping %d samples for having non-numerical '
-                         'labels', len(nan_labels))
-                self.X = self.X.drop(nan_labels)
-
+    def create_test_split(self, split_type='sample', **sample_args):
         if split_type == 'sample':
             self.Xtest = self.X.sample(**sample_args)
         elif split_type == 'site':
@@ -114,7 +111,7 @@ class CVHelper(object):
         else:
             raise RuntimeError('Unknown split_type (%s).' % split_type)
 
-        self.Xtest_zscored = self.Xzscored[self.Xtest.index]
+        self.Xtest_zscored = self.Xzscored.take(self.Xtest.index)
         self.Xzscored = self.Xzscored.drop(self.Xtest.index)
         self.X = self.X.drop(self.Xtest.index)
         LOG.info('Created a random split of the data, the training set has '
@@ -134,49 +131,59 @@ class CVHelper(object):
         elif output_set == 'evaluation':
             self.Xtest.to_csv(out_file, index=False)
 
-    def inner_loop(self, folds=None):
+    def fit(self, folds=None):
 
         cv_params = {
-            'n_jobs': self.n_jobs,
-            'refit': False
+            'n_jobs': self.n_jobs
         }
 
         folds_groups = None
         if folds is not None and folds.get('type', '') == 'kfold':
-            nsplits = folds.get('n_splits', 10)
-            cv_params['cv'] = KFold(n_splits=nsplits)
+            nsplits = folds.get('n_splits', 6)
+            cv_params['cv'] = StratifiedKFold(n_splits=nsplits, shuffle=True)
         else:
             LOG.info('No folds provided for CV, using default leave-one-site-out')
             folds_groups = list(self.X.site.values.ravel())
             cv_params['cv'] = LeaveOneGroupOut()
 
-        LOG.info('Starting inner cross-validation loop')
+        for clf_type, _ in list(self.param.items()):
+            self._models[clf_type] = []
+
+        LOG.info('Starting inner cross-validation loop. N=%d', len(self.X))
         for dozs in [False, True]:
             X = self.Xzscored.copy() if dozs else self.X.copy()
-
-            sample_x = [tuple(x) for x in X[self.ftnames].values]
-            labels_y = X[[self._rate_column]].values.ravel().tolist()
-
+            sample_x, labels_y = self._generate_sample(X)
             for clf_type, clf_params in list(self.param.items()):
                 for stype in self.scores:
                     cv_params['scoring'] = stype
                     LOG.info('CV loop for %s, optimizing for %s, and %s zscoring',
                              clf_type, stype, 'with' if dozs else 'without')
-                    innercv = GridSearchCV(_clf_build(clf_type), clf_params,
-                                           **cv_params)
+                    clf = GridSearchCV(_clf_build(clf_type), clf_params,
+                                       **cv_params)
 
-                    innercv.fit(sample_x, labels_y, groups=folds_groups)
+                    clf.fit(sample_x, labels_y, groups=folds_groups)
 
-                    self._models.append({
-                        'clf_type': clf_type,
+                    thismodel = {
                         'scoring': stype,
                         'zscored': dozs,
-                        'best_params': innercv.best_params_,
-                        'best_score': innercv.best_score_,
-                        'grid_scores': innercv.cv_results_
-                    })
+                        'best_params': clf.best_params_,
+                        'best_score': clf.best_score_,
+                        'grid_scores': clf.cv_results_
+                    }
 
-                    LOG.info('CV loop finished: \n%s', pf(self._models[-1], indent=2))
+                    LOG.info('Model selection finished. Running permutation test.')
+
+                    outer_cv = StratifiedKFold(n_splits=5, shuffle=True)
+                    LOG.info('Evaluating best classifier')
+                    score, permutation_scores, pvalue = permutation_test_score(
+                        clf, sample_x, labels_y, scoring=stype, cv=outer_cv, n_permutations=100)
+                    LOG.info('Classification score %s (p-value=%s)', score, pvalue)
+
+                    thismodel['classification_score'] = score
+                    thismodel['permutation_scores'] = permutation_scores
+                    thismodel['pvalue'] = pvalue
+                    self._models[clf_type].append(thismodel)
+
 
     def get_best(self, scoring=None):
         if scoring is None:
@@ -188,32 +195,39 @@ class CVHelper(object):
 
         best_score = -1
         best_model = None
-        for model in self._models:
-            if model['scoring'] == scoring and model['best_score'] > best_score:
-                best_model = model
-                best_score = model['best_score']
-
+        for clf_type, clf_vals in list(self._models.items()):
+            for vals in clf_vals:
+                if vals['scoring'] == scoring and vals['classification_score'] > best_score:
+                    best_model = vals
+                    best_model['clf_type'] = clf_type
         return best_model
 
-    def evaluate_loop(self):
-
+    def outer_loop(self):
         if self.Xtest is None:
             LOG.error('Test dataset is not set')
 
         best_model = self.get_best()
 
+        LOG.info('Buiding best classifier (%s), with params:\n%s',
+                 best_model['clf_type'], best_model['best_params'])
         clf = _clf_build(best_model['clf_type'])
         clf.set_params(**best_model['best_params'])
 
         X = self.Xzscored.copy() if best_model['zscored'] else self.X.copy()
-        clf.fit(_generate_sample(X))
-
         Xtest = self.Xtest_zscored.copy() if best_model['zscored'] else self.Xtest.copy()
-        clf.score(_generate_sample(Xtest))
+        x, y = self._generate_sample(pd.concat([X, Xtest]))
+
+        # test_fold = np.array([-1] * len(X) + [0] * len(Xtest))
+        ps = StratifiedKFold(n_splits=5)
+        LOG.info('Evaluating best classifier')
+        score, permutation_scores, pvalue = permutation_test_score(
+            clf, x, y, scoring="accuracy", cv=ps, n_permutations=10000)
+        LOG.info('Classification score %s (p-value=%s)', score, pvalue)
+
 
     def _generate_sample(self, X):
-        sample_x = [tuple(x) for x in X[self.ftnames].values]
-        labels_y = X[[self._rate_column]].values.ravel().tolist()
+        sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
+        labels_y = X[[self._rate_column]].values.ravel()
         return sample_x, labels_y
 
 

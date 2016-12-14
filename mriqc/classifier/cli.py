@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-12-12 16:27:15
+# @Last Modified time: 2016-12-13 17:43:34
 
 """
 MRIQC Cross-validation
@@ -18,11 +18,11 @@ warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    from mriqc import logging
-    LOG = logging.getLogger('mriqc.classifier')
+    from .cv import logger
+    LOG = logger.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
-        LOG.warn('%s: %s', category, message)
+        LOG.debug('captured warning (%s): %s', category, message)
         cached_warnings.append(category)
 
 
@@ -35,6 +35,7 @@ def main():
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
     from .cv import CVHelper
+    from mriqc import logging, LOG_FORMAT
 
     warnings.showwarning = warn_redirect
 
@@ -58,7 +59,7 @@ def main():
     g_input.add_argument('--nfolds', action='store', type=int, default=0,
                          help='create a data split for the validation set')
     g_input.add_argument(
-        '-S', '--score-types', action='store', nargs='*', default=['f1_weighted', 'accuracy'],
+        '-S', '--score-types', action='store', nargs='*', default=['accuracy'],
         choices=[
             'accuracy', 'adjusted_rand_score', 'average_precision', 'f1', 'f1_macro', 'f1_micro',
             'f1_samples', 'f1_weighted', 'log_loss', 'mean_absolute_error', 'mean_squared_error',
@@ -66,7 +67,17 @@ def main():
             'precision_samples', 'precision_weighted', 'r2', 'recall', 'recall_macro',
             'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc'])
 
+    g_input.add_argument('--log-file', action='store', default='mriqcfit.log')
+    g_input.add_argument('--log-level', action='store', default='INFO',
+                         choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+
     opts = parser.parse_args()
+
+    filelogger = logging.getLogger()
+    fhl = logging.FileHandler(opts.log_file)
+    fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
+    filelogger.addHandler(fhl)
+    filelogger.setLevel(opts.log_level)
 
     parameters = None
     if opts.parameters is not None:
@@ -76,26 +87,17 @@ def main():
     cvhelper = CVHelper(opts.training_data, opts.training_labels,
                         scores=opts.score_types, param=parameters)
 
-    if opts.test_data is None and opts.create_split:
-        cvhelper.create_test_split(rate_column='rate',
-                                   frac=.1, random_state=31051852)
-
-    cvhelper.to_csv('training_set.csv')
-    cvhelper.to_csv('evaluation_set.csv', output_set='evaluation')
-
     folds = None
-    folds_params = None
-
     if opts.nfolds > 0:
         folds = {'type': 'kfold', 'n_splits': opts.nfolds}
 
     # Run inner loop before setting held-out data, for hygene
-    cvhelper.inner_loop(folds=folds)
+    cvhelper.fit(folds=folds)
 
     if opts.test_data is not None:
         cvhelper.set_heldout_dataset(opts.test_data, opts.test_labels)
 
-    print(cvhelper.get_best(refit=False))
+    print('Best classifier: \n%s' % cvhelper.get_best())
 
 
 if __name__ == '__main__':
