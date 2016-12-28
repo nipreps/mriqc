@@ -87,7 +87,7 @@ def main():
     cvhelper = CVHelper(opts.training_data, opts.training_labels,
                         scores=opts.score_types, param=parameters)
 
-    folds = None
+    folds = {'type': 'loso'}
     if opts.nfolds > 0:
         folds = {'type': 'kfold', 'n_splits': opts.nfolds}
 

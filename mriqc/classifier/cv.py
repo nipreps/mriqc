@@ -63,7 +63,7 @@ DEFAULT_TEST_PARAMETERS = {
 class CVHelper(object):
 
     def __init__(self, X, Y, scores=None, param=None, lo_label='site',
-                 n_jobs=-1):
+                 n_jobs=-1, n_perm=5000):
         self.X, self.ftnames = read_dataset(X, Y)
         self.lo_labels = list(set(self.X[[
             lo_label]].values.ravel().tolist()))
@@ -99,6 +99,8 @@ class CVHelper(object):
                                   'spacing_x', 'spacing_y', 'spacing_z'])
         self._best_clf = {}
         self._best_model = {}
+
+        self.n_perm = n_perm
 
 
     @property
@@ -156,10 +158,15 @@ class CVHelper(object):
         if folds is not None and folds.get('type', '') == 'kfold':
             nsplits = folds.get('n_splits', 6)
             cv_params['cv'] = StratifiedKFold(n_splits=nsplits, shuffle=True)
+            outer_nsplits = nsplits - 1
+            outer_cv = StratifiedKFold(n_splits=outer_nsplits, shuffle=True)
+            LOG.info('Cross validation: using StratifiedKFold, inner loop is %d-fold and '
+                     ' outer loop is %d-fold', nsplits, outer_nsplits)
         else:
-            LOG.info('No folds provided for CV, using default leave-one-site-out')
             folds_groups = list(self.X.site.values.ravel())
             cv_params['cv'] = LeaveOneGroupOut()
+            outer_cv = LeaveOneGroupOut()
+            LOG.info('Cross validation: using default leave-one-site-out')
 
         for clf_type, _ in list(self.param.items()):
             self._models[clf_type] = []
@@ -192,10 +199,11 @@ class CVHelper(object):
 
                     LOG.info('Running permutation test.')
 
-                    outer_cv = StratifiedKFold(n_splits=5, shuffle=True)
+
                     LOG.info('Evaluating best classifier')
                     score, permutation_scores, pvalue = permutation_test_score(
-                        clf, sample_x, labels_y, scoring=stype, cv=outer_cv, n_permutations=100)
+                        clf, sample_x, labels_y, scoring=stype, cv=outer_cv,
+                        n_permutations=self.n_perm)
                     LOG.info('Classification score %s (p-value=%s)', score, pvalue)
 
                     thismodel['classification_score'] = score
