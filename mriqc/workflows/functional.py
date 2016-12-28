@@ -38,57 +38,70 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                   sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
     inputnode.iterables = [('in_file', dataset)]
 
-
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group', 'out_dvars',
                 'out_fd']), name='outputnode')
 
+    # Get the start/stop indexes to exclude from functional volumes if specified by the user
+    inputnode.inputs.start_idx = settings.get('start_idx', None)
+    inputnode.inputs.stop_idx = settings.get('stop_idx', None)
 
-    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file'],
-                                                output_names=['exclude_index',
-                                                              'out_file'],
-                                                function=reorient_and_discard_non_steady),
-                                   name='reorient_and_discard')
+    reorient_and_discard = pe.Node(
+        niu.Function(
+            input_names=['in_file', 'start_idx', 'stop_idx'],
+            output_names=['exclude_index', 'out_file'],
+            function=reorient_and_discard_non_steady
+        ),
+        name='reorient_and_discard'
+    )
 
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
     hmcwf = hmc_mcflirt()
-    if settings.get('hmc_afni', False):
-        hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False),
-                         despike=settings.get('despike', False),
-                         deoblique=settings.get('deoblique', False))
 
     # Set HMC settings
+    if settings.get('hmc_afni', False):
+        hmcwf = hmc_afni(
+            st_correct=settings.get('correct_slice_timing', False),
+            despike=settings.get('despike', False),
+            deoblique=settings.get('deoblique', False)
+        )
+
     hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
-    if settings.get('start_idx'):
-        hmcwf.inputs.inputnode.start_idx = settings['start_idx']
-    if settings.get('stop_idx'):
-        hmcwf.inputs.inputnode.stop_idx = settings['stop_idx']
 
+    # 2. Compute mean fmri
+    mean = pe.Node(afni.TStat(
+        options='-mean', outputtype='NIFTI_GZ'), name='mean'
+    )
 
-    mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
-        options='-mean', outputtype='NIFTI_GZ'), name='mean')
-    bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
-        use_bet=settings.get('use_bet', False))
+    # 3. Compute brain mask
+    bmw = fmri_bmsk_workflow(
+        use_bet=settings.get('use_bet', False)
+    )
 
     # EPI to MNI registration
-    ema = epi_mni_align(ants_nthreads=settings['ants_nthreads'],
-                        testing=settings.get('testing', False))
+    ema = epi_mni_align(
+        ants_nthreads=settings['ants_nthreads'],
+        testing=settings.get('testing', False)
+    )
 
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
+
     # Reports
     repwf = individual_reports(settings)
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
-        (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
+        (inputnode, reorient_and_discard, [('in_file', 'in_file'),
+                                           ('start_idx', 'start_idx'),
+                                           ('stop_idx', 'stop_idx')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
