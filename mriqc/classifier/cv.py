@@ -89,15 +89,30 @@ class CVHelper(object):
                      'labels', len(nan_labels))
             self.X = self.X.drop(nan_labels)
 
+        nsamples = len(self.X)
+        nfails = int(self.X[self._rate_column].sum())
+        LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
+                 nfails, nsamples - nfails, nfails * 100 / nsamples)
         self.sites = list(set(self.X.site.values.ravel()))
         self.Xzscored = zscore_dataset(
             self.X, excl_columns=[self._rate_column, 'size_x', 'size_y', 'size_z',
                                   'spacing_x', 'spacing_y', 'spacing_z'])
+        self._best_clf = {}
+        self._best_model = {}
 
 
     @property
     def rate_column(self):
         return self._rate_column
+
+    @property
+    def best_clf(self):
+        return self._best_clf
+
+    @property
+    def best_model(self):
+        return self._best_model
+
 
     def create_test_split(self, split_type='sample', **sample_args):
         if split_type == 'sample':
@@ -150,6 +165,8 @@ class CVHelper(object):
             self._models[clf_type] = []
 
         LOG.info('Starting inner cross-validation loop. N=%d', len(self.X))
+
+        best_model = 0.0
         for dozs in [False, True]:
             X = self.Xzscored.copy() if dozs else self.X.copy()
             sample_x, labels_y = self._generate_sample(X)
@@ -170,8 +187,10 @@ class CVHelper(object):
                         'best_score': clf.best_score_,
                         'grid_scores': clf.cv_results_
                     }
+                    LOG.info('Model selection finished. Best parameters:\n\t%s',
+                             str(clf.best_params_))
 
-                    LOG.info('Model selection finished. Running permutation test.')
+                    LOG.info('Running permutation test.')
 
                     outer_cv = StratifiedKFold(n_splits=5, shuffle=True)
                     LOG.info('Evaluating best classifier')
@@ -184,29 +203,23 @@ class CVHelper(object):
                     thismodel['pvalue'] = pvalue
                     self._models[clf_type].append(thismodel)
 
+                    if pvalue < 0.05 and best_model < score:
+                        best_model = score
+                        self._best_model[stype] = thismodel
+                        self._best_clf[stype] = clf
 
-    def get_best(self, scoring=None):
+
+
+    def get_best_cv(self, scoring=None):
         if scoring is None:
-            scoring = self.scores[0]
-
-        if scoring not in self.scores:
-            raise RuntimeError('CV did not compute any loop for '
-                               '"%s" scoring.' % scoring)
-
-        best_score = -1
-        best_model = None
-        for clf_type, clf_vals in list(self._models.items()):
-            for vals in clf_vals:
-                if vals['scoring'] == scoring and vals['classification_score'] > best_score:
-                    best_model = vals
-                    best_model['clf_type'] = clf_type
-        return best_model
+            return self._best_model
+        return self._best_model[scoring]
 
     def outer_loop(self):
         if self.Xtest is None:
             LOG.error('Test dataset is not set')
 
-        best_model = self.get_best()
+        best_model = self.get_best_cv()
 
         LOG.info('Buiding best classifier (%s), with params:\n%s',
                  best_model['clf_type'], best_model['best_params'])
@@ -220,9 +233,10 @@ class CVHelper(object):
         # test_fold = np.array([-1] * len(X) + [0] * len(Xtest))
         ps = StratifiedKFold(n_splits=5)
         LOG.info('Evaluating best classifier')
-        score, permutation_scores, pvalue = permutation_test_score(
-            clf, x, y, scoring="accuracy", cv=ps, n_permutations=10000)
-        LOG.info('Classification score %s (p-value=%s)', score, pvalue)
+        for stype in self.scores:
+            score, permutation_scores, pvalue = permutation_test_score(
+                clf, x, y, scoring=stype, cv=ps, n_permutations=10000)
+        LOG.info('Classification score %s=%s (p-value=%s)', stype, score, pvalue)
 
 
     def _generate_sample(self, X):

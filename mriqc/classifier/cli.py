@@ -94,10 +94,7 @@ def main():
     # Run inner loop before setting held-out data, for hygene
     cvhelper.fit(folds=folds)
 
-    if opts.test_data is not None:
-        cvhelper.set_heldout_dataset(opts.test_data, opts.test_labels)
-
-    print('Best classifier: \n%s' % cvhelper.get_best())
+    print('Best classifier: \n%s' % cvhelper.get_best_cv())
 
 
 if __name__ == '__main__':
