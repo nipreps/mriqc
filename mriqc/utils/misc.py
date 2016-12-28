@@ -19,6 +19,7 @@ from builtins import range  # pylint: disable=W0622
 BIDS_COMPONENTS = [('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
                    ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')]
 
+
 def split_ext(in_file, out_file=None):
     import os.path as op
     if out_file is None:
@@ -48,16 +49,13 @@ def reorient_and_discard_non_steady(in_file, start_idx=None, stop_idx=None):
         'stop_idx': None
     }
 
-    if start_idx and stop_idx:
+    if start_idx:
         exclude_index['start_idx'] = start_idx
-        exclude_index['stop_idx'] = stop_idx
-        nb.Nifti1Image(in_data[:, :, :, start_idx:stop_idx], nii.affine).to_filename(outfile)
-    elif start_idx:
-        exclude_index['start_idx'] = start_idx
-        nb.Nifti1Image(in_data[:, :, :, start_idx:], nii.affine).to_filename(outfile)
-    elif stop_idx:
-        exclude_index['stop_idx'] = stop_idx
-        nb.Nifti1Image(in_data[:, :, :, :stop_idx], nii.affine).to_filename(outfile)
+        if stop_idx:
+            exclude_index['stop_idx'] = stop_idx
+            nb.Nifti1Image(in_data[:, :, :, start_idx:stop_idx], nii.affine).to_filename(outfile)
+        else:
+            nb.Nifti1Image(in_data[:, :, :, start_idx:], nii.affine).to_filename(outfile)
     else:
         data = in_data[:, :, :, :50]
         timeseries = data.max(axis=0).max(axis=0).max(axis=0)
@@ -71,7 +69,11 @@ def reorient_and_discard_non_steady(in_file, start_idx=None, stop_idx=None):
                 break
 
         exclude_index['auto'] = excl_idx
-        nb.Nifti1Image(in_data[:, :, :, excl_idx:], nii.affine).to_filename(outfile)
+        if stop_idx:
+            exclude_index['stop_idx'] = stop_idx
+            nb.Nifti1Image(in_data[:, :, :, excl_idx:stop_idx], nii.affine).to_filename(outfile)
+        else:
+            nb.Nifti1Image(in_data[:, :, :, excl_idx:], nii.affine).to_filename(outfile)
 
     return exclude_index, os.path.abspath(outfile)
 
