@@ -19,13 +19,13 @@ from builtins import str
 from mriqc import logging
 LOG = logging.getLogger('mriqc.classifier')
 
-def read_dataset(feat_file, label_file):
+def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
     """ Reads in the features and labels """
 
     bids_comps = ['subject_id', 'session_id', 'task_id', 'run_id']
 
     x_df = pd.read_csv(feat_file, index_col=False,
-        dtype={col: str for col in bids_comps})
+                       dtype={col: str for col in bids_comps})
 
     bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
     x_df = x_df.sort_values(by=bids_comps_present)
@@ -46,8 +46,22 @@ def read_dataset(feat_file, label_file):
             feat_names.remove(col)
 
     # Massage labels table to have the appropriate format
-    y_df = pd.read_csv(label_file, index_col=False, dtype={'subject_id': object}).sort_values(
-        by=['subject_id'])
+    y_df = pd.read_csv(
+        label_file, index_col=False, dtype={'subject_id': object},
+        na_values=-1).sort_values(by=['subject_id'])
+
+    # Convert string labels to ints
+    if not y_df[rate_label].dtype == np.number:
+        y_df.loc[y_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = 1
+        y_df.loc[y_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = 1
+
+        y_df.loc[y_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 0
+        y_df.loc[y_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
+        y_df.loc[y_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
+        y_df.loc[y_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 0
+
+        y_df[[rate_label]] = y_df[[rate_label]].apply(pd.to_numeric, errors='coerce')
+
     x_df['subject_id'] = x_df['subject_id'].map(lambda x: str(x))
 
     # Remove failed cases from Y, append new columns to X
@@ -55,6 +69,25 @@ def read_dataset(feat_file, label_file):
 
     # Merge Y dataframe into X
     x_df = pd.merge(x_df, y_df, on='subject_id', how='left')
+
+    if merged_name is not None:
+        x_df.to_csv(merged_name, index=False)
+
+    # Drop samples with invalid rating
+    nan_labels = x_df[np.isnan(x_df[rate_label])].index.ravel().tolist()
+    if nan_labels:
+        LOG.info('Dropping %d samples for having non-numerical '
+                 'labels', len(nan_labels))
+        x_df = x_df.drop(nan_labels)
+
+    # Print out some info
+    nsamples = len(x_df)
+    LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
+             feat_file, label_file, nsamples)
+
+    nfails = int(x_df[rate_label].sum())
+    LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
+             nfails, nsamples - nfails, nfails * 100 / nsamples)
 
     return x_df, feat_names
 

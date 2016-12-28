@@ -62,44 +62,31 @@ DEFAULT_TEST_PARAMETERS = {
 
 class CVHelper(object):
 
-    def __init__(self, X, Y, scores=None, param=None, lo_label='site',
-                 n_jobs=-1, n_perm=5000):
-        self.X, self.ftnames = read_dataset(X, Y)
-        self.lo_labels = list(set(self.X[[
-            lo_label]].values.ravel().tolist()))
+    def __init__(self, X, Y, scores=None, param=None, n_jobs=-1, n_perm=5000,
+                 site_label='site', rate_label='rate'):
 
-        self.scores = ['f1', 'accuracy']
+        # Initialize some values
+        self.scores = ['accuracy']
         if scores is not None:
             self.scores = scores
 
         self.param = DEFAULT_TEST_PARAMETERS.copy()
-
         if param is not None:
             self.param = param
 
-        self._models = {}
         self.Xtest = None
         self.n_jobs = n_jobs
-        self._rate_column = 'rate'
-        LOG.info('Created CV object for dataset "%s" with labels "%s"', X, Y)
+        self._rate_column = rate_label
 
-        nan_labels = self.X[np.isnan(self.X[self._rate_column])].index.ravel().tolist()
-        if nan_labels:
-            LOG.info('Dropping %d samples for having non-numerical '
-                     'labels', len(nan_labels))
-            self.X = self.X.drop(nan_labels)
-
-        nsamples = len(self.X)
-        nfails = int(self.X[self._rate_column].sum())
-        LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
-                 nfails, nsamples - nfails, nfails * 100 / nsamples)
-        self.sites = list(set(self.X.site.values.ravel()))
+        self.X, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
+        self.sites = list(set(self.X[site_label].values.ravel()))
         self.Xzscored = zscore_dataset(
-            self.X, excl_columns=[self._rate_column, 'size_x', 'size_y', 'size_z',
+            self.X, excl_columns=[rate_label, 'size_x', 'size_y', 'size_z',
                                   'spacing_x', 'spacing_y', 'spacing_z'])
+
+        self._models = {}
         self._best_clf = {}
         self._best_model = {}
-
         self.n_perm = n_perm
 
 
@@ -203,7 +190,8 @@ class CVHelper(object):
                     LOG.info('Evaluating best classifier')
                     score, permutation_scores, pvalue = permutation_test_score(
                         clf, sample_x, labels_y, scoring=stype, cv=outer_cv,
-                        n_permutations=self.n_perm)
+                        n_permutations=self.n_perm, groups=folds_groups,
+                        n_jobs=self.n_jobs)
                     LOG.info('Classification score %s (p-value=%s)', score, pvalue)
 
                     thismodel['classification_score'] = score
