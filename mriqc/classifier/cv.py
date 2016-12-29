@@ -63,7 +63,7 @@ DEFAULT_TEST_PARAMETERS = {
 class CVHelper(object):
 
     def __init__(self, X, Y, scores=None, param=None, n_jobs=-1, n_perm=5000,
-                 site_label='site', rate_label='rate'):
+                 site_label='site', rate_label='rate', cv_test=False):
 
         # Initialize some values
         self.scores = ['accuracy']
@@ -77,6 +77,7 @@ class CVHelper(object):
         self.Xtest = None
         self.n_jobs = n_jobs
         self._rate_column = rate_label
+        self._site_column = site_label
 
         self.X, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
         self.sites = list(set(self.X[site_label].values.ravel()))
@@ -88,6 +89,7 @@ class CVHelper(object):
         self._best_clf = {}
         self._best_model = {}
         self.n_perm = n_perm
+        self._cv_test = cv_test
 
 
     @property
@@ -101,6 +103,14 @@ class CVHelper(object):
     @property
     def best_model(self):
         return self._best_model
+
+    @property
+    def cv_test(self):
+        return self._cv_test
+
+    @cv_test.setter
+    def cv_test(self, value):
+        self._cv_test = True if value else False
 
 
     def create_test_split(self, split_type='sample', **sample_args):
@@ -150,7 +160,7 @@ class CVHelper(object):
             LOG.info('Cross validation: using StratifiedKFold, inner loop is %d-fold and '
                      ' outer loop is %d-fold', nsplits, outer_nsplits)
         else:
-            folds_groups = list(self.X.site.values.ravel())
+            folds_groups = list(self.X[[self._site_column]].values.ravel())
             cv_params['cv'] = LeaveOneGroupOut()
             outer_cv = LeaveOneGroupOut()
             LOG.info('Cross validation: using default leave-one-site-out')
@@ -158,51 +168,58 @@ class CVHelper(object):
         for clf_type, _ in list(self.param.items()):
             self._models[clf_type] = []
 
-        LOG.info('Starting inner cross-validation loop. N=%d', len(self.X))
-
         best_model = 0.0
         for dozs in [False, True]:
             X = self.Xzscored.copy() if dozs else self.X.copy()
             sample_x, labels_y = self._generate_sample(X)
             for clf_type, clf_params in list(self.param.items()):
                 for stype in self.scores:
+                    thismodel = {'scoring': stype, 'zscored': dozs, 'clf_type': clf_type}
                     cv_params['scoring'] = stype
                     LOG.info('CV loop for %s, optimizing for %s, and %s zscoring',
                              clf_type, stype, 'with' if dozs else 'without')
                     clf = GridSearchCV(_clf_build(clf_type), clf_params,
                                        **cv_params)
 
-                    clf.fit(sample_x, labels_y, groups=folds_groups)
 
-                    thismodel = {
-                        'scoring': stype,
-                        'zscored': dozs,
-                        'best_params': clf.best_params_,
-                        'best_score': clf.best_score_,
-                        'grid_scores': clf.cv_results_
-                    }
-                    LOG.info('Model selection finished. Best parameters:\n\t%s',
-                             str(clf.best_params_))
+                    if self._cv_test:
+                        LOG.info('Starting nested cross-validation')
+                        perm_res = permutation_test_score(
+                            clf, sample_x, labels_y, scoring=stype, cv=outer_cv,
+                            n_permutations=self.n_perm, groups=folds_groups,
+                            n_jobs=self.n_jobs)
+                        LOG.info('Permutation test finished. Estimated classification score %s'
+                                 ' (p-value=%s)', perm_res[0], perm_res[2])
+                        thismodel['classification_score'] = perm_res[0]
+                        thismodel['permutation_scores'] = perm_res[1]
+                        thismodel['pvalue'] = perm_res[2]
 
-                    LOG.info('Running permutation test.')
+                        score = perm_res[0]
+                        pvalue = perm_res[2]
 
+                    else:
+                        LOG.info('Starting single-loop cross-validation')
+                        clf.fit(sample_x, labels_y, groups=folds_groups)
+                        score = clf.best_score_
+                        pvalue = 0.0
 
-                    LOG.info('Evaluating best classifier')
-                    score, permutation_scores, pvalue = permutation_test_score(
-                        clf, sample_x, labels_y, scoring=stype, cv=outer_cv,
-                        n_permutations=self.n_perm, groups=folds_groups,
-                        n_jobs=self.n_jobs)
-                    LOG.info('Classification score %s (p-value=%s)', score, pvalue)
+                    LOG.info('Model selection finished. Score=%s, best parameters:\n\t%s',
+                             score, str(clf.best_params_))
 
-                    thismodel['classification_score'] = score
-                    thismodel['permutation_scores'] = permutation_scores
-                    thismodel['pvalue'] = pvalue
+                    thismodel['best_params'] = clf.best_params_
+                    thismodel['best_score'] = clf.best_score_
+                    thismodel['grid_scores'] = clf.cv_results_
                     self._models[clf_type].append(thismodel)
 
                     if pvalue < 0.05 and best_model < score:
+                        LOG.info('Best model updated (score=%f)', score)
                         best_model = score
-                        self._best_model[stype] = thismodel
-                        self._best_clf[stype] = clf
+                        self._best_model = thismodel
+
+        LOG.info('Cross-validation finished. Best classifier is %s-%s, with a best averaged '
+                 '%s score of %f and parameters %s', self._best_model['clf_type'],
+                 'zs' if self._best_model['zscored'] else 'nzs', self._best_model['scoring'],
+                 self._best_model['best_score'], self._best_model['best_params'])
 
 
 

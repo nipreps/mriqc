@@ -18,8 +18,8 @@ warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    from .cv import logger
-    LOG = logger.getLogger('mriqc.warnings')
+    from mriqc import logging
+    LOG = logging.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
         LOG.debug('captured warning (%s): %s', category, message)
