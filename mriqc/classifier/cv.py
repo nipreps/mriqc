@@ -24,9 +24,13 @@ from builtins import object
 from .data import read_dataset, zscore_dataset
 from mriqc import __version__, logging
 
+from sklearn.base import is_classifier, clone
+from sklearn.utils import indexable
+from sklearn.metrics.scorer import check_scoring
 try:
-    from sklearn.model_selection import (LeaveOneGroupOut, StratifiedKFold, GridSearchCV,
+    from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold, GridSearchCV,
                                          permutation_test_score, PredefinedSplit, cross_val_score)
+    from sklearn.model_selection._split import check_cv
 except ImportError:
     from sklearn.cross_validation import (
         permutation_test_score, StratifiedKFold,
@@ -38,32 +42,13 @@ except ImportError:
 LOG = logging.getLogger('mriqc.classifier')
 
 DEFAULT_TEST_PARAMETERS = {
-    b'svc_linear': [{
-        b'C': [0.01, 0.1, 1, 10, 100, 100]
-    }],
-    b'svc_rbf': [{
-        b'kernel': [b'rbf'],
-        b'gamma': [1e-2, 1e-3, 1e-4],
-        b'C': [0.01, 0.1, 1, 10, 100]
-    }],
-    b'rfc': [{
-        b'n_estimators': range(5, 20),
-        b'max_depth': [None] + range(5, 11),
-        b'min_samples_split': range(1, 5)
-    }]
+    'svc_linear': [{'C': [0.1, 1]}],
 }
-
-DEFAULT_TEST_PARAMETERS = {
-    'svc_linear': [{
-        'C': [0.001, 0.01, 0.1, 1, 10, 100, 100]
-    }],
-}
-
 
 class CVHelper(object):
 
     def __init__(self, X, Y, scores=None, param=None, n_jobs=-1, n_perm=5000,
-                 site_label='site', rate_label='rate', cv_test=False):
+                 site_label='site', rate_label='rate'):
 
         # Initialize some values
         self.scores = ['accuracy']
@@ -85,12 +70,28 @@ class CVHelper(object):
             self.X, excl_columns=[rate_label, 'size_x', 'size_y', 'size_z',
                                   'spacing_x', 'spacing_y', 'spacing_z'])
 
-        self._models = {}
+        self._models = []
         self._best_clf = {}
         self._best_model = {}
         self.n_perm = n_perm
-        self._cv_test = cv_test
+        self._cv_inner = {'type': 'kfold', 'n_splits': 10}
+        self._cv_outer = None
 
+    @property
+    def cv_inner(self):
+        return self._cv_inner
+
+    @cv_inner.setter
+    def cv_inner(self, value):
+        self._cv_inner = value
+
+    @property
+    def cv_outer(self):
+        return self._cv_outer
+
+    @cv_outer.setter
+    def cv_outer(self, value):
+        self._cv_outer = value
 
     @property
     def rate_column(self):
@@ -112,116 +113,91 @@ class CVHelper(object):
     def cv_test(self, value):
         self._cv_test = True if value else False
 
-
-    def create_test_split(self, split_type='sample', **sample_args):
-        if split_type == 'sample':
-            self.Xtest = self.X.sample(**sample_args)
-        elif split_type == 'site':
-            newentries = []
-            for site in self.sites:
-                sitedf = self.X[self.X.site == site]
-                newentries.append(sitedf.sample(**sample_args))
-            self.Xtest = pd.concat(newentries)
-        else:
-            raise RuntimeError('Unknown split_type (%s).' % split_type)
-
-        self.Xtest_zscored = self.Xzscored.take(self.Xtest.index)
-        self.Xzscored = self.Xzscored.drop(self.Xtest.index)
-        self.X = self.X.drop(self.Xtest.index)
-        LOG.info('Created a random split of the data, the training set has '
-                 '%d and the evaluation set %d.', len(self.X), len(self.Xtest))
-
-    def set_heldout_dataset(self, X, Y):
-        self.Xtest, ftnames = read_dataset(X, Y)
-        if set(self.ftnames) - set(ftnames):
-            raise RuntimeError('Some features are missing in the held-out dataset')
-
-    def _sample_from_test(self, n=100):
-        self.Xtest = self.X.sample(n=n, random_state=31051852)
-
     def to_csv(self, out_file, output_set='training'):
         if output_set == 'training':
             self.X.to_csv(out_file, index=False)
         elif output_set == 'evaluation':
             self.Xtest.to_csv(out_file, index=False)
 
-    def fit(self, folds=None):
+    def fit(self):
+        gs_cv_params = {'n_jobs': self.n_jobs, 'cv': _cv_build(self.cv_inner),
+                        'verbose': 0}
+        inner_cv_scores = []
+        total_cv_scores = {}
 
-        cv_params = {
-            'n_jobs': self.n_jobs
-        }
-
-        folds_groups = None
-        if folds is not None and folds.get('type', '') == 'kfold':
-            nsplits = folds.get('n_splits', 6)
-            cv_params['cv'] = StratifiedKFold(n_splits=nsplits, shuffle=True)
-            outer_nsplits = nsplits - 1
-            outer_cv = StratifiedKFold(n_splits=outer_nsplits, shuffle=True)
-            LOG.info('Cross validation: using StratifiedKFold, inner loop is %d-fold and '
-                     ' outer loop is %d-fold', nsplits, outer_nsplits)
-        else:
-            folds_groups = list(self.X[[self._site_column]].values.ravel())
-            cv_params['cv'] = LeaveOneGroupOut()
-            outer_cv = LeaveOneGroupOut()
-            LOG.info('Cross validation: using default leave-one-site-out')
-
-        for clf_type, _ in list(self.param.items()):
-            self._models[clf_type] = []
-
-        best_model = 0.0
         for dozs in [False, True]:
-            X = self.Xzscored.copy() if dozs else self.X.copy()
-            sample_x, labels_y = self._generate_sample(X)
+            X, y, groups = self._generate_sample(zscored=dozs)
+
             for clf_type, clf_params in list(self.param.items()):
+                clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
+
                 for stype in self.scores:
-                    thismodel = {'scoring': stype, 'zscored': dozs, 'clf_type': clf_type}
-                    cv_params['scoring'] = stype
-                    LOG.info('CV loop for %s, optimizing for %s, and %s zscoring',
-                             clf_type, stype, 'with' if dozs else 'without')
-                    clf = GridSearchCV(_clf_build(clf_type), clf_params,
-                                       **cv_params)
+                    LOG.info('CV loop [scorer=%s, classifier=%s]', stype, clf_str)
 
+                    # The inner CV loop is a grid search on clf_params
+                    inner_cv = GridSearchCV(_clf_build(clf_type), clf_params, **gs_cv_params)
 
-                    if self._cv_test:
-                        LOG.info('Starting nested cross-validation')
-                        perm_res = permutation_test_score(
-                            clf, sample_x, labels_y, scoring=stype, cv=outer_cv,
-                            n_permutations=self.n_perm, groups=folds_groups,
-                            n_jobs=self.n_jobs)
-                        LOG.info('Permutation test finished. Estimated classification score %s'
-                                 ' (p-value=%s)', perm_res[0], perm_res[2])
-                        thismodel['classification_score'] = perm_res[0]
-                        thismodel['permutation_scores'] = perm_res[1]
-                        thismodel['pvalue'] = perm_res[2]
+                    # Some sklearn's validations
+                    scoring = check_scoring(inner_cv, scoring=stype)
+                    cv_outer = check_cv(_cv_build(self.cv_outer), y,
+                                        classifier=is_classifier(inner_cv))
 
-                        score = perm_res[0]
-                        pvalue = perm_res[2]
+                    # Outer CV loop
+                    outer_cv_scores = []
+                    for train, test in list(cv_outer.split(X, y, groups)):
+                        # Find the groups in the train set, in case inner CV is LOSO.
+                        fit_params = None
+                        if self.cv_inner.get('type') == 'loso':
+                            train_groups = [groups[i] for i in train]
+                            fit_params = {'groups': train_groups}
 
-                    else:
-                        LOG.info('Starting single-loop cross-validation')
-                        clf.fit(sample_x, labels_y, groups=folds_groups)
-                        score = clf.best_score_
-                        pvalue = 0.0
+                        result = _fit_and_score(clone(inner_cv), X, y, scoring, train, test,
+                                                params=clf_params, cv_params=gs_cv_params,
+                                                fit_params=fit_params, verbose=2)
 
-                    LOG.info('Model selection finished. Score=%s, best parameters:\n\t%s',
-                             score, str(clf.best_params_))
+                        # Test group has no positive cases
+                        if result is None:
+                            continue
 
-                    thismodel['best_params'] = clf.best_params_
-                    thismodel['best_score'] = clf.best_score_
-                    thismodel['grid_scores'] = clf.cv_results_
-                    self._models[clf_type].append(thismodel)
+                        scores, clf = result
+                        outer_cv_scores.append(scores)
+                        inner_cv_scores.append(clf.best_score_)
+                        test_groups = list(set(groups[i] for i in test))
+                        self._models.append({
+                            'scoring': stype,
+                            'clf_type': clf_str,
+                            'left-out-sites': [self.sites[i] for i in test_groups],
+                            'best_params': clf.best_params_,
+                            'best_score': clf.best_score_,
+                            'cv_results': clf.cv_results_
+                        })
 
-                    if pvalue < 0.05 and best_model < score:
-                        LOG.info('Best model updated (score=%f)', score)
-                        best_model = score
-                        self._best_model = thismodel
+                        LOG.info('Inner CV result (%s): score=%f, params=%s', clf_str,
+                                 clf.best_score_, clf.best_params_)
 
-        LOG.info('Cross-validation finished. Best classifier is %s-%s, with a best averaged '
-                 '%s score of %f and parameters %s', self._best_model['clf_type'],
-                 'zs' if self._best_model['zscored'] else 'nzs', self._best_model['scoring'],
+                    total_cv_scores[clf_str] = outer_cv_scores
+                    LOG.info('Outer CV result (%s): score_avg=%f, score_std=%f', clf_str,
+                             np.mean(outer_cv_scores), np.std(outer_cv_scores))
+
+        LOG.info('Cross-validation finished -- %d models evaluated', len(self._models))
+        best_idx = np.argmax(inner_cv_scores)
+        self._best_model = self._models[best_idx]
+        LOG.info('Best model %s, score=%f, params=%s', self._best_model['clf_type'],
                  self._best_model['best_score'], self._best_model['best_params'])
 
+        LOG.info('Overall CV score for best model is %f +/- %f',
+                 np.mean(total_cv_scores[self._best_model['clf_type']]),
+                 2 * np.std(total_cv_scores[self._best_model['clf_type']]))
 
+
+    def get_groups(self):
+        groups = list(self.X[[self._site_column]].values.ravel())
+        group_names = list(set(groups))
+        groups_idx = []
+        for g in groups:
+            groups_idx.append(group_names.index(g))
+
+        return groups_idx
 
     def get_best_cv(self, scoring=None):
         if scoring is None:
@@ -252,11 +228,146 @@ class CVHelper(object):
         LOG.info('Classification score %s=%s (p-value=%s)', stype, score, pvalue)
 
 
-    def _generate_sample(self, X):
+    def _generate_sample(self, zscored=False):
+        X = self.Xzscored.copy() if zscored else self.X.copy()
         sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
         labels_y = X[[self._rate_column]].values.ravel()
-        return sample_x, labels_y
 
+        return indexable(sample_x, labels_y, self.get_groups())
+
+
+def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
+                   parameters=None, fit_params=None, cv_params=None,
+                   return_train_score=False,
+                   return_parameters=False, return_n_test_samples=False,
+                   return_times=False, error_score='raise'):
+    """
+    Fit estimator and compute scores for a given dataset split.
+
+    Parameters
+    ----------
+    estimator : estimator object implementing 'fit'
+        The object to use to fit the data.
+    X : array-like of shape at least 2D
+        The data to fit.
+    y : array-like, optional, default: None
+        The target variable to try to predict in the case of
+        supervised learning.
+    scorer : callable
+        A scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+    train : array-like, shape (n_train_samples,)
+        Indices of training samples.
+    test : array-like, shape (n_test_samples,)
+        Indices of test samples.
+    verbose : integer
+        The verbosity level.
+    error_score : 'raise' (default) or numeric
+        Value to assign to the score if an error occurs in estimator fitting.
+        If set to 'raise', the error is raised. If a numeric value is given,
+        FitFailedWarning is raised. This parameter does not affect the refit
+        step, which will always raise the error.
+    parameters : dict or None
+        Parameters to be set on the estimator.
+    fit_params : dict or None
+        Parameters that will be passed to ``estimator.fit``.
+    return_train_score : boolean, optional, default: False
+        Compute and return score on training set.
+    return_parameters : boolean, optional, default: False
+        Return parameters that has been used for the estimator.
+
+    Returns
+    -------
+    train_score : float, optional
+        Score on training set, returned only if `return_train_score` is `True`.
+    test_score : float
+        Score on test set.
+    n_test_samples : int
+        Number of test samples.
+    fit_time : float
+        Time spent for fitting in seconds.
+    score_time : float
+        Time spent for scoring in seconds.
+    parameters : dict or None, optional
+        The parameters that have been evaluated.
+    """
+    import time
+    import numbers
+    from sklearn.utils.metaestimators import _safe_split
+    from sklearn.model_selection._validation import _index_param_value, _score
+    from sklearn.externals.joblib.logger import short_format_time
+
+    # Adjust length of sample weights
+    fit_params = fit_params if fit_params is not None else {}
+    fit_params = dict([(k, _index_param_value(X, v, train))
+                      for k, v in fit_params.items()])
+
+    if parameters is not None:
+        estimator.set_params(**parameters)
+
+    start_time = time.time()
+
+    X_train, y_train = _safe_split(estimator, X, y, train)
+    X_test, y_test = _safe_split(estimator, X, y, test, train)
+
+    if len(set(y_test)) == 1:
+        LOG.warn('Group has no positive labels, skipping CV iteration')
+        return None
+
+    if verbose > 0:
+        LOG.info('CV iteration: Xtrain=%d, Ytrain=%d/%d -- Xtest=%d, Ytest=%d/%d.',
+                 len(X_train), len(X_train) - sum(y_train), sum(y_train),
+                 len(X_test), len(X_test) - sum(y_test), sum(y_test))
+
+    try:
+        if y_train is None:
+            estimator.fit(X_train, **fit_params)
+        else:
+            estimator.fit(X_train, y_train, **fit_params)
+
+    except Exception as e:
+        # Note fit time as time until error
+        fit_time = time.time() - start_time
+        score_time = 0.0
+        if error_score == 'raise':
+            raise
+        elif isinstance(error_score, numbers.Number):
+            test_score = error_score
+            if return_train_score:
+                train_score = error_score
+            LOG.warn("Classifier fit failed. The score on this train-test"
+                     " partition for these parameters will be set to %f. "
+                     "Details: \n%r", error_score, e)
+        else:
+            raise ValueError("error_score must be the string 'raise' or a"
+                             " numeric value. (Hint: if using 'raise', please"
+                             " make sure that it has been spelled correctly.)")
+
+    else:
+        fit_time = time.time() - start_time
+        test_score = _score(estimator, X_test, y_test, scorer)
+        score_time = time.time() - start_time - fit_time
+        if return_train_score:
+            train_score = _score(estimator, X_train, y_train, scorer)
+
+    if verbose > 0:
+        total_time = score_time + fit_time
+        msg = 'Iteration took %s' % short_format_time(total_time)
+
+        if verbose > 1:
+            msg += ", score=%f." % test_score
+
+        LOG.info(msg)
+
+    ret = [train_score, test_score] if return_train_score else [test_score]
+
+    if return_n_test_samples:
+        ret.append(_num_samples(X_test))
+    if return_times:
+        ret.extend([fit_time, score_time])
+    if return_parameters:
+        ret.append(parameters)
+    return ret, estimator
 
 def _clf_build(clf_type):
     if clf_type == 'svc_linear':
@@ -266,24 +377,15 @@ def _clf_build(clf_type):
     elif clf_type == 'rfc':
         return RFC()
 
+def _cv_build(cv_scheme):
+    if cv_scheme is None:
+        return None
 
+    if cv_scheme is not None and cv_scheme.get('type', '') == 'kfold':
+        nsplits = cv_scheme.get('n_splits', 6)
+        return StratifiedKFold(n_splits=nsplits, shuffle=True)
 
+    if cv_scheme is not None and cv_scheme.get('type', '') == 'loso':
+        return LeavePGroupsOut(n_groups=1)
 
-def permutation_distribution(y_true, y_pred, n_permutations=5e4):
-    """ Compute the distribution of permutations """
-    # Save actual f1_score in front
-    random_f1 = []
-    random_acc = []
-    for i in range(int(n_permutations)):
-        y_sh = np.random.permutation(y_true)
-        random_f1.append(f1_score(y_sh, y_pred))
-        random_acc.append(accuracy_score(y_sh, y_pred))
-
-    random_f1 = np.array(random_f1)
-    random_acc = np.array(random_acc)
-
-    pval_f1 = ((len(random_f1[random_f1 > f1_score(y_true, y_pred)]) + 1) /
-               float(n_permutations + 1))
-    pval_acc = ((len(random_acc[random_acc > accuracy_score(y_true, y_pred)]) + 1) /
-                float(n_permutations + 1))
-    return pval_f1, pval_acc
+    raise RuntimeError('Unknown CV scheme (%s)' % str(cv_scheme))

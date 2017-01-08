@@ -49,15 +49,22 @@ def main():
 
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-P', '--parameters', action='store',
-                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
+                         default=pkgrf('mriqc', 'data/grid_nested_cv.yml'))
     g_input.add_argument('-C', '--classifier', action='store', nargs='*',
                          choices=['svc_linear', 'svc_rbf', 'rfc', 'all'],
                          default=['svc_rbf'])
 
+    g_input.add_argument('--cv-inner', action='store', default=10,
+                         help='inner loop of cross-validation')
+    g_input.add_argument('--cv-outer', action='store', default='loso',
+                         help='outer loop of cross-validation')
+
     g_input.add_argument('--create-split', action='store_true', default=False,
                          help='create a data split for the validation set')
-    g_input.add_argument('--nfolds', action='store', type=int, default=0,
-                         help='create a data split for the validation set')
+
+    g_input.add_argument('--nperm', action='store', default=5000, type=int,
+                         help='number of permutations')
+
     g_input.add_argument(
         '-S', '--score-types', action='store', nargs='*', default=['accuracy'],
         choices=[
@@ -85,16 +92,22 @@ def main():
             parameters = yaml.load(paramfile)
 
     cvhelper = CVHelper(opts.training_data, opts.training_labels,
-                        scores=opts.score_types, param=parameters)
+                        scores=opts.score_types, param=parameters, n_perm=opts.nperm)
 
-    folds = {'type': 'loso'}
-    if opts.nfolds > 0:
-        folds = {'type': 'kfold', 'n_splits': opts.nfolds}
+    cvhelper.cv_inner = read_cv(opts.cv_inner)
+    cvhelper.cv_outer = read_cv(opts.cv_outer)
 
     # Run inner loop before setting held-out data, for hygene
-    cvhelper.fit(folds=folds)
+    cvhelper.fit()
 
-    print('Best classifier: \n%s' % cvhelper.get_best_cv())
+
+def read_cv(value):
+    if isinstance(value, int):
+        if value > 0:
+            return {'type': 'kfold', 'n_splits': value}
+        else:
+            return None
+    return {'type': 'loso'}
 
 
 if __name__ == '__main__':
