@@ -124,6 +124,7 @@ class CVHelper(object):
                         'verbose': 0}
         inner_cv_scores = []
         total_cv_scores = {}
+        total_cv_acc = {}
 
         for dozs in [False, True]:
             X, y, groups = self._generate_sample(zscored=dozs)
@@ -131,53 +132,53 @@ class CVHelper(object):
             for clf_type, clf_params in list(self.param.items()):
                 clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
 
-                for stype in self.scores:
-                    LOG.info('CV loop [scorer=%s, classifier=%s]', stype, clf_str)
+                LOG.info('CV loop [scorer=roc_auc, classifier=%s]', clf_str)
 
-                    # The inner CV loop is a grid search on clf_params
-                    inner_cv = GridSearchCV(_clf_build(clf_type), clf_params, **gs_cv_params)
+                # The inner CV loop is a grid search on clf_params
+                inner_cv = GridSearchCV(_clf_build(clf_type), clf_params, **gs_cv_params)
 
-                    # Some sklearn's validations
-                    scoring = check_scoring(inner_cv, scoring=stype)
-                    cv_outer = check_cv(_cv_build(self.cv_outer), y,
-                                        classifier=is_classifier(inner_cv))
+                # Some sklearn's validations
+                scoring = check_scoring(inner_cv, scoring='roc_auc')
+                cv_outer = check_cv(_cv_build(self.cv_outer), y,
+                                    classifier=is_classifier(inner_cv))
 
-                    # Outer CV loop
-                    outer_cv_scores = []
-                    for train, test in list(cv_outer.split(X, y, groups)):
-                        # Find the groups in the train set, in case inner CV is LOSO.
-                        fit_params = None
-                        if self.cv_inner.get('type') == 'loso':
-                            train_groups = [groups[i] for i in train]
-                            fit_params = {'groups': train_groups}
+                # Outer CV loop
+                outer_cv_scores = []
+                outer_cv_acc = []
+                for train, test in list(cv_outer.split(X, y, groups)):
+                    # Find the groups in the train set, in case inner CV is LOSO.
+                    fit_params = None
+                    if self.cv_inner.get('type') == 'loso':
+                        train_groups = [groups[i] for i in train]
+                        fit_params = {'groups': train_groups}
 
-                        result = _fit_and_score(clone(inner_cv), X, y, scoring, train, test,
-                                                params=clf_params, cv_params=gs_cv_params,
-                                                fit_params=fit_params, verbose=2)
+                    result = _fit_and_score(clone(inner_cv), X, y, scoring, train, test,
+                                            fit_params=fit_params, verbose=1)
 
-                        # Test group has no positive cases
-                        if result is None:
-                            continue
+                    # Test group has no positive cases
+                    if result is None:
+                        continue
 
-                        scores, clf = result
-                        outer_cv_scores.append(scores)
-                        inner_cv_scores.append(clf.best_score_)
-                        test_groups = list(set(groups[i] for i in test))
-                        self._models.append({
-                            'scoring': stype,
-                            'clf_type': clf_str,
-                            'left-out-sites': [self.sites[i] for i in test_groups],
-                            'best_params': clf.best_params_,
-                            'best_score': clf.best_score_,
-                            'cv_results': clf.cv_results_
-                        })
-
-                        LOG.info('Inner CV result (%s): score=%f, params=%s', clf_str,
-                                 clf.best_score_, clf.best_params_)
-
+                    scores, clf = result
+                    outer_cv_scores.append(scores['test']['roc_auc'])
+                    outer_cv_acc.append(scores['test']['accuracy'])
+                    inner_cv_scores.append(clf.best_score_)
+                    test_groups = list(set(groups[i] for i in test))
+                    self._models.append({
+                        'clf_type': clf_str,
+                        'left-out-sites': [self.sites[i] for i in test_groups],
+                        'best_params': clf.best_params_,
+                        'best_score': clf.best_score_,
+                        'cv_results': clf.cv_results_
+                    })
                     total_cv_scores[clf_str] = outer_cv_scores
-                    LOG.info('Outer CV result (%s): score_avg=%f, score_std=%f', clf_str,
-                             np.mean(outer_cv_scores), np.std(outer_cv_scores))
+                    total_cv_acc[clf_str] = outer_cv_acc
+
+                    LOG.info('[%s] Outer CV: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)'
+                             'Inner CV: roc_auc=%f, params=%s. ',
+                             clf_str, np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
+                             np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc),
+                             clf.best_score_, clf.best_params_)
 
         LOG.info('Cross-validation finished -- %d models evaluated', len(self._models))
         best_idx = np.argmax(inner_cv_scores)
@@ -185,9 +186,11 @@ class CVHelper(object):
         LOG.info('Best model %s, score=%f, params=%s', self._best_model['clf_type'],
                  self._best_model['best_score'], self._best_model['best_params'])
 
-        LOG.info('Overall CV score for best model is %f +/- %f',
+        LOG.info('Overall CV scores for best model: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
                  np.mean(total_cv_scores[self._best_model['clf_type']]),
-                 2 * np.std(total_cv_scores[self._best_model['clf_type']]))
+                 2 * np.std(total_cv_scores[self._best_model['clf_type']]),
+                 np.mean(total_cv_acc[self._best_model['clf_type']]),
+                 2 * np.std(total_cv_acc[self._best_model['clf_type']]))
 
 
     def get_groups(self):
@@ -237,9 +240,7 @@ class CVHelper(object):
 
 
 def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
-                   parameters=None, fit_params=None, cv_params=None,
-                   return_train_score=False,
-                   return_parameters=False, return_n_test_samples=False,
+                   parameters=None, fit_params=None, return_train_score=False,
                    return_times=False, error_score='raise'):
     """
     Fit estimator and compute scores for a given dataset split.
@@ -314,7 +315,7 @@ def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
         LOG.warn('Group has no positive labels, skipping CV iteration')
         return None
 
-    if verbose > 0:
+    if verbose > 1:
         LOG.info('CV iteration: Xtrain=%d, Ytrain=%d/%d -- Xtest=%d, Ytest=%d/%d.',
                  len(X_train), len(X_train) - sum(y_train), sum(y_train),
                  len(X_test), len(X_test) - sum(y_test), sum(y_test))
@@ -350,23 +351,24 @@ def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
         if return_train_score:
             train_score = _score(estimator, X_train, y_train, scorer)
 
+        acc_score = _score(estimator, X_test, y_test,
+                           check_scoring(estimator, scoring='accuracy'))
+
     if verbose > 0:
         total_time = score_time + fit_time
-        msg = 'Iteration took %s' % short_format_time(total_time)
+        LOG.info('Iteration took %s, score=%f, accuracy=%f.',
+                 short_format_time(total_time), test_score, acc_score)
 
-        if verbose > 1:
-            msg += ", score=%f." % test_score
+    ret = {
+        'test': { 'roc_auc': test_score, 'accuracy': acc_score}
+    }
 
-        LOG.info(msg)
+    if return_train_score:
+        ret['train'] = {'roc_auc': train_score}
 
-    ret = [train_score, test_score] if return_train_score else [test_score]
-
-    if return_n_test_samples:
-        ret.append(_num_samples(X_test))
     if return_times:
-        ret.extend([fit_time, score_time])
-    if return_parameters:
-        ret.append(parameters)
+        ret['times'] = [fit_time, score_time]
+
     return ret, estimator
 
 def _clf_build(clf_type):
@@ -378,6 +380,7 @@ def _clf_build(clf_type):
         return RFC()
 
 def _cv_build(cv_scheme):
+    LOG.debug('Building CV scheme: %s', str(cv_scheme))
     if cv_scheme is None:
         return None
 

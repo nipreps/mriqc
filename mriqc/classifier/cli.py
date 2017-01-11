@@ -102,7 +102,14 @@ def main():
 
 
 def read_cv(value):
-    if isinstance(value, int):
+    from numbers import Number
+
+    try:
+        value = int(value)
+    except ValueError:
+        pass
+
+    if isinstance(value, Number):
         if value > 0:
             return {'type': 'kfold', 'n_splits': value}
         else:
