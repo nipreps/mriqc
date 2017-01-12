@@ -660,8 +660,7 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
-    myplot.add_spikes(np.loadtxt(in_spikes_bg, usecols=[0]),
-                      zscored=False)
+    myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
 
     # Add AFNI ouliers plot
     myplot.add_confounds([np.nan] + np.loadtxt(outliers, usecols=[0]).tolist(),
