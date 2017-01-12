@@ -660,20 +660,21 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
     # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
-    myplot.add_spikes(np.loadtxt(in_spikes_bg),
-                      zscored=False)
+    myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
 
     # Add AFNI ouliers plot
-    myplot.add_confounds([np.nan] + np.loadtxt(outliers).tolist(),
+    myplot.add_confounds([np.nan] + np.loadtxt(outliers, usecols=[0]).tolist(),
                          {'name': 'ouliers', 'units': '%', 'normalize': False,
                           'ylims': (0.0, None)})
 
     # Pick non-standardize dvars
-    myplot.add_confounds([np.nan] + np.loadtxt(dvars)[:, 1].tolist(),
+    myplot.add_confounds([np.nan] + np.loadtxt(dvars, skiprows=1,
+                                               usecols=[1]).tolist(),
                          {'name': 'DVARS', 'units': None, 'normalize': False})
 
     # Add FD
-    myplot.add_confounds([np.nan] + np.loadtxt(fd).tolist(),
+    myplot.add_confounds([np.nan] + np.loadtxt(fd, skiprows=1,
+                                               usecols=[0]).tolist(),
                          {'name': 'FD', 'units': 'mm', 'normalize': False,
                           'cutoff': [0.2], 'ylims': (0.0, 0.2)})
     myplot.plot()

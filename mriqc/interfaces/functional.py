@@ -98,10 +98,11 @@ class FunctionalQC(MRIQCBaseInterface):
         self._results['summary'] = summary_stats(epidata, mskdata)
 
         # DVARS
-        dvars_avg = np.loadtxt(self.inputs.in_dvars).mean(axis=0)
+        dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1,
+                               usecols=list(range(3))).mean(axis=0)
         dvars_col = ['std', 'nstd', 'vstd']
         self._results['dvars'] = {
-            dvars_col[i]: float(val) for i, val in enumerate(dvars_avg)
+            key: float(val) for key, val in zip(dvars_col, dvars_avg)
         }
 
         # tSNR
@@ -112,7 +113,7 @@ class FunctionalQC(MRIQCBaseInterface):
         self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # FD
-        fd_data = np.loadtxt(self.inputs.in_fd)
+        fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
         num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
         self._results['fd'] = {
             'mean': float(fd_data.mean()),
