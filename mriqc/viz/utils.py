@@ -177,10 +177,9 @@ def get_limits(nifti_file, only_plot_noise=False):
     return vmin, vmax
 
 
-def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
-                fig=None, bbox_mask_file=None, only_plot_noise=False,
-                vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
-                cmap='Greys_r', plot_sagittal=True, labels=None):
+def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
+                threshold=None, bbox_mask_file=None, only_plot_noise=False,
+                vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True):
     from builtins import bytes, str  # pylint: disable=W0622
     from matplotlib import cm
     from nilearn._utils import check_niimg_3d
@@ -215,7 +214,7 @@ def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
 
 
     start_idx = [0, 0, 0]
-    end_idx = list(img.get_shape())
+    end_idx = (np.array(img.get_shape()) - np.ones(3)).astype(np.uint8).tolist()
     if bbox_mask_file:
         bbox_mask_file = check_niimg_3d(bbox_mask_file, dtype='auto')
         bbox_data = _safe_get_data(bbox_mask_file)
@@ -226,18 +225,27 @@ def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
         start_idx[2] += 15
         end_idx[2] -= 15
 
-    z_cuts = np.array(list(range(start_idx[2], end_idx[2])))
 
-    while len(z_cuts) > 70:
+    # Zoom in
+    data = data[start_idx[0]:end_idx[0],
+                start_idx[1]:end_idx[1],
+                start_idx[2]:end_idx[2]]
+
+    # Move center of coordinates
+    if sum(start_idx) > 0:
+        affine[:3, 3] += affine[:3, :3].dot(start_idx)
+
+    img = new_img_like(img, as_ndarray(data), affine)
+
+    z_cuts = np.array(list(range(data.shape[2])))
+
+    while len(z_cuts) > 36:
         # Discard one every two slices
         z_cuts = z_cuts[::2]
 
-    if labels is None:
-        labels = ['%d' % z for z in z_cuts]
-
-    n_images = len(z_cuts)
-    rows, cols = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
-    z_grouped_cuts = [z_cuts[i:i + cols] for i in range(0, n_images, cols)]
+    # Discard first N volumes to make it multiple of ncols
+    z_cuts = z_cuts[len(z_cuts) % ncols:]
+    z_grouped_cuts = [z_cuts[i:i + ncols] for i in range(0, len(z_cuts), ncols)]
 
     overlay_data = None
     if overlay_mask:
@@ -245,14 +253,12 @@ def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
         overlay_data = _safe_get_data(overlay_mask)
 
 
-    est_vmin, est_vmax = get_limits(data,
-                                    only_plot_noise=only_plot_noise)
+    est_vmin, est_vmax = get_limits(
+        data, only_plot_noise=only_plot_noise)
     if not vmin:
         vmin = est_vmin
     if not vmax:
         vmax = est_vmax
-
-    affine[:3, 3] = -0.5 * affine[:3, :3].dot(np.array(end_idx) - [0.5] * 3)
 
     svg_rows = []
     for row, row_cuts in enumerate(z_grouped_cuts):
@@ -277,11 +283,16 @@ def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
 
 
     if plot_sagittal:
+        x_sp = data.shape[0] // (ncols + 1)
+        x_vox = list(range(x_sp, data.shape[0], x_sp))
+        x_coords = [affine.dot([x, 0, 0, 1])[0] for x in x_vox[:-1]]
+
         plot_kwargs = {
-            'display_mode': 'y',
-            'cut_coords': 6,
+            'display_mode': 'x',
+            'cut_coords': x_coords,
             'vmax': vmax,
-            'vmin': vmin
+            'vmin': vmin,
+            'cmap': cmap
         }
 
         if overlay_data is None:
@@ -295,7 +306,7 @@ def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
         display = None
 
     combine_svg(svg_rows, out_file)
-    return fig
+    return out_file
 
 
 def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
@@ -490,9 +501,8 @@ def plot_bg_dist(in_file):
     return out_file
 
 
-def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
-                       title=None, plot_sagittal=True, labels=None,
-                       only_plot_noise=False, cmap='Greys_r'):
+def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None, title=None,
+                       plot_sagittal=True, only_plot_noise=False, cmap='Greys_r'):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -502,7 +512,7 @@ def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
 
     out_file = op.abspath(out_file)
     plot_mosaic(
-        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
+        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title,
         only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
     )
     return out_file

@@ -59,6 +59,7 @@ def combine_svg(svg_list, out_file):
     # Query the size of each
     sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in svgs]
 
+
     # Calculate the scale to fit all widths
     scales = [1.0] * len(svgs)
     if not all([width[0] == sizes[0][0] for width in sizes[1:]]):
@@ -71,7 +72,7 @@ def combine_svg(svg_list, out_file):
 
     # Compose the views panel: total size is the width of
     # any element (used the first here) and the sum of heights
-    totalsize = [newsizes[0][0], np.sum(newsizes[:3], axis=0)[1]]
+    totalsize = [newsizes[0][0], np.sum(newsizes, axis=0)[1]]
     fig = svgt.SVGFigure(totalsize[0], totalsize[1])
 
     yoffset = 0
