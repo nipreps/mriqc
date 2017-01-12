@@ -10,8 +10,6 @@
 """ Visualization utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
 from sys import version_info
-from builtins import str
-from io import open
 
 PY3 = version_info[0] > 2
 
@@ -32,14 +30,11 @@ def extract_svg(display_object, dpi=300):
     """
     from io import StringIO
     image_buf = StringIO()
-    display_object.frame_axes.figure.savefig(image_buf, dpi=dpi, format='svg', facecolor='k',
-                                             edgecolor='k')
+    display_object.frame_axes.figure.savefig(
+        image_buf, dpi=dpi, format='svg',
+        facecolor='k', edgecolor='k')
     image_buf.seek(0)
     image_svg = image_buf.getvalue()
-    # display_object.savefig('tmpfile.svg')
-    # with open('tmpfile.svg', 'r' if PY3 else 'rb') as file_obj:
-    #     image_svg = file_obj.read()
-
     start_idx = image_svg.find('<svg ')
     end_idx = image_svg.rfind('</svg>')
     return image_svg[start_idx:end_idx]
