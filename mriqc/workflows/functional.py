@@ -304,7 +304,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Verbose-reporting goes here
     from mriqc.interfaces.viz import PlotContours
-    from mriqc.interfaces.viz_utils import plot_bg_dist
+    from mriqc.viz.utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,

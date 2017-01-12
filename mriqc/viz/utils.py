@@ -173,138 +173,90 @@ def get_limits(nifti_file, only_plot_noise=False):
     return vmin, vmax
 
 
-def plot_mosaic(nifti_file, title=None, overlay_mask=None,
+def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
                 cmap='Greys_r', plot_sagittal=True, labels=None):
     from builtins import bytes, str  # pylint: disable=W0622
     from matplotlib import cm
+    from nilearn._utils import check_niimg_3d
+    from nilearn._utils.niimg import _safe_get_data
+    from nilearn._utils.compat import get_affine as _get_affine
+    from nilearn._utils.extmath import fast_abs_percentile
+    from nilearn.numpy_conversions import as_ndarray
+    from nilearn.image import new_img_like
 
     if isinstance(cmap, (str, bytes)):
         cmap = cm.get_cmap(cmap)
 
-    if isinstance(nifti_file, (str, bytes)):
-        nii = nb.as_closest_canonical(nb.load(nifti_file))
-        mean_data = nii.get_data()
-        mean_data = mean_data[::-1, ...]
+
+    if img is not False and img is not None:
+        img = check_niimg_3d(img, dtype='auto')
+        data = _safe_get_data(img)
+        affine = _get_affine(img)
+
+        if np.isnan(np.sum(data)):
+            data = np.nan_to_num(data)
+
+        # Deal with automatic settings of plot parameters
+        if threshold == 'auto':
+            # Threshold epsilon below a percentile value, to be sure that some
+            # voxels pass the threshold
+            threshold = fast_abs_percentile(data) - 1e-5
+
+        img = new_img_like(img, as_ndarray(data), affine)
     else:
-        mean_data = nifti_file
+        raise RuntimeError('input image should be a path or a Nifti object')
 
+
+    start_idx = [0, 0, 0]
+    end_idx = img.get_shape().tolist()
     if bbox_mask_file:
-        bbox_data = nb.as_closest_canonical(
-            nb.load(bbox_mask_file)).get_data()
-        bbox_data = bbox_data[::-1, ...]
-        B = np.argwhere(bbox_data)
-        (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
-            0) + 1
-        mean_data = mean_data[ystart:ystop, xstart:xstop, zstart:zstop]
+        bbox_mask_file = check_niimg_3d(bbox_mask_file, dtype='auto')
+        bbox_data = _safe_get_data(bbox_mask_file)
+        bbox = np.argwhere(bbox_data)
+        start_idx = bbox.min(0)
+        end_idx = bbox.max(0) + 1
+    elif end_idx[2] > 70:
+        start_idx[2] += 15
+        end_idx[2] -= 15
 
-    z_vals = np.array(list(range(0, mean_data.shape[2])))
+    z_cuts = np.array(list(range(start_idx[2], end_idx[2])))
+
+    while len(z_cuts) > 70:
+        # Discard one every two slices
+        z_cuts = z_cuts[::2]
 
     if labels is None:
-        # Reduce the number of slices shown
-        if len(z_vals) > 70:
-            rem = 15
-            # Crop inferior and posterior
-            if not bbox_mask_file:
-                # mean_data = mean_data[..., rem:-rem]
-                z_vals = z_vals[rem:-rem]
-            else:
-                # mean_data = mean_data[..., 2 * rem:]
-                z_vals = z_vals[2 * rem:]
+        labels = ['%d' % z for z in z_cuts]
 
-        while len(z_vals) > 70:
-            # Discard one every two slices
-            # mean_data = mean_data[..., ::2]
-            z_vals = z_vals[::2]
+    n_images = len(z_cuts)
+    rows, cols = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
 
-        labels = ['%d' % z for z in z_vals]
-
-    n_images = len(z_vals)
-    row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
-
-    end = "pre"
-    z_vals = list(z_vals)
-    while (row - 1) * col > len(z_vals) and (
-            z_vals[0] != 0 or z_vals[-1] != mean_data.shape[2] - 1):
-        if end == "pre":
-            if z_vals[0] != 0:
-                z_vals = [z_vals[0] - 1] + z_vals
-            end = "post"
-        else:
-            if z_vals[-1] != mean_data.shape[2] - 1:
-                z_vals = z_vals + [z_vals[-1] + 1]
-            end = "pre"
-        if (row - 1) * col < len(z_vals):
-            break
-
+    overlay_data = None
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(
-            nb.load(overlay_mask)).get_data()
+        overlay_mask = check_niimg_3d(overlay_mask, dtype='auto')
+        overlay_data = _safe_get_data(overlay_mask)
 
-    # create figures
-    if fig is None:
-        fig = plt.Figure(figsize=figsize)
 
-    FigureCanvas(fig)
-
-    est_vmin, est_vmax = get_limits(mean_data,
+    est_vmin, est_vmax = get_limits(data,
                                     only_plot_noise=only_plot_noise)
     if not vmin:
         vmin = est_vmin
     if not vmax:
         vmax = est_vmax
 
-    fig.subplots_adjust(top=0.85)
-    for image, (z_val, z_label) in enumerate(zip(z_vals, labels)):
-        ax = fig.add_subplot(row, col, image + 1)
-        if overlay_mask:
-            ax.set_rasterized(True)
-        ax.imshow(np.fliplr(mean_data[:, :, z_val].T), vmin=vmin,
-                  vmax=vmax,
-                  cmap=cmap, interpolation='nearest', origin='lower')
+    for row in list(range(rows)):
+        if title and row == 0:
+            fig.suptitle(title, fontsize='10')
+        # call nilearns plot_anat
 
-        if overlay_mask:
-            cmap = cm.Reds  # @UndefinedVariable
-            cmap._init()
-            alphas = np.linspace(0, 0.75, cmap.N + 3)
-            cmap._lut[:, -1] = alphas
-            ax.imshow(np.fliplr(overlay_data[:, :, z_val].T), vmin=0,
-                      vmax=1,
-                      cmap=cmap, interpolation='nearest', origin='lower')
-
-        ax.annotate(
-            z_label, xy=(.99, .99), xycoords='axes fraction',
-            fontsize=8, color='k', backgroundcolor='white', horizontalalignment='right',
-            verticalalignment='top')
-
-        ax.axis('off')
+        if overlay_data is not None:
+            # add mask
 
     if plot_sagittal:
-        start = int(mean_data.shape[0] / 5)
-        stop = mean_data.shape[0] - start
-        step = int((stop - start) / (col))
-        x_vals = range(start, stop, step)
-        x_vals = np.array(x_vals[:col])
-        x_vals += int((stop - x_vals[-1]) / 2)
-        for image, x_val in enumerate(x_vals):
-            ax = fig.add_subplot(row, col, image + (row - 1) * col + 1)
-            ax.imshow(mean_data[x_val, :, :].T, vmin=vmin,
-                      vmax=vmax,
-                      cmap=cmap, interpolation='nearest', origin='lower')
-            ax.annotate(
-                '%d' % x_val, xy=(.99, .99), xycoords='axes fraction',
-                fontsize=8, color='k', backgroundcolor='white',
-                horizontalalignment='right', verticalalignment='top')
-            ax.axis('off')
 
-    fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01,
-        hspace=0.1)
 
-    if title:
-        fig.suptitle(title, fontsize='10')
-    fig.subplots_adjust(wspace=0.002, hspace=0.002)
     return fig
 
 
