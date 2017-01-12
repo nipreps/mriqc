@@ -17,12 +17,16 @@ import numpy as np
 import nibabel as nb
 import pandas as pd
 
+from nilearn.plotting import plot_anat, plot_roi
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
+
+from .svg import extract_svg, combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -173,7 +177,7 @@ def get_limits(nifti_file, only_plot_noise=False):
     return vmin, vmax
 
 
-def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
+def plot_mosaic(img, out_file, title=None, overlay_mask=None, threshold=None,
                 fig=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
                 cmap='Greys_r', plot_sagittal=True, labels=None):
@@ -183,13 +187,14 @@ def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
     from nilearn._utils.niimg import _safe_get_data
     from nilearn._utils.compat import get_affine as _get_affine
     from nilearn._utils.extmath import fast_abs_percentile
-    from nilearn.numpy_conversions import as_ndarray
+    from nilearn._utils.numpy_conversions import as_ndarray
     from nilearn.image import new_img_like
 
     if isinstance(cmap, (str, bytes)):
         cmap = cm.get_cmap(cmap)
 
 
+    # This code is copied from nilearn
     if img is not False and img is not None:
         img = check_niimg_3d(img, dtype='auto')
         data = _safe_get_data(img)
@@ -210,7 +215,7 @@ def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
 
 
     start_idx = [0, 0, 0]
-    end_idx = img.get_shape().tolist()
+    end_idx = list(img.get_shape())
     if bbox_mask_file:
         bbox_mask_file = check_niimg_3d(bbox_mask_file, dtype='auto')
         bbox_data = _safe_get_data(bbox_mask_file)
@@ -232,6 +237,7 @@ def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
 
     n_images = len(z_cuts)
     rows, cols = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
+    z_grouped_cuts = [z_cuts[i:i + cols] for i in range(0, n_images, cols)]
 
     overlay_data = None
     if overlay_mask:
@@ -246,17 +252,49 @@ def plot_mosaic(img, title=None, overlay_mask=None, threshold=None,
     if not vmax:
         vmax = est_vmax
 
-    for row in list(range(rows)):
-        if title and row == 0:
-            fig.suptitle(title, fontsize='10')
-        # call nilearns plot_anat
+    affine[:3, 3] = -0.5 * affine[:3, :3].dot(np.array(end_idx) - [0.5] * 3)
 
-        if overlay_data is not None:
-            # add mask
+    svg_rows = []
+    for row, row_cuts in enumerate(z_grouped_cuts):
+        plot_kwargs = {
+            'title': title if row == 0 else None,
+            'display_mode': 'z',
+            'cut_coords': [affine.dot([0, 0, r, 1])[2] for r in row_cuts],
+            'vmax': vmax,
+            'vmin': vmin,
+            'cmap': cmap
+        }
+
+        if overlay_data is None:
+            display = plot_anat(img, **plot_kwargs)
+        else:
+            display = plot_roi(overlay_data, bg_img=img,
+                               **plot_kwargs)
+
+        svg_rows.append(svg2str(display))
+        display.close()
+        display = None
+
 
     if plot_sagittal:
+        plot_kwargs = {
+            'display_mode': 'y',
+            'cut_coords': 6,
+            'vmax': vmax,
+            'vmin': vmin
+        }
 
+        if overlay_data is None:
+            display = plot_anat(img, **plot_kwargs)
+        else:
+            display = plot_roi(overlay_data, bg_img=img,
+                               **plot_kwargs)
 
+        svg_rows.append(svg2str(display))
+        display.close()
+        display = None
+
+    combine_svg(svg_rows, out_file)
     return fig
 
 
@@ -455,70 +493,16 @@ def plot_bg_dist(in_file):
 def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
                        title=None, plot_sagittal=True, labels=None,
                        only_plot_noise=False, cmap='Greys_r'):
-    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
-                      only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == ".gz":
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + '_mosaic.svg')
+        out_file = fname + '_mosaic.svg'
 
-    fig.savefig(out_file, format=out_file.split('.')[-1], dpi=300)
-    fig.clf()
-    fig = None
-    return op.abspath(out_file)
-
-def combine_svg_verbose(
-        in_brainmask,
-        in_segmentation,
-        in_artmask,
-        in_headmask,
-        in_airmask,
-        in_bgplot):
-    import os.path as op
-    import svgutils.transform as svgt
-    import svgutils.compose as svgc
-    import numpy as np
-
-    hspace = 10
-    wspace = 10
-    #create new SVG figure
-    in_mosaics = [in_brainmask,
-                  in_segmentation,
-                  in_artmask,
-                  in_headmask,
-                  in_airmask]
-    figs = [svgt.fromfile(f) for f in in_mosaics]
-
-    roots = [f.getroot() for f in figs]
-    nfigs = len(figs)
-
-    sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in figs]
-    maxsize = np.max(sizes, axis=0)
-    minsize = np.min(sizes, axis=0)
-
-    bgfile = svgt.fromfile(in_bgplot)
-    bgscale = (maxsize[1] * 2 + hspace)/int(bgfile.height[:-2])
-    bgsize = (int(bgfile.width[:-2]), int(bgfile.height[:-2]))
-    bgfileroot = bgfile.getroot()
-
-    totalsize = (minsize[0] + hspace + int(bgsize[0] * bgscale),
-                 nfigs * maxsize[1] + (nfigs - 1) * hspace)
-    fig = svgt.SVGFigure(svgc.Unit(totalsize[0]).to('cm'),
-                         svgc.Unit(totalsize[1]).to('cm'))
-
-    yoffset = 0
-    for i, r in enumerate(roots):
-        xoffset = 0
-        if sizes[i][0] == maxsize[0]:
-            xoffset = int(0.5 * (totalsize[0] - sizes[i][0]))
-        r.moveto(xoffset, yoffset)
-        yoffset += maxsize[1] + hspace
-
-    bgfileroot.moveto(minsize[0] + wspace, 3 * (maxsize[1] + hspace), scale=bgscale)
-
-    fig.append(roots + [bgfileroot])
-    out_file = op.abspath('fig_final.svg')
-    fig.save(out_file)
+    out_file = op.abspath(out_file)
+    plot_mosaic(
+        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
+        only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
+    )
     return out_file
