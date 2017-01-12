@@ -26,7 +26,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
-from .svg import extract_svg, combine_svg, svg2str
+from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -305,7 +305,8 @@ def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
         display.close()
         display = None
 
-    combine_svg(svg_rows, out_file)
+    fig = combine_svg(svg_rows)
+    fig.save(out_file)
     return out_file
 
 
