@@ -235,7 +235,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         return workflow
 
     from mriqc.interfaces.viz import PlotContours
-    from mriqc.interfaces.viz_utils import plot_bg_dist
+    from mriqc.viz.utils import plot_bg_dist
     plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
                           function=plot_bg_dist), name='PlotBackground')
 
