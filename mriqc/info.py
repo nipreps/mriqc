@@ -59,7 +59,7 @@ REQUIRES = [
     'nitime',
     'nilearn',
     'svgutils',
-    'nipype>=0.13.0rc1',
+    'nipype',
     'nipy',
     'statsmodels',
     'pybids'
