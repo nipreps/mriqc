@@ -7,8 +7,8 @@ MRIQC
 
 """
 
-__versionbase__ = '0.8.9'
-__versionrev__ = '-1'
+__versionbase__ = '0.9.0'
+__versionrev__ = '-rc1'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -50,7 +50,7 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows',
+    'niworkflows>=0.0.4a0',
     'pandas',
     'dipy',
     'jinja2',
@@ -65,11 +65,7 @@ REQUIRES = [
     'pybids'
 ]
 
-LINKS_REQUIRES = [
-    'git+https://github.com/nipy/nipype.git#egg=nipype',
-    'git+https://github.com/poldracklab/niworkflows.git@master#egg=niworkflows',
-    'git+https://github.com/incf/pybids.git@master#egg=pybids',
-]
+LINKS_REQUIRES = []
 
 TESTS_REQUIRES = [
     'mock',

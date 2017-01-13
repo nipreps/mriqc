@@ -17,12 +17,16 @@ import numpy as np
 import nibabel as nb
 import pandas as pd
 
+from nilearn.plotting import plot_anat, plot_roi
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
+
+from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -173,139 +177,137 @@ def get_limits(nifti_file, only_plot_noise=False):
     return vmin, vmax
 
 
-def plot_mosaic(nifti_file, title=None, overlay_mask=None,
-                fig=None, bbox_mask_file=None, only_plot_noise=False,
-                vmin=None, vmax=None, figsize=DINA4_LANDSCAPE,
-                cmap='Greys_r', plot_sagittal=True, labels=None):
+def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
+                threshold=None, bbox_mask_file=None, only_plot_noise=False,
+                vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True):
     from builtins import bytes, str  # pylint: disable=W0622
     from matplotlib import cm
+    from nilearn._utils import check_niimg_3d
+    from nilearn._utils.niimg import _safe_get_data
+    from nilearn._utils.compat import get_affine as _get_affine
+    from nilearn._utils.extmath import fast_abs_percentile
+    from nilearn._utils.numpy_conversions import as_ndarray
+    from nilearn.image import new_img_like
 
     if isinstance(cmap, (str, bytes)):
         cmap = cm.get_cmap(cmap)
 
-    if isinstance(nifti_file, (str, bytes)):
-        nii = nb.as_closest_canonical(nb.load(nifti_file))
-        mean_data = nii.get_data()
-        mean_data = mean_data[::-1, ...]
+
+    # This code is copied from nilearn
+    if img is not False and img is not None:
+        img = check_niimg_3d(img, dtype='auto')
+        data = _safe_get_data(img)
+        affine = _get_affine(img)
+
+        if np.isnan(np.sum(data)):
+            data = np.nan_to_num(data)
+
+        # Deal with automatic settings of plot parameters
+        if threshold == 'auto':
+            # Threshold epsilon below a percentile value, to be sure that some
+            # voxels pass the threshold
+            threshold = fast_abs_percentile(data) - 1e-5
+
+        img = new_img_like(img, as_ndarray(data), affine)
     else:
-        mean_data = nifti_file
+        raise RuntimeError('input image should be a path or a Nifti object')
 
+
+    start_idx = [0, 0, 0]
+    end_idx = (np.array(img.get_shape()) - np.ones(3)).astype(np.uint8).tolist()
     if bbox_mask_file:
-        bbox_data = nb.as_closest_canonical(
-            nb.load(bbox_mask_file)).get_data()
-        bbox_data = bbox_data[::-1, ...]
-        B = np.argwhere(bbox_data)
-        (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(
-            0) + 1
-        mean_data = mean_data[ystart:ystop, xstart:xstop, zstart:zstop]
+        bbox_mask_file = check_niimg_3d(bbox_mask_file, dtype='auto')
+        bbox_data = _safe_get_data(bbox_mask_file)
+        bbox = np.argwhere(bbox_data)
+        start_idx = bbox.min(0)
+        end_idx = bbox.max(0) + 1
+    elif end_idx[2] > 70:
+        start_idx[2] += 15
+        end_idx[2] -= 15
 
-    z_vals = np.array(list(range(0, mean_data.shape[2])))
 
-    if labels is None:
-        # Reduce the number of slices shown
-        if len(z_vals) > 70:
-            rem = 15
-            # Crop inferior and posterior
-            if not bbox_mask_file:
-                # mean_data = mean_data[..., rem:-rem]
-                z_vals = z_vals[rem:-rem]
-            else:
-                # mean_data = mean_data[..., 2 * rem:]
-                z_vals = z_vals[2 * rem:]
+    # Zoom in
+    data = data[start_idx[0]:end_idx[0],
+                start_idx[1]:end_idx[1],
+                start_idx[2]:end_idx[2]]
 
-        while len(z_vals) > 70:
-            # Discard one every two slices
-            # mean_data = mean_data[..., ::2]
-            z_vals = z_vals[::2]
+    # Move center of coordinates
+    if sum(start_idx) > 0:
+        affine[:3, 3] += affine[:3, :3].dot(start_idx)
 
-        labels = ['%d' % z for z in z_vals]
+    img = new_img_like(img, as_ndarray(data), affine)
 
-    n_images = len(z_vals)
-    row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
+    z_cuts = np.array(list(range(data.shape[2])))
 
-    end = "pre"
-    z_vals = list(z_vals)
-    while (row - 1) * col > len(z_vals) and (
-            z_vals[0] != 0 or z_vals[-1] != mean_data.shape[2] - 1):
-        if end == "pre":
-            if z_vals[0] != 0:
-                z_vals = [z_vals[0] - 1] + z_vals
-            end = "post"
-        else:
-            if z_vals[-1] != mean_data.shape[2] - 1:
-                z_vals = z_vals + [z_vals[-1] + 1]
-            end = "pre"
-        if (row - 1) * col < len(z_vals):
-            break
+    while len(z_cuts) > 36:
+        # Discard one every two slices
+        z_cuts = z_cuts[::2]
 
+    # Discard first N volumes to make it multiple of ncols
+    z_cuts = z_cuts[len(z_cuts) % ncols:]
+    z_grouped_cuts = [z_cuts[i:i + ncols] for i in range(0, len(z_cuts), ncols)]
+
+    overlay_data = None
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(
-            nb.load(overlay_mask)).get_data()
+        overlay_mask = check_niimg_3d(overlay_mask, dtype='auto')
+        overlay_data = _safe_get_data(overlay_mask)
 
-    # create figures
-    if fig is None:
-        fig = plt.Figure(figsize=figsize)
 
-    FigureCanvas(fig)
-
-    est_vmin, est_vmax = get_limits(mean_data,
-                                    only_plot_noise=only_plot_noise)
+    est_vmin, est_vmax = get_limits(
+        data, only_plot_noise=only_plot_noise)
     if not vmin:
         vmin = est_vmin
     if not vmax:
         vmax = est_vmax
 
-    fig.subplots_adjust(top=0.85)
-    for image, (z_val, z_label) in enumerate(zip(z_vals, labels)):
-        ax = fig.add_subplot(row, col, image + 1)
-        if overlay_mask:
-            ax.set_rasterized(True)
-        ax.imshow(np.fliplr(mean_data[:, :, z_val].T), vmin=vmin,
-                  vmax=vmax,
-                  cmap=cmap, interpolation='nearest', origin='lower')
+    svg_rows = []
+    for row, row_cuts in enumerate(z_grouped_cuts):
+        plot_kwargs = {
+            'title': title if row == 0 else None,
+            'display_mode': 'z',
+            'cut_coords': [affine.dot([0, 0, r, 1])[2] for r in row_cuts],
+            'vmax': vmax,
+            'vmin': vmin,
+            'cmap': cmap
+        }
 
-        if overlay_mask:
-            cmap = cm.Reds  # @UndefinedVariable
-            cmap._init()
-            alphas = np.linspace(0, 0.75, cmap.N + 3)
-            cmap._lut[:, -1] = alphas
-            ax.imshow(np.fliplr(overlay_data[:, :, z_val].T), vmin=0,
-                      vmax=1,
-                      cmap=cmap, interpolation='nearest', origin='lower')
+        if overlay_data is None:
+            display = plot_anat(img, **plot_kwargs)
+        else:
+            display = plot_roi(overlay_data, bg_img=img,
+                               **plot_kwargs)
 
-        ax.annotate(
-            z_label, xy=(.99, .99), xycoords='axes fraction',
-            fontsize=8, color='k', backgroundcolor='white', horizontalalignment='right',
-            verticalalignment='top')
+        svg_rows.append(svg2str(display))
+        display.close()
+        display = None
 
-        ax.axis('off')
 
     if plot_sagittal:
-        start = int(mean_data.shape[0] / 5)
-        stop = mean_data.shape[0] - start
-        step = int((stop - start) / (col))
-        x_vals = range(start, stop, step)
-        x_vals = np.array(x_vals[:col])
-        x_vals += int((stop - x_vals[-1]) / 2)
-        for image, x_val in enumerate(x_vals):
-            ax = fig.add_subplot(row, col, image + (row - 1) * col + 1)
-            ax.imshow(mean_data[x_val, :, :].T, vmin=vmin,
-                      vmax=vmax,
-                      cmap=cmap, interpolation='nearest', origin='lower')
-            ax.annotate(
-                '%d' % x_val, xy=(.99, .99), xycoords='axes fraction',
-                fontsize=8, color='k', backgroundcolor='white',
-                horizontalalignment='right', verticalalignment='top')
-            ax.axis('off')
+        x_sp = data.shape[0] // (ncols + 1)
+        x_vox = list(range(x_sp, data.shape[0], x_sp))
+        x_coords = [affine.dot([x, 0, 0, 1])[0] for x in x_vox[:-1]]
 
-    fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01,
-        hspace=0.1)
+        plot_kwargs = {
+            'display_mode': 'x',
+            'cut_coords': x_coords,
+            'vmax': vmax,
+            'vmin': vmin,
+            'cmap': cmap
+        }
 
-    if title:
-        fig.suptitle(title, fontsize='10')
-    fig.subplots_adjust(wspace=0.002, hspace=0.002)
-    return fig
+        if overlay_data is None:
+            display = plot_anat(img, **plot_kwargs)
+        else:
+            display = plot_roi(overlay_data, bg_img=img,
+                               **plot_kwargs)
+
+        svg_rows.append(svg2str(display))
+        display.close()
+        display = None
+
+    fig = combine_svg(svg_rows)
+    fig.save(out_file)
+    return out_file
 
 
 def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
@@ -500,73 +502,18 @@ def plot_bg_dist(in_file):
     return out_file
 
 
-def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None,
-                       title=None, plot_sagittal=True, labels=None,
-                       only_plot_noise=False, cmap='Greys_r'):
-    fig = plot_mosaic(in_file, bbox_mask_file=bbox_mask_file, title=title, labels=labels,
-                      only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal)
+def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None, title=None,
+                       plot_sagittal=True, only_plot_noise=False, cmap='Greys_r'):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
         if ext == ".gz":
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + '_mosaic.svg')
+        out_file = fname + '_mosaic.svg'
 
-    fig.savefig(out_file, format=out_file.split('.')[-1], dpi=300)
-    fig.clf()
-    fig = None
-    return op.abspath(out_file)
-
-def combine_svg_verbose(
-        in_brainmask,
-        in_segmentation,
-        in_artmask,
-        in_headmask,
-        in_airmask,
-        in_bgplot):
-    import os.path as op
-    import svgutils.transform as svgt
-    import svgutils.compose as svgc
-    import numpy as np
-
-    hspace = 10
-    wspace = 10
-    #create new SVG figure
-    in_mosaics = [in_brainmask,
-                  in_segmentation,
-                  in_artmask,
-                  in_headmask,
-                  in_airmask]
-    figs = [svgt.fromfile(f) for f in in_mosaics]
-
-    roots = [f.getroot() for f in figs]
-    nfigs = len(figs)
-
-    sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in figs]
-    maxsize = np.max(sizes, axis=0)
-    minsize = np.min(sizes, axis=0)
-
-    bgfile = svgt.fromfile(in_bgplot)
-    bgscale = (maxsize[1] * 2 + hspace)/int(bgfile.height[:-2])
-    bgsize = (int(bgfile.width[:-2]), int(bgfile.height[:-2]))
-    bgfileroot = bgfile.getroot()
-
-    totalsize = (minsize[0] + hspace + int(bgsize[0] * bgscale),
-                 nfigs * maxsize[1] + (nfigs - 1) * hspace)
-    fig = svgt.SVGFigure(svgc.Unit(totalsize[0]).to('cm'),
-                         svgc.Unit(totalsize[1]).to('cm'))
-
-    yoffset = 0
-    for i, r in enumerate(roots):
-        xoffset = 0
-        if sizes[i][0] == maxsize[0]:
-            xoffset = int(0.5 * (totalsize[0] - sizes[i][0]))
-        r.moveto(xoffset, yoffset)
-        yoffset += maxsize[1] + hspace
-
-    bgfileroot.moveto(minsize[0] + wspace, 3 * (maxsize[1] + hspace), scale=bgscale)
-
-    fig.append(roots + [bgfileroot])
-    out_file = op.abspath('fig_final.svg')
-    fig.save(out_file)
+    out_file = op.abspath(out_file)
+    plot_mosaic(
+        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title,
+        only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
+    )
     return out_file
