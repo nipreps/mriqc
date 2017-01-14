@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-13 15:45:09
+# @Last Modified time: 2017-01-13 16:31:39
 
 """
 mriqc_fit command line interface definition
@@ -85,6 +85,10 @@ def main():
     g_input.add_argument('-o', '--output-file', action='store', default='cv_result.csv',
                          help='the output table with cross validated scores')
 
+    g_input.add_argument('--njobs', action='store', default=-1,
+                         help='number of jobs')
+
+
     opts = parser.parse_args()
 
     filelogger = logging.getLogger()
@@ -98,7 +102,7 @@ def main():
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
 
-    cvhelper = CVHelper(opts.training_data, opts.training_labels,
+    cvhelper = CVHelper(opts.training_data, opts.training_labels, n_jobs=opts.njobs,
                         scores=opts.score_types, param=parameters, n_perm=opts.nperm)
 
     cvhelper.cv_inner = read_cv(opts.cv_inner)
