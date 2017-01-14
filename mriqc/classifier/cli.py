@@ -3,15 +3,19 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-12-13 17:43:34
+# @Last Modified time: 2017-01-13 15:45:09
 
 """
-MRIQC Cross-validation
+mriqc_fit command line interface definition
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from sys import version_info
+import os.path as op
+from fcntl import flock, LOCK_EX, LOCK_UN
 import warnings
 
+PY3 = version_info[0] > 2
 
 from sklearn.metrics.base import UndefinedMetricWarning
 warnings.simplefilter("once", UndefinedMetricWarning)
@@ -78,6 +82,9 @@ def main():
     g_input.add_argument('--log-level', action='store', default='INFO',
                          choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
+    g_input.add_argument('-o', '--output-file', action='store', default='cv_result.csv',
+                         help='the output table with cross validated scores')
+
     opts = parser.parse_args()
 
     filelogger = logging.getLogger()
@@ -99,6 +106,12 @@ def main():
 
     # Run inner loop before setting held-out data, for hygene
     cvhelper.fit()
+    with open(opts.output_file, 'a' if PY3 else 'ab') as outfile:
+        flock(outfile, LOCK_EX)
+        save_headers = op.getsize(opts.output_file) == 0
+        cvhelper.cv_scores_df[['clf', 'accuracy', 'roc_auc']].to_csv(
+            outfile, index=False, header=save_headers)
+        flock(outfile, LOCK_UN)
 
 
 def read_cv(value):

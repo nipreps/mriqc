@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-12-13 17:38:45
+# @Last Modified time: 2017-01-13 15:16:43
 
 """
 MRIQC Cross-validation
@@ -76,6 +76,11 @@ class CVHelper(object):
         self.n_perm = n_perm
         self._cv_inner = {'type': 'kfold', 'n_splits': 10}
         self._cv_outer = None
+        self._cv_scores_df = None
+
+    @property
+    def cv_scores_df(self):
+        return self._cv_scores_df
 
     @property
     def cv_inner(self):
@@ -191,6 +196,19 @@ class CVHelper(object):
                  2 * np.std(total_cv_scores[self._best_model['clf_type']]),
                  np.mean(total_cv_acc[self._best_model['clf_type']]),
                  2 * np.std(total_cv_acc[self._best_model['clf_type']]))
+
+        cvdict = {
+            'clf': [],
+            'roc_auc': [],
+            'accuracy': []
+        }
+
+        for key, value in list(total_cv_scores.items()):
+            cvdict['clf'] += [key] * len(value)
+            cvdict['roc_auc'] += value
+            cvdict['accuracy'] += total_cv_acc[key]
+
+        self._cv_scores_df = pd.DataFrame(cvdict)
 
 
     def get_groups(self):

@@ -3,10 +3,10 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-12-12 16:50:17
+# @Last Modified time: 2017-01-13 14:42:40
 
 """
-MRIQC Cross-validation
+mriqc_fit: data handling module
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
