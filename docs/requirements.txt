@@ -17,4 +17,4 @@ nose
 doctest-ignore-unicode
 sphinx
 svgutils
-nipype
+nipype>=0.13.0rc1
