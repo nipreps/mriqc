@@ -50,7 +50,8 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'niworkflows>=0.0.4a0',
+    'nipype>=0.13.0rc1',
+    'niworkflows>=0.0.5',
     'pandas',
     'dipy',
     'jinja2',
@@ -59,7 +60,6 @@ REQUIRES = [
     'nitime',
     'nilearn',
     'svgutils',
-    'nipype',
     'nipy',
     'statsmodels',
     'pybids'
