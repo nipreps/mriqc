@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-13 15:16:43
+# @Last Modified time: 2017-01-20 17:28:54
 
 """
 MRIQC Cross-validation
@@ -23,6 +23,8 @@ from sklearn.metrics import classification_report, f1_score, accuracy_score
 from builtins import object
 from .data import read_dataset, zscore_dataset
 from mriqc import __version__, logging
+from .model_selection import ModelAndGridSearchCV
+
 
 from sklearn.base import is_classifier, clone
 from sklearn.utils import indexable
@@ -133,82 +135,79 @@ class CVHelper(object):
 
         for dozs in [False, True]:
             X, y, groups = self._generate_sample(zscored=dozs)
+            # clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
+            # LOG.info('CV loop [scorer=roc_auc, classifier=%s]', clf_str)
 
-            for clf_type, clf_params in list(self.param.items()):
-                clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
+            # The inner CV loop is a grid search on clf_params
+            inner_cv = ModelAndGridSearchCV(self.param, **gs_cv_params)
 
-                LOG.info('CV loop [scorer=roc_auc, classifier=%s]', clf_str)
+            # Some sklearn's validations
+            scoring = check_scoring(inner_cv, scoring='roc_auc')
+            cv_outer = check_cv(_cv_build(self.cv_outer), y,
+                                classifier=is_classifier(inner_cv))
 
-                # The inner CV loop is a grid search on clf_params
-                inner_cv = GridSearchCV(_clf_build(clf_type), clf_params, **gs_cv_params)
+            # Outer CV loop
+            outer_cv_scores = []
+            outer_cv_acc = []
+            for train, test in list(cv_outer.split(X, y, groups)):
+                # Find the groups in the train set, in case inner CV is LOSO.
+                fit_params = None
+                if self.cv_inner.get('type') == 'loso':
+                    train_groups = [groups[i] for i in train]
+                    fit_params = {'groups': train_groups}
 
-                # Some sklearn's validations
-                scoring = check_scoring(inner_cv, scoring='roc_auc')
-                cv_outer = check_cv(_cv_build(self.cv_outer), y,
-                                    classifier=is_classifier(inner_cv))
+                result = _fit_and_score(clone(inner_cv), X, y, scoring, train, test,
+                                        fit_params=fit_params, verbose=1)
 
-                # Outer CV loop
-                outer_cv_scores = []
-                outer_cv_acc = []
-                for train, test in list(cv_outer.split(X, y, groups)):
-                    # Find the groups in the train set, in case inner CV is LOSO.
-                    fit_params = None
-                    if self.cv_inner.get('type') == 'loso':
-                        train_groups = [groups[i] for i in train]
-                        fit_params = {'groups': train_groups}
+                # Test group has no positive cases
+                if result is None:
+                    continue
 
-                    result = _fit_and_score(clone(inner_cv), X, y, scoring, train, test,
-                                            fit_params=fit_params, verbose=1)
+                scores, clf = result
+                outer_cv_scores.append(scores['test']['roc_auc'])
+                outer_cv_acc.append(scores['test']['accuracy'])
+                inner_cv_scores.append(clf.best_score_)
+                test_groups = list(set(groups[i] for i in test))
+                self._models.append({
+                    # 'clf_type': clf_str,
+                    'left-out-sites': [self.sites[i] for i in test_groups],
+                    'best_params': clf.best_params_,
+                    'best_score': clf.best_score_,
+                    'cv_results': clf.cv_results_
+                })
+        #         total_cv_scores[clf_str] = outer_cv_scores
+        #         total_cv_acc[clf_str] = outer_cv_acc
 
-                    # Test group has no positive cases
-                    if result is None:
-                        continue
+        #         LOG.info('[%s] Outer CV: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)'
+        #                  'Inner CV: roc_auc=%f, params=%s. ',
+        #                  clf_str, np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
+        #                  np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc),
+        #                  clf.best_score_, clf.best_params_)
 
-                    scores, clf = result
-                    outer_cv_scores.append(scores['test']['roc_auc'])
-                    outer_cv_acc.append(scores['test']['accuracy'])
-                    inner_cv_scores.append(clf.best_score_)
-                    test_groups = list(set(groups[i] for i in test))
-                    self._models.append({
-                        'clf_type': clf_str,
-                        'left-out-sites': [self.sites[i] for i in test_groups],
-                        'best_params': clf.best_params_,
-                        'best_score': clf.best_score_,
-                        'cv_results': clf.cv_results_
-                    })
-                    total_cv_scores[clf_str] = outer_cv_scores
-                    total_cv_acc[clf_str] = outer_cv_acc
+        # LOG.info('Cross-validation finished -- %d models evaluated', len(self._models))
+        # best_idx = np.argmax(inner_cv_scores)
+        # self._best_model = self._models[best_idx]
+        # LOG.info('Best model %s, score=%f, params=%s', self._best_model['clf_type'],
+        #          self._best_model['best_score'], self._best_model['best_params'])
 
-                    LOG.info('[%s] Outer CV: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)'
-                             'Inner CV: roc_auc=%f, params=%s. ',
-                             clf_str, np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
-                             np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc),
-                             clf.best_score_, clf.best_params_)
+        # LOG.info('Overall CV scores for best model: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
+        #          np.mean(total_cv_scores[self._best_model['clf_type']]),
+        #          2 * np.std(total_cv_scores[self._best_model['clf_type']]),
+        #          np.mean(total_cv_acc[self._best_model['clf_type']]),
+        #          2 * np.std(total_cv_acc[self._best_model['clf_type']]))
 
-        LOG.info('Cross-validation finished -- %d models evaluated', len(self._models))
-        best_idx = np.argmax(inner_cv_scores)
-        self._best_model = self._models[best_idx]
-        LOG.info('Best model %s, score=%f, params=%s', self._best_model['clf_type'],
-                 self._best_model['best_score'], self._best_model['best_params'])
+        # cvdict = {
+        #     'clf': [],
+        #     'roc_auc': [],
+        #     'accuracy': []
+        # }
 
-        LOG.info('Overall CV scores for best model: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
-                 np.mean(total_cv_scores[self._best_model['clf_type']]),
-                 2 * np.std(total_cv_scores[self._best_model['clf_type']]),
-                 np.mean(total_cv_acc[self._best_model['clf_type']]),
-                 2 * np.std(total_cv_acc[self._best_model['clf_type']]))
+        # for key, value in list(total_cv_scores.items()):
+        #     cvdict['clf'] += [key] * len(value)
+        #     cvdict['roc_auc'] += value
+        #     cvdict['accuracy'] += total_cv_acc[key]
 
-        cvdict = {
-            'clf': [],
-            'roc_auc': [],
-            'accuracy': []
-        }
-
-        for key, value in list(total_cv_scores.items()):
-            cvdict['clf'] += [key] * len(value)
-            cvdict['roc_auc'] += value
-            cvdict['accuracy'] += total_cv_acc[key]
-
-        self._cv_scores_df = pd.DataFrame(cvdict)
+        # self._cv_scores_df = pd.DataFrame(cvdict)
 
 
     def get_groups(self):
