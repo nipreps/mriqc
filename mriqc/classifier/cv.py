@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-20 17:28:54
+# @Last Modified time: 2017-01-20 17:34:55
 
 """
 MRIQC Cross-validation
@@ -128,7 +128,7 @@ class CVHelper(object):
 
     def fit(self):
         gs_cv_params = {'n_jobs': self.n_jobs, 'cv': _cv_build(self.cv_inner),
-                        'verbose': 0}
+                        'verbose': 5}
         inner_cv_scores = []
         total_cv_scores = {}
         total_cv_acc = {}

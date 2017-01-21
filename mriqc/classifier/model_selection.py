@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-20 17:26:31
+# @Last Modified time: 2017-01-20 18:01:06
 
 """
 Extends sklearn's GridSearchCV to a model search object
@@ -26,7 +26,7 @@ from sklearn.model_selection._search import (
     Parallel, delayed, clone, defaultdict, rankdata
 )
 from sklearn.model_selection._validation import (
-    _score, _num_samples, _num_splits, _index_param_value, _safe_split,
+    _score, _num_samples, _index_param_value, _safe_split,
     FitFailedWarning, logger)
 
 from sklearn import svm
@@ -351,7 +351,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
                  pre_dispatch='2*n_jobs', error_score='raise',
                  return_train_score=True):
         super(ModelAndGridSearchCV, self).__init__(
-            scoring=scoring, fit_params=fit_params,
+            estimator=None, scoring=scoring, fit_params=fit_params,
             n_jobs=n_jobs, iid=iid, refit=refit, cv=cv, verbose=verbose,
             pre_dispatch=pre_dispatch, error_score=error_score,
             return_train_score=return_train_score)
@@ -459,7 +459,8 @@ class ModelAndGridSearchCV(BaseSearchCV):
                                             mask=True,
                                             dtype=object))
         for cand_i, params in enumerate(candidate_params):
-            for name, value in params.items():
+            param_est, param_values = params
+            for name, value in param_values.items():
                 # An all masked empty array gets created for the key
                 # `"param_%s" % name` at the first occurence of `name`.
                 # Setting the value at an index also unmasks that index
@@ -537,12 +538,11 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
         The parameters that have been evaluated.
     """
     if verbose > 1:
-        if parameters is None:
-            msg = ''
-        else:
-            msg = '%s' % (', '.join('%s=%s' % (k, v)
-                          for k, v in parameters.items()))
-        print("[CV] %s %s" % (msg, (64 - len(msg)) * '.'))
+        msg = '[CV model=%s]' % estimator_str.upper()
+        if parameters is not None:
+            msg += ' %s' % (', '.join('%s=%s' % (k, v)
+                            for k, v in parameters.items()))
+        print("%s %s" % (msg, (89 - len(msg)) * '.'))
 
     estimator = _clf_build(estimator_str)
 
@@ -597,7 +597,7 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
     if verbose > 1:
         total_time = score_time + fit_time
         end_msg = "%s, total=%s" % (msg, logger.short_format_time(total_time))
-        print("[CV] %s %s" % ((64 - len(end_msg)) * '.', end_msg))
+        print("%s %s" % ((89 - len(end_msg)) * '.', end_msg))
 
     ret = [train_score, test_score] if return_train_score else [test_score]
 
@@ -606,7 +606,7 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
     if return_times:
         ret.extend([fit_time, score_time])
     if return_parameters:
-        ret.append(parameters)
+        ret.append((estimator_str, parameters))
     return ret
 
 
