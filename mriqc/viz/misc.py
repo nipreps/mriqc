@@ -280,15 +280,15 @@ def plot_histograms(X, Y, rating_label='rate', out_file=None):
         ax_zsd = plt.subplot(gs[i, 1])
 
         sn.distplot(dataframe.loc[dataframe.rate == 0, col], norm_hist=False,
-                    label='Accept', ax=ax_nzs)
+                    label='Accept', ax=ax_nzs, color='dodgerblue')
         sn.distplot(dataframe.loc[dataframe.rate == 1, col], norm_hist=False,
-                    label='Reject', ax=ax_nzs)
+                    label='Reject', ax=ax_nzs, color='darkorange')
         ax_nzs.legend()
 
         sn.distplot(zscored.loc[zscored.rate == 0, col], norm_hist=False,
-                    label='Accept', ax=ax_zsd)
+                    label='Accept', ax=ax_zsd, color='dodgerblue')
         sn.distplot(zscored.loc[zscored.rate == 1, col], norm_hist=False,
-                    label='Reject', ax=ax_zsd)
+                    label='Reject', ax=ax_zsd, color='darkorange')
 
         alldata = dataframe[[col]].values.ravel().tolist()
         minv = np.percentile(alldata, 0.2)

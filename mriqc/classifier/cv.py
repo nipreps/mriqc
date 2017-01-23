@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-20 17:34:55
+# @Last Modified time: 2017-01-23 11:27:36
 
 """
 MRIQC Cross-validation
@@ -128,11 +128,11 @@ class CVHelper(object):
 
     def fit(self):
         gs_cv_params = {'n_jobs': self.n_jobs, 'cv': _cv_build(self.cv_inner),
-                        'verbose': 5}
-        inner_cv_scores = []
-        total_cv_scores = {}
-        total_cv_acc = {}
+                        'verbose': 0}
 
+        zscore_cv_auc = []
+        zscore_cv_acc = []
+        split_id = 0
         for dozs in [False, True]:
             X, y, groups = self._generate_sample(zscored=dozs)
             # clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
@@ -163,51 +163,88 @@ class CVHelper(object):
                 if result is None:
                     continue
 
-                scores, clf = result
-                outer_cv_scores.append(scores['test']['roc_auc'])
-                outer_cv_acc.append(scores['test']['accuracy'])
-                inner_cv_scores.append(clf.best_score_)
+                score, clf = result
                 test_groups = list(set(groups[i] for i in test))
                 self._models.append({
                     # 'clf_type': clf_str,
+                    'zscored': int(dozs),
+                    'outer_split_id': split_id,
                     'left-out-sites': [self.sites[i] for i in test_groups],
+                    'best_model': clf.best_model_,
                     'best_params': clf.best_params_,
                     'best_score': clf.best_score_,
-                    'cv_results': clf.cv_results_
+                    'best_index': clf.best_index_,
+                    'cv_results': clf.cv_results_,
+                    'cv_scores': score['test']['roc_auc'],
+                    'cv_accuracy': score['test']['accuracy'],
+                    'cv_params': clf.cv_results_['params'],
+                    'cv_auc_means': clf.cv_results_['mean_test_score'],
+                    'cv_splits': [clf.cv_results_['split%d_test_score' % i]
+                                  for i in list(range(clf.n_splits_))]
                 })
-        #         total_cv_scores[clf_str] = outer_cv_scores
-        #         total_cv_acc[clf_str] = outer_cv_acc
 
-        #         LOG.info('[%s] Outer CV: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)'
-        #                  'Inner CV: roc_auc=%f, params=%s. ',
-        #                  clf_str, np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
-        #                  np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc),
-        #                  clf.best_score_, clf.best_params_)
+                # Store the outer loop scores
+                if score['test']['roc_auc'] is not None:
+                    outer_cv_scores.append(score['test']['roc_auc'])
+                outer_cv_acc.append(score['test']['accuracy'])
+                split_id += 1
 
-        # LOG.info('Cross-validation finished -- %d models evaluated', len(self._models))
-        # best_idx = np.argmax(inner_cv_scores)
-        # self._best_model = self._models[best_idx]
-        # LOG.info('Best model %s, score=%f, params=%s', self._best_model['clf_type'],
-        #          self._best_model['best_score'], self._best_model['best_params'])
+                # LOG.info(
+                #     '[%s-%szs] Outer CV: roc_auc=%f, accuracy=%f, '
+                #     'Inner CV: best roc_auc=%f, params=%s. ',
+                #     clf.best_model_[0], 'n' if not dozs else '',
+                #     score['test']['roc_auc'] if score['test']['roc_auc'] is not None else -1.0,
+                #     score['test']['accuracy'],
+                #     clf.best_score_, clf.best_model_[1])
 
-        # LOG.info('Overall CV scores for best model: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
-        #          np.mean(total_cv_scores[self._best_model['clf_type']]),
-        #          2 * np.std(total_cv_scores[self._best_model['clf_type']]),
-        #          np.mean(total_cv_acc[self._best_model['clf_type']]),
-        #          2 * np.std(total_cv_acc[self._best_model['clf_type']]))
+            LOG.info('Outer CV loop finished, roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
+                     np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
+                     np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc))
 
-        # cvdict = {
-        #     'clf': [],
-        #     'roc_auc': [],
-        #     'accuracy': []
-        # }
+            zscore_cv_auc.append(outer_cv_scores)
+            zscore_cv_acc.append(outer_cv_acc)
 
-        # for key, value in list(total_cv_scores.items()):
-        #     cvdict['clf'] += [key] * len(value)
-        #     cvdict['roc_auc'] += value
-        #     cvdict['accuracy'] += total_cv_acc[key]
 
-        # self._cv_scores_df = pd.DataFrame(cvdict)
+        # Select best performing model
+        best_inner_loops = [model['best_score'] for model in self._models]
+        best_idx = np.argmax(best_inner_loops)
+        self._best_model = self._models[best_idx]
+        LOG.info('Inner CV [%d models compared] - best model %s-%szs, score=%f, params=%s',
+                 len(best_inner_loops) * len(self._models[0]['cv_params']),
+                 self._best_model['best_model'][0],
+                 'n' if not self._best_model['zscored'] else '',
+                 self._best_model['best_score'], self._best_model['best_params'])
+
+        # Write out evaluation result
+        best_zs = 1 if self._best_model['zscored'] else 0
+        LOG.info('CV - estimated performance: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
+                 np.mean(zscore_cv_auc[best_zs]), 2 * np.std(zscore_cv_auc[best_zs]),
+                 np.mean(zscore_cv_acc[best_zs]), 2 * np.std(zscore_cv_acc[best_zs]),
+        )
+
+        # Compose a dataframe object
+        cvdict = {
+            'clf': [],
+            'zscored': [],
+            'params': [],
+            'roc_auc': [],
+            'mean_auc': [],
+            'split_id': []
+        }
+        for model in self._models:
+            for i, param in enumerate(model['cv_params']):
+                loop_scores = np.array(model['cv_splits'])
+                nscores = loop_scores.shape[0] # Shape should be n_splits x n_param_comb
+                cvdict['clf'] += [param[0]] * nscores
+                cvdict['split_id'] += [model['outer_split_id']] * nscores
+                cvdict['zscored'] += [int(model['zscored'])] * nscores
+                cvdict['params'] += [param[1]] * nscores
+                cvdict['mean_auc'] += [model['cv_auc_means'][i]] * nscores
+                cvdict['roc_auc'] += loop_scores[:, i].ravel().tolist()
+
+        self._cv_scores_df = pd.DataFrame(cvdict)[[
+            'clf', 'split_id', 'zscored', 'roc_auc', 'mean_auc', 'params']]
+
 
 
     def get_groups(self):
@@ -328,10 +365,6 @@ def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
 
-    if len(set(y_test)) == 1:
-        LOG.warn('Group has no positive labels, skipping CV iteration')
-        return None
-
     if verbose > 1:
         LOG.info('CV iteration: Xtrain=%d, Ytrain=%d/%d -- Xtest=%d, Ytest=%d/%d.',
                  len(X_train), len(X_train) - sum(y_train), sum(y_train),
@@ -363,21 +396,38 @@ def _fit_and_score(estimator, X, y, scorer, train, test, verbose=1,
 
     else:
         fit_time = time.time() - start_time
-        test_score = _score(estimator, X_test, y_test, scorer)
-        score_time = time.time() - start_time - fit_time
+
+        test_score = None
+        score_time = 0.0
+        if len(set(y_test)) > 1:
+            test_score = _score(estimator, X_test, y_test, scorer)
+            score_time = time.time() - start_time - fit_time
+        else:
+            LOG.warn('Test set has no positive labels, scoring has been skipped '
+                     'in this loop.')
+
         if return_train_score:
             train_score = _score(estimator, X_train, y_train, scorer)
 
         acc_score = _score(estimator, X_test, y_test,
                            check_scoring(estimator, scoring='accuracy'))
+        inner_mean_scores = [
+            estimator.cv_results_['split%d_test_score' % i][estimator.best_index_]
+            for i in list(range(estimator.n_splits_))
+        ]
 
     if verbose > 0:
         total_time = score_time + fit_time
-        LOG.info('Iteration took %s, score=%f, accuracy=%f.',
-                 short_format_time(total_time), test_score, acc_score)
+        if test_score is not None:
+            LOG.info('Iteration took %s, score=%f, accuracy=%f.',
+                     short_format_time(total_time), test_score, acc_score)
+        else:
+            LOG.info('Iteration took %s, score=None, accuracy=%f.',
+                     short_format_time(total_time), acc_score)
 
     ret = {
-        'test': { 'roc_auc': test_score, 'accuracy': acc_score}
+        'test': {'roc_auc': test_score, 'accuracy': acc_score,
+                 'loop_scores': inner_mean_scores}
     }
 
     if return_train_score:

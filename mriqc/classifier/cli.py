@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-13 16:31:39
+# @Last Modified time: 2017-01-23 10:09:04
 
 """
 mriqc_fit command line interface definition
@@ -113,7 +113,7 @@ def main():
     with open(opts.output_file, 'a' if PY3 else 'ab') as outfile:
         flock(outfile, LOCK_EX)
         save_headers = op.getsize(opts.output_file) == 0
-        cvhelper.cv_scores_df[['clf', 'accuracy', 'roc_auc']].to_csv(
+        cvhelper.cv_scores_df.to_csv(
             outfile, index=False, header=save_headers)
         flock(outfile, LOCK_UN)
 

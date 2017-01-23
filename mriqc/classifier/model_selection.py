@@ -32,7 +32,11 @@ from sklearn.model_selection._validation import (
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier as RFC
 
+
+from mriqc import logging
 from builtins import object, zip
+
+LOG = logging.getLogger('mriqc.classifier')
 
 def _len(indict):
     product = partial(reduce, operator.mul)
@@ -356,6 +360,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
             pre_dispatch=pre_dispatch, error_score=error_score,
             return_train_score=return_train_score)
         self.param_grid = param_grid
+        self.best_model_ = None
         # _check_param_grid(param_grid)
 
     def fit(self, X, y=None, groups=None):
@@ -377,14 +382,14 @@ class ModelAndGridSearchCV(BaseSearchCV):
     def _fit(self, X, y, groups, parameter_iterable):
         """Actual fitting,  performing the search over parameters."""
         X, y, groups = indexable(X, y, groups)
+
         cv = check_cv(self.cv, y, classifier=True)
         n_splits = cv.get_n_splits(X, y, groups)
 
         if self.verbose > 0 and isinstance(parameter_iterable, Sized):
             n_candidates = len(parameter_iterable)
-            print("Fitting {0} folds for each of {1} candidates, totalling"
-                  " {2} fits".format(n_splits, n_candidates,
-                                     n_candidates * n_splits))
+            LOG.info("Fitting %d folds for each of %d candidates, totalling"
+                     " %d fits", n_splits, n_candidates, n_candidates * n_splits)
 
         pre_dispatch = self.pre_dispatch
 
@@ -474,10 +479,11 @@ class ModelAndGridSearchCV(BaseSearchCV):
         self.cv_results_ = results
         self.best_index_ = best_index
         self.n_splits_ = n_splits
+        self.best_model_ = candidate_params[best_index]
 
         if self.refit:
             # build best estimator and fit
-            best_estimator = _clf_build(candidate_params[best_index][0])
+            best_estimator = _clf_build(self.best_model_[0])
             best_estimator.set_params(**best_parameters)
             if y is not None:
                 best_estimator.fit(X, y, **self.fit_params)
@@ -542,7 +548,7 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
         if parameters is not None:
             msg += ' %s' % (', '.join('%s=%s' % (k, v)
                             for k, v in parameters.items()))
-        print("%s %s" % (msg, (89 - len(msg)) * '.'))
+        LOG.info("%s %s", msg, (89 - len(msg)) * '.')
 
     estimator = _clf_build(estimator_str)
 
@@ -597,7 +603,7 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
     if verbose > 1:
         total_time = score_time + fit_time
         end_msg = "%s, total=%s" % (msg, logger.short_format_time(total_time))
-        print("%s %s" % ((89 - len(end_msg)) * '.', end_msg))
+        LOG.info(end_msg)
 
     ret = [train_score, test_score] if return_train_score else [test_score]
 
