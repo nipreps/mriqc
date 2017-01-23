@@ -3,7 +3,7 @@ numpy
 future
 matplotlib
 nibabel
-niworkflows>=0.0.3a20
+niworkflows
 pandas
 dipy
 jinja2
@@ -17,4 +17,4 @@ nose
 doctest-ignore-unicode
 sphinx
 svgutils
--e git+https://github.com/nipy/nipype.git@master#egg=nipype
+nipype>=0.13.0rc1

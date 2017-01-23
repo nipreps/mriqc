@@ -1,2 +1,1 @@
--e git+https://github.com/poldracklab/niworkflows.git@master#egg=niworkflows
--e git+https://github.com/nipy/nipype.git@master#egg=nipype
+nipype>=0.13.0rc1
