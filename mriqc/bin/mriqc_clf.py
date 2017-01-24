@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 14:41:50
+# @Last Modified time: 2017-01-24 09:23:50
 
 """
 mriqc_fit command line interface definition
@@ -99,9 +99,9 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        cvhelper.evaluate()
-        # Get score
-        cvhelper.get_score()
+        print('roc_auc=%f, accuracy=%f' % (cvhelper.evaluate(scoring='roc_auc'),
+                                           cvhelper.evaluate()))
+
 
 
 if __name__ == '__main__':

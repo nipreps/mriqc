@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 17:29:30
+# @Last Modified time: 2017-01-24 09:22:09
 
 """
 MRIQC Cross-validation
@@ -247,10 +247,17 @@ class CVHelper(CVHelperBase):
                                              site_label='site', rate_label='rate')
         self._Xtest = None
         self._zscored = zscored
+        self._estimator = None
+        self._Yhat = None
 
         if zscored:
             self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                     excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+
+    @property
+    def estimator(self):
+        return self._estimator
+
 
     @property
     def Xtest(self):
@@ -259,7 +266,7 @@ class CVHelper(CVHelperBase):
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
         if self._zscored:
-            self._Xtest = zscore_dataset(self._Xtest, njobs=n_jobs,
+            self._Xtest = zscore_dataset(self._Xtest, njobs=self.n_jobs,
                                          excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
     def fit(self):
@@ -267,18 +274,31 @@ class CVHelper(CVHelperBase):
         LOG.info('Start fitting ...')
         estimator = RFC()
         grid = RobustGridSearchCV(
-            estimator, self.param['rfc'], error_score=0.5,
+            estimator, self.param['rfc'], error_score=0.5, refit=True,
             scoring=check_scoring(estimator, scoring='roc_auc'),
             n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
 
         X, y, groups = self._generate_sample()
-        grid.fit(X, y, groups=groups)
+        self._estimator = grid.fit(X, y, groups=groups)
 
         LOG.info('Model selection - best parameters (roc_auc=%f) %s',
                  grid.best_score_, grid.best_params_)
 
     def save(self, filehandler):
         raise NotImplementedError
+
+    def predict(self, X=None):
+        if X is None:
+            X = self._Xtest
+        sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
+        return self.estimator.predict(sample_x)
+
+    def evaluate(self, scoring='accuracy'):
+        from sklearn.model_selection._validation import _score
+
+        sample_x = np.array([tuple(x) for x in self._Xtest[self.ftnames].values])
+        return _score(self._estimator, sample_x, self._Xtest.rate.values.ravel().tolist(),
+                      check_scoring(self._estimator, scoring=scoring))
 
 
 def _cv_build(cv_scheme):
