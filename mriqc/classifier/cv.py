@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 11:27:36
+# @Last Modified time: 2017-01-23 17:29:30
 
 """
 MRIQC Cross-validation
@@ -69,8 +69,9 @@ class CVHelper(object):
         self.X, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
         self.sites = list(set(self.X[site_label].values.ravel()))
         self.Xzscored = zscore_dataset(
-            self.X, excl_columns=[rate_label, 'size_x', 'size_y', 'size_z',
-                                  'spacing_x', 'spacing_y', 'spacing_z'])
+            self.X, njobs=n_jobs, excl_columns=[
+                rate_label, 'size_x', 'size_y', 'size_z',
+                'spacing_x', 'spacing_y', 'spacing_z'])
 
         self._models = []
         self._best_clf = {}
@@ -127,6 +128,8 @@ class CVHelper(object):
             self.Xtest.to_csv(out_file, index=False)
 
     def fit(self):
+        LOG.info('Start fitting ...')
+
         gs_cv_params = {'n_jobs': self.n_jobs, 'cv': _cv_build(self.cv_inner),
                         'verbose': 0}
 
@@ -134,11 +137,13 @@ class CVHelper(object):
         zscore_cv_acc = []
         split_id = 0
         for dozs in [False, True]:
+            LOG.info('Generate %sz-scored sample ...', '' if dozs else 'non ')
             X, y, groups = self._generate_sample(zscored=dozs)
             # clf_str = '%s-%szs' % (clf_type.upper(), '' if dozs else 'n')
             # LOG.info('CV loop [scorer=roc_auc, classifier=%s]', clf_str)
 
             # The inner CV loop is a grid search on clf_params
+            LOG.info('Creating ModelAndGridSearchCV')
             inner_cv = ModelAndGridSearchCV(self.param, **gs_cv_params)
 
             # Some sklearn's validations
@@ -149,6 +154,7 @@ class CVHelper(object):
             # Outer CV loop
             outer_cv_scores = []
             outer_cv_acc = []
+            LOG.info('Starting nested cross-validation ...')
             for train, test in list(cv_outer.split(X, y, groups)):
                 # Find the groups in the train set, in case inner CV is LOSO.
                 fit_params = None

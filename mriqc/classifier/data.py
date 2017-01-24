@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-13 14:42:40
+# @Last Modified time: 2017-01-23 17:10:35
 
 """
 mriqc_fit: data handling module
@@ -12,7 +12,6 @@ mriqc_fit: data handling module
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from scipy.stats import zscore
 import pandas as pd
 from builtins import str
 
@@ -92,10 +91,17 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
     return x_df, feat_names
 
 
-def zscore_dataset(dataframe, excl_columns=None, by='site'):
+def zscore_dataset(dataframe, excl_columns=None, by='site',
+                   njobs=-1):
     """ Returns a dataset zscored by the column given as argument """
+    from multiprocessing import Pool, cpu_count
 
-    sites = list(dataframe[[by]].values.ravel())
+    LOG.info('z-scoring dataset ...')
+
+    if njobs <= 0:
+        njobs = cpu_count()
+
+    sites = list(set(dataframe[[by]].values.ravel().tolist()))
     columns = list(dataframe._get_numeric_data().columns.ravel())
 
     if excl_columns is None:
@@ -113,17 +119,25 @@ def zscore_dataset(dataframe, excl_columns=None, by='site'):
                 pass
 
     zs_df = dataframe.copy()
-    for site in sites:
-        site_df = zs_df.loc[zs_df.site == site, columns]
-        zscored = zscore(site_df, ddof=1, axis=0)
-        for i, col in enumerate(columns):
-            if not np.isnan(zscored[:, i]).any():
-                zs_df.loc[zs_df.site == site, col] = zscored[:, i]
 
-            if not np.isfinite(zs_df.loc[zs_df.site == site, col].sum()):
-                LOG.warn('Sum of measure %s of %s\'s sample is infinite',
-                         col, site)
-                zs_df.drop(col, axis=1, inplace=True)
-                break
+    pool = Pool(njobs)
+    args = [(zs_df, columns, s) for s in sites]
+    results = pool.map(zscore_site, args)
+    for site, res in zip(sites, results):
+        zs_df.loc[zs_df.site == site, columns] = res
+
+    zs_df.replace([np.inf, -np.inf], np.nan)
+    nan_columns = zs_df.columns[zs_df.isnull().any()].tolist()
+
+    if nan_columns:
+        LOG.warn('Columns %s contain NaNs after z-scoring.', ", ".join(nan_columns))
+        zs_df[nan_columns] = dataframe[nan_columns].values
 
     return zs_df
+
+def zscore_site(args):
+    """ z-scores only one site """
+    from scipy.stats import zscore
+    dataframe, columns, site = args
+    return zscore(dataframe.loc[dataframe.site == site, columns].values,
+                  ddof=1, axis=0)

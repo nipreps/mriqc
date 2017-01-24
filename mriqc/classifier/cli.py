@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 10:09:04
+# @Last Modified time: 2017-01-23 14:41:50
 
 """
 mriqc_fit command line interface definition
@@ -85,7 +85,7 @@ def main():
     g_input.add_argument('-o', '--output-file', action='store', default='cv_result.csv',
                          help='the output table with cross validated scores')
 
-    g_input.add_argument('--njobs', action='store', default=-1,
+    g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
 
