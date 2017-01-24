@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 17:10:35
+# @Last Modified time: 2017-01-24 11:48:25
 
 """
 mriqc_fit: data handling module
@@ -48,6 +48,7 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
     y_df = pd.read_csv(
         label_file, index_col=False, dtype={'subject_id': object},
         na_values=-1).sort_values(by=['subject_id'])
+    y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Convert string labels to ints
     if not y_df[rate_label].dtype == np.number:
