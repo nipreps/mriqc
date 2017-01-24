@@ -552,7 +552,6 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
 
     estimator = _clf_build(estimator_str)
 
-
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
     fit_params = dict([(k, _index_param_value(X, v, train))
@@ -614,6 +613,153 @@ def _fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
     if return_parameters:
         ret.append((estimator_str, parameters))
     return ret
+
+
+def nested_fit_and_score(
+        estimator, X, y, scorer, train, test, verbose=1,
+        parameters=None, fit_params=None, return_train_score=False,
+        return_times=False, error_score='raise'):
+    """
+    Fit estimator and compute scores for a given dataset split.
+
+    Parameters
+    ----------
+    estimator : estimator object implementing 'fit'
+        The object to use to fit the data.
+    X : array-like of shape at least 2D
+        The data to fit.
+    y : array-like, optional, default: None
+        The target variable to try to predict in the case of
+        supervised learning.
+    scorer : callable
+        A scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+    train : array-like, shape (n_train_samples,)
+        Indices of training samples.
+    test : array-like, shape (n_test_samples,)
+        Indices of test samples.
+    verbose : integer
+        The verbosity level.
+    error_score : 'raise' (default) or numeric
+        Value to assign to the score if an error occurs in estimator fitting.
+        If set to 'raise', the error is raised. If a numeric value is given,
+        FitFailedWarning is raised. This parameter does not affect the refit
+        step, which will always raise the error.
+    parameters : dict or None
+        Parameters to be set on the estimator.
+    fit_params : dict or None
+        Parameters that will be passed to ``estimator.fit``.
+    return_train_score : boolean, optional, default: False
+        Compute and return score on training set.
+    return_parameters : boolean, optional, default: False
+        Return parameters that has been used for the estimator.
+
+    Returns
+    -------
+    train_score : float, optional
+        Score on training set, returned only if `return_train_score` is `True`.
+    test_score : float
+        Score on test set.
+    n_test_samples : int
+        Number of test samples.
+    fit_time : float
+        Time spent for fitting in seconds.
+    score_time : float
+        Time spent for scoring in seconds.
+    parameters : dict or None, optional
+        The parameters that have been evaluated.
+    """
+    import time
+    import numbers
+    from sklearn.utils.metaestimators import _safe_split
+    from sklearn.model_selection._validation import _index_param_value, _score
+    from sklearn.externals.joblib.logger import short_format_time
+
+    # Adjust length of sample weights
+    fit_params = fit_params if fit_params is not None else {}
+    fit_params = dict([(k, _index_param_value(X, v, train))
+                      for k, v in fit_params.items()])
+
+    if parameters is not None:
+        estimator.set_params(**parameters)
+
+    start_time = time.time()
+
+    X_train, y_train = _safe_split(estimator, X, y, train)
+    X_test, y_test = _safe_split(estimator, X, y, test, train)
+
+    if verbose > 1:
+        LOG.info('CV iteration: Xtrain=%d, Ytrain=%d/%d -- Xtest=%d, Ytest=%d/%d.',
+                 len(X_train), len(X_train) - sum(y_train), sum(y_train),
+                 len(X_test), len(X_test) - sum(y_test), sum(y_test))
+
+    try:
+        if y_train is None:
+            estimator.fit(X_train, **fit_params)
+        else:
+            estimator.fit(X_train, y_train, **fit_params)
+
+    except Exception as e:
+        # Note fit time as time until error
+        fit_time = time.time() - start_time
+        score_time = 0.0
+        if error_score == 'raise':
+            raise
+        elif isinstance(error_score, numbers.Number):
+            test_score = error_score
+            if return_train_score:
+                train_score = error_score
+            LOG.warn("Classifier fit failed. The score on this train-test"
+                     " partition for these parameters will be set to %f. "
+                     "Details: \n%r", error_score, e)
+        else:
+            raise ValueError("error_score must be the string 'raise' or a"
+                             " numeric value. (Hint: if using 'raise', please"
+                             " make sure that it has been spelled correctly.)")
+
+    else:
+        fit_time = time.time() - start_time
+
+        test_score = None
+        score_time = 0.0
+        if len(set(y_test)) > 1:
+            test_score = _score(estimator, X_test, y_test, scorer)
+            score_time = time.time() - start_time - fit_time
+        else:
+            LOG.warn('Test set has no positive labels, scoring has been skipped '
+                     'in this loop.')
+
+        if return_train_score:
+            train_score = _score(estimator, X_train, y_train, scorer)
+
+        acc_score = _score(estimator, X_test, y_test,
+                           check_scoring(estimator, scoring='accuracy'))
+        inner_mean_scores = [
+            estimator.cv_results_['split%d_test_score' % i][estimator.best_index_]
+            for i in list(range(estimator.n_splits_))
+        ]
+
+    if verbose > 0:
+        total_time = score_time + fit_time
+        if test_score is not None:
+            LOG.info('Iteration took %s, score=%f, accuracy=%f.',
+                     short_format_time(total_time), test_score, acc_score)
+        else:
+            LOG.info('Iteration took %s, score=None, accuracy=%f.',
+                     short_format_time(total_time), acc_score)
+
+    ret = {
+        'test': {'roc_auc': test_score, 'accuracy': acc_score,
+                 'loop_scores': inner_mean_scores}
+    }
+
+    if return_train_score:
+        ret['train'] = {'roc_auc': train_score}
+
+    if return_times:
+        ret['times'] = [fit_time, score_time]
+
+    return ret, estimator
 
 
 def _clf_build(clf_type):

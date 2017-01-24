@@ -2,9 +2,3 @@ rfc:
 - max_depth: [null, 5, 6, 7, 8, 9, 10]
   min_samples_split: [2, 3, 4]
   n_estimators: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-svc_linear:
-- C: [0.01, 0.1, 1, 10, 100, 1000]
-svc_rbf:
-- C: [0.01, 0.1, 1, 10, 100]
-  gamma: [0.01, 0.001, 0.0001]
-  kernel: [rbf]
