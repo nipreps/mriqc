@@ -13,39 +13,27 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 import pandas as pd
-import simplejson as json
-
-from pprint import pformat as pf
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.metrics import classification_report, f1_score, accuracy_score
 
 from builtins import object
-from .data import read_dataset, zscore_dataset
+
 from mriqc import __version__, logging
-from .sklearn_extension import ModelAndGridSearchCV, nested_fit_and_score
+from .data import read_dataset, zscore_dataset
+from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 
 from sklearn.base import is_classifier, clone
-from sklearn.utils import indexable
 from sklearn.metrics.scorer import check_scoring
-try:
-    from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold, GridSearchCV,
-                                         permutation_test_score, PredefinedSplit, cross_val_score)
-    from sklearn.model_selection._split import check_cv
-except ImportError:
-    from sklearn.cross_validation import (
-        permutation_test_score, StratifiedKFold,
-        LeaveOneLabelOut as LeaveOneGroupOut,
-        PredefinedSplit, cross_val_score)
-    from sklearn.grid_search import GridSearchCV
-
+from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold,
+                                     permutation_test_score, PredefinedSplit, cross_val_score)
+from sklearn.model_selection._split import check_cv
 
 LOG = logging.getLogger('mriqc.classifier')
 
 DEFAULT_TEST_PARAMETERS = {
     'svc_linear': [{'C': [0.1, 1]}],
 }
+
+EXCLUDE_COLUMNS = ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']
 
 class CVHelperBase(object):
 
@@ -59,18 +47,18 @@ class CVHelperBase(object):
         self._rate_column = rate_label
         self._site_column = site_label
 
-        self.X, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
-        self.sites = list(set(self.X[site_label].values.ravel()))
-        self.Xzscored = zscore_dataset(
-            self.X, njobs=n_jobs, excl_columns=[
-                rate_label, 'size_x', 'size_y', 'size_z',
-                'spacing_x', 'spacing_y', 'spacing_z'])
+        self._Xtrain, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
+        self.sites = list(set(self._Xtrain[site_label].values.ravel()))
+
+    @property
+    def rate_column(self):
+        return self._rate_column
 
     def fit(self):
         raise NotImplementedError
 
     def get_groups(self):
-        groups = list(self.X[[self._site_column]].values.ravel())
+        groups = list(self._Xtrain[[self._site_column]].values.ravel())
         group_names = list(set(groups))
         groups_idx = []
         for g in groups:
@@ -79,7 +67,8 @@ class CVHelperBase(object):
         return groups_idx
 
     def _generate_sample(self, zscored=False):
-        X = self.Xzscored.copy() if zscored else self.X.copy()
+        from sklearn.utils import indexable
+        X = self._Xtr_zs.copy() if zscored else self._Xtrain.copy()
         sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
         labels_y = X[[self._rate_column]].values.ravel()
 
@@ -90,6 +79,9 @@ class NestedCVHelper(CVHelperBase):
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate'):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rate')
+
+        self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
+                                      excl_columns=[rate_label] + EXCLUDE_COLUMNS)
         self._models = []
         self._best_clf = {}
         self._best_model = {}
@@ -116,10 +108,6 @@ class NestedCVHelper(CVHelperBase):
     @cv_outer.setter
     def cv_outer(self, value):
         self._cv_outer = value
-
-    @property
-    def rate_column(self):
-        return self._rate_column
 
     @property
     def best_clf(self):
@@ -253,23 +241,41 @@ class NestedCVHelper(CVHelperBase):
 
 
 class CVHelper(CVHelperBase):
-
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate'):
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate',
+                 zscored=False):
         super(CVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rate')
         self._Xtest = None
+        self._zscored = zscored
 
+        if zscored:
+            self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
+                                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
 
     @property
     def Xtest(self):
         return self._Xtest
 
     def setXtest(self, X, Y):
-        self._Xtest, _ = read_dataset(X, Y, rate_label=self.rate_label)
-        self._Xtest_zs = zscore_dataset(
-            self._Xtest, njobs=n_jobs, excl_columns=[
-                rate_label, 'size_x', 'size_y', 'size_z',
-                'spacing_x', 'spacing_y', 'spacing_z'])
+        self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
+        if self._zscored:
+            self._Xtest = zscore_dataset(self._Xtest, njobs=n_jobs,
+                                         excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
+
+    def fit(self):
+        from sklearn.ensemble import RandomForestClassifier as RFC
+        LOG.info('Start fitting ...')
+        estimator = RFC()
+        grid = RobustGridSearchCV(
+            estimator, self.param['rfc'], error_score=0.5,
+            scoring=check_scoring(estimator, scoring='roc_auc'),
+            n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
+
+        X, y, groups = self._generate_sample()
+        grid.fit(X, y, groups=groups)
+
+        LOG.info('Model selection - best parameters (roc_auc=%f) %s',
+                 grid.best_score_, grid.best_params_)
 
     def save(self, filehandler):
         raise NotImplementedError

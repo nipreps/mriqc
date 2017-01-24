@@ -104,14 +104,5 @@ def main():
         cvhelper.get_score()
 
 
-    with open(opts.output_file, 'a' if PY3 else 'ab') as outfile:
-        flock(outfile, LOCK_EX)
-        save_headers = op.getsize(opts.output_file) == 0
-        cvhelper.cv_scores_df.to_csv(
-            outfile, index=False, header=save_headers)
-        flock(outfile, LOCK_UN)
-
-
-
 if __name__ == '__main__':
     main()
