@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-24 10:20:03
+# @Last Modified time: 2017-01-24 11:12:44
 
 """
 MRIQC Cross-validation
@@ -47,7 +47,7 @@ class CVHelperBase(object):
         self._rate_column = rate_label
         self._site_column = site_label
 
-        self._Xtrain, self.ftnames = read_dataset(X, Y, rate_label=rate_label)
+        self._Xtrain, self._ftnames = read_dataset(X, Y, rate_label=rate_label)
         self.sites = list(set(self._Xtrain[site_label].values.ravel()))
 
     @property
@@ -69,7 +69,7 @@ class CVHelperBase(object):
     def _generate_sample(self, zscored=False):
         from sklearn.utils import indexable
         X = self._Xtr_zs.copy() if zscored else self._Xtrain.copy()
-        sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
+        sample_x = np.array([tuple(x) for x in X[self._ftnames].values])
         labels_y = X[[self._rate_column]].values.ravel()
 
         return indexable(sample_x, labels_y, self.get_groups())
@@ -241,18 +241,31 @@ class NestedCVHelper(CVHelperBase):
 
 
 class CVHelper(CVHelperBase):
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate',
-                 zscored=False):
-        super(CVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
-                                             site_label='site', rate_label='rate')
+    def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
+                 site_label='site', rate_label='rate', zscored=False):
+
+        if (X is None or Y is None) and load_clf is None:
+            raise RuntimeError('Either load_clf or X & Y should be supplied')
+
+        self._estimator = None
         self._Xtest = None
         self._zscored = zscored
-        self._estimator = None
-        self._Yhat = None
+        self._pickled = False
+        self._rate_column = rate_label
 
-        if zscored:
-            self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
-                                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+        if load_clf is not None:
+            self.n_jobs = n_jobs
+            self.load(load_clf)
+            self._ftnames = getattr(self._estimator, '_ftnames')
+        else:
+            super(CVHelper, self).__init__(
+                X, Y, param=param, n_jobs=n_jobs,
+                site_label=site_label, rate_label=rate_label)
+            if zscored:
+                self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
+                                        excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+
+
 
     @property
     def estimator(self):
@@ -271,6 +284,10 @@ class CVHelper(CVHelperBase):
 
     def fit(self):
         from sklearn.ensemble import RandomForestClassifier as RFC
+        if self._pickled:
+            LOG.info('Classifier was loaded from file, cancelling fitting.')
+            return
+
         LOG.info('Start fitting ...')
         estimator = RFC()
         grid = RobustGridSearchCV(
@@ -286,22 +303,24 @@ class CVHelper(CVHelperBase):
 
     def save(self, filehandler):
         from sklearn.externals import joblib
+        setattr(self._estimator, '_ftnames', self._ftnames)
         joblib.dump(self._estimator, filehandler)
 
     def load(self, filehandler):
         from sklearn.externals import joblib
         self._estimator = joblib.load(filehandler)
+        self._pickled = True
 
     def predict(self, X=None):
         if X is None:
             X = self._Xtest
-        sample_x = np.array([tuple(x) for x in X[self.ftnames].values])
+        sample_x = np.array([tuple(x) for x in X[self._ftnames].values])
         return self.estimator.predict(sample_x)
 
     def evaluate(self, scoring='accuracy'):
         from sklearn.model_selection._validation import _score
 
-        sample_x = np.array([tuple(x) for x in self._Xtest[self.ftnames].values])
+        sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
         return _score(self._estimator, sample_x, self._Xtest.rate.values.ravel().tolist(),
                       check_scoring(self._estimator, scoring=scoring))
 

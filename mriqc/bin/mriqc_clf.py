@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-24 09:23:50
+# @Last Modified time: 2017-01-24 11:13:29
 
 """
 mriqc_fit command line interface definition
@@ -45,8 +45,8 @@ def main():
 
     parser = ArgumentParser(description='MRIQC model selection and held-out evaluation',
                             formatter_class=RawTextHelpFormatter)
-    parser.add_argument('training_data', help='input data')
-    parser.add_argument('training_labels', help='input data')
+    parser.add_argument('--train-data', help='input data')
+    parser.add_argument('--train-labels', help='input data')
 
     parser.add_argument('--test-data', help='test data')
     parser.add_argument('--test-labels', help='test labels')
@@ -81,7 +81,7 @@ def main():
 
     if opts.load_classifier is None:
         # Initialize model selection helper
-        cvhelper = CVHelper(opts.training_data, opts.training_labels, n_jobs=opts.njobs,
+        cvhelper = CVHelper(X=opts.train_data, Y=opts.train_labels, n_jobs=opts.njobs,
                             param=parameters)
 
         # Perform model selection before setting held-out data, for hygene
@@ -92,8 +92,7 @@ def main():
             cvhelper.save(opts.save_classifier)
 
     else:
-        # cvhelper = CVHelper(opts.load_classifier, n_jobs=opts.njobs)
-        raise NotImplementedError
+        cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs)
 
     if opts.test_data and opts.test_labels:
         # Set held-out data
