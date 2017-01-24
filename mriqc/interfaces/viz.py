@@ -160,12 +160,19 @@ class PlotSpikes(MRIQCBaseInterface):
             if t > 0:
                 slices.append(data[..., z, t - 1])
                 labels.append(labelfmt(t - 1, z))
+            else:
+                slices.append(np.zeros_like(data[..., z, 0]))
+                labels.append('')
+
             slices.append(data[..., z, t])
             labels.append(labelfmt(t, z))
 
             if t < (len(spikes_list) - 1):
                 slices.append(data[..., z, t + 1])
                 labels.append(labelfmt(t + 1, z))
+            else:
+                slices.append(np.zeros_like(data[..., z, 0]))
+                labels.append('')
 
         spikes_data = np.stack(slices, axis=-1)
         nb.Nifti1Image(spikes_data, nii.get_affine(),
@@ -182,6 +189,5 @@ class PlotSpikes(MRIQCBaseInterface):
             title=title,
             cmap=self.inputs.cmap,
             plot_sagittal=False,
-            only_plot_noise=False,
-            labels=labels)
+            only_plot_noise=False)
         return runtime
