@@ -35,11 +35,10 @@ RUN chmod +x /usr/bin/run_*
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
     rm Miniconda3-latest-Linux-x86_64.sh
-ENV PATH /usr/local/miniconda/bin:$PATH
-
-# http://bugs.python.org/issue19846
-# > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
-ENV LANG=C.UTF-8 \
+ENV PATH=/usr/local/miniconda/bin:$PATH \
+    PYTHONPATH=/usr/local/miniconda/lib/python2.7/site-packages \
+    PYTHONNOUSERSITE=1 \
+    LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
 WORKDIR /root
