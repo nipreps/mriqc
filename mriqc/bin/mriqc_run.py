@@ -239,6 +239,9 @@ def main():
 
             if not opts.dry_run:
                 workflow.run(**plugin_settings)
+        else:
+            raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
+                               'BIDS-compliant.' % settings['bids_dir'])
 
     # Set up group level
     if opts.analysis_level == 'group' or opts.participant_label is None:
