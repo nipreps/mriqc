@@ -37,7 +37,8 @@ RUN chmod +x /usr/bin/run_*
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh && \
     /bin/bash Miniconda2-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
     rm Miniconda2-latest-Linux-x86_64.sh
-ENV PATH /usr/local/miniconda/bin:$PATH
+ENV PATH=/usr/local/miniconda/bin:$PATH \
+    PYTHONPATH=/usr/local/miniconda/lib/python2.7/site-packages
 
 # Create conda environment
 RUN conda config --add channels conda-forge && \
