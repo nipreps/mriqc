@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-25 17:10:48
+# @Last Modified time: 2017-01-26 11:47:00
 
 """
 MRIQC Cross-validation
@@ -14,18 +14,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import pandas as pd
 
-from builtins import object
-
 from mriqc import __version__, logging
 from .data import read_dataset, zscore_dataset
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
-
 
 from sklearn.base import is_classifier, clone
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold,
                                      permutation_test_score, PredefinedSplit, cross_val_score)
 from sklearn.model_selection._split import check_cv
+
+from builtins import object, bytes, str
 
 LOG = logging.getLogger('mriqc.classifier')
 
@@ -310,15 +309,32 @@ class CVHelper(CVHelperBase):
         LOG.info('Model selection - best parameters (roc_auc=%f) %s',
                  grid.best_score_, grid.best_params_)
 
-    def save(self, filehandler):
-        from sklearn.externals import joblib
+    def save(self, filehandler, compress=3):
+        """
+        Pickle the estimator, adding the feature names
+        http://scikit-learn.org/stable/modules/model_persistence.html
+
+        """
+        from os.path import splitext
+        from sklearn.externals.joblib import dump as savepkl
+        from gzip import open as gzopen
+
+        # Store ftnames
         setattr(self._estimator, '_ftnames', self._ftnames)
-        joblib.dump(self._estimator, filehandler)
+        savepkl(self._estimator, filehandler, compress=compress)
 
     def load(self, filehandler):
-        from sklearn.externals import joblib
-        self._estimator = joblib.load(filehandler)
+        """
+        UnPickle the estimator, adding the feature names
+        http://scikit-learn.org/stable/modules/model_persistence.html
+
+        """
+        from os.path import splitext
+        from sklearn.externals.joblib import load as loadpkl
+        self._estimator = loadpkl(filehandler)
+        self._ftnames = getattr(self._estimator, '_ftnames')
         self._pickled = True
+
 
     def predict(self, X=None):
         if X is None:

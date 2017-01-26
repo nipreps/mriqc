@@ -54,6 +54,7 @@ def main():
                                           'participants=mriqc.bin.subject_wrangler:main']},
         packages=find_packages(exclude=['*.tests']),
         package_data={'mriqc': ['data/*.yml',
+                                'data/rfc-nzs-abide-1.0.pklz',
                                 'data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',

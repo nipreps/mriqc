@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-24 11:13:29
+# @Last Modified time: 2017-01-26 11:42:28
 
 """
 mriqc_fit command line interface definition
@@ -45,8 +45,12 @@ def main():
 
     parser = ArgumentParser(description='MRIQC model selection and held-out evaluation',
                             formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--train-data', help='input data')
-    parser.add_argument('--train-labels', help='input data')
+
+    g_clf = parser.add_mutually_exclusive_group()
+    g_clf.add_argument('--train', nargs=2, help='training data tables, X and Y')
+    g_clf.add_argument('--load-classifier', nargs="?", default=None,
+                       const=pkgrf('mriqc', 'data/rfc-nzs-abide-1.0.pklz'),
+                       help='load pickled classifier in')
 
     parser.add_argument('--test-data', help='test data')
     parser.add_argument('--test-labels', help='test labels')
@@ -55,7 +59,6 @@ def main():
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
 
-    g_input.add_argument('--load-classifier', action='store', help='load pickled classifier in')
     g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
@@ -79,9 +82,11 @@ def main():
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
 
-    if opts.load_classifier is None:
+    train = [False] if opts.train is None else [val is not None for val in opts.train]
+
+    if all(train):
         # Initialize model selection helper
-        cvhelper = CVHelper(X=opts.train_data, Y=opts.train_labels, n_jobs=opts.njobs,
+        cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
                             param=parameters)
 
         # Perform model selection before setting held-out data, for hygene
@@ -90,6 +95,8 @@ def main():
         # Pickle if required
         if opts.save_classifier:
             cvhelper.save(opts.save_classifier)
+    elif any(train):
+        raise RuntimeError('Both --train-data and --train-labels must be set')
 
     else:
         cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs)
