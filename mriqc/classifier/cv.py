@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-24 11:12:44
+# @Last Modified time: 2017-01-25 17:10:48
 
 """
 MRIQC Cross-validation
@@ -76,7 +76,8 @@ class CVHelperBase(object):
 
 class NestedCVHelper(CVHelperBase):
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate'):
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate',
+                 task_id=None):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rate')
 
@@ -88,6 +89,7 @@ class NestedCVHelper(CVHelperBase):
         self._cv_inner = {'type': 'kfold', 'n_splits': 10}
         self._cv_outer = None
         self._cv_scores_df = None
+        self._task_id = task_id
 
     @property
     def cv_scores_df(self):
@@ -173,8 +175,8 @@ class NestedCVHelper(CVHelperBase):
                     'cv_accuracy': score['test']['accuracy'],
                     'cv_params': clf.cv_results_['params'],
                     'cv_auc_means': clf.cv_results_['mean_test_score'],
-                    'cv_splits': [clf.cv_results_['split%d_test_score' % i]
-                                  for i in list(range(clf.n_splits_))]
+                    'cv_splits': {'split%03d' % i: clf.cv_results_['split%d_test_score' % i]
+                                  for i in list(range(clf.n_splits_))}
                 })
 
                 # Store the outer loop scores
@@ -221,23 +223,30 @@ class NestedCVHelper(CVHelperBase):
             'clf': [],
             'zscored': [],
             'params': [],
-            'roc_auc': [],
             'mean_auc': [],
             'split_id': []
         }
+
+        cvdict.update({key: [] for key in self._models[0]['cv_splits'].keys()})
         for model in self._models:
             for i, param in enumerate(model['cv_params']):
-                loop_scores = np.array(model['cv_splits'])
-                nscores = loop_scores.shape[0] # Shape should be n_splits x n_param_comb
-                cvdict['clf'] += [param[0]] * nscores
-                cvdict['split_id'] += [model['outer_split_id']] * nscores
-                cvdict['zscored'] += [int(model['zscored'])] * nscores
-                cvdict['params'] += [param[1]] * nscores
-                cvdict['mean_auc'] += [model['cv_auc_means'][i]] * nscores
-                cvdict['roc_auc'] += loop_scores[:, i].ravel().tolist()
+                cvdict['clf'] += [param[0]]
+                cvdict['split_id'] += [model['outer_split_id']]
+                cvdict['zscored'] += [int(model['zscored'])]
+                cvdict['params'] += [param[1]]
+                cvdict['mean_auc'] += [model['cv_auc_means'][i]]
+                for key, val in list(model['cv_splits'].items()):
+                    cvdict[key] += [val[i]]
 
-        self._cv_scores_df = pd.DataFrame(cvdict)[[
-            'clf', 'split_id', 'zscored', 'roc_auc', 'mean_auc', 'params']]
+        # massage columns
+        cols = list(sorted(cvdict.keys()))
+        cols.remove('zscored')
+        cols.insert(1, 'zscored')
+        if self._task_id is not None:
+            cvdict['task_id'] = [self._task_id] * len(cvdict['clf'])
+            cols.insert(0, 'task_id')
+
+        self._cv_scores_df = pd.DataFrame(cvdict)[cols]
 
 
 class CVHelper(CVHelperBase):

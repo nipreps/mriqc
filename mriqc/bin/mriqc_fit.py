@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-23 14:41:50
+# @Last Modified time: 2017-01-25 09:38:13
 
 """
 mriqc_fit command line interface definition
@@ -66,6 +66,7 @@ def main():
 
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
+    g_input.add_argument('--task-id', action='store')
 
 
     opts = parser.parse_args()
@@ -83,7 +84,8 @@ def main():
             parameters = yaml.load(paramfile)
 
     cvhelper = NestedCVHelper(opts.training_data, opts.training_labels,
-                              n_jobs=opts.njobs, param=parameters)
+                              n_jobs=opts.njobs, param=parameters,
+                              task_id=opts.task_id)
 
     cvhelper.cv_inner = read_cv(opts.cv_inner)
     cvhelper.cv_outer = read_cv(opts.cv_outer)
