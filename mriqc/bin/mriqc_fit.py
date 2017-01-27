@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-25 09:38:13
+# @Last Modified time: 2017-01-27 10:47:21
 
 """
 mriqc_fit command line interface definition
@@ -61,7 +61,9 @@ def main():
     g_input.add_argument('--log-level', action='store', default='INFO',
                          choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
 
-    g_input.add_argument('-o', '--output-file', action='store', default='cv_result.csv',
+    g_input.add_argument('-o', '--output-file', action='store', default='cv_inner_loop.csv',
+                         help='the output table with cross validated scores')
+    g_input.add_argument('-O', '--output-outer-cv', action='store', default='cv_outer_loop.csv',
                          help='the output table with cross validated scores')
 
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
@@ -95,10 +97,16 @@ def main():
     with open(opts.output_file, 'a' if PY3 else 'ab') as outfile:
         flock(outfile, LOCK_EX)
         save_headers = op.getsize(opts.output_file) == 0
-        cvhelper.cv_scores_df.to_csv(
+        cvhelper.get_inner_cv_scores().to_csv(
             outfile, index=False, header=save_headers)
         flock(outfile, LOCK_UN)
 
+    with open(opts.output_outer_cv, 'a' if PY3 else 'ab') as outfile:
+        flock(outfile, LOCK_EX)
+        save_headers = op.getsize(opts.output_outer_cv) == 0
+        cvhelper.get_outer_cv_scores().to_csv(
+            outfile, index=False, header=save_headers)
+        flock(outfile, LOCK_UN)
 
 def read_cv(value):
     from numbers import Number

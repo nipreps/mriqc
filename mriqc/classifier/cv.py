@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 09:12:46
+# @Last Modified time: 2017-01-27 10:44:53
 
 """
 MRIQC Cross-validation
@@ -217,16 +217,12 @@ class NestedCVHelper(CVHelperBase):
                  np.mean(zscore_cv_acc[best_zs]), 2 * np.std(zscore_cv_acc[best_zs]),
         )
 
+    def get_inner_cv_scores(self):
         # Compose a dataframe object
-        cvdict = {
-            'clf': [],
-            'zscored': [],
-            'params': [],
-            'mean_auc': [],
-            'split_id': []
-        }
-
+        columns = ['split_id', 'zscored', 'clf', 'mean_auc', 'params']
+        cvdict = {col: [] for col in columns}
         cvdict.update({key: [] for key in self._models[0]['cv_splits'].keys()})
+
         for model in self._models:
             for i, param in enumerate(model['cv_params']):
                 cvdict['clf'] += [param[0]]
@@ -238,14 +234,29 @@ class NestedCVHelper(CVHelperBase):
                     cvdict[key] += [val[i]]
 
         # massage columns
-        cols = list(sorted(cvdict.keys()))
-        cols.remove('zscored')
-        cols.insert(1, 'zscored')
         if self._task_id is not None:
             cvdict['task_id'] = [self._task_id] * len(cvdict['clf'])
-            cols.insert(0, 'task_id')
+            columns.insert(0, 'task_id')
 
-        self._cv_scores_df = pd.DataFrame(cvdict)[cols]
+        self._cv_scores_df = pd.DataFrame(cvdict)[columns]
+        return self._cv_scores_df
+
+    def get_outer_cv_scores(self):
+        # Compose a dataframe object
+        columns = ['split_id', 'zscored', 'auc', 'acc']
+        cvdict = {col: [] for col in columns}
+
+        for model in self._models:
+            cvdict['zscored'] += [int(model['zscored'])]
+            cvdict['split_id'] += [model['outer_split_id']]
+            cvdict['auc'] += [model['cv_scores']]
+            cvdict['acc'] += [model['cv_accuracy']]
+
+        if self._task_id is not None:
+            cvdict['task_id'] = [self._task_id] * len(cvdict['split_id'])
+            columns.insert(0, 'task_id')
+
+        return pd.DataFrame(cvdict)[columns]
 
 
 class CVHelper(CVHelperBase):

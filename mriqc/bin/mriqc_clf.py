@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-26 11:42:28
+# @Last Modified time: 2017-01-27 09:25:33
 
 """
 mriqc_fit command line interface definition
@@ -99,7 +99,8 @@ def main():
         raise RuntimeError('Both --train-data and --train-labels must be set')
 
     else:
-        cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs)
+        cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs,
+                            rate_label='rate')
 
     if opts.test_data and opts.test_labels:
         # Set held-out data

@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-24 11:48:25
+# @Last Modified time: 2017-01-27 10:51:10
 
 """
 mriqc_fit: data handling module
@@ -47,7 +47,8 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
 
     # Massage labels table to have the appropriate format
     y_df = pd.read_csv(
-        label_file, index_col=False, dtype={'subject_id': object}).sort_values(by=['subject_id'])
+        label_file, index_col=False, dtype={'subject_id': object},
+        usecols=['subject_id', 'site', rate_label]).sort_values(by=['subject_id'])
     y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
     x_df['subject_id'] = x_df['subject_id'].map(lambda x: str(x))
 

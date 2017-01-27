@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-20 18:01:06
+# @Last Modified time: 2017-01-27 10:31:53
 
 """
 Extends sklearn's GridSearchCV to a model search object
@@ -849,10 +849,6 @@ def nested_fit_and_score(
 
         acc_score = _score(estimator, X_test, y_test,
                            check_scoring(estimator, scoring='accuracy'))
-        inner_mean_scores = [
-            estimator.cv_results_['split%d_test_score' % i][estimator.best_index_]
-            for i in list(range(estimator.n_splits_))
-        ]
 
     if verbose > 0:
         total_time = score_time + fit_time
@@ -864,8 +860,7 @@ def nested_fit_and_score(
                      short_format_time(total_time), acc_score)
 
     ret = {
-        'test': {'roc_auc': test_score, 'accuracy': acc_score,
-                 'loop_scores': inner_mean_scores}
+        'test': {'roc_auc': test_score, 'accuracy': acc_score}
     }
 
     if return_train_score:
