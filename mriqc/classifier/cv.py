@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-26 11:47:00
+# @Last Modified time: 2017-01-27 09:12:46
 
 """
 MRIQC Cross-validation
@@ -36,7 +36,7 @@ EXCLUDE_COLUMNS = ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spac
 
 class CVHelperBase(object):
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate'):
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1'):
         # Initialize some values
         self.param = DEFAULT_TEST_PARAMETERS.copy()
         if param is not None:
@@ -75,10 +75,10 @@ class CVHelperBase(object):
 
 class NestedCVHelper(CVHelperBase):
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rate',
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
                  task_id=None):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
-                                             site_label='site', rate_label='rate')
+                                             site_label='site', rate_label='rater_1')
 
         self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
@@ -250,7 +250,7 @@ class NestedCVHelper(CVHelperBase):
 
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
-                 site_label='site', rate_label='rate', zscored=False):
+                 site_label='site', rate_label='rater_1', zscored=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')

@@ -18,7 +18,8 @@ from builtins import str
 from mriqc import logging
 LOG = logging.getLogger('mriqc.classifier')
 
-def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
+def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
+                 binarize=True):
     """ Reads in the features and labels """
 
     bids_comps = ['subject_id', 'session_id', 'task_id', 'run_id']
@@ -46,22 +47,8 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
 
     # Massage labels table to have the appropriate format
     y_df = pd.read_csv(
-        label_file, index_col=False, dtype={'subject_id': object},
-        na_values=-1).sort_values(by=['subject_id'])
+        label_file, index_col=False, dtype={'subject_id': object}).sort_values(by=['subject_id'])
     y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
-
-    # Convert string labels to ints
-    if not y_df[rate_label].dtype == np.number:
-        y_df.loc[y_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = 1
-        y_df.loc[y_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = 1
-
-        y_df.loc[y_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 0
-
-        y_df[[rate_label]] = y_df[[rate_label]].apply(pd.to_numeric, errors='coerce')
-
     x_df['subject_id'] = x_df['subject_id'].map(lambda x: str(x))
 
     # Remove failed cases from Y, append new columns to X
@@ -74,11 +61,28 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None):
         x_df.to_csv(merged_name, index=False)
 
     # Drop samples with invalid rating
-    nan_labels = x_df[np.isnan(x_df[rate_label])].index.ravel().tolist()
+    nan_labels = x_df[x_df[rate_label].isnull()].index.ravel().tolist()
     if nan_labels:
         LOG.info('Dropping %d samples for having non-numerical '
                  'labels', len(nan_labels))
         x_df = x_df.drop(nan_labels)
+
+    # Convert string labels to ints
+    try:
+        x_df.loc[x_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = -1
+        x_df.loc[x_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = -1
+        x_df.loc[x_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
+        x_df.loc[x_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
+        x_df.loc[x_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 1
+        x_df.loc[x_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 1
+    except AttributeError:
+        pass
+
+    x_df[[rate_label]] = x_df[[rate_label]].apply(pd.to_numeric, errors='raise')
+
+    if binarize:
+        x_df.loc[x_df[rate_label] >= 0, rate_label] = 0
+        x_df.loc[x_df[rate_label] < 0, rate_label] = 1
 
     # Print out some info
     nsamples = len(x_df)

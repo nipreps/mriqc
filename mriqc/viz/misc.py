@@ -26,7 +26,7 @@ def fill_matrix(matrix, width, value='n/a'):
 def plot_raters(dataframe, site=None, ax=None, width=101,
                 raters=None):
     if raters is None:
-        raters = ['Marie', 'PCP_rater_2', 'PCP_rater_3']
+        raters = ['rater_1', 'rater_2', 'rater_3']
 
     if site is not None:
         dataframe = dataframe.loc[dataframe.site == site]
@@ -52,7 +52,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         matrices[-1] = fill_matrix(matrices[-1], width)
         matrix = np.hstack(tuple(matrices))
 
-    palette = {'OK': 'limegreen', 'maybe': 'gold', 'fail': 'tomato', 'n/a': 'w'}
+    palette = {'1': 'limegreen', '0': 'gold', '-1': 'tomato', 'n/a': 'w'}
 
     ax = ax if ax is not None else plt.gca()
 
@@ -65,7 +65,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
     for (x, y), w in np.ndenumerate(matrix):
         if w == '':
             w = 'n/a'
-        color = palette[w.strip()]
+        color = palette[str(w)]
         rect = plt.Circle([x - size / 2, y - size / 2], size * 0.5,
                              facecolor=color, edgecolor=color)
         ax.add_patch(rect)
@@ -97,8 +97,9 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
 
     return ax
 
-def raters_variability_plot(mdata, figsize=(22, 22),
+def raters_variability_plot(y_path, figsize=(22, 22),
                             width=101, out_file=None):
+    mdata = pd.read_csv(y_path, index_col=False, na_values='n/a', na_filter=False)
     sites_list = sorted(set(mdata.site.values.ravel().tolist()))
     sites_len = []
     for site in sites_list:
@@ -126,26 +127,42 @@ def raters_variability_plot(mdata, figsize=(22, 22),
     return fig
 
 def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
-                          rating_label='rate'):
+                          rating_label='rater_1'):
     import seaborn as sn
     sn.set(style="whitegrid")
 
     mdata, pp_cols = read_dataset(X, Y, rate_label=rating_label)
 
-    mdata['database'] = ['ABIDE'] * len(mdata['site'].values.ravel())
-    zscored = zscore_dataset(
-            mdata, excl_columns=[rating_label, 'size_x', 'size_y', 'size_z',
-                                 'spacing_x', 'spacing_y', 'spacing_z'])
-    sites = list(set(mdata[rating_label].values.ravel()))
+    for col in mdata.columns.ravel().tolist():
+        if col.startswith('rater_') and col != rating_label:
+            del mdata[col]
 
-    palette = ['dodgerblue', 'darkorange']
-    nrows = len(pp_cols)
+    mdata = mdata.loc[mdata[rating_label].notnull()]
+    mdata['database'] = ['ABIDE'] * len(mdata.site.values.ravel())
+    mdata['rate'] = [''] * len(mdata[rating_label])
+    mdata.loc[mdata[rating_label] == 0, 'rate'] = 'OK'
+    mdata.loc[mdata[rating_label] == 1, 'rate'] = 'exclude'
+
+    for col in [rating_label, 'size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']:
+        del mdata[col]
+        try:
+            pp_cols.remove(col)
+        except:
+            pass
+
+    zscored = zscore_dataset(mdata, excl_columns=['rate'])
+
+    sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
+
+    palette = ['limegreen', 'tomato']
+    # palette = ['dodgerblue', 'darkorange']
+    nrows = len(pp_cols)
 
     fig = plt.figure(figsize=figsize)
     # ncols = 2 * (nsites - 1) + 2
     gs = GridSpec(nrows, 4, wspace=0.02)
-    gs.set_width_ratios([6 * nsites, 1, 1, 6 * nsites])
+    gs.set_width_ratios([nsites, 1, 1, nsites])
 
     for i, colname in enumerate(pp_cols):
         ax_nzs = plt.subplot(gs[i, 0])
@@ -154,14 +171,14 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         ax_zsc = plt.subplot(gs[i, 3])
 
         # plots
-        sn.stripplot(x='site', y=colname, data=mdata, hue=rating_label, jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=mdata, hue='rate', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=ax_nzs)
-        sn.stripplot(x='site', y=colname, data=zscored, hue=rating_label, jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=zscored, hue='rate', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=ax_zsc)
 
-        sn.stripplot(x='database', y=colname, data=mdata, hue=rating_label, jitter=0.18, alpha=.4,
+        sn.stripplot(x='database', y=colname, data=mdata, hue='rate', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=axg_nzs)
-        sn.stripplot(x='database', y=colname, data=zscored, hue=rating_label, jitter=0.18,
+        sn.stripplot(x='database', y=colname, data=zscored, hue='rate', jitter=0.18,
                      alpha=.4, split=True, palette=palette, ax=axg_zsc)
 
         ax_nzs.legend_.remove()
@@ -256,14 +273,20 @@ def plot_corrmat(in_csv, out_file=None):
     return corrplot
 
 
-def plot_histograms(X, Y, rating_label='rate', out_file=None):
+def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     import seaborn as sn
     sn.set(style="whitegrid")
 
-    dataframe, pp_cols = read_dataset(X, Y, rate_label=rating_label)
+    mdata, pp_cols = read_dataset(X, Y, rate_label=rating_label)
+    mdata['rater'] = mdata[[rating_label]].values.ravel()
 
+    for col in mdata.columns.ravel().tolist():
+        if col.startswith('rater_'):
+            del mdata[col]
+
+    mdata = mdata.loc[mdata.rater.notnull()]
     zscored = zscore_dataset(
-        dataframe, excl_columns=[rating_label, 'size_x', 'size_y', 'size_z',
+            mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
                                  'spacing_x', 'spacing_y', 'spacing_z'])
 
     colnames = [col for col in sorted(pp_cols)
@@ -279,18 +302,18 @@ def plot_histograms(X, Y, rating_label='rate', out_file=None):
         ax_nzs = plt.subplot(gs[i, 0])
         ax_zsd = plt.subplot(gs[i, 1])
 
-        sn.distplot(dataframe.loc[dataframe.rate == 0, col], norm_hist=False,
+        sn.distplot(mdata.loc[(mdata.rater == 0), col], norm_hist=False,
                     label='Accept', ax=ax_nzs, color='dodgerblue')
-        sn.distplot(dataframe.loc[dataframe.rate == 1, col], norm_hist=False,
+        sn.distplot(mdata.loc[(mdata.rater == 1), col], norm_hist=False,
                     label='Reject', ax=ax_nzs, color='darkorange')
         ax_nzs.legend()
 
-        sn.distplot(zscored.loc[zscored.rate == 0, col], norm_hist=False,
+        sn.distplot(zscored.loc[(zscored.rater == 0), col], norm_hist=False,
                     label='Accept', ax=ax_zsd, color='dodgerblue')
-        sn.distplot(zscored.loc[zscored.rate == 1, col], norm_hist=False,
+        sn.distplot(zscored.loc[(zscored.rater == 1), col], norm_hist=False,
                     label='Reject', ax=ax_zsd, color='darkorange')
 
-        alldata = dataframe[[col]].values.ravel().tolist()
+        alldata = mdata[[col]].values.ravel().tolist()
         minv = np.percentile(alldata, 0.2)
         maxv = np.percentile(alldata, 99.8)
         ax_nzs.set_xlim([minv, maxv])
