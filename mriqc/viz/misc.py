@@ -333,3 +333,135 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
 
     fig.savefig(out_file, format=ext[1:], bbox_inches='tight', pad_inches=0, dpi=100)
     return fig
+
+
+def plot_artifact(image_path, figsize=(20, 20), vmax=None, cut_coords=None, display_mode='ortho',
+                  size=None):
+    import nilearn.plotting as nplt
+
+    fig = plt.figure(figsize=figsize)
+    nplt_disp = nplt.plot_anat(
+        image_path, display_mode=display_mode, cut_coords=cut_coords,
+        vmax=vmax, figure=fig, annotate=False)
+
+    if size is None:
+        size = figsize[0] * 6
+
+
+    bg_color = 'k'
+    fg_color = 'w'
+    ax = fig.gca()
+    ax.text(
+        .1, .95, 'L',
+        transform=ax.transAxes,
+        horizontalalignment='left',
+        verticalalignment='top',
+        size=size,
+        bbox=dict(boxstyle="square,pad=0", ec=bg_color, fc=bg_color, alpha=1),
+        color=fg_color)
+
+    ax.text(
+        .9, .95, 'R',
+        transform=ax.transAxes,
+        horizontalalignment='right',
+        verticalalignment='top',
+        size=size,
+        bbox=dict(boxstyle="square,pad=0", ec=bg_color, fc=bg_color),
+        color=fg_color)
+
+    return nplt_disp, ax
+
+
+def figure1_a(image_path, display_mode='y', vmax=300, cut_coords=[15], figsize=(20, 20)):
+    import matplotlib.patches as patches
+
+    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
+                             figsize=figsize)
+
+    ax.add_patch(
+        patches.Arrow(
+            0.2,            # x
+            0.2,            # y
+            0.1,            # dx
+            0.6,            # dy
+            width=.25,
+            color='tomato',
+            transform=ax.transAxes
+        )
+    )
+
+    ax.add_patch(
+        patches.Arrow(
+            0.8,            # x
+            0.2,            # y
+            -0.1,            # dx
+            0.6,            # dy
+            width=.25,
+            color='tomato',
+            transform=ax.transAxes
+        )
+    )
+    return disp
+
+
+def figure1_b(image_path, display_mode='z', vmax=400, cut_coords=[-24], figsize=(20, 20)):
+    import matplotlib.patches as patches
+
+    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
+                             figsize=figsize)
+
+    ax.add_patch(
+        patches.Arrow(
+            0.02,            # x
+            0.55,            # y
+            0.1,            # dx
+            0.0,            # dy
+            width=.10,
+            color='tomato',
+            transform=ax.transAxes
+        )
+    )
+    ax.add_patch(
+        patches.Arrow(
+            0.98,            # x
+            0.55,            # y
+            -0.1,            # dx
+            0.0,            # dy
+            width=.10,
+            color='tomato',
+            transform=ax.transAxes
+        )
+    )
+
+    ax.add_patch(
+        patches.Arrow(
+            0.02,            # x
+            0.80,            # y
+            0.1,            # dx
+            0.0,            # dy
+            width=.10,
+            color='limegreen',
+            transform=ax.transAxes
+        )
+    )
+    ax.add_patch(
+        patches.Arrow(
+            0.98,            # x
+            0.80,            # y
+            -0.1,            # dx
+            0.0,            # dy
+            width=.10,
+            color='limegreen',
+            transform=ax.transAxes
+        )
+    )
+    return disp
+
+def figure1(artifact1, artifact2, out_file):
+    from .svg import svg2str, combine_svg
+    combine_svg([
+        svg2str(figure1_b(artifact2)),
+        svg2str(figure1_a(artifact1))
+        ],
+        axis='vertical').save(out_file)
+

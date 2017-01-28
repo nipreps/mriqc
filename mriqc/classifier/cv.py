@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 10:44:53
+# @Last Modified time: 2017-01-27 18:17:21
 
 """
 MRIQC Cross-validation
@@ -159,12 +159,12 @@ class NestedCVHelper(CVHelperBase):
                     continue
 
                 score, clf = result
-                test_groups = list(set(groups[i] for i in test))
+                test_group = list(set(groups[i] for i in test))[0]
                 self._models.append({
                     # 'clf_type': clf_str,
                     'zscored': int(dozs),
                     'outer_split_id': split_id,
-                    'left-out-sites': [self.sites[i] for i in test_groups],
+                    'left-out-sites': self.sites[test_group],
                     'best_model': clf.best_model_,
                     'best_params': clf.best_params_,
                     'best_score': clf.best_score_,
@@ -243,12 +243,13 @@ class NestedCVHelper(CVHelperBase):
 
     def get_outer_cv_scores(self):
         # Compose a dataframe object
-        columns = ['split_id', 'zscored', 'auc', 'acc']
+        columns = ['split_id', 'site', 'zscored', 'auc', 'acc']
         cvdict = {col: [] for col in columns}
 
         for model in self._models:
             cvdict['zscored'] += [int(model['zscored'])]
             cvdict['split_id'] += [model['outer_split_id']]
+            cvdict['site'] += [model['left-out-sites']]
             cvdict['auc'] += [model['cv_scores']]
             cvdict['acc'] += [model['cv_accuracy']]
 
