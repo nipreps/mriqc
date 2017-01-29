@@ -230,7 +230,7 @@ def wm2max(img, seg):
     """
     wmmask = np.zeros_like(seg)
     wmmask[seg == FSL_FAST_LABELS['wm']] = 1
-    return np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95)
+    return float(np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95))
 
 def art_qi1(airmask, artmask):
     """

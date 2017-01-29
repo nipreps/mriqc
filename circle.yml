@@ -19,7 +19,7 @@ dependencies:
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
-    - docker build -f docker/Dockerfile_py35 -t mriqc:py35 .
+    - for i in $(seq 1 5); do docker build -f docker/Dockerfile_py35 -t mriqc:py35 . && break || sleep 15; done
     - docker save mriqc:py35 > ~/docker/image.tar
 
 test:

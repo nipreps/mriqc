@@ -75,6 +75,7 @@ span.section-subtitle {
 div.embeded-report {
   width: 100%;
   page-break-before:always;
+  padding-top: 20px;
 }
 
 div.embeded-report svg { width: 100%; }
@@ -104,13 +105,8 @@ div.embeded-report svg { width: 100%; }
 <h2>Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
-{% if metadata %}
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
-<li>Dataset metadata:
-{{ metadata }}
-</li>
-{% endif %}
 {% if workflow_details %}
 <li>Workflow details:
   <ul class="sub-simple">
@@ -131,6 +127,14 @@ div.embeded-report svg { width: 100%; }
 {{ svg }}
 </div>
 {% endfor %}
+
+{% if metadata %}
+<h2>Metadata</h2>
+<div class="metadata-table">
+{{ metadata }}
+</div>
+{% endif %}
+
 
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
