@@ -12,6 +12,13 @@ Contents
    mriqc.reports
 
 
+Containerized versions
+----------------------
+
+If you have Docker installed, the quickest way to get ``mriqc`` to work
+is following docker_.
+
+
 Installation
 ------------
 
@@ -43,22 +50,26 @@ A fast and easy way to check that your dataset fulfills the
 :abbr:`BIDS (brain imaging data structure)` standard is
 the `BIDS validator <http://incf.github.io/bids-validator/>`_.
 
-Running ``mriqc`` only requires: ::
+Since ``mriqc`` follows the [BIDSApps]_ specification,
+its execution only requires: ::
 
-  mriqc -B ~/Data/bids_dataset -o out/ -w work/
+  mriqc bids-dataset/ out/ participant
 
 
 It is possible to run ``mriqc`` on specific subjects using ::
 
-  mriqc -B ~/Data/bids_dataset -S S001 S002 -o out/ -w work/
+  mriqc bids-dataset/ out/ participant --participant_label S001 S002
 
 where ``S001`` and ``S002`` are subject identifiers, corresponding to the folders
-``sub-S001`` and ``sub-S002`` in the :abbr:`BIDS (brain imaging data structure)` tree. Here, it is also accepted to use the ``sub-`` prefix ::
+``sub-S001`` and ``sub-S002`` in the :abbr:`BIDS (brain imaging data structure)` tree.
+Here, it is also accepted to use the ``sub-`` prefix ::
 
-  mriqc -B ~/Data/bids_dataset -S sub-S001 sub-S002 -o out/ -w work/
+  mriqc bids-dataset/ out/ participant --participant_label sub-S001 sub-S002
 
 
 Depending on the input images, the resulting outputs will vary as described next.
 
 
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
+  .. [BIDSApps] `BIDS-Apps: portable neuroimaging pipelines that understand BIDS
+     datasets <http://bids-apps.neuroimaging.io/>`_
