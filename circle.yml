@@ -2,7 +2,7 @@ machine:
   environment:
     SCRATCH: "$HOME/scratch"
     TEST_DATA_NAME: "circle-tests"
-    TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5835f77c594d9000421f69ae"
+    TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/589241339ad5a101fad8c474"
   services:
     - docker
 
