@@ -207,7 +207,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     pages = 5
     extra_pages = 0
     if verbose:
-        extra_pages = 2
+        extra_pages = 3
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -288,7 +288,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
         (inputnode, mplots, [('mni_report', 'in4')]),
-        (mosaic_spikes, mplots, [('out_file', 'in4')]),
+        (mosaic_spikes, mplots, [('out_file', 'in5')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
