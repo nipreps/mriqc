@@ -15,6 +15,6 @@ sklearn
 scikit-learn
 nose
 doctest-ignore-unicode
-sphinx
+sphinx>=1.4
 svgutils
 nipype>=0.13.0rc1
