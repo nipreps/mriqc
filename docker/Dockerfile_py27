@@ -43,7 +43,7 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
 
 # Create conda environment
 RUN conda config --add channels conda-forge && \
-    conda install -y numpy scipy statsmodels matplotlib && \
+    conda install -y numpy>=1.12.0 scipy matplotlib && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
