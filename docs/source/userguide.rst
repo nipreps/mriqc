@@ -16,7 +16,7 @@ Containerized versions
 ----------------------
 
 If you have Docker installed, the quickest way to get ``mriqc`` to work
-is following docker_.
+is following :ref:`Run mriqc with docker`.
 
 
 Installation
