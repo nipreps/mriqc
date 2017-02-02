@@ -44,14 +44,14 @@ CLASSIFIERS = [
 
 
 REQUIRES = [
-    'numpy',
+    'numpy>=1.12.0',
+    'nipype>=0.13.0rc1',
+    'niworkflows>=0.0.5',
     'future',
     'scipy',
     'six',
     'matplotlib',
     'nibabel',
-    'nipype>=0.13.0rc1',
-    'niworkflows>=0.0.5',
     'pandas',
     'dipy',
     'jinja2',
