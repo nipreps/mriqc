@@ -17,7 +17,7 @@ from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     BaseInterfaceInputSpec, isdefined)
 from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
-from mriqc.viz.utils import (plot_mosaic_helper, plot_segmentation)
+from mriqc.viz.utils import (plot_mosaic_helper, plot_segmentation, plot_slice)
 from mriqc.interfaces.base import MRIQCBaseInterface
 
 
@@ -123,6 +123,7 @@ class PlotMosaic(MRIQCBaseInterface):
 
 class PlotSpikesInputSpec(PlotBaseInputSpec):
     in_spikes = File(exists=True, mandatory=True, desc='tsv file of spikes')
+    in_fft = File(exists=True, mandatory=True, desc='nifti file with the 4D FFT')
 
 
 class PlotSpikesOutputSpec(TraitedSpec):
@@ -142,7 +143,7 @@ class PlotSpikes(MRIQCBaseInterface):
 
         spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int)
         # No spikes
-        if len(spikes_list) == 0:
+        if not spikes_list:
             with open(out_file, 'w') as f:
                 f.write('<p>No high-frequency spikes were found in this dataset</p>')
             return runtime
@@ -191,3 +192,5 @@ class PlotSpikes(MRIQCBaseInterface):
             plot_sagittal=False,
             only_plot_noise=False)
         return runtime
+
+

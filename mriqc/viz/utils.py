@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 """ Visualization utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 
 import math
 import os.path as op
@@ -26,11 +25,41 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
+from builtins import zip, range, str, bytes
 from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
+
+def plot_slice(data, spacing=None, cmap='Greys_r', label=None, ax=None,
+               vmax=None, vmin=None):
+    from matplotlib.cm import get_cmap
+
+    if isinstance(cmap, (str, bytes)):
+        cmap = cm.get_cmap(cmap)
+
+    est_vmin, est_vmax = _get_limits(data)
+    if not vmin:
+        vmin = est_vmin
+    if not vmax:
+        vmax = est_vmax
+
+    if ax is None:
+        ax = plt.gca()
+
+    if spacing is None:
+        spacing = [1.0, 1.0]
+
+    phys_sp = np.array(spacing) * data.shape
+
+    ax.imshow(data, vmin=vmin, vmax=vmax, cmap=cmap,
+              interpolation='nearest', origin='lower',
+              extent=[0, phys_sp[0], 0, phys_sp[1]])
+
+    if label is not None:
+        ax.annotate()
+
 
 def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
                 threshold=None, bbox_mask_file=None, only_plot_noise=False,
