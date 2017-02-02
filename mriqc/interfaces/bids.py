@@ -16,7 +16,7 @@ from nipype import logging
 from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
                                     BaseInterfaceInputSpec, File, Undefined)
 from mriqc.interfaces.base import MRIQCBaseInterface
-from mriqc.utils.misc import BIDS_COMPONENTS
+from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -37,9 +37,7 @@ class ReadSidecarJSON(MRIQCBaseInterface):
     """
     An utility to find and read JSON sidecar files of a BIDS tree
     """
-    expr = re.compile('^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?'
-                      '(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?'
-                      '(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?')
+    expr = re.compile(BIDS_EXPR)
     input_spec = ReadSidecarJSONInputSpec
     output_spec = ReadSidecarJSONOutputSpec
 
@@ -122,7 +120,7 @@ class IQMFileSink(MRIQCBaseInterface):
             out_dir = self.inputs.out_dir
 
         fname_comps = []
-        for comp, cpre in BIDS_COMPONENTS:
+        for comp, cpre in list(BIDS_COMP.items()):
             comp_val = None
             if isdefined(getattr(self.inputs, comp)):
                 comp_val = getattr(self.inputs, comp)
@@ -167,7 +165,7 @@ class IQMFileSink(MRIQCBaseInterface):
                     'discarding output.', root_key, str(val))
 
         id_dict = {}
-        for comp, _ in BIDS_COMPONENTS:
+        for comp in list(BIDS_COMP.keys()):
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val

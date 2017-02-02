@@ -28,7 +28,7 @@ def main():
     from nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
-    from mriqc.reports.utils import check_reports
+    # from mriqc.reports.utils import check_reports
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
