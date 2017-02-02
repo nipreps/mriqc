@@ -16,8 +16,14 @@ import pandas as pd
 from io import open  # pylint: disable=W0622
 from builtins import range  # pylint: disable=W0622
 
-BIDS_COMPONENTS = [('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
-                   ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')]
+BIDS_COMP = {'subject_id': 'sub', 'session_id': 'ses', 'task_id': 'task',
+             'acq_id': 'acq', 'rec_id': 'req', 'run_id': 'run'}
+
+BIDS_EXPR = """\
+^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?\
+(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?\
+(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
+"""
 
 def split_ext(in_file, out_file=None):
     import os.path as op
@@ -150,7 +156,7 @@ def generate_csv(derivatives_dir, output_dir, qctype):
 
     all_id_fields = []
     datalist = []
-    comps = set([key for key, _ in BIDS_COMPONENTS])
+    comps = set(list(BIDS_COMP.keys()))
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
 

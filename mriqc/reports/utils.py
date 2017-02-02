@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-21 19:27:22
+# @Last Modified time: 2017-02-01 15:53:32
 """ Helpers in report generation """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
@@ -109,42 +109,41 @@ def read_report_snippet(in_file):
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
 
-def check_reports(dataset, settings, save_failed=True):
-    """Check if reports have been created"""
-    import os.path as op
-    import pandas as pd
-    supported_components = ['subject_id', 'session_id', 'task_id', 'run_id']
-    expr = re.compile('^(?P<subject_id>sub-[a-zA-Z0-9]+)(_(?P<session_id>ses-[a-zA-Z0-9]+))?'
-                      '(_(?P<task_id>task-[a-zA-Z0-9]+))?(_(?P<acq_id>acq-[a-zA-Z0-9]+))?'
-                      '(_(?P<rec_id>rec-[a-zA-Z0-9]+))?(_(?P<run_id>run-[a-zA-Z0-9]+))?')
+# def check_reports(dataset, settings, save_failed=True):
+#     """Check if reports have been created"""
+#     import os.path as op
+#     import pandas as pd
+#     from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
+#     supported_components = list(BIDS_COMP.keys())
+#     expr = re.compile(BIDS_EXPR)
 
-    reports_missed = False
-    missing = {}
-    for mod, files in list(dataset.items()):
-        missing[mod] = []
-        qctype = 'anatomical' if mod == 't1w' else 'functional'
+#     reports_missed = False
+#     missing = {}
+#     for mod, files in list(dataset.items()):
+#         missing[mod] = []
+#         qctype = 'anatomical' if mod == 't1w' else 'functional'
 
-        for fname in files:
-            m = expr.search(op.basename(fname)).groupdict()
-            components = [m.get(key) for key in supported_components if m.get(key)]
-            components.insert(0, qctype)
+#         for fname in files:
+#             m = expr.search(op.basename(fname)).groupdict()
+#             components = [m.get(key) for key in supported_components if m.get(key)]
+#             components.insert(0, qctype)
 
-            report_fname = op.join(
-                settings['report_dir'], '_'.join(components) + '_report.html')
+#             report_fname = op.join(
+#                 settings['report_dir'], '_'.join(components) + '_report.html')
 
-            if not op.isfile(report_fname):
-                missing[mod].append(
-                    {key: m.get(key) for key in supported_components if m.get(key)})
+#             if not op.isfile(report_fname):
+#                 missing[mod].append(
+#                     {key: m.get(key) for key in supported_components if m.get(key)})
 
-        mod_missing = missing[mod]
-        if mod_missing:
-            reports_missed = True
+#         mod_missing = missing[mod]
+#         if mod_missing:
+#             reports_missed = True
 
-        if mod_missing and save_failed:
-            out_file = op.join(settings['output_dir'], 'failed_%s.csv' % qctype)
-            miss_cols = list(set(supported_components) & set(list(mod_missing[0].keys())))
-            dframe = pd.DataFrame.from_dict(mod_missing).sort_values(
-                by=miss_cols)
-            dframe[miss_cols].to_csv(out_file, index=False)
+#         if mod_missing and save_failed:
+#             out_file = op.join(settings['output_dir'], 'failed_%s.csv' % qctype)
+#             miss_cols = list(set(supported_components) & set(list(mod_missing[0].keys())))
+#             dframe = pd.DataFrame.from_dict(mod_missing).sort_values(
+#                 by=miss_cols)
+#             dframe[miss_cols].to_csv(out_file, index=False)
 
-    return reports_missed
+#     return reports_missed

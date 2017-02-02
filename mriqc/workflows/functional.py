@@ -98,6 +98,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
+                        ('acq_id', 'inputnode.acq_id'),
+                        ('rec_id', 'inputnode.rec_id'),
                         ('run_id', 'inputnode.run_id'),
                         ('out_dict', 'inputnode.metadata')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -127,8 +129,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'orig', 'epi_mean',
-        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
+        'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
@@ -182,6 +184,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('task_id', 'task_id'),
+                               ('acq_id', 'acq_id'),
+                               ('rec_id', 'rec_id'),
                                ('run_id', 'run_id'),
                                ('metadata', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
