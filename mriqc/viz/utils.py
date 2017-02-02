@@ -34,7 +34,7 @@ DINA4_PORTRAIT = (8.27, 11.69)
 
 def plot_slice_tern(dslice, prev=None, post=None,
                     spacing=None, cmap='Greys_r', label=None, ax=None,
-                    vmax=None, vmin=None, annotate=False):
+                    vmax=None, vmin=None):
     from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
@@ -90,6 +90,7 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
 
     data = nii.get_data()
     zooms = nii.header.get_zooms()[:2]
+    tstep = nii.header.get_zooms()[-1]
     ntpoints = data.shape[-1]
 
     if len(spikes_list) > cols * 7:
@@ -124,7 +125,7 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
 
         plot_slice_tern(data[..., z, t], prev=prev, post=post, spacing=zooms,
                         ax=ax2,
-                        label=labelfmt.format(t, z))
+                        label=labelfmt.format(t * tstep, z))
 
         plot_slice_tern(fft[..., z, t], prev=pvft, post=psft, vmin=-5, vmax=5, cmap='coolwarm',
                         ax=ax1)
