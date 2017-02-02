@@ -32,14 +32,15 @@ DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
 
-def plot_slice(data, spacing=None, cmap='Greys_r', label=None, ax=None,
-               vmax=None, vmin=None):
+def plot_slice_tern(dslice, prev=None, post=None,
+                    spacing=None, cmap='Greys_r', label=None, ax=None,
+                    vmax=None, vmin=None, annotate=False):
     from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
-        cmap = cm.get_cmap(cmap)
+        cmap = get_cmap(cmap)
 
-    est_vmin, est_vmax = _get_limits(data)
+    est_vmin, est_vmax = _get_limits(dslice)
     if not vmin:
         vmin = est_vmin
     if not vmax:
@@ -50,15 +51,90 @@ def plot_slice(data, spacing=None, cmap='Greys_r', label=None, ax=None,
 
     if spacing is None:
         spacing = [1.0, 1.0]
+    else:
+        spacing = [spacing[1], spacing[0]]
 
-    phys_sp = np.array(spacing) * data.shape
+    phys_sp = np.array(spacing) * dslice.shape
 
-    ax.imshow(data, vmin=vmin, vmax=vmax, cmap=cmap,
+    if prev is None:
+        prev = np.ones_like(dslice)
+    if post is None:
+        post = np.ones_like(dslice)
+
+    combined = np.swapaxes(np.vstack((prev, dslice, post)), 0, 1)
+    ax.imshow(combined, vmin=vmin, vmax=vmax, cmap=cmap,
               interpolation='nearest', origin='lower',
-              extent=[0, phys_sp[0], 0, phys_sp[1]])
+              extent=[0, phys_sp[1] * 3, 0, phys_sp[0]])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(False)
 
     if label is not None:
-        ax.annotate()
+        ax.text(.5, .05, label,
+                transform=ax.transAxes,
+                horizontalalignment='center',
+                verticalalignment='top',
+                size=24,
+                bbox=dict(boxstyle="square,pad=0", ec='k', fc='k'),
+                color='w')
+
+
+def plot_spikes(in_file, in_fft, spikes_list, cols=3,
+                labelfmt='t={0:.3f}s (z={1:d})',
+                out_file=None):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    nii = nb.as_closest_canonical(nb.load(in_file))
+    fft = nb.load(in_fft).get_data()
+
+
+    data = nii.get_data()
+    zooms = nii.header.get_zooms()[:2]
+    ntpoints = data.shape[-1]
+
+    nspikes = len(spikes_list)
+
+    rows = 2
+    if nspikes > cols:
+        rows = math.ceil(nspikes / cols)
+
+    fig = plt.figure(figsize=(10 * rows, 7 * cols))
+
+    for i, (t, z) in enumerate(spikes_list):
+        prev = None
+        pvft = None
+        if t > 0:
+            prev = data[..., z, t - 1]
+            pvft = fft[..., z, t - 1]
+
+        post = None
+        psft = None
+        if t < (ntpoints - 1):
+            post = data[..., z, t + 1]
+            psft = fft[..., z, t + 1]
+
+
+        ax1 = fig.add_subplot(rows, cols, i + 1)
+        divider = make_axes_locatable(ax1)
+        ax2 = divider.new_vertical(size="100%", pad=0.1)
+        fig.add_axes(ax2)
+
+        plot_slice_tern(data[..., z, t], prev=prev, post=post, spacing=zooms,
+                        ax=ax2,
+                        label=labelfmt.format(t, z))
+
+        plot_slice_tern(fft[..., z, t], prev=pvft, post=psft, vmin=-5, vmax=5, cmap='coolwarm',
+                        ax=ax1)
+
+    plt.tight_layout()
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath('%s.svg' % fname)
+
+    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
+    return out_file
 
 
 def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,

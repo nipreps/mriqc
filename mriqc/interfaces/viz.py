@@ -17,7 +17,7 @@ from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     BaseInterfaceInputSpec, isdefined)
 from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
-from mriqc.viz.utils import (plot_mosaic_helper, plot_segmentation, plot_slice)
+from mriqc.viz.utils import (plot_mosaic_helper, plot_segmentation, plot_spikes)
 from mriqc.interfaces.base import MRIQCBaseInterface
 
 
@@ -141,56 +141,17 @@ class PlotSpikes(MRIQCBaseInterface):
         out_file = op.abspath(self.inputs.out_file)
         self._results['out_file'] = out_file
 
-        spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int)
+        spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int).tolist()
         # No spikes
         if not spikes_list:
             with open(out_file, 'w') as f:
                 f.write('<p>No high-frequency spikes were found in this dataset</p>')
             return runtime
 
-        spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).reshape(-1, 2)]
-
-        # Spikes found
-        nii = nb.load(self.inputs.in_file)
-        data = nii.get_data()
-
-        slices = []
-        labels = []
-        labelfmt = 't={0:.3f}s (z={1:d})'.format
-        for t, z in spikes_list:
-            if t > 0:
-                slices.append(data[..., z, t - 1])
-                labels.append(labelfmt(t - 1, z))
-            else:
-                slices.append(np.zeros_like(data[..., z, 0]))
-                labels.append('')
-
-            slices.append(data[..., z, t])
-            labels.append(labelfmt(t, z))
-
-            if t < (len(spikes_list) - 1):
-                slices.append(data[..., z, t + 1])
-                labels.append(labelfmt(t + 1, z))
-            else:
-                slices.append(np.zeros_like(data[..., z, 0]))
-                labels.append('')
-
-        spikes_data = np.stack(slices, axis=-1)
-        nb.Nifti1Image(spikes_data, nii.get_affine(),
-                       nii.get_header()).to_filename('spikes.nii.gz')
-
-        title = None
-        if isdefined(self.inputs.title):
-            title = self.inputs.title
-
-        # tr = nii.get_header().get_zooms()[-1]
-        plot_mosaic_helper(
-            op.abspath('spikes.nii.gz'),
-            out_file=out_file,
-            title=title,
-            cmap=self.inputs.cmap,
-            plot_sagittal=False,
-            only_plot_noise=False)
+        spikes_list = [tuple(i) for i in spikes_list]
+        plot_spikes(
+            self.inputs.in_file, self.inputs.in_fft, spikes_list,
+            out_file=out_file)
         return runtime
 
 
