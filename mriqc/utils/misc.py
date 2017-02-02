@@ -16,8 +16,10 @@ import pandas as pd
 from io import open  # pylint: disable=W0622
 from builtins import range  # pylint: disable=W0622
 
-BIDS_COMP = {'subject_id': 'sub', 'session_id': 'ses', 'task_id': 'task',
-             'acq_id': 'acq', 'rec_id': 'req', 'run_id': 'run'}
+BIDS_COMP = collections.OrderedDict([
+    ('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
+    ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')
+])
 
 BIDS_EXPR = """\
 ^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?\
