@@ -98,6 +98,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
+                        ('acq_id', 'inputnode.acq_id'),
+                        ('rec_id', 'inputnode.rec_id'),
                         ('run_id', 'inputnode.run_id'),
                         ('out_dict', 'inputnode.metadata')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -127,8 +129,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'orig', 'epi_mean',
-        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
+        'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
@@ -182,6 +184,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('task_id', 'task_id'),
+                               ('acq_id', 'acq_id'),
+                               ('rec_id', 'rec_id'),
                                ('run_id', 'run_id'),
                                ('metadata', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -203,7 +207,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     pages = 5
     extra_pages = 0
     if verbose:
-        extra_pages = 3
+        extra_pages = 2
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -251,10 +255,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mosaic_spikes = pe.Node(PlotSpikes(
-        out_file='plot_spikes.svg', cmap='viridis',
-        title='High-Frequency spikes'),
-                            name='PlotSpikes')
+    # mosaic_spikes = pe.Node(PlotSpikes(
+    #     out_file='plot_spikes.svg', cmap='viridis',
+    #     title='High-Frequency spikes'),
+    #                         name='PlotSpikes')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -278,13 +282,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
-        (inputnode, mosaic_spikes, [('orig', 'in_file'),
-                                    ('in_spikes', 'in_spikes')]),
+        # (inputnode, mosaic_spikes, [('orig', 'in_file'),
+        #                             ('in_spikes', 'in_spikes')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        (mosaic_spikes, mplots, [('out_file', 'in4')]),
-        (inputnode, mplots, [('mni_report', 'in5')]),
+        (inputnode, mplots, [('mni_report', 'in4')]),
+        # (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
