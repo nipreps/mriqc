@@ -148,7 +148,7 @@ class PlotSpikes(MRIQCBaseInterface):
                 f.write('<p>No high-frequency spikes were found in this dataset</p>')
             return runtime
 
-        spikes_list = [tuple(i) for i in spikes_list]
+        spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).tolist()]
         plot_spikes(
             self.inputs.in_file, self.inputs.in_fft, spikes_list,
             out_file=out_file)
