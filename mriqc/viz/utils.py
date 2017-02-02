@@ -34,7 +34,7 @@ DINA4_PORTRAIT = (8.27, 11.69)
 
 
 def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
-               ax=None, vmax=None, vmin=None):
+               ax=None, vmax=None, vmin=None, annotate=False):
     from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
@@ -61,10 +61,21 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
     ax.grid(False)
     ax.axis('off')
 
-    if label is not None:
-        ax.text(.85, .95, label, color='w', transform=ax.transAxes,
+    if annotate:
+        bgcolor = cmap(min(dslice.min(), 0.0))
+        ax.text(.95, .95, 'R', color='w', transform=ax.transAxes,
                 horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec='k', fc='k'))
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+        ax.text(.05, .95, 'L', color='w', transform=ax.transAxes,
+                horizontalalignment='center', verticalalignment='top',
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+
+    if label is not None:
+        bgcolor = cmap(min(dslice.min(), 0.0))
+        ax.text(.98, .01, label, color='w', transform=ax.transAxes,
+                horizontalalignment='right', verticalalignment='bottom',
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+
 
 def plot_slice_tern(dslice, prev=None, post=None,
                     spacing=None, cmap='Greys_r', label=None, ax=None,
@@ -104,7 +115,7 @@ def plot_slice_tern(dslice, prev=None, post=None,
     ax.grid(False)
 
     if label is not None:
-        ax.text(.95, .95, label,
+        ax.text(.5, .05, label,
                 transform=ax.transAxes,
                 horizontalalignment='center',
                 verticalalignment='top',
@@ -175,20 +186,21 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
     return out_file
 
 
-def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
-                threshold=None, bbox_mask_file=None, only_plot_noise=False,
+def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
+                bbox_mask_file=None, only_plot_noise=False, annotate=True,
                 vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True,
-                fig=None):
+                fig=None, zmax=128):
 
     if isinstance(img, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(img))
-        img_data = nii.get_data()
-        zooms = nii.header.get_zooms()[:2]
+        img_data = nii.get_data()[::-1, ...]
+        zooms = nii.header.get_zooms()
     else:
         img_data = img
-        zooms = [1.0, 1.0]
+        zooms = [1.0, 1.0, 1.0]
+        out_file = 'mosaic.svg'
 
-    if img_data.shape[2] > 70 and bbox_mask_file is None:
+    if img_data.shape[2] > zmax and bbox_mask_file is None:
         lowthres = np.percentile(img_data, 5)
         mask_file = np.ones_like(img_data)
         mask_file[img_data <= lowthres] = 0
@@ -196,13 +208,13 @@ def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
 
     if bbox_mask_file is not None:
         bbox_data = nb.as_closest_canonical(
-            nb.load(bbox_mask_file)).get_data()
+            nb.load(bbox_mask_file)).get_data()[::-1, ...]
         img_data = _bbox(img_data, bbox_data)
 
     z_vals = np.array(list(range(0, img_data.shape[2])))
 
     # Reduce the number of slices shown
-    if len(z_vals) > 70:
+    if len(z_vals) > zmax:
         rem = 15
         # Crop inferior and posterior
         if not bbox_mask_file:
@@ -212,7 +224,7 @@ def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
             # img_data = img_data[..., 2 * rem:]
             z_vals = z_vals[2 * rem:]
 
-    while len(z_vals) > 70:
+    while len(z_vals) > zmax:
         # Discard one every two slices
         # img_data = img_data[..., ::2]
         z_vals = z_vals[::2]
@@ -261,8 +273,8 @@ def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
         if overlay_mask:
             ax.set_rasterized(True)
         plot_slice(img_data[:, :, z_val], vmin=vmin, vmax=vmax,
-                   cmap=cmap, ax=ax, spacing=zooms,
-                   label='%d' % z_val)
+                   cmap=cmap, ax=ax, spacing=zooms[:2],
+                   label='%d' % z_val, annotate=annotate)
 
         if overlay_mask:
             from matplotlib import cm
@@ -271,7 +283,7 @@ def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
             alphas = np.linspace(0, 0.75, msk_cmap.N + 3)
             msk_cmap._lut[:, -1] = alphas
             plot_slice(overlay_data[:, :, z_val], vmin=0, vmax=1,
-                       cmap=msk_cmap, ax=ax, spacing=zooms)
+                       cmap=msk_cmap, ax=ax, spacing=zooms[:2])
         naxis += 1
 
 
@@ -291,12 +303,19 @@ def plot_mosaic(img, out_file, ncols=8, title=None, overlay_mask=None,
             naxis += 1
 
     fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.01,
-        hspace=0.1)
+        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05,
+        hspace=0.05)
 
     if title:
         fig.suptitle(title, fontsize='10')
     fig.subplots_adjust(wspace=0.002, hspace=0.002)
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(img))
+        if ext == ".gz":
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath(fname + '_mosaic.svg')
+
     fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
     return out_file
 
@@ -490,24 +509,6 @@ def plot_bg_dist(in_file):
     fig.savefig(out_file, format='svg', dpi=300)
     plt.close()
     return out_file
-
-
-def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None, title=None,
-                       plot_sagittal=True, only_plot_noise=False, cmap='Greys_r'):
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, _ = op.splitext(fname)
-        out_file = fname + '_mosaic.svg'
-
-    out_file = op.abspath(out_file)
-    plot_mosaic(
-        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title,
-        only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
-    )
-    return out_file
-
 
 def _get_limits(nifti_file, only_plot_noise=False):
     from builtins import bytes, str   # pylint: disable=W0622
