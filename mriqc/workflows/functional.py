@@ -204,10 +204,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 5
+    pages = 3
     extra_pages = 0
     if verbose:
-        extra_pages = 2
+        extra_pages = 4
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -287,7 +287,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        (inputnode, mplots, [('mni_report', 'in4')]),
         # (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
@@ -322,7 +321,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, mosaic_noise, [('epi_mean', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', 'in%d' % (pages + 1))]),
         (mosaic_noise, mplots, [('out_file', 'in%d' % (pages + 2))]),
-        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))])
+        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))]),
+        (inputnode, mplots, [('mni_report', 'in%d' % (pages + 4))]),
     ])
     return workflow
 
