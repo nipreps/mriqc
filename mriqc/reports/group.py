@@ -16,7 +16,7 @@ import pandas as pd
 from builtins import zip, object, str  # pylint: disable=W0622
 
 from mriqc import logging
-from mriqc.utils.misc import BIDS_COMPONENTS
+from mriqc.utils.misc import BIDS_COMP
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
@@ -83,7 +83,7 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         ]
     }
 
-    def_comps = [key for key, _ in BIDS_COMPONENTS]
+    def_comps = list(BIDS_COMP.keys())
     dataframe = pd.read_csv(csv_file, index_col=False,
                             dtype={comp: object for comp in def_comps})
 
@@ -148,7 +148,7 @@ def _format_labels(row):
     """format participant labels"""
     crow = []
 
-    for col_id, prefix in BIDS_COMPONENTS:
+    for col_id, prefix in list(BIDS_COMP.items()):
         if pd.notnull(row[[col_id]])[0]:
             crow.append('%s-%s' % (prefix, row[[col_id]].values[0]))
     return '_'.join(crow)

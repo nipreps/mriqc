@@ -16,6 +16,7 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
     import datetime
     from json import load
     from mriqc import __version__ as ver
+    from mriqc.utils.misc import BIDS_COMP
     from mriqc.reports.utils import iqms2html, anat_flags, read_report_snippet
     from mriqc.data import IndividualTemplate
     from mriqc import logging
@@ -40,8 +41,7 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
     metadata = iqms_dict.pop('metadata', None)
     qctype = metadata.pop('qc_type', None)
     file_id = [metadata.pop(k, None)
-               for k in ['subject_id', 'session_id', 'task_id',
-                         'acq_id', 'rec_id', 'run_id']]
+               for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
 
     # Deal with special IQMs

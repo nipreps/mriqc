@@ -32,151 +32,6 @@ DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
 
-
-def plot_measures(df, measures, ncols=4, title='Group level report',
-                  subject=None, figsize=DINA4_PORTRAIT):
-    import matplotlib.gridspec as gridspec
-    nmeasures = len(measures)
-    nrows = nmeasures // ncols
-    if nmeasures % ncols > 0:
-        nrows += 1
-
-    fig = plt.figure(figsize=figsize)
-    gsp = gridspec.GridSpec(nrows, ncols)
-
-    axes = []
-
-    for i, mname in enumerate(measures):
-        axes.append(plt.subplot(gsp[i]))
-        axes[-1].set_xlabel(mname)
-        sns.distplot(
-            df[[mname]], ax=axes[-1], color="b", rug=True, norm_hist=True)
-
-        # labels = np.array(axes[-1].get_xticklabels())
-        # labels[2:-2] = ''
-        axes[-1].set_xticklabels([])
-        plt.ticklabel_format(style='sci', axis='y', scilimits=(-1, 1))
-
-        if subject is not None:
-            subid = subject
-            try:
-                subid = int(subid)
-            except ValueError:
-                pass
-
-            subdf = df.loc[df['subject_id'] == subid]
-            sessions = np.atleast_1d(subdf[['session_id']]).reshape(-1).tolist()
-
-            for ss in sessions:
-                sesdf = subdf.loc[subdf['session_id'] == ss]
-                scans = np.atleast_1d(sesdf[['run_id']]).reshape(-1).tolist()
-
-                for sc in scans:
-                    scndf = subdf.loc[sesdf['run_id'] == sc]
-                    plot_vline(
-                        scndf.iloc[0][mname], '_'.join([ss, sc]), axes[-1])
-
-    fig.suptitle(title)
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.subplots_adjust(top=0.85)
-    return fig
-
-
-def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
-             strip_nsubj=10, title='Summary report'):
-    import matplotlib.gridspec as gridspec
-    # colnames = [v for gnames in groups for v in gnames]
-    lengs = [len(el) for el in groups]
-    # ncols = np.sum(lengs)
-
-    fig = plt.figure(figsize=figsize)
-    gsp = gridspec.GridSpec(1, len(groups), width_ratios=lengs)
-
-    subjects = sorted(pd.unique(df.subject_id.ravel()))
-    nsubj = len(subjects)
-    subid = subject
-    if subid is not None:
-        try:
-            subid = int(subid)
-        except ValueError:
-            pass
-
-    axes = []
-    for i, snames in enumerate(groups):
-        if len(snames) == 0:
-            continue
-
-        axes.append(plt.subplot(gsp[i]))
-
-        if nsubj > strip_nsubj:
-            pal = sns.color_palette("hls", len(snames))
-            sns.violinplot(data=df[snames], ax=axes[-1], linewidth=.8, palette=pal)
-        else:
-            stdf = df.copy()
-            if subid is not None:
-                stdf = stdf.loc[stdf['subject_id'] != subid]
-            sns.stripplot(data=stdf[snames], ax=axes[-1], jitter=0.25)
-
-        axes[-1].set_xticklabels(
-            [el.get_text() for el in axes[-1].get_xticklabels()],
-            rotation='vertical')
-        plt.ticklabel_format(style='sci', axis='y', scilimits=(-1, 1))
-        # df[snames].plot(kind='box', ax=axes[-1])
-
-        # If we know the subject, place a star for each scan
-        if subject is not None:
-            subdf = df.loc[df['subject_id'] == subid]
-            scans = sorted(pd.unique(subdf.run_id.ravel()))
-            nstars = len(scans)
-            if nstars == 0:
-                continue
-
-            for j, sname in enumerate(snames):
-                vals = []
-                for _, scid in enumerate(scans):
-                    val = subdf.loc[df.run_id == scid, [sname]].iloc[0, 0]
-                    vals.append(val)
-
-                if len(vals) != nstars:
-                    continue
-
-                pos = [j]
-                if nstars > 1:
-                    pos = np.linspace(j-0.3, j+0.3, num=nstars)
-
-                axes[-1].plot(
-                    pos, vals, ms=9, mew=.8, linestyle='None',
-                    color='w', marker='*', markeredgecolor='k',
-                    zorder=10)
-
-    fig.suptitle(title)
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.subplots_adjust(top=0.85)
-    return fig
-
-
-def get_limits(nifti_file, only_plot_noise=False):
-    from builtins import bytes, str   # pylint: disable=W0622
-
-    if isinstance(nifti_file, (str, bytes)):
-        nii = nb.as_closest_canonical(nb.load(nifti_file))
-        data = nii.get_data()
-    else:
-        data = nifti_file
-
-    data_mask = np.logical_not(np.isnan(data))
-
-    if only_plot_noise:
-        data_mask = np.logical_and(data_mask, data != 0)
-        vmin = np.percentile(data[data_mask], 0)
-        vmax = np.percentile(data[data_mask], 61)
-    else:
-        vmin = np.percentile(data[data_mask], 0.5)
-        vmax = np.percentile(data[data_mask], 99.5)
-
-    return vmin, vmax
-
-
 def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
                 threshold=None, bbox_mask_file=None, only_plot_noise=False,
                 vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True):
@@ -253,7 +108,7 @@ def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
         overlay_data = _safe_get_data(overlay_mask)
 
 
-    est_vmin, est_vmax = get_limits(
+    est_vmin, est_vmax = _get_limits(
         data, only_plot_noise=only_plot_noise)
     if not vmin:
         vmin = est_vmin
@@ -517,3 +372,25 @@ def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None, title=None,
         only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
     )
     return out_file
+
+
+def _get_limits(nifti_file, only_plot_noise=False):
+    from builtins import bytes, str   # pylint: disable=W0622
+
+    if isinstance(nifti_file, (str, bytes)):
+        nii = nb.as_closest_canonical(nb.load(nifti_file))
+        data = nii.get_data()
+    else:
+        data = nifti_file
+
+    data_mask = np.logical_not(np.isnan(data))
+
+    if only_plot_noise:
+        data_mask = np.logical_and(data_mask, data != 0)
+        vmin = np.percentile(data[data_mask], 0)
+        vmax = np.percentile(data[data_mask], 61)
+    else:
+        vmin = np.percentile(data[data_mask], 0.5)
+        vmax = np.percentile(data[data_mask], 99.5)
+
+    return vmin, vmax
