@@ -255,10 +255,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    # mosaic_spikes = pe.Node(PlotSpikes(
-    #     out_file='plot_spikes.svg', cmap='viridis',
-    #     title='High-Frequency spikes'),
-    #                         name='PlotSpikes')
+    mosaic_spikes = pe.Node(PlotSpikes(
+        out_file='plot_spikes.svg', cmap='viridis',
+        title='High-Frequency spikes'),
+                            name='PlotSpikes')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -282,13 +282,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
-        # (inputnode, mosaic_spikes, [('orig', 'in_file'),
-        #                             ('in_spikes', 'in_spikes')]),
+        (inputnode, mosaic_spikes, [('orig', 'in_file'),
+                                    ('in_spikes', 'in_spikes')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
         (inputnode, mplots, [('mni_report', 'in4')]),
-        # (mosaic_spikes, mplots, [('out_file', 'in4')]),
+        (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
