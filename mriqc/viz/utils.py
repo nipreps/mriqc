@@ -92,13 +92,16 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
     zooms = nii.header.get_zooms()[:2]
     ntpoints = data.shape[-1]
 
-    nspikes = len(spikes_list)
+    if len(spikes_list) > cols * 7:
+        cols += 1
 
-    rows = 2
+
+    nspikes = len(spikes_list)
+    rows = 1
     if nspikes > cols:
         rows = math.ceil(nspikes / cols)
 
-    fig = plt.figure(figsize=(10 * rows, 7 * cols))
+    fig = plt.figure(figsize=(7 * cols, 5 * rows))
 
     for i, (t, z) in enumerate(spikes_list):
         prev = None
