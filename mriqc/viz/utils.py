@@ -236,22 +236,6 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
     if plot_sagittal:
         nrows += 1
 
-    #row, col = _calc_rows_columns((figsize[0] / figsize[1]), n_images)
-    # end = "pre"
-    # z_vals = list(z_vals)
-    # while (row - 1) * col > len(z_vals) and (
-    #         z_vals[0] != 0 or z_vals[-1] != img_data.shape[2] - 1):
-    #     if end == "pre":
-    #         if z_vals[0] != 0:
-    #             z_vals = [z_vals[0] - 1] + z_vals
-    #         end = "post"
-    #     else:
-    #         if z_vals[-1] != img_data.shape[2] - 1:
-    #             z_vals = z_vals + [z_vals[-1] + 1]
-    #         end = "pre"
-    #     if (row - 1) * col < len(z_vals):
-    #         break
-
     if overlay_mask:
         overlay_data = nb.as_closest_canonical(
             nb.load(overlay_mask)).get_data()
@@ -302,7 +286,8 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
             ax = fig.add_subplot(nrows, ncols, naxis)
 
             plot_slice(img_data[x_val, ...], vmin=vmin, vmax=vmax,
-                       cmap=cmap, ax=ax, label='%d' % x_val)
+                       cmap=cmap, ax=ax, label='%d' % x_val,
+                       spacing=[zooms[0], zooms[2]])
             naxis += 1
 
     fig.subplots_adjust(
