@@ -44,7 +44,7 @@ def main():
                              'should be stored. If you are running group level analysis '
                              'this folder should be prepopulated with the results of the'
                              'participant level analysis.')
-    parser.add_argument('analysis_level', action='store',
+    parser.add_argument('analysis_level', action='store', nargs='+',
                         help='Level of the analysis that will be performed. '
                              'Multiple participant level analyses can be run independently '
                              '(in parallel) using the same output_dir.',
@@ -203,9 +203,17 @@ def main():
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
 
+    # If ends successfully and no --participant_label was set, run group level
+    analysis_levels = opts.analysis_level
+    if opts.participant_label is None:
+        analysis_levels.append('group')
+    analysis_levels = list(set(analysis_levels))
+    if len(analysis_levels) > 2:
+        raise RuntimeError('Error parsing analysis levels, got "%s"' % ', '.join(analysis_levels))
+
     MRIQC_LOG.info(
-        'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
-        __version__, opts.analysis_level, opts.participant_label, settings)
+        'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+        __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
     # Process data types
     qc_types = []
@@ -222,7 +230,7 @@ def main():
                                 participant_label=opts.participant_label)
 
     # Set up participant level
-    if opts.analysis_level == 'participant':
+    if 'participant' in analysis_levels:
         workflow = Workflow(name='workflow_enumerator')
         workflow.base_dir = settings['work_dir']
 
@@ -244,7 +252,7 @@ def main():
                                'BIDS-compliant.' % settings['bids_dir'])
 
     # Set up group level
-    if opts.analysis_level == 'group' or opts.participant_label is None:
+    if 'group' in analysis_levels:
         from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv
 
