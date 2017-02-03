@@ -8,7 +8,7 @@ MRIQC
 """
 
 __versionbase__ = '0.9.0'
-__versionrev__ = '-rc1'
+__versionrev__ = '-rc2'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
