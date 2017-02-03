@@ -17,7 +17,7 @@ from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     BaseInterfaceInputSpec, isdefined)
 from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
-from mriqc.viz.utils import (plot_mosaic_helper, plot_segmentation, plot_spikes)
+from mriqc.viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
 from mriqc.interfaces.base import MRIQCBaseInterface
 
 
@@ -76,6 +76,7 @@ class PlotBaseInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True,
                    desc='File to be plotted')
     title = traits.Str(desc='a title string for the plot')
+    annotate = traits.Bool(True, usedefault=True, desc='annotate left/right')
     figsize = traits.Tuple(
         (11.69, 8.27), traits.Float, traits.Float, usedefault=True,
         desc='Figure size')
@@ -110,13 +111,14 @@ class PlotMosaic(MRIQCBaseInterface):
         if isdefined(self.inputs.title):
             title = self.inputs.title
 
-        plot_mosaic_helper(
+        plot_mosaic(
             self.inputs.in_file,
             out_file=self.inputs.out_file,
             title=title,
             only_plot_noise=self.inputs.only_noise,
             bbox_mask_file=mask,
-            cmap=self.inputs.cmap)
+            cmap=self.inputs.cmap,
+            annotate=self.inputs.annotate)
         self._results['out_file'] = op.abspath(self.inputs.out_file)
         return runtime
 
