@@ -62,19 +62,17 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
     ax.axis('off')
 
     if annotate:
-        bgcolor = cmap(min(dslice.min(), 0.0))
-        ax.text(.95, .95, 'R', color='w', transform=ax.transAxes,
+        ax.text(.95, .95, 'R', color=cmap(vmax), transform=ax.transAxes,
                 horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
-        ax.text(.05, .95, 'L', color='w', transform=ax.transAxes,
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
+        ax.text(.05, .95, 'L', color=cmap(vmax), transform=ax.transAxes,
                 horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
 
     if label is not None:
-        bgcolor = cmap(min(dslice.min(), 0.0))
-        ax.text(.98, .01, label, color='w', transform=ax.transAxes,
+        ax.text(.98, .01, label, color=cmap(vmax), transform=ax.transAxes,
                 horizontalalignment='right', verticalalignment='bottom',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
 
 
 def plot_slice_tern(dslice, prev=None, post=None,
@@ -193,7 +191,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
     if isinstance(img, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(img))
-        img_data = nii.get_data()[::-1, ...]
+        img_data = nii.get_data()
         zooms = nii.header.get_zooms()
     else:
         img_data = img
@@ -208,7 +206,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
     if bbox_mask_file is not None:
         bbox_data = nb.as_closest_canonical(
-            nb.load(bbox_mask_file)).get_data()[::-1, ...]
+            nb.load(bbox_mask_file)).get_data()
         img_data = _bbox(img_data, bbox_data)
 
     z_vals = np.array(list(range(0, img_data.shape[2])))
@@ -289,13 +287,15 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
     if plot_sagittal:
         naxis = (ncols * nrows) - ncols + 1
-        start = int(img_data.shape[0] / 5)
-        stop = img_data.shape[0] - start
-        step = int((stop - start) / (ncols))
-        x_vals = range(start, stop, step)
-        x_vals = np.array(x_vals[:ncols])
-        x_vals += int((stop - x_vals[-1]) / 2)
-        for x_val in x_vals:
+
+        step = int(img_data.shape[0] / (ncols + 1))
+        start = step
+        stop = img_data.shape[0] - step
+
+        if step == 0:
+            step = 1
+
+        for x_val in list(range(start, stop, step)):
             ax = fig.add_subplot(nrows, ncols, naxis)
 
             plot_slice(img_data[x_val, ...], vmin=vmin, vmax=vmax,
