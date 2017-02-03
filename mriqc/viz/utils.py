@@ -61,18 +61,21 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
     ax.grid(False)
     ax.axis('off')
 
+    bgcolor = cmap(min(vmin, 0.0))
+    fgcolor = cmap(vmax)
+
     if annotate:
-        ax.text(.95, .95, 'R', color=cmap(vmax), transform=ax.transAxes,
+        ax.text(.95, .95, 'R', color=fgcolor, transform=ax.transAxes,
                 horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
-        ax.text(.05, .95, 'L', color=cmap(vmax), transform=ax.transAxes,
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+        ax.text(.05, .95, 'L', color=fgcolor, transform=ax.transAxes,
                 horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
 
     if label is not None:
-        ax.text(.98, .01, label, color=cmap(vmax), transform=ax.transAxes,
+        ax.text(.98, .01, label, color=fgcolor, transform=ax.transAxes,
                 horizontalalignment='right', verticalalignment='bottom',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=cmap(vmin), fc=cmap(vmin)))
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
 
 
 def plot_slice_tern(dslice, prev=None, post=None,
@@ -286,7 +289,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
 
     if plot_sagittal:
-        naxis = (ncols * nrows) - ncols + 1
+        naxis = ncols * (nrows - 1) + 1
 
         step = int(img_data.shape[0] / (ncols + 1))
         start = step
@@ -295,7 +298,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         if step == 0:
             step = 1
 
-        for x_val in list(range(start, stop, step)):
+        for x_val in list(range(start, stop, step))[:ncols]:
             ax = fig.add_subplot(nrows, ncols, naxis)
 
             plot_slice(img_data[x_val, ...], vmin=vmin, vmax=vmax,
