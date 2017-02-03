@@ -119,6 +119,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.out_spikes', 'inputnode.in_spikes'),
+                         ('outputnode.out_fft', 'inputnode.in_fft'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
@@ -204,7 +205,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 3
+    pages = 4
     extra_pages = 0
     if verbose:
         extra_pages = 4
@@ -212,8 +213,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_iqms', 'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
-        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'exclude_index',
-        'mni_report']),
+        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
+        'exclude_index', 'mni_report']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -255,10 +256,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    # mosaic_spikes = pe.Node(PlotSpikes(
-    #     out_file='plot_spikes.svg', cmap='viridis',
-    #     title='High-Frequency spikes'),
-    #                         name='PlotSpikes')
+    mosaic_spikes = pe.Node(PlotSpikes(
+        out_file='plot_spikes.svg', cmap='viridis',
+        title='High-Frequency spikes'),
+                            name='PlotSpikes')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
     rnode = pe.Node(niu.Function(
@@ -282,12 +283,13 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
-        # (inputnode, mosaic_spikes, [('orig', 'in_file'),
-        #                             ('in_spikes', 'in_spikes')]),
+        (inputnode, mosaic_spikes, [('orig', 'in_file'),
+                                    ('in_spikes', 'in_spikes'),
+                                    ('in_fft', 'in_fft')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        # (mosaic_spikes, mplots, [('out_file', 'in4')]),
+        (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])

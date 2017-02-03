@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 """ Visualization utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 
 import math
 import os.path as op
@@ -26,11 +25,121 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
+from builtins import zip, range, str, bytes
 from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
+
+def plot_slice_tern(dslice, prev=None, post=None,
+                    spacing=None, cmap='Greys_r', label=None, ax=None,
+                    vmax=None, vmin=None):
+    from matplotlib.cm import get_cmap
+
+    if isinstance(cmap, (str, bytes)):
+        cmap = get_cmap(cmap)
+
+    est_vmin, est_vmax = _get_limits(dslice)
+    if not vmin:
+        vmin = est_vmin
+    if not vmax:
+        vmax = est_vmax
+
+    if ax is None:
+        ax = plt.gca()
+
+    if spacing is None:
+        spacing = [1.0, 1.0]
+    else:
+        spacing = [spacing[1], spacing[0]]
+
+    phys_sp = np.array(spacing) * dslice.shape
+
+    if prev is None:
+        prev = np.ones_like(dslice)
+    if post is None:
+        post = np.ones_like(dslice)
+
+    combined = np.swapaxes(np.vstack((prev, dslice, post)), 0, 1)
+    ax.imshow(combined, vmin=vmin, vmax=vmax, cmap=cmap,
+              interpolation='nearest', origin='lower',
+              extent=[0, phys_sp[1] * 3, 0, phys_sp[0]])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(False)
+
+    if label is not None:
+        ax.text(.5, .05, label,
+                transform=ax.transAxes,
+                horizontalalignment='center',
+                verticalalignment='top',
+                size=24,
+                bbox=dict(boxstyle="square,pad=0", ec='k', fc='k'),
+                color='w')
+
+
+def plot_spikes(in_file, in_fft, spikes_list, cols=3,
+                labelfmt='t={0:.3f}s (z={1:d})',
+                out_file=None):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    nii = nb.as_closest_canonical(nb.load(in_file))
+    fft = nb.load(in_fft).get_data()
+
+
+    data = nii.get_data()
+    zooms = nii.header.get_zooms()[:2]
+    tstep = nii.header.get_zooms()[-1]
+    ntpoints = data.shape[-1]
+
+    if len(spikes_list) > cols * 7:
+        cols += 1
+
+
+    nspikes = len(spikes_list)
+    rows = 1
+    if nspikes > cols:
+        rows = math.ceil(nspikes / cols)
+
+    fig = plt.figure(figsize=(7 * cols, 5 * rows))
+
+    for i, (t, z) in enumerate(spikes_list):
+        prev = None
+        pvft = None
+        if t > 0:
+            prev = data[..., z, t - 1]
+            pvft = fft[..., z, t - 1]
+
+        post = None
+        psft = None
+        if t < (ntpoints - 1):
+            post = data[..., z, t + 1]
+            psft = fft[..., z, t + 1]
+
+
+        ax1 = fig.add_subplot(rows, cols, i + 1)
+        divider = make_axes_locatable(ax1)
+        ax2 = divider.new_vertical(size="100%", pad=0.1)
+        fig.add_axes(ax2)
+
+        plot_slice_tern(data[..., z, t], prev=prev, post=post, spacing=zooms,
+                        ax=ax2,
+                        label=labelfmt.format(t * tstep, z))
+
+        plot_slice_tern(fft[..., z, t], prev=pvft, post=psft, vmin=-5, vmax=5,
+                        cmap=get_parula(), ax=ax1)
+
+    plt.tight_layout()
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath('%s.svg' % fname)
+
+    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
+    return out_file
+
 
 def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
                 threshold=None, bbox_mask_file=None, only_plot_noise=False,
@@ -394,3 +503,76 @@ def _get_limits(nifti_file, only_plot_noise=False):
         vmax = np.percentile(data[data_mask], 99.5)
 
     return vmin, vmax
+
+
+
+def get_parula():
+    from matplotlib.colors import LinearSegmentedColormap
+
+    cm_data = [
+        [0.2081, 0.1663, 0.5292],
+        [0.2116238095, 0.1897809524, 0.5776761905],
+        [0.212252381, 0.2137714286, 0.6269714286],
+        [0.2081, 0.2386, 0.6770857143],
+        [0.1959047619, 0.2644571429, 0.7279],
+        [0.1707285714, 0.2919380952, 0.779247619],
+        [0.1252714286, 0.3242428571, 0.8302714286],
+        [0.0591333333, 0.3598333333, 0.8683333333],
+        [0.0116952381, 0.3875095238, 0.8819571429],
+        [0.0059571429, 0.4086142857, 0.8828428571],
+        [0.0165142857, 0.4266, 0.8786333333],
+        [0.032852381, 0.4430428571, 0.8719571429],
+        [0.0498142857, 0.4585714286, 0.8640571429],
+        [0.0629333333, 0.4736904762, 0.8554380952],
+        [0.0722666667, 0.4886666667, 0.8467],
+        [0.0779428571, 0.5039857143, 0.8383714286],
+        [0.079347619, 0.5200238095, 0.8311809524],
+        [0.0749428571, 0.5375428571, 0.8262714286],
+        [0.0640571429, 0.5569857143, 0.8239571429],
+        [0.0487714286, 0.5772238095, 0.8228285714],
+        [0.0343428571, 0.5965809524, 0.819852381],
+        [0.0265, 0.6137, 0.8135],
+        [0.0238904762, 0.6286619048, 0.8037619048],
+        [0.0230904762, 0.6417857143, 0.7912666667],
+        [0.0227714286, 0.6534857143, 0.7767571429],
+        [0.0266619048, 0.6641952381, 0.7607190476],
+        [0.0383714286, 0.6742714286, 0.743552381],
+        [0.0589714286, 0.6837571429, 0.7253857143],
+        [0.0843, 0.6928333333, 0.7061666667],
+        [0.1132952381, 0.7015, 0.6858571429],
+        [0.1452714286, 0.7097571429, 0.6646285714],
+        [0.1801333333, 0.7176571429, 0.6424333333],
+        [0.2178285714, 0.7250428571, 0.6192619048],
+        [0.2586428571, 0.7317142857, 0.5954285714],
+        [0.3021714286, 0.7376047619, 0.5711857143],
+        [0.3481666667, 0.7424333333, 0.5472666667],
+        [0.3952571429, 0.7459, 0.5244428571],
+        [0.4420095238, 0.7480809524, 0.5033142857],
+        [0.4871238095, 0.7490619048, 0.4839761905],
+        [0.5300285714, 0.7491142857, 0.4661142857],
+        [0.5708571429, 0.7485190476, 0.4493904762],
+        [0.609852381, 0.7473142857, 0.4336857143],
+        [0.6473, 0.7456, 0.4188],
+        [0.6834190476, 0.7434761905, 0.4044333333],
+        [0.7184095238, 0.7411333333, 0.3904761905],
+        [0.7524857143, 0.7384, 0.3768142857],
+        [0.7858428571, 0.7355666667, 0.3632714286],
+        [0.8185047619, 0.7327333333, 0.3497904762],
+        [0.8506571429, 0.7299, 0.3360285714],
+        [0.8824333333, 0.7274333333, 0.3217],
+        [0.9139333333, 0.7257857143, 0.3062761905],
+        [0.9449571429, 0.7261142857, 0.2886428571],
+        [0.9738952381, 0.7313952381, 0.266647619],
+        [0.9937714286, 0.7454571429, 0.240347619],
+        [0.9990428571, 0.7653142857, 0.2164142857],
+        [0.9955333333, 0.7860571429, 0.196652381],
+        [0.988, 0.8066, 0.1793666667],
+        [0.9788571429, 0.8271428571, 0.1633142857],
+        [0.9697, 0.8481380952, 0.147452381],
+        [0.9625857143, 0.8705142857, 0.1309],
+        [0.9588714286, 0.8949, 0.1132428571],
+        [0.9598238095, 0.9218333333, 0.0948380952],
+        [0.9661, 0.9514428571, 0.0755333333],
+        [0.9763, 0.9831, 0.0538]]
+
+    return LinearSegmentedColormap.from_list('parula', cm_data)
