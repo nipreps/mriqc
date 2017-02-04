@@ -174,7 +174,7 @@ def generate_csv(derivatives_dir, output_dir, qctype):
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    all_id_fields = list(set(all_id_fields))
+    all_id_fields = list(comps & set(cols))
 
     # Sort the dataframe, with failsafe if pandas version is too old
     try:
