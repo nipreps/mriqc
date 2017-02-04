@@ -298,22 +298,18 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
-
-    enhance = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
-
-
     if use_bet or not has_dipy:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
         workflow.connect([
-            (inputnode, enhance, [('in_file', 'in_file')]),
-            (enhance, bet, [('out_file', 'in_file')]),
+            (inputnode, bet, [('in_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
 
     else:
         from nipype.interfaces.dipy import Denoise
+        enhance = pe.Node(niu.Function(
+            input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
         estsnr = pe.Node(niu.Function(
             input_names=['in_file', 'seg_file'], output_names=['out_snr'],
             function=_estimate_snr), name='EstimateSNR')
