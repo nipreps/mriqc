@@ -27,6 +27,10 @@ BIDS_EXPR = """\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
 
+QCTYPES = collections.OrderedDict([
+    ('anat', 'T1w'), ('func', 'bold')
+])
+
 def split_ext(in_file, out_file=None):
     import os.path as op
     if out_file is None:
@@ -152,7 +156,7 @@ def generate_csv(derivatives_dir, output_dir, qctype):
 
     # If some were found, generate the CSV file and group report
     out_csv = op.join(output_dir, qctype[:4] + 'MRIQC.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*.json'))
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % QCTYPES[qctype[:4]]))
     if not jsonfiles:
         return None, out_csv
 
