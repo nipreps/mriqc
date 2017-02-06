@@ -29,8 +29,8 @@ test:
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports :
         timeout: 3200
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -d func -w work/
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -d anat -w work/
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/func:/scratch -w /scratch mriqc:py35 out/derivatives out/ group -d func
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH/anat:/scratch -w /scratch mriqc:py35 out/derivatives out/ group -d anat
     - diffval=1; diffval=$( cd $SCRATCH && find out/ | sort > outputs.txt && diff $HOME/mriqc/tests/circle_outputs.txt outputs.txt | wc -l ); exit $diffval
 general:
   artifacts:
