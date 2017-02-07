@@ -152,7 +152,7 @@ def spectrum_mask(size):
     ftmask[ftmask < 1] = 0
     return ftmask
 
-def slice_wise_fft(in_file, ftmask=None, spike_thres=10., out_prefix=None):
+def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
     import numpy as np
@@ -180,7 +180,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=10., out_prefix=None):
         fft_slices = []
         for z in range(func_frame.shape[2]):
             sl = func_frame[..., z]
-            fftsl = median_filter(np.absolute(np.fft.fft2(sl)),
+            fftsl = median_filter(np.real(np.fft.fft2(sl)),
                                   size=(5, 5), mode='constant') * ftmask
             fft_slices.append(fftsl)
         fft_data.append(np.stack(fft_slices, axis=-1))

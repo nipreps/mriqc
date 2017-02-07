@@ -111,6 +111,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
+                        ('acq_id', 'inputnode.acq_id'),
+                        ('rec_id', 'inputnode.rec_id'),
                         ('run_id', 'inputnode.run_id'),
                         ('out_dict', 'inputnode.metadata')]),
         (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -130,6 +132,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.out_spikes', 'inputnode.in_spikes'),
+                         ('outputnode.out_fft', 'inputnode.in_fft'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
@@ -141,8 +144,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'run_id', 'orig', 'epi_mean',
-        'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
+        'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
@@ -196,6 +199,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
                                ('task_id', 'task_id'),
+                               ('acq_id', 'acq_id'),
+                               ('rec_id', 'rec_id'),
                                ('run_id', 'run_id'),
                                ('metadata', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -214,16 +219,16 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 5
+    pages = 4
     extra_pages = 0
     if verbose:
-        extra_pages = 3
+        extra_pages = 4
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_iqms', 'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
-        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'exclude_index',
-        'mni_report']),
+        'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
+        'exclude_index', 'mni_report']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -293,12 +298,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
         (inputnode, mosaic_spikes, [('orig', 'in_file'),
-                                    ('in_spikes', 'in_spikes')]),
+                                    ('in_spikes', 'in_spikes'),
+                                    ('in_fft', 'in_fft')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
         (mosaic_spikes, mplots, [('out_file', 'in4')]),
-        (inputnode, mplots, [('mni_report', 'in5')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
@@ -332,7 +337,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, mosaic_noise, [('epi_mean', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', 'in%d' % (pages + 1))]),
         (mosaic_noise, mplots, [('out_file', 'in%d' % (pages + 2))]),
-        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))])
+        (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))]),
+        (inputnode, mplots, [('mni_report', 'in%d' % (pages + 4))]),
     ])
     return workflow
 

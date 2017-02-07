@@ -1,3 +1,18 @@
+Release 0.9.0
+=============
+
+* [ENH] Improve group level command line, with more informative output when no IQMs are found for a modality (#372)
+* [ENH] Make group reports self-contained (#333)
+* [FIX] New mosaics, based on old ones (#361, #360, #334)
+* [FIX] Require numpy>=1.12 to avoid casting problems (#356)
+* [FIX] Add support for acq and rec tags of BIDS (#346)
+* [DOC] Documentation updates (#350)
+* [FIX] pybids compatibility "No scans were found" (#340, #347, #342)
+* [ENH] Rewrite PYTHONPATH in docker/singularity images (#345)
+* [ENH] Move metadata onto the bottom of the individual reports (#332)
+* [ENH] Don't include MNI registration report unles --verbose-reports is used (#362)
+
+
 Release 0.8.9
 =============
 

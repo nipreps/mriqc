@@ -16,8 +16,20 @@ import pandas as pd
 from io import open  # pylint: disable=W0622
 from builtins import range  # pylint: disable=W0622
 
-BIDS_COMPONENTS = [('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
-                   ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')]
+BIDS_COMP = collections.OrderedDict([
+    ('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
+    ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')
+])
+
+BIDS_EXPR = """\
+^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?\
+(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?\
+(_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
+"""
+
+QCTYPES = collections.OrderedDict([
+    ('anat', 'T1w'), ('func', 'bold')
+])
 
 
 def split_ext(in_file, out_file=None):
@@ -167,13 +179,13 @@ def generate_csv(derivatives_dir, output_dir, qctype):
 
     # If some were found, generate the CSV file and group report
     out_csv = op.join(output_dir, qctype[:4] + 'MRIQC.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*.json'))
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % QCTYPES[qctype[:4]]))
     if not jsonfiles:
         return None, out_csv
 
     all_id_fields = []
     datalist = []
-    comps = set([key for key, _ in BIDS_COMPONENTS])
+    comps = set(list(BIDS_COMP.keys()))
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
 
@@ -189,7 +201,7 @@ def generate_csv(derivatives_dir, output_dir, qctype):
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    all_id_fields = list(set(all_id_fields))
+    all_id_fields = list(comps & set(cols))
 
     # Sort the dataframe, with failsafe if pandas version is too old
     try:

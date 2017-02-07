@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 """ Visualization utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 
 import math
 import os.path as op
@@ -26,6 +25,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
+from builtins import zip, range, str, bytes  # pylint: disable=W0622
 from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
@@ -33,282 +33,279 @@ DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
 
 
-def plot_measures(df, measures, ncols=4, title='Group level report',
-                  subject=None, figsize=DINA4_PORTRAIT):
-    import matplotlib.gridspec as gridspec
-    nmeasures = len(measures)
-    nrows = nmeasures // ncols
-    if nmeasures % ncols > 0:
-        nrows += 1
-
-    fig = plt.figure(figsize=figsize)
-    gsp = gridspec.GridSpec(nrows, ncols)
-
-    axes = []
-
-    for i, mname in enumerate(measures):
-        axes.append(plt.subplot(gsp[i]))
-        axes[-1].set_xlabel(mname)
-        sns.distplot(
-            df[[mname]], ax=axes[-1], color="b", rug=True, norm_hist=True)
-
-        # labels = np.array(axes[-1].get_xticklabels())
-        # labels[2:-2] = ''
-        axes[-1].set_xticklabels([])
-        plt.ticklabel_format(style='sci', axis='y', scilimits=(-1, 1))
-
-        if subject is not None:
-            subid = subject
-            try:
-                subid = int(subid)
-            except ValueError:
-                pass
-
-            subdf = df.loc[df['subject_id'] == subid]
-            sessions = np.atleast_1d(subdf[['session_id']]).reshape(-1).tolist()
-
-            for ss in sessions:
-                sesdf = subdf.loc[subdf['session_id'] == ss]
-                scans = np.atleast_1d(sesdf[['run_id']]).reshape(-1).tolist()
-
-                for sc in scans:
-                    scndf = subdf.loc[sesdf['run_id'] == sc]
-                    plot_vline(
-                        scndf.iloc[0][mname], '_'.join([ss, sc]), axes[-1])
-
-    fig.suptitle(title)
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.subplots_adjust(top=0.85)
-    return fig
-
-
-def plot_all(df, groups, subject=None, figsize=(DINA4_LANDSCAPE[0], 5),
-             strip_nsubj=10, title='Summary report'):
-    import matplotlib.gridspec as gridspec
-    # colnames = [v for gnames in groups for v in gnames]
-    lengs = [len(el) for el in groups]
-    # ncols = np.sum(lengs)
-
-    fig = plt.figure(figsize=figsize)
-    gsp = gridspec.GridSpec(1, len(groups), width_ratios=lengs)
-
-    subjects = sorted(pd.unique(df.subject_id.ravel()))
-    nsubj = len(subjects)
-    subid = subject
-    if subid is not None:
-        try:
-            subid = int(subid)
-        except ValueError:
-            pass
-
-    axes = []
-    for i, snames in enumerate(groups):
-        if len(snames) == 0:
-            continue
-
-        axes.append(plt.subplot(gsp[i]))
-
-        if nsubj > strip_nsubj:
-            pal = sns.color_palette("hls", len(snames))
-            sns.violinplot(data=df[snames], ax=axes[-1], linewidth=.8, palette=pal)
-        else:
-            stdf = df.copy()
-            if subid is not None:
-                stdf = stdf.loc[stdf['subject_id'] != subid]
-            sns.stripplot(data=stdf[snames], ax=axes[-1], jitter=0.25)
-
-        axes[-1].set_xticklabels(
-            [el.get_text() for el in axes[-1].get_xticklabels()],
-            rotation='vertical')
-        plt.ticklabel_format(style='sci', axis='y', scilimits=(-1, 1))
-        # df[snames].plot(kind='box', ax=axes[-1])
-
-        # If we know the subject, place a star for each scan
-        if subject is not None:
-            subdf = df.loc[df['subject_id'] == subid]
-            scans = sorted(pd.unique(subdf.run_id.ravel()))
-            nstars = len(scans)
-            if nstars == 0:
-                continue
-
-            for j, sname in enumerate(snames):
-                vals = []
-                for _, scid in enumerate(scans):
-                    val = subdf.loc[df.run_id == scid, [sname]].iloc[0, 0]
-                    vals.append(val)
-
-                if len(vals) != nstars:
-                    continue
-
-                pos = [j]
-                if nstars > 1:
-                    pos = np.linspace(j-0.3, j+0.3, num=nstars)
-
-                axes[-1].plot(
-                    pos, vals, ms=9, mew=.8, linestyle='None',
-                    color='w', marker='*', markeredgecolor='k',
-                    zorder=10)
-
-    fig.suptitle(title)
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.subplots_adjust(top=0.85)
-    return fig
-
-
-def get_limits(nifti_file, only_plot_noise=False):
-    from builtins import bytes, str   # pylint: disable=W0622
-
-    if isinstance(nifti_file, (str, bytes)):
-        nii = nb.as_closest_canonical(nb.load(nifti_file))
-        data = nii.get_data()
-    else:
-        data = nifti_file
-
-    data_mask = np.logical_not(np.isnan(data))
-
-    if only_plot_noise:
-        data_mask = np.logical_and(data_mask, data != 0)
-        vmin = np.percentile(data[data_mask], 0)
-        vmax = np.percentile(data[data_mask], 61)
-    else:
-        vmin = np.percentile(data[data_mask], 0.5)
-        vmax = np.percentile(data[data_mask], 99.5)
-
-    return vmin, vmax
-
-
-def plot_mosaic(img, out_file, ncols=6, title=None, overlay_mask=None,
-                threshold=None, bbox_mask_file=None, only_plot_noise=False,
-                vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True):
-    from builtins import bytes, str  # pylint: disable=W0622
-    from matplotlib import cm
-    from nilearn._utils import check_niimg_3d
-    from nilearn._utils.niimg import _safe_get_data
-    from nilearn._utils.compat import get_affine as _get_affine
-    from nilearn._utils.extmath import fast_abs_percentile
-    from nilearn._utils.numpy_conversions import as_ndarray
-    from nilearn.image import new_img_like
+def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
+               ax=None, vmax=None, vmin=None, annotate=False):
+    from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
-        cmap = cm.get_cmap(cmap)
+        cmap = get_cmap(cmap)
 
-
-    # This code is copied from nilearn
-    if img is not False and img is not None:
-        img = check_niimg_3d(img, dtype='auto')
-        data = _safe_get_data(img)
-        affine = _get_affine(img)
-
-        if np.isnan(np.sum(data)):
-            data = np.nan_to_num(data)
-
-        # Deal with automatic settings of plot parameters
-        if threshold == 'auto':
-            # Threshold epsilon below a percentile value, to be sure that some
-            # voxels pass the threshold
-            threshold = fast_abs_percentile(data) - 1e-5
-
-        img = new_img_like(img, as_ndarray(data), affine)
-    else:
-        raise RuntimeError('input image should be a path or a Nifti object')
-
-
-    start_idx = [0, 0, 0]
-    end_idx = (np.array(img.get_shape()) - np.ones(3)).astype(np.uint8).tolist()
-    if bbox_mask_file:
-        bbox_mask_file = check_niimg_3d(bbox_mask_file, dtype='auto')
-        bbox_data = _safe_get_data(bbox_mask_file)
-        bbox = np.argwhere(bbox_data)
-        start_idx = bbox.min(0)
-        end_idx = bbox.max(0) + 1
-    elif end_idx[2] > 70:
-        start_idx[2] += 15
-        end_idx[2] -= 15
-
-
-    # Zoom in
-    data = data[start_idx[0]:end_idx[0],
-                start_idx[1]:end_idx[1],
-                start_idx[2]:end_idx[2]]
-
-    # Move center of coordinates
-    if sum(start_idx) > 0:
-        affine[:3, 3] += affine[:3, :3].dot(start_idx)
-
-    img = new_img_like(img, as_ndarray(data), affine)
-
-    z_cuts = np.array(list(range(data.shape[2])))
-
-    while len(z_cuts) > 36:
-        # Discard one every two slices
-        z_cuts = z_cuts[::2]
-
-    # Discard first N volumes to make it multiple of ncols
-    z_cuts = z_cuts[len(z_cuts) % ncols:]
-    z_grouped_cuts = [z_cuts[i:i + ncols] for i in range(0, len(z_cuts), ncols)]
-
-    overlay_data = None
-    if overlay_mask:
-        overlay_mask = check_niimg_3d(overlay_mask, dtype='auto')
-        overlay_data = _safe_get_data(overlay_mask)
-
-
-    est_vmin, est_vmax = get_limits(
-        data, only_plot_noise=only_plot_noise)
+    est_vmin, est_vmax = _get_limits(dslice)
     if not vmin:
         vmin = est_vmin
     if not vmax:
         vmax = est_vmax
 
-    svg_rows = []
-    for row, row_cuts in enumerate(z_grouped_cuts):
-        plot_kwargs = {
-            'title': title if row == 0 else None,
-            'display_mode': 'z',
-            'cut_coords': [affine.dot([0, 0, r, 1])[2] for r in row_cuts],
-            'vmax': vmax,
-            'vmin': vmin,
-            'cmap': cmap
-        }
+    if ax is None:
+        ax = plt.gca()
 
-        if overlay_data is None:
-            display = plot_anat(img, **plot_kwargs)
+    if spacing is None:
+        spacing = [1.0, 1.0]
+
+    phys_sp = np.array(spacing) * dslice.shape
+    ax.imshow(np.swapaxes(dslice, 0, 1), vmin=vmin, vmax=vmax, cmap=cmap,
+              interpolation='nearest', origin='lower',
+              extent=[0, phys_sp[0], 0, phys_sp[1]])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(False)
+    ax.axis('off')
+
+    bgcolor = cmap(min(vmin, 0.0))
+    fgcolor = cmap(vmax)
+
+    if annotate:
+        ax.text(.95, .95, 'R', color=fgcolor, transform=ax.transAxes,
+                horizontalalignment='center', verticalalignment='top',
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+        ax.text(.05, .95, 'L', color=fgcolor, transform=ax.transAxes,
+                horizontalalignment='center', verticalalignment='top',
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+
+    if label is not None:
+        ax.text(.98, .01, label, color=fgcolor, transform=ax.transAxes,
+                horizontalalignment='right', verticalalignment='bottom',
+                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+
+
+def plot_slice_tern(dslice, prev=None, post=None,
+                    spacing=None, cmap='Greys_r', label=None, ax=None,
+                    vmax=None, vmin=None):
+    from matplotlib.cm import get_cmap
+
+    if isinstance(cmap, (str, bytes)):
+        cmap = get_cmap(cmap)
+
+    est_vmin, est_vmax = _get_limits(dslice)
+    if not vmin:
+        vmin = est_vmin
+    if not vmax:
+        vmax = est_vmax
+
+    if ax is None:
+        ax = plt.gca()
+
+    if spacing is None:
+        spacing = [1.0, 1.0]
+    else:
+        spacing = [spacing[1], spacing[0]]
+
+    phys_sp = np.array(spacing) * dslice.shape
+
+    if prev is None:
+        prev = np.ones_like(dslice)
+    if post is None:
+        post = np.ones_like(dslice)
+
+    combined = np.swapaxes(np.vstack((prev, dslice, post)), 0, 1)
+    ax.imshow(combined, vmin=vmin, vmax=vmax, cmap=cmap,
+              interpolation='nearest', origin='lower',
+              extent=[0, phys_sp[1] * 3, 0, phys_sp[0]])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.grid(False)
+
+    if label is not None:
+        ax.text(.5, .05, label,
+                transform=ax.transAxes,
+                horizontalalignment='center',
+                verticalalignment='top',
+                size=14,
+                bbox=dict(boxstyle="square,pad=0", ec='k', fc='k'),
+                color='w')
+
+
+def plot_spikes(in_file, in_fft, spikes_list, cols=3,
+                labelfmt='t={0:.3f}s (z={1:d})',
+                out_file=None):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    nii = nb.as_closest_canonical(nb.load(in_file))
+    fft = nb.load(in_fft).get_data()
+
+
+    data = nii.get_data()
+    zooms = nii.header.get_zooms()[:2]
+    tstep = nii.header.get_zooms()[-1]
+    ntpoints = data.shape[-1]
+
+    if len(spikes_list) > cols * 7:
+        cols += 1
+
+
+    nspikes = len(spikes_list)
+    rows = 1
+    if nspikes > cols:
+        rows = math.ceil(nspikes / cols)
+
+    fig = plt.figure(figsize=(7 * cols, 5 * rows))
+
+    for i, (t, z) in enumerate(spikes_list):
+        prev = None
+        pvft = None
+        if t > 0:
+            prev = data[..., z, t - 1]
+            pvft = fft[..., z, t - 1]
+
+        post = None
+        psft = None
+        if t < (ntpoints - 1):
+            post = data[..., z, t + 1]
+            psft = fft[..., z, t + 1]
+
+
+        ax1 = fig.add_subplot(rows, cols, i + 1)
+        divider = make_axes_locatable(ax1)
+        ax2 = divider.new_vertical(size="100%", pad=0.1)
+        fig.add_axes(ax2)
+
+        plot_slice_tern(data[..., z, t], prev=prev, post=post, spacing=zooms,
+                        ax=ax2,
+                        label=labelfmt.format(t * tstep, z))
+
+        plot_slice_tern(fft[..., z, t], prev=pvft, post=psft, vmin=-5, vmax=5,
+                        cmap=get_parula(), ax=ax1)
+
+    plt.tight_layout()
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath('%s.svg' % fname)
+
+    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
+    return out_file
+
+
+def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
+                bbox_mask_file=None, only_plot_noise=False, annotate=True,
+                vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True,
+                fig=None, zmax=128):
+
+    if isinstance(img, (str, bytes)):
+        nii = nb.as_closest_canonical(nb.load(img))
+        img_data = nii.get_data()
+        zooms = nii.header.get_zooms()
+    else:
+        img_data = img
+        zooms = [1.0, 1.0, 1.0]
+        out_file = 'mosaic.svg'
+
+    if img_data.shape[2] > zmax and bbox_mask_file is None:
+        lowthres = np.percentile(img_data, 5)
+        mask_file = np.ones_like(img_data)
+        mask_file[img_data <= lowthres] = 0
+        img_data = _bbox(img_data, mask_file)
+
+    if bbox_mask_file is not None:
+        bbox_data = nb.as_closest_canonical(
+            nb.load(bbox_mask_file)).get_data()
+        img_data = _bbox(img_data, bbox_data)
+
+    z_vals = np.array(list(range(0, img_data.shape[2])))
+
+    # Reduce the number of slices shown
+    if len(z_vals) > zmax:
+        rem = 15
+        # Crop inferior and posterior
+        if not bbox_mask_file:
+            # img_data = img_data[..., rem:-rem]
+            z_vals = z_vals[rem:-rem]
         else:
-            display = plot_roi(overlay_data, bg_img=img,
-                               **plot_kwargs)
+            # img_data = img_data[..., 2 * rem:]
+            z_vals = z_vals[2 * rem:]
 
-        svg_rows.append(svg2str(display))
-        display.close()
-        display = None
+    while len(z_vals) > zmax:
+        # Discard one every two slices
+        # img_data = img_data[..., ::2]
+        z_vals = z_vals[::2]
+
+
+    n_images = len(z_vals)
+    nrows = math.ceil(n_images / ncols)
+    if plot_sagittal:
+        nrows += 1
+
+    if overlay_mask:
+        overlay_data = nb.as_closest_canonical(
+            nb.load(overlay_mask)).get_data()
+
+    # create figures
+    if fig is None:
+        fig = plt.figure(figsize=(22, nrows * 3))
+
+    est_vmin, est_vmax = _get_limits(img_data,
+                                     only_plot_noise=only_plot_noise)
+    if not vmin:
+        vmin = est_vmin
+    if not vmax:
+        vmax = est_vmax
+
+    naxis = 1
+    for z_val in z_vals:
+        ax = fig.add_subplot(nrows, ncols, naxis)
+
+        if overlay_mask:
+            ax.set_rasterized(True)
+        plot_slice(img_data[:, :, z_val], vmin=vmin, vmax=vmax,
+                   cmap=cmap, ax=ax, spacing=zooms[:2],
+                   label='%d' % z_val, annotate=annotate)
+
+        if overlay_mask:
+            from matplotlib import cm
+            msk_cmap = cm.Reds  # @UndefinedVariable
+            msk_cmap._init()
+            alphas = np.linspace(0, 0.75, msk_cmap.N + 3)
+            msk_cmap._lut[:, -1] = alphas
+            plot_slice(overlay_data[:, :, z_val], vmin=0, vmax=1,
+                       cmap=msk_cmap, ax=ax, spacing=zooms[:2])
+        naxis += 1
 
 
     if plot_sagittal:
-        x_sp = data.shape[0] // (ncols + 1)
-        x_vox = list(range(x_sp, data.shape[0], x_sp))
-        x_coords = [affine.dot([x, 0, 0, 1])[0] for x in x_vox[:-1]]
+        naxis = ncols * (nrows - 1) + 1
 
-        plot_kwargs = {
-            'display_mode': 'x',
-            'cut_coords': x_coords,
-            'vmax': vmax,
-            'vmin': vmin,
-            'cmap': cmap
-        }
+        step = int(img_data.shape[0] / (ncols + 1))
+        start = step
+        stop = img_data.shape[0] - step
 
-        if overlay_data is None:
-            display = plot_anat(img, **plot_kwargs)
-        else:
-            display = plot_roi(overlay_data, bg_img=img,
-                               **plot_kwargs)
+        if step == 0:
+            step = 1
 
-        svg_rows.append(svg2str(display))
-        display.close()
-        display = None
+        for x_val in list(range(start, stop, step))[:ncols]:
+            ax = fig.add_subplot(nrows, ncols, naxis)
 
-    fig = combine_svg(svg_rows)
-    fig.save(out_file)
+            plot_slice(img_data[x_val, ...], vmin=vmin, vmax=vmax,
+                       cmap=cmap, ax=ax, label='%d' % x_val,
+                       spacing=[zooms[0], zooms[2]])
+            naxis += 1
+
+    fig.subplots_adjust(
+        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05,
+        hspace=0.05)
+
+    if title:
+        fig.suptitle(title, fontsize='10')
+    fig.subplots_adjust(wspace=0.002, hspace=0.002)
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(img))
+        if ext == ".gz":
+            fname, _ = op.splitext(fname)
+        out_file = op.abspath(fname + '_mosaic.svg')
+
+    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
     return out_file
-
 
 def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
 
@@ -501,19 +498,99 @@ def plot_bg_dist(in_file):
     plt.close()
     return out_file
 
+def _get_limits(nifti_file, only_plot_noise=False):
+    from builtins import bytes, str   # pylint: disable=W0622
 
-def plot_mosaic_helper(in_file, out_file=None, bbox_mask_file=None, title=None,
-                       plot_sagittal=True, only_plot_noise=False, cmap='Greys_r'):
+    if isinstance(nifti_file, (str, bytes)):
+        nii = nb.as_closest_canonical(nb.load(nifti_file))
+        data = nii.get_data()
+    else:
+        data = nifti_file
 
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, _ = op.splitext(fname)
-        out_file = fname + '_mosaic.svg'
+    data_mask = np.logical_not(np.isnan(data))
 
-    out_file = op.abspath(out_file)
-    plot_mosaic(
-        in_file, out_file, bbox_mask_file=bbox_mask_file, title=title,
-        only_plot_noise=only_plot_noise, cmap=cmap, plot_sagittal=plot_sagittal
-    )
-    return out_file
+    if only_plot_noise:
+        data_mask = np.logical_and(data_mask, data != 0)
+        vmin = np.percentile(data[data_mask], 0)
+        vmax = np.percentile(data[data_mask], 61)
+    else:
+        vmin = np.percentile(data[data_mask], 0.5)
+        vmax = np.percentile(data[data_mask], 99.5)
+
+    return vmin, vmax
+
+def _bbox(img_data, bbox_data):
+    B = np.argwhere(bbox_data)
+    (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(0) + 1
+    return img_data[ystart:ystop, xstart:xstop, zstart:zstop]
+
+def get_parula():
+    from matplotlib.colors import LinearSegmentedColormap
+
+    cm_data = [
+        [0.2081, 0.1663, 0.5292],
+        [0.2116238095, 0.1897809524, 0.5776761905],
+        [0.212252381, 0.2137714286, 0.6269714286],
+        [0.2081, 0.2386, 0.6770857143],
+        [0.1959047619, 0.2644571429, 0.7279],
+        [0.1707285714, 0.2919380952, 0.779247619],
+        [0.1252714286, 0.3242428571, 0.8302714286],
+        [0.0591333333, 0.3598333333, 0.8683333333],
+        [0.0116952381, 0.3875095238, 0.8819571429],
+        [0.0059571429, 0.4086142857, 0.8828428571],
+        [0.0165142857, 0.4266, 0.8786333333],
+        [0.032852381, 0.4430428571, 0.8719571429],
+        [0.0498142857, 0.4585714286, 0.8640571429],
+        [0.0629333333, 0.4736904762, 0.8554380952],
+        [0.0722666667, 0.4886666667, 0.8467],
+        [0.0779428571, 0.5039857143, 0.8383714286],
+        [0.079347619, 0.5200238095, 0.8311809524],
+        [0.0749428571, 0.5375428571, 0.8262714286],
+        [0.0640571429, 0.5569857143, 0.8239571429],
+        [0.0487714286, 0.5772238095, 0.8228285714],
+        [0.0343428571, 0.5965809524, 0.819852381],
+        [0.0265, 0.6137, 0.8135],
+        [0.0238904762, 0.6286619048, 0.8037619048],
+        [0.0230904762, 0.6417857143, 0.7912666667],
+        [0.0227714286, 0.6534857143, 0.7767571429],
+        [0.0266619048, 0.6641952381, 0.7607190476],
+        [0.0383714286, 0.6742714286, 0.743552381],
+        [0.0589714286, 0.6837571429, 0.7253857143],
+        [0.0843, 0.6928333333, 0.7061666667],
+        [0.1132952381, 0.7015, 0.6858571429],
+        [0.1452714286, 0.7097571429, 0.6646285714],
+        [0.1801333333, 0.7176571429, 0.6424333333],
+        [0.2178285714, 0.7250428571, 0.6192619048],
+        [0.2586428571, 0.7317142857, 0.5954285714],
+        [0.3021714286, 0.7376047619, 0.5711857143],
+        [0.3481666667, 0.7424333333, 0.5472666667],
+        [0.3952571429, 0.7459, 0.5244428571],
+        [0.4420095238, 0.7480809524, 0.5033142857],
+        [0.4871238095, 0.7490619048, 0.4839761905],
+        [0.5300285714, 0.7491142857, 0.4661142857],
+        [0.5708571429, 0.7485190476, 0.4493904762],
+        [0.609852381, 0.7473142857, 0.4336857143],
+        [0.6473, 0.7456, 0.4188],
+        [0.6834190476, 0.7434761905, 0.4044333333],
+        [0.7184095238, 0.7411333333, 0.3904761905],
+        [0.7524857143, 0.7384, 0.3768142857],
+        [0.7858428571, 0.7355666667, 0.3632714286],
+        [0.8185047619, 0.7327333333, 0.3497904762],
+        [0.8506571429, 0.7299, 0.3360285714],
+        [0.8824333333, 0.7274333333, 0.3217],
+        [0.9139333333, 0.7257857143, 0.3062761905],
+        [0.9449571429, 0.7261142857, 0.2886428571],
+        [0.9738952381, 0.7313952381, 0.266647619],
+        [0.9937714286, 0.7454571429, 0.240347619],
+        [0.9990428571, 0.7653142857, 0.2164142857],
+        [0.9955333333, 0.7860571429, 0.196652381],
+        [0.988, 0.8066, 0.1793666667],
+        [0.9788571429, 0.8271428571, 0.1633142857],
+        [0.9697, 0.8481380952, 0.147452381],
+        [0.9625857143, 0.8705142857, 0.1309],
+        [0.9588714286, 0.8949, 0.1132428571],
+        [0.9598238095, 0.9218333333, 0.0948380952],
+        [0.9661, 0.9514428571, 0.0755333333],
+        [0.9763, 0.9831, 0.0538]]
+
+    return LinearSegmentedColormap.from_list('parula', cm_data)

@@ -29,7 +29,7 @@ def main():
     from nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
-    from mriqc.reports.utils import check_reports
+    # from mriqc.reports.utils import check_reports
 
     parser = ArgumentParser(description='MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -45,7 +45,7 @@ def main():
                              'should be stored. If you are running group level analysis '
                              'this folder should be prepopulated with the results of the'
                              'participant level analysis.')
-    parser.add_argument('analysis_level', action='store',
+    parser.add_argument('analysis_level', action='store', nargs='+',
                         help='Level of the analysis that will be performed. '
                              'Multiple participant level analyses can be run independently '
                              '(in parallel) using the same output_dir.',
@@ -172,12 +172,21 @@ def main():
 
     log_dir = op.join(settings['output_dir'], 'logs')
 
+    analysis_levels = opts.analysis_level
+    if opts.participant_label is None:
+        analysis_levels.append('group')
+    analysis_levels = list(set(analysis_levels))
+    if len(analysis_levels) > 2:
+        raise RuntimeError('Error parsing analysis levels, got "%s"' % ', '.join(analysis_levels))
+
     settings['report_dir'] = opts.report_dir
     if not settings['report_dir']:
         settings['report_dir'] = op.join(settings['output_dir'], 'reports')
 
     check_folder(settings['output_dir'])
-    check_folder(settings['work_dir'])
+    if 'participant' in analysis_levels:
+        check_folder(settings['work_dir'])
+
     check_folder(log_dir)
     check_folder(settings['report_dir'])
 
@@ -205,8 +214,8 @@ def main():
             plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
 
     MRIQC_LOG.info(
-        'Running MRIQC-%s (analysis_level=%s, participant_label=%s)\n\tSettings=%s',
-        __version__, opts.analysis_level, opts.participant_label, settings)
+        'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+        __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
     # Process data types
     qc_types = []
@@ -222,8 +231,11 @@ def main():
     dataset = collect_bids_data(settings['bids_dir'],
                                 participant_label=opts.participant_label)
 
+    # Overwrite if participant level is run
+    derivatives_dir = settings['bids_dir']
+
     # Set up participant level
-    if opts.analysis_level == 'participant':
+    if 'participant' in analysis_levels:
         workflow = Workflow(name='workflow_enumerator')
         workflow.base_dir = settings['work_dir']
 
@@ -243,15 +255,16 @@ def main():
         else:
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
+        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
 
     # Set up group level
-    if opts.analysis_level == 'group' or opts.participant_label is None:
+    if 'group' in analysis_levels:
         from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
 
-        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
+
         for qctype in qc_types:
             dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], qctype)
 

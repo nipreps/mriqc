@@ -78,6 +78,8 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
         (to_ras, n4itk, [('out_file', 'input_image')]),
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
+                        ('acq_id', 'inputnode.acq_id'),
+                        ('rec_id', 'inputnode.rec_id'),
                         ('run_id', 'inputnode.run_id')]),
         (n4itk, asw, [('output_image', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
@@ -121,8 +123,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'run_id', 'orig', 'brainmask', 'airmask', 'artmask',
-        'headmask', 'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
+        'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'brainmask', 'airmask', 'artmask', 'headmask', 'segmentation',
+        'inu_corrected', 'in_inu', 'pvms', 'metadata',
         'reverse_transforms', 'reverse_invert_flags']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
@@ -153,6 +156,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow.connect([
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
+                               ('acq_id', 'acq_id'),
+                               ('rec_id', 'rec_id'),
                                ('run_id', 'run_id'),
                                ('metadata', 'metadata')]),
         (inputnode, getqi2, [('orig', 'in_file'),
@@ -293,22 +298,18 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
-
-    enhance = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
-
-
     if use_bet or not has_dipy:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name='fsl_bet')
         workflow.connect([
-            (inputnode, enhance, [('in_file', 'in_file')]),
-            (enhance, bet, [('out_file', 'in_file')]),
+            (inputnode, bet, [('in_file', 'in_file')]),
             (bet, outputnode, [('outskin_mask_file', 'out_file')])
         ])
 
     else:
         from nipype.interfaces.dipy import Denoise
+        enhance = pe.Node(niu.Function(
+            input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
         estsnr = pe.Node(niu.Function(
             input_names=['in_file', 'seg_file'], output_names=['out_snr'],
             function=_estimate_snr), name='EstimateSNR')
