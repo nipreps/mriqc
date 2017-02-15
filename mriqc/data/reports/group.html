@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title></title>
-    <link rel="stylesheet" type="text/css" href="resources/boxplots.css">
-    <script src="resources/d3.min.js" charset="utf-8"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/poldracklab/mriqc/master/mriqc/data/reports/resources/boxplots.css">
+    <script src="https://cdn.rawgit.com/poldracklab/mriqc/master/mriqc/data/reports/resources/d3.min.js" charset="utf-8"></script>
     <title>MRIQC: group {{ qctype }}
 report</title>
 </head>
@@ -25,7 +25,7 @@ report</h1>
 {% endif %}
 </ul>
 
-<script src="resources/boxplots.js" charset="utf-8"></script>
+<script src="https://cdn.rawgit.com/poldracklab/mriqc/master/mriqc/data/reports/resources/boxplots.js" charset="utf-8"></script>
 {% for data_csv in csv_groups %}
 <div class="chart-wrapper" id="chart-group{{ loop.index0 }}"></div>
 <pre class="csvdata" id="data-csv{{ loop.index0 }}" style="display: none">

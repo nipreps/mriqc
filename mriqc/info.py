@@ -8,7 +8,7 @@ MRIQC
 """
 
 __versionbase__ = '0.9.0'
-__versionrev__ = '-rc1'
+__versionrev__ = '-0'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -44,14 +44,14 @@ CLASSIFIERS = [
 
 
 REQUIRES = [
-    'numpy',
+    'numpy>=1.12.0',
+    'nipype>=0.13.0rc1',
+    'niworkflows>=0.0.5',
     'future',
     'scipy',
     'six',
     'matplotlib',
     'nibabel',
-    'nipype>=0.13.0rc1',
-    'niworkflows>=0.0.5',
     'pandas',
     'dipy',
     'jinja2',
@@ -74,7 +74,7 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx'],
+    'doc': ['sphinx>=1.4'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
