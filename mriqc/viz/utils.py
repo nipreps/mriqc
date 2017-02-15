@@ -201,6 +201,9 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         zooms = [1.0, 1.0, 1.0]
         out_file = 'mosaic.svg'
 
+    # Remove extra dimensions
+    img_data = np.squeeze(img_data)
+
     if img_data.shape[2] > zmax and bbox_mask_file is None:
         lowthres = np.percentile(img_data, 5)
         mask_file = np.ones_like(img_data)
