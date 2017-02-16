@@ -33,6 +33,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
 
     dataframe = dataframe[raters]
     matrix = dataframe.as_matrix()
+    nsamples = len(dataframe)
 
     if matrix.shape[0] < width:
         matrix = fill_matrix(matrix, width)
@@ -52,7 +53,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         matrices[-1] = fill_matrix(matrices[-1], width)
         matrix = np.hstack(tuple(matrices))
 
-    palette = {'1': 'limegreen', '0': 'gold', '-1': 'tomato', 'n/a': 'w'}
+    palette = {'1.0': 'limegreen', '0.0': 'gold', '-1.0': 'tomato', 'n/a': 'w'}
 
     ax = ax if ax is not None else plt.gca()
 
@@ -61,19 +62,48 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
 
-    size = 0.75
+    size = 0.40
+
+    nrows = ((nsamples - 1) // width) + 1
+    xlims = (-1.0, width + 2.0)
+    ylims = (-0.2, nrows * 3.2 + (nrows - 1))
+
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
     for (x, y), w in np.ndenumerate(matrix):
-        if w == '':
+        if str(w) not in list(palette.keys()):
             w = 'n/a'
         color = palette[str(w)]
-        rect = plt.Circle([x - size / 2, y - size / 2], size * 0.5,
+        rect = plt.Circle([x + 0.5, y + 0.5], size,
                              facecolor=color, edgecolor=color)
         ax.add_patch(rect)
 
-    ax.autoscale_view()
+
+    text_x = ((nsamples - 1) % width) + 6.5
+    for i, rname in enumerate(raters):
+        good = 100 * sum(dataframe[rname] == 1.0) / nsamples
+        bad = 100 * sum(dataframe[rname] == -1.0) / nsamples
+
+        text_y = 1.2 * i + (nrows - 1) * 4.1 + 0.2
+        ax.text(text_x, text_y, '%2.0f%%' % good,
+            color='limegreen', weight=1000, size=18,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=ax.transData)
+        ax.text(text_x + 3.50, text_y, '%2.0f%%' % max((0.0, 100 - good - bad)),
+            color='dimgray', weight=1000, size=18,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=ax.transData)
+        ax.text(text_x + 7.0, text_y, '%2.0f%%' % bad,
+            color='tomato', weight=1000, size=18,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=ax.transData)
+
+    # ax.autoscale_view()
     ax.invert_yaxis()
-    ax.set_yticklabels([])
-    ax.set_yticks([])
+    plt.grid(False)
 
     # Remove and redefine spines
     for side in ["top", "right", "bottom"]:
@@ -83,28 +113,33 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
 
     ax.spines["left"].set_linewidth(3)
     ax.spines["left"].set_color('dimgray')
-    ax.spines["left"].set_position(('data', -1.5))
-    plt.grid(b=False, which='major', linewidth=0)
-    # ax.yaxis.set_label_position("right")
+    # ax.spines["left"].set_position(('data', xlims[0]))
+    ax.set_yticks([0.5 * (ylims[0] + ylims[1])])
+    ax.set_yticklabels([site], fontsize=20)
 
-    ax.set_ylabel(site, fontsize=18, rotation=0)
-    ylabel_y = 0.20
+    # for tick in ax.yaxis.get_major_ticks():
+    #     tick.label
 
-    if nblocks > 1:
-        ylabel_y = 0.45
+    # ax.set_ylabel(site, fontsize=18, rotation=0)
+    # ylabel_y = 0.20
 
-    ax.yaxis.set_label_coords(-0.01, ylabel_y)
+    # if nblocks > 1:
+    #     ylabel_y = 0.45
+
+    # ax.yaxis.set_label_coords(-0.01, ylabel_y)
 
     return ax
 
 def raters_variability_plot(y_path, figsize=(22, 22),
                             width=101, out_file=None):
-    mdata = pd.read_csv(y_path, index_col=False, na_values='n/a', na_filter=False)
+    mdata = pd.read_csv(y_path, index_col=False,
+                        dtype={'rater_1': float, 'rater_2': float, 'rater_3': float})
     sites_list = sorted(set(mdata.site.values.ravel().tolist()))
     sites_len = []
     for site in sites_list:
         sites_len.append(len(mdata.loc[mdata.site == site]))
 
+    sites_len, sites_list = zip(*sorted(zip(sites_len, sites_list)))
 
     blocks = [(slen - 1) // width + 1 for slen in sites_len]
     fig = plt.figure(figsize=figsize)
