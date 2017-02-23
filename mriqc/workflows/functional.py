@@ -383,7 +383,8 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, save_rms=True, save_mats=True),
                       name='MCFLIRT')
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
-                                               format="FSL"), name='ComputeFD')
+                                               parameter_source="FSL"),
+                     name='ComputeFD')
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
@@ -437,7 +438,8 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
-                                               format="AFNI"), name='ComputeFD')
+                                               parameter_source="AFNI"),
+                     name='ComputeFD')
 
     workflow.connect([
         (inputnode, fdnode, [('fd_radius', 'radius')]),
