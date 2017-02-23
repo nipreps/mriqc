@@ -36,7 +36,7 @@ RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_6
     /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
     rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH=/usr/local/miniconda/bin:$PATH \
-    PYTHONPATH=/usr/local/miniconda/lib/python2.7/site-packages \
+    PYTHONPATH=/usr/local/miniconda/lib/python3.5/site-packages \
     PYTHONNOUSERSITE=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
