@@ -55,6 +55,7 @@ def main():
         packages=find_packages(exclude=['*.tests']),
         package_data={'mriqc': ['data/*.yml',
                                 'data/rfc-nzs-abide-1.0.pklz',
+                                'data/rfc-nzs-full-1.0.pklz',
                                 'data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',

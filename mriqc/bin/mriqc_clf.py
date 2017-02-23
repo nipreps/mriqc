@@ -49,7 +49,7 @@ def main():
     g_clf = parser.add_mutually_exclusive_group()
     g_clf.add_argument('--train', nargs=2, help='training data tables, X and Y')
     g_clf.add_argument('--load-classifier', nargs="?", default=None,
-                       const=pkgrf('mriqc', 'data/rfc-nzs-abide-1.0.pklz'),
+                       const=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
                        help='load pickled classifier in')
 
     parser.add_argument('--test-data', help='test data')
