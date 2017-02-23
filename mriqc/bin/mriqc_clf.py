@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 10:30:31
+# @Last Modified time: 2017-02-23 11:27:30
 
 """
 mriqc_fit command line interface definition
@@ -113,7 +113,7 @@ def main():
                                            cvhelper.evaluate()))
 
     if opts.evaluation_data:
-        cvhelper.predict(opts.evaluation_data, out_file=opts.output)
+        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output)
 
 
 if __name__ == '__main__':

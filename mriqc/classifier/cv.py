@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 10:31:08
+# @Last Modified time: 2017-02-23 11:39:07
 
 """
 MRIQC Cross-validation
@@ -49,13 +49,21 @@ class CVHelperBase(object):
         self.sites = list(set(self._Xtrain[site_label].values.ravel()))
 
     @property
+    def ftnames(self):
+        return self._ftnames
+
+
+    @property
     def rate_column(self):
         return self._rate_column
 
     def fit(self):
         raise NotImplementedError
 
-    def predict(self, data, out_file=None):
+    def predict_dataset(self, data, out_file=None):
+        raise NotImplementedError
+
+    def predict(self, data):
         raise NotImplementedError
 
     def get_groups(self):
@@ -348,12 +356,15 @@ class CVHelper(CVHelperBase):
         self._pickled = True
 
 
-    def predict(self, data, out_file=None):
+    def predict(self, datapoints):
+        return self.estimator.predict(datapoints).astype(int)
+
+    def predict_dataset(self, data, out_file=None):
         _xeval, _, bidts = read_iqms(data)
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
 
         pred = _xeval[bidts].copy()
-        pred['prediction'] = self.estimator.predict(sample_x).astype(int)
+        pred['prediction'] = self.predict(sample_x).astype(int)
 
         if out_file is not None:
             pred[bidts + ['prediction']].to_csv(out_file, index=False)
