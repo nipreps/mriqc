@@ -14,6 +14,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib.lines import Line2D
+from matplotlib.font_manager import FontProperties
 from mriqc.classifier.data import read_dataset, zscore_dataset
 
 def fill_matrix(matrix, width, value='n/a'):
@@ -32,6 +34,9 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         dataframe = dataframe.loc[dataframe.site == site]
 
     dataframe = dataframe[raters]
+    dataframe.columns = ['rater_1', 'rater_3', 'rater_2']
+    dataframe = dataframe[raters].sort_values(by=raters, ascending=True)
+
     matrix = dataframe.as_matrix()
     nsamples = len(dataframe)
 
@@ -65,7 +70,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
     size = 0.40
 
     nrows = ((nsamples - 1) // width) + 1
-    xlims = (-1.0, width + 2.0)
+    xlims = (-14.0, width)
     ylims = (-0.2, nrows * 3.2 + (nrows - 1))
 
     ax.set_xlim(xlims)
@@ -79,24 +84,25 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         ax.add_patch(rect)
 
 
-    text_x = ((nsamples - 1) % width) + 6.5
+    # text_x = ((nsamples - 1) % width) + 6.5
+    text_x = -8.5
     for i, rname in enumerate(raters):
         good = 100 * sum(dataframe[rname] == 1.0) / nsamples
         bad = 100 * sum(dataframe[rname] == -1.0) / nsamples
 
-        text_y = 1.2 * i + (nrows - 1) * 4.1 + 0.2
+        text_y = 1.5 * i + (nrows - 1) * 2.0
         ax.text(text_x, text_y, '%2.0f%%' % good,
-            color='limegreen', weight=1000, size=18,
+            color='limegreen', weight=1000, size=16,
             horizontalalignment='right',
             verticalalignment='center',
             transform=ax.transData)
         ax.text(text_x + 3.50, text_y, '%2.0f%%' % max((0.0, 100 - good - bad)),
-            color='dimgray', weight=1000, size=18,
+            color='dimgray', weight=1000, size=16,
             horizontalalignment='right',
             verticalalignment='center',
             transform=ax.transData)
         ax.text(text_x + 7.0, text_y, '%2.0f%%' % bad,
-            color='tomato', weight=1000, size=18,
+            color='tomato', weight=1000, size=16,
             horizontalalignment='right',
             verticalalignment='center',
             transform=ax.transData)
@@ -111,29 +117,27 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         ax.spines[side].set_color('none')
         ax.spines[side].set_visible(False)
 
-    ax.spines["left"].set_linewidth(3)
+    ax.spines["left"].set_linewidth(1.5)
     ax.spines["left"].set_color('dimgray')
     # ax.spines["left"].set_position(('data', xlims[0]))
+
     ax.set_yticks([0.5 * (ylims[0] + ylims[1])])
-    ax.set_yticklabels([site], fontsize=20)
+    ax.tick_params(axis='y', which='major', pad=15)
+    ax.set_yticklabels([site])
 
-    # for tick in ax.yaxis.get_major_ticks():
-    #     tick.label
-
-    # ax.set_ylabel(site, fontsize=18, rotation=0)
-    # ylabel_y = 0.20
-
-    # if nblocks > 1:
-    #     ylabel_y = 0.45
-
-    # ax.yaxis.set_label_coords(-0.01, ylabel_y)
+    ticks_font = FontProperties(
+        family='FreeSans', style='normal', size=20,
+        weight='normal', stretch='normal')
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(ticks_font)
 
     return ax
 
 def raters_variability_plot(y_path, figsize=(22, 22),
                             width=101, out_file=None):
+    rater_types = {'rater_1': float, 'rater_2': float, 'rater_3': float}
     mdata = pd.read_csv(y_path, index_col=False,
-                        dtype={'rater_1': float, 'rater_2': float, 'rater_3': float})
+                        dtype=rater_types)
     sites_list = sorted(set(mdata.site.values.ravel().tolist()))
     sites_len = []
     for site in sites_list:
@@ -149,6 +153,64 @@ def raters_variability_plot(y_path, figsize=(22, 22),
         ax = plt.subplot(gsel)
         plot_raters(mdata, site=s, ax=ax, width=width)
 
+
+    # ax.add_line(Line2D([0.0, width], [8.0, 8.0], color='k'))
+    # ax.annotate(
+    #     '%d images' % width, xy=(0.5 * width, 8), xycoords='data',
+    #     xytext=(0.5 * width, 9), fontsize=20, ha='center', va='top',
+    #     arrowprops=dict(arrowstyle='-[,widthB=1.0,lengthB=0.2', lw=1.0)
+    # )
+
+    # ax.annotate('QC Prevalences', xy=(0.1, -0.15), xytext=(0.5, -0.1), xycoords='axes fraction',
+    #         fontsize=20, ha='center', va='top',
+    #         arrowprops=dict(arrowstyle='-[, widthB=3.0, lengthB=0.2', lw=1.0))
+
+    newax = plt.axes([0.6, 0.65, .25, .16])
+    newax.grid(False)
+    newax.set_xticklabels([])
+    newax.set_xticks([])
+    newax.set_yticklabels([])
+    newax.set_yticks([])
+
+    nsamples = len(mdata)
+    for i, rater in enumerate(sorted(rater_types.keys())):
+        good = 100 * sum(mdata[rater] == 1.0) / nsamples
+        bad = 100 * sum(mdata[rater] == -1.0) / nsamples
+
+        text_x = .92
+        text_y = .5 - 0.17 * i
+        newax.text(text_x - .36, text_y, '%2.1f%%' % good,
+            color='limegreen', weight=1000, size=25,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=newax.transAxes)
+        newax.text(text_x - .18, text_y, '%2.1f%%' % max((0.0, 100 - good - bad)),
+            color='dimgray', weight=1000, size=25,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=newax.transAxes)
+        newax.text(text_x, text_y, '%2.1f%%' % bad,
+            color='tomato', weight=1000, size=25,
+            horizontalalignment='right',
+            verticalalignment='center',
+            transform=newax.transAxes)
+
+        newax.text(1 - text_x, text_y, 'Rater %d' % (i + 1),
+            color='k', size=25,
+            horizontalalignment='left',
+            verticalalignment='center',
+            transform=newax.transAxes)
+
+    newax.text(0.5, 0.95, 'Imbalance of ratings',
+        color='k', size=25,
+        horizontalalignment='center',
+        verticalalignment='top',
+        transform=newax.transAxes)
+    newax.text(0.5, 0.85, '(ABIDE, aggregated)',
+        color='k', size=25,
+        horizontalalignment='center',
+        verticalalignment='top',
+        transform=newax.transAxes)
     if out_file is None:
         out_file = 'raters.svg'
 
