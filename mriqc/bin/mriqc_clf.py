@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 09:31:14
+# @Last Modified time: 2017-02-23 10:30:31
 
 """
 mriqc_fit command line interface definition
@@ -53,6 +53,8 @@ def main():
     parser.add_argument('--test-data', help='test data')
     parser.add_argument('--test-labels', help='test labels')
 
+    parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
+
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
@@ -64,6 +66,9 @@ def main():
                          choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
+
+    g_input.add_argument('-o', '--output', action='store', default='predicted_qa.csv',
+                         help='file containing the labels assigned by the classifier')
 
 
     opts = parser.parse_args()
@@ -107,6 +112,8 @@ def main():
         print('roc_auc=%f, accuracy=%f' % (cvhelper.evaluate(scoring='roc_auc'),
                                            cvhelper.evaluate()))
 
+    if opts.evaluation_data:
+        cvhelper.predict(opts.evaluation_data, out_file=opts.output)
 
 
 if __name__ == '__main__':

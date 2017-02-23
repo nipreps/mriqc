@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 09:26:54
+# @Last Modified time: 2017-02-23 10:31:08
 
 """
 MRIQC Cross-validation
@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from mriqc import __version__, logging
-from .data import read_dataset, zscore_dataset
+from .data import read_iqms, read_dataset, zscore_dataset
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
@@ -53,6 +53,9 @@ class CVHelperBase(object):
         return self._rate_column
 
     def fit(self):
+        raise NotImplementedError
+
+    def predict(self, data, out_file=None):
         raise NotImplementedError
 
     def get_groups(self):
@@ -345,11 +348,16 @@ class CVHelper(CVHelperBase):
         self._pickled = True
 
 
-    def predict(self, X=None):
-        if X is None:
-            X = self._Xtest
-        sample_x = np.array([tuple(x) for x in X[self._ftnames].values])
-        return self.estimator.predict(sample_x)
+    def predict(self, data, out_file=None):
+        _xeval, _, bidts = read_iqms(data)
+        sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
+
+        pred = _xeval[bidts].copy()
+        pred['prediction'] = self.estimator.predict(sample_x).astype(int)
+
+        if out_file is not None:
+            pred[bidts + ['prediction']].to_csv(out_file, index=False)
+        return pred
 
     def evaluate(self, scoring='accuracy'):
         from sklearn.model_selection._validation import _score

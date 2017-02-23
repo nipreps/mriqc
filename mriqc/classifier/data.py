@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 09:29:55
+# @Last Modified time: 2017-02-23 10:27:05
 
 """
 mriqc_fit: data handling module
@@ -16,26 +16,26 @@ import pandas as pd
 from builtins import str
 
 from mriqc import logging
+from mriqc.utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
-def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
-                 binarize=True):
-    """ Reads in the features and labels """
+def read_iqms(feat_file):
+    """ Reads in the features """
 
-    bids_comps = ['subject_id', 'session_id', 'task_id', 'run_id']
-
+    bids_comps = list(BIDS_COMP.keys())
     x_df = pd.read_csv(feat_file, index_col=False,
                        dtype={col: str for col in bids_comps})
 
+    # Find present bids bits and sort by them
     bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
     x_df = x_df.sort_values(by=bids_comps_present)
+
+    # Remove sub- prefix in subject_id
     x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
-    # x_df['subject_id'] = x_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Remove columns that are not IQMs
     feat_names = list(x_df._get_numeric_data().columns.ravel())
-
-    for col in ['subject_id', 'session_id', 'run_id', 'qc_type']:
+    for col in bids_comps:
         try:
             feat_names.remove(col)
         except ValueError:
@@ -45,12 +45,48 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
         if col.startswith(('size_', 'spacing_', 'Unnamed')):
             feat_names.remove(col)
 
+    return x_df, feat_names, bids_comps_present
+
+def read_labels(label_file, rate_label='rate', binarize=True):
+    """ Reads in the labels """
     # Massage labels table to have the appropriate format
-    y_df = pd.read_csv(
-        label_file, index_col=False, dtype={'subject_id': object},
-        usecols=['subject_id', 'site', rate_label]).sort_values(by=['subject_id'])
+
+    bids_comps = list(BIDS_COMP.keys())
+
+    y_df = pd.read_csv(label_file, index_col=False,
+                       dtype={col: str for col in bids_comps})
+
+    # Find present bids bits and sort by them
+    bids_comps_present = list(set(y_df.columns.ravel().tolist()) & set(bids_comps))
+    y_df = y_df.sort_values(by=bids_comps_present)
     y_df.subject_id = y_df.subject_id.str.lstrip('sub-')
-    # y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
+
+    # Convert string labels to ints
+    try:
+        y_df.loc[y_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = -1
+        y_df.loc[y_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = -1
+        y_df.loc[y_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
+        y_df.loc[y_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
+        y_df.loc[y_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 1
+        y_df.loc[y_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 1
+    except AttributeError:
+        pass
+
+    y_df[[rate_label]] = y_df[[rate_label]].apply(pd.to_numeric, errors='raise')
+
+    if binarize:
+        y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
+        y_df.loc[y_df[rate_label] < 0, rate_label] = 1
+
+    return y_df[bids_comps_present + ['site', rate_label]]
+
+
+def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
+                 binarize=True):
+    """ Reads in the features and labels """
+
+    x_df, feat_names, _ = read_iqms(feat_file)
+    y_df = read_labels(label_file, rate_label, binarize)
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df['subject_id'].isin(list(x_df.subject_id.values.ravel()))]
@@ -67,23 +103,6 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
         LOG.info('Dropping %d samples for having non-numerical '
                  'labels', len(nan_labels))
         x_df = x_df.drop(nan_labels)
-
-    # Convert string labels to ints
-    try:
-        x_df.loc[x_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = -1
-        x_df.loc[x_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = -1
-        x_df.loc[x_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
-        x_df.loc[x_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
-        x_df.loc[x_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 1
-        x_df.loc[x_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 1
-    except AttributeError:
-        pass
-
-    x_df[[rate_label]] = x_df[[rate_label]].apply(pd.to_numeric, errors='raise')
-
-    if binarize:
-        x_df.loc[x_df[rate_label] >= 0, rate_label] = 0
-        x_df.loc[x_df[rate_label] < 0, rate_label] = 1
 
     # Print out some info
     nsamples = len(x_df)
