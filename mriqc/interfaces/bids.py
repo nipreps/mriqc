@@ -181,7 +181,7 @@ class IQMFileSink(MRIQCBaseInterface):
 
             features = tuple([self._out_dict.pop(key, None)
                               for key in cvhelper.ftnames])
-            id_dict['mriqc_pred'] = cvhelper.predict(np.array([features]))[0]
+            id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
 
 
         if self.inputs.modality == 'bold':
