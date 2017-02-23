@@ -33,8 +33,6 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
     if site is not None:
         dataframe = dataframe.loc[dataframe.site == site]
 
-    dataframe = dataframe[raters]
-    dataframe.columns = ['rater_1', 'rater_3', 'rater_2']
     dataframe = dataframe[raters].sort_values(by=raters, ascending=True)
 
     matrix = dataframe.as_matrix()
@@ -138,6 +136,13 @@ def raters_variability_plot(y_path, figsize=(22, 22),
     rater_types = {'rater_1': float, 'rater_2': float, 'rater_3': float}
     mdata = pd.read_csv(y_path, index_col=False,
                         dtype=rater_types)
+
+    # Swap raters 2 and 3
+    cols = mdata.columns.ravel().tolist()
+    i, j = cols.index('rater_2'), cols.index('rater_3')
+    cols[j], cols[i] = cols[i], cols[j]
+    mdata.columns = cols
+
     sites_list = sorted(set(mdata.site.values.ravel().tolist()))
     sites_len = []
     for site in sites_list:
