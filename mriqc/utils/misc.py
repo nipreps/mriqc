@@ -173,19 +173,21 @@ def generate_pred(derivatives_dir, output_dir, qctype):
             continue
 
         for k in headers:
-            predictions[k].append(data.pop(k))
+            predictions[k].append(data.pop(k, None))
 
     dataframe = pd.DataFrame(
         predictions).sort_values(by=list(BIDS_COMP.keys()))
 
     # Drop empty columns
-    dataframe.drop_na(axis='columns', how='all', inplace=True)
+    dataframe.dropna(axis='columns', how='all', inplace=True)
+
+    bdits_cols = list(set(BIDS_COMP.keys()) & set(dataframe.columns.ravel()))
 
     # Drop duplicates
-    dataframe.drop_duplicates(list(BIDS_COMP.keys()),
+    dataframe.drop_duplicates(bdits_cols,
                               keep='last', inplace=True)
 
-    dataframe[headers].to_csv(out_csv, index=False)
+    dataframe[bdits_cols + ['mriqc_pred']].to_csv(out_csv, index=False)
     return out_csv
 
 
