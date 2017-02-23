@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 11:39:07
+# @Last Modified time: 2017-02-23 13:55:39
 
 """
 MRIQC Cross-validation
@@ -349,7 +349,6 @@ class CVHelper(CVHelperBase):
         http://scikit-learn.org/stable/modules/model_persistence.html
 
         """
-        from os.path import splitext
         from sklearn.externals.joblib import load as loadpkl
         self._estimator = loadpkl(filehandler)
         self._ftnames = getattr(self._estimator, '_ftnames')

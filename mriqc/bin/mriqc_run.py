@@ -259,7 +259,7 @@ def main():
     # Set up group level
     if 'group' in analysis_levels:
         from mriqc.reports import group_html
-        from mriqc.utils.misc import generate_csv
+        from mriqc.utils.misc import generate_csv, generate_pred
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
         for qctype in qc_types:
@@ -272,8 +272,14 @@ def main():
                     'report was not generated.', qctype, derivatives_dir)
                 continue
 
-            out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', qctype, out_csv)
+
+            out_pred = generate_pred(derivatives_dir, settings['output_dir'], qctype)
+            if out_pred is not None:
+                MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
+                               qctype, out_pred)
+
+            out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             group_html(out_csv, qctype,
                        csv_failed=op.join(settings['output_dir'], 'failed_' + qctype + '.csv'),
                        out_file=out_html)

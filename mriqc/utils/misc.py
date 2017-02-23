@@ -147,6 +147,47 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
         fname = op.join(out_path, fname)
     return op.abspath(fname + '.' + ext)
 
+def generate_pred(derivatives_dir, output_dir, qctype):
+    """
+    Reads the metadata in the JIQM (json iqm) files and
+    generates a corresponding prediction CSV table
+    """
+
+    if not qctype.startswith('anat'):
+        return None
+
+    # If some were found, generate the CSV file and group report
+    out_csv = op.join(output_dir, qctype[:4] + 'MRIQC_predicted_qa.csv')
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % QCTYPES[qctype[:4]]))
+    if not jsonfiles:
+        return None
+
+    headers = list(BIDS_COMP.keys()) + ['mriqc_pred']
+    predictions = {k: [] for k in headers}
+
+    for jsonfile in jsonfiles:
+        with open(jsonfile, 'r') as jsondata:
+            data = json.load(jsondata).pop('metadata', None)
+
+        if data is None:
+            continue
+
+        for k in headers:
+            predictions[k].append(data.pop(k))
+
+    dataframe = pd.DataFrame(
+        predictions).sort_values(by=list(BIDS_COMP.keys()))
+
+    # Drop empty columns
+    dataframe.drop_na(axis='columns', how='all', inplace=True)
+
+    # Drop duplicates
+    dataframe.drop_duplicates(list(BIDS_COMP.keys()),
+                              keep='last', inplace=True)
+
+    dataframe[headers].to_csv(out_csv, index=False)
+    return out_csv
+
 
 def generate_csv(derivatives_dir, output_dir, qctype):
     """
