@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 10:31:53
+# @Last Modified time: 2017-02-23 09:17:22
 
 """
 Extends sklearn's GridSearchCV to a model search object
@@ -14,19 +14,20 @@ import warnings
 import numbers
 import time
 
-import numpy as np
-from collections import Mapping, Sized
 from functools import partial, reduce
 from itertools import product
+from collections import Mapping, Sized
 import operator
+import numpy as np
 
 from sklearn.base import is_classifier, clone
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._search import (
     BaseSearchCV, MaskedArray, check_scoring, indexable,
-    Parallel, delayed, clone, defaultdict, rankdata
+    Parallel, delayed, defaultdict, rankdata
 )
+
 from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
     FitFailedWarning, logger)
@@ -578,7 +579,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
                                             mask=True,
                                             dtype=object))
         for cand_i, params in enumerate(candidate_params):
-            param_est, param_values = params
+            _, param_values = params
             for name, value in param_values.items():
                 # An all masked empty array gets created for the key
                 # `"param_%s" % name` at the first occurence of `name`.
@@ -784,10 +785,6 @@ def nested_fit_and_score(
     parameters : dict or None, optional
         The parameters that have been evaluated.
     """
-    import time
-    import numbers
-    from sklearn.utils.metaestimators import _safe_split
-    from sklearn.model_selection._validation import _index_param_value, _score
     from sklearn.externals.joblib.logger import short_format_time
 
     # Adjust length of sample weights

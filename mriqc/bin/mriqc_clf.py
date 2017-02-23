@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 09:25:33
+# @Last Modified time: 2017-02-23 09:31:14
 
 """
 mriqc_fit command line interface definition
@@ -11,8 +11,6 @@ mriqc_fit command line interface definition
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from sys import version_info
-import os.path as op
-from fcntl import flock, LOCK_EX, LOCK_UN
 import warnings
 
 PY3 = version_info[0] > 2

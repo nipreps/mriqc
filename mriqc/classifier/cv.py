@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 18:17:21
+# @Last Modified time: 2017-02-23 09:26:54
 
 """
 MRIQC Cross-validation
@@ -20,11 +20,10 @@ from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_
 
 from sklearn.base import is_classifier, clone
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold,
-                                     permutation_test_score, PredefinedSplit, cross_val_score)
+from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import check_cv
 
-from builtins import object, bytes, str
+from builtins import object, str
 
 LOG = logging.getLogger('mriqc.classifier')
 
@@ -327,9 +326,7 @@ class CVHelper(CVHelperBase):
         http://scikit-learn.org/stable/modules/model_persistence.html
 
         """
-        from os.path import splitext
         from sklearn.externals.joblib import dump as savepkl
-        from gzip import open as gzopen
 
         # Store ftnames
         setattr(self._estimator, '_ftnames', self._ftnames)

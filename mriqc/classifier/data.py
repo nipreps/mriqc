@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-01-27 10:51:10
+# @Last Modified time: 2017-02-23 09:29:55
 
 """
 mriqc_fit: data handling module
@@ -29,8 +29,8 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
 
     bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
     x_df = x_df.sort_values(by=bids_comps_present)
-
-    x_df['subject_id'] = x_df['subject_id'].map(lambda x: x.lstrip('sub-'))
+    x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
+    # x_df['subject_id'] = x_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Remove columns that are not IQMs
     feat_names = list(x_df._get_numeric_data().columns.ravel())
@@ -49,8 +49,8 @@ def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
     y_df = pd.read_csv(
         label_file, index_col=False, dtype={'subject_id': object},
         usecols=['subject_id', 'site', rate_label]).sort_values(by=['subject_id'])
-    y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
-    x_df['subject_id'] = x_df['subject_id'].map(lambda x: str(x))
+    y_df.subject_id = y_df.subject_id.str.lstrip('sub-')
+    # y_df['subject_id'] = y_df['subject_id'].map(lambda x: x.lstrip('sub-'))
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df['subject_id'].isin(list(x_df.subject_id.values.ravel()))]

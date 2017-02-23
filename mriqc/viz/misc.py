@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.lines import Line2D
 from matplotlib.font_manager import FontProperties
 from mriqc.classifier.data import read_dataset, zscore_dataset
 
@@ -249,7 +248,7 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         del mdata[col]
         try:
             pp_cols.remove(col)
-        except:
+        except ValueError:
             pass
 
     zscored = zscore_dataset(mdata, excl_columns=['rate'])
@@ -474,8 +473,11 @@ def plot_artifact(image_path, figsize=(20, 20), vmax=None, cut_coords=None, disp
     return nplt_disp, ax
 
 
-def figure1_a(image_path, display_mode='y', vmax=300, cut_coords=[15], figsize=(20, 20)):
+def figure1_a(image_path, display_mode='y', vmax=300, cut_coords=None, figsize=(20, 20)):
     import matplotlib.patches as patches
+
+    if cut_coords is None:
+        cut_coords = [15]
 
     disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
                              figsize=figsize)
@@ -506,8 +508,11 @@ def figure1_a(image_path, display_mode='y', vmax=300, cut_coords=[15], figsize=(
     return disp
 
 
-def figure1_b(image_path, display_mode='z', vmax=400, cut_coords=[-24], figsize=(20, 20)):
+def figure1_b(image_path, display_mode='z', vmax=400, cut_coords=None, figsize=(20, 20)):
     import matplotlib.patches as patches
+
+    if cut_coords is None:
+        cut_coords = [-24]
 
     disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
                              figsize=figsize)
