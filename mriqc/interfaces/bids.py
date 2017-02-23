@@ -179,7 +179,7 @@ class IQMFileSink(MRIQCBaseInterface):
             cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
                                 n_jobs=1)
 
-            features = tuple([self._out_dict.pop(key, None)
+            features = tuple([self._out_dict.get(key, None)
                               for key in cvhelper.ftnames])
             id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
 
