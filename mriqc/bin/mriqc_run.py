@@ -262,8 +262,6 @@ def main():
         from mriqc.utils.misc import generate_csv
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
-
-
         for qctype in qc_types:
             dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], qctype)
 
@@ -274,12 +272,25 @@ def main():
                     'report was not generated.', qctype, derivatives_dir)
                 continue
 
+            # Predict anatomical quality
+            if qctype.startswith('anat'):
+                from pkg_resources import resource_filename as pkgrf
+                from mriqc.classifier.cv import CVHelper
+
+                out_pred = op.join(settings['output_dir'], 'aMRIQC_prediction.csv')
+                cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
+                                    n_jobs=settings['n_procs'])
+                cvhelper.predict(out_csv, out_file=out_pred)
+                MRIQC_LOG.info('Prediction CSV table for the %s data generated (%s)',
+                               qctype, out_csv)
+
             out_html = op.join(reports_dir, qctype[:4] + '_group.html')
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', qctype, out_csv)
             group_html(out_csv, qctype,
                        csv_failed=op.join(settings['output_dir'], 'failed_' + qctype + '.csv'),
                        out_file=out_html)
             MRIQC_LOG.info('Group-%s report generated (%s)', qctype, out_html)
+
 
 if __name__ == '__main__':
     main()
