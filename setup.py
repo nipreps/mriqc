@@ -3,7 +3,6 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-14 11:03:27
 """ MRIQC setup script """
 from setuptools.command.build_py import build_py
 from sys import version_info
@@ -46,13 +45,19 @@ def main():
         url=ldict['URL'],
         download_url=ldict['DOWNLOAD_URL'],
         entry_points={'console_scripts': ['mriqc=mriqc.bin.mriqc_run:main',
+                                          'mriqc_fit=mriqc.bin.mriqc_fit:main',
+                                          'mriqc_clf=mriqc.bin.mriqc_clf:main',
                                           'mriqc_plot=mriqc.bin.mriqc_plot:main',
                                           'abide2bids=mriqc.bin.abide2bids:main',
                                           'fs2gif=mriqc.bin.fs2gif:main',
                                           'dfcheck=mriqc.bin.dfcheck:main',
                                           'participants=mriqc.bin.subject_wrangler:main']},
         packages=find_packages(exclude=['*.tests']),
-        package_data={'mriqc': ['data/reports/*.rst',
+        package_data={'mriqc': ['data/*.yml',
+                                'data/csv/*.csv',
+                                'data/rfc-nzs-abide-1.0.pklz',
+                                'data/rfc-nzs-full-1.0.pklz',
+                                'data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',
                                 'data/tests/*']},

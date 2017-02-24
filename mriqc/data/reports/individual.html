@@ -80,6 +80,18 @@ div.embeded-report {
 
 div.embeded-report svg { width: 100%; }
 
+span.qa-fail {
+  color: white;
+  font-weight: bold;
+  background-color: #FF6347;
+}
+
+span.qa-pass {
+  color: white;
+  font-weight: bold;
+  background-color: #32CD32;
+}
+
 </style>
 </head>
 <body>
@@ -96,6 +108,13 @@ report</h1>
 <h2>Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
+{% if pred_qa is not none %}
+<li>MRIQC predicted QA:
+{% if pred_qa > 0 %}<span class="qa-fail">Exclude</span>
+{% else %}<span class="qa-pass">Pass</span>
+{% endif %}
+</li>
+{% endif %}
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
 {% if workflow_details %}

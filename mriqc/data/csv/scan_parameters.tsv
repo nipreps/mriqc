@@ -1,0 +1,57 @@
+	CALTEC	CMU	KKI	MAX_MUN	NYU	LEUVEN_1	LEUVEN_2	OHSU	OLIN	PITT	SBL	SDSU	STANFORD	TRINITY	UCLA_1	UCLA_2	UM_1	UM_2	USM	YALE	DS030
+Vendor	Siemens	Siemens	Philips	Siemens	Siemens	Philips	Philips	Siemens	Siemens	Siemens	Phillips	GE	GE	Philips	Siemens	Siemens	GE	GE	Siemens	Siemens	
+Model	Magnetom TrioTim	Magnetom Verio	Achieva 3T	Magnetom Verio	Magnetom Allegra	Intera 3T	Intera 3T	Magnetom TrioTim	Magnetom Allegra	Magnetom Allegra	Intera 3T	MR750 3T	Signa 3T	Achieva 3T	Magnetom TrioTim	Magnetom TrioTim	Signa 3T	Signa 3T	Magnetom Allegra	Magnetom TrioTim	
+Version	Syngo MR B17	Syngo MR B17		Syngo MR B17	Syngo MR 2004A			Syngo MR B17	Syngo MR 2004A	Syngo MR A30					Syngo MR B15	Syngo MR B15			Syngo MR A30	Syngo MR B17	
+TR (sec)	1.59	1.87	8.00E-03	1.8	2.53	9.60E-03	9.60E-03	2.3	2.5	2.1		1.11E-02	8.40E-03	8.50E-03	2.3	2.3			2.1	1.23	
+TE (sec)	2.73E-03	2.48E-03	3.70E-03	3.06E-03	3.25E-03	4.60E-03	4.60E-03	3.58E-03	2.74E-03	3.93E-03		4.30E-03	1.80E-03	3.90E-03	2.84E-03	2.84E-03	1.80E-03	1.80E-03	3.93E-03	1.73E-03	
+TI	0.8	1.1		0.9	1.1	0.88514	0.88514	0.90	0.9	1		0.6		1.06	0.853	0.853			1	6.24E-01	
+FA (deg)	10	8		9	7	8	8	10	8	7	8	8	15	8	9	9	15	15	7	9	
+PE Dir	AP	AP		AP	AP	RL	RL	AP	RL	AP				AP	AP	AP	AP	AP	AP	AP	
+Seq. name			MPRAGE			3D TFE	3D TFE	MPRAGE	MPRAGE	MPRAGE		Fast SPGR			MPRAGE	MPRAGE	Fast SPGR	Fast SPGR	MPRAGE	MPRAGE	
+Scan Time						6:22	6:22		7:37	8:59	4:11			7:29	9:14	9:14			8:59	8:34	
+Orientation	Sagittal	Sagittal		Sagittal	Sagittal	Coronal	Coronal	Sagittal	T > S-1.2	Sagittal		Sagittal		Sagittal	Sagittal	Sagittal	Axial	Axial	Sagittal	Sagittal	
+Slice Thickness	1	1		1	1.33	0.98	0.98	1.1	1	1.05		1	1.5	1	1.2	1.2	1.2	1.2	1.05	1	
+Averages	1	1		1	1			1	1	1				1	1	1			1	3	
+Coil Elements	HEA;HEP	HEA;HEP	Head-8	HEA;HEP;NE2	HE	Head-8	Head-8	HEA;HEP	HE	HE	Head-32	8-channel		Head-8	HEA;HEP	HEA;HEP			HE	HEA;HEP	
+Fat suppr.	Water excit. Fast	None		None	None	None	None	None	None	None				None	None	None			None	None	
+Water suppr.	None	None		None	None	None	None	None	None	None				None	None	None			None	None	
+Base resolution	256	256		256	256	256	256	256	256	256				256	256	256			256	256	
+Phase resolution	100.00%	100.00%		100.00%	75%			100%	100%	100%					100%	100%			100%	100%	
+Slice resolution	100.00%	100.00%		100.00%	100.00%			100%	100%	100%					100%	100%			100%	70%	
+Phase partial Fourier	Off	Off		7/8	Off			Off	7/8	Off					Off	Off			Off	Off	
+Slice partial Fourier	Off	Off		Off	Off			Off	Off	Off					Off	Off			Off	Off	
+Interpolation	Off	Off		Off	Off			Off	Off	Off					Off	Off			Off	Off	
+PAT mode	GRAPPA	GRAPPA	SENSE	GRAPPA		SENSE	SENSE	None	None	None	SENSE			SENSE	None	None			None	GRAPPA	
+Acceleration Factor PE	2	2		2																2	
+Reference lines PE	24	24		36																24	
+Acceleration factor 3D	1			1																1	
+Matrix coil mode	Auto (3x)	Auto (3x)		Auto (3x)				Auto (CP)							Auto (CP)	Auto (CP)				Auto (Triple)	
+Reference scan mode	Integrated	Integrated		Integrated																Integrated	
+Image filter	Off	Off		Off	Off			Off	Off	Off					Off	Off			Off	Off	
+Distortion Correction	Off	Off		On	Off			Off	Off	Off					Off	Off			Off	Off	
+Prescan Normalize	Off	On		On	Off			On	Off	Off					Off	Off				On	
+Normalize	Off	Off		Off	Off			Off	Off	Off					Off	Off			Off	Off	
+B1 filter	Off	Off		Off	Off			Off	Off	Off					Off	Off				Off	
+Raw filter	On	Off		Off	On			Off	Off	Off					Off	Off			Off	Off	
+Elliptical filter	Off	Off		Off	Off			Off	Off	On					Off	Off			On	On	
+Trajectory						Cartesian	Cartesian			Cartesian									Cartesian		
+Intensity	Weak				Weak																
+Slope	25				25																
+Multi-slice mode	Single shot	Single shot		Single shot	Single shot			Single shot	Single shot	Single shot					Single shot	Single shot			Single shot	Sequential	
+Series	Ascending	Ascending		Interleaved	Ascending			Interleaved	Ascending	Ascending					Interleaved	Interleaved			Ascending	Ascending	
+Positioning mode	REF	REF		ISO				FIX							REF	REF				FIX	
+Table position	H;0	H;0						H;0							H;0	H;0			H;0	H;0	
+MSMA	S-C-T	S-C-T		S-C-T	S-C-T			S-C-T							S-C-T	S-C-T			S-C-T	S-C-T	
+Sagittal	RL	RL		RL	RL			RL	RL	RL					RL	RL			RL	LR	
+Coronal	AP	AP		AP	AP			AP	AP	AP					AP	AP			AP	PA	
+Transversal	FH	FH		FH	FH			FH	FH	FH					FH	FH			FH	FH	
+Save uncombined	Off	Off		Off	Off			Off	Off	Off					Off	Off			0	0	
+Elliptical scanning	Off	Off		Off	Off			Off	Off	Off					Off	Off			0	0	
+Asymmetric echo	Allowed	Allowed		Off	Off			Off	Allowed	Allowed					Off	Off			Allowed	Allowed	
+Bandwidth	200	170		230	200	135.4	135.4	180	190	130				178.7	240	240			130	160	
+Flow comp	Off	Off		Off	Off			Off							Off	Off				Off	
+Echo spacing	7.90E-03	7.40E-03		7.30E-03	7.40E-03			8.20E-03	7.00E-03	9.40E-03					6.60E-03	6.60E-03			9.40E-03	7.40E-03	
+RF pulse type	Fast	Fast*		Normal	Fast			Fast	Fast	Fast					Fast	Fast			Fast	Fast	
+Gradient Mode	Normal	Normal		Fast	Fast			Fast*	Fast	Fast					Fast	Fast			Fast	Fast	
+Excitation	Slab-sel	Non-sel		Non-sel	Non-sel			Non-sel	Non-sel	Non-sel					Non-sel	Non-sel			Non-sel	Slab-sel.	
+RF spoiling	On	On		On	On			On	On	On					On	On			On	On	
