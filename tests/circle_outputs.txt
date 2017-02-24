@@ -1,5 +1,6 @@
 out/
 out/anatMRIQC.csv
+out/anatMRIQC_predicted_qa.csv
 out/derivatives
 out/derivatives/sub-ds003s01_T1w.json
 out/derivatives/sub-ds003s01_task-rhymejudgment_bold.json
