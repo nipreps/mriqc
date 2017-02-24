@@ -97,12 +97,21 @@ span.qa-pass {
 <body>
 <div class="document">
 
-<h1>MRIQC: individual {{ qctype }}
-report</h1>
+<h1>MRIQC: individual {{ qctype }} report</h1>
+{% if (exclude_index["auto"] and exclude_index["auto"] > 0) or exclude_index["start_idx"] or exclude_index["stop_idx"] %}
+    <p>
+        {% if exclude_index["auto"] and exclude_index["auto"] > 0 %}
+            <span class="problematic">Non-steady state (strong T1 contrast) has been detected in the first {{ exclude_index["auto"] }} volumes</span>.
+        {% elif exclude_index["start_idx"] %}
+            <span class="problematic">The user specified to remove the first {{ exclude_index["start_idx"] }} volumes</span>.
+        {% endif %}
 
-{% if exclude_index > 0 %}
-    <p><span class="problematic">Non-steady state (strong T1 contrast) has been detected in the first {{ exclude_index }} volumes</span>.
-    They were excluded before generating any QC measures and plots.</p>
+        {% if exclude_index["stop_idx"] %}
+            <span class="problematic">The user specified to consider volumes until volume {{ exclude_index["stop_idx"] }} (non-inclusive)</span>.
+        {% endif %}
+
+        These volumes were excluded before generating any QC measures and plots.
+    </p>
 {% endif %}
 
 <h2>Summary</h2>

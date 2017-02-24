@@ -22,6 +22,7 @@ from mriqc.utils.misc import check_folder
 
 DEFAULT_MEM_GB = 8
 
+
 def main():
     """Entry point"""
     from nipype import config as ncfg
