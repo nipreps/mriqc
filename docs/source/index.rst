@@ -18,6 +18,7 @@ Contents
    userguide
    measures
    docker
+   classifier
 
 
 Indices and tables

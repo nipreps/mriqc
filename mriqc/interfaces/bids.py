@@ -170,6 +170,20 @@ class IQMFileSink(MRIQCBaseInterface):
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
 
+        # Predict QA from IQMs and add to metadata
+        if self.inputs.modality == 'T1w':
+            from pkg_resources import resource_filename as pkgrf
+            import numpy as np
+            from mriqc.classifier.cv import CVHelper
+
+            cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
+                                n_jobs=1)
+
+            features = tuple([self._out_dict.get(key, None)
+                              for key in cvhelper.ftnames])
+            id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
+
+
         if self.inputs.modality == 'bold':
             id_dict['qc_type'] = 'func'
         elif self.inputs.modality == 'T1w':

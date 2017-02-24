@@ -8,12 +8,9 @@ The mriqc package provides a series of :abbr:`NR (no-reference)`,
 assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-import logging
+from __future__ import print_function, division, absolute_import, unicode_literals
 
+import logging
 from .info import (
     __versionbase__,
     __versionrev__,
@@ -29,5 +26,8 @@ from .info import (
     __longdesc__
 )
 
-MRIQC_LOG = logging.getLogger('mriqc')
-MRIQC_LOG.setLevel(logging.INFO)
+
+LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
+logging.basicConfig(level=logging.DEBUG,
+                    format=LOG_FORMAT)
+MRIQC_LOG = logging.getLogger()
