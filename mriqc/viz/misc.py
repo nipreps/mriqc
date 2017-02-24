@@ -340,7 +340,7 @@ def plot_corrmat(in_csv, out_file=None):
     dataframe = pd.read_csv(in_csv, index_col=False, na_values='n/a', na_filter=False)
     colnames = dataframe.columns.ravel().tolist()
 
-    for col in ['subject_id', 'site', 'qc_type']:
+    for col in ['subject_id', 'site', 'modality']:
         try:
             colnames.remove(col)
         except ValueError:

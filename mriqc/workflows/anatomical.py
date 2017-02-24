@@ -30,13 +30,13 @@ from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
 from mriqc.utils.misc import check_folder
 WFLOGGER = logging.getLogger('workflow')
 
-def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
+def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     """
     One-subject-one-session-one-run pipeline to extract the NR-IQMs from
     anatomical images
     """
 
-    workflow = pe.Workflow(name=name)
+    workflow = pe.Workflow(name=name+mod)
     WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
                   sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
@@ -61,13 +61,18 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
         testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
+    if mod == 'T1w':
+        norm.inputs.reference = 'T1'
+    elif mod == 'T2w':
+        norm.inputs.reference = 'T2'
+
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(
         img_type=1, segments=True, out_basename='segment'), name='segmentation')
     # 7. Compute IQMs
-    iqmswf = compute_iqms(settings)
+    iqmswf = compute_iqms(settings, modality='T1w')
     # Reports
     repwf = individual_reports(settings)
 
@@ -119,7 +124,7 @@ def anat_qc_workflow(dataset, settings, name='anatMRIQC'):
 
     return workflow
 
-def compute_iqms(settings, name='ComputeIQMs'):
+def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     """Workflow that actually computes the IQMs"""
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -150,8 +155,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    datasink = pe.Node(IQMFileSink(modality='T1w', out_dir=deriv_dir),
+    datasink = pe.Node(IQMFileSink(ut_dir=deriv_dir),
                        name='datasink')
+    datasink.inputs.modality = modality
 
     workflow.connect([
         (inputnode, datasink, [('subject_id', 'subject_id'),
@@ -203,15 +209,14 @@ def individual_reports(settings, name='ReportsWorkflow'):
         'mni_report']),
         name='inputnode')
 
-    # T1w mosaic plot
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='T1w - zoomed',
+        title='zoomed',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='T1w - noise enhanced',
+        title='noise enhanced',
         only_noise=True,
         cmap='viridis_r'), name='PlotMosaicNoise')
 

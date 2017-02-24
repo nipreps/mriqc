@@ -21,7 +21,7 @@ from mriqc.utils.misc import BIDS_COMP
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
-def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
+def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
     from shutil import copy
@@ -126,7 +126,7 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'qctype': qctype,
+            'modality': mod,
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
