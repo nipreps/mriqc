@@ -1,0 +1,4 @@
+rfc:
+- max_depth: [null, 5, 20, 40]
+  min_samples_split: [2, 3, 5, 10]
+  n_estimators: [100, 150, 200, 250]

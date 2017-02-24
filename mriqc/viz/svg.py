@@ -22,7 +22,7 @@ def svg2str(display_object, dpi=300):
     image_buf.seek(0)
     return image_buf.getvalue()
 
-def combine_svg(svg_list):
+def combine_svg(svg_list, axis='vertical'):
     """
     Composes the input svgs into one standalone svg
     """
@@ -37,27 +37,50 @@ def combine_svg(svg_list):
     sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in svgs]
 
 
-    # Calculate the scale to fit all widths
-    scales = [1.0] * len(svgs)
-    if not all([width[0] == sizes[0][0] for width in sizes[1:]]):
-        ref_size = sizes[0]
-        for i, els in enumerate(sizes):
-            scales[i] = ref_size[0]/els[0]
+    if axis == 'vertical':
+        # Calculate the scale to fit all widths
+        scales = [1.0] * len(svgs)
+        if not all([width[0] == sizes[0][0] for width in sizes[1:]]):
+            ref_size = sizes[0]
+            for i, els in enumerate(sizes):
+                scales[i] = ref_size[0]/els[0]
 
-    newsizes = [tuple(size)
-                for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
+        newsizes = [tuple(size)
+                    for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
+        totalsize = [newsizes[0][0], np.sum(newsizes, axis=0)[1]]
+
+    elif axis == 'horizontal':
+        # Calculate the scale to fit all heights
+        scales = [1.0] * len(svgs)
+        if not all([height[0] == sizes[0][1] for height in sizes[1:]]):
+            ref_size = sizes[0]
+            for i, els in enumerate(sizes):
+                scales[i] = ref_size[1]/els[1]
+
+        newsizes = [tuple(size)
+                    for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
+        totalsize = [np.sum(newsizes, axis=0)[0], newsizes[0][1]]
+
 
     # Compose the views panel: total size is the width of
     # any element (used the first here) and the sum of heights
-    totalsize = [newsizes[0][0], np.sum(newsizes, axis=0)[1]]
     fig = svgt.SVGFigure(totalsize[0], totalsize[1])
 
-    yoffset = 0
-    for i, r in enumerate(roots):
-        size = newsizes[i]
-        r.moveto(0, yoffset, scale=scales[i])
-        yoffset += size[1]
-        fig.append(r)
+    if axis == 'vertical':
+        yoffset = 0
+        for i, r in enumerate(roots):
+            size = newsizes[i]
+            r.moveto(0, yoffset, scale=scales[i])
+            yoffset += size[1]
+            fig.append(r)
+    elif axis == 'horizontal':
+        xoffset = 0
+        for i, r in enumerate(roots):
+            size = newsizes[i]
+            r.moveto(xoffset, 0, scale=scales[i])
+            xoffset += size[0]
+            fig.append(r)
+
     return fig
 
 def extract_svg(display_object, dpi=300):
