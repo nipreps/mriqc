@@ -1,17 +1,17 @@
 The MRIQC Reports
 =================
 
-Structural images (:abbr:`sMRI (structural MRI)`)
+Structural images - T1w and T2w (:abbr:`sMRI (structural MRI)`)
 -------------------------------------------------
 
 After all processing has been completed, the designated output directory for the ``mriqc`` workflow will contain a set of pdf
 files that contain the relevant reports for the set of scans undergoing
 quality assessment. The set of output pdfs includes one pdf file per
 input scan in the scan directory, e.g.:
-``anatomical_sub-01.pdf``, which contains the T1 slice
+``T1w_sub-01.html``, which contains the T1 slice
 mosaic and :abbr:`IQMs (image quality metrics)` for that scan. There will also be a group report
 pdf in the main output directory, e.g.:
-``anatomical_group.pdf``, that contains summary metrics for
+``T1w_group.html``, that contains summary metrics for
 the entire set of scans.
 
 
@@ -48,7 +48,7 @@ For the group reports:
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The violin plots included in the group report, e.g.:
-``anatomical_group.pdf``, are a graphical representation of
+``anatomical_group.html``, are a graphical representation of
 the columnar values in the ``aMRIQC.csv`` file that was
 created in the main output directory for the workflow. The scores for
 each metric described above were aggregated to create the distributions
@@ -68,14 +68,14 @@ After all processing has been completed, the designated output directory
 for the functional workflow will contain a set of pdf files that contain
 the relevant reports for the set of scans undergoing quality assessment.
 The set of output pdfs includes one pdf file per input scan, e.g.:
-``functional_sub-01.pdf``, which contains a mosaic plot of the
+``bold_sub-01.html``, which contains a mosaic plot of the
 mean :abbr:`EPI (echo-planar imaging)` volume, a mosaic plot of the
 :abbr:`tSNR (signal-to-noise ration across timesteps)` volume, an
 :abbr:`FD (frame displacement)` plot, and
 :abbr:`IQMs (image quality metrics)` for that scan.
 The :abbr:`IQMs (image quality metrics)` are split in two
 categories: *spatial* and *temporal*. There will also be a group report
-pdf in that main output directory, e.g.: ``functional_group.pdf``, that
+pdf in that main output directory, e.g.: ``bold_group.html``, that
 contains the summary of :abbr:`IQMs (image quality metrics)` for the entire set of scans.
 
 
