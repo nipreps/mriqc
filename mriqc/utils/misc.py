@@ -149,7 +149,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
     generates a corresponding prediction CSV table
     """
 
-    if not mod != 'T1w':
+    if mod != 'T1w':
         return None
 
     # If some were found, generate the CSV file and group report
