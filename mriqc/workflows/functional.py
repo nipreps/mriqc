@@ -19,7 +19,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc.workflows.utils import (fwhm_dict, fd_jenkinson, slice_wise_fft)
+from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 
@@ -55,18 +55,19 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    hmcwf = hmc_mcflirt()
-    if settings.get('hmc_afni', False):
+    if settings.get('hmc_fsl', False):
+        assert(not settings.get('hmc_afni', False))
+        hmcwf = hmc_mcflirt()
+    else:
+        assert(settings.get('hmc_afni', True))
         hmcwf = hmc_afni(st_correct=settings.get('correct_slice_timing', False),
                          despike=settings.get('despike', False),
-                         deoblique=settings.get('deoblique', False))
+                         deoblique=settings.get('deoblique', False),
+                         start_idx=settings.get('start_idx', None),
+                         stop_idx=settings.get('stop_idx', None))
 
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
-    if settings.get('start_idx'):
-        hmcwf.inputs.inputnode.start_idx = settings['start_idx']
-    if settings.get('stop_idx'):
-        hmcwf.inputs.inputnode.stop_idx = settings['stop_idx']
 
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
@@ -112,7 +113,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
         (bmw, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
-        (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
+        (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd'),
+                        ('outputnode.out_file', 'inputnode.hmc_epi')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
                       ('outputnode.report', 'inputnode.mni_report')]),
         (reorient_and_discard, repwf, [('exclude_index', 'inputnode.exclude_index')]),
@@ -157,7 +159,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     measures = pe.Node(FunctionalQC(), name='measures')
 
     workflow.connect([
-        (inputnode, dvnode, [('orig', 'in_file'),
+        (inputnode, dvnode, [('hmc_epi', 'in_file'),
                              ('brainmask', 'in_mask')]),
         (inputnode, measures, [('epi_mean', 'in_epi'),
                                ('brainmask', 'in_mask'),
@@ -212,7 +214,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'in_iqms', 'orig', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
+        'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
         'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
         'exclude_index', 'mni_report']),
         name='inputnode')
@@ -233,7 +235,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, spikes, [('orig', 'in_file'),
                              ('brainmask', 'in_mask')]),
         (inputnode, spmask, [('orig', 'in_file')]),
-        (inputnode, bigplot, [('orig', 'in_func'),
+        (inputnode, bigplot, [('hmc_epi', 'in_func'),
                               ('brainmask', 'in_mask'),
                               ('hmc_fd', 'fd'),
                               ('in_dvars', 'dvars'),
@@ -380,12 +382,14 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
 
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, save_rms=True, save_mats=True),
                       name='MCFLIRT')
-    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False), name='ComputeFD')
+    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
+                                               parameter_source="FSL"),
+                     name='ComputeFD')
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
         (inputnode, fdnode, [('fd_radius', 'radius')]),
-        (mcflirt, fdnode, [('par_file', 'in_plots')]),
+        (mcflirt, fdnode, [('par_file', 'in_file')]),
         (mcflirt, outputnode, [('out_file', 'out_file')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),
     ])
@@ -393,7 +397,8 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     return workflow
 
 
-def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=False):
+def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False,
+             deoblique=False, start_idx=None, stop_idx=None):
     """A head motion correction (HMC) workflow for functional scans"""
 
     workflow = pe.Workflow(name=name)
@@ -404,11 +409,20 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_fd']), name='outputnode')
 
-    drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
-                       name='drop_trs')
-
-    reorient = pe.Node(afni.Resample(
-        orientation='RPI', outputtype='NIFTI_GZ'), name='reorient')
+    if (start_idx is not None) or (stop_idx is not None):
+        drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
+                           name='drop_trs')
+        workflow.connect([
+            (inputnode, drop_trs, [('in_file', 'in_file_a'),
+                                   ('start_idx', 'start_idx'),
+                                   ('stop_idx', 'stop_idx')]),
+        ])
+    else:
+        drop_trs = pe.Node(niu.IdentityInterface(fields=['out_file']),
+                              name='drop_trs')
+        workflow.connect([
+            (inputnode, drop_trs, [('in_file', 'out_file')]),
+        ])
 
     get_mean_RPI = pe.Node(afni.TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='get_mean_RPI')
@@ -423,24 +437,18 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
 
     # Compute the frame-wise displacement
-    calc_fd = pe.Node(niu.Function(
-        function=fd_jenkinson, input_names=['in_file', 'rmax'],
-        output_names=['out_fd']), name='calc_fd')
+    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
+                                               parameter_source="AFNI"),
+                     name='ComputeFD')
 
     workflow.connect([
-        (inputnode, drop_trs, [('in_file', 'in_file_a'),
-                               ('start_idx', 'start_idx'),
-                               ('stop_idx', 'stop_idx')]),
-        (inputnode, calc_fd, [('fd_radius', 'rmax')]),
-        (reorient, get_mean_RPI, [('out_file', 'in_file')]),
-        (reorient, hmc, [('out_file', 'in_file')]),
+        (inputnode, fdnode, [('fd_radius', 'radius')]),
         (get_mean_RPI, hmc, [('out_file', 'basefile')]),
         (hmc, get_mean_motion, [('out_file', 'in_file')]),
-        (reorient, hmc_A, [('out_file', 'in_file')]),
         (get_mean_motion, hmc_A, [('out_file', 'basefile')]),
         (hmc_A, outputnode, [('out_file', 'out_file')]),
-        (hmc_A, calc_fd, [('oned_matrix_save', 'in_file')]),
-        (calc_fd, outputnode, [('out_fd', 'out_fd')]),
+        (hmc_A, fdnode, [('oned_file', 'in_file')]),
+        (fdnode, outputnode, [('out_file', 'out_fd')]),
     ])
 
     # Slice timing correction, despiking, and deoblique
@@ -457,7 +465,9 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
             (drop_trs, st_corr, [('out_file', 'in_file')]),
             (st_corr, despike_node, [('out_file', 'in_file')]),
             (despike_node, deoblique_node, [('out_file', 'in_file')]),
-            (deoblique_node, reorient, [('out_file', 'in_file')])
+            (deoblique_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (deoblique_node, hmc, [('out_file', 'in_file')]),
+            (deoblique_node, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif st_correct and despike:
@@ -465,7 +475,9 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
             (st_corr, despike_node, [('out_file', 'in_file')]),
-            (despike_node, reorient, [('out_file', 'in_file')]),
+            (despike_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (despike_node, hmc, [('out_file', 'in_file')]),
+            (despike_node, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif st_correct and deoblique:
@@ -473,14 +485,18 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
             (st_corr, deoblique_node, [('out_file', 'in_file')]),
-            (deoblique_node, reorient, [('out_file', 'in_file')])
+            (deoblique_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (deoblique_node, hmc, [('out_file', 'in_file')]),
+            (deoblique_node, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif st_correct:
 
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
-            (st_corr, reorient, [('out_file', 'in_file')])
+            (st_corr, get_mean_RPI, [('out_file', 'in_file')]),
+            (st_corr, hmc, [('out_file', 'in_file')]),
+            (st_corr, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif despike and deoblique:
@@ -488,27 +504,36 @@ def hmc_afni(name='fMRI_HMC_afni', st_correct=False, despike=False, deoblique=Fa
         workflow.connect([
             (drop_trs, despike_node, [('out_file', 'in_file')]),
             (despike_node, deoblique_node, [('out_file', 'in_file')]),
-            (deoblique_node, reorient, [('out_file', 'in_file')])
+            (deoblique_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (deoblique_node, hmc, [('out_file', 'in_file')]),
+            (deoblique_node, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif despike:
 
         workflow.connect([
             (drop_trs, despike_node, [('out_file', 'in_file')]),
-            (despike_node, reorient, [('out_file', 'in_file')]),
+            (despike_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (despike_node, hmc, [('out_file', 'in_file')]),
+            (despike_node, hmc_A, [('out_file', 'in_file')]),
         ])
 
     elif deoblique:
 
         workflow.connect([
             (drop_trs, deoblique_node, [('out_file', 'in_file')]),
-            (deoblique_node, reorient, [('out_file', 'in_file')])
+            (deoblique_node, get_mean_RPI, [('out_file', 'in_file')]),
+            (deoblique_node, hmc, [('out_file', 'in_file')]),
+            (deoblique_node, hmc_A, [('out_file', 'in_file')]),
+
         ])
 
     else:
 
         workflow.connect([
-            (drop_trs, reorient, [('out_file', 'in_file')]),
+            (drop_trs, get_mean_RPI, [('out_file', 'in_file')]),
+            (drop_trs, hmc, [('out_file', 'in_file')]),
+            (drop_trs, hmc_A, [('out_file', 'in_file')]),
         ])
 
     return workflow

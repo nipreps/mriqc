@@ -78,6 +78,10 @@ def main():
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
+    g_input.add_argument('--hmc-afni', action='store_true', default=True,
+                        help='Use ANFI 3dvolreg for head motion correction (HMC)')
+    g_input.add_argument('--hmc-fsl', action='store_true', default=False,
+                        help='Use FSL MCFLIRT for head motion correction (HMC)')
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
@@ -93,9 +97,6 @@ def main():
 
     # AFNI head motion correction settings
     g_afni = parser.add_argument_group('specific settings for AFNI head motion correction')
-    g_afni.add_argument('--hmc-afni', action='store_true', default=False,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC) and '
-                             'frame displacement (FD) estimation')
     g_afni.add_argument('--deoblique', action='store_true', default=False,
                         help='Deoblique the functional scans during head motion '
                              'correction preprocessing')
@@ -150,6 +151,7 @@ def main():
         'write_graph': opts.write_graph,
         'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
+        'hmc_fsl': opts.hmc_fsl,
         'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
         'output_dir': op.abspath(opts.output_dir),

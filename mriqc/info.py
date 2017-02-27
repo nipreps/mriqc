@@ -46,7 +46,7 @@ CLASSIFIERS = [
 REQUIRES = [
     'numpy>=1.12.0',
     'nipype',
-    'niworkflows>=0.0.5',
+    'niworkflows',
     'future',
     'scipy',
     'six',
