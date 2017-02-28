@@ -126,6 +126,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 
+    if settings['fft_spikes_detector']:
+        workflow.connect([
+            (iqmswf, repwf, [('outputnode.out_spikes', 'inputnode.in_spikes'),
+                             ('outputnode.out_fft', 'inputnode.in_fft')]),
+        ])
+
     return workflow
 
 def compute_iqms(settings, name='ComputeIQMs'):
@@ -151,11 +157,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
 
-    # FFT spikes finder
-    spikes_fft = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['n_spikes', 'out_spikes', 'out_fft'],
-        function=slice_wise_fft), name='SpikesFinderFFT')
-
     measures = pe.Node(FunctionalQC(), name='measures')
 
     workflow.connect([
@@ -168,15 +169,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('in_tsnr', 'in_tsnr')]),
         (inputnode, fwhm, [('epi_mean', 'in_file'),
                            ('brainmask', 'mask')]),
-        (inputnode, spikes_fft, [('orig', 'in_file')]),
         (inputnode, quality, [('hmc_epi', 'in_file')]),
         (inputnode, outliers, [('hmc_epi', 'in_file'),
                                ('brainmask', 'mask')]),
         (dvnode, measures, [('out_all', 'in_dvars')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
-        (outliers, outputnode, [('out_file', 'outliers')]),
-        (spikes_fft, outputnode, [('out_spikes', 'out_spikes'),
-                                  ('out_fft', 'out_fft')])
+        (outliers, outputnode, [('out_file', 'outliers')])
     ])
 
     # Save to JSON file
@@ -194,10 +192,25 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
-        (spikes_fft, datasink, [('n_spikes', 'spikes_num')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
+
+    if settings['fft_spikes_detector']:
+        # FFT spikes finder
+        spikes_fft = pe.Node(niu.Function(
+            input_names=['in_file'],
+            output_names=['n_spikes', 'out_spikes', 'out_fft'],
+            function=slice_wise_fft), name='SpikesFinderFFT')
+
+        workflow.connect([
+            (inputnode, spikes_fft, [('orig', 'in_file')]),
+            (spikes_fft, outputnode, [('out_spikes', 'out_spikes'),
+                                      ('out_fft', 'out_fft')]),
+            (spikes_fft, datasink, [('n_spikes', 'spikes_num')])
+        ])
+
+
     return workflow
 
 
@@ -258,12 +271,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mosaic_spikes = pe.Node(PlotSpikes(
-        out_file='plot_spikes.svg', cmap='viridis',
-        title='High-Frequency spikes'),
-                            name='PlotSpikes')
-
-    mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages + extra_pages + int(settings['fft_spikes_detector'])),
+                     name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
         output_names=['out_file'], function=individual_html), name='GenerateReport')
@@ -285,16 +294,25 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
-        (inputnode, mosaic_spikes, [('orig', 'in_file'),
-                                    ('in_spikes', 'in_spikes'),
-                                    ('in_fft', 'in_fft')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
+
+    if settings['fft_spikes_detector']:
+        mosaic_spikes = pe.Node(PlotSpikes(
+            out_file='plot_spikes.svg', cmap='viridis',
+            title='High-Frequency spikes'),
+            name='PlotSpikes')
+
+        workflow.connect([
+            (inputnode, mosaic_spikes, [('orig', 'in_file'),
+                                        ('in_spikes', 'in_spikes'),
+                                        ('in_fft', 'in_fft')]),
+            (mosaic_spikes, mplots, [('out_file', 'in4')])
+        ])
 
     if not verbose:
         return workflow
