@@ -46,11 +46,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                 'out_fd']), name='outputnode')
 
 
-    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file'],
+    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file', 'float32'],
                                                 output_names=['exclude_index',
                                                               'out_file'],
                                                 function=reorient_and_discard_non_steady),
                                    name='reorient_and_discard')
+    reorient_and_discard.inputs.float32 = settings["float32"]
 
     # Workflow --------------------------------------------------------
 
