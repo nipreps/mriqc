@@ -27,10 +27,6 @@ BIDS_EXPR = """\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
 
-QCTYPES = collections.OrderedDict([
-    ('anat', 'T1w'), ('func', 'bold')
-])
-
 def split_ext(in_file, out_file=None):
     import os.path as op
     if out_file is None:
@@ -152,18 +148,18 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
         fname = op.join(out_path, fname)
     return op.abspath(fname + '.' + ext)
 
-def generate_pred(derivatives_dir, output_dir, qctype):
+def generate_pred(derivatives_dir, output_dir, mod):
     """
     Reads the metadata in the JIQM (json iqm) files and
     generates a corresponding prediction CSV table
     """
 
-    if not qctype.startswith('anat'):
+    if mod != 'T1w':
         return None
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, qctype[:4] + 'MRIQC_predicted_qa.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % QCTYPES[qctype[:4]]))
+    out_csv = op.join(output_dir, mod + 'MRIQC_predicted_qa.csv')
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
     if not jsonfiles:
         return None
 
@@ -196,15 +192,15 @@ def generate_pred(derivatives_dir, output_dir, qctype):
     return out_csv
 
 
-def generate_csv(derivatives_dir, output_dir, qctype):
+def generate_csv(derivatives_dir, output_dir, mod):
     """
     Generates a csv file from all json files in the derivatives directory
     """
     errorlist = []
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, qctype[:4] + 'MRIQC.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % QCTYPES[qctype[:4]]))
+    out_csv = op.join(output_dir, mod + 'MRIQC.csv')
+    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
     if not jsonfiles:
         return None, out_csv
 
@@ -215,7 +211,7 @@ def generate_csv(derivatives_dir, output_dir, qctype):
         dfentry = _read_and_save(jsonfile)
 
         if (dfentry is not None and dfentry['metadata'].get(
-            'qc_type', 'unknown').startswith(qctype[:4])):
+            'modality', 'unknown') == mod):
             metadata = dfentry.pop('metadata')
             id_fields = list(comps & set(list(metadata.keys())))
             for field in id_fields:

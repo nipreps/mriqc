@@ -183,11 +183,7 @@ class IQMFileSink(MRIQCBaseInterface):
                               for key in cvhelper.ftnames])
             id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
 
-
-        if self.inputs.modality == 'bold':
-            id_dict['qc_type'] = 'func'
-        elif self.inputs.modality == 'T1w':
-            id_dict['qc_type'] = 'anat'
+        id_dict['modality'] = self.inputs.modality
 
         if self._out_dict.get('metadata', None) is None:
             self._out_dict['metadata'] = {}
