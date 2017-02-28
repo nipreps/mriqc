@@ -234,7 +234,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
-    spikes = pe.Node(Spikes(), name='SpikesFinder')
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
 
     bigplot = pe.Node(niu.Function(
@@ -244,8 +243,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, spikes_bg, [('orig', 'in_file')]),
-        (inputnode, spikes, [('orig', 'in_file'),
-                             ('brainmask', 'in_mask')]),
         (inputnode, spmask, [('orig', 'in_file')]),
         (inputnode, bigplot, [('hmc_epi', 'in_func'),
                               ('brainmask', 'in_mask'),
@@ -253,7 +250,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
                               ('in_dvars', 'dvars'),
                               ('epi_parc', 'in_segm'),
                               ('outliers', 'outliers')]),
-        (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
     ])
@@ -692,7 +688,7 @@ def _parse_tout(in_file):
     return data.mean()
 
 
-def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
+def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
               fd, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
@@ -707,7 +703,6 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
 
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
-    # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
 
     # Add AFNI ouliers plot
