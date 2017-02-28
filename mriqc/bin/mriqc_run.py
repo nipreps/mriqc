@@ -86,6 +86,8 @@ def main():
                          help="Cast the input data to float32 if it's "
                               "represented in higher precision (saves space and "
                               "improves perfomance)")
+    g_input.add_argument('--fft-spikes-detector', action='store_true', default=False,
+                         help='Turn on FFT based spike detector (slow).')
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
@@ -156,6 +158,7 @@ def main():
         'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
         'hmc_fsl': opts.hmc_fsl,
+        'fft_spikes_detector': opts.fft_spikes_detector,
         'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
         'output_dir': op.abspath(opts.output_dir),
