@@ -155,13 +155,13 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             'csv_groups': csv_groups,
             'failed': failed,
             'boxplots_js': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                       'resources',
+                                                       'embed_resources',
                                                        'boxplots.js'))).read(),
             'd3_js': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                 'resources',
+                                                 'embed_resources',
                                                  'd3.min.js'))).read(),
             'boxplots_css': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                        'resources',
+                                                        'embed_resources',
                                                         'boxplots.css'))).read()
         }, out_file)
 

@@ -39,7 +39,7 @@ function makeDistroChart(settings) {
         margin: {top: 15, right: 10, bottom: 50, left: 50},
         constrainExtremes: false,
         color: d3.scale.category10(),
-        qctype: null
+        modality: null
     };
 
     for (var setting in settings) {
@@ -1579,12 +1579,7 @@ function makeDistroChart(settings) {
                         cPlot.objs.points.pts.push(cPlot.objs.points.g
                             .append("a")
                             .attr("xlink:href", function(d) {
-                                if (chart.settings["qctype"].startsWith('anat')) {
-                                    return chart.groupObjs[cName].labels[pt] + "_T1w.html"
-                                } else if (chart.settings["qctype"].startsWith('func')) {
-                                    return chart.groupObjs[cName].labels[pt] + "_bold.html"
-                                }
-
+                                return chart.groupObjs[cName].labels[pt] + "_" + chart.settings["modality"] + ".html"
                             })
                             .append("circle")
                             .attr("class", "point")
