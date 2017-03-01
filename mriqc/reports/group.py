@@ -153,17 +153,18 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
-            'failed': failed
+            'failed': failed,
+            'boxplots_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                       'resources',
+                                                       'boxplots.js'))).read(),
+            'd3_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                 'resources',
+                                                 'd3.min.js'))).read(),
+            'boxplots_css': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                        'resources',
+                                                        'boxplots.css'))).read()
         }, out_file)
 
-    res_folder = op.join(op.dirname(out_file), 'resources')
-    check_folder(res_folder)
-    for fname in ['boxplots.css', 'boxplots.js', 'd3.min.js']:
-        dstpath = op.join(res_folder, fname)
-        if op.isfile(dstpath):
-            remove(dstpath)
-
-        copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
     return out_file
 
 
