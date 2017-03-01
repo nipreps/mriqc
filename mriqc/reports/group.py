@@ -21,7 +21,7 @@ from mriqc.utils.misc import BIDS_COMP
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
-def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
+def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
     from os import remove
     from shutil import copy
@@ -37,7 +37,7 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         from io import BytesIO as TextIO
 
     QCGROUPS = {
-        'anat': [
+        'T1w': [
             (['cjv'], None),
             (['cnr'], None),
             (['efc'], None),
@@ -60,7 +60,30 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
             (['summary_wm_mean', 'summary_wm_stdv', 'summary_wm_k',
               'summary_wm_p05', 'summary_wm_p95'], None)
         ],
-        'func': [
+        'T2w': [
+            (['cjv'], None),
+            (['cnr'], None),
+            (['efc'], None),
+            (['fber'], None),
+            (['wm2max'], None),
+            (['snr_csf', 'snr_gm', 'snr_wm'], None),
+            (['snrd_csf', 'snrd_gm', 'snrd_wm'], None),
+            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['qi_1', 'qi_2'], None),
+            (['inu_range', 'inu_med'], None),
+            (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
+            (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
+            (['tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm'], None),
+            (['summary_bg_mean', 'summary_bg_stdv', 'summary_bg_k',
+              'summary_bg_p05', 'summary_bg_p95'], None),
+            (['summary_csf_mean', 'summary_csf_stdv', 'summary_csf_k',
+              'summary_csf_p05', 'summary_csf_p95'], None),
+            (['summary_gm_mean', 'summary_gm_stdv', 'summary_gm_k',
+              'summary_gm_p05', 'summary_gm_p95'], None),
+            (['summary_wm_mean', 'summary_wm_stdv', 'summary_wm_k',
+              'summary_wm_p05', 'summary_wm_p95'], None)
+        ],
+        'bold': [
             (['efc'], None),
             (['fber'], None),
             (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
@@ -106,7 +129,7 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
 
     csv_groups = []
-    for group, units in QCGROUPS[qctype[:4]]:
+    for group, units in QCGROUPS[mod]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
         for iqm in group:
@@ -126,21 +149,22 @@ def gen_html(csv_file, qctype, csv_failed=None, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'qctype': qctype,
+            'modality': mod,
             'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             'version': ver,
             'csv_groups': csv_groups,
-            'failed': failed
+            'failed': failed,
+            'boxplots_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                       'embed_resources',
+                                                       'boxplots.js'))).read(),
+            'd3_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                 'embed_resources',
+                                                 'd3.min.js'))).read(),
+            'boxplots_css': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                        'embed_resources',
+                                                        'boxplots.css'))).read()
         }, out_file)
 
-    res_folder = op.join(op.dirname(out_file), 'resources')
-    check_folder(res_folder)
-    for fname in ['boxplots.css', 'boxplots.js', 'd3.min.js']:
-        dstpath = op.join(res_folder, fname)
-        if op.isfile(dstpath):
-            remove(dstpath)
-
-        copy(pkgrf('mriqc', op.join('data', 'reports', 'resources', fname)), dstpath)
     return out_file
 
 

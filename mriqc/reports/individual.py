@@ -39,7 +39,7 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
 
     # Extract and prune metadata
     metadata = iqms_dict.pop('metadata', None)
-    qctype = metadata.pop('qc_type', None)
+    mod = metadata.pop('modality', None)
     file_id = [metadata.pop(k, None)
                for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
@@ -47,18 +47,17 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
     pred_qa = metadata.pop('mriqc_pred', None)
 
     # Deal with special IQMs
-    if qctype.startswith('anat'):
-        qctype = 'anatomical'
+    if mod in ('T1w', 'T2w'):
         flags = anat_flags(iqms_dict)
         if flags:
             wf_details.append(flags)
-    elif qctype.startswith('func'):
-        qctype = 'functional'
+    elif mod == 'bold':
+        pass
     else:
-        RuntimeError('Unknown QC type "%s"' % qctype)
+        RuntimeError('Unknown modality "%s"' % mod)
 
     config = {
-        'qctype': qctype,
+        'modality': mod,
         'sub_id': '_'.join(file_id),
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
         'version': ver,

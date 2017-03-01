@@ -8,10 +8,11 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from copy import deepcopy
 from bids.grabbids import BIDSLayout
 
-DEFAULT_MODALITIES = ['func', 't1w']
+DEFAULT_MODALITIES = ['bold', 'T1w', 'T2w']
 DEFAULT_QUERIES = {
-    'func': {'modality': 'func', 'type': 'bold', 'extensions': ['nii', 'nii.gz']},
-    't1w': {'modality': 'anat', 'type': 'T1w', 'extensions': ['nii', 'nii.gz']}
+    'bold': {'modality': 'func', 'type': 'bold', 'extensions': ['nii', 'nii.gz']},
+    'T1w': {'modality': 'anat', 'type': 'T1w', 'extensions': ['nii', 'nii.gz']},
+    'T2w': {'modality': 'anat', 'type': 'T2w', 'extensions': ['nii', 'nii.gz']}
 }
 
 def collect_bids_data(dataset, participant_label=None, session=None, run=None,
