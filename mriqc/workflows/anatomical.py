@@ -159,7 +159,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    datasink = pe.Node(IQMFileSink(ut_dir=deriv_dir),
+    datasink = pe.Node(IQMFileSink(modality=modality, out_dir=deriv_dir),
                        name='datasink')
     datasink.inputs.modality = modality
 
