@@ -6,11 +6,11 @@
     <title></title>
     <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/poldracklab/mriqc/master/mriqc/data/reports/resources/boxplots.css">
     <script src="https://cdn.rawgit.com/poldracklab/mriqc/master/mriqc/data/reports/resources/d3.min.js" charset="utf-8"></script>
-    <title>MRIQC: group {{ qctype }}
+    <title>MRIQC: group {{ modality }}
 report</title>
 </head>
 <body>
-    <h1>MRIQC: group {{ qctype }}
+    <h1>MRIQC: group {{ modality }}
 report</h1>
 <h2>Summary</h2>
 <ul class="simple">
@@ -66,7 +66,7 @@ report</h1>
             selector:"#chart-group" + group,
             chartSize:{height:300, width:100 + 60 * nIQMs},
             constrainExtremes:false,
-            qctype: '{{ qctype }}'
+            modality: '{{ modality }}'
         });
         chart1.renderDataPlots();
         chart1.dataPlots.change({showPlot:true, plotType:20, padding: 20, showBeanLines:false});
