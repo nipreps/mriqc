@@ -135,7 +135,15 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
 
     # Carpet plot
     ax1 = plt.subplot(gs[1])
-    ax1.imshow(detrended[order, :], interpolation='nearest',
+
+    # Avoid segmentation faults for long acquisitions by decimating the input data
+    long_cutoff = 800
+    if detrended.shape[1] > long_cutoff:
+        data = detrended[order, ::2]
+    else:
+        data = detrended[order, :]
+
+    ax1.imshow(data, interpolation='nearest',
                aspect='auto', cmap='gray', vmin=-2, vmax=2)
 
     ax1.grid(False)
@@ -143,9 +151,9 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
     ax1.set_yticklabels([])
 
     # Set 10 frame markers in X axis
-    interval = int(detrended.shape[-1] + 1) // 10
+    interval = int(data.shape[-1] + 1) // 10
     xticks = list(
-        range(0, detrended.shape[-1])[::interval]) + [detrended.shape[-1]-1]
+        range(0, data.shape[-1])[::interval]) + [data.shape[-1]-1]
     ax1.set_xticks(xticks)
 
     if notr:
@@ -153,6 +161,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
     else:
         ax1.set_xlabel('time (s)')
         labels = tr * (np.array(xticks))
+        if detrended.shape[1] > long_cutoff:
+            labels *= 2
         ax1.set_xticklabels(['%.02f' % t for t in labels.tolist()])
 
     # Remove and redefine spines
