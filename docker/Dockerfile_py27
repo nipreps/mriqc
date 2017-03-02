@@ -52,6 +52,10 @@ COPY . /root/src/mriqc/
 RUN pip install -r requirements.txt && \
     pip install -e .[all]
 
+RUN mkdir /niworkflows_data
+ENV CRN_SHARED_DATA /niworkflows_data
+RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
+
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]

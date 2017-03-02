@@ -46,11 +46,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                 'out_fd']), name='outputnode')
 
 
-    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file'],
+    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file', 'float32'],
                                                 output_names=['exclude_index',
                                                               'out_file'],
                                                 function=reorient_and_discard_non_steady),
                                    name='reorient_and_discard')
+    reorient_and_discard.inputs.float32 = settings["float32"]
 
     # Workflow --------------------------------------------------------
 
@@ -120,11 +121,15 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (reorient_and_discard, repwf, [('exclude_index', 'inputnode.exclude_index')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
-                         ('outputnode.out_spikes', 'inputnode.in_spikes'),
-                         ('outputnode.out_fft', 'inputnode.in_fft'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
+
+    if settings['fft_spikes_detector']:
+        workflow.connect([
+            (iqmswf, repwf, [('outputnode.out_spikes', 'inputnode.in_spikes'),
+                             ('outputnode.out_fft', 'inputnode.in_fft')]),
+        ])
 
     return workflow
 
@@ -151,11 +156,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
 
-    # FFT spikes finder
-    spikes_fft = pe.Node(niu.Function(
-        input_names=['in_file'], output_names=['n_spikes', 'out_spikes', 'out_fft'],
-        function=slice_wise_fft), name='SpikesFinderFFT')
-
     measures = pe.Node(FunctionalQC(), name='measures')
 
     workflow.connect([
@@ -168,15 +168,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('in_tsnr', 'in_tsnr')]),
         (inputnode, fwhm, [('epi_mean', 'in_file'),
                            ('brainmask', 'mask')]),
-        (inputnode, spikes_fft, [('orig', 'in_file')]),
         (inputnode, quality, [('hmc_epi', 'in_file')]),
         (inputnode, outliers, [('hmc_epi', 'in_file'),
                                ('brainmask', 'mask')]),
         (dvnode, measures, [('out_all', 'in_dvars')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
-        (outliers, outputnode, [('out_file', 'outliers')]),
-        (spikes_fft, outputnode, [('out_spikes', 'out_spikes'),
-                                  ('out_fft', 'out_fft')])
+        (outliers, outputnode, [('out_file', 'outliers')])
     ])
 
     # Save to JSON file
@@ -194,10 +191,25 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
-        (spikes_fft, datasink, [('n_spikes', 'spikes_num')]),
         (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
+
+    if settings['fft_spikes_detector']:
+        # FFT spikes finder
+        spikes_fft = pe.Node(niu.Function(
+            input_names=['in_file'],
+            output_names=['n_spikes', 'out_spikes', 'out_fft'],
+            function=slice_wise_fft), name='SpikesFinderFFT')
+
+        workflow.connect([
+            (inputnode, spikes_fft, [('orig', 'in_file')]),
+            (spikes_fft, outputnode, [('out_spikes', 'out_spikes'),
+                                      ('out_fft', 'out_fft')]),
+            (spikes_fft, datasink, [('n_spikes', 'spikes_num')])
+        ])
+
+
     return workflow
 
 
@@ -222,7 +234,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
-    spikes = pe.Node(Spikes(), name='SpikesFinder')
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
 
     bigplot = pe.Node(niu.Function(
@@ -232,8 +243,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, spikes_bg, [('orig', 'in_file')]),
-        (inputnode, spikes, [('orig', 'in_file'),
-                             ('brainmask', 'in_mask')]),
         (inputnode, spmask, [('orig', 'in_file')]),
         (inputnode, bigplot, [('hmc_epi', 'in_func'),
                               ('brainmask', 'in_mask'),
@@ -241,7 +250,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
                               ('in_dvars', 'dvars'),
                               ('epi_parc', 'in_segm'),
                               ('outliers', 'outliers')]),
-        (spikes, bigplot, [('out_tsz', 'in_spikes')]),
         (spikes_bg, bigplot, [('out_tsz', 'in_spikes_bg')]),
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
     ])
@@ -258,12 +266,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mosaic_spikes = pe.Node(PlotSpikes(
-        out_file='plot_spikes.svg', cmap='viridis',
-        title='High-Frequency spikes'),
-                            name='PlotSpikes')
-
-    mplots = pe.Node(niu.Merge(pages + extra_pages), name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages + extra_pages + int(settings['fft_spikes_detector'])),
+                     name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
         output_names=['out_file'], function=individual_html), name='GenerateReport')
@@ -285,16 +289,25 @@ def individual_reports(settings, name='ReportsWorkflow'):
                             ('exclude_index', 'exclude_index')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
-        (inputnode, mosaic_spikes, [('orig', 'in_file'),
-                                    ('in_spikes', 'in_spikes'),
-                                    ('in_fft', 'in_fft')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        (mosaic_spikes, mplots, [('out_file', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
+
+    if settings['fft_spikes_detector']:
+        mosaic_spikes = pe.Node(PlotSpikes(
+            out_file='plot_spikes.svg', cmap='viridis',
+            title='High-Frequency spikes'),
+            name='PlotSpikes')
+
+        workflow.connect([
+            (inputnode, mosaic_spikes, [('orig', 'in_file'),
+                                        ('in_spikes', 'in_spikes'),
+                                        ('in_fft', 'in_fft')]),
+            (mosaic_spikes, mplots, [('out_file', 'in4')])
+        ])
 
     if not verbose:
         return workflow
@@ -675,7 +688,7 @@ def _parse_tout(in_file):
     return data.mean()
 
 
-def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
+def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
               fd, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
@@ -690,7 +703,6 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes, in_spikes_bg,
 
     myplot = fMRIPlot(
         in_func, in_mask, in_segm, title=title)
-    # myplot.add_spikes(np.loadtxt(in_spikes), title='Axial slice homogeneity (brain mask)')
     myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
 
     # Add AFNI ouliers plot
