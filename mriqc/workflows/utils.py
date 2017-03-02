@@ -111,7 +111,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
         fft_slices = []
         for z in range(func_frame.shape[2]):
             sl = func_frame[..., z]
-            fftsl = median_filter(np.real(np.fft.fft2(sl)),
+            fftsl = median_filter(np.real(np.fft.fft2(sl)).astype(np.float32),
                                   size=(5, 5), mode='constant') * ftmask
             fft_slices.append(fftsl)
         fft_data.append(np.stack(fft_slices, axis=-1))
@@ -128,7 +128,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 
     # save fft z-scored
     out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
-    nii = nb.Nifti1Image(fft_zscored, nb.load(in_file).get_affine(), None)
+    nii = nb.Nifti1Image(fft_zscored.astype(np.float32), np.eye(4), None)
     nii.to_filename(out_fft)
 
     # Find peaks

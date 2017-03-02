@@ -12,15 +12,17 @@ from mriqc.workflows.anatomical import anat_qc_workflow
 from mriqc.workflows.functional import fmri_qc_workflow
 
 
-def build_workflow(dataset, qctype, settings=None):
+def build_workflow(dataset, mod, settings=None):
     """ Multi-subject anatomical workflow wrapper """
 
-    if qctype.startswith('func'):
+    if mod == 'bold':
         workflow = fmri_qc_workflow(dataset, settings=settings)
-    elif qctype.startswith('anat'):
-        workflow = anat_qc_workflow(dataset, settings=settings)
+    elif mod == 'T1w':
+        workflow = anat_qc_workflow(dataset, mod='T1w', settings=settings)
+    elif mod == 'T2w':
+        workflow = anat_qc_workflow(dataset, mod='T2w', settings=settings)
     else:
-        raise NotImplementedError('Unknown workflow type "%s"' % qctype)
+        raise NotImplementedError('Unknown workflow type "%s"' % mod)
 
     workflow.base_dir = settings['work_dir']
     if settings.get('write_graph', False):

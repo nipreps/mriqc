@@ -58,9 +58,9 @@ def main():
                         nargs="*")
 
     g_input = parser.add_argument_group('mriqc specific inputs')
-    g_input.add_argument('-d', '--data-type', action='store', nargs='*',
-                         choices=['anat', 'anatomical', 'func', 'functional'],
-                         default=['anat', 'func'])
+    g_input.add_argument('-m', '--modalities', action='store', nargs='*',
+                         choices=['T1w', 'bold', 'T2w'],
+                         default=['T1w', 'bold', 'T2w'])
     g_input.add_argument('-s', '--session-id', action='store')
     g_input.add_argument('-r', '--run-id', action='store')
     g_input.add_argument('--nthreads', action='store', type=int,
@@ -82,6 +82,12 @@ def main():
                         help='Use ANFI 3dvolreg for head motion correction (HMC)')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
                         help='Use FSL MCFLIRT for head motion correction (HMC)')
+    g_input.add_argument('-f', '--float32', action='store_true', default=False,
+                         help="Cast the input data to float32 if it's "
+                              "represented in higher precision (saves space and "
+                              "improves perfomance)")
+    g_input.add_argument('--fft-spikes-detector', action='store_true', default=False,
+                         help='Turn on FFT based spike detector (slow).')
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
@@ -152,11 +158,13 @@ def main():
         'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
         'hmc_fsl': opts.hmc_fsl,
+        'fft_spikes_detector': opts.fft_spikes_detector,
         'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
-        'verbose_reports': opts.verbose_reports or opts.testing
+        'verbose_reports': opts.verbose_reports or opts.testing,
+        'float32': opts.float32
     }
 
     if opts.hmc_afni:
@@ -219,15 +227,7 @@ def main():
         __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
     # Process data types
-    qc_types = []
-    modalities = []
-    for qcdt in sorted(list(set([qcdt[:4] for qcdt in opts.data_type]))):
-        if qcdt.startswith('anat'):
-            qc_types.append('anatomical')
-            modalities.append('t1w')
-        if qcdt.startswith('func'):
-            qc_types.append('functional')
-            modalities.append('func')
+    modalities = opts.modalities
 
     dataset = collect_bids_data(settings['bids_dir'],
                                 participant_label=opts.participant_label)
@@ -241,12 +241,12 @@ def main():
         workflow.base_dir = settings['work_dir']
 
         wf_list = []
-        for qctype, mod in zip(qc_types, modalities):
+        for mod in modalities:
             if not dataset[mod]:
-                MRIQC_LOG.warn('No %s scans were found in %s', qctype, settings['bids_dir'])
+                MRIQC_LOG.warn('No %s scans were found in %s', mod, settings['bids_dir'])
                 continue
 
-            wf_list.append(build_workflow(dataset[mod], qctype, settings=settings))
+            wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
 
         if wf_list:
             workflow.add_nodes(wf_list)
@@ -264,28 +264,29 @@ def main():
         from mriqc.utils.misc import generate_csv, generate_pred
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
-        for qctype in qc_types:
-            dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], qctype)
+
+        for mod in modalities:
+            dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], mod)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
                 MRIQC_LOG.warn(
                     'No IQM-JSON files were found for the %s data type in %s. The group-level '
-                    'report was not generated.', qctype, derivatives_dir)
+                    'report was not generated.', mod, derivatives_dir)
                 continue
 
-            MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', qctype, out_csv)
+            MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
 
-            out_pred = generate_pred(derivatives_dir, settings['output_dir'], qctype)
+            out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             if out_pred is not None:
                 MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
-                               qctype, out_pred)
+                               mod, out_pred)
 
-            out_html = op.join(reports_dir, qctype[:4] + '_group.html')
-            group_html(out_csv, qctype,
-                       csv_failed=op.join(settings['output_dir'], 'failed_' + qctype + '.csv'),
+            out_html = op.join(reports_dir, mod + '_group.html')
+            group_html(out_csv, mod,
+                       csv_failed=op.join(settings['output_dir'], 'failed_' + mod + '.csv'),
                        out_file=out_html)
-            MRIQC_LOG.info('Group-%s report generated (%s)', qctype, out_html)
+            MRIQC_LOG.info('Group-%s report generated (%s)', mod, out_html)
 
 
 if __name__ == '__main__':
