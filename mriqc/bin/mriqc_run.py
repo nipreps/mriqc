@@ -265,6 +265,7 @@ def main():
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
 
+        n_group_reports = 0
         for mod in modalities:
             dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], mod)
 
@@ -287,6 +288,10 @@ def main():
                        csv_failed=op.join(settings['output_dir'], 'failed_' + mod + '.csv'),
                        out_file=out_html)
             MRIQC_LOG.info('Group-%s report generated (%s)', mod, out_html)
+            n_group_reports += 1
+
+        if n_group_reports == 0:
+            raise Exception("No data found. No group level reports were generated.")
 
 
 if __name__ == '__main__':
