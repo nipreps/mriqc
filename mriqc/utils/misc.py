@@ -199,7 +199,7 @@ def generate_csv(derivatives_dir, output_dir, mod):
     errorlist = []
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, mod + 'MRIQC.csv')
+    out_csv = op.join(output_dir, mod + '.csv')
     jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
     if not jsonfiles:
         return None, out_csv
