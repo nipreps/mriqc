@@ -158,7 +158,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
         return None
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, mod + 'MRIQC_predicted_qa.csv')
+    out_csv = op.join(output_dir, mod + '_predicted_qa.csv')
     jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
     if not jsonfiles:
         return None
