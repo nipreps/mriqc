@@ -232,9 +232,6 @@ def main():
     dataset = collect_bids_data(settings['bids_dir'],
                                 participant_label=opts.participant_label)
 
-    # Overwrite if participant level is run
-    derivatives_dir = settings['bids_dir']
-
     # Set up participant level
     if 'participant' in analysis_levels:
         workflow = Workflow(name='workflow_enumerator')
@@ -256,7 +253,6 @@ def main():
         else:
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
-        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
 
     # Set up group level
     if 'group' in analysis_levels:
@@ -264,10 +260,11 @@ def main():
         from mriqc.utils.misc import generate_csv, generate_pred
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
+        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
 
         n_group_reports = 0
         for mod in modalities:
-            dataframe, out_csv = generate_csv(derivatives_dir, settings['output_dir'], mod)
+            dataframe, out_csv = generate_csv(derivatives_dir, mod)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
