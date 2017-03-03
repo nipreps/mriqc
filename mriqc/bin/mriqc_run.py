@@ -264,7 +264,8 @@ def main():
 
         n_group_reports = 0
         for mod in modalities:
-            dataframe, out_csv = generate_csv(derivatives_dir, mod)
+            dataframe, out_csv = generate_csv(derivatives_dir,
+                                              settings['output_dir'], mod)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
