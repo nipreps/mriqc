@@ -1,6 +1,5 @@
 out/
-out/anatMRIQC.csv
-out/anatMRIQC_predicted_qa.csv
+out/bold.csv
 out/derivatives
 out/derivatives/sub-ds003s01_T1w.json
 out/derivatives/sub-ds003s01_task-rhymejudgment_bold.json
@@ -22,7 +21,6 @@ out/derivatives/sub-ds205s09_T1w.json
 out/derivatives/sub-ds205s09_task-view_acq-LR_run-01_bold.json
 out/derivatives/sub-ds205s09_task-view_acq-LR_run-02_bold.json
 out/derivatives/sub-ds205s09_task-view_acq-RL_run-01_bold.json
-out/funcMRIQC.csv
 out/logs
 out/reports
 out/reports/anat_group.html
@@ -51,3 +49,5 @@ out/reports/sub-ds205s09_T1w.html
 out/reports/sub-ds205s09_task-view_acq-LR_run-01_bold.html
 out/reports/sub-ds205s09_task-view_acq-LR_run-02_bold.html
 out/reports/sub-ds205s09_task-view_acq-RL_run-01_bold.html
+out/T1w.csv
+out/T1w_predicted_qa.csv
