@@ -23,12 +23,7 @@ out/derivatives/sub-ds205s09_task-view_acq-LR_run-02_bold.json
 out/derivatives/sub-ds205s09_task-view_acq-RL_run-01_bold.json
 out/logs
 out/reports
-out/reports/anat_group.html
-out/reports/func_group.html
-out/reports/resources
-out/reports/resources/boxplots.css
-out/reports/resources/boxplots.js
-out/reports/resources/d3.min.js
+out/reports/bold_group.html
 out/reports/sub-ds003s01_T1w.html
 out/reports/sub-ds003s01_task-rhymejudgment_bold.html
 out/reports/sub-ds003s02_T1w.html
@@ -49,5 +44,6 @@ out/reports/sub-ds205s09_T1w.html
 out/reports/sub-ds205s09_task-view_acq-LR_run-01_bold.html
 out/reports/sub-ds205s09_task-view_acq-LR_run-02_bold.html
 out/reports/sub-ds205s09_task-view_acq-RL_run-01_bold.html
+out/reports/T1w_group.html
 out/T1w.csv
 out/T1w_predicted_qa.csv
