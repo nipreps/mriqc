@@ -49,10 +49,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
-    # 1a. Reorient anatomical image
+    # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(), name='conform')
-    # 1b. Estimate bias
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, save_bias=True), name='Bias')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf()
     # 3. Head mask (including nasial-cerebelum mask)
@@ -84,18 +82,17 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     workflow.connect([
         (inputnode, to_ras, [('in_file', 'in_file')]),
         (inputnode, meta, [('in_file', 'in_file')]),
-        (to_ras, n4itk, [('out_file', 'input_image')]),
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('acq_id', 'inputnode.acq_id'),
                         ('rec_id', 'inputnode.rec_id'),
                         ('run_id', 'inputnode.run_id')]),
-        (n4itk, asw, [('output_image', 'inputnode.in_file')]),
+        (to_ras, asw, [('out_file', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
-        (n4itk, hmsk, [('output_image', 'inputnode.in_file')]),
+        (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
-        (n4itk, norm, [('output_image', 'moving_image')]),
-        (asw, norm, [('outputnode.out_mask', 'moving_mask')]),
+        (asw, norm, [('outputnode.bias_corrected', 'moving_image'),
+                     ('outputnode.out_mask', 'moving_mask')]),
         (to_ras, amw, [('out_file', 'inputnode.in_file')]),
         (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
@@ -105,9 +102,9 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
-        (n4itk, iqmswf, [('output_image', 'inputnode.inu_corrected'),
-                         ('bias_image', 'inputnode.in_inu')]),
-        (asw, iqmswf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (asw, iqmswf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
+                       ('outputnode.bias_image', 'inputnode.in_inu'),
+                       ('outputnode.out_mask', 'inputnode.brainmask')]),
         (amw, iqmswf, [('outputnode.out_file', 'inputnode.airmask'),
                        ('outputnode.artifact_msk', 'inputnode.artmask')]),
         (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
@@ -115,8 +112,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
         (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
         (to_ras, repwf, [('out_file', 'inputnode.orig')]),
-        (n4itk, repwf, [('output_image', 'inputnode.inu_corrected')]),
-        (asw, repwf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (asw, repwf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
+                      ('outputnode.out_mask', 'inputnode.brainmask')]),
         (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
         (amw, repwf, [('outputnode.out_file', 'inputnode.airmask'),
                       ('outputnode.artifact_msk', 'inputnode.artmask')]),
