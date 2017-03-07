@@ -565,6 +565,8 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
     from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
+    from pkg_resources import resource_filename as pkgrf
+
     mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
@@ -576,16 +578,13 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
     n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
-    # Mask T2 template image
-    brainmask = pe.Node(fsl.ApplyMask(
-        in_file=op.join(mni_template, '%dmm_T2.nii.gz' % resolution),
-        mask_file=op.join(mni_template, '%dmm_brainmask.nii.gz' % resolution)),
-        name='MNIApplyMask')
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
         testing=testing, moving='EPI', generate_report=True),
                    name='EPI2MNI')
+    norm.inputs.reference_image = pkgrf(
+        'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
 
     # Warp segmentation into EPI space
     invt = pe.Node(ApplyTransforms(
@@ -598,7 +597,6 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
         (inputnode, n4itk, [('epi_mean', 'input_image')]),
         (inputnode, epimask, [('epi_mask', 'mask_file')]),
         (n4itk, epimask, [('output_image', 'in_file')]),
-        (brainmask, norm, [('out_file', 'reference_image')]),
         (epimask, norm, [('out_file', 'moving_image')]),
         (norm, invt, [
             ('reverse_transforms', 'transforms'),
