@@ -1,3 +1,8 @@
+Release 1.0.0
+=============
+
+* [FIX] Race condition in bold workflow when using shared workdir (#409)
+
 Release 0.9.0
 =============
 
