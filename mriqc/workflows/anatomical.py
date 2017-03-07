@@ -97,7 +97,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
                      ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
-                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+                        ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
         (norm, repwf, ([('out_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
