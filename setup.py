@@ -60,7 +60,8 @@ def main():
                                 'data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',
-                                'data/tests/*']},
+                                'data/tests/*',
+                                'data/mni/*.nii.gz']},
         zip_safe=False,
         cmdclass={'build_py': BuildWithCommitInfoCommand}
     )

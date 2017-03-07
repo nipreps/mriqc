@@ -1,6 +1,7 @@
 Release 1.0.0
 =============
 
+* [FIX] Race condition in bold workflow when using shared workdir (#409)
 * [FIX] Tests (#408, #407, #405)
 * [FIX] Remove CDN for group level reports (#406)
 * [FIX] Unused connection, matplotlib segfault (#403, #402)
@@ -15,6 +16,7 @@ Release 0.9.0-1
 ===============
 
 * [FIX] Remove non-repeatable step from pipeline (#369)
+
 
 Release 0.9.0
 =============
