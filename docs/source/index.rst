@@ -7,18 +7,23 @@ Welcome to mriqc's documentation!
 =================================
 
 .. include:: ../../README.rst
-
+   :start-line: 3
+   :end-line: 39
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   userguide
+   about
+   install
+   running
    measures
    docker
    classifier
+   reports
+   workflows
 
 
 Indices and tables

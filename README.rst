@@ -1,7 +1,7 @@
 mriqc: image quality metrics for quality assessment of MRI
 ==========================================================
 
-This pipeline is developed by `the Poldrack Lab at Stanford University
+MRIQC is developed by `the Poldrack Lab at Stanford University
 <https://poldracklab.stanford.edu>`_ for use at the `Center for Reproducible
 Neuroscience (CRN) <http://reproducibility.stanford.edu>`_, as well as
 for open-source software distribution.
@@ -16,7 +16,7 @@ for open-source software distribution.
 .. image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
   :target: https://www.codacy.com/app/code_3/mriqc
 
-.. image:: https://coveralls.io/repos/github/poldracklab/mriqc/badge.svg?branch=master 
+.. image:: https://coveralls.io/repos/github/poldracklab/mriqc/badge.svg?branch=master
   :target: https://coveralls.io/github/poldracklab/mriqc?branch=master
 
 .. image:: https://codecov.io/gh/poldracklab/mriqc/branch/master/graph/badge.svg
@@ -42,62 +42,37 @@ for open-source software distribution.
 About
 -----
 
-The package provides a series of image processing workflows to extract and
-compute a series of NR (no-reference), IQMs (image quality metrics) to be 
-used in QAPs (quality assessment protocols) for MRI (magnetic resonance imaging).
+MRIQC extracts no-reference IQMs (image quality metrics) from
+structural (T1w and T2w) and functional MRI (magnetic resonance imaging)
+data.
 
-This open-source neuroimaging data processing tool is being developed as a
-part of the MRI image analysis and reproducibility platform offered by
+MRIQC is an open-source project, developed under the following
+software engineering principles:
+
+1. Modularity and integrability: MRIQC implements a
+nipype workflow to integrate modular sub-workflows that rely upon third
+party software toolboxes such as FSL, ANTs and AFNI.
+2. Minimal preprocessing: the workflow described before should be as minimal
+as possible to estimate the IQMs on the original data or their minimally processed
+derivatives.
+3. Interoperability and standards: MRIQC follows the the brain imaging data structure
+(BIDS), and it adopts the BIDS-App standard.
+4. Reliability and robustness: the software undergoes frequent vetting sprints
+by testing its robustness against data variability (acquisition parameters,
+physiological differences, etc.) using images from the OpenfMRI resource.
+Reliability is checked and maintained with the use of a continuous
+integration service.
+
+
+MRIQC is part of the MRI image analysis and reproducibility platform offered by
 the CRN. This pipeline derives from, and is heavily influenced by, the
 `PCP Quality Assessment Protocol <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`_.
-
-This tool extracts a series of IQMs from structural and functional MRI data.
-It is also scheduled to add diffusion MRI to the target imaging families.
-
-
-External Dependencies
----------------------
-
-``mriqc`` is implemented using ``nipype``, but it requires some other neuroimaging
-software tools:
-
-- `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/>`_.
-- The N4ITK bias correction tool released with `ANTs <http://stnava.github.io/ANTs/>`_.
-- `AFNI <https://afni.nimh.nih.gov/>`_.
-
-These tools must be installed and their binaries available in the 
-system's ``$PATH``.
-
-
-Installation
-------------
-
-The ``mriqc`` is packaged and available through the PyPi repository.
-Therefore, the easiest way to install the tool is: ::
-
-    pip install mriqc
-
-
-
-Execution and the BIDS format
------------------------------
-
-The ``mriqc`` workflow takes as principal input the path of the dataset
-that is to be processed.
-The only requirement to the input dataset is that it has a valid `BIDS (Brain
-Imaging Data Structure) <http://bids.neuroimaging.io/>`_ format.
-This can be easily checked online using the 
-`BIDS Validator <http://incf.github.io/bids-validator/>`_.
-
-Example command line: ::
-
-    mriqc -i ~/Data/bids_dataset -o out/ -w work/
 
 
 Support and communication
 -------------------------
 
-The documentation of this project is found here: http://mriqc.readthedocs.org/en/latest/.
+The documentation of this project is found here: http://mriqc.readthedocs.org/.
 
 If you have a problem or would like to ask a question about how to use ``mriqc``,
 please submit a question to NeuroStars.org with an ``mriqc`` tag.
@@ -106,7 +81,7 @@ NeuroStars.org is a platform similar to StackOverflow but dedicated to neuroinfo
 All previous ``mriqc`` questions are available here:
 http://neurostars.org/t/mriqc/
 
-To participate in the ``mriqc`` development-related discussions please use the 
+To participate in the ``mriqc`` development-related discussions please use the
 following mailing list: http://mail.python.org/mailman/listinfo/neuroimaging
 Please add *[mriqc]* to the subject line when posting on the mailing list.
 
@@ -132,5 +107,5 @@ the ``mriqc`` distribution.
 All trademarks referenced herein are property of their respective
 holders.
 
-Copyright (c) 2015-2016, the mriqc developers and the CRN.
+Copyright (c) 2015-2017, the mriqc developers and the CRN.
 All rights reserved.
