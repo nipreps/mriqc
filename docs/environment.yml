@@ -19,6 +19,7 @@ dependencies:
 - seaborn
 - PyYAML
 - nose
+- statsmodels
 
 - pip:
     - doctest-ignore-unicode

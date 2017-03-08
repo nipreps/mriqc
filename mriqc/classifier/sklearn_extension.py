@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-07 19:39:38
+# @Last Modified time: 2017-03-08 12:47:30
 
 """
 =====================
@@ -30,9 +30,11 @@ from sklearn.base import is_classifier, clone
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._search import (
-    BaseSearchCV, MaskedArray, check_scoring, indexable,
+    BaseSearchCV, check_scoring, indexable,
     Parallel, delayed, defaultdict, rankdata
 )
+
+from sklearn.utils.fixes import np_version
 
 from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
@@ -40,6 +42,11 @@ from sklearn.model_selection._validation import (
 
 from mriqc import logging
 from builtins import object, zip
+
+if np_version < (1, 12, 0):
+    from sklearn.utils.fixes import MaskedArray
+else:
+    from numpy.ma import MaskedArray
 
 LOG = logging.getLogger('mriqc.classifier')
 
