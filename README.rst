@@ -56,8 +56,7 @@ party software toolboxes such as FSL, ANTs and AFNI.
 as possible to estimate the IQMs on the original data or their minimally processed
 derivatives.
 3. Interoperability and standards: MRIQC follows the the brain imaging data structure
-(BIDS), and it adopts the BIDS-App standard. An example of the ease of
-running MRIQC is presented in Listing SI1.
+(BIDS), and it adopts the BIDS-App standard.
 4. Reliability and robustness: the software undergoes frequent vetting sprints
 by testing its robustness against data variability (acquisition parameters,
 physiological differences, etc.) using images from the OpenfMRI resource.
