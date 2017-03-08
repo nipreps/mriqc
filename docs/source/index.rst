@@ -6,7 +6,9 @@
 Welcome to mriqc's documentation!
 =================================
 
-.. include:: badges.rst
+.. include:: ../../README.rst
+   :start-line: 3
+   :end-line: 39
 
 Contents
 ========
