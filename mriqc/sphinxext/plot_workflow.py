@@ -198,7 +198,7 @@ def setup(app):
     app.add_config_value('wf_working_directory', None, True)
     app.add_config_value('wf_template', None, True)
 
-    app.connect('doctree-read'.encode(), mark_wf_labels)
+    app.connect('doctree-read'.encode() if PY2 else 'doctree-read', mark_wf_labels)
 
     metadata = {'parallel_read_safe': True, 'parallel_write_safe': True}
     return metadata
