@@ -1,6 +1,4 @@
 
-.. _classifier:
-
 ===================================
 The MRIQC classifier for T1w images
 ===================================
@@ -10,8 +8,3 @@ The MRIQC classifier for T1w images
     :undoc-members:
     :show-inheritance:
 
-
-Contents
---------
-
-- py:module:`~mriqc.classifier.cv`

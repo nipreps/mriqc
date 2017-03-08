@@ -50,7 +50,6 @@ indexing columns and the predicted quality label under the ``prediction`` column
 
     cv/helpers
     cv/data
-    cv/sklearn_ext
 
 """
 
