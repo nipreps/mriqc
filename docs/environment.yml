@@ -1,7 +1,4 @@
 name: mriqc
-python:
-    extra_requirements:
-        - docs
 channels:
   - conda-forge
   - defaults
