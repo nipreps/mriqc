@@ -1,7 +1,7 @@
 name: mriqc
 channels:
+  - default
   - conda-forge
-  - defaults
 dependencies:
   - python=3.5
   - numpy=1.12.0
