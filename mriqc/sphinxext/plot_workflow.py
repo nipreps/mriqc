@@ -83,12 +83,9 @@ import traceback
 
 from docutils.parsers.rst import directives
 from docutils.parsers.rst.directives.images import Image
-align = Image.align
-import sphinx
-
-from builtins import str, bytes, range
 
 from mriqc.utils.misc import check_folder as mkdirs
+
 
 
 try:
@@ -100,6 +97,9 @@ except ImportError:
     import jinja
     def format_template(template, **kw):
         return jinja.from_string(template, **kw)
+
+from builtins import str, bytes
+align = Image.align
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3

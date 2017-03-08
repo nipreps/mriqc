@@ -3,6 +3,7 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
+
 In order to ease the screening process of individual images, MRIQC
 generates individual reports with mosaic views of a number of cutting planes and
 supporting information (for example, segmentation contours). The most straightforward
@@ -18,6 +19,7 @@ reports for the ABIDE dataset are available online at `mriqc.org <http://mriqc.o
 .. toctree::
     :maxdepth: 3
 
+    reports/group
     reports/smri
     reports/bold
 

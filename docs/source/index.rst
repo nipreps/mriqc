@@ -14,13 +14,16 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    about
-   userguide
+   install
+   running
    measures
    docker
    classifier
+   reports
+   workflows
 
 
 Indices and tables
