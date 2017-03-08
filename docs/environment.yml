@@ -27,6 +27,6 @@ dependencies:
     - dipy
     - nitime
     - nilearn
-    -e git+https://github.com/nipy/nipype.git@master#egg=nipype
-    -e git+https://github.com/poldracklab/niworkflows.git@master#egg=niworkflows
+    - git+https://github.com/nipy/nipype.git@master
+    - git+https://github.com/poldracklab/niworkflows.git@master
 
