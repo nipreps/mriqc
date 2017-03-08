@@ -17,5 +17,5 @@ nose
 doctest-ignore-unicode
 sphinx>=1.4
 svgutils
--e git+https://github.com/nipy/nipype.git@master#egg=nipype
+nipype
 -e git+https://github.com/poldracklab/niworkflows.git@master#egg=niworkflows
