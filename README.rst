@@ -77,19 +77,9 @@ the CRN. This pipeline derives from, and is heavily influenced by, the
 Support and communication
 -------------------------
 
-The documentation of this project is found here: http://mriqc.readthedocs.org/.
+The documentation of this project is found here: http://mriqc.readthedocs.io/.
 
-If you have a problem or would like to ask a question about how to use ``mriqc``,
-please submit a question to NeuroStars.org with an ``mriqc`` tag.
-NeuroStars.org is a platform similar to StackOverflow but dedicated to neuroinformatics.
-
-All previous ``mriqc`` questions are available here:
-http://neurostars.org/t/mriqc/
-
-To participate in the ``mriqc`` development-related discussions please use the
-following mailing list: http://mail.python.org/mailman/listinfo/neuroimaging
-Please add *[mriqc]* to the subject line when posting on the mailing list.
-
+Users can get help using the `mriqc-users google group <https://groups.google.com/forum/#!forum/mriqc-users>`_.
 
 All bugs, concerns and enhancement requests for this software can be submitted here:
 https://github.com/poldracklab/mriqc/issues.
@@ -98,9 +88,16 @@ https://github.com/poldracklab/mriqc/issues.
 Authors
 -------
 
-Oscar Esteban, Krzysztof F. Gorgolewski, Craig A. Moodie, William Triplett.
+Oscar Esteban, Krzysztof F. Gorgolewski.
 Poldrack Lab, Psychology Department, Stanford University,
 and Center for Reproducible Neuroscience, Stanford University.
+
+.. topic:: **Thanks**
+
+    * The QAP developers (C. Craddock, S. Giavasis, D. Clark, Z. Shezhad, and J.
+      Pellman) for the initial base of code which MRIQC was forked from.
+    * W Triplett and CA Moodie for their initial contributions with bugfixes and documentation, and
+    * J Varada for his contributions on the source code.
 
 
 License information
