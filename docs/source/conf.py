@@ -46,6 +46,7 @@ sys.path.insert(0, os.path.abspath('../../mriqc'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'mriqc.sphinxext.plot_workflow',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',

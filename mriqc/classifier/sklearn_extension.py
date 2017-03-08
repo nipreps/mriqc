@@ -3,10 +3,16 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 09:17:22
+# @Last Modified time: 2017-03-07 19:39:38
 
 """
+=====================
+Extensions to sklearn
+=====================
+
+
 Extends sklearn's GridSearchCV to a model search object
+
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
