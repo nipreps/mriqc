@@ -12,6 +12,6 @@ dependencies:
 - jinja2=2.8
 - sphinx>=1.5.1
 - sphinx_rtd_theme
+- nipy
 - pip:
     - nilearn
-    - nipy
