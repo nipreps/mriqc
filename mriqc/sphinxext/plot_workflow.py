@@ -320,8 +320,8 @@ class ImageFile(object):
         self.dirname = dirname
         self.formats = []
 
-    def filename(self, format):
-        return os.path.join(self.dirname, "%s.%s" % (self.basename, format))
+    def filename(self, fmt):
+        return os.path.join(self.dirname, "%s.%s" % (self.basename, fmt))
 
     def filenames(self):
         return [self.filename(fmt) for fmt in self.formats]
@@ -454,7 +454,15 @@ def render_figures(code, code_path, output_dir, output_base, context,
 
     for fmt, dpi in formats:
         try:
-            ns['wf'].write_graph(img.filename(fmt))
+            img_path = img.filename(fmt)
+            imgname, ext = os.path.splitext(os.path.basename(img_path))
+            ns['wf'].base_dir = output_dir
+            ns['wf'].write_graph(imgname, format=ext[1:])
+
+            src = os.path.join(os.path.dirname(img_path), ns['wf'].name,
+                               os.path.basename(img_path))
+            print(src, img_path)
+            shutil.move(src, img_path)
         except Exception as err:
             raise GraphError(traceback.format_exc())
 

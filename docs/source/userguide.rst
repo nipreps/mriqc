@@ -9,3 +9,4 @@ User Guide
    measures
    reports
    workflows
+   classifier
