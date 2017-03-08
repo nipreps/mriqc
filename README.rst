@@ -49,19 +49,24 @@ data.
 MRIQC is an open-source project, developed under the following
 software engineering principles:
 
-1. Modularity and integrability: MRIQC implements a
-nipype workflow to integrate modular sub-workflows that rely upon third
-party software toolboxes such as FSL, ANTs and AFNI.
-2. Minimal preprocessing: the workflow described before should be as minimal
-as possible to estimate the IQMs on the original data or their minimally processed
-derivatives.
-3. Interoperability and standards: MRIQC follows the the brain imaging data structure
-(BIDS), and it adopts the BIDS-App standard.
-4. Reliability and robustness: the software undergoes frequent vetting sprints
-by testing its robustness against data variability (acquisition parameters,
-physiological differences, etc.) using images from the OpenfMRI resource.
-Reliability is checked and maintained with the use of a continuous
-integration service.
+#. **Modularity and integrability**: MRIQC implements a
+   `nipype <http://nipype.readthedocs.io>`_ workflow to integrate modular 
+   sub-workflows that rely upon third party software toolboxes such as 
+   FSL, ANTs and AFNI.
+
+#. **Minimal preprocessing**: the MRIQC workflows should be as minimal
+   as possible to estimate the IQMs on the original data or their minimally
+   processed derivatives.
+
+#. **Interoperability and standards**: MRIQC follows the the `brain imaging data structure
+   (BIDS) <http://bids.neuroimaging.io>`_, and it adopts the `BIDS-App
+   <http://bids-apps.neuroimaging.io>`_ standard.
+   
+#. **Reliability and robustness**: the software undergoes frequent vetting sprints
+   by testing its robustness against data variability (acquisition parameters,
+   physiological differences, etc.) using images from `OpenfMRI <https://openfmri.org>`_.
+   Its reliability is permanently checked and maintained with 
+   `CircleCI <https://circleci.com/gh/poldracklab/mriqc>`_.
 
 
 MRIQC is part of the MRI image analysis and reproducibility platform offered by
