@@ -1,5 +1,6 @@
 name: mriqc_docs
 channels:
+  - default
   - conda-forge
 dependencies:
 - numpy
