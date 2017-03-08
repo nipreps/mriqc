@@ -2,7 +2,6 @@ name: mriqc_docs
 channels:
   - conda-forge
 dependencies:
-- python=3.5
 - numpy
 - scipy=0.18.1
 - scikit-learn=0.18.1
