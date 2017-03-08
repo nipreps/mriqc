@@ -22,6 +22,7 @@ from nipype.interfaces import afni
 from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
+from niworkflows.interfaces.segmentation import MELODICRPT
 
 DEFAULT_FD_RADIUS = 50.
 WFLOGGER = logging.getLogger('workflow')
@@ -83,6 +84,13 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
 
+    # Estimate ICA components
+    melodic = pe.Node(MELODICRPT(no_bet=True,
+                                 no_mask=True,
+                                 no_mm=True,
+                                 generate_report=True,
+                                 compress_report=True), name="ICA")
+
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
     # Reports
@@ -92,6 +100,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (reorient_and_discard, melodic, [('out_file', 'in_files')]),
+        (melodic, repwf, [('out_report', 'inputnode.ica_report')]),
         (hmcwf, bmw, [('outputnode.out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
@@ -219,7 +229,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    pages = 4
+    pages = 5
     extra_pages = 0
     if verbose:
         extra_pages = 4
@@ -228,7 +238,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
         'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
-        'exclude_index', 'mni_report']),
+        'exclude_index', 'mni_report', 'ica_report']),
         name='inputnode')
 
     spmask = pe.Node(niu.Function(
@@ -292,6 +302,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
+        (inputnode, mplots, [('ica_report', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
