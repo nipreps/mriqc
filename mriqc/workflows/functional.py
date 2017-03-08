@@ -88,8 +88,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     melodic = pe.Node(MELODICRPT(no_bet=True,
                                  no_mask=True,
                                  no_mm=True,
-                                 generate_report=True,
-                                 compress_report=True), name="ICA")
+                                 generate_report=True), name="ICA")
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
