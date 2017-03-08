@@ -32,9 +32,10 @@ Most of these :abbr:`IQMs (image quality metrics)` are migrated or derivated fro
 
 
 .. toctree::
+    :maxdepth: 3
 
-    measures/t1w
-    measures/bold
+    iqms/t1w
+    iqms/bold
 
 
 

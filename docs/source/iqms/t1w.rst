@@ -62,7 +62,7 @@ Measures targeting specific artifacts
   of noise voxel (non-artifact background voxels) intensities, and a
   Rician distribution.
 
-  .. figure:: resources/mortamet-mrm2009.png
+  .. figure:: ../resources/mortamet-mrm2009.png
 
     The workflow to compute the artifact detection from [Mortamet2009]_.
 
@@ -72,7 +72,7 @@ Measures targeting specific artifacts
   distribution, that captures the existence of long tails due to
   hyper-intensity of the carotid vessels and fat. Values
   should be around the interval [0.6, 0.8]
-  
+
 
 Other measures
 ^^^^^^^^^^^^^^
@@ -102,37 +102,13 @@ Other measures
 
 .. topic:: References
 
-  .. [Atkinson1997] Atkinson et al., *Automatic correction of motion artifacts
-    in magnetic resonance images using an entropy
-    focus criterion*, IEEE Trans Med Imag 16(6):903-910, 1997.
-    doi:`10.1109/42.650886 <http://dx.doi.org/10.1109/42.650886>`_.
-
   .. [Dietrich2007] Dietrich et al., *Measurement of SNRs in MR images: influence
     of multichannel coils, parallel imaging and reconstruction filters*, JMRI 26(2):375--385.
     2007. doi:`10.1002/jmri.20969 <http://dx.doi.org/10.1002/jmri.20969>`_.
 
-  .. [Friedman2008] Friedman, L et al., *Test--retest and between‐site reliability in a multicenter 
-    fMRI study*. Hum Brain Mapp, 29(8):958--972, 2008. doi:`10.1002/hbm.20440
-    <http://dx.doi.org/10.1002/hbm.20440>`_.
-
   .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
     a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
     doi:`10.3389/finf.201600010 <http://dx.doi.org/10.3389/finf.201600010>`_.
-
-  .. [Giannelli2010] Giannelli et al., *Characterization of Nyquist ghost in
-    EPI-fMRI acquisition sequences implemented on two clinical 1.5 T MR scanner
-    systems: effect of readout bandwidth and echo spacing*. J App Clin Med Phy,
-    11(4). 2010.
-    doi:`10.1120/jacmp.v11i4.3237 <http://dx.doi.org/10.1120/jacmp.v11i4.3237>`_.
-
-  .. [Jenkinson2002] Jenkinson et al., *Improved Optimisation for the Robust and
-    Accurate Linear Registration and Motion Correction of Brain Images*.
-    NeuroImage, 17(2), 825-841, 2002.
-    doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`_.
-
-  .. [Kaufman1989] Kaufman et al., *Measuring signal-to-noise ratios in MR imaging*,\
-    Radiology 173(1)265--267, 1989. doi:`10.1148/radiology.173.1.2781018
-    <http://dx.doi.org/10.1148/radiology.173.1.2781018>`_
 
   .. [Magnota2006] Magnotta, VA., & Friedman, L., *Measurement of signal-to-noise
     and contrast-to-noise in the fBIRN multicenter imaging study*. 
@@ -142,20 +118,6 @@ Other measures
   .. [Mortamet2009] Mortamet B et al., *Automatic quality assessment in
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
-
-  .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
-
-  .. [Power2012] Power et al., *Spurious but systematic correlations in
-    functional connectivity MRI networks arise from subject motion*,
-    NeuroImage 59(3):2142-2154,
-    2012, doi:`10.1016/j.neuroimage.2011.10.018
-    <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`_.
-
-  .. [Saad2013] Saad et al. *Correcting Brain-Wide Correlation Differences
-     in Resting-State FMRI*, Brain Conn 3(4):339-352,
-     2013, doi:`10.1089/brain.2013.0156
-     <http://dx.doi.org/10.1089/brain.2013.0156>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
     2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_
