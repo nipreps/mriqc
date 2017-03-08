@@ -6,8 +6,7 @@
 Welcome to mriqc's documentation!
 =================================
 
-.. include:: ../../README.rst
-
+.. include:: badges.rst
 
 Contents
 ========
@@ -15,6 +14,7 @@ Contents
 .. toctree::
    :maxdepth: 3
 
+   about
    userguide
    measures
    docker
