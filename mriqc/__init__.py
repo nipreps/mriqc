@@ -31,3 +31,8 @@ LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
 logging.basicConfig(level=logging.DEBUG,
                     format=LOG_FORMAT)
 MRIQC_LOG = logging.getLogger()
+
+DEFAULTS = {
+    'ants_nthreads': 6,
+    'float32': False
+}
