@@ -98,7 +98,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                  no_mm=True,
                                  generate_report=True), name="ICA")
     melodic.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
+                                        "biggest_file_size_gb"] * 3
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
