@@ -1,6 +1,9 @@
 Release 1.0.0
 =============
 
+* [FIX] Respect Nifi header in fMRI conform node (#415)
+* [DOC] Deep revision of documentation (#411, #416)
+* [ENH] Added sphinx extension to plot workflow graphs (#411)
 * [FIX] Removed repeated bias correction on anatomical workflows (#410)
 * [FIX] Race condition in bold workflow when using shared workdir (#409)
 * [FIX] Tests (#408, #407, #405)
