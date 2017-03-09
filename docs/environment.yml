@@ -21,6 +21,11 @@ dependencies:
 - nose
 - statsmodels
 - xvfbwrapper
+- configparser
+- funcsigs
+- prov
+- networkx
+- python-dateutil
 
 - pip:
     - doctest-ignore-unicode
