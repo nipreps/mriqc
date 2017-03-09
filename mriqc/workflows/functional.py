@@ -54,7 +54,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                    name='reorient_and_discard')
     reorient_and_discard.inputs.float32 = settings["float32"]
     reorient_and_discard.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # Workflow --------------------------------------------------------
 
@@ -78,7 +78,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
     mean.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
 
@@ -89,7 +89,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
     tsnr.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # Estimate ICA components
     melodic = pe.Node(MELODICRPT(no_bet=True,
@@ -97,7 +97,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                  no_mm=True,
                                  generate_report=True), name="ICA")
     melodic.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -166,7 +166,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS')
     dvnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # AFNI quality measures
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -174,15 +174,15 @@ def compute_iqms(settings, name='ComputeIQMs'):
     outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
                        name='outliers')
     outliers.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
     quality.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     measures = pe.Node(FunctionalQC(), name='measures')
     measures.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     workflow.connect([
         (inputnode, dvnode, [('hmc_epi', 'in_file'),
@@ -423,12 +423,12 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, save_rms=True, save_mats=True),
                       name='MCFLIRT')
     mcflirt.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
                                                parameter_source="FSL"),
                      name='ComputeFD')
     fdnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
@@ -471,29 +471,29 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     get_mean_RPI = pe.Node(afni.TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='get_mean_RPI')
     get_mean_RPI.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # calculate hmc parameters
     hmc = pe.Node(
         afni.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct')
     hmc.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     get_mean_motion = get_mean_RPI.clone('get_mean_motion')
     get_mean_motion.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
     hmc_A = hmc.clone('motion_correct_A')
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
     hmc_A.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
                                                parameter_source="AFNI"),
                      name='ComputeFD')
     fdnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 2
 
     workflow.connect([
         (inputnode, fdnode, [('fd_radius', 'radius')]),
