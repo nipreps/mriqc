@@ -54,7 +54,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                    name='reorient_and_discard')
     reorient_and_discard.inputs.float32 = settings["float32"]
     reorient_and_discard.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
+                                        "biggest_file_size_gb"]
 
     # Workflow --------------------------------------------------------
 
@@ -78,7 +78,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
     mean.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
+                                        "biggest_file_size_gb"]
     bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
         use_bet=settings.get('use_bet', False))
 
@@ -427,8 +427,6 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
                                                parameter_source="FSL"),
                      name='ComputeFD')
-    fdnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
 
     workflow.connect([
         (inputnode, mcflirt, [('in_file', 'in_file')]),
@@ -471,7 +469,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     get_mean_RPI = pe.Node(afni.TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='get_mean_RPI')
     get_mean_RPI.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
+                                        "biggest_file_size_gb"]
 
     # calculate hmc parameters
     hmc = pe.Node(
@@ -482,7 +480,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     get_mean_motion = get_mean_RPI.clone('get_mean_motion')
     get_mean_motion.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
+                                        "biggest_file_size_gb"]
     hmc_A = hmc.clone('motion_correct_A')
     hmc_A.inputs.md1d_file = 'max_displacement.1D'
     hmc_A.interface.estimated_memory_gb = settings[
@@ -492,8 +490,6 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
                                                parameter_source="AFNI"),
                      name='ComputeFD')
-    fdnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2
 
     workflow.connect([
         (inputnode, fdnode, [('fd_radius', 'radius')]),
