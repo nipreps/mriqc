@@ -10,10 +10,13 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 from mriqc.workflows.anatomical import anat_qc_workflow
 from mriqc.workflows.functional import fmri_qc_workflow
+import os
 
 
 def build_workflow(dataset, mod, settings=None):
     """ Multi-subject anatomical workflow wrapper """
+
+    settings["biggest_file_size_gb"] = _get_biggest_file_size_gb(dataset)
 
     if mod == 'bold':
         workflow = fmri_qc_workflow(dataset, settings=settings)
@@ -28,3 +31,11 @@ def build_workflow(dataset, mod, settings=None):
     if settings.get('write_graph', False):
         workflow.write_graph()
     return workflow
+
+def _get_biggest_file_size_gb(files):
+    max_size = 0
+    for file in files:
+        size = os.path.getsize(file)/(1024*1024*1024)
+        if size > max_size:
+            max_size = size
+    return max_size

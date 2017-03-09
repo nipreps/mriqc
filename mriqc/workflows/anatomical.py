@@ -59,6 +59,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
         testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
+    norm.interface.num_threads = settings['ants_nthreads']
+
     if mod == 'T1w':
         norm.inputs.reference = 'T1'
     elif mod == 'T2w':
