@@ -4,3 +4,5 @@ python:
     setup_py_install: true
 formats:
     - none
+requirements_file: requirements.txt
+
