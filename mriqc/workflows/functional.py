@@ -18,6 +18,7 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
+from niworkflows.interfaces.masks import ComputeEPIMask
 
 from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
@@ -79,8 +80,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
     mean.interface.estimated_memory_gb = settings[
                                         "biggest_file_size_gb"]
-    bmw = fmri_bmsk_workflow(                   # 3. Compute brain mask
-        use_bet=settings.get('use_bet', False))
+    skullstrip_epi = pe.Node(ComputeEPIMask(dilation=1),
+                             name='skullstrip_epi')
 
     # EPI to MNI registration
     ema = epi_mni_align(ants_nthreads=settings['ants_nthreads'],
@@ -110,11 +111,11 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (reorient_and_discard, melodic, [('out_file', 'in_files')]),
         (melodic, repwf, [('out_report', 'inputnode.ica_report')]),
-        (mean, bmw, [('out_file', 'inputnode.in_file')]),
+        (mean, skullstrip_epi, [('out_file', 'in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
-        (bmw, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
+        (skullstrip_epi, ema, [('mask_file', 'inputnode.epi_mask')]),
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
@@ -126,12 +127,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
-        (bmw, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
+        (skullstrip_epi, iqmswf, [('mask_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
-        (bmw, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
+        (skullstrip_epi, repwf, [('mask_file', 'inputnode.brainmask')]),
         (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd'),
                         ('outputnode.out_file', 'inputnode.hmc_epi')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
@@ -368,41 +369,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (plot_bmask, mplots, [('out_file', 'in%d' % (pages + 3))]),
         (inputnode, mplots, [('mni_report', 'in%d' % (pages + 4))]),
     ])
-    return workflow
-
-
-def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
-    """Comute brain mask of an fmri dataset"""
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
-                        name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
-                         name='outputnode')
-
-    if not use_bet:
-        afni_msk = pe.Node(afni.Automask(
-            outputtype='NIFTI_GZ'), name='afni_msk')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, afni_msk, [('in_file', 'in_file')]),
-            (afni_msk, outputnode, [('out_file', 'out_file')])
-        ])
-
-    else:
-        from nipype.interfaces.fsl import BET, ErodeImage
-        bet_msk = pe.Node(BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(ErodeImage(kernel_shape='box', kernel_size=1.0),
-                        name='erode')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, bet_msk, [('in_file', 'in_file')]),
-            (bet_msk, erode, [('mask_file', 'in_file')]),
-            (erode, outputnode, [('out_file', 'out_file')])
-        ])
-
     return workflow
 
 
