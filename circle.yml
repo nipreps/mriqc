@@ -38,6 +38,7 @@ general:
   branches:
     ignore:
       - gh-pages # ignore gh-pages
+      - doc/* # ignore all doc-related branches
 
 # deployment:
 #   codecov:

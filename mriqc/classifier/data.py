@@ -3,10 +3,15 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 10:27:05
+# @Last Modified time: 2017-03-08 13:52:24
 
 """
-mriqc_fit: data handling module
+===================
+Data handler module
+===================
+
+Reads in and writes CSV files with the IQMs
+
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals

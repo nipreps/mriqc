@@ -17,6 +17,7 @@ serve to show the default.
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import sys
 import os
@@ -25,7 +26,7 @@ from mriqc import __version__
 # Hack for readthedocs
 # http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
 import mock
-MOCK_MODULES = ['numpy', 'scipy', 'nitime', 'matplotlib', 'matplotlib.pyplot', 'scipy.interpolate']
+MOCK_MODULES = ['scipy.interpolate']
 for mod_name in MOCK_MODULES:
     try:
         __import__(mod_name)
@@ -53,7 +54,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'mriqc.sphinxext.plot_workflow'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -71,9 +73,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'mriqc'
-copyright = u'2016, Oscar Esteban'
-author = u'Oscar Esteban'
+project = 'mriqc'
+copyright = '2017, Oscar Esteban'
+author = 'Oscar Esteban'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -247,8 +249,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mriqc.tex', u'mriqc Documentation',
-     u'Oscar Esteban', 'manual'),
+    (master_doc, 'mriqc.tex', 'mriqc Documentation',
+     'Oscar Esteban', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -277,7 +279,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mriqc', u'mriqc Documentation',
+    (master_doc, 'mriqc', 'mriqc Documentation',
      [author], 1)
 ]
 
@@ -291,7 +293,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'mriqc', u'mriqc Documentation',
+    (master_doc, 'mriqc', 'mriqc Documentation',
      author, 'mriqc', 'One line description of project.',
      'Miscellaneous'),
 ]

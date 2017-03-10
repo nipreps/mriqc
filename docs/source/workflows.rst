@@ -1,7 +1,5 @@
-setup module
-============
 
-.. automodule:: setup
+.. automodule:: mriqc.workflows
     :members:
     :undoc-members:
     :show-inheritance:

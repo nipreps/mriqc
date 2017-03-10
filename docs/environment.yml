@@ -1,0 +1,39 @@
+name: mriqc_docs
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+- numpy>=1.11.0
+- scipy=0.18.1
+- scikit-learn=0.18.1
+- pandas=0.19.1
+- matplotlib=2.0.0
+- traits=4.6
+- jinja2=2.8
+- sphinx>=1.5.1
+- sphinx_rtd_theme
+- mock
+- future
+- matplotlib
+- nibabel
+- seaborn
+- PyYAML
+- nose
+- statsmodels
+- xvfbwrapper
+- configparser
+- funcsigs
+- prov
+- networkx
+- python-dateutil
+
+- pip:
+    - doctest-ignore-unicode
+    - svgutils
+    - nipy
+    - dipy
+    - nitime
+    - nilearn
+    - git+https://github.com/poldracklab/niworkflows.git@02cbbd2fb5a38979665e3af2a2a117d8504f1b70#egg=niworkflows
+    - git+https://github.com/nipy/nipype.git@a81d993a99425b2411fc412ee17896d0aa8abd02#egg=nipype
+
