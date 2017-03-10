@@ -1,6 +1,5 @@
 
-.. _bold:
-
+.. _iqms_bold:
 
 IQMs for functional images
 --------------------------

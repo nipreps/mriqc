@@ -1,4 +1,6 @@
 
+.. _reports_group:
+
 Group reports
 =============
 
