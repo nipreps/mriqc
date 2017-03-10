@@ -88,14 +88,11 @@ ENV ANTSPATH=/opt/ants \
 
 # Installing and setting up c3d
 RUN mkdir -p /opt/c3d && \
-    curl -sSL "http://downloads.sourceforge.net/project/c3d/c3d/1.0.0/c3d-1.0.0-Linux-x86_64.tar.gz" \
+    curl -sSL "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f341d6594d9001f591bac2" \
     | tar -xzC /opt/c3d --strip-components 1
 
 ENV C3DPATH=/opt/c3d/ \
     PATH=$C3DPATH/bin:$PATH
-
-# Install some other required tools
-RUN apt-get install -y --no-install-recommends 
 
 # Install BIDS-validator
 RUN curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
@@ -146,10 +143,12 @@ ENV CRN_SHARED_DATA /niworkflows_data
 # Metadata
 ARG BUILD_DATE
 ARG VCS_REF
+ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="MRIQC" \
       org.label-schema.description="MRIQC - Quality Control of structural and functional MRI" \
       org.label-schema.url="http://mriqc.readthedocs.io" \
       org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.version=$VERSION \
       org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
       org.label-schema.schema-version="1.0"
