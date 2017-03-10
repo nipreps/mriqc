@@ -8,14 +8,14 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-07 19:07:49
+# @Last Modified time: 2017-03-09 16:42:24
 """
 
 Measures for the structural information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - :py:func:`~mriqc.qc.anatomical.efc`
-- :py:func:`~mriqc.qc.anatomical.fber`
+- :py:func:`~mriqc.qc.anatomical.fber` [Shehzad2015]_
 - **fwhm** - Full-width half maximum smoothness of the voxels averaged
 - :py:func:`~mriqc.qc.anatomical.snr`
 - **summary\_{mean, stdv, p05, p95}\_\*** - Mean, standard deviation, 5% percentile and 95% percentile of the distribution of background and foreground.
@@ -73,6 +73,7 @@ Measures for artifacts and other
      in Resting-State FMRI*, Brain Conn 3(4):339-352,
      2013, doi:`10.1089/brain.2013.0156
      <http://dx.doi.org/10.1089/brain.2013.0156>`_.
+
 
 mriqc.qc.functional module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

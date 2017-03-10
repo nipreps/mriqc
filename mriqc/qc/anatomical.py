@@ -43,7 +43,7 @@ Measures based on information theory
   different dimensions.
 
 - :py:func:`~mriqc.qc.anatomical.fber`:
-  The :abbr:`FBER (Foreground-Background Energy Ratio)`,
+  The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
   defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
   Higher values are better.
 
@@ -121,7 +121,12 @@ Other measures
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
-    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_
+    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
+
+  .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
+     Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
+     Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
+     doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
 
 
 mriqc.qc.anatomical module
@@ -290,7 +295,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
 
 def fber(img, air):
     r"""
-    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
+    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
     to outside the head. Higher values are better.
 
