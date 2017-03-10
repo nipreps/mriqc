@@ -25,40 +25,30 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+FROM poldracklab/mriqc:base
 
-FROM poldracklab/neuroimaging-core:base-0.0.2
+# Update metadata
+ARG VERSION
+LABEL org.label-schema.version=$VERSION
 
+# Write scripts
 COPY docker/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
-# Install miniconda
-RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    /bin/bash Miniconda3-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
-    rm Miniconda3-latest-Linux-x86_64.sh
-ENV PATH=/usr/local/miniconda/bin:$PATH \
-    PYTHONPATH=/usr/local/miniconda/lib/python3.5/site-packages \
-    PYTHONNOUSERSITE=1 \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+# Installing dev requirements (packages that are not in pypi)
+WORKDIR /root/
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt && \
+    rm -rf ~/.cache/pip
 
-WORKDIR /root
-
-# Create conda environment, use nipype's conda-forge channel
-RUN conda config --add channels conda-forge && \
-    conda install -y numpy>=1.12.0 scipy matplotlib && \
-    python -c "from matplotlib import font_manager"
-
-COPY . /root/src/mriqc/
-
-RUN pip install -r /root/src/mriqc/requirements.txt
-
-WORKDIR /root/src/mriqc
-
-RUN pip install -e .[all]
-
-RUN mkdir /niworkflows_data
-ENV CRN_SHARED_DATA /niworkflows_data
+# Pre-cache niworkflows data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
+
+# Installing mriqc
+COPY . /root/src/mriqc
+RUN cd /root/src/mriqc && \
+    pip install -e .[all] && \
+    rm -rf ~/.cache/pip
 
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]

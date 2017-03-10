@@ -25,36 +25,37 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+FROM poldracklab/mriqc:base
 
-FROM poldracklab/neuroimaging-core:base-0.0.2
+# Update metadata
+ARG VERSION
+LABEL org.label-schema.version=$VERSION
 
-WORKDIR /root
-
+# Write scripts
 COPY docker/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
-# Install miniconda
-RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh && \
-    /bin/bash Miniconda2-latest-Linux-x86_64.sh -b -p /usr/local/miniconda && \
-    rm Miniconda2-latest-Linux-x86_64.sh
-ENV PATH=/usr/local/miniconda/bin:$PATH \
-    PYTHONPATH=/usr/local/miniconda/lib/python2.7/site-packages \
-    PYTHONNOUSERSITE=1
-
-# Create conda environment
-RUN conda config --add channels conda-forge && \
-    conda install -y numpy>=1.12.0 scipy matplotlib && \
+# Downgrade python to 2.7
+# matplotlib cleanups: set default backend, precaching fonts
+RUN conda install python=2.7 && \
+    find /usr/local/miniconda/ -exec chmod 775 {} + && \
+    sed -i 's/\(backend *: \).*$/\1Agg/g' /usr/local/miniconda/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc && \
     python -c "from matplotlib import font_manager"
 
-# Install mriqc
-WORKDIR /root/src/mriqc
-COPY . /root/src/mriqc/
+# Installing dev requirements (packages that are not in pypi)
+WORKDIR /root/
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt && \
-    pip install -e .[all]
+    rm -rf ~/.cache/pip
 
-RUN mkdir /niworkflows_data
-ENV CRN_SHARED_DATA /niworkflows_data
+# Pre-cache niworkflows data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
+
+# Installing mriqc
+COPY . /root/src/mriqc
+RUN cd /root/src/mriqc && \
+    pip install -e .[all] && \
+    rm -rf ~/.cache/pip
 
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
