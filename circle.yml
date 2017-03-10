@@ -26,7 +26,7 @@ dependencies:
         timeout: 21600
     - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg VERSION=$CIRCLE_TAG . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ] :
         timeout: 2600
-    - e=1 && for i in {1..5}; do docker build --rm=false -f docker/Dockerfile_py27 -t poldracklab/mriqc:latest-py27--build-arg VERSION=$CIRCLE_TAG-py27 . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ] :
+    - e=1 && for i in {1..5}; do docker build --rm=false -f docker/Dockerfile_py27 -t poldracklab/mriqc:latest-py27 --build-arg VERSION=$CIRCLE_TAG-py27 . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ] :
         timeout: 2600
     - docker save ubuntu:xenial-20161213 poldracklab/mriqc:base poldracklab/mriqc:latest poldracklab/mriqc:latest-py27 > ~/docker/image.tar
 
