@@ -1,4 +1,6 @@
 
+.. _reports_bold:
+
 BOLD images
 -----------
 
@@ -10,6 +12,8 @@ An example report is given
 The individual report for the functional images is
 structured as follows:
 
+.. _reports_bold_summary:
+
 Summary
 ^^^^^^^
 
@@ -19,6 +23,8 @@ The first section summarizes some important information:
     ``mriqc``, software version;
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
+
+.. _reports_bold_visual:
 
 Visual reports
 ^^^^^^^^^^^^^^
@@ -43,6 +49,8 @@ The section with visual reports contains:
 
    .. figure:: ../resources/reports-bold_summary.png
      :alt: fMRI summary plot
+
+.. _reports_bold_verbose:
 
 Verbose reports
 ^^^^^^^^^^^^^^^
@@ -75,6 +83,8 @@ following plots will be appended:
    .. figure:: ../resources/reports-bold_mni.png
      :alt: bold-mni coregistration
 
+.. _reports_bold_metadata:
+
 Metadata
 ^^^^^^^^
 
@@ -82,8 +92,7 @@ If some metadata was found in the BIDS structure, it is
 reported here.
 
 
-References
-^^^^^^^^^^
+.. topic:: References
 
   .. [Power2016] Power JD, A simple but useful way to assess fMRI scan qualities.
      NeuroImage. 2016. doi: `10.1016/j.neuroimage.2016.08.009 <http://doi.org/10.1016/j.neuroimage.2016.08.009>`_

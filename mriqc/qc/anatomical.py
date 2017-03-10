@@ -9,25 +9,42 @@
 Measures based on noise measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- :py:func:`~mriqc.qc.anatomical.cjv`:
-  The :abbr:`CJV (coefficient of joint variation)` of GM and WM was proposed as objective function by [Ganzetti2016]_ for the optimization of :abbr:`INU (intensity non-uniformity)` correction algorithms. Higher values are related to the presence of heavy head motion and large :abbr:`INU (intensity non-uniformity)` artifacts. Lower values are better.
+.. _iqms_struc_cjv:
 
-- :py:func:`~mriqc.qc.anatomical.cnr`:
-  The :abbr:`CNR (contrast-to-noise Ratio)` [Magnota2006]_, is an extension of the :abbr:`SNR (signal-to-noise Ratio)` calculation to evaluate how separated the tissue distributions of GM and WM are. Higher values indicate better quality.
+- :py:func:`~mriqc.qc.anatomical.cjv` -- **coefficient of joint variation**
+  (:abbr:`CJV (coefficient of joint variation)`):
+  The ``cjv`` of GM and WM was proposed as objective function by [Ganzetti2016]_ for
+  the optimization of :abbr:`INU (intensity non-uniformity)` correction algorithms.
+  Higher values are related to the presence of heavy head motion and large
+  :abbr:`INU (intensity non-uniformity)` artifacts. Lower values are better.
 
-- :py:func:`~mriqc.qc.anatomical.snr_dietrich`:
-  MRIQC includes the :abbr:`SNR (signal-to-noise Ratio)` as proposed
+.. _iqms_struc_cnr:
+
+- :py:func:`~mriqc.qc.anatomical.cnr` -- **contrast-to-noise ratio**
+  (:abbr:`CNR (contrast-to-noise Ratio)`): The ``cnr`` [Magnota2006]_,
+  is an extension of the :abbr:`SNR (signal-to-noise Ratio)` calculation
+  to evaluate how separated the tissue distributions of GM and WM are.
+  Higher values indicate better quality.
+
+.. _iqms_struc_snr:
+
+- :py:func:`~mriqc.qc.anatomical.snr` -- **signal-to-noise ratio**
+  (:abbr:`SNR (signal-to-noise Ratio)`): calculated within the
+  tissue mask.
+
+.. _iqms_struc_snr_dietrich:
+
+- :py:func:`~mriqc.qc.anatomical.snr_dietrich`: **Dietrich's SNR**
+  (:abbr:`SNRd (signal-to-noise Ratio, Dietrich 2007)`) as proposed
   by [Dietrich2007]_, using the air background as reference.
-  Additionally, for images that have undergone some noise reduction
-  processing, or the more complex noise realizations of current
-  parallel acquisitions, a simplified calculation using the within
-  tissue variance is also provided
 
-- :py:func:`~mriqc.qc.anatomical.art_qi2`: The
-  :abbr:`QI2 (quality index 2)` of [Mortamet2009]_ is a calculation
-  of the goodness-of-fit of a :math:`\chi^2` distribution on the
-  air mask, once the artifactual intensities detected for computing
-  the :abbr:`QI1 (quality index 1)` index have been removed.
+.. _iqms_struc_qi2:
+
+- :py:func:`~mriqc.qc.anatomical.art_qi2`: **Mortamet's quality index 2**
+  (:abbr:`QI2 (quality index 2)`) is a calculation of the goodness-of-fit
+  of a :math:`\chi^2` distribution on the air mask,
+  once the artifactual intensities detected for computing
+  the :abbr:`QI1 (quality index 1)` index have been removed [Mortamet2009]_.
 
 Measures based on information theory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -43,7 +60,7 @@ Measures based on information theory
   different dimensions.
 
 - :py:func:`~mriqc.qc.anatomical.fber`:
-  The :abbr:`FBER (Foreground-Background Energy Ratio)`,
+  The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
   defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
   Higher values are better.
 
@@ -121,7 +138,12 @@ Other measures
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
-    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_
+    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
+
+  .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
+     Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
+     Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
+     doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
 
 
 mriqc.qc.anatomical module
@@ -290,7 +312,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
 
 def fber(img, air):
     r"""
-    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)`,
+    Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
     to outside the head. Higher values are better.
 

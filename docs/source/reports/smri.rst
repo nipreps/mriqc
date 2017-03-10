@@ -1,6 +1,5 @@
 
-.. _smri:
-
+.. _reports_smri:
 
 T1 and T2 -weighed images
 -------------------------

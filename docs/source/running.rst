@@ -1,4 +1,5 @@
 
+.. _running_mriqc:
 
 Running mriqc
 -------------
@@ -16,8 +17,8 @@ Since ``mriqc`` follows the [BIDSApps]_ specification, the execution is
 split in two consecutive steps: a first level (or ``participant``) followed
 by a second level (or ``group`` level).
 In the ``participant`` level, all individual images to be processed are run
-through the pipeline, and the :ref:`MRIQC measures` are extracted and
-the individual reports (see :ref:`The MRIQC Reports`) generated.
+through the pipeline, and the :ref:`MRIQC measures <measures>` are extracted and
+the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
 In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
 first place are combined in a table and the group reports are generated.
 
@@ -61,7 +62,7 @@ Containerized versions
 ^^^^^^^^^^^^^^^^^^^^^^
 
 If you have Docker installed, the quickest way to get ``mriqc`` to work
-is following :ref:`Run mriqc with docker`.
+is following :ref:`the running with docker guide <docker>`.
 
 Running MRIQC on HPC clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

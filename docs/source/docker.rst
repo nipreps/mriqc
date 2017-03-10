@@ -1,4 +1,6 @@
 
+.. _docker:
+
 Run mriqc with docker
 =====================
 
@@ -16,6 +18,7 @@ Preliminaries
 
 
 
+.. _docker_run_mriqc:
 
 Running mriqc
 -------------

@@ -1,4 +1,5 @@
 
+.. _reports:
 
 ==============
 Visual reports
@@ -8,3 +9,4 @@ Visual reports
     :members:
     :undoc-members:
     :show-inheritance:
+
