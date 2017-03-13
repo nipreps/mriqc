@@ -27,13 +27,54 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FROM poldracklab/mriqc:base
 
-# Update metadata
-ARG VERSION
-LABEL org.label-schema.version=$VERSION
+ARG PY_VER_MAJOR=3
+ARG PY_VER_MINOR=5
+
+# Placeholder for niworkflows data
+RUN mkdir /niworkflows_data
+ENV CRN_SHARED_DATA /niworkflows_data
 
 # Write scripts
 COPY docker/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
+
+# Installing and setting up miniconda
+RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh && \
+    bash Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh
+
+ENV PATH=/usr/local/miniconda/bin:$PATH \
+    PYTHONNOUSERSITE=1 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    ACCEPT_INTEL_PYTHON_EULA=yes \
+    MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
+
+# Installing precomputed python packages
+RUN conda config --add channels conda-forge --add channels intel && \
+    chmod +x /usr/local/miniconda/bin/*; sync && \
+    conda config --set always_yes yes --set changeps1 no && \
+    conda update -q conda && \
+    chmod +x /usr/local/miniconda/bin/*; sync && \
+    conda install -y mkl=2017.0.1 \
+                     numpy \
+                     scipy=0.18.1 \
+                     scikit-learn=0.17.1 \
+                     matplotlib=1.5.1 \
+                     pandas=0.19.0 \
+                     libxml2=2.9.4 \
+                     libxslt=1.1.29 \
+                     traits=4.6.0 \
+                     psutil=5.0.1 \
+                     icu=58.1 \
+                     scandir && \
+    find /usr/local/miniconda/ -exec chmod 775 {} +
+
+# matplotlib cleanups: set default backend, precaching fonts
+RUN sed -i 's/\(backend *: \).*$/\1Agg/g' /usr/local/miniconda/lib/python${PY_VER_MAJOR}.${PY_VER_MINOR}/site-packages/matplotlib/mpl-data/matplotlibrc && \
+    python -c "from matplotlib import font_manager"
+
 
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /root/
@@ -49,6 +90,19 @@ COPY . /root/src/mriqc
 RUN cd /root/src/mriqc && \
     pip install -e .[all] && \
     rm -rf ~/.cache/pip
+
+# Metadata
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="MRIQC" \
+      org.label-schema.description="MRIQC - Quality Control of structural and functional MRI" \
+      org.label-schema.url="http://mriqc.readthedocs.io" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.version=$VERSION \
+      org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
+      org.label-schema.schema-version="1.0"
 
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
