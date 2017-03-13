@@ -52,10 +52,8 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
     OMP_NUM_THREADS=1
 
 # Installing precomputed python packages
-RUN conda config --add channels conda-forge --add channels intel && \
-    chmod +x /usr/local/miniconda/bin/*; sync && \
+RUN conda config --add channels conda-forge && \
     conda config --set always_yes yes --set changeps1 no && \
-    conda update -q conda && \
     chmod +x /usr/local/miniconda/bin/*; sync && \
     conda install -y mkl=2017.0.1 \
                      numpy \
