@@ -50,6 +50,8 @@ RUN apt-key add /root/.neurodebian.gpg && \
                     apt-utils \
                     fusefat \
                     make \
+                    build-essentials \
+                    gcc \
                     git=1:2.7.4-0ubuntu1 \
                     graphviz=2.38.0-12ubuntu2 \
                     nodejs && \
