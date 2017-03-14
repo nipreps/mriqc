@@ -84,19 +84,18 @@ RUN mkdir -p /opt/ants && \
     curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
     | tar -xjC /opt/ants --strip-components 1
 
-ENV ANTSPATH=/opt/ants \
-    PATH=$ANTSPATH:$PATH
+ENV PATH=/opt/ants:$PATH
 
 # Installing and setting up c3d
 RUN mkdir -p /opt/c3d && \
     curl -sSL "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f341d6594d9001f591bac2" \
     | tar -xzC /opt/c3d --strip-components 1
 
-ENV C3DPATH=/opt/c3d/ \
-    PATH=$C3DPATH/bin:$PATH
+ENV PATH=/opt/c3d:$PATH
 
 # Install BIDS-validator
 RUN curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     npm install -g bids-validator
+
