@@ -18,6 +18,8 @@ from builtins import zip, object, str  # pylint: disable=W0622
 from mriqc import logging
 from mriqc.utils.misc import BIDS_COMP
 
+from io import open
+
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
