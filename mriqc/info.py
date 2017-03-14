@@ -62,7 +62,7 @@ REQUIRES = [
     'svgutils',
     'nipy',
     'statsmodels',
-    'pybids'
+    'pybids>=0.1.0'
 ]
 
 LINKS_REQUIRES = []
