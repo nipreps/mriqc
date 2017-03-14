@@ -66,8 +66,8 @@ RUN conda config --add channels conda-forge && \
                      traits=4.6.0 \
                      psutil=5.0.1 \
                      icu=58.1 \
-                     scandir && \
-    find /usr/local/miniconda/ -exec chmod 775 {} +
+                     scandir; \
+    sync
 
 # matplotlib cleanups: set default backend, precaching fonts
 RUN sed -i 's/\(backend *: \).*$/\1Agg/g' /usr/local/miniconda/lib/python${PY_VER_MAJOR}.${PY_VER_MINOR}/site-packages/matplotlib/mpl-data/matplotlibrc && \
