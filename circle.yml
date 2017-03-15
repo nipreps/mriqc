@@ -48,6 +48,19 @@ general:
       - gh-pages # ignore gh-pages
       - doc/* # ignore all doc-related branches
 
+deployment:
+  production:
+    tag: /.*/
+    commands:
+      # Deploy to docker hub      
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push poldracklab/mriqc:latest poldracklab/mriqc:latest-py27; fi :
+          timeout: 21600
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag polracklab/mriqc:latest poldracklab/mriqc:$CIRCLE_TAG && docker push poldracklab/mriqc:$CIRCLE_TAG; fi :
+          timeout: 21600
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag polracklab/mriqc:latest-py27 poldracklab/mriqc:$CIRCLE_TAG-py27 && docker push poldracklab/mriqc:$CIRCLE_TAG-py27; fi :
+          timeout: 21600
+
+
 # deployment:
 #   codecov:
 #     branch: /.*/

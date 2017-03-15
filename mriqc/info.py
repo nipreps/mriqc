@@ -8,7 +8,7 @@ MRIQC
 """
 
 __versionbase__ = '0.9.0'
-__versionrev__ = '-0'
+__versionrev__ = '-1'
 __version__ = __versionbase__ + __versionrev__
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
@@ -62,7 +62,7 @@ REQUIRES = [
     'svgutils',
     'nipy',
     'statsmodels',
-    'pybids'
+    'pybids>=0.1.0'
 ]
 
 LINKS_REQUIRES = []
