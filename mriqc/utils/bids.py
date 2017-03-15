@@ -8,6 +8,8 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from copy import deepcopy
 from bids.grabbids import BIDSLayout
 
+from builtins import str, bytes
+
 DEFAULT_MODALITIES = ['bold', 'T1w', 'T2w']
 DEFAULT_QUERIES = {
     'bold': {'modality': 'func', 'type': 'bold', 'extensions': ['nii', 'nii.gz']},
@@ -48,19 +50,25 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
 
     # Set participants
     if participant_label is not None:
-        if not isinstance(participant_label, list):
-            for key in queries.keys():
-                queries[key]['subject'] = participant_label
-        else:
-            participant_label = ['{}'.format(sub) for sub in participant_label]
-            participant_label = [sub[4:] if sub.startswith('sub-') else sub
-                                 for sub in participant_label]
+        if isinstance(participant_label, (bytes, str)):
+            participant_label = [participant_label]
 
-            # For some reason, outer subject ids are filtered out
-            participant_label.insert(0, 'null')
-            participant_label.append('null')
-            for key in queries.keys():
-                queries[key]['subject'] = 'sub-\\(' + '|'.join(participant_label) + '\\){1}'
+        participant_label = ['{}'.format(sub) for sub in participant_label]
+        participant_label = [sub[4:] if sub.startswith('sub-') else sub
+                             for sub in participant_label]
+        participant_label = [sub[:-1] if sub.endswith('*') else (sub + '$')
+                             for sub in participant_label]
+        participant_label = [sub[1:] if sub.startswith('*') else ('^' + sub)
+                             for sub in participant_label]
+
+
+        print('participant labels ', participant_label)
+
+        # For some reason, outer subject ids are filtered out
+        participant_label.insert(0, 'null')
+        participant_label.append('null')
+        for key in queries.keys():
+            queries[key]['subject'] = 'sub-\\(' + '|'.join(participant_label) + '\\){1}'
 
     # Start querying
     imaging_data = {}
