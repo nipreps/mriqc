@@ -135,6 +135,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     for group, units in QCGROUPS[mod]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
+
         for iqm in group:
             if iqm in datacols:
                 values = dataframe[[iqm]].values.ravel().tolist()
@@ -144,10 +145,12 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                     dfdict['value'] += values
                     dfdict['label'] += dataframe[['label']].values.ravel().tolist()
 
-                    csv_df = pd.DataFrame(dfdict)
-                    csv_str = TextIO()
-                    csv_df[['iqm', 'value', 'label', 'units']].to_csv(csv_str, index=False)
-                    csv_groups.append(csv_str.getvalue())
+        # Save only if there are values
+        if dfdict['value']:
+            csv_df = pd.DataFrame(dfdict)
+            csv_str = TextIO()
+            csv_df[['iqm', 'value', 'label', 'units']].to_csv(csv_str, index=False)
+            csv_groups.append(csv_str.getvalue())
 
     if out_file is None:
         out_file = op.abspath('group.html')
