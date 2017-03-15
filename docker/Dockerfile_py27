@@ -47,8 +47,8 @@ RUN conda config --add channels conda-forge && \
     python -c "from matplotlib import font_manager"
 
 # Install mriqc
-WORKDIR /root/src/mriqc
-COPY . /root/src/mriqc/
+WORKDIR /opt/src/mriqc
+COPY . /opt/src/mriqc/
 RUN pip install -r requirements.txt && \
     pip install -e .[all]
 
