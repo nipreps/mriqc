@@ -9,7 +9,7 @@ import sys
 
 def main():
     """Import the file directly"""
-    from info import __version__
+    from __about__ import __version__
     print(__version__)
 
 if __name__ == '__main__':

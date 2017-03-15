@@ -52,6 +52,11 @@ deployment:
   production:
     tag: /.*/
     commands:
+      # Deploy to pypi
+      - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/__about__.py
+      - printf "[distutils]\nindex-servers =\n    pypi\n\n[pypi]\nusername:$PYPI_USER\npassword:$PYPI_PASS\n" > ~/.pypirc
+      - python setup.py sdist upload -r pypi
+
       # Deploy to docker hub      
       - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push poldracklab/mriqc:latest poldracklab/mriqc:latest-py27; fi :
           timeout: 21600

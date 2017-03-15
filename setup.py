@@ -20,8 +20,8 @@ def main():
     # Python 3: use a locals dictionary
     # http://stackoverflow.com/a/1463370/6820620
     ldict = locals()
-    # Get version and release info, which is all stored in mriqc/info.py
-    module_file = op.join(this_path, PACKAGE_NAME, 'info.py')
+    # Get version and release info, which is all stored in mriqc/__about__.py
+    module_file = op.join(this_path, PACKAGE_NAME, '__about__.py')
     with open(module_file) as infofile:
         pythoncode = [line for line in infofile.readlines() if not line.strip().startswith('#')]
         exec('\n'.join(pythoncode), globals(), ldict)  # pylint: disable=W0122
