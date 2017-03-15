@@ -1,6 +1,7 @@
 Release 0.9.0-2
 ===============
 
+* [ENH] Revise Docker paths (#429)
 * [FIX] Greedy participant selection (#426)
 * [FIX] Pin pybids to new version 0.1.0 (#427)
 * [FIX] Amends sloppy PR #425 (#428)
