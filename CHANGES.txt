@@ -1,6 +1,6 @@
 Release 0.9.0-2
 ===============
-
+* [FIX] Amends sloppy PR #425 (#428)
 
 Release 0.9.0-1
 ===============
