@@ -1,4 +1,2 @@
 #!/bin/bash
-source /etc/fsl/fsl.sh
-source /etc/afni/afni.sh
-py.test --ignore=src/ -n 16 --junitxml=/scratch/tests.xml
+py.test --ignore=src/ -n ${CIRCLE_NCPUS:-4} --junitxml=/scratch/tests.xml
