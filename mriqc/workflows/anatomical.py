@@ -7,7 +7,35 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-""" A QC workflow for anatomical MRI """
+"""
+=======================
+The anatomical workflow
+=======================
+
+The anatomical workflow follows the following steps:
+
+#. Conform (reorientations, revise data types) input data and read
+   associated metadata.
+#. Skull-stripping (AFNI).
+#. Calculate head mask -- :py:func:`headmsk_wf`.
+#. Spatial Normalization to MNI (ANTs)
+#. Calculate air mask above the nasial-cerebelum plane -- :py:func:`airmsk_wf`.
+#. Brain tissue segmentation (FAST).
+#. Extraction of IQMs -- :py:func:`compute_iqms`.
+#. Individual-reports generation -- :py:func:`individual_reports`.
+
+This workflow is orchestrated by :py:func:`anat_qc_workflow`.
+
+For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``:
+
+.. workflow::
+
+    import os.path as op
+    from niworkflows.anat.skullstrip import afni_wf
+    wf = afni_wf()
+
+
+"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import zip, range
 import os.path as op
@@ -34,6 +62,16 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     """
     One-subject-one-session-one-run pipeline to extract the NR-IQMs from
     anatomical images
+
+    .. workflow::
+
+        import os.path as op
+        from mriqc.workflows.anatomical import anat_qc_workflow
+        datadir = op.abspath('data')
+        wf = anat_qc_workflow([op.join(datadir, 'sub-001/anat/sub-001_T1w.nii.gz')],
+                              settings={'bids_dir': datadir,
+                                        'output_dir': op.abspath('out')})
+
     """
 
     workflow = pe.Workflow(name=name+mod)
@@ -53,7 +91,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     to_ras = pe.Node(ConformImage(), name='conform')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf()
-    # 3. Head mask (including nasial-cerebelum mask)
+    # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
@@ -128,7 +166,15 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     return workflow
 
 def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
-    """Workflow that actually computes the IQMs"""
+    """
+    Workflow that actually computes the IQMs
+
+    .. workflow::
+
+        from mriqc.workflows.anatomical import compute_iqms
+        wf = compute_iqms(settings={'output_dir': 'out'})
+
+    """
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
@@ -195,7 +241,15 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
 
 def individual_reports(settings, name='ReportsWorkflow'):
-    """Encapsulates nodes writing plots"""
+    """
+    Encapsulates nodes writing plots
+
+    .. workflow::
+
+        from mriqc.workflows.anatomical import individual_reports
+        wf = individual_reports(settings={'output_dir': 'out'})
+
+    """
     from mriqc.interfaces import PlotMosaic
     from mriqc.reports import individual_html
 
@@ -292,7 +346,15 @@ def individual_reports(settings, name='ReportsWorkflow'):
     return workflow
 
 def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
-    """Computes a head mask as in [Mortamet2009]_."""
+    """
+    Computes a head mask as in [Mortamet2009]_.
+
+    .. workflow::
+
+        from mriqc.workflows.anatomical import headmsk_wf
+        wf = headmsk_wf()
+
+    """
 
     has_dipy = False
     try:
@@ -345,7 +407,15 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
 
 
 def airmsk_wf(name='AirMaskWorkflow'):
-    """Implements the Step 1 of [Mortamet2009]_."""
+    """
+    Implements the Step 1 of [Mortamet2009]_.
+
+    .. workflow::
+
+        from mriqc.workflows.anatomical import airmsk_wf
+        wf = airmsk_wf()
+
+    """
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(

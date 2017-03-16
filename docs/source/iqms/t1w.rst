@@ -1,6 +1,5 @@
 
-.. _t1w:
-
+.. _iqms_t1w:
 
 IQMs for structural images
 --------------------------

@@ -58,11 +58,11 @@ RUN curl -sL https://deb.nodesource.com/setup_7.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g svgo
 
-COPY . /root/src/mriqc/
+COPY . /opt/src/mriqc/
 
-RUN pip install -r /root/src/mriqc/requirements.txt
+RUN pip install -r /opt/src/mriqc/requirements.txt
 
-WORKDIR /root/src/mriqc
+WORKDIR /opt/src/mriqc
 
 RUN pip install -e .[all]
 

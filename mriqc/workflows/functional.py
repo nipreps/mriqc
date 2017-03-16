@@ -6,7 +6,28 @@
 # @Author: oesteban
 # @Date:   2016-01-05 16:15:08
 # @Email:  code@oscaresteban.es
-""" A QC workflow for fMRI data """
+"""
+=======================
+The functional workflow
+=======================
+
+The functional workflow follows the following steps:
+
+#. Conform (reorientations, revise data types) input data, read
+   associated metadata and discard non-steady state frames
+   (:py:func:`mriqc.utils.misc.reorient_and_discard_non_steady`).
+#. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
+   AFNI -- :py:func:`hmc_afni`.
+#. Skull-stripping of the time-series (AFNI) --
+   :py:func:`fmri_bmsk_workflow`.
+#. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
+#. Spatial Normalization to MNI (ANTs) -- :py:func:`epi_mni_align`
+#. Extraction of IQMs -- :py:func:`compute_iqms`.
+#. Individual-reports generation -- :py:func:`individual_reports`.
+
+This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
+
+"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os
 import os.path as op
@@ -20,16 +41,31 @@ from nipype.interfaces import fsl
 from nipype.interfaces import afni
 from niworkflows.interfaces.masks import ComputeEPIMask
 
+from mriqc import DEFAULTS
 from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces.segmentation import MELODICRPT
 
+
 DEFAULT_FD_RADIUS = 50.
 WFLOGGER = logging.getLogger('workflow')
 
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
-    """ The fMRI qc workflow """
+    """
+    The fMRI qc workflow
+
+    .. workflow::
+
+      import os.path as op
+      from mriqc.workflows.functional import fmri_qc_workflow
+      datadir = op.abspath('data')
+      wf = fmri_qc_workflow([op.join(datadir, 'sub-001/func/sub-001_task-rest_bold.nii.gz')],
+                            settings={'bids_dir': datadir,
+                                      'output_dir': op.abspath('out')})
+
+
+    """
 
     workflow = pe.Workflow(name=name)
 
@@ -53,7 +89,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                                               'out_file'],
                                                 function=reorient_and_discard_non_steady),
                                    name='reorient_and_discard')
-    reorient_and_discard.inputs.float32 = settings["float32"]
+
+    reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
     reorient_and_discard.interface.estimated_memory_gb = settings[
                                         "biggest_file_size_gb"]
 
@@ -61,10 +98,10 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     # 1. HMC: head motion correct
     if settings.get('hmc_fsl', False):
-        assert(not settings.get('hmc_afni', False))
+        assert not settings.get('hmc_afni', False)
         hmcwf = hmc_mcflirt(settings)
     else:
-        assert(settings.get('hmc_afni', True))
+        assert settings.get('hmc_afni', True)
         hmcwf = hmc_afni(settings,
                          st_correct=settings.get('correct_slice_timing', False),
                          despike=settings.get('despike', False),
@@ -80,11 +117,10 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
     mean.interface.estimated_memory_gb = settings[
                                         "biggest_file_size_gb"]
-    skullstrip_epi = pe.Node(ComputeEPIMask(dilation=1),
-                             name='skullstrip_epi')
+    skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
 
     # EPI to MNI registration
-    ema = epi_mni_align(ants_nthreads=settings['ants_nthreads'],
+    ema = epi_mni_align(ants_nthreads=settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
                         testing=settings.get('testing', False))
 
     # Compute TSNR using nipype implementation
@@ -113,11 +149,11 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (reorient_and_discard, melodic, [('out_file', 'in_files')]),
         (melodic, repwf, [('out_report', 'inputnode.ica_report')]),
-        (mean, skullstrip_epi, [('out_file', 'in_file')]),
+        (mean, skullstrip_epi, [('out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
-        (skullstrip_epi, ema, [('mask_file', 'inputnode.epi_mask')]),
+        (skullstrip_epi, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
         (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
                         ('session_id', 'inputnode.session_id'),
                         ('task_id', 'inputnode.task_id'),
@@ -129,12 +165,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
-        (skullstrip_epi, iqmswf, [('mask_file', 'inputnode.brainmask')]),
+        (skullstrip_epi, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
         (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
-        (skullstrip_epi, repwf, [('mask_file', 'inputnode.brainmask')]),
+        (skullstrip_epi, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (hmcwf, repwf, [('outputnode.out_fd', 'inputnode.hmc_fd'),
                         ('outputnode.out_file', 'inputnode.hmc_epi')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
@@ -146,7 +182,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 
-    if settings['fft_spikes_detector']:
+    if settings.get('fft_spikes_detector', False):
         workflow.connect([
             (iqmswf, repwf, [('outputnode.out_spikes', 'inputnode.in_spikes'),
                              ('outputnode.out_fft', 'inputnode.in_fft')]),
@@ -155,7 +191,16 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     return workflow
 
 def compute_iqms(settings, name='ComputeIQMs'):
-    """Workflow that actually computes the IQMs"""
+    """
+    Workflow that actually computes the IQMs
+
+    .. workflow::
+
+      from mriqc.workflows.functional import compute_iqms
+      wf = compute_iqms(settings={'output_dir': 'out'})
+
+
+    """
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
@@ -224,7 +269,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
 
-    if settings['fft_spikes_detector']:
+    if settings.get('fft_spikes_detector', False):
         # FFT spikes finder
         spikes_fft = pe.Node(niu.Function(
             input_names=['in_file'],
@@ -243,7 +288,15 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 
 def individual_reports(settings, name='ReportsWorkflow'):
-    """Encapsulates nodes writing plots"""
+    """
+    Encapsulates nodes writing plots
+
+    .. workflow::
+
+      from mriqc.workflows.functional import individual_reports
+      wf = individual_reports(settings={'output_dir': 'out'})
+
+    """
     from mriqc.interfaces import PlotMosaic, PlotSpikes
     from mriqc.reports import individual_html
 
@@ -295,7 +348,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mplots = pe.Node(niu.Merge(pages + extra_pages + int(settings['fft_spikes_detector'])),
+    mplots = pe.Node(niu.Merge(pages + extra_pages + int(settings.get('fft_spikes_detector', False))),
                      name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
@@ -326,7 +379,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
 
-    if settings['fft_spikes_detector']:
+    if settings.get('fft_spikes_detector', False):
         mosaic_spikes = pe.Node(PlotSpikes(
             out_file='plot_spikes.svg', cmap='viridis',
             title='High-Frequency spikes'),
@@ -374,10 +427,61 @@ def individual_reports(settings, name='ReportsWorkflow'):
     return workflow
 
 
+def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
+    """
+    Computes a brain mask for the input :abbr:`fMRI (functional MRI)`
+    dataset
+
+    .. workflow::
+
+      from mriqc.workflows.functional import fmri_bmsk_workflow
+      wf = fmri_bmsk_workflow()
+
+
+    """
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
+                        name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
+                         name='outputnode')
+
+    if not use_bet:
+        afni_msk = pe.Node(afni.Automask(
+            outputtype='NIFTI_GZ'), name='afni_msk')
+
+        # Connect brain mask extraction
+        workflow.connect([
+            (inputnode, afni_msk, [('in_file', 'in_file')]),
+            (afni_msk, outputnode, [('out_file', 'out_file')])
+        ])
+
+    else:
+        from nipype.interfaces.fsl import BET, ErodeImage
+        bet_msk = pe.Node(BET(mask=True, functional=True), name='bet_msk')
+        erode = pe.Node(ErodeImage(kernel_shape='box', kernel_size=1.0),
+                        name='erode')
+
+        # Connect brain mask extraction
+        workflow.connect([
+            (inputnode, bet_msk, [('in_file', 'in_file')]),
+            (bet_msk, erode, [('mask_file', 'in_file')]),
+            (erode, outputnode, [('out_file', 'out_file')])
+        ])
+
+    return workflow
+
+
 def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     """
     An :abbr:`HMC (head motion correction)` for functional scans
     using FSL MCFLIRT
+
+    .. workflow::
+
+      from mriqc.workflows.functional import hmc_mcflirt
+      wf = hmc_mcflirt()
+
     """
 
     workflow = pe.Workflow(name=name)
@@ -409,7 +513,16 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
 
 def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
              deoblique=False, start_idx=None, stop_idx=None):
-    """A head motion correction (HMC) workflow for functional scans"""
+    """
+    A :abbr:`HMC (head motion correction)` workflow for
+    functional scans
+
+    .. workflow::
+
+      from mriqc.workflows.functional import hmc_afni
+      wf = hmc_afni()
+
+    """
 
     workflow = pe.Workflow(name=name)
 
@@ -566,6 +679,11 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     Returns the EPI mean resampled in MNI space (for checking out registration) and
     the associated "lobe" parcellation in EPI space.
 
+    .. workflow::
+
+      from mriqc.workflows.functional import epi_mni_align
+      wf = epi_mni_align()
+
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
@@ -616,6 +734,11 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
 
 
 def spikes_mask(in_file, in_mask=None, out_file=None):
+    """
+    Utility function to calculate a mask in which check
+    for :abbr:`EM (electromagnetic)` spikes.
+    """
+
     import os.path as op
     import nibabel as nb
     import numpy as np

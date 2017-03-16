@@ -60,6 +60,7 @@ def main():
                                 'data/reports/*.rst',
                                 'data/reports/*.html',
                                 'data/reports/resources/*',
+                                'data/reports/embed_resources/*',
                                 'data/tests/*',
                                 'data/mni/*.nii.gz']},
         zip_safe=False,

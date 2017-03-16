@@ -26,6 +26,7 @@ def main():
     """Entry point"""
     from nipype import config as ncfg
     from nipype.pipeline.engine import Workflow
+    from mriqc import DEFAULTS
     from mriqc.utils.bids import collect_bids_data
     from mriqc.workflows.core import build_workflow
     # from mriqc.reports.utils import check_reports
@@ -82,10 +83,10 @@ def main():
                         help='Use ANFI 3dvolreg for head motion correction (HMC)')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
                         help='Use FSL MCFLIRT for head motion correction (HMC)')
-    g_input.add_argument('-f', '--float32', action='store_true', default=False,
-                         help="Cast the input data to float32 if it's "
-                              "represented in higher precision (saves space and "
-                              "improves perfomance)")
+    g_input.add_argument(
+        '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
+        help="Cast the input data to float32 if it's represented in higher precision "
+             "(saves space and improves perfomance)")
     g_input.add_argument('--fft-spikes-detector', action='store_true', default=False,
                          help='Turn on FFT based spike detector (slow).')
 
@@ -96,8 +97,9 @@ def main():
 
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
-    g_ants.add_argument('--ants-nthreads', action='store', type=int, default=6,
-                        help='number of threads that will be set in ANTs processes')
+    g_ants.add_argument(
+        '--ants-nthreads', action='store', type=int, default=DEFAULTS['ants_nthreads'],
+        help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
 

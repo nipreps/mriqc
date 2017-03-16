@@ -1,4 +1,5 @@
 
+.. _measures:
 
 ============================
 Image Quality Metrics (IQMs)

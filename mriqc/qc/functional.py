@@ -8,35 +8,45 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-07 19:07:49
+# @Last Modified time: 2017-03-09 17:36:58
 """
 
 Measures for the structural information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- :py:func:`~mriqc.qc.anatomical.efc`
-- :py:func:`~mriqc.qc.anatomical.fber`
-- **fwhm** - Full-width half maximum smoothness of the voxels averaged
-- :py:func:`~mriqc.qc.anatomical.snr`
-- **summary\_{mean, stdv, p05, p95}\_\*** - Mean, standard deviation, 5% percentile and 95% percentile of the distribution of background and foreground.
+Definitions are given in the
+:ref:`summary of structural IQMs <iqms_t1w>`.
+
+- **Entropy-focus criterion** (:py:func:`~mriqc.qc.anatomical.efc`).
+- **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
+- **Full-width half maximum smoothness** (``fwhm_*``).
+- **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
+- **Summary statistics** (``summary_*_*``).
 
 
 Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **dvars** - Spatial standard deviation of the voxelwise temporal
-  derivatives (calculated after motion correction)
-- :py:func:`~mriqc.qc.functional.gsr` (**ghost\_x**): Ghost to Signal Ratio
-  across the three coordinate axes, and also for each axis [x,y,x]
-- :py:func:`~mriqc.qc.functional.gcor`: **gcor** - Global Correlation
+- **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
+  RMS variance over voxels (``dvars``), calculated
+  `with nipype <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
+nipype.algorithms.confounds.html#computedvars>`_ before motion correction.
+- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, ``ghost_*``:
+  along the two possible phase-encoding axes **x**, **y**.
+- **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``).
+- **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is the median value
+  of the `tSNR map <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
+nipype.algorithms.confounds.html#tsnr>`_.
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- **mean\_fd** - Mean Framewise Displacement (as in Power et al. 2012)
-- **num\_fd** - Number of volumes with :abbr:`FD (frame displacement)` greater than 0.2mm
-- **perc\_fd** - Percent of volumes with :abbr:`FD (frame displacement)` greater than 0.2mm
-- **outlier** - Mean fraction of outliers per fMRI volume
-- **quality** - Median Distance Index
+- **Framewise Displacement** (``mean_fd``, [Power2012]_).
+- **Number of timepoints above FD theshold** (``num_fd``): the threshold is defined
+  at 0.20mm, so :abbr:`FD (frame displacement)` :math:`> 0.20mm`
+- **Percent of ``num_fd`` w.r.t. the timeseries**.
+- **Outlier fraction** (``outlier``) - Mean fraction of outliers per fMRI volume
+  as given by AFNI.
+- **Quality index** (``quality``) - Mean quality index as computed by AFNI.
 
 .. topic:: References
 
@@ -73,6 +83,7 @@ Measures for artifacts and other
      in Resting-State FMRI*, Brain Conn 3(4):339-352,
      2013, doi:`10.1089/brain.2013.0156
      <http://dx.doi.org/10.1089/brain.2013.0156>`_.
+
 
 mriqc.qc.functional module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

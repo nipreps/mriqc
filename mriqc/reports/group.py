@@ -18,6 +18,8 @@ from builtins import zip, object, str  # pylint: disable=W0622
 from mriqc import logging
 from mriqc.utils.misc import BIDS_COMP
 
+from io import open
+
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 MRIQC_REPORT_LOG.setLevel(logging.INFO)
 
@@ -129,21 +131,26 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
 
     csv_groups = []
+    datacols = dataframe.columns.ravel().tolist()
     for group, units in QCGROUPS[mod]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
-        for iqm in group:
-            if iqm in dataframe.columns.ravel().tolist():
-                values = dataframe[[iqm]].values.ravel().tolist()
-                dfdict['iqm'] += [iqm] * nPart
-                dfdict['units'] += [units] * nPart
-                dfdict['value'] += values
-                dfdict['label'] += dataframe[['label']].values.ravel().tolist()
 
-        csv_df = pd.DataFrame(dfdict)
-        csv_str = TextIO()
-        csv_df[['iqm', 'value', 'label', 'units']].to_csv(csv_str, index=False)
-        csv_groups.append(csv_str.getvalue())
+        for iqm in group:
+            if iqm in datacols:
+                values = dataframe[[iqm]].values.ravel().tolist()
+                if values:
+                    dfdict['iqm'] += [iqm] * nPart
+                    dfdict['units'] += [units] * nPart
+                    dfdict['value'] += values
+                    dfdict['label'] += dataframe[['label']].values.ravel().tolist()
+
+        # Save only if there are values
+        if dfdict['value']:
+            csv_df = pd.DataFrame(dfdict)
+            csv_str = TextIO()
+            csv_df[['iqm', 'value', 'label', 'units']].to_csv(csv_str, index=False)
+            csv_groups.append(csv_str.getvalue())
 
     if out_file is None:
         out_file = op.abspath('group.html')

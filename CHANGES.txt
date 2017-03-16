@@ -1,6 +1,19 @@
-Release 1.0.0
-=============
+Release 0.9.0-2
+===============
 
+* [ENH] Revise Docker paths (#429)
+* [FIX] Greedy participant selection (#426)
+* [FIX] Pin pybids to new version 0.1.0 (#427)
+* [FIX] Amends sloppy PR #425 (#428)
+
+Release 0.9.0-1
+===============
+
+* [FIX] BOLD reports clipped IQMs after spikes_num (#425)
+* [FIX] Unicode error writing group reports (#424)
+* [FIX] Respect Nifi header in fMRI conform node (#415)
+* [DOC] Deep revision of documentation (#411, #416)
+* [ENH] Added sphinx extension to plot workflow graphs (#411)
 * [FIX] Removed repeated bias correction on anatomical workflows (#410)
 * [FIX] Race condition in bold workflow when using shared workdir (#409)
 * [FIX] Tests (#408, #407, #405)
@@ -13,15 +26,10 @@ Release 1.0.0
 * [ENH] Re-enable 3dvolreg (#390)
 * [ENH] Add T1w classifier (#389)
 
-Release 0.9.0-1
+Release 0.9.0-0
 ===============
 
 * [FIX] Remove non-repeatable step from pipeline (#369)
-
-
-Release 0.9.0
-=============
-
 * [ENH] Improve group level command line, with more informative output when no IQMs are found for a modality (#372)
 * [ENH] Make group reports self-contained (#333)
 * [FIX] New mosaics, based on old ones (#361, #360, #334)
