@@ -63,29 +63,41 @@ report</h1>
             }
 
         });
+        if (data.length > 0) {
+            chart1 = makeDistroChart({
+                data: data,
+                xName: 'iqm',
+                yName: 'value',
+                selector: "#chart-group" + group,
+                chartSize: {height: 300, width: 100 + 60 * nIQMs},
+                constrainExtremes: false,
+                modality: '{{ modality }}'
+            });
+            chart1.renderDataPlots();
+            chart1.dataPlots.change({
+                showPlot: true,
+                plotType: 20,
+                padding: 20,
+                showBeanLines: false
+            });
+            chart1.renderBoxPlot();
+            chart1.boxPlots.show({
+                showWhiskers: true,
+                showOutliers: false,
+                boxWidth: 15,
+                lineWidth: 15,
+                padding: -10,
+                colors: ['#555']
+            });
 
-        chart1 = makeDistroChart({
-            data:data,
-            xName:'iqm',
-            yName:'value',
-            selector:"#chart-group" + group,
-            chartSize:{height:300, width:100 + 60 * nIQMs},
-            constrainExtremes:false,
-            modality: '{{ modality }}'
-        });
-        chart1.renderDataPlots();
-        chart1.dataPlots.change({showPlot:true, plotType:20, padding: 20, showBeanLines:false});
-        chart1.renderBoxPlot();
-        chart1.boxPlots.show({showWhiskers:true,showOutliers:false,boxWidth:15,lineWidth:15,
-            padding: -10, colors:['#555']});
+            // chart1.renderNotchBoxes({showNotchBox:false});
+            // chart1.renderViolinPlot({showViolinPlot:false});
+            // chart1.violinPlots.show({reset:true,clamp:0});
+            // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})
 
-        // chart1.renderNotchBoxes({showNotchBox:false});
-        // chart1.renderViolinPlot({showViolinPlot:false});
-        // chart1.violinPlots.show({reset:true,clamp:0});
-        // chart1.dataPlots.show({showPlot:false,showBeanLines:true, colors:['#555']})
-
-        //chart1.notchBoxes.hide();
-        //chart1.boxPlots.hide();
+            //chart1.notchBoxes.hide();
+            //chart1.boxPlots.hide();
+        }
     }
 
     {% for data_csv in csv_groups %}
