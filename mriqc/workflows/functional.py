@@ -132,8 +132,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     melodic = pe.Node(MELODICRPT(no_bet=True,
                                  no_mask=True,
                                  no_mm=True,
-                                 #dim_est='mdl',
-                                 #var_norm=True, # http://mialab.mrn.org/software/gift/publications/2010_OHBM_Elena_ICAPrenormalization_submitted.pdf
                                  generate_report=True), name="ICA")
     melodic.interface.estimated_memory_gb = settings[
                                         "biggest_file_size_gb"] * 5
@@ -148,6 +146,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (reorient_and_discard, melodic, [('out_file', 'in_files')]),
+        (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
         (melodic, repwf, [('out_report', 'inputnode.ica_report')]),
         (mean, skullstrip_epi, [('out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
