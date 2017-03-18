@@ -27,7 +27,7 @@ test:
     # Test mriqcp
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /opt/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:py35 :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --n_procs 1:
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --ica:
         timeout: 3200
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -m bold
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:py35 /data/${TEST_DATA_NAME} out/ group -m T1w

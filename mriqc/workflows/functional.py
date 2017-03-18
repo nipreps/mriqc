@@ -128,14 +128,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     tsnr.interface.estimated_memory_gb = settings[
                                         "biggest_file_size_gb"] * 2
 
-    # Estimate ICA components
-    melodic = pe.Node(MELODICRPT(no_bet=True,
-                                 no_mask=True,
-                                 no_mm=True,
-                                 generate_report=True), name="ICA")
-    melodic.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 5
-
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
     # Reports
@@ -145,9 +137,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
-        (reorient_and_discard, melodic, [('out_file', 'in_files')]),
-        (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
-        (melodic, repwf, [('out_report', 'inputnode.ica_report')]),
         (mean, skullstrip_epi, [('out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
@@ -185,6 +174,19 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         workflow.connect([
             (iqmswf, repwf, [('outputnode.out_spikes', 'inputnode.in_spikes'),
                              ('outputnode.out_fft', 'inputnode.in_fft')]),
+        ])
+
+    if settings.get('ica', False):
+        melodic = pe.Node(MELODICRPT(no_bet=True,
+                                     no_mask=True,
+                                     no_mm=True,
+                                     generate_report=True), name="ICA")
+        melodic.interface.estimated_memory_gb = settings[
+                                                    "biggest_file_size_gb"] * 5
+        workflow.connect([
+            (reorient_and_discard, melodic, [('out_file', 'in_files')]),
+            (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
+            (melodic, repwf, [('out_report', 'inputnode.ica_report')])
         ])
 
     return workflow
@@ -347,7 +349,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mplots = pe.Node(niu.Merge(pages + extra_pages + int(settings.get('fft_spikes_detector', False))),
+    mplots = pe.Node(niu.Merge(pages + extra_pages
+                               + int(settings.get('fft_spikes_detector', False))
+                               + int(settings.get('ica', False))),
                      name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
@@ -373,7 +377,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (mosaic_mean, mplots, [('out_file', 'in1')]),
         (mosaic_stddev, mplots, [('out_file', 'in2')]),
         (bigplot, mplots, [('out_file', 'in3')]),
-        (inputnode, mplots, [('ica_report', 'in4')]),
         (mplots, rnode, [('out', 'in_plots')]),
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
@@ -389,6 +392,14 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                         ('in_spikes', 'in_spikes'),
                                         ('in_fft', 'in_fft')]),
             (mosaic_spikes, mplots, [('out_file', 'in4')])
+        ])
+
+    if settings.get('ica', False):
+        page_number = 4
+        if settings.get('fft_spikes_detector', False):
+            page_number += 1
+        workflow.connect([
+            (inputnode, mplots, [('ica_report', 'in%d'%page_number)])
         ])
 
     if not verbose:

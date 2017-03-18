@@ -76,6 +76,9 @@ def main():
                          help='Do not run the workflow.')
     g_input.add_argument('--use-plugin', action='store', default=None,
                          help='nipype plugin configuration file')
+    g_input.add_argument('--ica', action='store_true', default=False,
+                         help='Run ICA on the raw data and include the components'
+                              'in the individual reports (slow but potentially very insightful)')
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
@@ -146,7 +149,8 @@ def main():
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
-        'float32': opts.float32
+        'float32': opts.float32,
+        'ica': opts.ica
     }
 
     if opts.hmc_afni:
