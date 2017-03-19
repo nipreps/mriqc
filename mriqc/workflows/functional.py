@@ -39,7 +39,6 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
-from niworkflows.interfaces.masks import ComputeEPIMask
 
 from mriqc import DEFAULTS
 from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
