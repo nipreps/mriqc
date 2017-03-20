@@ -682,8 +682,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
         (n4itk, epimask, [('output_image', 'in_file')]),
         (epimask, norm, [('out_file', 'moving_image')]),
         (norm, invt, [
-            ('reverse_transforms', 'transforms'),
-            ('reverse_invert_flags', 'invert_transform_flags')]),
+            ('inverse_composite_transform', 'transforms')]),
         (invt, outputnode, [('output_image', 'epi_parc')]),
         (norm, outputnode, [('warped_image', 'epi_mni'),
                             ('out_report', 'report')]),
