@@ -193,7 +193,7 @@ class IQMFileSink(MRIQCBaseInterface):
         if self.inputs.save_extra:
             from mriqc import __version__ as version
             id_dict['version'] = version
-            in_dict['software'] = 'mriqc'
+            id_dict['software'] = 'mriqc'
 
 
         if self._out_dict.get('metadata', None) is None:
