@@ -1,6 +1,7 @@
 Release x.x.x
 =============
 
+* [ENH] Add mriqc version and input image hash to IQMs json file (#432)
 * [FIX] Affine and warp transforms are now applied in the correct order
 
 Release 0.9.0-2
