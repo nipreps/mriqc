@@ -14,7 +14,8 @@ from io import open
 from builtins import bytes, str
 from nipype import logging
 from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
-                                    BaseInterfaceInputSpec, File, Undefined)
+                                    BaseInterfaceInputSpec, File, Undefined, Str)
+from nipype.utils.filemanip import hash_infile
 from mriqc.interfaces.base import MRIQCBaseInterface
 from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
 
@@ -22,15 +23,16 @@ IFLOGGER = logging.getLogger('interface')
 
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='the input nifti file')
-    fields = traits.List(traits.Str, desc='get only certain fields')
+    fields = traits.List(Str, desc='get only certain fields')
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
-    subject_id = traits.Str()
-    session_id = traits.Str()
-    task_id = traits.Str()
-    acq_id = traits.Str()
-    rec_id = traits.Str()
-    run_id = traits.Str()
+    subject_id = Str()
+    session_id = Str()
+    task_id = Str()
+    acq_id = Str()
+    rec_id = Str()
+    run_id = Str()
+    md5sum = Str()
     out_dict = traits.Dict()
 
 class ReadSidecarJSON(MRIQCBaseInterface):
@@ -46,6 +48,7 @@ class ReadSidecarJSON(MRIQCBaseInterface):
         output_keys = [key for key in list(self.output_spec().get().keys()) if key.endswith('_id')]
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
+        metadata['md5sum'] = hash_infile(self.inputs.in_file)
         for key in output_keys:
             id_value = outputs.get(key)
             if id_value is not None:
@@ -61,13 +64,15 @@ class ReadSidecarJSON(MRIQCBaseInterface):
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
-    subject_id = traits.Str(mandatory=True, desc='the subject id')
-    modality = traits.Str(mandatory=True, desc='the qc type')
-    session_id = traits.Either(None, traits.Str, usedefault=True)
-    task_id = traits.Either(None, traits.Str, usedefault=True)
-    acq_id = traits.Either(None, traits.Str, usedefault=True)
-    rec_id = traits.Either(None, traits.Str, usedefault=True)
-    run_id = traits.Either(None, traits.Str, usedefault=True)
+    subject_id = Str(mandatory=True, desc='the subject id')
+    modality = Str(mandatory=True, desc='the qc type')
+    session_id = traits.Either(None, Str, usedefault=True)
+    task_id = traits.Either(None, Str, usedefault=True)
+    acq_id = traits.Either(None, Str, usedefault=True)
+    rec_id = traits.Either(None, Str, usedefault=True)
+    run_id = traits.Either(None, Str, usedefault=True)
+    md5sum = Str()
+    save_extra = traits.Bool(True, usedefault=True, desc='save extra metadata')
 
     root = traits.Dict(desc='output root dictionary')
     out_dir = File(desc='the output directory')
@@ -184,6 +189,12 @@ class IQMFileSink(MRIQCBaseInterface):
             id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
 
         id_dict['modality'] = self.inputs.modality
+
+        if self.inputs.save_extra:
+            from mriqc import __version__ as version
+            id_dict['version'] = version
+            in_dict['software'] = 'mriqc'
+
 
         if self._out_dict.get('metadata', None) is None:
             self._out_dict['metadata'] = {}
