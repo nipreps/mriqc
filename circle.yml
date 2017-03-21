@@ -20,18 +20,18 @@ dependencies:
   override:
     - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py
-    - for i in $(seq 1 5); do docker build -f docker/Dockerfile_py35 -t mriqc:latest . && break || sleep 15; done
-    - docker save mriqc:latest > ~/docker/image.tar
+    - e=1 && for i in {1..5}; do docker build --rm=false -f docker/Dockerfile_py35 -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION=$CIRCLE_TAG . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
+    - docker save poldracklab/mriqc:latest > ~/docker/image.tar
 
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /opt/src/mriqc --entrypoint="/usr/bin/run_tests" mriqc:latest :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /opt/src/mriqc --entrypoint="/usr/bin/run_tests" poldracklab/mriqc:latest :
         timeout: 2600
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports :
         timeout: 3200
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w
     - cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt
 general:
   artifacts:

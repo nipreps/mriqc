@@ -63,3 +63,15 @@ RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09
 WORKDIR /scratch
 ENTRYPOINT ["/usr/bin/run_mriqc"]
 CMD ["--help"]
+
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="MRIQC" \
+      org.label-schema.description="MRIQC  - NR-IQMs (no-reference Image Quality Metrics) for MRI" \
+      org.label-schema.url="http://mriqc.readthedocs.io" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
