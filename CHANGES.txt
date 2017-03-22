@@ -1,3 +1,8 @@
+Release x.x.x
+=============
+
+* [ENH] Optional ICA reports for identifying spatiotemporal artifacts (#412)
+
 Release 0.9.1
 =============
 
