@@ -12,8 +12,6 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import logging
 from .info import (
-    __versionbase__,
-    __versionrev__,
     __version__,
     __author__,
     __email__,
