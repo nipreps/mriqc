@@ -1,3 +1,7 @@
+Release x.x.x
+=============
+
+* [ENH] Crashfiles are saved in plain text to improve portability ()
 Release 0.9.1
 =============
 
