@@ -22,6 +22,8 @@ out/derivatives/sub-ds205s09_task-view_acq-LR_run-01_bold.json
 out/derivatives/sub-ds205s09_task-view_acq-LR_run-02_bold.json
 out/derivatives/sub-ds205s09_task-view_acq-RL_run-01_bold.json
 out/logs
+out/logs/run_stats.log
+out/logs/run_stats.log.html
 out/reports
 out/reports/bold_group.html
 out/reports/sub-ds003s01_T1w.html

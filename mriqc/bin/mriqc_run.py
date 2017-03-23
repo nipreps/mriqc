@@ -79,6 +79,8 @@ def main():
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
+    g_input.add_argument('--profile', action='store_true', default=False,
+                         help='hook up the resource profiler callback to nipype')
     g_input.add_argument('--hmc-afni', action='store_true', default=True,
                         help='Use ANFI 3dvolreg for head motion correction (HMC)')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
@@ -207,6 +209,7 @@ def main():
         'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
     })
 
+    callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
         from yaml import load as loadyml
@@ -223,6 +226,8 @@ def main():
         if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
+            if total_memory > 0:
+                plugin_settings['plugin_args']['memory_gb'] = total_memory
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
@@ -251,7 +256,20 @@ def main():
             workflow.add_nodes(wf_list)
 
             if not opts.dry_run:
+                if opts.profile:
+                    import logging
+                    from nipype.pipeline.plugins.callback_log import log_nodes_cb
+                    plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
+                    callback_log_path = op.join(log_dir, 'run_stats.log')
+                    logger = logging.getLogger('callback')
+                    logger.setLevel(logging.DEBUG)
+                    handler = logging.FileHandler(callback_log_path)
+                    logger.addHandler(handler)
+
                 workflow.run(**plugin_settings)
+                if callback_log_path is not None:
+                    from nipype.utils.draw_gantt_chart import generate_gantt_chart
+                    generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
