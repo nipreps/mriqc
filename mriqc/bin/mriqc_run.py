@@ -269,7 +269,7 @@ def main():
                 workflow.run(**plugin_settings)
                 if callback_log_path is not None:
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
-                    generate_gantt_chart(callback_log_path, cores=8)
+                    generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
