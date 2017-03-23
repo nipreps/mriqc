@@ -2,6 +2,8 @@ Release x.x.x
 =============
 
 * [ENH] Optional ICA reports for identifying spatiotemporal artifacts (#412)
+* [ENH] Crashfiles are saved in plain text to improve portability (#434)
+
 
 Release 0.9.1
 =============

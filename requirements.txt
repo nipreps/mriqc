@@ -1,3 +1,3 @@
 numpy>=1.12.0
--e git+https://github.com/nipy/nipype.git@a81d993a99425b2411fc412ee17896d0aa8abd02#egg=nipype
+-e git+https://github.com/nipy/nipype.git@c6d24b87d0972f011af08245397073bc1282828d#egg=nipype
 -e git+https://github.com/poldracklab/niworkflows.git@f1778e7502a65f3dec4d4323a49170cac01feb7b#egg=niworkflows

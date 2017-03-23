@@ -188,7 +188,7 @@ def main():
     # Set nipype config
     ncfg.update_config({
         'logging': {'log_directory': log_dir, 'log_to_file': True},
-        'execution': {'crashdump_dir': log_dir}
+        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
     })
 
     plugin_settings = {'plugin': 'Linear'}
