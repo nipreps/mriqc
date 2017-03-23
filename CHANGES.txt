@@ -1,7 +1,10 @@
 Release x.x.x
 =============
 
+* [ENH] Add --profile flag (#435)
 * [ENH] Crashfiles are saved in plain text to improve portability (#434)
+
+
 Release 0.9.1
 =============
 
