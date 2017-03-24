@@ -16,6 +16,14 @@ Preliminaries
    safely use the BIDS-validator since no data is uploaded to the server,
    works locally in your browser.
 
+.. warning ::
+
+    `2GB is the default memory setting
+    <https://docs.docker.com/docker-for-mac/>`_
+    on a fresh installation of Docker for Mac.
+    We recommend increasing the available memory for Docker containers
+    (`see this issue <https://github.com/poldracklab/mriqc/issues/388#issuecomment-281208441>`_).
+
 
 
 .. _docker_run_mriqc:
