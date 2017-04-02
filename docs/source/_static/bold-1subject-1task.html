@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+    <head>
+        <style>
+            #content{
+                width:99%;
+                height:100%;
+                position:absolute;
+            }
+
+            .node{
+                background-color:#7070FF;
+                border-radius: 5px;
+                position:absolute;
+                width:20px;
+                white-space:pre-wrap;
+            }
+
+            .line{
+                position: absolute;
+                color: #C2C2C2;
+                opacity: 0.5;
+                margin: 0px;
+            }
+
+            .time{
+                position: absolute;
+                font-size: 16px;
+                color: #666666;
+                margin: 0px;
+            }
+
+            .bar{
+                position: absolute;
+                height: 1px;
+                opacity: 0.7;
+            }
+
+            .dot{
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                background-color: red;
+            }
+            .label {
+                width:20px;
+                height:20px;
+                opacity: 0.7;
+                display: inline-block;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="content">
+            <div style="display:inline-block;">
+    <p>Start: 2017-03-24 07:49:23</p><p>Finish: 2017-03-24 08:31:04</p><p>Duration: 41.68 minutes</p><p>Nodes: 33</p><p>Cores: 10</p>
+    </div>
+    <div style="display:inline-block;margin-left:60px;vertical-align: top;">
+        <p><span><div class="label" style="background-color:#90BBD7;"></div> Estimated Resource</span></p>
+        <p><span><div class="label" style="background-color:#03969D;"></div> Actual Resource</span></p>
+        <p><span><div class="label" style="background-color:#f00;"></div> Failed Node</span></p>
+    </div>
+    <hr class='line' width='98%' style='top:220px;'><p class='time' style='top:200px;'> 07:49 </p><hr class='line' width='98%' style='top:720px;'><p class='time' style='top:700px;'> 07:59 </p><hr class='line' width='98%' style='top:1220px;'><p class='time' style='top:1200px;'> 08:09 </p><hr class='line' width='98%' style='top:1720px;'><p class='time' style='top:1700px;'> 08:19 </p><hr class='line' width='98%' style='top:2220px;'><p class='time' style='top:2200px;'> 08:29 </p><hr class='line' width='98%' style='top:2720px;'><p class='time' style='top:2700px;'> 08:39 </p><div class='node' style='left:60px;top:220.0px;height:3px;background-color:#7070FF;'title='metadata
+duration:0.0173234833333
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:24'></div><div class='node' style='left:90px;top:219.975085px;height:21.2529608333px;background-color:#2D2D66;'title='reorient_and_discard
+duration:0.465059216667
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:51'></div><div class='node' style='left:60px;top:243.3248375px;height:3px;background-color:#4E4EB2;'title='get_mean_RPI
+duration:0.0936077
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:57'></div><div class='node' style='left:90px;top:243.282929167px;height:4.57046083333px;background-color:#7070FF;'title='SpikesMask
+duration:0.131409216667
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:59'></div><div class='node' style='left:60px;top:249.866673333px;height:3.1278375px;background-color:#7070FF;'title='SpikesFinderBgMask
+duration:0.10255675
+start:2017-03-24 07:49:59
+end:2017-03-24 07:50:05'></div><div class='node' style='left:120px;top:243.241736667px;height:117.068253333px;background-color:#4E4EB2;'title='SpikesFinderFFT
+duration:2.38136506667
+start:2017-03-24 07:49:51
+end:2017-03-24 07:52:14'></div><div class='node' style='left:60px;top:362.325140833px;height:3px;background-color:#4E4EB2;'title='PlotSpikes
+duration:0.00857918333333
+start:2017-03-24 07:52:14
+end:2017-03-24 07:52:15'></div><div class='node' style='left:150px;top:248.020089167px;height:914.694009167px;background-color:#9B9BFF;'title='motion_correct
+duration:18.3338801833
+start:2017-03-24 07:49:57
+end:2017-03-24 08:08:17'></div><div class='node' style='left:60px;top:1164.72765083px;height:3px;background-color:#4E4EB2;'title='get_mean_motion
+duration:0.0810094333333
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:22'></div><div class='node' style='left:60px;top:1168.79144833px;height:912.559840833px;background-color:#4E4EB2;'title='motion_correct_A
+duration:18.2911968167
+start:2017-03-24 08:08:22
+end:2017-03-24 08:26:39'></div><div class='node' style='left:60px;top:2083.5031px;height:3px;background-color:#4E4EB2;'title='ComputeFD
+duration:0.00843621666667
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:40'></div><div class='node' style='left:90px;top:2083.45727917px;height:3px;background-color:#9B9BFF;'title='mean
+duration:0.0805924833333
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:44'></div><div class='node' style='left:60px;top:2083.55432583px;height:3px;background-color:#2D2D66;'title='compute_tsnr
+duration:0.0925172333333
+start:2017-03-24 08:26:40
+end:2017-03-24 08:26:45'></div><div class='node' style='left:120px;top:2083.40936417px;height:5.16629166667px;background-color:#9B9BFF;'title='quality
+duration:0.143325833333
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:48'></div><div class='node' style='left:150px;top:2083.36575417px;height:7.55766583333px;background-color:#7070FF;'title='afni_msk
+duration:0.191153316667
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:51'></div><div class='node' style='left:90px;top:2087.55112917px;height:4.216835px;background-color:#4E4EB2;'title='SharpenEPI
+duration:0.1243367
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:52'></div><div class='node' style='left:60px;top:2093.0997625px;height:3px;background-color:#4E4EB2;'title='smoothness
+duration:0.01837085
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:52'></div><div class='node' style='left:60px;top:2093.78202917px;height:3px;background-color:#4E4EB2;'title='EPIApplyMask
+duration:0.01403945
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:53'></div><div class='node' style='left:120px;top:2093.17823917px;height:3px;background-color:#9B9BFF;'title='outliers
+duration:0.0917270333333
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:57'></div><div class='node' style='left:150px;top:2092.93884167px;height:4.41815333333px;background-color:#9B9BFF;'title='PlotBrainmask
+duration:0.128363066667
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:59'></div><div class='node' style='left:180px;top:2093.25659667px;height:47.4074008333px;background-color:#2D2D66;'title='ComputeDVARS
+duration:0.988148016667
+start:2017-03-24 08:26:51
+end:2017-03-24 08:27:50'></div><div class='node' style='left:60px;top:2142.6778975px;height:5.69220416667px;background-color:#4E4EB2;'title='measures
+duration:0.153844083333
+start:2017-03-24 08:27:51
+end:2017-03-24 08:28:00'></div><div class='node' style='left:60px;top:2150.38397917px;height:3px;background-color:#9B9BFF;'title='datasink
+duration:0.0152354666667
+start:2017-03-24 08:28:00
+end:2017-03-24 08:28:01'></div><div class='node' style='left:210px;top:2093.0195875px;height:64.497115px;background-color:#2D2D66;'title='PlotMosaicZoomed
+duration:1.3299423
+start:2017-03-24 08:26:51
+end:2017-03-24 08:28:11'></div><div class='node' style='left:240px;top:2087.50158083px;height:74.5807691667px;background-color:#2D2D66;'title='PlotMosaicMean
+duration:1.53161538333
+start:2017-03-24 08:26:44
+end:2017-03-24 08:28:16'></div><div class='node' style='left:270px;top:2087.59555917px;height:77.0407516667px;background-color:#2D2D66;'title='PlotMosaicNoise
+duration:1.58081503333
+start:2017-03-24 08:26:44
+end:2017-03-24 08:28:19'></div><div class='node' style='left:300px;top:2088.19381583px;height:76.5711216667px;background-color:#2D2D66;'title='PlotMosaicSD
+duration:1.57142243333
+start:2017-03-24 08:26:45
+end:2017-03-24 08:28:19'></div><div class='node' style='left:90px;top:2094.49783167px;height:190.87407px;background-color:#2D2D66;'title='EPI2MNI
+duration:3.8574814
+start:2017-03-24 08:26:53
+end:2017-03-24 08:30:44'></div><div class='node' style='left:60px;top:2287.38539667px;height:3px;background-color:#2D2D66;'title='ResampleSegmentation
+duration:0.0425273666667
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:47'></div><div class='node' style='left:60px;top:2289.526535px;height:11.0708483333px;background-color:#4E4EB2;'title='BigPlot
+duration:0.261416966667
+start:2017-03-24 08:30:47
+end:2017-03-24 08:31:02'></div><div class='node' style='left:60px;top:2302.61099333px;height:3px;background-color:#7070FF;'title='MergePlots
+duration:0.0109002
+start:2017-03-24 08:31:02
+end:2017-03-24 08:31:03'></div><div class='node' style='left:60px;top:2303.16935083px;height:3px;background-color:#4E4EB2;'title='GenerateReport
+duration:0.0138323666667
+start:2017-03-24 08:31:03
+end:2017-03-24 08:31:04'></div><div class='node' style='left:60px;top:2303.87598083px;height:3px;background-color:#2D2D66;'title='dsplots
+duration:0.00665875
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><p class='time' style='top:198px;left:960px;'>Memory</p><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:219.975px;'title='1.000 GB
+duration:0.000
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:23'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:220.000px;'title='2.000 GB
+duration:0.017
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:24'></div><div class='bar' style='background-color:#90BBD7;height:20.362px;width:20.000px;left:960px; top:220.866px;'title='1.000 GB
+duration:0.447
+start:2017-03-24 07:49:24
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:243.228px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:243.242px;'title='1.000 GB
+duration:0.001
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:243.283px;'title='2.000 GB
+duration:0.001
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:960px; top:243.325px;'title='3.000 GB
+duration:0.094
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:248.005px;'title='2.000 GB
+duration:0.000
+start:2017-03-24 07:49:57
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:960px; top:248.020px;'title='3.000 GB
+duration:0.037
+start:2017-03-24 07:49:57
+end:2017-03-24 07:49:59'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:249.853px;'title='2.000 GB
+duration:0.000
+start:2017-03-24 07:49:59
+end:2017-03-24 07:49:59'></div><div class='bar' style='background-color:#90BBD7;height:3.128px;width:60.000px;left:960px; top:249.867px;'title='3.000 GB
+duration:0.103
+start:2017-03-24 07:49:59
+end:2017-03-24 07:50:05'></div><div class='bar' style='background-color:#90BBD7;height:105.315px;width:40.000px;left:960px; top:254.995px;'title='2.000 GB
+duration:2.146
+start:2017-03-24 07:50:05
+end:2017-03-24 07:52:14'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:362.310px;'title='1.000 GB
+duration:0.000
+start:2017-03-24 07:52:14
+end:2017-03-24 07:52:14'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:362.325px;'title='2.000 GB
+duration:0.009
+start:2017-03-24 07:52:14
+end:2017-03-24 07:52:15'></div><div class='bar' style='background-color:#90BBD7;height:799.960px;width:20.000px;left:960px; top:362.754px;'title='1.000 GB
+duration:16.039
+start:2017-03-24 07:52:15
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:1164.714px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:1164.728px;'title='1.000 GB
+duration:0.081
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:1168.778px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:08:22
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#90BBD7;height:912.560px;width:20.000px;left:960px; top:1168.791px;'title='1.000 GB
+duration:18.291
+start:2017-03-24 08:08:22
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2083.351px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:2083.366px;'title='1.000 GB
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:2083.409px;'title='2.000 GB
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:960px; top:2083.457px;'title='3.000 GB
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:960px; top:2083.503px;'title='4.000 GB
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:40'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2083.554px;'title='5.000 GB
+duration:0.007
+start:2017-03-24 08:26:40
+end:2017-03-24 08:26:40'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:960px; top:2083.925px;'title='4.000 GB
+duration:0.071
+start:2017-03-24 08:26:40
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:960px; top:2087.487px;'title='3.000 GB
+duration:0.000
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:960px; top:2087.502px;'title='4.000 GB
+duration:0.001
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2087.551px;'title='5.000 GB
+duration:0.001
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:960px; top:2087.596px;'title='6.000 GB
+duration:0.012
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:45'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2088.180px;'title='5.000 GB
+duration:0.000
+start:2017-03-24 08:26:45
+end:2017-03-24 08:26:45'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:960px; top:2088.194px;'title='6.000 GB
+duration:0.048
+start:2017-03-24 08:26:45
+end:2017-03-24 08:26:48'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2090.576px;'title='5.000 GB
+duration:0.047
+start:2017-03-24 08:26:48
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:960px; top:2092.923px;'title='4.000 GB
+duration:0.000
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2092.939px;'title='5.000 GB
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:960px; top:2093.020px;'title='6.000 GB
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:960px; top:2093.100px;'title='7.000 GB
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:960px; top:2093.178px;'title='8.000 GB
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:180.000px;left:960px; top:2093.257px;'title='9.000 GB
+duration:0.010
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:960px; top:2093.768px;'title='8.000 GB
+duration:0.000
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:180.000px;left:960px; top:2093.782px;'title='9.000 GB
+duration:0.005
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:960px; top:2094.018px;'title='8.000 GB
+duration:0.009
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:53'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:960px; top:2094.484px;'title='7.000 GB
+duration:0.000
+start:2017-03-24 08:26:53
+end:2017-03-24 08:26:53'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:960px; top:2094.498px;'title='8.000 GB
+duration:0.065
+start:2017-03-24 08:26:53
+end:2017-03-24 08:26:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:960px; top:2097.765px;'title='7.000 GB
+duration:0.032
+start:2017-03-24 08:26:57
+end:2017-03-24 08:26:59'></div><div class='bar' style='background-color:#90BBD7;height:41.307px;width:120.000px;left:960px; top:2099.357px;'title='6.000 GB
+duration:0.866
+start:2017-03-24 08:26:59
+end:2017-03-24 08:27:50'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2142.664px;'title='5.000 GB
+duration:0.000
+start:2017-03-24 08:27:50
+end:2017-03-24 08:27:51'></div><div class='bar' style='background-color:#90BBD7;height:5.692px;width:120.000px;left:960px; top:2142.678px;'title='6.000 GB
+duration:0.154
+start:2017-03-24 08:27:51
+end:2017-03-24 08:28:00'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:960px; top:2150.370px;'title='5.000 GB
+duration:0.000
+start:2017-03-24 08:28:00
+end:2017-03-24 08:28:00'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:960px; top:2150.384px;'title='6.000 GB
+duration:0.015
+start:2017-03-24 08:28:00
+end:2017-03-24 08:28:01'></div><div class='bar' style='background-color:#90BBD7;height:6.371px;width:100.000px;left:960px; top:2151.146px;'title='5.000 GB
+duration:0.167
+start:2017-03-24 08:28:01
+end:2017-03-24 08:28:11'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:960px; top:2159.517px;'title='4.000 GB
+duration:0.091
+start:2017-03-24 08:28:11
+end:2017-03-24 08:28:16'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:960px; top:2164.082px;'title='3.000 GB
+duration:0.051
+start:2017-03-24 08:28:16
+end:2017-03-24 08:28:19'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:960px; top:2166.636px;'title='2.000 GB
+duration:0.003
+start:2017-03-24 08:28:19
+end:2017-03-24 08:28:19'></div><div class='bar' style='background-color:#90BBD7;height:118.607px;width:20.000px;left:960px; top:2166.765px;'title='1.000 GB
+duration:2.412
+start:2017-03-24 08:28:19
+end:2017-03-24 08:30:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2287.372px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:2287.385px;'title='1.000 GB
+duration:0.043
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:47'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2289.512px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:30:47
+end:2017-03-24 08:30:47'></div><div class='bar' style='background-color:#90BBD7;height:11.071px;width:20.000px;left:960px; top:2289.527px;'title='1.000 GB
+duration:0.261
+start:2017-03-24 08:30:47
+end:2017-03-24 08:31:02'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2302.597px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:31:02
+end:2017-03-24 08:31:02'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:2302.611px;'title='1.000 GB
+duration:0.011
+start:2017-03-24 08:31:02
+end:2017-03-24 08:31:03'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2303.156px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:31:03
+end:2017-03-24 08:31:03'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:2303.169px;'title='1.000 GB
+duration:0.014
+start:2017-03-24 08:31:03
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2303.861px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:960px; top:2303.876px;'title='1.000 GB
+duration:0.007
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:960px; top:2304.209px;'title='0.000 GB
+duration:0.000
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><p class='time' style='top:198px;left:960px;'>Memory</p><div class='bar' style='background-color:#03969D;height:2082.234px;width:0.000px;left:960px; top:219.975px;'title='0.000 GB
+duration:41.685
+start:2017-03-24 07:49:23
+end:2017-03-24 08:31:04'></div><p class='time' style='top:198px;left:420px;'>Threads</p><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:219.975px;'title='1 threads
+duration:0.000
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:23'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:220.000px;'title='2 threads
+duration:0.017
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:24'></div><div class='bar' style='background-color:#90BBD7;height:20.362px;width:20.000px;left:420px; top:220.866px;'title='1 threads
+duration:0.447
+start:2017-03-24 07:49:24
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:243.228px;'title='0 threads
+duration:0.000
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:243.242px;'title='1 threads
+duration:0.001
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:243.283px;'title='2 threads
+duration:0.001
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:420px; top:243.325px;'title='3 threads
+duration:0.094
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:248.005px;'title='2 threads
+duration:0.000
+start:2017-03-24 07:49:57
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:420px; top:248.020px;'title='3 threads
+duration:0.037
+start:2017-03-24 07:49:57
+end:2017-03-24 07:49:59'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:249.853px;'title='2 threads
+duration:0.000
+start:2017-03-24 07:49:59
+end:2017-03-24 07:49:59'></div><div class='bar' style='background-color:#90BBD7;height:3.128px;width:60.000px;left:420px; top:249.867px;'title='3 threads
+duration:0.103
+start:2017-03-24 07:49:59
+end:2017-03-24 07:50:05'></div><div class='bar' style='background-color:#90BBD7;height:105.315px;width:40.000px;left:420px; top:254.995px;'title='2 threads
+duration:2.146
+start:2017-03-24 07:50:05
+end:2017-03-24 07:52:14'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:362.310px;'title='1 threads
+duration:0.000
+start:2017-03-24 07:52:14
+end:2017-03-24 07:52:14'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:362.325px;'title='2 threads
+duration:0.009
+start:2017-03-24 07:52:14
+end:2017-03-24 07:52:15'></div><div class='bar' style='background-color:#90BBD7;height:799.960px;width:20.000px;left:420px; top:362.754px;'title='1 threads
+duration:16.039
+start:2017-03-24 07:52:15
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:1164.714px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:1164.728px;'title='1 threads
+duration:0.081
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:1168.778px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:08:22
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#90BBD7;height:912.560px;width:20.000px;left:420px; top:1168.791px;'title='1 threads
+duration:18.291
+start:2017-03-24 08:08:22
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2083.351px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:2083.366px;'title='1 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:2083.409px;'title='2 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:420px; top:2083.457px;'title='3 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:420px; top:2083.503px;'title='4 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:40'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2083.554px;'title='5 threads
+duration:0.007
+start:2017-03-24 08:26:40
+end:2017-03-24 08:26:40'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:420px; top:2083.925px;'title='4 threads
+duration:0.071
+start:2017-03-24 08:26:40
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:420px; top:2087.487px;'title='3 threads
+duration:0.000
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:420px; top:2087.502px;'title='4 threads
+duration:0.001
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2087.551px;'title='5 threads
+duration:0.001
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:420px; top:2087.596px;'title='6 threads
+duration:0.012
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:45'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2088.180px;'title='5 threads
+duration:0.000
+start:2017-03-24 08:26:45
+end:2017-03-24 08:26:45'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:420px; top:2088.194px;'title='6 threads
+duration:0.048
+start:2017-03-24 08:26:45
+end:2017-03-24 08:26:48'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2090.576px;'title='5 threads
+duration:0.047
+start:2017-03-24 08:26:48
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:420px; top:2092.923px;'title='4 threads
+duration:0.000
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2092.939px;'title='5 threads
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:420px; top:2093.020px;'title='6 threads
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:420px; top:2093.100px;'title='7 threads
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:420px; top:2093.178px;'title='8 threads
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:180.000px;left:420px; top:2093.257px;'title='9 threads
+duration:0.010
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:420px; top:2093.768px;'title='8 threads
+duration:0.000
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:180.000px;left:420px; top:2093.782px;'title='9 threads
+duration:0.005
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:420px; top:2094.018px;'title='8 threads
+duration:0.009
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:53'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:420px; top:2094.484px;'title='7 threads
+duration:0.000
+start:2017-03-24 08:26:53
+end:2017-03-24 08:26:53'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:160.000px;left:420px; top:2094.498px;'title='8 threads
+duration:0.065
+start:2017-03-24 08:26:53
+end:2017-03-24 08:26:57'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:140.000px;left:420px; top:2097.765px;'title='7 threads
+duration:0.032
+start:2017-03-24 08:26:57
+end:2017-03-24 08:26:59'></div><div class='bar' style='background-color:#90BBD7;height:41.307px;width:120.000px;left:420px; top:2099.357px;'title='6 threads
+duration:0.866
+start:2017-03-24 08:26:59
+end:2017-03-24 08:27:50'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2142.664px;'title='5 threads
+duration:0.000
+start:2017-03-24 08:27:50
+end:2017-03-24 08:27:51'></div><div class='bar' style='background-color:#90BBD7;height:5.692px;width:120.000px;left:420px; top:2142.678px;'title='6 threads
+duration:0.154
+start:2017-03-24 08:27:51
+end:2017-03-24 08:28:00'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:100.000px;left:420px; top:2150.370px;'title='5 threads
+duration:0.000
+start:2017-03-24 08:28:00
+end:2017-03-24 08:28:00'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:120.000px;left:420px; top:2150.384px;'title='6 threads
+duration:0.015
+start:2017-03-24 08:28:00
+end:2017-03-24 08:28:01'></div><div class='bar' style='background-color:#90BBD7;height:6.371px;width:100.000px;left:420px; top:2151.146px;'title='5 threads
+duration:0.167
+start:2017-03-24 08:28:01
+end:2017-03-24 08:28:11'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:80.000px;left:420px; top:2159.517px;'title='4 threads
+duration:0.091
+start:2017-03-24 08:28:11
+end:2017-03-24 08:28:16'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:60.000px;left:420px; top:2164.082px;'title='3 threads
+duration:0.051
+start:2017-03-24 08:28:16
+end:2017-03-24 08:28:19'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:40.000px;left:420px; top:2166.636px;'title='2 threads
+duration:0.003
+start:2017-03-24 08:28:19
+end:2017-03-24 08:28:19'></div><div class='bar' style='background-color:#90BBD7;height:118.607px;width:20.000px;left:420px; top:2166.765px;'title='1 threads
+duration:2.412
+start:2017-03-24 08:28:19
+end:2017-03-24 08:30:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2287.372px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:44'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:2287.385px;'title='1 threads
+duration:0.043
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:47'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2289.512px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:30:47
+end:2017-03-24 08:30:47'></div><div class='bar' style='background-color:#90BBD7;height:11.071px;width:20.000px;left:420px; top:2289.527px;'title='1 threads
+duration:0.261
+start:2017-03-24 08:30:47
+end:2017-03-24 08:31:02'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2302.597px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:31:02
+end:2017-03-24 08:31:02'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:2302.611px;'title='1 threads
+duration:0.011
+start:2017-03-24 08:31:02
+end:2017-03-24 08:31:03'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2303.156px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:31:03
+end:2017-03-24 08:31:03'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:2303.169px;'title='1 threads
+duration:0.014
+start:2017-03-24 08:31:03
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2303.861px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:20.000px;left:420px; top:2303.876px;'title='1 threads
+duration:0.007
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><div class='bar' style='background-color:#90BBD7;height:3.000px;width:0.000px;left:420px; top:2304.209px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:31:04
+end:2017-03-24 08:31:04'></div><p class='time' style='top:198px;left:420px;'>Threads</p><div class='bar' style='background-color:#03969D;height:21.350px;width:0.000px;left:420px; top:219.975px;'title='0 threads
+duration:0.467
+start:2017-03-24 07:49:23
+end:2017-03-24 07:49:51'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:243.325px;'title='1 threads
+duration:0.094
+start:2017-03-24 07:49:51
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:0.000px;left:420px; top:248.005px;'title='0 threads
+duration:0.000
+start:2017-03-24 07:49:57
+end:2017-03-24 07:49:57'></div><div class='bar' style='background-color:#03969D;height:914.694px;width:20.000px;left:420px; top:248.020px;'title='1 threads
+duration:18.334
+start:2017-03-24 07:49:57
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:0.000px;left:420px; top:1164.714px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:17'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:1164.728px;'title='1 threads
+duration:0.081
+start:2017-03-24 08:08:17
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:0.000px;left:420px; top:1168.778px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:08:22
+end:2017-03-24 08:08:22'></div><div class='bar' style='background-color:#03969D;height:912.560px;width:20.000px;left:420px; top:1168.791px;'title='1 threads
+duration:18.291
+start:2017-03-24 08:08:22
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:0.000px;left:420px; top:2083.351px;'title='0 threads
+duration:0.000
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:2083.366px;'title='1 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2083.409px;'title='2 threads
+duration:0.001
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:39'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:60.000px;left:420px; top:2083.457px;'title='3 threads
+duration:0.081
+start:2017-03-24 08:26:39
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2087.487px;'title='2 threads
+duration:0.001
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:44'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:60.000px;left:420px; top:2087.551px;'title='3 threads
+duration:0.060
+start:2017-03-24 08:26:44
+end:2017-03-24 08:26:48'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2090.576px;'title='2 threads
+duration:0.047
+start:2017-03-24 08:26:48
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:2092.923px;'title='1 threads
+duration:0.004
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2093.100px;'title='2 threads
+duration:0.002
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:51'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:60.000px;left:420px; top:2093.178px;'title='3 threads
+duration:0.012
+start:2017-03-24 08:26:51
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2093.768px;'title='2 threads
+duration:0.000
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:60.000px;left:420px; top:2093.782px;'title='3 threads
+duration:0.005
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:52'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:40.000px;left:420px; top:2094.018px;'title='2 threads
+duration:0.009
+start:2017-03-24 08:26:52
+end:2017-03-24 08:26:53'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:2094.484px;'title='1 threads
+duration:0.066
+start:2017-03-24 08:26:53
+end:2017-03-24 08:26:57'></div><div class='bar' style='background-color:#03969D;height:187.621px;width:0.000px;left:420px; top:2097.765px;'title='0 threads
+duration:3.792
+start:2017-03-24 08:26:57
+end:2017-03-24 08:30:44'></div><div class='bar' style='background-color:#03969D;height:3.000px;width:20.000px;left:420px; top:2287.385px;'title='1 threads
+duration:0.043
+start:2017-03-24 08:30:44
+end:2017-03-24 08:30:47'></div><div class='bar' style='background-color:#03969D;height:12.697px;width:0.000px;left:420px; top:2289.512px;'title='0 threads
+duration:0.294
+start:2017-03-24 08:30:47
+end:2017-03-24 08:31:04'></div>
+        </div>
+    </body>

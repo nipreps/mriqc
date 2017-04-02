@@ -73,6 +73,34 @@ Singularity containers
 Requesting resources
 ....................
 
+We have profiled cores and memory usages with the *resource profiler*
+tool of nipype.
+
+An MRIQC run of one subject (from the ABIDE) dataset, containing only one
+run, one BOLD task (resting-state) yielded the following report:
+
+  .. raw:: html
+
+      <iframe src="_static/bold-1subject-1task.html" height="345px" width="100%"></iframe>
+
+
+  Using the ``MultiProc`` plugin of nipype with ``nprocs=10``, the workflow
+  nodes run across the available processors for 41.68 minutes.
+  A memory peak of 8GB is reached by the end of the runtime, when the
+  plotting nodes are fired up.
+
+We also profiled MRIQC on a dataset with 8 tasks (one run per task),
+on ds030 of OpenfMRI:
+
+  .. raw:: html
+
+      <iframe src="_static/bold-1subject-8tasks.html" height="345px" width="100%"></iframe>
+
+  Again, we used ``n_procs=10``. The software run for roughly about the same
+  time (47.11 min). Most of the run time, memory usage keeps around a 
+  maximum of 10GB. Since we saw a memory consumption of 1-2GB during the
+  the 1-task example, a rule of thumb may be that each task takes around
+  1GB of memory.
 
 
 .. topic:: References
