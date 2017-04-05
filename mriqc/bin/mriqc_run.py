@@ -76,6 +76,9 @@ def main():
                          help='Do not run the workflow.')
     g_input.add_argument('--use-plugin', action='store', default=None,
                          help='nipype plugin configuration file')
+    g_input.add_argument('--ica', action='store_true', default=False,
+                         help='Run ICA on the raw data and include the components'
+                              'in the individual reports (slow but potentially very insightful)')
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
@@ -136,26 +139,6 @@ def main():
     if opts.n_procs is not None:
         n_procs = opts.n_procs
 
-    # Check physical memory
-    total_memory = opts.mem_gb
-    if total_memory < 0:
-        try:
-            from psutil import virtual_memory
-            total_memory = virtual_memory().total // (1024 ** 3) + 1
-        except ImportError:
-            MRIQC_LOG.warn('Total physical memory could not be estimated, using %d'
-                           'GB as default', DEFAULT_MEM_GB)
-            total_memory = DEFAULT_MEM_GB
-
-    if total_memory > 0:
-        av_procs = total_memory // 4
-        if av_procs < 1:
-            MRIQC_LOG.warn('Total physical memory is less than 4GB, memory allocation'
-                           ' problems are likely to occur.')
-            n_procs = 1
-        elif n_procs > av_procs:
-            n_procs = av_procs
-
     settings = {
         'bids_dir': bids_dir,
         'write_graph': opts.write_graph,
@@ -168,7 +151,8 @@ def main():
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
-        'float32': opts.float32
+        'float32': opts.float32,
+        'ica': opts.ica
     }
 
     if opts.hmc_afni:
@@ -226,8 +210,8 @@ def main():
         if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
-            if total_memory > 0:
-                plugin_settings['plugin_args']['memory_gb'] = total_memory
+            if opts.mem_gb:
+                plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
