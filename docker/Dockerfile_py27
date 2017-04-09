@@ -60,7 +60,7 @@ RUN npm install -g svgo
 WORKDIR /opt/src/mriqc
 COPY . /opt/src/mriqc/
 RUN pip install -r requirements.txt && \
-    pip install -e .[all]
+    pip install .[all]
 
 RUN mkdir /niworkflows_data
 ENV CRN_SHARED_DATA /niworkflows_data
