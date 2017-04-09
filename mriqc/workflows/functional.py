@@ -468,8 +468,7 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
     else:
         from nipype.interfaces.fsl import BET, ErodeImage
         bet_msk = pe.Node(BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(ErodeImage(kernel_shape='box', kernel_size=1.0),
-                        name='erode')
+        erode = pe.Node(ErodeImage(), name='erode')
 
         # Connect brain mask extraction
         workflow.connect([
@@ -713,14 +712,15 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-        testing=testing, moving='EPI', generate_report=True),
+        testing=testing, moving='EPI', generate_report=True,
+        template_resolution=2),
                    name='EPI2MNI')
     norm.inputs.reference_image = pkgrf(
         'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
     norm.interface.num_threads = ants_nthreads
 
     # Warp segmentation into EPI space
-    invt = pe.Node(ApplyTransforms(
+    invt = pe.Node(ApplyTransforms(float=True,
         input_image=op.join(mni_template, '%dmm_parc.nii.gz' % resolution),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
                    name='ResampleSegmentation')

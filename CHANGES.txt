@@ -4,6 +4,8 @@ Release x.x.x
 * [ENH] Optional ICA reports for identifying spatiotemporal artifacts (#412)
 * [ENH] Add --profile flag (#435)
 * [ENH] Crashfiles are saved in plain text to improve portability (#434)
+* [FIX] Fixes EPI mask erosion (#442)
+* [ENH] MNI corregistration uses 2mm targets to improve performance (#442)
 
 
 Release 0.9.1
