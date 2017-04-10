@@ -85,9 +85,9 @@ def main():
     g_input.add_argument('--profile', action='store_true', default=False,
                          help='hook up the resource profiler callback to nipype')
     g_input.add_argument('--hmc-afni', action='store_true', default=True,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC)')
+                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
-                        help='Use FSL MCFLIRT for head motion correction (HMC)')
+                        help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_input.add_argument(
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
