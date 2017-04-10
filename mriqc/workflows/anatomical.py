@@ -96,7 +96,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
-        testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
+        testing=settings.get('testing', False), generate_report=True,
+        template_resolution=2), name='SpatialNormalization')
     norm.interface.num_threads = settings.get('ants_nthreads', 6)
 
     if mod == 'T1w':
@@ -197,7 +198,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     # Project MNI segmentation to T1 space
     invt = pe.MapNode(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        dimension=3, default_value=0, interpolation='NearestNeighbor',
+        float=True),
         iterfield=['input_image'], name='MNItpms2t1')
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
@@ -421,8 +423,9 @@ def airmsk_wf(name='AirMaskWorkflow'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    invt = pe.Node(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
+    invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
+                                        interpolation='NearestNeighbor',
+                                        float=True), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
