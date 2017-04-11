@@ -692,8 +692,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-        testing=testing, moving='EPI', generate_report=True,
-        template_resolution=2),
+        testing=testing, moving='EPI', generate_report=True),
                    name='EPI2MNI')
     norm.inputs.reference_image = pkgrf(
         'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
