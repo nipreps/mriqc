@@ -5,7 +5,7 @@ Release x.x.x
 * [ENH] Add --profile flag (#435)
 * [ENH] Crashfiles are saved in plain text to improve portability (#434)
 * [FIX] Fixes EPI mask erosion (#442)
-* [ENH] MNI corregistration uses 2mm targets to improve performance (#442)
+* [ENH] Make FSL and AFNI motion correction more comparable by using the same scheme for defining the reference image (#444)
 
 
 Release 0.9.1
