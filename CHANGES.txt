@@ -1,4 +1,4 @@
-Release x.x.x
+Release 0.9.2
 =============
 
 * [ENH] Optional ICA reports for identifying spatiotemporal artifacts (#412)
@@ -6,6 +6,7 @@ Release x.x.x
 * [ENH] Crashfiles are saved in plain text to improve portability (#434)
 * [FIX] Fixes EPI mask erosion (#442)
 * [ENH] Make FSL and AFNI motion correction more comparable by using the same scheme for defining the reference image (#444)
+* [FIX] Temporarily disabling T1w quality classifier until it can be retrained on new measures (#447)
 
 
 Release 0.9.1
