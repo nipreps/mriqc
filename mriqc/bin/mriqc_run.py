@@ -280,10 +280,10 @@ def main():
 
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
 
-            out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
-            if out_pred is not None:
-                MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
-                               mod, out_pred)
+            # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
+            # if out_pred is not None:
+            #     MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
+            #                    mod, out_pred)
 
             out_html = op.join(reports_dir, mod + '_group.html')
             group_html(out_csv, mod,

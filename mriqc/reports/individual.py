@@ -44,7 +44,7 @@ def individual_html(in_iqms, in_plots=None, exclude_index=0, wf_details=None):
                for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
 
-    pred_qa = metadata.pop('mriqc_pred', None)
+    pred_qa = None #metadata.pop('mriqc_pred', None)
 
     # Deal with special IQMs
     if mod in ('T1w', 'T2w'):

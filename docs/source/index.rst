@@ -21,7 +21,6 @@ Contents
    running
    measures
    docker
-   classifier
    reports
    workflows
 
