@@ -92,7 +92,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
     reorient_and_discard.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"]
+                                        "biggest_file_size_gb"] * 2
 
     # Workflow --------------------------------------------------------
 
@@ -315,7 +315,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
+    spmask.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 2
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
+    spikes_bg.interface.estimated_memory_gb = settings[
+                                               "biggest_file_size_gb"] * 2
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
