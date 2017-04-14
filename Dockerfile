@@ -67,16 +67,16 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
     LC_ALL=C.UTF-8
 
 # Installing precomputed python packages
-RUN conda install -y mkl=2017.0.1 mkl-service &&  \
-    conda install -y numpy=1.12.0 \
+RUN conda install -c conda-forge -y openblas=0.2.19 &&  \
+    conda install -c conda-forge -y \
+                     numpy=1.12.0 \
                      cython=0.25.2 \
-                     scipy=0.18.1 \
+                     scipy=0.19.0 \
                      scikit-learn=0.18.1 \
                      matplotlib=2.0.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
-                     gcc=4.8.5 \
                      traits=4.6.0 &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y
@@ -92,8 +92,8 @@ RUN apt-get install -y --no-install-recommends \
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
-ENV MKL_NUM_THREADS=1 \
-    OMP_NUM_THREADS=1
+#ENV MKL_NUM_THREADS=1 \
+#    OMP_NUM_THREADS=1
 
 # Installing dev requirements (packages that are not in pypi)
 ADD requirements.txt requirements.txt
