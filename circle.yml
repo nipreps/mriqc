@@ -28,7 +28,7 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch -w /opt/src/mriqc --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ -n ${CIRCLE_NCPUS:-4} --junitxml=/scratch/tests.xml :
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc :
         timeout: 2600
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --profile --n_proc 2 --ants-nthreads 1 --ica :
         timeout: 3200
