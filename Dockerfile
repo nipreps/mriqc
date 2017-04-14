@@ -11,9 +11,6 @@ RUN apt-get update && \
                     bzip2 \
                     ca-certificates \
                     xvfb \
-                    build-essential \
-                    autoconf \
-                    libtool \
                     pkg-config && \
     curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /root/.neurodebian.gpg && \
@@ -70,13 +67,15 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
 RUN conda install -c conda-forge -y openblas=0.2.19 &&  \
     conda install -c conda-forge -y \
                      numpy=1.12.0 \
-                     cython=0.25.2 \
                      scipy=0.19.0 \
                      scikit-learn=0.18.1 \
                      matplotlib=2.0.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
+                     sympy=1.0 \
+                     statsmodels=0.8.0 \
+                     dipy=0.11.0 \
                      traits=4.6.0 &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y
