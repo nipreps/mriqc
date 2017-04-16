@@ -76,7 +76,8 @@ RUN conda install -c conda-forge -y openblas=0.2.19 &&  \
                      sympy=1.0 \
                      statsmodels=0.8.0 \
                      dipy=0.11.0 \
-                     traits=4.6.0 &&  \
+                     traits=4.6.0 \
+                     psutil=5.2.2 &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y
 
