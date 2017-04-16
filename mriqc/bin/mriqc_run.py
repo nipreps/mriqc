@@ -103,7 +103,7 @@ def main():
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
     g_ants.add_argument(
-        '--ants-nthreads', action='store', type=int, default=DEFAULTS['ants_nthreads'],
+        '--ants-nthreads', action='store', type=int, default=0,
         help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
@@ -136,7 +136,7 @@ def main():
         MRIQC_LOG.warn('Option --nthreads has been deprecated in mriqc 0.8.8. '
                        'Please use --n_procs instead.')
         n_procs = opts.nthreads
-    if opts.n_procs is not None:
+    else:
         n_procs = opts.n_procs
 
     settings = {
@@ -202,10 +202,15 @@ def main():
     else:
         # Setup multiprocessing
         if settings['n_procs'] == 0:
-            settings['n_procs'] = 1
-            max_parallel_ants = cpu_count() // settings['ants_nthreads']
-            if max_parallel_ants > 1:
-                settings['n_procs'] = max_parallel_ants
+            settings['n_procs'] = cpu_count()
+
+        if settings['ants_nthreads'] == 0:
+            if settings['n_procs'] > 1:
+                # always leave one extra thread for non ANTs work,
+                # don't use more than 8 threads - the speed up is minimal
+                settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
+            else:
+                settings['ants_nthreads'] = 1
 
         if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
