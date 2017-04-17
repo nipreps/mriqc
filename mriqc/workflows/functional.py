@@ -92,7 +92,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
     reorient_and_discard.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 3.5
 
     # Workflow --------------------------------------------------------
 
@@ -124,7 +124,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
     tsnr.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2.5
+                                        "biggest_file_size_gb"] * 3
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -225,7 +225,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
     quality.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2.5
+                                        "biggest_file_size_gb"] * 3
 
     measures = pe.Node(FunctionalQC(), name='measures')
     measures.interface.estimated_memory_gb = settings[
