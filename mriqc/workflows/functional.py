@@ -92,7 +92,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
     reorient_and_discard.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2.5
+                                        "biggest_file_size_gb"] * 3
 
     # Workflow --------------------------------------------------------
 
