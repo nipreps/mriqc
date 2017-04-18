@@ -46,16 +46,16 @@ Running mriqc
   ::
 
       
-      docker run -v <bids_dir>:/data -v <scratch_dir>:/scratch -w /scratch poldracklab/mriqc:latest /data /scratch/out participant --participant_label 001 002 003 -w /scratch/work
+      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out participant --participant_label 001 002 003
+      
 
-
-3. Run the group level and report generation on previously processed
+3. Run the group level and report generation on previously processed (use the same ``<output_dir>``)
    subjects:
 
   ::
 
       
-      docker run -v <bids_dir>:/data -v <scratch_dir>:/scratch -w /scratch poldracklab/mriqc:latest /data /scratch/out group -w /scratch/work
+      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out group
 
 
 .. note::
@@ -75,12 +75,16 @@ Let's dissect this command line:
 + :code:`docker run`- instructs the docker engine to get and run certain
   image (which is the last of docker-related arguments:
   :code:`poldracklab/mriqc:latest`)
-+ :code:`-v <bids_dir>:/data` - instructs docker to mount the local
-  directory `<bids_dir>`into :code:`/data` inside the container.
-+ :code:`-v <scratch_dir>:/scratch`- instructs docker to mount the local
-  directory `<work_dir>`into :code:`/scratch` inside the container.
-+ :code:`poldracklab/mriqc:latest` - is the name of the image to be run, and
-  sets an endpoint for the docker-related arguments in the command line.
-+ :code:`/data /scratch/out participant -w /scratch/work` - are the standard
++ :code:`-v <bids_dir>:/data:ro` - instructs docker to mount the local
+  directory with your input dataset `<bids_dir>`into :code:`/data` inside 
+  the container in a read only mode.
++ :code:`-v <output_dir>:/out`- instructs docker to mount the local
+  directory `<output_dir>`into :code:`/out` inside the container. This is 
+  where the results of the QC analysis (reports, tables) will be stored.
++ :code:`poldracklab/mriqc:latest` - this tells docker to run MRIQC. ``latest``
+  corresponds to the version of MRIQC. You 
+  should replace ``latest`` with a version of MRIQC you want to use. Remember
+  not to switch versions while analysing one dataset!
++ :code:`/data /scratch/out participant` - are the standard
   arguments of mriqc.
 
