@@ -124,7 +124,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
     tsnr.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 3
+                                        "biggest_file_size_gb"] * 4
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -703,6 +703,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     norm.inputs.reference_image = pkgrf(
         'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
     norm.interface.num_threads = ants_nthreads
+    norm.interface.estimated_memory_gb = 4
 
     # Warp segmentation into EPI space
     invt = pe.Node(ApplyTransforms(float=True,
