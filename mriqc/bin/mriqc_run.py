@@ -99,6 +99,11 @@ def main():
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
     g_outputs.add_argument('--report-dir', action='store')
     g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
+    g_outputs.add_argument('--no-sub', default=False, action='store_true',
+                           help='Turn off submission of anonymized quality metrics '
+                                'to MRIQC\'s metrics repository.')
+    g_outputs.add_argument('--email', action='store', default='', type=str,
+                           help='Email address to include with quality mectic submission.')
 
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
@@ -152,8 +157,16 @@ def main():
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
-        'ica': opts.ica
+        'ica': opts.ica,
+        'no_sub':opts.no_sub or opts.testing,
+        'email':opts.email
     }
+
+    if settings['no_sub'] == False:
+        MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
+                       ' to MRIQC\'s metrics repository.'
+                       ' Use --no-sub to disable submission.')
+
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -300,6 +313,10 @@ def main():
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
 
+    if settings['no_sub'] == False:
+        MRIQC_LOG.warn('Anonymized quality metrics have beeen submitted'
+                       ' to MRIQC\'s metrics repository.'
+                       ' Use --no-sub to disable submission.')
 
 if __name__ == '__main__':
     main()
