@@ -111,8 +111,8 @@ def read_report_snippet(in_file):
 
 def upload_qc_metrics(in_iqms, email = '', no_sub = False):
     """Upload qc metrics to remote repository.
-    
 
+    
     Arguments:
     in_iqms -- Path to the qc metric json file as a string
 
