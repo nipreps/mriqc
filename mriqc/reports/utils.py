@@ -144,7 +144,7 @@ def upload_qc_metrics(in_iqms, email = '', no_sub = False):
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
         headers = {'token':secret_key,"Content-Type":"application/json"}
         try:
-            r = requests.put("http://localhost:5000/measurements/upload",
+            r = requests.put("http://34.201.213.252:5000/measurements/upload",
                              headers=headers,data = dumps(data))
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
