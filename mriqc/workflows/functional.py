@@ -124,7 +124,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
     tsnr.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 4
+                                        "biggest_file_size_gb"] * 4.5
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -213,7 +213,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS')
     dvnode.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2.5
+                                        "biggest_file_size_gb"] * 3
 
     # AFNI quality measures
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -229,7 +229,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     measures = pe.Node(FunctionalQC(), name='measures')
     measures.interface.estimated_memory_gb = settings[
-                                        "biggest_file_size_gb"] * 2.5
+                                        "biggest_file_size_gb"] * 3
 
     workflow.connect([
         (inputnode, dvnode, [('hmc_epi', 'in_file'),
