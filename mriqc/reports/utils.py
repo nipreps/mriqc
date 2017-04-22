@@ -132,7 +132,7 @@ def upload_qc_metrics(in_iqms, email = '', no_sub = False):
 
     report_log = logging.getLogger('mriqc.report')
     report_log.setLevel(logging.INFO)
-    
+
     if no_sub == True:
         report_log.info('QC metrics were not uploaded because --no_sub or --testing options were set.')
         r = "No Response"
