@@ -67,6 +67,7 @@ def reorient_and_discard_non_steady(in_file, float32=False):
             break
 
     nb.Nifti1Image(in_data[:, :, :, exclude_index:], nii.affine, nii.header).to_filename(outfile)
+    nii.uncache()
     return exclude_index, os.path.abspath(outfile)
 
 def check_folder(folder):
