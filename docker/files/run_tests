@@ -1,2 +1,0 @@
-#!/bin/bash
-py.test --ignore=src/ -n ${CIRCLE_NCPUS:-4} --junitxml=/scratch/tests.xml
