@@ -1,7 +1,9 @@
-Release x.x.x
+Release 0.9.3
 =============
 
 * [ENH] Reafactor of the Dockerfile to improve transparency, reduce size, and enable injecting code in Singularity (#457)
+* [ENH] Make more the memory consumption estimates of each processing step more conservative to improve robustness (#456)
+* [FIX] Minor documentation cleanups (#461)
 
 Release 0.9.2
 =============
