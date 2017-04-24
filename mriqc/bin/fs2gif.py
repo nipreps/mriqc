@@ -68,6 +68,9 @@ def main():
                         if op.isdir(os.path.join(subjects_dir, name))]
     environ = os.environ.copy()
     environ['SUBJECTS_DIR'] = subjects_dir
+    if opts.use_xvfb:
+        environ['doublebufferflag'] = 1
+
     # tcl_file = pkgr.resource_filename('mriqc', 'data/fsexport.tcl')
     tcl_contents = """
 SetOrientation 0
