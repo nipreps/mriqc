@@ -33,12 +33,12 @@ def main():
     parser = ArgumentParser(description='Batch export freesurfer results to animated gifs',
                             formatter_class=RawTextHelpFormatter)
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-S', '--subjects-dir', action='store', default=os.getcwd())
     g_input.add_argument('-s', '--subject-id', action='store')
     g_input.add_argument('-t', '--temp-dir', action='store')
     g_input.add_argument('--keep-temp', action='store_true', default=False)
     g_input.add_argument('--zoom', action='store_true', default=False)
     g_input.add_argument('--hist-eq', action='store_true', default=False)
+    g_input.add_argument('--use-xvfb', action='store_true', default=False)
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store', default='fs2gif')
 
@@ -61,20 +61,11 @@ def main():
         if exc.errno != EEXIST:
             raise exc
 
-    subjects_dir = op.abspath(opts.subjects_dir)
-    subject_list = opts.subject_id
-    if subject_list is None:
-        subject_list = [name for name in os.listdir(subjects_dir)
+    subjects_dir = os.getenv('SUBJECTS_DIR', op.abspath('subjects'))
+    subject_list = [opts.subject_id]
+    if opts.subject_id is None:
+        subject_list = [op.basename(name) for name in os.listdir(subjects_dir)
                         if op.isdir(os.path.join(subjects_dir, name))]
-    elif isinstance(subject_list, string_types):
-        if '*' not in subject_list:
-            subject_list = [subject_list]
-        else:
-            all_dirs = [op.join(subjects_dir, name) for name in os.listdir(subjects_dir)
-                        if op.isdir(os.path.join(subjects_dir, name))]
-            pattern = glob.glob(op.abspath(op.join(subjects_dir, opts.subject_id)))
-            subject_list = list(set(pattern).intersection(set(all_dirs)))
-
     environ = os.environ.copy()
     environ['SUBJECTS_DIR'] = subjects_dir
     # tcl_file = pkgr.resource_filename('mriqc', 'data/fsexport.tcl')
@@ -86,8 +77,8 @@ SetDisplayFlag 22 1
 set i 0
 """
 
-    for sub_path in subject_list:
-        subid = op.basename(sub_path)
+    for subid in subject_list:
+        sub_path = op.join(subjects_dir, subid)
         tmp_sub = op.join(tmpdir, subid)
         try:
             os.makedirs(tmp_sub)
@@ -129,8 +120,13 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file], env=environ)
+            cmd = ['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd.insert(4, '--use-xvfb')
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
             # Convert to animated gif
+            print('Stacking coronal slices')
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-*.tif' % (tmp_sub, subid),
                      '%s/%s.gif' % (out_dir, subid)])
 
@@ -148,7 +144,14 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file], env=environ)
+            cmd = ['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd.insert(4, '--use-xvfb')
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
+            # Convert to animated gif
+            print('Stacking coronal slices')
+
 
             # Export tiffs for right hemisphere
             tcl_file = op.join(tmp_sub, 'rh-%s.tcl' % subid)
@@ -163,9 +166,13 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file], env=environ)
-
+            cmd = ['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd.insert(4, '--use-xvfb')
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
             # Convert to animated gif
+            print('Stacking coronal slices')
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-lh-*.tif' % (tmp_sub, subid),
                      '%s/%s-lh.gif' % (out_dir, subid)])
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-rh-*.tif' % (tmp_sub, subid),
