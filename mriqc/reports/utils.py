@@ -138,7 +138,35 @@ def upload_qc_metrics(in_iqms, email = '', no_sub = False):
         r = "No Response"
     else:
         with open(in_iqms, 'r') as h:
-            data = load(h)
+            in_data = load(h)
+        #metadata whitelist
+        whitelist = [u"ContrastBolusIngredient",u"RepetitionTime",u"TaskName",u"Manufacturer",
+                     u"ManufacturersModelName",u"MagneticFieldStrength",u"DeviceSerialNumber",
+                     u"SoftwareVersions",u"HardcopyDeviceSoftwareVersion",u"ReceiveCoilName",
+                     u"GradientSetType",u"MRTransmitCoilSequence",u"MatrixCoilMode",
+                     u"CoilCombinationMethod",u"PulseSequenceType",u"PulseSequenceDetails",
+                     u"NumberShots",u"ParallelReductionFactorInPlane",u"ParallelAcquisitionTechnique",
+                     u"PartialFourier",u"PartialFourierDirection",u"PhaseEncodingDirection",
+                     u"EffectiveEchoSpacing",u"TotalReadoutTime",u"Timing Parameters",
+                     u"EchoTime",u"InversionTime",u"SliceTiming",u"SliceEncodingDirection",
+                     u"NumberOfVolumesDiscardedByScanner",u"NumberOfVolumesDiscardedByUser",
+                     u"DelayTime",u"FlipAngle",u"MultibandAccelerationFactor",u"Instructions",
+                     u"TaskDescription",u"CogAtlasID",u"CogPOID",u"InstitutionName",
+                     u"InstitutionAddress",u"ConversionSoftware",u"ConversionSoftwareVersion",
+                     u"md5sum",u"modality",u"mriqc_pred",u"software",u"subject_id",u"version"]
+        # flatten data
+        data = {k:v for k,v in in_data.items() if k != 'metadata'}
+        # Filter Metadata values that aren't in whitelist
+        try:
+            data.update({k:v for k,v in in_data['metadata'].items() if k in whitelist})
+        except KeyError:
+            pass
+        # Preemptively adding code to handle settings
+        try:
+            data.update({k:v for k,v in in_data['settings'].items() if k in whitelist})
+        except KeyError:
+            pass
+        
         if email != '':
             data['email'] = email
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
