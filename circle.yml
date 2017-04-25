@@ -35,8 +35,8 @@ test:
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w
     - cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i $SCRATCH/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv
-    - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i $SCRATCH/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv
+    - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv
 general:
   artifacts:
     - "~/scratch"
