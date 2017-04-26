@@ -166,7 +166,7 @@ def upload_qc_metrics(in_iqms, email = '', no_sub = False):
             data.update({k:v for k,v in in_data['settings'].items() if k in whitelist})
         except KeyError:
             pass
-        
+
         if email != '':
             data['email'] = email
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
