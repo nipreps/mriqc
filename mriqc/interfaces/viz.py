@@ -15,10 +15,10 @@ import nibabel as nb
 import numpy as np
 from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     BaseInterfaceInputSpec, isdefined)
+from niworkflows.interfaces.base import SimpleInterface
 from io import open # pylint: disable=W0622
 from mriqc.utils.misc import split_ext
 from mriqc.viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
-from mriqc.interfaces.base import MRIQCBaseInterface
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -41,7 +41,7 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
 class PlotContoursOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
 
-class PlotContours(MRIQCBaseInterface):
+class PlotContours(SimpleInterface):
     """ Plot contours """
     input_spec = PlotContoursInputSpec
     output_spec = PlotContoursOutputSpec
@@ -94,7 +94,7 @@ class PlotMosaicOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output pdf file')
 
 
-class PlotMosaic(MRIQCBaseInterface):
+class PlotMosaic(SimpleInterface):
 
     """
     Plots slices of a 3D volume into a pdf file
@@ -132,7 +132,7 @@ class PlotSpikesOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
 
 
-class PlotSpikes(MRIQCBaseInterface):
+class PlotSpikes(SimpleInterface):
     """
     Plot slices of a dataset with spikes
     """
