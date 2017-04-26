@@ -36,6 +36,9 @@ def main():
     ref_df, ref_names, ref_bids = read_iqms(opts.reference_csv)
     tst_df, tst_names, tst_bids = read_iqms(opts.input_csv)
 
+    ref_df.set_index(ref_bids)
+    tst_df.set_index(tst_bids)
+
     if sorted(ref_bids) != sorted(tst_bids):
         sys.exit('Dataset has different BIDS bits w.r.t. reference')
 
@@ -45,7 +48,19 @@ def main():
     ref_df = ref_df.sort_values(by=ref_bids)
     tst_df = tst_df.sort_values(by=tst_bids)
 
-    if not np.all(ref_df[ref_names].values == tst_df[tst_names].values):
+    diff = ref_df[ref_names].values != tst_df[tst_names].values
+    if np.any(diff):
+        ne_stacked = (ref_df[ref_names] != tst_df[ref_names]).stack()
+        changed = ne_stacked[ne_stacked]
+        # changed.set_index(ref_bids)
+        difference_locations = np.where(diff)
+        changed_from = ref_df[ref_names].values[difference_locations]
+        changed_to = tst_df[ref_names].values[difference_locations]
+        cols = [ref_names[v] for v in difference_locations[1]]
+        bids_df = ref_df.loc[difference_locations[0], ref_bids].reset_index()
+        chng_df = pd.DataFrame({'iqm': cols, 'from': changed_from, 'to': changed_to})
+        table = pd.concat([bids_df, chng_df], axis=1)
+        print(table[ref_bids + ['iqm', 'from', 'to']].to_string(index=False))
         sys.exit('Output CSV file changed one or more values')
 
     sys.exit(0)
