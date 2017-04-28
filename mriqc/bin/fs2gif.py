@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:23:13
+# @Last Modified time: 2017-04-28 11:16:12
 
 """
 Batch export freesurfer results to animated gifs
@@ -39,6 +39,7 @@ def main():
     g_input.add_argument('--zoom', action='store_true', default=False)
     g_input.add_argument('--hist-eq', action='store_true', default=False)
     g_input.add_argument('--use-xvfb', action='store_true', default=False)
+
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store', default='fs2gif')
 
@@ -125,7 +126,8 @@ set i 0
                 tclfp.write('QuitMedit\n')
             cmd = ['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file]
             if opts.use_xvfb:
-                cmd.insert(4, '--use-xvfb')
+                cmd = _xvfb_run() + cmd
+
             print('Running tkmedit: %s' % ' '.join(cmd))
             sp.call(cmd, env=environ)
             # Convert to animated gif
@@ -149,7 +151,8 @@ set i 0
                 tclfp.write('QuitMedit\n')
             cmd = ['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file]
             if opts.use_xvfb:
-                cmd.insert(4, '--use-xvfb')
+                cmd = _xvfb_run() + cmd
+
             print('Running tkmedit: %s' % ' '.join(cmd))
             sp.call(cmd, env=environ)
             # Convert to animated gif
@@ -171,7 +174,8 @@ set i 0
                 tclfp.write('QuitMedit\n')
             cmd = ['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file]
             if opts.use_xvfb:
-                cmd.insert(4, '--use-xvfb')
+                cmd = _xvfb_run() + cmd
+
             print('Running tkmedit: %s' % ' '.join(cmd))
             sp.call(cmd, env=environ)
             # Convert to animated gif
@@ -184,6 +188,23 @@ set i 0
 
         if not opts.keep_temp:
             rmtree(tmp_sub, ignore_errors=True, onerror=_myerror)
+
+
+def _xvfb_run(wait=5, server_args='-screen 0, 1600x1200x24', logs=None):
+    """
+    Wrap command with xvfb-run. Copied from:
+    https://github.com/VUIIS/seam/blob/1dabd9ca5b1fc7d66ef7d41c34ea8d42d668a484/seam/util.py
+
+    """
+    if logs is None:
+        logs = op.join(mkdtemp(), 'fs2gif_xvfb')
+
+    return ['xvfb-run',
+            '-a', # automatically get a free server number
+            '-f {}.out'.format(logs),
+            '-e {}.err'.format(logs),
+            '--wait={:d}'.format(wait),
+            '--server-args="{}"'.format(server_args)]
 
 def _myerror(msg):
     print('WARNING: Error deleting temporal files: %s' % msg)
