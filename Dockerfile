@@ -54,7 +54,7 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
 RUN conda config --add channels conda-forge && \
     conda config --set always_yes yes --set changeps1 no && \
     chmod +x /usr/local/miniconda/bin/*; sync && \
-    conda install -y openblas=0.2.19; sync && \
+    conda install -y python=${PY_VER_MAJOR}.$PY_VER_MINOR openblas=0.2.19; sync && \
     conda install -y numpy=1.12.0 \
                      scipy=0.19.0 \
                      scikit-learn=0.18.1 \
