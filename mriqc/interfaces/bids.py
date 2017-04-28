@@ -16,7 +16,7 @@ from nipype import logging
 from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
                                     BaseInterfaceInputSpec, File, Undefined, Str)
 from nipype.utils.filemanip import hash_infile
-from mriqc.interfaces.base import MRIQCBaseInterface
+from niworkflows.interfaces.base import SimpleInterface
 from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
@@ -35,7 +35,7 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     md5sum = Str()
     out_dict = traits.Dict()
 
-class ReadSidecarJSON(MRIQCBaseInterface):
+class ReadSidecarJSON(SimpleInterface):
     """
     An utility to find and read JSON sidecar files of a BIDS tree
     """
@@ -92,7 +92,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
 class IQMFileSinkOutputSpec(TraitedSpec):
     out_file = File(desc='the output JSON file containing the IQMs')
 
-class IQMFileSink(MRIQCBaseInterface):
+class IQMFileSink(SimpleInterface):
     input_spec = IQMFileSinkInputSpec
     output_spec = IQMFileSinkOutputSpec
     expr = re.compile('^root[0-9]+$')
