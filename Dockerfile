@@ -62,7 +62,6 @@ RUN conda config --add channels conda-forge && \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
-                     sympy=1.0 \
                      statsmodels=0.8.0 \
                      dipy=0.11.0 \
                      traits=4.6.0 \

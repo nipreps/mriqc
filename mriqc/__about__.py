@@ -63,7 +63,6 @@ REQUIRES = [
     'nipy',
     'statsmodels',
     'pybids>=0.1.0',
-    'sympy',
 ]
 
 LINKS_REQUIRES = []
