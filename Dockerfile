@@ -29,7 +29,7 @@
 FROM poldracklab/mriqc:base
 
 ARG PY_VER_MAJOR=3
-ARG PY_VER_MINOR=5
+ARG PY_VER_MINOR=6
 ARG CONDA_VERSION=4.3.11
 
 # Placeholder for niworkflows data
