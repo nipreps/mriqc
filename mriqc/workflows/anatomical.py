@@ -95,8 +95,11 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
-        num_threads=settings.get('ants_nthreads', 6), template='mni_icbm152_nlin_asym_09c',
+        num_threads=settings.get('ants_nthreads'), template='mni_icbm152_nlin_asym_09c',
         testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
+    norm.interface.num_threads = settings.get('ants_nthreads')
+    norm.interface.estimated_memory_gb = 6
+
     if mod == 'T1w':
         norm.inputs.reference = 'T1'
     elif mod == 'T2w':
@@ -132,10 +135,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (asw, norm, [('outputnode.bias_corrected', 'moving_image'),
                      ('outputnode.out_mask', 'moving_mask')]),
         (to_ras, amw, [('out_file', 'inputnode.in_file')]),
-        (norm, amw, [('reverse_transforms', 'inputnode.reverse_transforms'),
-                     ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
-        (norm, iqmswf, [('reverse_transforms', 'inputnode.reverse_transforms'),
-                        ('reverse_invert_flags', 'inputnode.reverse_invert_flags')]),
+        (norm, amw, [('inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+        (norm, iqmswf, [('inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
         (norm, repwf, ([('out_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
@@ -178,7 +179,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
         'brainmask', 'airmask', 'artmask', 'headmask', 'segmentation',
         'inu_corrected', 'in_inu', 'pvms', 'metadata',
-        'reverse_transforms', 'reverse_invert_flags']), name='inputnode')
+        'inverse_composite_transform']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
 
@@ -197,7 +198,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     # Project MNI segmentation to T1 space
     invt = pe.MapNode(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        dimension=3, default_value=0, interpolation='NearestNeighbor',
+        float=True),
         iterfield=['input_image'], name='MNItpms2t1')
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
@@ -226,8 +228,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (inputnode, fwhm, [('orig', 'in_file'),
                            ('brainmask', 'mask')]),
         (inputnode, invt, [('orig', 'reference_image'),
-                           ('reverse_transforms', 'transforms'),
-                           ('reverse_invert_flags', 'invert_transform_flags')]),
+                           ('inverse_composite_transform', 'transforms')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
         (measures, datasink, [('out_qc', 'root')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
@@ -417,13 +418,14 @@ def airmsk_wf(name='AirMaskWorkflow'):
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'in_mask', 'head_mask', 'reverse_transforms', 'reverse_invert_flags']),
+        fields=['in_file', 'in_mask', 'head_mask', 'inverse_composite_transform']),
         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
-    invt = pe.Node(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor'), name='invert_xfm')
+    invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
+                                        interpolation='NearestNeighbor',
+                                        float=True), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
@@ -432,8 +434,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
         (inputnode, qi1, [('in_file', 'in_file'),
                           ('head_mask', 'head_mask')]),
         (inputnode, invt, [('in_mask', 'reference_image'),
-                           ('reverse_transforms', 'transforms'),
-                           ('reverse_invert_flags', 'invert_transform_flags')]),
+                           ('inverse_composite_transform', 'transforms')]),
         (invt, qi1, [('output_image', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])

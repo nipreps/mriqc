@@ -20,8 +20,8 @@ from nipype import logging
 from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
+from niworkflows.interfaces.base import SimpleInterface
 from mriqc.utils.misc import _flatten_dict
-from mriqc.interfaces.base import MRIQCBaseInterface
 from mriqc.qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
                                  art_qi2, volume_fraction, rpve, summary_stats,
                                  cjv, wm2max)
@@ -62,7 +62,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     tpm_overlap = traits.Dict
 
 
-class StructuralQC(MRIQCBaseInterface):
+class StructuralQC(SimpleInterface):
     """
     Computes anatomical :abbr:`QC (Quality Control)` measures on the
     structural image given as input
@@ -190,7 +190,7 @@ class ArtifactMaskOutputSpec(TraitedSpec):
     out_air_msk = File(exists=True, desc='output artifacts mask, without artifacts')
 
 
-class ArtifactMask(MRIQCBaseInterface):
+class ArtifactMask(SimpleInterface):
     """
     Computes the artifact mask using the method described in [Mortamet2009]_.
     """
@@ -252,7 +252,7 @@ class ComputeQI2OutputSpec(TraitedSpec):
     out_file = File(desc='output plot: noise fit')
 
 
-class ComputeQI2(MRIQCBaseInterface):
+class ComputeQI2(SimpleInterface):
     """
     Computes the artifact mask using the method described in [Mortamet2009]_.
     """

@@ -39,27 +39,29 @@ ARG DEBIAN_FRONTEND=noninteractive
 COPY docker/files/neurodebian.gpg /root/.neurodebian.gpg
 
 # Prepare environment
-RUN apt-key add /root/.neurodebian.gpg && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
                     curl \
-                    xvfb \
                     bzip2 \
                     ca-certificates \
+                    xvfb \
+                    pkg-config \
                     unzip \
                     apt-utils \
                     fusefat \
                     make \
                     gcc \
                     git=1:2.7.4-0ubuntu1 \
-                    graphviz=2.38.0-12ubuntu2 \
-                    nodejs && \
-    curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true; \
-    apt-get update
+                    graphviz=2.38.0-12ubuntu2 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Installing Neurodebian packages (FSL, AFNI, git)
-RUN apt-get install -y --no-install-recommends \
+# Add neurodebian and install packages (FSL, AFNI)
+RUN curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key add /root/.neurodebian.gpg && \
+    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true) && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
                     fsl-core=5.0.9-1~nd+1+nd16.04+1 \
                     fsl-mni152-templates=5.0.7-2 \
                     afni=16.2.07~dfsg.1-2~nd16.04+1 && \
@@ -84,18 +86,24 @@ RUN mkdir -p /opt/ants && \
     curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
     | tar -xjC /opt/ants --strip-components 1
 
-ENV PATH=/opt/ants:$PATH
+ENV ANTSPATH=/opt/ants \
+    PATH=/opt/ants:$PATH
 
 # Installing and setting up c3d
 RUN mkdir -p /opt/c3d && \
     curl -sSL "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/57f341d6594d9001f591bac2" \
     | tar -xzC /opt/c3d --strip-components 1
-
 ENV PATH=/opt/c3d:$PATH
 
-# Install BIDS-validator
-RUN curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
+# Installing WEBP tools
+RUN curl -sSLO "http://downloads.webmproject.org/releases/webp/libwebp-0.5.2-linux-x86-64.tar.gz" && \
+  tar -xf libwebp-0.5.2-linux-x86-64.tar.gz && cd libwebp-0.5.2-linux-x86-64/bin && \
+  mv cwebp /usr/local/bin/ && rm -rf libwebp-0.5.2-linux-x86-64
+
+# Install BIDS-validator and SVGO
+RUN curl -sL https://deb.nodesource.com/setup_7.x | bash - && \
+    apt-get update && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    npm install -g bids-validator
+    npm install -g svgo bids-validator
 

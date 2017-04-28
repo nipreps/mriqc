@@ -22,6 +22,7 @@ import pandas as pd
 
 def main():
     """Entry point"""
+    from mriqc.classifier.data import read_iqms
     parser = ArgumentParser(description='compare two pandas dataframes',
                             formatter_class=RawTextHelpFormatter)
     g_input = parser.add_argument_group('Inputs')
@@ -31,25 +32,35 @@ def main():
                          required=True, help='reference dataframe')
 
     opts = parser.parse_args()
-    tstdf = pd.read_csv(opts.input_csv).sort_values(['subject_id', 'session_id', 'run_id'],
-                                                    ascending=[True, True, True])
-    refdf = pd.read_csv(opts.reference_csv).sort_values(['subject_id', 'session_id', 'run_id'],
-                                                        ascending=[True, True, True])
 
-    refcolumns = refdf.columns.ravel().tolist()
-    for col in refcolumns:
-        if 'Unnamed' in col:
-            refcolumns.remove(col)
+    ref_df, ref_names, ref_bids = read_iqms(opts.reference_csv)
+    tst_df, tst_names, tst_bids = read_iqms(opts.input_csv)
 
-    tstcolumns = tstdf.columns.ravel().tolist()
-    for col in tstcolumns:
-        if 'Unnamed' in col:
-            tstcolumns.remove(col)
+    ref_df.set_index(ref_bids)
+    tst_df.set_index(tst_bids)
 
-    if sorted(refcolumns) != sorted(tstcolumns):
+    if sorted(ref_bids) != sorted(tst_bids):
+        sys.exit('Dataset has different BIDS bits w.r.t. reference')
+
+    if sorted(ref_names) != sorted(tst_names):
         sys.exit('Output CSV file changed number of columns')
 
-    if not np.all(refdf[refcolumns].values == tstdf[refcolumns].values):
+    ref_df = ref_df.sort_values(by=ref_bids)
+    tst_df = tst_df.sort_values(by=tst_bids)
+
+    diff = ref_df[ref_names].values != tst_df[tst_names].values
+    if np.any(diff):
+        ne_stacked = (ref_df[ref_names] != tst_df[ref_names]).stack()
+        changed = ne_stacked[ne_stacked]
+        # changed.set_index(ref_bids)
+        difference_locations = np.where(diff)
+        changed_from = ref_df[ref_names].values[difference_locations]
+        changed_to = tst_df[ref_names].values[difference_locations]
+        cols = [ref_names[v] for v in difference_locations[1]]
+        bids_df = ref_df.loc[difference_locations[0], ref_bids].reset_index()
+        chng_df = pd.DataFrame({'iqm': cols, 'from': changed_from, 'to': changed_to})
+        table = pd.concat([bids_df, chng_df], axis=1)
+        print(table[ref_bids + ['iqm', 'from', 'to']].to_string(index=False))
         sys.exit('Output CSV file changed one or more values')
 
     sys.exit(0)

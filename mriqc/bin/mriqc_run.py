@@ -76,13 +76,18 @@ def main():
                          help='Do not run the workflow.')
     g_input.add_argument('--use-plugin', action='store', default=None,
                          help='nipype plugin configuration file')
+    g_input.add_argument('--ica', action='store_true', default=False,
+                         help='Run ICA on the raw data and include the components'
+                              'in the individual reports (slow but potentially very insightful)')
 
     g_input.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
+    g_input.add_argument('--profile', action='store_true', default=False,
+                         help='hook up the resource profiler callback to nipype')
     g_input.add_argument('--hmc-afni', action='store_true', default=True,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC)')
+                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
-                        help='Use FSL MCFLIRT for head motion correction (HMC)')
+                        help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_input.add_argument(
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
@@ -98,7 +103,7 @@ def main():
     # ANTs options
     g_ants = parser.add_argument_group('specific settings for ANTs registrations')
     g_ants.add_argument(
-        '--ants-nthreads', action='store', type=int, default=DEFAULTS['ants_nthreads'],
+        '--ants-nthreads', action='store', type=int, default=0,
         help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
@@ -131,28 +136,8 @@ def main():
         MRIQC_LOG.warn('Option --nthreads has been deprecated in mriqc 0.8.8. '
                        'Please use --n_procs instead.')
         n_procs = opts.nthreads
-    if opts.n_procs is not None:
+    else:
         n_procs = opts.n_procs
-
-    # Check physical memory
-    total_memory = opts.mem_gb
-    if total_memory < 0:
-        try:
-            from psutil import virtual_memory
-            total_memory = virtual_memory().total // (1024 ** 3) + 1
-        except ImportError:
-            MRIQC_LOG.warn('Total physical memory could not be estimated, using %d'
-                           'GB as default', DEFAULT_MEM_GB)
-            total_memory = DEFAULT_MEM_GB
-
-    if total_memory > 0:
-        av_procs = total_memory // 4
-        if av_procs < 1:
-            MRIQC_LOG.warn('Total physical memory is less than 4GB, memory allocation'
-                           ' problems are likely to occur.')
-            n_procs = 1
-        elif n_procs > av_procs:
-            n_procs = av_procs
 
     settings = {
         'bids_dir': bids_dir,
@@ -166,7 +151,8 @@ def main():
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
-        'float32': opts.float32
+        'float32': opts.float32,
+        'ica': opts.ica
     }
 
     if opts.hmc_afni:
@@ -204,9 +190,10 @@ def main():
     # Set nipype config
     ncfg.update_config({
         'logging': {'log_directory': log_dir, 'log_to_file': True},
-        'execution': {'crashdump_dir': log_dir}
+        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
     })
 
+    callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
         from yaml import load as loadyml
@@ -215,14 +202,21 @@ def main():
     else:
         # Setup multiprocessing
         if settings['n_procs'] == 0:
-            settings['n_procs'] = 1
-            max_parallel_ants = cpu_count() // settings['ants_nthreads']
-            if max_parallel_ants > 1:
-                settings['n_procs'] = max_parallel_ants
+            settings['n_procs'] = cpu_count()
+
+        if settings['ants_nthreads'] == 0:
+            if settings['n_procs'] > 1:
+                # always leave one extra thread for non ANTs work,
+                # don't use more than 8 threads - the speed up is minimal
+                settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
+            else:
+                settings['ants_nthreads'] = 1
 
         if settings['n_procs'] > 1:
             plugin_settings['plugin'] = 'MultiProc'
             plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
+            if opts.mem_gb:
+                plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
     MRIQC_LOG.info(
         'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
@@ -251,7 +245,20 @@ def main():
             workflow.add_nodes(wf_list)
 
             if not opts.dry_run:
+                if opts.profile:
+                    import logging
+                    from nipype.pipeline.plugins.callback_log import log_nodes_cb
+                    plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
+                    callback_log_path = op.join(log_dir, 'run_stats.log')
+                    logger = logging.getLogger('callback')
+                    logger.setLevel(logging.DEBUG)
+                    handler = logging.FileHandler(callback_log_path)
+                    logger.addHandler(handler)
+
                 workflow.run(**plugin_settings)
+                if callback_log_path is not None:
+                    from nipype.utils.draw_gantt_chart import generate_gantt_chart
+                    generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
@@ -278,10 +285,10 @@ def main():
 
             MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
 
-            out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
-            if out_pred is not None:
-                MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
-                               mod, out_pred)
+            # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
+            # if out_pred is not None:
+            #     MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
+            #                    mod, out_pred)
 
             out_html = op.join(reports_dir, mod + '_group.html')
             group_html(out_csv, mod,

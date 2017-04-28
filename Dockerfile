@@ -25,10 +25,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 FROM poldracklab/mriqc:base
 
 ARG PY_VER_MAJOR=3
 ARG PY_VER_MINOR=5
+ARG CONDA_VERSION=4.3.11
 
 # Placeholder for niworkflows data
 RUN mkdir /niworkflows_data
@@ -39,32 +41,36 @@ COPY docker/files/run_* /usr/bin/
 RUN chmod +x /usr/bin/run_*
 
 # Installing and setting up miniconda
-RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh && \
-    bash Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh -b -p /usr/local/miniconda && \
-    rm Miniconda${PY_VER_MAJOR}-4.2.12-Linux-x86_64.sh
+RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda${PY_VER_MAJOR}-${CONDA_VERSION}-Linux-x86_64.sh && \
+    bash Miniconda${PY_VER_MAJOR}-${CONDA_VERSION}-Linux-x86_64.sh -b -p /usr/local/miniconda && \
+    rm Miniconda${PY_VER_MAJOR}-${CONDA_VERSION}-Linux-x86_64.sh
 
 ENV PATH=/usr/local/miniconda/bin:$PATH \
     PYTHONNOUSERSITE=1 \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
-    ACCEPT_INTEL_PYTHON_EULA=yes \
-    MKL_NUM_THREADS=1 \
-    OMP_NUM_THREADS=1
+    ACCEPT_INTEL_PYTHON_EULA=yes
+
+# ENV MKL_NUM_THREADS=1 \
+#     OMP_NUM_THREADS=1
 
 # Installing precomputed python packages
 RUN conda config --add channels conda-forge && \
     conda config --set always_yes yes --set changeps1 no && \
     chmod +x /usr/local/miniconda/bin/*; sync && \
-    conda install -y mkl=2017.0.1 \
-                     numpy \
-                     scipy=0.18.1 \
-                     scikit-learn=0.17.1 \
-                     matplotlib=1.5.1 \
-                     pandas=0.19.0 \
+    conda install -y openblas=0.2.19; sync && \
+    conda install -y numpy=1.12.0 \
+                     scipy=0.19.0 \
+                     scikit-learn=0.18.1 \
+                     matplotlib=2.0.0 \
+                     pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
+                     sympy=1.0 \
+                     statsmodels=0.8.0 \
+                     dipy=0.11.0 \
                      traits=4.6.0 \
-                     psutil=5.0.1 \
+                     psutil=5.2.2 \
                      icu=58.1 \
                      scandir; \
     sync
@@ -102,6 +108,5 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
       org.label-schema.schema-version="1.0"
 
-WORKDIR /scratch
-ENTRYPOINT ["/usr/bin/run_mriqc"]
+ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 CMD ["--help"]
