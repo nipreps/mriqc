@@ -36,10 +36,6 @@ ARG CONDA_VERSION=4.3.11
 RUN mkdir /niworkflows_data
 ENV CRN_SHARED_DATA /niworkflows_data
 
-# Write scripts
-COPY docker/files/run_* /usr/bin/
-RUN chmod +x /usr/bin/run_*
-
 # Installing and setting up miniconda
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda${PY_VER_MAJOR}-${CONDA_VERSION}-Linux-x86_64.sh && \
     bash Miniconda${PY_VER_MAJOR}-${CONDA_VERSION}-Linux-x86_64.sh -b -p /usr/local/miniconda && \
