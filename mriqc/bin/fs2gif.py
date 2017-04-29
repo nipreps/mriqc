@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:23:13
+# @Last Modified time: 2017-04-28 11:16:12
 
 """
 Batch export freesurfer results to animated gifs
@@ -33,12 +33,13 @@ def main():
     parser = ArgumentParser(description='Batch export freesurfer results to animated gifs',
                             formatter_class=RawTextHelpFormatter)
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-S', '--subjects-dir', action='store', default=os.getcwd())
     g_input.add_argument('-s', '--subject-id', action='store')
     g_input.add_argument('-t', '--temp-dir', action='store')
     g_input.add_argument('--keep-temp', action='store_true', default=False)
     g_input.add_argument('--zoom', action='store_true', default=False)
     g_input.add_argument('--hist-eq', action='store_true', default=False)
+    g_input.add_argument('--use-xvfb', action='store_true', default=False)
+
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store', default='fs2gif')
 
@@ -61,22 +62,16 @@ def main():
         if exc.errno != EEXIST:
             raise exc
 
-    subjects_dir = op.abspath(opts.subjects_dir)
-    subject_list = opts.subject_id
-    if subject_list is None:
-        subject_list = [name for name in os.listdir(subjects_dir)
+    subjects_dir = os.getenv('SUBJECTS_DIR', op.abspath('subjects'))
+    subject_list = [opts.subject_id]
+    if opts.subject_id is None:
+        subject_list = [op.basename(name) for name in os.listdir(subjects_dir)
                         if op.isdir(os.path.join(subjects_dir, name))]
-    elif isinstance(subject_list, string_types):
-        if '*' not in subject_list:
-            subject_list = [subject_list]
-        else:
-            all_dirs = [op.join(subjects_dir, name) for name in os.listdir(subjects_dir)
-                        if op.isdir(os.path.join(subjects_dir, name))]
-            pattern = glob.glob(op.abspath(op.join(subjects_dir, opts.subject_id)))
-            subject_list = list(set(pattern).intersection(set(all_dirs)))
-
     environ = os.environ.copy()
     environ['SUBJECTS_DIR'] = subjects_dir
+    if opts.use_xvfb:
+        environ['doublebufferflag'] = 1
+
     # tcl_file = pkgr.resource_filename('mriqc', 'data/fsexport.tcl')
     tcl_contents = """
 SetOrientation 0
@@ -86,8 +81,8 @@ SetDisplayFlag 22 1
 set i 0
 """
 
-    for sub_path in subject_list:
-        subid = op.basename(sub_path)
+    for subid in subject_list:
+        sub_path = op.join(subjects_dir, subid)
         tmp_sub = op.join(tmpdir, subid)
         try:
             os.makedirs(tmp_sub)
@@ -129,8 +124,14 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file], env=environ)
+            cmd = ['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd = _xvfb_run() + cmd
+
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
             # Convert to animated gif
+            print('Stacking coronal slices')
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-*.tif' % (tmp_sub, subid),
                      '%s/%s.gif' % (out_dir, subid)])
 
@@ -148,7 +149,15 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file], env=environ)
+            cmd = ['tkmedit', subid, 'norm.mgz', 'lh.white', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd = _xvfb_run() + cmd
+
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
+            # Convert to animated gif
+            print('Stacking coronal slices')
+
 
             # Export tiffs for right hemisphere
             tcl_file = op.join(tmp_sub, 'rh-%s.tcl' % subid)
@@ -163,9 +172,14 @@ set i 0
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            sp.call(['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file], env=environ)
+            cmd = ['tkmedit', subid, 'norm.mgz', 'rh.white', '-tcl', tcl_file]
+            if opts.use_xvfb:
+                cmd = _xvfb_run() + cmd
 
+            print('Running tkmedit: %s' % ' '.join(cmd))
+            sp.call(cmd, env=environ)
             # Convert to animated gif
+            print('Stacking coronal slices')
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-lh-*.tif' % (tmp_sub, subid),
                      '%s/%s-lh.gif' % (out_dir, subid)])
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-rh-*.tif' % (tmp_sub, subid),
@@ -174,6 +188,23 @@ set i 0
 
         if not opts.keep_temp:
             rmtree(tmp_sub, ignore_errors=True, onerror=_myerror)
+
+
+def _xvfb_run(wait=5, server_args='-screen 0, 1600x1200x24', logs=None):
+    """
+    Wrap command with xvfb-run. Copied from:
+    https://github.com/VUIIS/seam/blob/1dabd9ca5b1fc7d66ef7d41c34ea8d42d668a484/seam/util.py
+
+    """
+    if logs is None:
+        logs = op.join(mkdtemp(), 'fs2gif_xvfb')
+
+    return ['xvfb-run',
+            '-a', # automatically get a free server number
+            '-f {}.out'.format(logs),
+            '-e {}.err'.format(logs),
+            '--wait={:d}'.format(wait),
+            '--server-args="{}"'.format(server_args)]
 
 def _myerror(msg):
     print('WARNING: Error deleting temporal files: %s' % msg)
