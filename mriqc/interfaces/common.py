@@ -10,7 +10,7 @@ import nibabel as nb
 
 from nipype import logging
 from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File
-from .base import MRIQCBaseInterface
+from niworkflows.interfaces.base import SimpleInterface
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -26,7 +26,7 @@ class ConformImageOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output conformed file')
 
 
-class ConformImage(MRIQCBaseInterface):
+class ConformImage(SimpleInterface):
 
     """
     Conforms an input image

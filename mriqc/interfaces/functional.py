@@ -14,10 +14,11 @@ from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
                                     BaseInterfaceInputSpec)
 from nipype import logging
 
+from niworkflows.interfaces.base import SimpleInterface
+
 from mriqc.utils.misc import _flatten_dict
 from mriqc.qc.anatomical import snr, fber, efc, summary_stats
 from mriqc.qc.functional import (gsr, gcor)
-from .base import MRIQCBaseInterface
 IFLOGGER = logging.getLogger('interface')
 
 
@@ -49,7 +50,7 @@ class FunctionalQCOutputSpec(TraitedSpec):
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
 
 
-class FunctionalQC(MRIQCBaseInterface):
+class FunctionalQC(SimpleInterface):
     """
     Computes anatomical :abbr:`QC (Quality Control)` measures on the
     structural image given as input
@@ -165,7 +166,7 @@ class SpikesOutputSpec(TraitedSpec):
     num_spikes = traits.Int(desc='number of spikes found (total)')
 
 
-class Spikes(MRIQCBaseInterface):
+class Spikes(SimpleInterface):
 
     """
     Computes the number of spikes

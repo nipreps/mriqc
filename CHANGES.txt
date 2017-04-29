@@ -1,3 +1,8 @@
+Next release
+============
+
+* [ENH] Updated fs2gif script (#465)
+
 Release 0.9.3
 =============
 
