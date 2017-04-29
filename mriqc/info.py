@@ -16,7 +16,7 @@ __copyright__ = ('Copyright 2016, Center for Reproducible Neuroscience, '
 __credits__ = 'Oscar Esteban'
 __license__ = '3-clause BSD'
 __status__ = 'Prototype'
-__description__ = 'NR-IQMs (no-reference Image Quality Metrics) for MRI'
+__description__ = 'Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain'
 __longdesc__ = ("MRIQC provides a series of image processing workflows "
                 "to extract and compute a series of NR (no-reference), IQMs "
                 "(image quality metrics) to be used in QAPs (quality "
