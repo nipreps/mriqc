@@ -98,12 +98,9 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(fsl.FAST(
-        segments=True, out_basename='segment'), name='segmentation')
-    if mod == 'T1w':
-        segment.inputs.img_type = 1
-    elif mod == 'T2w':
-        segment.inputs.img_type = 2
+    segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
+                      name='segmentation', estimated_memory_gb=3)
+
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
@@ -157,20 +154,19 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     return workflow
 
-def spatial_normalization(settings, mod='T1w', name='SpatialNormalization'):
+def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
+                          resolution=2.0):
     """
     A simple workflow to perform spatial normalization
 
     """
+    from mriqc.interfaces.common import EnsureSize
     from nipype.interfaces.ants import AffineInitializer
     from niworkflows.data import getters as niwgetters
 
     # Have some settings handy
-    test_mode = settings.get('testing', False)
     tpl_id = settings.get('template_id', 'mni_icbm152_nlin_asym_09c')
     mni_template = getattr(niwgetters, 'get_{}'.format(tpl_id))()
-    res = 1 if not test_mode else 2
-
 
     # Define workflow interface
     workflow = pe.Workflow(name=name)
@@ -182,27 +178,38 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization'):
     # Mask inputs for initialization
     mmask = pe.Node(fsl.ApplyMask(), name='MovingApplyMask')
     fmask = pe.Node(fsl.ApplyMask(), name='FixedApplyMask')
-    fmask.inputs.in_file = op.join(mni_template, '%dmm_%s.nii.gz' % (res, mod[:2]))
-    fmask.inputs.mask_file = op.join(mni_template, '%dmm_brainmask.nii.gz' % res)
+    fmask.inputs.in_file = op.join(mni_template,
+                                   '%dmm_%s.nii.gz' % (int(resolution), mod[:2]))
+    fmask.inputs.mask_file = op.join(mni_template,
+                                     '%dmm_brainmask.nii.gz' % int(resolution))
+
+    # Ensure resolution
+    resample = pe.Node(EnsureSize(pixel_size=resolution), 'EnsureSize')
 
     # Initializer
     init = pe.Node(AffineInitializer(), name='NormalizationInit')
 
     # Spatial normalization
     norm = pe.Node(RobustMNINormalization(
-        num_threads=settings.get('ants_nthreads'), template=tpl_id, testing=True,
-        generate_report=True, reference=mod[:2]), name='SpatialNormalization')
+        flavor='testing' if settings.get('testing', False) else 'fast',
+        num_threads=settings.get('ants_nthreads'),
+        template=tpl_id,
+        template_resolution=2,
+        reference=mod[:2],
+        generate_report=True,), name='SpatialNormalization')
     norm.interface.num_threads = settings.get('ants_nthreads')
-    norm.interface.estimated_memory_gb = 6 if not test_mode else 3
+    norm.interface.estimated_memory_gb = 3
 
     workflow.connect([
-        (inputnode, mmask, [('moving_image', 'in_file'),
-                            ('moving_mask', 'mask_file')]),
+        (inputnode, resample, [('moving_image', 'in_file'),
+                               ('moving_mask', 'in_mask')]),
+        (resample, mmask, [('out_file', 'in_file'),
+                           ('out_mask', 'mask_file')]),
         (mmask, init, [('out_file', 'moving_image')]),
         (fmask, init, [('out_file', 'fixed_image')]),
         (init, norm, [('out_file', 'initial_moving_transform')]),
-        (inputnode, norm, [('moving_image', 'moving_image'),
-                           ('moving_mask', 'moving_mask')]),
+        (resample, norm, [('out_file', 'moving_image'),
+                          ('out_mask', 'moving_mask')]),
         (norm, outputnode, [('inverse_composite_transform', 'inverse_composite_transform'),
                             ('out_report', 'out_report')]),
     ])
