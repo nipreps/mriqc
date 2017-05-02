@@ -165,7 +165,7 @@ class EnsureSize(SimpleInterface):
     def _run_interface(self, runtime):
         nii = nb.load(self.inputs.in_file)
         zooms = nii.header.get_zooms()
-        if np.all(np.array(zooms[:3]) > self.inputs.pixel_size):
+        if np.all(np.array(zooms[:3]) <= self.inputs.pixel_size):
             self._results['out_file'] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
                 self._results['out_mask'] = self.inputs.in_mask
