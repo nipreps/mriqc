@@ -338,11 +338,22 @@ def efc(img):
     """
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
-    and blurring induced by head motion. Lower values are better.
+    and blurring induced by head motion. A range of low values is better,
+    with EFC = 0 for all the energy concentrated in one pixel.
+    
+    .. math::
+    
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
+        
+    with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
     The original equation is normalized by the maximum entropy, so that the
     :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
-    different dimensions.
+    different dimensions:
+    
+    .. math::
+    
+        \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
 
