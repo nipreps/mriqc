@@ -92,7 +92,7 @@ Other measures
 ^^^^^^^^^^^^^^
 
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
-  the spatial distribution of the image intensity values in units of voxels [Friedman2008]_.
+  the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
   Lower values are better
 
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
@@ -140,6 +140,11 @@ Other measures
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
      Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
      doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
+     
+  .. [Forman1995] Forman SD et a., *Improved assessment of significant activation in functional
+     magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
+     Magn. Reson. Med. 33 (5), 636–647, 1995.
+     doi:`10.1016/j.neuroimage.2006.03.062 <http://dx.doi.org/10.1016/j.neuroimage.2006.03.062>`_.
 
 
 mriqc.qc.anatomical module
