@@ -372,7 +372,11 @@ def wm2max(img, seg):
     Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
     defined as the maximum intensity found in the volume w.r.t. the
     mean value of the white matter tissue. Values close to 1.0 are
-    better.
+    better:
+    
+    .. math ::
+    
+        \text{WM2MAX} = \frac{\mu_\text{WM}}{P_{99.95}(X)}
 
     """
     wmmask = np.zeros_like(seg)
