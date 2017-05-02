@@ -164,9 +164,15 @@ class EnsureSize(SimpleInterface):
 
     def _run_interface(self, runtime):
         nii = nb.load(self.inputs.in_file)
-        if np.all(np.array(nii.header.get_zooms()[:3]) > self.inputs.pixel_size):
+        zooms = nii.header.get_zooms()
+        if np.all(np.array(zooms[:3]) > self.inputs.pixel_size):
             self._results['out_file'] = self.inputs.in_file
+            if isdefined(self.inputs.in_mask):
+                self._results['out_mask'] = self.inputs.in_mask
             return runtime
+
+        IFLOGGER.info('One or more voxel dimensions (%f, %f, %f) are greater than the requested'
+                      'voxel size (%f)', zooms[0], zooms[1], zooms[2], self.inputs.pixel_size)
 
         # Figure out new matrix
         # 1) Get base affine
