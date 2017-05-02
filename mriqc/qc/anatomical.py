@@ -176,7 +176,7 @@ def snr(img, smask, erode=True, fglabel=1):
 
     .. math::
 
-        \text{SNR} = \frac{\mu_F}{\sigma_F},
+        \text{SNR} = \frac{\mu_F}{\sigma_F\sqrt{n/(n-1)}},
 
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
