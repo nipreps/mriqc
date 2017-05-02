@@ -93,7 +93,12 @@ Other measures
 
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
   the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
-  Lower values are better
+  Lower values are better. Uses the gaussian width estimator filter implemented in
+  AFNI's `3dFWHMx`:
+  
+  .. math ::
+  
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
 
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
   the
