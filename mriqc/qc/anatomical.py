@@ -76,10 +76,6 @@ Measures targeting specific artifacts
   The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity corrupted by artifacts
   normalized by the number of voxels in the background. Lower values are better.
 
-  Optionally, it also calculates **qi2**, the distance between the distribution
-  of noise voxel (non-artifact background voxels) intensities, and a
-  Rician distribution.
-
   .. figure:: ../resources/mortamet-mrm2009.png
 
     The workflow to compute the artifact detection from [Mortamet2009]_.
