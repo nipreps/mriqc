@@ -196,9 +196,12 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
         template=tpl_id,
         template_resolution=2,
         reference=mod[:2],
-        generate_report=True,), name='SpatialNormalization')
-    norm.interface.num_threads = settings.get('ants_nthreads')
-    norm.interface.estimated_memory_gb = 3
+        generate_report=True,),
+                   name='SpatialNormalization',
+                   # Request all MultiProc processes when ants_nthreads > n_procs
+                   num_threads=min(settings.get('ants_nthreads'),
+                                   settings.get('n_procs')),
+                   estimated_memory_gb=3)
 
     workflow.connect([
         (inputnode, resample, [('moving_image', 'in_file'),
