@@ -12,6 +12,8 @@
 The anatomical workflow
 =======================
 
+.. image :: _static/anatomical_workflow_source.svg
+
 The anatomical workflow follows the following steps:
 
 #. Conform (reorientations, revise data types) input data and read
@@ -70,7 +72,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         datadir = op.abspath('data')
         wf = anat_qc_workflow([op.join(datadir, 'sub-001/anat/sub-001_T1w.nii.gz')],
                               settings={'bids_dir': datadir,
-                                        'output_dir': op.abspath('out')})
+                                        'output_dir': op.abspath('out'),
+                                        'ants_nthreads': 1})
 
     """
 
@@ -96,16 +99,24 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 4. Spatial Normalization, using ANTs
     norm = pe.Node(RobustMNINormalization(
         num_threads=settings.get('ants_nthreads'), template='mni_icbm152_nlin_asym_09c',
-        reference=mod[:2], testing=settings.get('testing', False), generate_report=True),
-                   name='SpatialNormalization')
+        testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
     norm.interface.num_threads = settings.get('ants_nthreads')
     norm.interface.estimated_memory_gb = 6
+
+    if mod == 'T1w':
+        norm.inputs.reference = 'T1'
+    elif mod == 'T2w':
+        norm.inputs.reference = 'T2'
 
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
-                      name='segmentation', estimated_memory_gb=3)
+    segment = pe.Node(fsl.FAST(
+        segments=True, out_basename='segment'), name='segmentation')
+    if mod == 'T1w':
+        segment.inputs.img_type = 1
+    elif mod == 'T2w':
+        segment.inputs.img_type = 2
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
