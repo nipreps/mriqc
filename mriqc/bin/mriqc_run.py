@@ -206,9 +206,9 @@ def main():
 
         if settings['ants_nthreads'] == 0:
             if settings['n_procs'] > 1:
-                # always leave one extra thread for non ANTs work,
-                # don't use more than 8 threads - the speed up is minimal
-                settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
+                # Use all available threads, at least 4 threads.
+                # maximum 8 threads since the speed up is minimal after that
+                settings['ants_nthreads'] = min(max(settings['n_procs'], 4), 8)
             else:
                 settings['ants_nthreads'] = 1
 
