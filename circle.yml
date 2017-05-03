@@ -19,20 +19,21 @@ dependencies:
     # Create scratch folder and force group permissions
     - mkdir -p $SCRATCH && sudo setfacl -d -m group:ubuntu:rwx $SCRATCH && sudo setfacl -m group:ubuntu:rwx $SCRATCH
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
+    - if [ "${CIRCLE_NODE_TOTAL:-1}" == "1" ]; then unset CIRCLE_NODE_INDEX; fi
   override:
-    - if [[ -e ~/docker/image.tar ]]; then docker load -i ~/docker/image.tar; fi
     - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py
-    - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
-    - docker save poldracklab/mriqc:latest > ~/docker/image.tar
+    - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then docker load -i ~/docker/image.tar || true; fi
+    - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]; fi
+    - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then docker save poldracklab/mriqc:latest > ~/docker/image.tar; fi
 
 test:
   override:
     # Test mriqcp
+    - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m T1w --verbose-reports --profile --n_procs 1 --ants-nthreads 4; fi :
+        timeout: 3200
     - if [ "${CIRCLE_NODE_INDEX:-1}" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc; fi :
         timeout: 2600
     - if [ "${CIRCLE_NODE_INDEX:-1}" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m bold --verbose-reports --profile --n_procs 1 --ants-nthreads 4 --ica; fi :
-        timeout: 3200
-    - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m T1w --verbose-reports --profile --n_procs 1 --ants-nthreads 4; fi :
         timeout: 3200
     - if [ "${CIRCLE_NODE_INDEX:-0}" == "0" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w; fi
     - if [ "${CIRCLE_NODE_INDEX:-1}" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold; fi
