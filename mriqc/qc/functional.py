@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-04 10:21:13
+# @Last Modified time: 2017-05-04 14:15:34
 """
 
 Measures for the structural information
@@ -50,7 +50,7 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
     temporal difference time series. The ``dvars_vstd`` is a voxel-wise
     standardization of DVARS, where the temporal difference time series is
     normalized across time by that voxel standard deviation across time, before
-    computing the RMS of the temporal difference.
+    computing the RMS of the temporal difference [Nichols2013]_.
 
 
 - **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``) calculates
