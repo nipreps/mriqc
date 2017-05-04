@@ -34,7 +34,7 @@ test:
         timeout: 3200
     - case $CIRCLE_NODE_INDEX in 0) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w ;; 1) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold ;; esac :
         parallel: true
-    - cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt
+    - case $CIRCLE_NODE_INDEX in 0) cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_T1w.txt $SCRATCH/outputs.txt ;; cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_bold.txt $SCRATCH/outputs.txt ;; esac
     - case $CIRCLE_NODE_INDEX in 0) docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv ;; 1) docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv;; esac :
         parallel: true
 
