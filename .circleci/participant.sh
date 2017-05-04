@@ -14,7 +14,7 @@ DOCKER_RUN="docker run -i -v /etc/localtime:/etc/localtime:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       --verbose-reports --profile"
+                       --verbose-reports"
 
 case $CIRCLE_NODE_INDEX in
 	0)

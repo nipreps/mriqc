@@ -8,8 +8,6 @@ out/derivatives/sub-ds205s03_T1w.json
 out/derivatives/sub-ds205s07_T1w.json
 out/derivatives/sub-ds205s09_T1w.json
 out/logs
-out/logs/run_stats.log
-out/logs/run_stats.log.html
 out/reports
 out/reports/sub-ds003s01_T1w.html
 out/reports/sub-ds003s02_T1w.html
