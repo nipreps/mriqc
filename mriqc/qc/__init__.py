@@ -3,7 +3,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
-
 Some no-reference :abbr:`IQMs (image quality metrics)` are extracted in the
 final stage of all processing workflows run by MRIQC.
 A no-reference :abbr:`IQM (image quality metric)` is a measurement of some aspect
@@ -28,8 +27,9 @@ sharpness/blurriness of the images, etc.
 
   Most of the :abbr:`IQMs (image quality metrics)` in this module are adapted, derived or
   reproduced from the :abbr:`QAP (quality assessment protocols)` project [QAP]_.
-  We particularly thank Steve Giavasis (@sgiavasis) and Krishna Somandepali for their
-  original implementations of the code in this module that we took from the [QAP]_.
+  We particularly thank Steve Giavasis (`@sgiavasis <http://github.com/sgiavasis>`_) and
+  Krishna Somandepali for their original implementations of the code in this module that
+  we took from the [QAP]_.
   The [QAP]_ has a very good description of the :abbr:`IQMs (image quality metrics)`
   in [QAP-measures]_.
 

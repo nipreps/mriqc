@@ -4,7 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # pylint: disable=no-member
 
-"""
+r"""
 
 Measures based on noise measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -94,10 +94,10 @@ Other measures
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
   the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
   Lower values are better. Uses the gaussian width estimator filter implemented in
-  AFNI's `3dFWHMx`:
-  
+  AFNI's ``3dFWHMx``:
+
   .. math ::
-  
+
       \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
 
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
@@ -116,7 +116,12 @@ Other measures
   :abbr:`WM (white-matter)`.
 
 - **overlap_\*_\***:
-  The overlap of the :abbr:`TPMs (tissue probability maps)` estimated from the image and the corresponding maps from the ICBM nonlinear-asymmetric 2009c template.
+  The overlap of the :abbr:`TPMs (tissue probability maps)` estimated from the image and
+  the corresponding maps from the ICBM nonlinear-asymmetric 2009c template.
+
+  .. math ::
+
+      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}{\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
 
 
 .. topic:: References
@@ -145,7 +150,7 @@ Other measures
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
      Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
      doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
-     
+
   .. [Forman1995] Forman SD et a., *Improved assessment of significant activation in functional
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
      Magn. Reson. Med. 33 (5), 636–647, 1995.
@@ -341,24 +346,24 @@ def fber(img, air):
 
 
 def efc(img):
-    """
+    r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
     and blurring induced by head motion. A range of low values is better,
     with EFC = 0 for all the energy concentrated in one pixel.
-    
+
     .. math::
-    
+
         \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
-        
+
     with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
     The original equation is normalized by the maximum entropy, so that the
     :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
     different dimensions:
-    
+
     .. math::
-    
+
         \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
@@ -383,9 +388,9 @@ def wm2max(img, seg):
     defined as the maximum intensity found in the volume w.r.t. the
     mean value of the white matter tissue. Values close to 1.0 are
     better:
-    
+
     .. math ::
-    
+
         \text{WM2MAX} = \frac{\mu_\text{WM}}{P_{99.95}(X)}
 
     """
@@ -394,15 +399,15 @@ def wm2max(img, seg):
     return float(np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95))
 
 def art_qi1(airmask, artmask):
-    """
+    r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates **q1**, as the proportion of voxels with intensity corrupted by artifacts
+    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity corrupted by artifacts
     normalized by the number of voxels in the background:
-    
+
     .. math ::
-    
+
         \text{QI}_1 = \frac{1}{N} \sum\limits_{x\in X_\text{art}} 1
-    
+
     Lower values are better.
 
     :param numpy.ndarray airmask: input air mask, without artifacts
@@ -417,10 +422,17 @@ def art_qi1(airmask, artmask):
 
 def art_qi2(img, airmask, ncoils=12, erodemask=True,
             out_file='qi2_fitting.txt', min_voxels=1e3):
-    """
-    Calculates **qi2**, the distance between the distribution
-    of noise voxel (non-artifact background voxels) intensities, and a
-    centered Chi distribution.
+    r"""
+    Calculates :math:`\text{QI}_2`, based on the goodness-of-fit of a centered
+    :math:`\chi^2` distribution onto the intensity distribution of
+    non-artifactual background (within the "hat" mask):
+
+
+    .. math ::
+
+        \chi^2_n = \frac{2}{(\sigma \sqrt{2})^{2n} \, (n - 1)!}x^{2n - 1}\, e^{-\frac{x}{2}}
+
+    where :math:`n` is the number of coil elements.
 
     :param numpy.ndarray img: input data
     :param numpy.ndarray airmask: input air mask without artifacts
@@ -482,9 +494,13 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
 
 
 def volume_fraction(pvms):
-    """
+    r"""
     Computes the :abbr:`ICV (intracranial volume)` fractions
     corresponding to the (partial volume maps).
+
+    .. math ::
+
+        \text{ICV}^k = \frac{\sum_i p^k_i}{\sum\limits_{x \in X_\text{brain}} 1}
 
     :param list pvms: list of :code:`numpy.ndarray` of partial volume maps.
 
@@ -505,7 +521,14 @@ def rpve(pvms, seg):
     """
     Computes the :abbr:`rPVe (residual partial voluming error)`
     of each tissue class.
+
+    .. math ::
+
+        \\text{rPVE}^k = \\frac{1}{N} \\left[ \\sum\\limits_{p^k_i \
+\\in [0.5, P_{98}]} p^k_i + \\sum\\limits_{p^k_i \\in [P_{2}, 0.5)} 1 - p^k_i \\right]
+
     """
+
     pvfs = {}
     for k, lid in list(FSL_FAST_LABELS.items()):
         if lid == 0:

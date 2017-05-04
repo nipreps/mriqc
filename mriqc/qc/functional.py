@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-09 17:36:58
+# @Last Modified time: 2017-05-04 14:15:34
 """
 
 Measures for the structural information
@@ -21,32 +21,92 @@ Definitions are given in the
 - **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
 - **Full-width half maximum smoothness** (``fwhm_*``).
 - **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
-- **Summary statistics** (``summary_*_*``).
+- **Summary statistics** (:py:func:`~mriqc.qc.anatomical.summary_stats`).
 
 
 Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
-  RMS variance over voxels (``dvars``), calculated
+  RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
+  BOLD signal across the entire brain at each frame of data. DVARS is calculated
   `with nipype <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
-nipype.algorithms.confounds.html#computedvars>`_ before motion correction.
-- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, ``ghost_*``:
-  along the two possible phase-encoding axes **x**, **y**.
-- **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``).
-- **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is the median value
+nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
+
+  .. math ::
+
+      \\text{DVARS}_t = \\sqrt{\\frac{1}{N}\\sum_i \\left[x_{i,t} - x_{i,t-1}\\right]^2}
+
+
+  .. note ::
+
+    Intensities are scaled to 1000 leading to the units being expressed in x10
+    :math:`\\%\\Delta\\text{BOLD}` change.
+
+  .. note ::
+
+    MRIQC calculates two additional standardized values of the DVARS.
+    The ``dvars_std`` metric is normalized with the standard deviation of the
+    temporal difference time series. The ``dvars_vstd`` is a voxel-wise
+    standardization of DVARS, where the temporal difference time series is
+    normalized across time by that voxel standard deviation across time, before
+    computing the RMS of the temporal difference [Nichols2013]_.
+
+
+- **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``) calculates
+  an optimized summary of time-series correlation as in [Saad2013]_:
+
+  .. math ::
+
+      \\text{GCOR} = \\frac{1}{N}\\mathbf{g}_u^T\\mathbf{g}_u
+
+  where :math:`\\mathbf{g}_u` is the average of all unit-variance time series in a
+  :math:`T` (\# timepoints) :math:`\\times` :math:`N` (\# voxels) matrix.
+
+- **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is a simplified
+  interpretation of the tSNR definition [Kruger2001]_. We report the median value
   of the `tSNR map <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
-nipype.algorithms.confounds.html#tsnr>`_.
+nipype.algorithms.confounds.html#tsnr>`_ calculated like:
+
+  .. math ::
+
+      \\text{tSNR} = \\frac{\\langle S \\rangle_t}{\\sigma_t},
+
+  where :math:`\\langle S \\rangle_t` is the average BOLD signal (across time),
+  and :math:`\\sigma_t` is the corresponding temporal standard-deviation map.
+
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- **Framewise Displacement** (``mean_fd``, [Power2012]_).
-- **Number of timepoints above FD theshold** (``num_fd``): the threshold is defined
-  at 0.20mm, so :abbr:`FD (frame displacement)` :math:`> 0.20mm`
-- **Percent of ``num_fd`` w.r.t. the timeseries**.
+- **Framewise Displacement** (``mean_fd``): expresses instantaneous
+  head-motion. Rotational displacements are calculated as the
+  displacement on the surface of a sphere of radius 50 mm [Power2012]_:
+
+  .. math ::
+
+      \\text{FD}_t = |\\Delta d_{x,t}| + |\\Delta d_{y,t}| + \
+|\\Delta d_{z,t}| + |\\Delta \\alpha_t| + |\\Delta \\beta_t| + |\\Delta \\gamma_t|
+
+  Along with the base framewise displacement, MRIQC reports the
+  **number of timepoints above FD threshold** (``num_fd``), and the
+  **percent of FDs above the FD threshold** w.r.t. the full timeseries.
+  In both cases, the threshold is set at 0.20mm.
+
+- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, ``ghost_*``):
+  along the two possible phase-encoding axes **x**, **y**:
+
+  .. math ::
+
+      \\text{GSR} = \\frac{\\mu_G - \\mu_{NG}}{\\mu_S}
+
+  .. image :: ../_static/epi-gsrmask.png
+    :width: 200px
+    :align: center
+
+
 - **Outlier fraction** (``outlier``) - Mean fraction of outliers per fMRI volume
-  as given by AFNI.
-- **Quality index** (``quality``) - Mean quality index as computed by AFNI.
+  as given by AFNI's ``3dToutcount``.
+- **Quality index** (``quality``) - Mean quality index as computed by AFNI's ``3dTqual``.
 
 .. topic:: References
 
@@ -69,6 +129,10 @@ Measures for artifacts and other
     Accurate Linear Registration and Motion Correction of Brain Images*.
     NeuroImage, 17(2), 825-841, 2002.
     doi:`10.1006/nimg.2002.1132 <http://dx.doi.org/10.1006/nimg.2002.1132>`_.
+
+  .. [Kruger2001] Krüger et al., *Physiological noise in oxygenation-sensitive
+    magnetic resonance imaging*, Magn. Reson. Med. 46(4):631-637, 2001.
+    doi:`10.1002/mrm.1240 <http://dx.doi.org/10.1002/mrm.1240>`_.
 
   .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
       <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
