@@ -64,7 +64,7 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
     LC_ALL=C.UTF-8
 
 # Installing precomputed python packages
-RUN conda install -c conda-forge -y openblas=0.2.19 &&  \
+RUN conda install -c conda-forge -y openblas=0.2.19; sync &&  \
     conda install -c conda-forge -y \
                      numpy=1.12.0 \
                      scipy=0.19.0 \
@@ -77,12 +77,11 @@ RUN conda install -c conda-forge -y openblas=0.2.19 &&  \
                      statsmodels=0.8.0 \
                      dipy=0.11.0 \
                      traits=4.6.0 \
-                     psutil=5.2.2 &&  \
+                     psutil=5.2.2 \
+                     sphinx=1.5.4; sync &&  \
     chmod +x /usr/local/miniconda/bin/* && \
-    conda clean --all -y
-
-# Precaching fonts
-RUN python -c "from matplotlib import font_manager"
+    conda clean --all -y; sync && \
+    python -c "from matplotlib import font_manager"
 
 # Installing Ubuntu packages and cleaning up
 RUN apt-get install -y --no-install-recommends \
@@ -96,19 +95,20 @@ RUN apt-get install -y --no-install-recommends \
 #    OMP_NUM_THREADS=1
 
 # Installing dev requirements (packages that are not in pypi)
-ADD requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt && \
-    rm -rf ~/.cache/pip
-
-# Installing MRIQC
-COPY . /root/src/mriqc
-RUN cd /root/src/mriqc && pip install .[classifier,duecredit] && \
     rm -rf ~/.cache/pip
 
 # Precaching atlases
 RUN mkdir /niworkflows_data
 ENV CRN_SHARED_DATA /niworkflows_data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
+
+# Installing MRIQC
+COPY . /root/src/mriqc
+RUN cd /root/src/mriqc && pip install .[classifier,duecredit,tests,doc] && \
+    rm -rf ~/.cache/pip
+
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
