@@ -76,10 +76,6 @@ Measures targeting specific artifacts
   The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity corrupted by artifacts
   normalized by the number of voxels in the background. Lower values are better.
 
-  Optionally, it also calculates **qi2**, the distance between the distribution
-  of noise voxel (non-artifact background voxels) intensities, and a
-  Rician distribution.
-
   .. figure:: ../resources/mortamet-mrm2009.png
 
     The workflow to compute the artifact detection from [Mortamet2009]_.
@@ -96,8 +92,13 @@ Other measures
 ^^^^^^^^^^^^^^
 
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
-  the spatial distribution of the image intensity values in units of voxels [Friedman2008]_.
-  Lower values are better
+  the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
+  Lower values are better. Uses the gaussian width estimator filter implemented in
+  AFNI's `3dFWHMx`:
+  
+  .. math ::
+  
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
 
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
   the
@@ -144,6 +145,11 @@ Other measures
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
      Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
      doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
+     
+  .. [Forman1995] Forman SD et a., *Improved assessment of significant activation in functional
+     magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
+     Magn. Reson. Med. 33 (5), 636–647, 1995.
+     doi:`10.1016/j.neuroimage.2006.03.062 <http://dx.doi.org/10.1016/j.neuroimage.2006.03.062>`_.
 
 
 mriqc.qc.anatomical module
@@ -176,7 +182,7 @@ def snr(img, smask, erode=True, fglabel=1):
 
     .. math::
 
-        \text{SNR} = \frac{\mu_F}{\sigma_F},
+        \text{SNR} = \frac{\mu_F}{\sigma_F\sqrt{n/(n-1)}},
 
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
@@ -279,7 +285,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
 
     .. math::
 
-        \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{\mu_\text{WM} - \mu_\text{GM}}.
+        \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{|\mu_\text{WM} - \mu_\text{GM}|}.
 
     :param numpy.ndarray img: the input data
     :param numpy.ndarray wmmask: the white matter mask
@@ -338,11 +344,22 @@ def efc(img):
     """
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
-    and blurring induced by head motion. Lower values are better.
+    and blurring induced by head motion. A range of low values is better,
+    with EFC = 0 for all the energy concentrated in one pixel.
+    
+    .. math::
+    
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
+        
+    with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
     The original equation is normalized by the maximum entropy, so that the
     :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
-    different dimensions.
+    different dimensions:
+    
+    .. math::
+    
+        \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
 
@@ -365,7 +382,11 @@ def wm2max(img, seg):
     Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
     defined as the maximum intensity found in the volume w.r.t. the
     mean value of the white matter tissue. Values close to 1.0 are
-    better.
+    better:
+    
+    .. math ::
+    
+        \text{WM2MAX} = \frac{\mu_\text{WM}}{P_{99.95}(X)}
 
     """
     wmmask = np.zeros_like(seg)
@@ -376,7 +397,13 @@ def art_qi1(airmask, artmask):
     """
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     Caculates **q1**, as the proportion of voxels with intensity corrupted by artifacts
-    normalized by the number of voxels in the background. Lower values are better.
+    normalized by the number of voxels in the background:
+    
+    .. math ::
+    
+        \text{QI}_1 = \frac{1}{N} \sum\limits_{x\in X_\text{art}} 1
+    
+    Lower values are better.
 
     :param numpy.ndarray airmask: input air mask, without artifacts
     :param numpy.ndarray artmask: input artifacts mask
