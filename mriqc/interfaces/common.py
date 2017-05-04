@@ -165,8 +165,8 @@ class EnsureSize(SimpleInterface):
     def _run_interface(self, runtime):
         nii = nb.load(self.inputs.in_file)
         zooms = nii.header.get_zooms()
-        size_diff = np.array(zooms[:3]) - self.inputs.pixel_size
-        if np.all(size_diff >= 0.1):
+        size_diff = np.array(zooms[:3]) - (self.inputs.pixel_size - 0.1)
+        if np.all(size_diff >= -1e-3):
             IFLOGGER.info('Voxel size is large enough')
             self._results['out_file'] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
