@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-03 15:25:00
+# @Last Modified time: 2017-05-04 10:21:13
 """
 
 Measures for the structural information
@@ -28,14 +28,30 @@ Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
-  RMS variance over voxels ([Power2012]_ ``dvars``) indexes the rate of change of
+  RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
   BOLD signal across the entire brain at each frame of data. DVARS is calculated
   `with nipype <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
-nipype.algorithms.confounds.html#computedvars>`_ before motion correction:
+nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
   .. math ::
 
       \\text{DVARS}_t = \\sqrt{\\frac{1}{N}\\sum_i \\left[x_{i,t} - x_{i,t-1}\\right]^2}
+
+
+  .. note ::
+
+    Intensities are scaled to 1000 leading to the units being expressed in x10
+    :math:`\\%\\Delta\\text{BOLD}` change.
+
+  .. note ::
+
+    MRIQC calculates two additional standardized values of the DVARS.
+    The ``dvars_std`` metric is normalized with the standard deviation of the
+    temporal difference time series. The ``dvars_vstd`` is a voxel-wise
+    standardization of DVARS, where the temporal difference time series is
+    normalized across time by that voxel standard deviation across time, before
+    computing the RMS of the temporal difference.
+
 
 - **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``) calculates
   an optimized summary of time-series correlation as in [Saad2013]_:
@@ -54,7 +70,10 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
   .. math ::
 
-      \\text{tSNR} = \\frac{\\langle S \\rangle_t}{\\sigma_t}
+      \\text{tSNR} = \\frac{\\langle S \\rangle_t}{\\sigma_t},
+
+  where :math:`\\langle S \\rangle_t` is the average BOLD signal (across time),
+  and :math:`\\sigma_t` is the corresponding temporal standard-deviation map.
 
 
 Measures for artifacts and other
