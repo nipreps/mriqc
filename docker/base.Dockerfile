@@ -96,3 +96,16 @@ RUN python -c "from matplotlib import font_manager"
 # will handle parallelization
 #ENV MKL_NUM_THREADS=1 \
 #    OMP_NUM_THREADS=1
+
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="mriqc-base" \
+      org.label-schema.description="MRIQC - Base docker image" \
+      org.label-schema.url="http://mriqc.readthedocs.io" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
+
