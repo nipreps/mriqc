@@ -10,7 +10,7 @@ set -x         # Print command traces before executing command.
 
 
 DOCKER_RUN="docker run -i -v /etc/localtime:/etc/localtime:ro \
-                       -v ~/data:/data:ro \
+                       -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data/${TEST_DATA_NAME} out/ participant \
