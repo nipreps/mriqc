@@ -206,9 +206,9 @@ def main():
 
         if settings['ants_nthreads'] == 0:
             if settings['n_procs'] > 1:
-                # always leave one extra thread for non ANTs work,
-                # don't use more than 8 threads - the speed up is minimal
-                settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
+                # Use all available threads, at least 4 threads.
+                # maximum 8 threads since the speed up is minimal after that
+                settings['ants_nthreads'] = min(max(settings['n_procs'], 4), 8)
             else:
                 settings['ants_nthreads'] = 1
 
@@ -245,7 +245,7 @@ def main():
             workflow.add_nodes(wf_list)
 
             if not opts.dry_run:
-                if opts.profile:
+                if plugin_settings['plugin'] == 'MultiProc' and opts.profile:
                     import logging
                     from nipype.pipeline.plugins.callback_log import log_nodes_cb
                     plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
