@@ -23,21 +23,23 @@ dependencies:
     - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py
     - docker load -i ~/docker/image.tar || true
     - docker images
-    - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc-base:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
+    - e=1 && for i in {1..5}; do docker build -f docker/base.Dockerfile --rm=false -t poldracklab/mriqc-base:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
     - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
     - docker save ubuntu:xenial-20161213 poldracklab/mriqc-base:latest poldracklab/mriqc:latest > ~/docker/image.tar
 
 test:
   override:
-    - |-
-        case $CIRCLE_NODE_INDEX in \
-        0) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m T1w --verbose-reports --testing --profile --n_procs 1 --ants-nthreads 4 \
-        && \
-        docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc \
-        ;; \
-        1) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m bold --verbose-reports --profile --testing --n_procs 1 --ants-nthreads 4 --ica \
-        ;; \
-        esac :
+    - |
+        case $CIRCLE_NODE_INDEX in
+        0)
+            docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m T1w --verbose-reports --testing --profile --n_procs 1 --ants-nthreads 4 \
+            && \
+            docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc \
+            ;; \
+        1)
+            docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant -m bold --verbose-reports --profile --testing --n_procs 1 --ants-nthreads 4 --ica \
+            ;; \
+            esac :
           parallel: true
           timeout: 3200
     - case $CIRCLE_NODE_INDEX in 0) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w ;; 1) docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold ;; esac :
