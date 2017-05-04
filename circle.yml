@@ -21,7 +21,7 @@ dependencies:
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
   override:
     - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py
-    - docker pull poldracklab/mriqc:latest
+    - docker pull poldracklab/mriqc:latest || true
     - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
 
 test:
