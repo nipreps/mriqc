@@ -35,7 +35,6 @@ test:
         parallel: true
     - bash .circleci/check_iqms.sh :
         parallel: true
-
 general:
   artifacts:
     - "~/scratch"
