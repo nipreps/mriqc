@@ -18,7 +18,7 @@ if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
     if grep -q "ERROR" ${SCRATCH}/docs/builddocs.log; then exit_docs=1; fi
 fi
 
-if [ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )" == "1" ]; then
+if [ "$ONLYDOCS" == "1" ]; then
 	echo "Building [docs_only], nothing to do."
 	exit $exit_docs
 fi

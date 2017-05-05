@@ -29,12 +29,20 @@ test:
     - bash .circleci/participant.sh :
         parallel: true
         timeout: 3200
+        environment:
+          ONLYDOCS: $( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
     - bash .circleci/group.sh :
         parallel: true
+        environment:
+          ONLYDOCS: $( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
     - bash .circleci/check_outputs.sh :
         parallel: true
+        environment:
+          ONLYDOCS: $( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
     - bash .circleci/check_iqms.sh :
         parallel: true
+        environment:
+          ONLYDOCS: $( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
 
 general:
   artifacts:
