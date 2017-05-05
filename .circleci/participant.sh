@@ -2,7 +2,7 @@
 #
 # Balance nipype testing workflows across CircleCI build nodes
 #
-
+#
 # Setting      # $ help set
 set -e         # Exit immediately if a command exits with a non-zero status.
 set -u         # Treat unset variables as an error when substituting.
