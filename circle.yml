@@ -15,7 +15,7 @@ dependencies:
     - "~/data"
 
   pre:
-    - if [ "$ONLY_DOCS" == "1" ]; then echo "Only build docs"; else echo "$ONLY_DOCS"; fi
+    - echo "$ONLY_DOCS"
     # Download test data
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions
