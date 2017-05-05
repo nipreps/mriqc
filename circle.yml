@@ -16,6 +16,7 @@ dependencies:
 
   pre:
     - git log --format=oneline -n 1 $CIRCLE_SHA1
+    - git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]}
     - echo "$ONLY_DOCS"
     # Download test data
     - mkdir -p ~/data/ ~/docker
