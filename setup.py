@@ -51,6 +51,7 @@ def main():
                                           'abide2bids=mriqc.bin.abide2bids:main',
                                           'fs2gif=mriqc.bin.fs2gif:main',
                                           'dfcheck=mriqc.bin.dfcheck:main',
+                                          'nib-hash=mriqc.bin.nib_hash:main',
                                           'participants=mriqc.bin.subject_wrangler:main']},
         packages=find_packages(exclude=['*.tests']),
         package_data={'mriqc': ['data/*.yml',

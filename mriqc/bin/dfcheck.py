@@ -3,16 +3,13 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-03-16 15:12:13
+# @Last Modified time: 2017-05-05 12:25:28
 
 """
 Compares pandas dataframes by columns
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
