@@ -15,6 +15,7 @@ dependencies:
     - "~/data"
 
   pre:
+    - git log --format=oneline -n 1 $CIRCLE_SHA1
     - echo "$ONLY_DOCS"
     # Download test data
     - mkdir -p ~/data/ ~/docker
