@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-09 17:17:08
+# @Last Modified time: 2017-05-04 18:12:22
 
 """
 =====================
@@ -43,7 +43,13 @@ from sklearn.model_selection._validation import (
 from mriqc import logging
 from builtins import object, zip
 
-if np_version < (1, 12, 0):
+NUMPY_MA = False
+try:
+    NUMPY_MA = np_version < (1, 12, 0)
+except TypeError:
+    pass
+
+if NUMPY_MA:
     from sklearn.utils.fixes import MaskedArray
 else:
     from numpy.ma import MaskedArray

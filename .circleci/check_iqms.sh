@@ -8,7 +8,7 @@ set -e         # Exit immediately if a command exits with a non-zero status.
 set -u         # Treat unset variables as an error when substituting.
 set -x         # Print command traces before executing command.
 
-if echo $GIT_COMMIT_DESC | grep -Pi 'docs[ _]?only'; then
+if echo "$GIT_COMMIT_DESC" | grep -Pi 'docs[ _]?only'; then
 	echo "Building docs_only, nothing to do."
 	exit 0
 fi

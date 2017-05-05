@@ -1,5 +1,5 @@
 
-.. _reports_group:
+.. _reports-group:
 
 Group reports
 =============

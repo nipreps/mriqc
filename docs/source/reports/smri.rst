@@ -1,5 +1,5 @@
 
-.. _reports_smri:
+.. _reports-smri:
 
 T1 and T2 -weighed images
 -------------------------
@@ -12,6 +12,9 @@ An example report is given
 The individual report for the structural images is
 structured as follows:
 
+
+.. _reports-smri-summary:
+
 Summary
 ^^^^^^^
 
@@ -22,6 +25,8 @@ The first section summarizes some important information:
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
 
+
+.. _reports-smri-visual:
 
 Visual reports
 ^^^^^^^^^^^^^^
@@ -38,6 +43,8 @@ The section with visual reports contains:
    .. figure:: ../resources/reports-t1w_background.png
      :alt: t1 background
 
+
+.. _reports-smri-verbose:
 
 Verbose reports
 ^^^^^^^^^^^^^^^
@@ -70,6 +77,9 @@ following plots will be appended:
    
    .. figure:: ../resources/reports-t1w_qi2.png
      :alt: t1 fitting of QI2
+
+
+.. _reports-smri-metadata:
 
 Metadata
 ^^^^^^^^

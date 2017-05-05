@@ -19,24 +19,14 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import sys
 import os
-from mriqc import __version__
-
-# Hack for readthedocs
-# http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
-import mock
-MOCK_MODULES = ['scipy.interpolate']
-for mod_name in MOCK_MODULES:
-    try:
-        __import__(mod_name)
-    except ImportError:
-        sys.modules[mod_name] = mock.Mock()
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../../mriqc'))
+from mriqc import __version__
 
 # -- General configuration ------------------------------------------------
 
@@ -54,9 +44,38 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autosectionlabel',
+    # 'sphinx.ext.autosectionlabel',
     'mriqc.sphinxext.plot_workflow'
 ]
+
+# Mock modules in autodoc:
+autodoc_mock_imports = [
+    'scipy',
+    'scipy.cluster',
+    'scipy.linalg',
+    'scipy.ndimage',
+    'scipy.sparse',
+    'scipy.stats',
+    'scipy.spatial',
+    'sklearn',
+    'sklearn.base',
+    'sklearn.metrics',
+    'sklearn.utils',
+    'sklearn.utils.fixes',
+    'sklearn.metrics.scorer',
+    'sklearn.model_selection',
+    'sklearn.model_selection._split',
+    'sklearn.model_selection._search',
+    'sklearn.model_selection._validation',
+    'statsmodels.robust.scale',
+    'nilearn.image',
+    'nilearn.masking',
+    'nilearn.plotting',
+    'nilearn.signal',
+    'nilearn.spatial',
+]
+
+suppress_warnings = ['image.nonlocal_uri']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
