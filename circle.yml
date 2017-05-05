@@ -1,13 +1,13 @@
 machine:
   pre:
     - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+  services:
+    - docker
   environment:
     SCRATCH: "$HOME/scratch"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/589241339ad5a101fad8c474"
-    GIT_COMMIT_DESC: $(git log --format=oneline -n 1 $CIRCLE_SHA1)
-  services:
-    - docker
+    ONLY_DOCS: $( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qiP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
 
 dependencies:
   cache_directories:
@@ -15,6 +15,7 @@ dependencies:
     - "~/data"
 
   pre:
+    - if [ "$ONLY_DOCS" == "1" ]; then echo "Only build docs"; else echo "$ONLY_DOCS"; fi
     # Download test data
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions
