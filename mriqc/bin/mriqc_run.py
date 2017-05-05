@@ -245,7 +245,7 @@ def main():
             workflow.add_nodes(wf_list)
 
             if not opts.dry_run:
-                if opts.profile:
+                if plugin_settings['plugin'] == 'MultiProc' and opts.profile:
                     import logging
                     from nipype.pipeline.plugins.callback_log import log_nodes_cb
                     plugin_settings['plugin_args']['status_callback'] = log_nodes_cb

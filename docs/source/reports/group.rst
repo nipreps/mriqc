@@ -32,4 +32,3 @@ show themselves as outliers in the general distribution of the IQM:
 In this example, the corresponding individual report for the selected
 sample will open up (`click here to see this example 
 report <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-51296_T1w.html>`_).
-
