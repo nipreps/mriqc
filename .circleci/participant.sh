@@ -11,7 +11,7 @@ set -x         # Print command traces before executing command.
 exit_docs=1
 if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
 	docker run -i --rm=false -v ${SCRATCH}:/scratch -w /root/src/mriqc/docs \
-	           --entrypoint=sphinx-build poldracklab/mriqc:latest -T -E -D language=en -b html source/ /scratch/docs 2>&1 \
+	           --entrypoint=sphinx-build poldracklab/mriqc:latest -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
                | tee ${SCRATCH}/docs/builddocs.log
     cat ${SCRATCH}/docs/builddocs.log && \
     if grep -q "ERROR" ${SCRATCH}/docs/builddocs.log; then exit_docs=0; fi
