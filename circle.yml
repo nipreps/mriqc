@@ -14,8 +14,6 @@ dependencies:
     - "~/data"
 
   pre:
-    - export DOCSONLY=$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )
-    - echo "$DOCSONLY"
     # Download test data
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions

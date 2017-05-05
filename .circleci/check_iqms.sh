@@ -8,7 +8,7 @@ set -e         # Exit immediately if a command exits with a non-zero status.
 set -u         # Treat unset variables as an error when substituting.
 set -x         # Print command traces before executing command.
 
-if [ "$DOCSONLY" == "1" ]; then
+if [ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -qviP 'docs[ _]?only'; echo ${PIPESTATUS[1]} )" == "1" ]; then
 	echo "Building [docs_only], nothing to do."
 	exit 0
 fi
