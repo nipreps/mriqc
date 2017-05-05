@@ -27,27 +27,27 @@ dependencies:
 test:
   override:
     # Test mriqcp
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc; fi :
         timeout: 2600
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --profile --n_proc 2 --ants-nthreads 1 --ica; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --profile --n_proc 2 --ants-nthreads 1 --ica; fi :
         timeout: 3200
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == 1 ]; docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv; fi :
+    - if [ "$(grep -qviP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
 general:
