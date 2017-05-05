@@ -4,13 +4,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
 
-.. _workflows:
-
-===================
-The MRIQC workflows
-===================
-
-
 .. automodule:: mriqc.workflows.anatomical
     :members:
     :undoc-members:
