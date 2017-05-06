@@ -38,6 +38,7 @@ test:
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv
     - docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv
     - find $SCRATCH -name "*.nii.gz" -type f  | sed s+$SCRATCH+/scratch+ | sort | xargs -n1 $HASHCMD >> $SCRATCH/nii_outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/nii_outputs.txt $SCRATCH/nii_outputs.txt :
+        timeout: 3200
         environment:
           HASHCMD: docker run -i -v $SCRATCH:/scratch --entrypoint="/usr/local/miniconda/bin/nib-hash" poldracklab/mriqc:latest
 general:
