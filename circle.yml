@@ -1,6 +1,4 @@
 machine:
-  pre:
-    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
   environment:
     SCRATCH: "$HOME/scratch"
     TEST_DATA_NAME: "circle-tests"
@@ -25,7 +23,7 @@ dependencies:
     - |
       e=1
       for i in {1..5}; do
-          docker build --cache-from poldracklab/mriqc:circleci --rm=false -t poldracklab/mriqc:latest -t poldracklab/mriqc:circleci --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
+          docker build --rm=false -t poldracklab/mriqc:latest -t poldracklab/mriqc:circleci --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
       done && [ "$e" -eq "0" ]
   post:
     - ? |
