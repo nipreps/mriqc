@@ -110,6 +110,7 @@ RUN cd /root/src/mriqc && pip install .[classifier,duecredit] && \
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
+# Store metadata
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
