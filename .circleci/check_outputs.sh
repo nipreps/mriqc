@@ -21,10 +21,8 @@ echo "Checking outputs (${MODALITY})..."
 find $SCRATCH/out/   | sed s+$SCRATCH/++ | sort > $SCRATCH/outputs.txt
 diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_${MODALITY}.txt $SCRATCH/outputs.txt
 exit_code=$?
-popd
 
 echo "Checking nifti files (${MODALITY})..."
-
 # Have docker run cmd handy
 HASHCMD="docker run -i -v $SCRATCH:/scratch \
                     --entrypoint=/usr/local/miniconda/bin/nib-hash \
