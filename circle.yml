@@ -1,6 +1,7 @@
 machine:
   pre:
-    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+    - sudo curl -L -o /usr/bin/docker 'https://s3-external-1.amazonaws.com/circle-downloads/docker-1.9.1-circleci'
+    - sudo chmod 0755 /usr/bin/docker
   environment:
     SCRATCH: "$HOME/scratch"
     TEST_DATA_NAME: "circle-tests"
@@ -19,11 +20,18 @@ dependencies:
     # Create scratch folder and force group permissions
     - mkdir -p $SCRATCH && sudo setfacl -d -m group:ubuntu:rwx $SCRATCH && sudo setfacl -m group:ubuntu:rwx $SCRATCH
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
+    - if [ "$CIRCLE_TAG" != "" ]; then sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py ; fi
+    - docker load --input $HOME/docker/cache.tar || true
   override:
-    - sed -i -E "s/(__version__ = )'[A-Za-z0-9.-]+'/\1'$CIRCLE_TAG'/" mriqc/info.py
-    - docker pull poldracklab/mriqc:latest || true
-    - e=1 && for i in {1..5}; do docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15; done && [ "$e" -eq "0" ]
-
+    - ? |
+        e=1
+        for i in {1..5}; do
+            docker build --rm=false -t poldracklab/mriqc:latest -t poldracklab/mriqc:circleci --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
+        done && [ "$e" -eq "0" ]
+      :
+        timeout: 3200
+    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 poldracklab/mriqc:circleci :
+        timeout: 3200
 test:
   override:
     - bash .circleci/participant.sh :
