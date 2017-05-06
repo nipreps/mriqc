@@ -26,8 +26,11 @@ dependencies:
 
 test:
   override:
-    # Test mriqcp
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc; fi :
+    - ? |
+        if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then
+            docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc;
+        fi
+      :
         timeout: 2600
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
@@ -50,6 +53,11 @@ test:
     - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then find $SCRATCH -name "*.nii.gz" -type f  | sed s+$SCRATCH+/scratch+ | sort | xargs -n1 $HASHCMD >> $SCRATCH/nii_outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/nii_outputs.txt $SCRATCH/nii_outputs.txt ; fi :
+        timeout: 3200
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+          HASHCMD: docker run -i -v $SCRATCH:/scratch --entrypoint="/usr/local/miniconda/bin/nib-hash" poldracklab/mriqc:latest
 general:
   artifacts:
     - "~/scratch"
