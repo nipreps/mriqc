@@ -27,7 +27,7 @@ dependencies:
   override:
     - ? |
         if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
-            e=1 for i in {1..5}; do
+            e=1 && for i in {1..5}; do
                 docker build --rm=false -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
         fi
