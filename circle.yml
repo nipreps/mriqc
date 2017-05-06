@@ -4,6 +4,8 @@ machine:
     - sudo chmod 0755 /usr/bin/docker
   environment:
     SCRATCH: "$HOME/scratch"
+    DOCKER_IMAGE: "poldracklab/mriqc"
+    DOCKER_TAG: "latest"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/589241339ad5a101fad8c474"
   services:
@@ -24,48 +26,47 @@ dependencies:
     - docker load --input $HOME/docker/cache.tar || true
   override:
     - ? |
-        e=1
-        for i in {1..5}; do
-            docker build --rm=false -t poldracklab/mriqc:latest -t poldracklab/mriqc:circleci --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
+        e=1 && for i in {1..5}; do
+                docker build --rm=false -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
         done && [ "$e" -eq "0" ]
       :
         timeout: 3200
-    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 poldracklab/mriqc:circleci :
+    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 ${DOCKER_IMAGE}:${DOCKER_TAG} :
         timeout: 3200
 test:
   override:
     - ? |
         if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then
-            docker run -i -v /etc/localtime:/etc/localtime:ro -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint="py.test"  poldracklab/mriqc:latest --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc;
+            docker run -i -v ${CIRCLE_TEST_REPORTS}:/scratch --entrypoint=py.test  ${DOCKER_IMAGE}:${DOCKER_TAG} --ignore=src/ --junitxml=/scratch/tests.xml /root/src/mriqc
         fi
       :
         timeout: 2600
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --profile --n_procs 2 --ants-nthreads 1 --ica; fi :
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch ${DOCKER_IMAGE}:${DOCKER_TAG} /data/${TEST_DATA_NAME} out/ participant --testing --verbose-reports --profile --n_procs 2 --ants-nthreads 1 --ica; fi :
         timeout: 3200
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m bold; fi :
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch ${DOCKER_IMAGE}:${DOCKER_TAG} /data/${TEST_DATA_NAME} out/ group -m bold; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch poldracklab/mriqc:latest /data/${TEST_DATA_NAME} out/ group -m T1w; fi :
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v ~/data:/data:ro -v $SCRATCH:/scratch -w /scratch ${DOCKER_IMAGE}:${DOCKER_TAG} /data/${TEST_DATA_NAME} out/ group -m T1w; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
     - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then cd $SCRATCH && find out/ | sort > $SCRATCH/outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/circle_outputs.txt $SCRATCH/outputs.txt; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv; fi :
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" ${DOCKER_IMAGE}:${DOCKER_TAG} -i /scratch/out/T1w.csv -r /root/src/mriqc/mriqc/data/testdata/T1w.csv; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v /etc/localtime:/etc/localtime:ro -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" poldracklab/mriqc:latest -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv; fi :
+    - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then docker run -i -v $SCRATCH:/scratch -w /scratch --entrypoint="dfcheck" ${DOCKER_IMAGE}:${DOCKER_TAG} -i /scratch/out/bold.csv -r /root/src/mriqc/mriqc/data/testdata/bold.csv; fi :
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
     - if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "1" ]; then find $SCRATCH -name "*.nii.gz" -type f  | sed s+$SCRATCH+/scratch+ | sort | xargs -n1 $HASHCMD >> $SCRATCH/nii_outputs.txt && diff $HOME/$CIRCLE_PROJECT_REPONAME/tests/nii_outputs.txt $SCRATCH/nii_outputs.txt ; fi :
         timeout: 3200
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-          HASHCMD: docker run -i -v $SCRATCH:/scratch --entrypoint="/usr/local/miniconda/bin/nib-hash" poldracklab/mriqc:latest
+          HASHCMD: docker run -i -v $SCRATCH:/scratch --entrypoint=/usr/local/miniconda/bin/nib-hash ${DOCKER_IMAGE}:${DOCKER_TAG}
 general:
   artifacts:
     - "~/scratch"
@@ -78,9 +79,9 @@ deployment:
   production:
     tag: /.*/
     commands:
-      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push poldracklab/mriqc:latest; fi :
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push ${DOCKER_IMAGE}:${DOCKER_TAG}; fi :
           timeout: 21600
-      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG && docker push poldracklab/mriqc:$CIRCLE_TAG; fi :
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag ${DOCKER_IMAGE} ${DOCKER_IMAGE}:$CIRCLE_TAG && docker push ${DOCKER_IMAGE}:$CIRCLE_TAG; fi :
           timeout: 21600
       - printf "[distutils]\nindex-servers =\n    pypi\n\n[pypi]\nusername:$PYPI_USER\npassword:$PYPI_PASS\n" > ~/.pypirc
       - python setup.py sdist upload -r pypi
