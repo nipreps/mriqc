@@ -17,7 +17,7 @@ fi
 DOCKER_RUN="docker run -i -v /etc/localtime:/etc/localtime:ro \
                        -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
                        --verbose-reports"
 
@@ -26,7 +26,7 @@ case $CIRCLE_NODE_INDEX in
 		# Run tests in T1w build which is shorter
 		docker run -i -v /etc/localtime:/etc/localtime:ro \
 		           -v ${CIRCLE_TEST_REPORTS}:/scratch \
-		           --entrypoint="py.test"  poldracklab/mriqc:latest \
+		           --entrypoint="py.test"  ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		           --ignore=src/ \
 		           --junitxml=/scratch/tests.xml \
 		           /root/src/mriqc && \

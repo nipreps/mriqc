@@ -26,7 +26,7 @@ echo "Checking nifti files (${MODALITY})..."
 # Have docker run cmd handy
 HASHCMD="docker run -i -v $SCRATCH:/scratch \
                     --entrypoint=/usr/local/miniconda/bin/nib-hash \
-                    poldracklab/mriqc:latest"
+                    ${DOCKER_IMAGE}:${DOCKER_TAG}"
 
 
 find $SCRATCH -name "*.nii.gz" -type f  | sed s+$SCRATCH+/scratch+ | sort | xargs -n1 $HASHCMD >> $SCRATCH/nii_outputs.txt

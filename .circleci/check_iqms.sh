@@ -22,6 +22,6 @@ echo "Checking IQMs (${MODALITY} images)..."
 docker run -i -v /etc/localtime:/etc/localtime:ro \
               -v $SCRATCH:/scratch -w /scratch \
               --entrypoint="dfcheck" \
-              poldracklab/mriqc:latest \
+              ${DOCKER_IMAGE}:${DOCKER_TAG} \
               -i /scratch/out/${MODALITY}.csv \
               -r /root/src/mriqc/mriqc/data/testdata/${MODALITY}.csv

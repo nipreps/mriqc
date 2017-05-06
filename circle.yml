@@ -4,6 +4,8 @@ machine:
     - sudo chmod 0755 /usr/bin/docker
   environment:
     SCRATCH: "$HOME/scratch"
+    DOCKER_IMAGE: "poldracklab/mriqc"
+    DOCKER_TAG: "latest"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/589241339ad5a101fad8c474"
   services:
@@ -26,11 +28,11 @@ dependencies:
     - ? |
         e=1
         for i in {1..5}; do
-            docker build --rm=false -t poldracklab/mriqc:latest --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
+            docker build --rm=false -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-99.99.99}" . && e=0 && break || sleep 15
         done && [ "$e" -eq "0" ]
       :
         timeout: 3200
-    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 poldracklab/mriqc:latest :
+    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 ${DOCKER_IMAGE}:${DOCKER_TAG} :
         timeout: 3200
 test:
   override:
@@ -52,7 +54,6 @@ test:
         parallel: true
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-
 general:
   artifacts:
     - "~/scratch"
@@ -65,9 +66,9 @@ deployment:
   production:
     tag: /.*/
     commands:
-      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push poldracklab/mriqc:latest; fi :
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker push ${DOCKER_IMAGE}:${DOCKER_TAG}; fi :
           timeout: 21600
-      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG && docker push poldracklab/mriqc:$CIRCLE_TAG; fi :
+      - if [[ -n "$DOCKER_PASS" ]]; then docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS && docker tag ${DOCKER_IMAGE} ${DOCKER_IMAGE}:$CIRCLE_TAG && docker push ${DOCKER_IMAGE}:$CIRCLE_TAG; fi :
           timeout: 21600
       - printf "[distutils]\nindex-servers =\n    pypi\n\n[pypi]\nusername:$PYPI_USER\npassword:$PYPI_PASS\n" > ~/.pypirc
       - python setup.py sdist upload -r pypi

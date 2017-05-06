@@ -23,6 +23,6 @@ echo "Running group level (${MODALITY} images)..."
 docker run -i -v /etc/localtime:/etc/localtime:ro \
            -v ~/data:/data:ro \
            -v $SCRATCH:/scratch -w /scratch \
-           poldracklab/mriqc:latest \
+           ${DOCKER_IMAGE}:${DOCKER_TAG} \
            /data/${TEST_DATA_NAME} out/ group \
            -m ${MODALITY}
