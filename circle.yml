@@ -29,12 +29,22 @@ test:
     - bash .circleci/participant.sh :
         parallel: true
         timeout: 3200
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
     - bash .circleci/group.sh :
         parallel: true
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
     - bash .circleci/check_outputs.sh :
         parallel: true
+        timeout: 3200
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
     - bash .circleci/check_iqms.sh :
         parallel: true
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+
 general:
   artifacts:
     - "~/scratch"
