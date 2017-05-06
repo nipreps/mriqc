@@ -20,8 +20,7 @@ fi
 
 echo "Running group level (${MODALITY} images)..."
 
-docker run -i -v /etc/localtime:/etc/localtime:ro \
-           -v ~/data:/data:ro \
+docker run -i -v ~/data:/data:ro \
            -v $SCRATCH:/scratch -w /scratch \
            ${DOCKER_IMAGE}:${DOCKER_TAG} \
            /data/${TEST_DATA_NAME} out/ group \

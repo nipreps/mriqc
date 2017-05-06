@@ -14,8 +14,7 @@ if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; t
 	exit 0
 fi
 
-DOCKER_RUN="docker run -i -v /etc/localtime:/etc/localtime:ro \
-                       -v $HOME/data:/data:ro \
+DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
@@ -24,8 +23,7 @@ DOCKER_RUN="docker run -i -v /etc/localtime:/etc/localtime:ro \
 case $CIRCLE_NODE_INDEX in
 	0)
 		# Run tests in T1w build which is shorter
-		docker run -i -v /etc/localtime:/etc/localtime:ro \
-		           -v ${CIRCLE_TEST_REPORTS}:/scratch \
+		docker run -i -v ${CIRCLE_TEST_REPORTS}:/scratch \
 		           --entrypoint="py.test"  ${DOCKER_IMAGE}:${DOCKER_TAG} \
 		           --ignore=src/ \
 		           --junitxml=/scratch/tests.xml \

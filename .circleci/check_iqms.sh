@@ -19,8 +19,7 @@ if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
 fi
 
 echo "Checking IQMs (${MODALITY} images)..."
-docker run -i -v /etc/localtime:/etc/localtime:ro \
-              -v $SCRATCH:/scratch -w /scratch \
+docker run -i -v $SCRATCH:/scratch -w /scratch \
               --entrypoint="dfcheck" \
               ${DOCKER_IMAGE}:${DOCKER_TAG} \
               -i /scratch/out/${MODALITY}.csv \
