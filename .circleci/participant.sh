@@ -18,7 +18,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       --testting --verbose-reports --profile \
+                       --testing --verbose-reports --profile \
                        --n_procs 2 --ants-nthreads 1 --ica"
 
 case $CIRCLE_NODE_INDEX in
