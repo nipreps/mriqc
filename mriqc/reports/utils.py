@@ -147,7 +147,7 @@ def upload_qc_metrics(in_iqms, email = '', no_sub = False):
                      u"CoilCombinationMethod",u"PulseSequenceType",u"PulseSequenceDetails",
                      u"NumberShots",u"ParallelReductionFactorInPlane",u"ParallelAcquisitionTechnique",
                      u"PartialFourier",u"PartialFourierDirection",u"PhaseEncodingDirection",
-                     u"EffectiveEchoSpacing",u"TotalReadoutTime",u"Timing Parameters",
+                     u"EffectiveEchoSpacing",u"TotalReadoutTime",
                      u"EchoTime",u"InversionTime",u"SliceTiming",u"SliceEncodingDirection",
                      u"NumberOfVolumesDiscardedByScanner",u"NumberOfVolumesDiscardedByUser",
                      u"DelayTime",u"FlipAngle",u"MultibandAccelerationFactor",u"Instructions",
