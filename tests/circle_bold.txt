@@ -1,10 +1,6 @@
 out/
 out/bold.csv
 out/derivatives
-out/derivatives/sub-ds003s01_task-rhymejudgment_bold.json
-out/derivatives/sub-ds003s02_task-rhymejudgment_bold.json
-out/derivatives/sub-ds003s03_task-rhymejudgment_bold.json
-out/derivatives/sub-ds003s04_task-rhymejudgment_bold.json
 out/derivatives/sub-ds205s03_task-functionallocalizer_run-01_bold.json
 out/derivatives/sub-ds205s03_task-view_run-01_bold.json
 out/derivatives/sub-ds205s03_task-view_run-02_bold.json
@@ -19,10 +15,6 @@ out/logs/run_stats.log
 out/logs/run_stats.log.html
 out/reports
 out/reports/bold_group.html
-out/reports/sub-ds003s01_task-rhymejudgment_bold.html
-out/reports/sub-ds003s02_task-rhymejudgment_bold.html
-out/reports/sub-ds003s03_task-rhymejudgment_bold.html
-out/reports/sub-ds003s04_task-rhymejudgment_bold.html
 out/reports/sub-ds205s03_task-functionallocalizer_run-01_bold.html
 out/reports/sub-ds205s03_task-view_run-01_bold.html
 out/reports/sub-ds205s03_task-view_run-02_bold.html
