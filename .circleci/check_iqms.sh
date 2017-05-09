@@ -10,7 +10,7 @@ set -x         # Print command traces before executing command.
 
 # Exit if build_only tag is found
 if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; then
-       exit 0
+    exit 0
 fi
 
 # Exit if docs_only tag is found
