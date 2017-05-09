@@ -40,7 +40,6 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
 RUN mkdir -p /opt/ants && \
     curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
     | tar -xjC /opt/ants --strip-components 1
-
 ENV ANTSPATH=/opt/ants \
     PATH=/opt/ants:$PATH
 
