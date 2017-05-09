@@ -8,7 +8,7 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 # @Last Modified time: 2017-02-01 15:53:32
-""" Helpers in report generation """
+""" Helpers in report generation"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 
