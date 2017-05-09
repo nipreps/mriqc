@@ -41,18 +41,24 @@ RUN mkdir -p /opt/ants && \
     curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
     | tar -xjC /opt/ants --strip-components 1
 
-ENV ANTSPATH /opt/ants
-ENV PATH $ANTSPATH:$PATH
+ENV ANTSPATH=/opt/ants \
+    PATH=/opt/ants:$PATH
 
 # Installing WEBP tools
 RUN curl -sSLO "http://downloads.webmproject.org/releases/webp/libwebp-0.5.2-linux-x86-64.tar.gz" && \
-  tar -xf libwebp-0.5.2-linux-x86-64.tar.gz && cd libwebp-0.5.2-linux-x86-64/bin && \
-  mv cwebp /usr/local/bin/ && rm -rf libwebp-0.5.2-linux-x86-64
+    tar -xf libwebp-0.5.2-linux-x86-64.tar.gz && cd libwebp-0.5.2-linux-x86-64/bin && \
+    mv cwebp /usr/local/bin/ && rm -rf libwebp-0.5.2-linux-x86-64
 
 # Installing SVGO
 RUN curl -sL https://deb.nodesource.com/setup_7.x | bash -
 RUN apt-get install -y nodejs
 RUN npm install -g svgo
+
+# Installing Ubuntu packages and cleaning up
+RUN apt-get install -y --no-install-recommends \
+                    git=1:2.7.4-0ubuntu1 \
+                    graphviz=2.38.0-12ubuntu2 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Installing and setting up miniconda
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.3.11-Linux-x86_64.sh && \
@@ -64,7 +70,8 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
     LC_ALL=C.UTF-8
 
 # Installing precomputed python packages
-RUN conda install -c conda-forge -y openblas=0.2.19; sync &&  \
+RUN conda install -c conda-forge -y openblas=0.2.19; \
+    sync && \
     conda install -c conda-forge -y \
                      numpy=1.12.0 \
                      scipy=0.19.0 \
@@ -78,28 +85,19 @@ RUN conda install -c conda-forge -y openblas=0.2.19; sync &&  \
                      dipy=0.11.0 \
                      traits=4.6.0 \
                      psutil=5.2.2 \
-                     sphinx=1.5.4; sync &&  \
+                     sphinx=1.5.4; \
+    sync &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y; sync && \
     python -c "from matplotlib import font_manager"
 
-# Installing Ubuntu packages and cleaning up
-RUN apt-get install -y --no-install-recommends \
-                    git=1:2.7.4-0ubuntu1 \
-                    graphviz=2.38.0-12ubuntu2 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Unless otherwise specified each process should only use one thread - nipype
-# will handle parallelization
-#ENV MKL_NUM_THREADS=1 \
-#    OMP_NUM_THREADS=1
 
 # Installing dev requirements (packages that are not in pypi)
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
-# Precaching atlases
+# Precaching atlases after niworkflows is available
 RUN mkdir /niworkflows_data
 ENV CRN_SHARED_DATA /niworkflows_data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
@@ -109,15 +107,15 @@ COPY . /root/src/mriqc
 RUN cd /root/src/mriqc && pip install .[classifier,duecredit,tests,doc] && \
     rm -rf ~/.cache/pip
 
-
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
+# Store metadata
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="MRIQC" \
-      org.label-schema.description="MRIQC  - NR-IQMs (no-reference Image Quality Metrics) for MRI" \
+      org.label-schema.description="MRIQC - Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain" \
       org.label-schema.url="http://mriqc.readthedocs.io" \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
