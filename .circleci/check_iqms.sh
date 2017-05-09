@@ -15,13 +15,13 @@ fi
 
 # Exit if docs_only tag is found
 if [ "$(grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; then
-	echo "Building [docs_only], nothing to do."
-       exit 0
+    echo "Building [docs_only], nothing to do."
+    exit 0
 fi
 
 MODALITY=T1w
 if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
-	MODALITY=bold
+    MODALITY=bold
 fi
 
 echo "Checking IQMs (${MODALITY} images)..."
