@@ -14,8 +14,6 @@ if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; t
     exit 0
 fi
 
-ONLY_DOCS=$( grep -qviP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $?)
-
 exit_docs=0
 if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
     mkdir -p ${SCRATCH}/docs
@@ -26,7 +24,7 @@ if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
     if grep -q "ERROR" ${SCRATCH}/docs/builddocs.log; then exit_docs=1; fi
 fi
 
-if [ "$ONLYDOCS" == "1" ]; then
+if [ "$( grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $?)" == "0" ]; then
     echo "Building [docs_only], nothing to do."
     exit $exit_docs
 fi
