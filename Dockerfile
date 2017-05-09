@@ -40,7 +40,6 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
 RUN mkdir -p /opt/ants && \
     curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
     | tar -xjC /opt/ants --strip-components 1
-
 ENV ANTSPATH=/opt/ants \
     PATH=/opt/ants:$PATH
 
@@ -84,13 +83,12 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
                      statsmodels=0.8.0 \
                      dipy=0.11.0 \
                      traits=4.6.0 \
-                     psutil=5.2.2; \
-    sync && \
+                     psutil=5.2.2 \
+                     sphinx=1.5.4; \
+    sync &&  \
     chmod +x /usr/local/miniconda/bin/* && \
-    conda clean --all -y
-
-# Precaching fonts
-RUN python -c "from matplotlib import font_manager"
+    conda clean --all -y; sync && \
+    python -c "from matplotlib import font_manager"
 
 
 # Installing dev requirements (packages that are not in pypi)
@@ -105,7 +103,7 @@ RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09
 
 # Installing MRIQC
 COPY . /root/src/mriqc
-RUN cd /root/src/mriqc && pip install .[classifier,duecredit] && \
+RUN cd /root/src/mriqc && pip install .[classifier,duecredit,tests,doc] && \
     rm -rf ~/.cache/pip
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]

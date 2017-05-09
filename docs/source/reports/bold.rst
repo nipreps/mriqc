@@ -1,5 +1,5 @@
 
-.. _reports_bold:
+.. _reports-bold:
 
 BOLD images
 -----------
@@ -12,7 +12,8 @@ An example report is given
 The individual report for the functional images is
 structured as follows:
 
-.. _reports_bold_summary:
+
+.. _reports-bold-summary: 
 
 Summary
 ^^^^^^^
@@ -24,7 +25,8 @@ The first section summarizes some important information:
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
 
-.. _reports_bold_visual:
+
+.. _reports-bold-visual:
 
 Visual reports
 ^^^^^^^^^^^^^^
@@ -50,7 +52,8 @@ The section with visual reports contains:
    .. figure:: ../resources/reports-bold_summary.png
      :alt: fMRI summary plot
 
-.. _reports_bold_verbose:
+
+.. _reports-bold-verbose:
 
 Verbose reports
 ^^^^^^^^^^^^^^^
@@ -83,7 +86,8 @@ following plots will be appended:
    .. figure:: ../resources/reports-bold_mni.png
      :alt: bold-mni coregistration
 
-.. _reports_bold_metadata:
+
+.. _reports-bold-metadata:
 
 Metadata
 ^^^^^^^^

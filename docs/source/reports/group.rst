@@ -1,12 +1,12 @@
 
-.. _reports_group:
+.. _reports-group:
 
 Group reports
 =============
 
 Once a sample has been processed with the appropriate
 :ref:`workflow <workflows>`, all the :abbr:`IQMs (image quality metrics)`
-written out in :ref:`JSON files <iqjson>` are collected in a
+written out in JSON files are collected in a
 :abbr:`CSV (comma separated values)` table, at the standard path
 of ``<output-dir>/<modality>.csv``. Therefore, for structural
 images, the IQMs will be found in ``<output-dir>/T1w.csv``.
