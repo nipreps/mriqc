@@ -12,8 +12,6 @@
 The anatomical workflow
 =======================
 
-.. image :: _static/anatomical_workflow_source.svg
-
 The anatomical workflow follows the following steps:
 
 #. Conform (reorientations, revise data types) input data and read
@@ -72,8 +70,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         datadir = op.abspath('data')
         wf = anat_qc_workflow([op.join(datadir, 'sub-001/anat/sub-001_T1w.nii.gz')],
                               settings={'bids_dir': datadir,
-                                        'output_dir': op.abspath('out'),
-                                        'ants_nthreads': 1})
+                                        'output_dir': op.abspath('out')})
 
     """
 
@@ -97,26 +94,12 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
-    norm = pe.Node(RobustMNINormalization(
-        num_threads=settings.get('ants_nthreads'), template='mni_icbm152_nlin_asym_09c',
-        testing=settings.get('testing', False), generate_report=True), name='SpatialNormalization')
-    norm.interface.num_threads = settings.get('ants_nthreads')
-    norm.interface.estimated_memory_gb = 6
-
-    if mod == 'T1w':
-        norm.inputs.reference = 'T1'
-    elif mod == 'T2w':
-        norm.inputs.reference = 'T2'
-
+    norm = spatial_normalization(settings)
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(fsl.FAST(
-        segments=True, out_basename='segment'), name='segmentation')
-    if mod == 'T1w':
-        segment.inputs.img_type = 1
-    elif mod == 'T2w':
-        segment.inputs.img_type = 2
+    segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
+                      name='segmentation', estimated_memory_gb=3)
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
@@ -135,12 +118,15 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
         (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
-        (asw, norm, [('outputnode.bias_corrected', 'moving_image'),
-                     ('outputnode.out_mask', 'moving_mask')]),
+        (asw, norm, [('outputnode.bias_corrected', 'inputnode.moving_image'),
+                     ('outputnode.out_mask', 'inputnode.moving_mask')]),
+        (norm, amw, [
+            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+        (norm, iqmswf, [
+            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+        (norm, repwf, ([
+            ('outputnode.out_report', 'inputnode.mni_report')])),
         (to_ras, amw, [('out_file', 'inputnode.in_file')]),
-        (norm, amw, [('inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
-        (norm, iqmswf, [('inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
-        (norm, repwf, ([('out_report', 'inputnode.mni_report')])),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
         (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
@@ -165,6 +151,70 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
+    return workflow
+
+def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
+                          resolution=2.0):
+    """
+    A simple workflow to perform spatial normalization
+
+    """
+    from mriqc.interfaces.common import EnsureSize
+    from nipype.interfaces.ants import AffineInitializer
+    from niworkflows.data import getters as niwgetters
+
+    # Have some settings handy
+    tpl_id = settings.get('template_id', 'mni_icbm152_nlin_asym_09c')
+    mni_template = getattr(niwgetters, 'get_{}'.format(tpl_id))()
+
+    # Define workflow interface
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'moving_image', 'moving_mask']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=[
+        'inverse_composite_transform', 'out_report']), name='outputnode')
+
+    # Mask inputs for initialization
+    mmask = pe.Node(fsl.ApplyMask(), name='MovingApplyMask')
+    fmask = pe.Node(fsl.ApplyMask(), name='FixedApplyMask')
+    fmask.inputs.in_file = op.join(mni_template,
+                                   '%dmm_%s.nii.gz' % (int(resolution), mod[:2]))
+    fmask.inputs.mask_file = op.join(mni_template,
+                                     '%dmm_brainmask.nii.gz' % int(resolution))
+
+    # Ensure resolution
+    resample = pe.Node(EnsureSize(pixel_size=resolution), 'EnsureSize')
+
+    # Initializer
+    init = pe.Node(AffineInitializer(), name='NormalizationInit')
+
+    # Spatial normalization
+    norm = pe.Node(RobustMNINormalization(
+        flavor='testing' if settings.get('testing', False) else 'fast',
+        num_threads=settings.get('ants_nthreads'),
+        template=tpl_id,
+        template_resolution=2,
+        reference=mod[:2],
+        generate_report=True,),
+                   name='SpatialNormalization',
+                   # Request all MultiProc processes when ants_nthreads > n_procs
+                   num_threads=min(settings.get('ants_nthreads'),
+                                   settings.get('n_procs')),
+                   estimated_memory_gb=3)
+
+    workflow.connect([
+        (inputnode, resample, [('moving_image', 'in_file'),
+                               ('moving_mask', 'in_mask')]),
+        (resample, mmask, [('out_file', 'in_file'),
+                           ('out_mask', 'mask_file')]),
+        (mmask, init, [('out_file', 'moving_image')]),
+        (fmask, init, [('out_file', 'fixed_image')]),
+        (init, norm, [('out_file', 'initial_moving_transform')]),
+        (resample, norm, [('out_file', 'moving_image'),
+                          ('out_mask', 'moving_mask')]),
+        (norm, outputnode, [('inverse_composite_transform', 'inverse_composite_transform'),
+                            ('out_report', 'out_report')]),
+    ])
     return workflow
 
 def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):

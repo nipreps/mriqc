@@ -11,8 +11,6 @@
 The functional workflow
 =======================
 
-.. image :: _static/functional_workflow_source.svg
-
 The functional workflow follows the following steps:
 
 #. Conform (reorientations, revise data types) input data, read
@@ -71,8 +69,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     workflow = pe.Workflow(name=name)
 
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
-
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
@@ -95,7 +91,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                    name='reorient_and_discard')
 
     reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
-    reorient_and_discard.interface.estimated_memory_gb = 4.0 * biggest_file_gb
+    reorient_and_discard.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 4
 
     # Workflow --------------------------------------------------------
 
@@ -116,16 +113,17 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean')
-    mean.interface.estimated_memory_gb = biggest_file_gb * 1.5
+    mean.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 1.5
     skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
 
     # EPI to MNI registration
-    ema = epi_mni_align(ants_nthreads=settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
-                        testing=settings.get('testing', False))
+    ema = epi_mni_align(settings)
 
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
-    tsnr.interface.estimated_memory_gb = biggest_file_gb * 4.5
+    tsnr.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 4.5
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -180,7 +178,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                      no_mask=True,
                                      no_mm=True,
                                      generate_report=True), name="ICA")
-        melodic.interface.estimated_memory_gb = biggest_file_gb * 5
+        melodic.interface.estimated_memory_gb = settings[
+                                                    "biggest_file_size_gb"] * 5
         workflow.connect([
             (reorient_and_discard, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
@@ -200,9 +199,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 
     """
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
-
-
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
@@ -215,20 +211,24 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS')
-    dvnode.interface.estimated_memory_gb = biggest_file_gb * 3
+    dvnode.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 3
 
     # AFNI quality measures
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
     outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
                        name='outliers')
-    outliers.interface.estimated_memory_gb = biggest_file_gb * 2.5
+    outliers.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 2.5
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
                       name='quality')
-    quality.interface.estimated_memory_gb = biggest_file_gb * 3
+    quality.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 3
 
     measures = pe.Node(FunctionalQC(), name='measures')
-    measures.interface.estimated_memory_gb = biggest_file_gb * 3
+    measures.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 3
 
     workflow.connect([
         (inputnode, dvnode, [('hmc_epi', 'in_file'),
@@ -299,8 +299,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
     from mriqc.reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
-
     pages = 5
     extra_pages = 0
     if verbose:
@@ -316,15 +314,18 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
         function=spikes_mask), name='SpikesMask')
-    spmask.interface.estimated_memory_gb = biggest_file_gb * 3.5
+    spmask.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 3.5
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask')
-    spikes_bg.interface.estimated_memory_gb = biggest_file_gb * 2.5
+    spikes_bg.interface.estimated_memory_gb = settings[
+                                               "biggest_file_size_gb"] * 2.5
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
                      'fd', 'dvars', 'outliers'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
-    bigplot.interface.estimated_memory_gb =biggest_file_gb * 3.5
+    bigplot.interface.estimated_memory_gb = settings[
+                                                             "biggest_file_size_gb"] * 3.5
 
     workflow.connect([
         (inputnode, spikes_bg, [('orig', 'in_file')]),
@@ -491,7 +492,7 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     .. workflow::
 
       from mriqc.workflows.functional import hmc_mcflirt
-      wf = hmc_mcflirt({'biggest_file_size_gb': 1})
+      wf = hmc_mcflirt()
 
     """
 
@@ -535,11 +536,9 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     .. workflow::
 
       from mriqc.workflows.functional import hmc_afni
-      wf = hmc_afni({'biggest_file_size_gb': 1})
+      wf = hmc_afni()
 
     """
-
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
     workflow = pe.Workflow(name=name)
 
@@ -570,7 +569,8 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     hmc = pe.Node(
         afni.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct')
-    hmc.interface.estimated_memory_gb = biggest_file_gb * 2.5
+    hmc.interface.estimated_memory_gb = settings[
+                                        "biggest_file_size_gb"] * 2.5
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
@@ -662,7 +662,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     return workflow
 
-def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, resolution=2):
+def epi_mni_align(settings, name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
@@ -683,6 +683,12 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
     from pkg_resources import resource_filename as pkgrf
 
+    # Get settings
+    testing = settings.get('testing', False)
+    n_procs = settings.get('n_procs', 1)
+    ants_nthreads = settings.get('ants_nthreads', n_procs)
+
+    # Init template
     mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
@@ -696,17 +702,19 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
-        num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-        testing=testing, moving='EPI', generate_report=True),
-                   name='EPI2MNI')
-    norm.inputs.reference_image = pkgrf(
-        'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
-    norm.interface.num_threads = ants_nthreads
-    norm.interface.estimated_memory_gb = 4
+        num_threads=ants_nthreads,
+        template='mni_icbm152_nlin_asym_09c',
+        reference_image=pkgrf('mriqc', 'data/mni/2mm_T2_brain.nii.gz'),
+        flavor='testing' if testing else 'precise',
+        moving='EPI',
+        generate_report=True,),
+                   name='EPI2MNI',
+                   num_threads=n_procs,
+                   estimated_memory_gb=3)
 
     # Warp segmentation into EPI space
     invt = pe.Node(ApplyTransforms(float=True,
-        input_image=op.join(mni_template, '%dmm_parc.nii.gz' % resolution),
+        input_image=op.join(mni_template, '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
                    name='ResampleSegmentation')
 
