@@ -15,7 +15,7 @@ if [ "$(grep -qiP 'build[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; t
 fi
 
 exit_docs=0
-if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
+if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
     mkdir -p ${SCRATCH}/docs
     docker run -i --rm=false -v ${SCRATCH}:/scratch -w /root/src/mriqc/docs \
                --entrypoint=sphinx-build poldracklab/mriqc:latest -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
@@ -37,16 +37,16 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
 
 case $CIRCLE_NODE_INDEX in
     0)
-        # Run tests in T1w build which is shorter
+        ${DOCKER_RUN} -m T1w --n_procs 4 --ants-nthreads 4
+        ;;
+    1)
+        # Run tests in bold build which is shorter
         docker run -i -v ${CIRCLE_TEST_REPORTS}:/scratch \
                    --entrypoint="py.test"  ${DOCKER_IMAGE}:${DOCKER_TAG} \
                    --ignore=src/ \
                    --junitxml=/scratch/tests.xml \
                    /root/src/mriqc && \
-        ${DOCKER_RUN} -m T1w --n_procs 4 --ants-nthreads 4
-        exit $(( $? + $exit_docs ))
-        ;;
-    1)
         ${DOCKER_RUN} -m bold --testing --n_procs 2 --ants-nthreads 1 --ica
+        exit $(( $? + $exit_docs ))
         ;;
 esac
