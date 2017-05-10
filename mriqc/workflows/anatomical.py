@@ -53,6 +53,8 @@ from nipype.interfaces import afni
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
+
+from mriqc import DEFAULTS
 from mriqc.workflows.utils import fwhm_dict
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
@@ -201,8 +203,8 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
         generate_report=True,),
                    name='SpatialNormalization',
                    # Request all MultiProc processes when ants_nthreads > n_procs
-                   num_threads=min(settings.get('ants_nthreads'),
-                                   settings.get('n_procs')),
+                   num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
+                                   settings.get('n_procs', 1)),
                    estimated_memory_gb=3)
 
     workflow.connect([

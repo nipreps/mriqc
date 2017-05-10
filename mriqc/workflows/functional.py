@@ -674,7 +674,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     .. workflow::
 
       from mriqc.workflows.functional import epi_mni_align
-      wf = epi_mni_align()
+      wf = epi_mni_align({})
 
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
