@@ -35,12 +35,12 @@ if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
 fi
 
 # Add a nipype config file:
-mkdir -p ${HOME}/.nipype ${SCRATCH}/logs/nipype-${MODALITY
+mkdir -p ${HOME}/.nipype ${SCRATCH}/out/logs/nipype-${MODALITY}
 echo "[execution]" > ${HOME}/.nipype/nipype.cfg
 echo "profile_runtime = true" >> ${HOME}/.nipype/nipype.cfg
 echo "[logging]" >> ${HOME}/.nipype/nipype.cfg
 echo "log_to_file = true" >> ${HOME}/.nipype/nipype.cfg
-echo "log_directory = /scratch/logs/nipype-${MODALITY}" >> ${HOME}/.nipype/nipype.cfg
+echo "log_directory = /scratch/out/logs/nipype-${MODALITY}" >> ${HOME}/.nipype/nipype.cfg
 
 
 
