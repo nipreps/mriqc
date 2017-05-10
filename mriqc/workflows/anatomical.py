@@ -12,6 +12,8 @@
 The anatomical workflow
 =======================
 
+.. image :: _static/anatomical_workflow_source.svg
+
 The anatomical workflow follows the following steps:
 
 #. Conform (reorientations, revise data types) input data and read
@@ -70,7 +72,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         datadir = op.abspath('data')
         wf = anat_qc_workflow([op.join(datadir, 'sub-001/anat/sub-001_T1w.nii.gz')],
                               settings={'bids_dir': datadir,
-                                        'output_dir': op.abspath('out')})
+                                        'output_dir': op.abspath('out'),
+                                        'ants_nthreads': 1})
 
     """
 
