@@ -666,7 +666,9 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
+
     The input epi_mean is the averaged and brain-masked EPI timeseries
+
     Returns the EPI mean resampled in MNI space (for checking out registration) and
     the associated "lobe" parcellation in EPI space.
 
