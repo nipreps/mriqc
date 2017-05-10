@@ -52,7 +52,7 @@ def read_iqms(feat_file):
 
     return x_df, feat_names, bids_comps_present
 
-def read_labels(label_file, rate_label='rate', binarize=True):
+def read_labels(label_file, rate_label='rater_1', binarize=True):
     """ Reads in the labels """
     # Massage labels table to have the appropriate format
 
@@ -86,7 +86,7 @@ def read_labels(label_file, rate_label='rate', binarize=True):
     return y_df[bids_comps_present + ['site', rate_label]]
 
 
-def read_dataset(feat_file, label_file, rate_label='rate', merged_name=None,
+def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
                  binarize=True):
     """ Reads in the features and labels """
 

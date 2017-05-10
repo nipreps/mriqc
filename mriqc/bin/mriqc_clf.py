@@ -103,7 +103,7 @@ def main():
 
     else:
         cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs,
-                            rate_label='rate')
+                            rate_label='rater_1')
 
     if opts.test_data and opts.test_labels:
         # Set held-out data
