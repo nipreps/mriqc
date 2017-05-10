@@ -377,7 +377,7 @@ class CVHelper(CVHelperBase):
         from sklearn.model_selection._validation import _score
 
         sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
-        return _score(self._estimator, sample_x, self._Xtest.rate.values.ravel().tolist(),
+        return _score(self._estimator, sample_x, self._Xtest.rater_1.values.ravel().tolist(),
                       check_scoring(self._estimator, scoring=scoring))
 
 
