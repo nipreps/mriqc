@@ -33,8 +33,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       --testing --verbose-reports --profile \
-                       --n_procs 2 --ants-nthreads 1 --ica"
+                       --verbose-reports --profile"
 
 case $CIRCLE_NODE_INDEX in
     0)
@@ -44,10 +43,10 @@ case $CIRCLE_NODE_INDEX in
                    --ignore=src/ \
                    --junitxml=/scratch/tests.xml \
                    /root/src/mriqc && \
-        ${DOCKER_RUN} -m T1w
+        ${DOCKER_RUN} -m T1w --n_procs 4 --ants-nthreads 4
         exit $(( $? + $exit_docs ))
         ;;
     1)
-        ${DOCKER_RUN} -m bold
+        ${DOCKER_RUN} -m bold --testing --n_procs 2 --ants-nthreads 1 --ica
         ;;
 esac
