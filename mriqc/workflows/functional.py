@@ -120,8 +120,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
 
     # EPI to MNI registration
-    ema = epi_mni_align(ants_nthreads=settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
-                        testing=settings.get('testing', False))
+    ema = epi_mni_align(settings)
 
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
@@ -686,7 +685,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     # Get settings
     testing = settings.get('testing', False)
     n_procs = settings.get('n_procs', 1)
-    ants_nthreads = settings.get('ants_nthreads', n_procs)
+    ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
 
     # Init template
     mni_template = get_template()
