@@ -37,7 +37,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
 
 case $CIRCLE_NODE_INDEX in
     0)
-        ${DOCKER_RUN} -m T1w --n_procs 4 --ants-nthreads 4
+        ${DOCKER_RUN} -m T1w --n_procs 2 --ants-nthreads 1
         ;;
     1)
         # Run tests in bold build which is shorter
