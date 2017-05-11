@@ -201,7 +201,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     # Project MNI segmentation to T1 space
     invt = pe.MapNode(ants.ApplyTransforms(
-        dimension=3, default_value=0, interpolation='NearestNeighbor',
+        dimension=3, default_value=0, interpolation='Linear',
         float=True),
         iterfield=['input_image'], name='MNItpms2t1')
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
@@ -427,9 +427,10 @@ def airmsk_wf(name='AirMaskWorkflow'):
                          name='outputnode')
 
     invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
-                                        interpolation='NearestNeighbor',
-                                        float=True), name='invert_xfm')
+                                        interpolation='Linear', float=True), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
+
+    binarize = pe.Node(niu.Function(function=_binarize), name='Binarize')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
@@ -438,11 +439,37 @@ def airmsk_wf(name='AirMaskWorkflow'):
                           ('head_mask', 'head_mask')]),
         (inputnode, invt, [('in_mask', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
-        (invt, qi1, [('output_image', 'nasion_post_mask')]),
+        (invt, binarize, [('output_image', 'in_file')]),
+        (binarize, qi1, [('out', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_air_msk', 'out_file'),
                            ('out_art_msk', 'artifact_msk')])
     ])
     return workflow
+
+
+def _binarize(in_file, threshold=0.5, out_file=None):
+    import os.path as op
+    import numpy as np
+    import nibabel as nb
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath('{}_bin{}'.format(fname, ext))
+
+    nii = nb.load(in_file)
+    data = nii.get_data()
+
+    data[data <= threshold] = 0
+    data[data > 0] = 1
+
+    hdr = nii.header.copy()
+    hdr.set_data_dtype(np.uint8)
+    nb.Nifti1Image(data.astype(np.uint8), nii.affine, hdr).to_filename(
+        out_file)
+    return out_file
 
 def _estimate_snr(in_file, seg_file):
     import nibabel as nb
