@@ -191,7 +191,8 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     resample = pe.Node(EnsureSize(pixel_size=resolution), 'EnsureSize')
 
     # Initializer
-    init = pe.Node(AffineInitializer(), name='NormalizationInit')
+    init = pe.Node(AffineInitializer(num_threads=settings.get('ants_nthreads')),
+                   name='NormalizationInit')
 
     # Spatial normalization
     norm = pe.Node(RobustMNINormalization(
