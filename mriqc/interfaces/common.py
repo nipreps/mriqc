@@ -5,11 +5,14 @@
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 from os import path as op
+
+from pkg_resources import resource_filename as pkgrf
 import numpy as np
 import nibabel as nb
 
 from nipype import logging
-from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File
+from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
+from nipype.interfaces.ants import ApplyTransforms
 from niworkflows.interfaces.base import SimpleInterface
 
 IFLOGGER = logging.getLogger('interface')
@@ -135,4 +138,120 @@ class ConformImage(SimpleInterface):
 
         self._results['out_file'] = op.abspath('{}_conformed{}'.format(out_file, ext))
         nii.to_filename(self._results['out_file'])
+        return runtime
+
+
+class EnsureSizeInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, copyfile=False, mandatory=True, desc='input image')
+    in_mask = File(exists=True, copyfile=False, desc='input mask')
+    pixel_size = traits.Float(2.0, usedefault=True,
+                              desc='desired pixel size (mm)')
+
+
+class EnsureSizeOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='output image')
+    out_mask = File(exists=True, desc='output mask')
+
+
+class EnsureSize(SimpleInterface):
+    """
+    Checks the size of the input image and resamples it to
+    have `pixel_size`
+
+    """
+    input_spec = EnsureSizeInputSpec
+    output_spec = EnsureSizeOutputSpec
+
+    def _run_interface(self, runtime):
+        nii = nb.load(self.inputs.in_file)
+        zooms = nii.header.get_zooms()
+        size_diff = np.array(zooms[:3]) - (self.inputs.pixel_size - 0.1)
+        if np.all(size_diff >= -1e-3):
+            IFLOGGER.info('Voxel size is large enough')
+            self._results['out_file'] = self.inputs.in_file
+            if isdefined(self.inputs.in_mask):
+                self._results['out_mask'] = self.inputs.in_mask
+            return runtime
+
+        IFLOGGER.info('One or more voxel dimensions (%f, %f, %f) are smaller than '
+                      'the requested voxel size (%f) - diff=(%f, %f, %f)', zooms[0],
+                      zooms[1], zooms[2], self.inputs.pixel_size, size_diff[0],
+                      size_diff[1], size_diff[2])
+
+        # Figure out new matrix
+        # 1) Get base affine
+        aff_base = nii.header.get_base_affine()
+        aff_base_inv = np.linalg.inv(aff_base)
+
+        # 2) Find center pixel in mm
+        center_idx = (np.array(nii.shape[:3]) - 1) * 0.5
+        center_mm = aff_base.dot(center_idx.tolist() + [1])
+
+        # 3) Find extent of each dimension
+        min_mm = aff_base.dot([-0.5, -0.5, -0.5, 1])
+        max_mm = aff_base.dot((np.array(nii.shape[:3]) - 0.5).tolist() + [1])
+        extent_mm = np.abs(max_mm - min_mm)[:3]
+
+        # 4) Find new matrix size
+        new_size = np.array(extent_mm / self.inputs.pixel_size, dtype=int)
+
+        # 5) Initialize new base affine
+        new_base = aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
+
+        # 6) Find new center
+        new_center_idx = (new_size - 1) * 0.5
+        new_affine_base = np.eye(4)
+        new_affine_base[:3, :3] = new_base
+        new_affine_base[:3, 3] = center_mm[:3] - new_base.dot(new_center_idx)
+
+        # 7) Rotate new matrix
+        rotation = nii.affine.dot(aff_base_inv)
+        new_affine = rotation.dot(new_affine_base)
+
+        # 8) Generate new reference image
+        hdr = nii.header.copy()
+        hdr.set_data_shape(new_size)
+        ref_file = 'resample_ref.nii.gz'
+        nb.Nifti1Image(np.zeros(new_size, dtype=nii.get_data_dtype()),
+                       new_affine, hdr).to_filename(ref_file)
+
+        out_prefix, ext = op.splitext(op.basename(self.inputs.in_file))
+        if ext == '.gz':
+            out_prefix, ext2 = op.splitext(out_prefix)
+            ext = ext2 + ext
+
+        out_file = op.abspath('%s_resampled%s' % (out_prefix, ext))
+
+        # 9) Resample new image
+        ApplyTransforms(
+            dimension=3,
+            input_image=self.inputs.in_file,
+            reference_image=ref_file,
+            interpolation='LanczosWindowedSinc',
+            transforms=[pkgrf('mriqc', 'data/itk_identity.tfm')],
+            output_image=out_file,
+        ).run()
+
+        self._results['out_file'] = out_file
+
+        if isdefined(self.inputs.in_mask):
+            hdr = nii.header.copy()
+            hdr.set_data_shape(new_size)
+            hdr.set_data_dtype(np.uint8)
+            ref_mask = 'mask_ref.nii.gz'
+            nb.Nifti1Image(np.zeros(new_size, dtype=np.uint8),
+                           new_affine, hdr).to_filename(ref_mask)
+
+            out_mask = op.abspath('%s_resmask%s' % (out_prefix, ext))
+            ApplyTransforms(
+                dimension=3,
+                input_image=self.inputs.in_mask,
+                reference_image=ref_mask,
+                interpolation='NearestNeighbor',
+                transforms=[pkgrf('mriqc', 'data/itk_identity.tfm')],
+                output_image=out_mask,
+            ).run()
+
+            self._results['out_mask'] = out_mask
+
         return runtime

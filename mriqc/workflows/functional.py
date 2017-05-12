@@ -120,8 +120,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
 
     # EPI to MNI registration
-    ema = epi_mni_align(ants_nthreads=settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
-                        testing=settings.get('testing', False))
+    ema = epi_mni_align(settings)
 
     # Compute TSNR using nipype implementation
     tsnr = pe.Node(nac.TSNR(), name='compute_tsnr')
@@ -662,7 +661,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     return workflow
 
-def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, resolution=2):
+def epi_mni_align(settings, name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
@@ -675,7 +674,7 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     .. workflow::
 
       from mriqc.workflows.functional import epi_mni_align
-      wf = epi_mni_align()
+      wf = epi_mni_align({})
 
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
@@ -683,6 +682,12 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
     from pkg_resources import resource_filename as pkgrf
 
+    # Get settings
+    testing = settings.get('testing', False)
+    n_procs = settings.get('n_procs', 1)
+    ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
+
+    # Init template
     mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
@@ -696,17 +701,19 @@ def epi_mni_align(name='SpatialNormalization', ants_nthreads=6, testing=False, r
     n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
-        num_threads=ants_nthreads, template='mni_icbm152_nlin_asym_09c',
-        testing=testing, moving='EPI', generate_report=True),
-                   name='EPI2MNI')
-    norm.inputs.reference_image = pkgrf(
-        'mriqc', 'data/mni/%dmm_T2_brain.nii.gz' % resolution)
-    norm.interface.num_threads = ants_nthreads
-    norm.interface.estimated_memory_gb = 4
+        num_threads=ants_nthreads,
+        template='mni_icbm152_nlin_asym_09c',
+        reference_image=pkgrf('mriqc', 'data/mni/2mm_T2_brain.nii.gz'),
+        flavor='testing' if testing else 'precise',
+        moving='EPI',
+        generate_report=True,),
+                   name='EPI2MNI',
+                   num_threads=n_procs,
+                   estimated_memory_gb=3)
 
     # Warp segmentation into EPI space
     invt = pe.Node(ApplyTransforms(float=True,
-        input_image=op.join(mni_template, '%dmm_parc.nii.gz' % resolution),
+        input_image=op.join(mni_template, '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
                    name='ResampleSegmentation')
 
