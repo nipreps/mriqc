@@ -112,15 +112,12 @@ def read_report_snippet(in_file):
 def upload_qc_metrics(in_iqms, email = '', no_sub = False):
     """Upload qc metrics to remote repository.
 
-
     Arguments:
     in_iqms -- Path to the qc metric json file as a string
 
     Keyword arguments:
     email -- email address to be included with the metric submission, defaults to empty string
-    no_sub -- Flag from settings indicating whether or not metrics should be submitted.
-        If False, metrics will be submitted. If True, metrics will not be submitted.
-        Defaults to False.
+    no_sub -- Flag from settings indicating whether or not metrics should be submitted. If False, metrics will be submitted. If True, metrics will not be submitted. Defaults to False.
 
     Returns:
     either returns response object if a response was successfully sent
