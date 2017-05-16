@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-04 18:12:22
+# @Last Modified time: 2017-05-11 17:36:41
 
 """
 =====================
@@ -593,11 +593,11 @@ def nested_fit_and_score(
                      short_format_time(total_time), acc_score)
 
     ret = {
-        'test': {'roc_auc': test_score, 'accuracy': acc_score}
+        'test': {'score': test_score, 'accuracy': acc_score}
     }
 
     if return_train_score:
-        ret['train'] = {'roc_auc': train_score}
+        ret['train'] = {'score': train_score}
 
     if return_times:
         ret['times'] = [fit_time, score_time]

@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 11:27:30
+# @Last Modified time: 2017-05-15 16:18:41
 
 """
 mriqc_fit command line interface definition
@@ -59,6 +59,8 @@ def main():
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
 
+    g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
+
     g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
@@ -69,6 +71,9 @@ def main():
 
     g_input.add_argument('-o', '--output', action='store', default='predicted_qa.csv',
                          help='file containing the labels assigned by the classifier')
+
+    g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
+                         help='decision threshold of the classifier')
 
 
     opts = parser.parse_args()
@@ -90,7 +95,7 @@ def main():
     if all(train):
         # Initialize model selection helper
         cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
-                            param=parameters)
+                            param=parameters, scorer=opts.scorer)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
@@ -103,17 +108,18 @@ def main():
 
     else:
         cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs,
-                            rate_label='rater_1')
+                            rate_label='rater_1', scorer=opts.scorer)
 
     if opts.test_data and opts.test_labels:
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        print('roc_auc=%f, accuracy=%f' % (cvhelper.evaluate(scoring='roc_auc'),
-                                           cvhelper.evaluate()))
+        print('%s=%f, accuracy=%f' % (opts.scorer,
+                                      cvhelper.evaluate(scoring=opts.scorer),
+                                      cvhelper.evaluate(matrix=True)))
 
     if opts.evaluation_data:
-        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output)
+        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
 
 
 if __name__ == '__main__':

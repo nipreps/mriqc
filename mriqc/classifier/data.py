@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-08 13:52:24
+# @Last Modified time: 2017-05-12 12:56:31
 
 """
 ===================
@@ -119,6 +119,26 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
              nfails, nsamples - nfails, nfails * 100 / nsamples)
 
     return x_df, feat_names
+
+def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
+    sites = list(set(dataframe[[site_column]].values.ravel()))
+    pos_draw = []
+    neg_draw = []
+
+    for site in sites:
+        site_x = dataframe.loc[dataframe[site_column].str.contains(site)]
+        site_x_pos = site_x[site_x[rate_label] == 1]
+
+        if len(site_x_pos) > 4:
+            pos_draw.append(np.random.choice(site_x_pos.index.tolist()))
+
+            site_x_neg = site_x[site_x[rate_label] == 0]
+            neg_draw.append(np.random.choice(site_x_neg.index.tolist()))
+
+    left_out = dataframe.iloc[pos_draw + neg_draw].copy()
+    dataframe = dataframe.drop(dataframe.index[pos_draw + neg_draw])
+    return dataframe, left_out
+
 
 
 def zscore_dataset(dataframe, excl_columns=None, by='site',
