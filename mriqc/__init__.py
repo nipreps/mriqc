@@ -9,8 +9,8 @@ assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
-
 import logging
+
 from .info import (
     __version__,
     __author__,
@@ -34,3 +34,4 @@ DEFAULTS = {
     'ants_nthreads': 6,
     'float32': False
 }
+

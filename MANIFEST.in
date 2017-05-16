@@ -7,4 +7,5 @@ recursive-include mriqc/data *
 #Misc
 include requirements.txt
 include CHANGES.txt
-include LICENSE.txt
+include LICENSE.txtinclude versioneer.py
+include mriqc/_version.py

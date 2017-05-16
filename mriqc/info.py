@@ -7,7 +7,10 @@ MRIQC
 
 """
 
-__version__ = '99.99.99'
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
