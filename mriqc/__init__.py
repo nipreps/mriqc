@@ -11,7 +11,7 @@ assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 from __future__ import print_function, division, absolute_import, unicode_literals
 import logging
 
-from .info import (
+from .__about__ import (
     __version__,
     __author__,
     __email__,
@@ -21,7 +21,9 @@ from .info import (
     __license__,
     __status__,
     __description__,
-    __longdesc__
+    __longdesc__,
+    __url__,
+    __download__,
 )
 
 

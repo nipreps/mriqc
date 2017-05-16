@@ -7,6 +7,7 @@ MRIQC
 
 """
 
+from datetime import date
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
@@ -14,8 +15,8 @@ del get_versions
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
-__copyright__ = ('Copyright 2016, Center for Reproducible Neuroscience, '
-                 'Stanford University')
+__copyright__ = ('Copyright %d, Center for Reproducible Neuroscience, '
+                 'Stanford University') % date.today().year
 __credits__ = 'Oscar Esteban'
 __license__ = '3-clause BSD'
 __status__ = 'Prototype'
@@ -33,9 +34,9 @@ __longdesc__ = ("MRIQC provides a series of image processing workflows "
                 "It is also scheduled to add diffusion MRI to the target "
                 "imaging families.")
 
-URL = 'http://mriqc.readthedocs.org/'
-DOWNLOAD_URL = ('https://pypi.python.org/packages/source/m/mriqc/'
-                'mriqc-{}.tar.gz'.format(__version__))
+__url__ = 'http://mriqc.readthedocs.org/'
+__download__ = ('https://github.com/poldracklab/mriqc/archive/'
+                '{}.tar.gz'.format(__version__))
 CLASSIFIERS = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',

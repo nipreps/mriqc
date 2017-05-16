@@ -18,7 +18,7 @@ def main():
     from setuptools import setup, find_packages
     from io import open  # pylint: disable=W0622
 
-    from mriqc.info import (
+    from mriqc.__about__ import (
         __version__,
         __author__,
         __email__,
@@ -29,13 +29,13 @@ def main():
         __status__,
         __description__,
         __longdesc__,
+        __url__,
+        __download__,
         CLASSIFIERS,
         REQUIRES,
         LINKS_REQUIRES,
         TESTS_REQUIRES,
         EXTRA_REQUIRES,
-        URL,
-        DOWNLOAD_URL,
     )
 
     # this_path = op.dirname(op.abspath(getfile(currentframe())))
@@ -65,8 +65,8 @@ def main():
         dependency_links=LINKS_REQUIRES,
         tests_require=TESTS_REQUIRES,
         extras_require=EXTRA_REQUIRES,
-        url=URL,
-        download_url=DOWNLOAD_URL,
+        url=__url__,
+        download_url=__download__,
         entry_points={'console_scripts': ['mriqc=mriqc.bin.mriqc_run:main',
                                           'mriqc_fit=mriqc.bin.mriqc_fit:main',
                                           'mriqc_clf=mriqc.bin.mriqc_clf:main',
