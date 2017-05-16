@@ -4,20 +4,11 @@
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
 """ MRIQC setup script """
-from setuptools.command.build_py import build_py
-from sys import version_info
-import versioneer
-
-PY3 = version_info[0] >= 3
-PACKAGE_NAME = 'mriqc'
 
 def main():
     """ Install entry-point """
-    from os import path as op
-    from inspect import getfile, currentframe
+    import versioneer
     from setuptools import setup, find_packages
-    from io import open  # pylint: disable=W0622
-
     from mriqc.__about__ import (
         __version__,
         __author__,
@@ -31,23 +22,13 @@ def main():
         __longdesc__,
         __url__,
         __download__,
+        PACKAGE_NAME,
         CLASSIFIERS,
         REQUIRES,
         LINKS_REQUIRES,
         TESTS_REQUIRES,
         EXTRA_REQUIRES,
     )
-
-    # this_path = op.dirname(op.abspath(getfile(currentframe())))
-
-    # # Python 3: use a locals dictionary
-    # # http://stackoverflow.com/a/1463370/6820620
-    # ldict = locals()
-    # # Get version and release info, which is all stored in mriqc/info.py
-    # module_file = op.join(this_path, PACKAGE_NAME, 'info.py')
-    # with open(module_file) as infofile:
-    #     pythoncode = [line for line in infofile.readlines() if not line.strip().startswith('#')]
-    #     exec('\n'.join(pythoncode), globals(), ldict)  # pylint: disable=W0122
 
     setup(
         name=PACKAGE_NAME,

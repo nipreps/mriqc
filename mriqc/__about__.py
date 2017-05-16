@@ -37,6 +37,8 @@ __longdesc__ = ("MRIQC provides a series of image processing workflows "
 __url__ = 'http://mriqc.readthedocs.org/'
 __download__ = ('https://github.com/poldracklab/mriqc/archive/'
                 '{}.tar.gz'.format(__version__))
+
+PACKAGE_NAME = 'mriqc'
 CLASSIFIERS = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',
