@@ -17,6 +17,8 @@ dependencies:
     - "~/data"
 
   pre:
+    # Get history of tags
+    - git pull --tags
     # Download test data
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions
