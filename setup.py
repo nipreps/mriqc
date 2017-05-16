@@ -4,7 +4,6 @@
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
 """ MRIQC setup script """
-
 def main():
     """ Install entry-point """
     import versioneer
@@ -25,6 +24,7 @@ def main():
         PACKAGE_NAME,
         CLASSIFIERS,
         REQUIRES,
+        SETUP_REQUIRES,
         LINKS_REQUIRES,
         TESTS_REQUIRES,
         EXTRA_REQUIRES,
@@ -41,7 +41,7 @@ def main():
         maintainer_email='crn.poldracklab@gmail.com',
         classifiers=CLASSIFIERS,
         # Dependencies handling
-        setup_requires=[],
+        setup_requires=SETUP_REQUIRES,
         install_requires=REQUIRES,
         dependency_links=LINKS_REQUIRES,
         tests_require=TESTS_REQUIRES,

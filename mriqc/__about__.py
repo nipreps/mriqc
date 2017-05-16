@@ -48,6 +48,7 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.6',
 ]
 
+SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
