@@ -6,7 +6,7 @@
 """ MRIQC setup script """
 def main():
     """ Install entry-point """
-    import versioneer
+    import os
     from setuptools import setup, find_packages
     from mriqc.__about__ import (
         __version__,
@@ -30,9 +30,21 @@ def main():
         EXTRA_REQUIRES,
     )
 
+    version = None
+    cmdclass = {}
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    if os.path.isfile(os.path.join(root_dir, 'mriqc', 'VERSION')):
+        with open(os.path.join(root_dir, 'mriqc', 'VERSION')) as vfile:
+            version = vfile.readline().strip()
+
+    if version is None:
+        import versioneer
+        version = versioneer.get_version()
+        cmdclass = versioneer.get_cmdclass()
+
     setup(
         name=PACKAGE_NAME,
-        version=versioneer.get_version(),
+        version=version,
         description=__description__,
         long_description=__longdesc__,
         author=__author__,
@@ -70,7 +82,7 @@ def main():
                                 'data/tests/*',
                                 'data/mni/*.nii.gz']},
         zip_safe=False,
-        cmdclass=versioneer.get_cmdclass(),
+        cmdclass=cmdclass,
     )
 
 

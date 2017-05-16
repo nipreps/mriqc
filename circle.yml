@@ -17,8 +17,6 @@ dependencies:
     - "~/data"
 
   pre:
-    # Get history of tags
-    - git fetch --tags
     # Download test data
     - mkdir -p ~/data/ ~/docker
     # Create scratch folder and force group permissions
@@ -26,11 +24,10 @@ dependencies:
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
     - docker load --input $HOME/docker/cache.tar || true
   override:
+    - if [ "$CIRCLE_TAG" != "" ]; then echo "$CIRCLE_TAG" > mriqc/VERSION; else echo "$( python setup.py version | grep Version | tr -s ' ' | cut -d ' ' -f 2 )" > mriqc/VERSION; fi
     - ? |
         e=1 && for i in {1..5}; do
-            VERSION=$( python setup.py version | grep Version | tr -s ' ' | cut -d ' ' -f 2 )
-            echo "Extracted version: $VERSION"
-            docker build --rm=false -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${VERSION}" . && e=0 && break || sleep 15
+            docker build --rm=false -t ${DOCKER_IMAGE}:${DOCKER_TAG} --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg VERSION="${CIRCLE_TAG:-CIRCLE_SHA1}" . && e=0 && break || sleep 15
         done && [ "$e" -eq "0" ]
       :
         timeout: 3200
