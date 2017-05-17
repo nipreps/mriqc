@@ -51,28 +51,9 @@ extensions = [
 # Mock modules in autodoc:
 autodoc_mock_imports = [
     'scipy',
-    'scipy.cluster',
-    'scipy.linalg',
-    'scipy.ndimage',
-    'scipy.sparse',
-    'scipy.stats',
-    'scipy.spatial',
     'sklearn',
-    'sklearn.base',
-    'sklearn.metrics',
-    'sklearn.utils',
-    'sklearn.utils.fixes',
-    'sklearn.metrics.scorer',
-    'sklearn.model_selection',
-    'sklearn.model_selection._split',
-    'sklearn.model_selection._search',
-    'sklearn.model_selection._validation',
-    'statsmodels.robust.scale',
-    'nilearn.image',
-    'nilearn.masking',
-    'nilearn.plotting',
-    'nilearn.signal',
-    'nilearn.spatial',
+    'statsmodels',
+    'nilearn',
 ]
 
 suppress_warnings = ['image.nonlocal_uri']
