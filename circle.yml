@@ -4,7 +4,7 @@ machine:
     - sudo chmod 0755 /usr/bin/docker
   environment:
     SCRATCH: "$HOME/scratch"
-    DOCKER_IMAGE: "poldracklab/mriqc"
+    DOCKER_IMAGE: "nihfmrif/mriqc"
     DOCKER_TAG: "latest"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
