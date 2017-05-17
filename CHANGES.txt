@@ -1,7 +1,24 @@
-Next release
-============
+Release 0.9.4
+=============
 
-* [ENH] Updated fs2gif script (#465)
+  * [ENH] Speed up spatial normalization (#495)
+  * [ENH] Resampling of hat mask and TPMs with linear interp (#498)
+  * [TST] Build documentation in CircleCI (#484)
+  * [ENH] Use full-resolution T1w images from ABIDE (#486)
+  * [TST] Parallelize tests (#493)
+  * [TST] Binding /etc/localtime stopped working in docker 1.9.1 (#492)
+  * [TST] Downgrade docker to 1.9.1 in circle (build_only) (#491)
+  * [TST] Check for changes in intermediate nifti files (#485)
+  * [FIX] Erroneous flag --n_proc in CircleCI (#490)
+  * [ENH] Add build_only tag to circle builds (#488)
+  * [ENH] Update Dockerfile (#482)
+  * [FIX] Ignore --profile flag with Linear plugin (#483)
+  * [DOC] Deep revision of the documentation (#479)
+  * [ENH] Minor improvements: SpatialNormalization and segmentation (#472)
+  * [ENH] Fixed typo for neurodebian install via apt-get (#478)
+  * [ENH] Updating fs2gif script (#465)
+  * [ENH] RF: Use niworkflows.interface.SimpleInterface (#468)
+  * [ENH] Add reproducibility of metrics tracking (#466)
 
 Release 0.9.3
 =============
