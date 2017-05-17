@@ -32,6 +32,8 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
     fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
     in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
+    in_fwhm = traits.List(traits.Float, mandatory=True,
+                          desc='smoothness estimated with AFNI')
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -43,6 +45,7 @@ class FunctionalQCOutputSpec(TraitedSpec):
     dvars = traits.Dict
     gcor = traits.Float
     fd = traits.Dict
+    fwhm = traits.Dict(desc='full width half-maximum measure')
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
@@ -121,6 +124,12 @@ class FunctionalQC(SimpleInterface):
             'num': int(num_fd),
             'perc': float(num_fd * 100 / (len(fd_data) + 1))
         }
+
+        # FWHM
+        fwhm = np.array(self.inputs.in_fwhm) / np.array(hmcnii.get_header().get_zooms()[:3])
+        self._results['fwhm'] = {
+            'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
+            'avg': float(np.average(fwhm))}
 
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),
