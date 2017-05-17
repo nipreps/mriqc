@@ -47,7 +47,7 @@ from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
-from niworkflows.interfaces.registration import EstimateReferenceImage
+from niworkflows.interfaces import registration as nwr
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -502,7 +502,7 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_fd']), name='outputnode')
 
-    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
+    gen_ref = pe.Node(nwr.EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
 
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, interpolation='sinc'),
                       name='MCFLIRT')
@@ -563,7 +563,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (inputnode, drop_trs, [('in_file', 'out_file')]),
         ])
 
-    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
+    gen_ref = pe.Node(nwr.EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
 
     # calculate hmc parameters
     hmc = pe.Node(
