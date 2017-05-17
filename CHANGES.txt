@@ -1,6 +1,8 @@
 0.9.4
 =====
 
+  * ANNOUNCEMENT: Dropped Python 2 support
+  * [ENH] Use versioneer to handle versions (#500)
   * [ENH] Speed up spatial normalization (#495)
   * [ENH] Resampling of hat mask and TPMs with linear interp (#498)
   * [TST] Build documentation in CircleCI (#484)
