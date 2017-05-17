@@ -30,12 +30,28 @@ def main():
         EXTRA_REQUIRES,
     )
 
+    pkg_data = {
+        'mriqc': ['data/*.yml',
+                  'data/*.tfm',
+                  'data/csv/*.csv',
+                  'data/rfc-nzs-abide-1.0.pklz',
+                  'data/rfc-nzs-full-1.0.pklz',
+                  'data/reports/*.rst',
+                  'data/reports/*.html',
+                  'data/reports/resources/*',
+                  'data/reports/embed_resources/*',
+                  'data/tests/*',
+                  'data/mni/*.nii.gz'
+        ]
+    }
+
     version = None
     cmdclass = {}
     root_dir = os.path.dirname(os.path.realpath(__file__))
     if os.path.isfile(os.path.join(root_dir, 'mriqc', 'VERSION')):
         with open(os.path.join(root_dir, 'mriqc', 'VERSION')) as vfile:
             version = vfile.readline().strip()
+        pkg_data['mriqc'].insert(0, 'VERSION')
 
     if version is None:
         import versioneer
@@ -70,17 +86,7 @@ def main():
                                           'nib-hash=mriqc.bin.nib_hash:main',
                                           'participants=mriqc.bin.subject_wrangler:main']},
         packages=find_packages(exclude=['*.tests']),
-        package_data={'mriqc': ['data/*.yml',
-                                'data/*.tfm',
-                                'data/csv/*.csv',
-                                'data/rfc-nzs-abide-1.0.pklz',
-                                'data/rfc-nzs-full-1.0.pklz',
-                                'data/reports/*.rst',
-                                'data/reports/*.html',
-                                'data/reports/resources/*',
-                                'data/reports/embed_resources/*',
-                                'data/tests/*',
-                                'data/mni/*.nii.gz']},
+        package_data=pkg_data,
         zip_safe=False,
         cmdclass=cmdclass,
     )
