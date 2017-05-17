@@ -1,6 +1,10 @@
 #!/bin/bash
 #
-# Balance nipype testing workflows across CircleCI build nodes
+# Collects the pull-requests since the latest release and
+# aranges them in the CHANGES.txt file.
+#
+# This is a script to be run before releasing a new version.
+#
 #
 
 # Setting      # $ help set
