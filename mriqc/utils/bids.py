@@ -24,31 +24,25 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
     # Start a layout
     layout = BIDSLayout(dataset)
 
-    # Find all sessions
-    if session:
-        session_list = [session]
-    else:
-        session_list = layout.unique('session')
-        if session_list == []:
-            session_list = [None]
-
-    # Find all runs
-    if run:
-        run_list = [run]
-    else:
-        run_list = layout.unique('run')
-        if run_list == []:
-            run_list = [None]
+    # Set queries
+    if queries is None:
+        queries = deepcopy(DEFAULT_QUERIES)
 
     # Set modalities
     if modalities is None:
         modalities = deepcopy(DEFAULT_MODALITIES)
 
-    # Set queries
-    if queries is None:
-        queries = deepcopy(DEFAULT_QUERIES)
+    if session:
+        for mod in modalities:
+            queries[mod]['session'] = [session]
+
+    if run:
+        for mod in modalities:
+            queries[mod]['run'] = run
 
     if task:
+        if isinstance(task, list) and len(task) == 1:
+            task = task[0]
         queries['bold']['task'] = task
 
     # Set participants

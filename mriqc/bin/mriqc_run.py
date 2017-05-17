@@ -55,11 +55,11 @@ def get_parser():
     g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='+',
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
-    g_bids.add_argument('-s', '--session-id', action='store',
+    g_bids.add_argument('--session-id', action='store', nargs='+',
                         help='select a specific session to be processed')
-    g_bids.add_argument('-r', '--run-id', action='store',
+    g_bids.add_argument('--run-id', action='store', type=str, nargs='+',
                         help='select a specific run to be processed')
-    g_bids.add_argument('-t', '--task-id', action='store',
+    g_bids.add_argument('--task-id', action='store', nargs='+', type=str,
                         help='select a specific task to be processed')
     g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
                         choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
