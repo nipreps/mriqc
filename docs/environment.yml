@@ -10,6 +10,8 @@ dependencies:
 - matplotlib=2.0.0
 - traits=4.6
 - jinja2=2.8
+- sphinx>=1.5,<1.6
+- sphinx_rtd_theme>=0.2.4
 
 - pip:
     - git+https://github.com/nipy/nipype.git@f92a333b0d191773aa9cefd87fba869b87ab1414#egg=nipype
