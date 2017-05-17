@@ -12,6 +12,6 @@ dependencies:
 - jinja2=2.8
 
 - pip:
-    - git+https://github.com/poldracklab/niworkflows.git@db249b8c65e504bdb6bae618d5b94b6adff219b1#egg=niworkflows
     - git+https://github.com/nipy/nipype.git@f92a333b0d191773aa9cefd87fba869b87ab1414#egg=nipype
+    - git+https://github.com/poldracklab/niworkflows.git@178cdafd547cbad4656b06ff09f959d488fbcbe4#egg=niworkflows
 
