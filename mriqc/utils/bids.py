@@ -18,7 +18,7 @@ DEFAULT_QUERIES = {
 }
 
 def collect_bids_data(dataset, participant_label=None, session=None, run=None,
-                      queries=None, modalities=None):
+                      queries=None, task=None, modalities=None):
     """Get files in dataset"""
 
     # Start a layout
@@ -48,6 +48,9 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
     if queries is None:
         queries = deepcopy(DEFAULT_QUERIES)
 
+    if task:
+        queries['bold']['task'] = task
+
     # Set participants
     if participant_label is not None:
         if isinstance(participant_label, (bytes, str)):
@@ -60,9 +63,6 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
                              for sub in participant_label]
         participant_label = [sub[1:] if sub.startswith('*') else ('^' + sub)
                              for sub in participant_label]
-
-
-        print('participant labels ', participant_label)
 
         # For some reason, outer subject ids are filtered out
         participant_label.insert(0, 'null')
