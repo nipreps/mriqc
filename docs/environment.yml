@@ -10,29 +10,8 @@ dependencies:
 - matplotlib=2.0.0
 - traits=4.6
 - jinja2=2.8
-- sphinx>=1.5.1
-- sphinx_rtd_theme>=0.2.4
-- mock
-- future
-- matplotlib
-- nibabel
-- seaborn
-- PyYAML
-- nose
-- statsmodels
-- xvfbwrapper
-- funcsigs
-- prov
-- networkx
-- python-dateutil
 
 - pip:
-    - doctest-ignore-unicode
-    - svgutils
-    - nipy
-    - dipy
-    - nitime
-    - nilearn
     - git+https://github.com/poldracklab/niworkflows.git@db249b8c65e504bdb6bae618d5b94b6adff219b1#egg=niworkflows
     - git+https://github.com/nipy/nipype.git@4ace7df18c17980f459c750968cd83b0dcdd3762#egg=nipype
 
