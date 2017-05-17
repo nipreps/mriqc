@@ -94,6 +94,8 @@ def main():
              "(saves space and improves perfomance)")
     g_input.add_argument('--fft-spikes-detector', action='store_true', default=False,
                          help='Turn on FFT based spike detector (slow).')
+    g_input.add_argument('--fd_thres', action='store', default=0.2,
+                         type=float, help='motion threshold for FD computation')
 
     g_outputs = parser.add_argument_group('mriqc specific outputs')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
@@ -152,7 +154,8 @@ def main():
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
-        'ica': opts.ica
+        'ica': opts.ica,
+        'fd_thres': opts.fd_thres
     }
 
     if opts.hmc_afni:

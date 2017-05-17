@@ -205,11 +205,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
-        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'in_tsnr', 'metadata']), name='inputnode')
+        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'fd_thres', 'in_tsnr', 'metadata']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
-
+    #Set FD threshold
+    inputnode.inputs.fd_thres=settings.get('fd_thres',0.2)
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Compute DVARS
@@ -236,6 +237,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('brainmask', 'in_mask'),
                                ('hmc_epi', 'in_hmc'),
                                ('hmc_fd', 'in_fd'),
+                               ('fd_thres', 'fd_thres'),
                                ('in_tsnr', 'in_tsnr')]),
         (inputnode, fwhm, [('epi_mean', 'in_file'),
                            ('brainmask', 'mask')]),
@@ -307,10 +309,12 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'epi_parc',
+        'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'fd_thres', 'epi_parc',
         'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
         'exclude_index', 'mni_report', 'ica_report']),
         name='inputnode')
+    #Set FD threshold
+    inputnode.inputs.fd_thres=settings.get('fd_thres',0.2)
 
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
@@ -321,7 +325,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     bigplot = pe.Node(niu.Function(
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
-                     'fd', 'dvars', 'outliers'],
+                     'fd', 'fd_thres', 'dvars', 'outliers'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
     bigplot.interface.estimated_memory_gb =biggest_file_gb * 3.5
 
@@ -331,6 +335,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (inputnode, bigplot, [('hmc_epi', 'in_func'),
                               ('brainmask', 'in_mask'),
                               ('hmc_fd', 'fd'),
+                              ('fd_thres', 'fd_thres'),
                               ('in_dvars', 'dvars'),
                               ('epi_parc', 'in_segm'),
                               ('outliers', 'outliers')]),
@@ -816,7 +821,7 @@ def _parse_tout(in_file):
 
 
 def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
-              fd, dvars, outliers, out_file=None):
+              fd, fd_thres, dvars, outliers, out_file=None):
     import os.path as op
     import numpy as np
     from mriqc.viz.fmriplots import fMRIPlot
@@ -846,7 +851,7 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
     myplot.add_confounds([np.nan] + np.loadtxt(fd, skiprows=1,
                                                usecols=[0]).tolist(),
                          {'name': 'FD', 'units': 'mm', 'normalize': False,
-                          'cutoff': [0.2], 'ylims': (0.0, 0.2)})
+                          'cutoff': [fd_thres], 'ylims': (0.0, fd_thres)})
     myplot.plot()
     myplot.fig.savefig(out_file, bbox_inches='tight')
     myplot.fig.clf()
