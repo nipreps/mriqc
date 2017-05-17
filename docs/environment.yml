@@ -21,7 +21,6 @@ dependencies:
 - nose
 - statsmodels
 - xvfbwrapper
-- configparser
 - funcsigs
 - prov
 - networkx
@@ -34,6 +33,6 @@ dependencies:
     - dipy
     - nitime
     - nilearn
-    - git+https://github.com/poldracklab/niworkflows.git@d6612ceb1e44ca2df30b404ef853d136ede277bb#egg=niworkflows
-    - git+https://github.com/nipy/nipype.git@e1fb59500cb88c209976176bf4c0ef55ea4e25c2#egg=nipype
+    - git+https://github.com/oesteban/niworkflows.git@3bdaafceeb7d11ef0c899d57acc7417ae01bdfad#egg=niworkflows
+    - git+https://github.com/nipy/nipype.git@4ace7df18c17980f459c750968cd83b0dcdd3762#egg=nipype
 
