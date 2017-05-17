@@ -82,7 +82,7 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.4', 'mock', 'sphinx_rtd_theme'],
+    'doc': ['sphinx>=1.6', 'sphinx_rtd_theme>=0.2.4'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
