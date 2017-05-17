@@ -1,5 +1,5 @@
-Release 0.9.4
-=============
+0.9.4
+=====
 
   * [ENH] Speed up spatial normalization (#495)
   * [ENH] Resampling of hat mask and TPMs with linear interp (#498)
