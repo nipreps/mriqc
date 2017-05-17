@@ -44,12 +44,14 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'mriqc.sphinxext.plot_workflow',
     # 'sphinx.ext.autosectionlabel',
-    'mriqc.sphinxext.plot_workflow'
 ]
 
 # Mock modules in autodoc:
 autodoc_mock_imports = [
+    'numpy',
+    'pandas',
     'scipy',
     'sklearn',
     'statsmodels',
