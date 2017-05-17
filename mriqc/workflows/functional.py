@@ -46,7 +46,7 @@ from mriqc import DEFAULTS
 from mriqc.workflows.utils import fwhm_dict, slice_wise_fft
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
-from niworkflows.interfaces.segmentation import MELODICRPT
+from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces.registration import EstimateReferenceImage
 
 
@@ -175,10 +175,10 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         ])
 
     if settings.get('ica', False):
-        melodic = pe.Node(MELODICRPT(no_bet=True,
-                                     no_mask=True,
-                                     no_mm=True,
-                                     generate_report=True), name="ICA")
+        melodic = pe.Node(nws.MELODICRPT(no_bet=True,
+                                         no_mask=True,
+                                         no_mm=True,
+                                         generate_report=True), name="ICA")
         melodic.interface.estimated_memory_gb = biggest_file_gb * 5
         workflow.connect([
             (reorient_and_discard, melodic, [('out_file', 'in_files')]),
