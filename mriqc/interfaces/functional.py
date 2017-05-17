@@ -126,7 +126,7 @@ class FunctionalQC(SimpleInterface):
         }
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm) / np.array(hmcnii.get_header().get_zooms()[:3])
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.get_header().get_zooms()[:3])
         self._results['fwhm'] = {
             'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
             'avg': float(np.average(fwhm))}

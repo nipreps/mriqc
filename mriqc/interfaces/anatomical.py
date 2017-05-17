@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-17 15:08:33
+# @Last Modified time: 2017-05-17 16:54:26
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -135,7 +135,7 @@ class StructuralQC(SimpleInterface):
             pvmdata.append(nb.load(fname).get_data().astype(np.float32))
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm) / np.array(imnii.get_header().get_zooms()[:3])
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.get_header().get_zooms()[:3])
         self._results['fwhm'] = {
             'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
             'avg': float(np.average(fwhm))}
