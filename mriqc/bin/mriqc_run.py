@@ -98,6 +98,7 @@ def get_parser():
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
 
+
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
     g_conf.add_argument('--ica', action='store_true', default=False,
