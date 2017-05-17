@@ -31,7 +31,7 @@ from mriqc import __version__
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.6'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -44,35 +44,18 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'mriqc.sphinxext.plot_workflow',
     # 'sphinx.ext.autosectionlabel',
-    'mriqc.sphinxext.plot_workflow'
 ]
 
 # Mock modules in autodoc:
 autodoc_mock_imports = [
+    'numpy',
+    'pandas',
     'scipy',
-    'scipy.cluster',
-    'scipy.linalg',
-    'scipy.ndimage',
-    'scipy.sparse',
-    'scipy.stats',
-    'scipy.spatial',
     'sklearn',
-    'sklearn.base',
-    'sklearn.metrics',
-    'sklearn.utils',
-    'sklearn.utils.fixes',
-    'sklearn.metrics.scorer',
-    'sklearn.model_selection',
-    'sklearn.model_selection._split',
-    'sklearn.model_selection._search',
-    'sklearn.model_selection._validation',
-    'statsmodels.robust.scale',
-    'nilearn.image',
-    'nilearn.masking',
-    'nilearn.plotting',
-    'nilearn.signal',
-    'nilearn.spatial',
+    'statsmodels',
+    'nilearn',
 ]
 
 suppress_warnings = ['image.nonlocal_uri']
