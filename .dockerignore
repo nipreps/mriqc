@@ -28,3 +28,7 @@ agave/**/*
 agave
 notebooks/**/*
 notebooks
+
+# CircleCI venv
+venv/**/*
+venv/
