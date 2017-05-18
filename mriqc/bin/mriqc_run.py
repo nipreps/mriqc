@@ -283,6 +283,11 @@ def main():
                     logger.addHandler(handler)
 
                 workflow.run(**plugin_settings)
+                if not settings['no_sub']:
+                    MRIQC_LOG.warn(
+                        'Anonymized quality metrics have beeen submitted'
+                        ' to MRIQC\'s metrics repository.'
+                        ' Use --no-sub to disable submission.')
                 if callback_log_path is not None:
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
@@ -327,10 +332,6 @@ def main():
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
 
-    if not settings['no_sub']:
-        MRIQC_LOG.warn('Anonymized quality metrics have beeen submitted'
-                       ' to MRIQC\'s metrics repository.'
-                       ' Use --no-sub to disable submission.')
 
 if __name__ == '__main__':
     main()
