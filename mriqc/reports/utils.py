@@ -8,7 +8,7 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 # @Last Modified time: 2017-02-01 15:53:32
-""" Helpers in report generation """
+""" Helpers in report generation"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 
@@ -108,6 +108,78 @@ def read_report_snippet(in_file):
                     svg_tag_line = i
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
+
+def upload_qc_metrics(in_iqms, email = '', no_sub = False):
+    """Upload qc metrics to remote repository.
+
+    Arguments:
+    in_iqms -- Path to the qc metric json file as a string
+
+    Keyword arguments:
+    email -- email address to be included with the metric submission, defaults to empty string
+    no_sub -- Flag from settings indicating whether or not metrics should be submitted. If False, metrics will be submitted. If True, metrics will not be submitted. Defaults to False.
+
+    Returns:
+    either returns response object if a response was successfully sent
+    or it returns the string "No Response"
+    """
+    from json import load,dumps
+    import requests
+    from mriqc import logging
+
+    report_log = logging.getLogger('mriqc.report')
+    report_log.setLevel(logging.INFO)
+
+    if no_sub == True:
+        report_log.info('QC metrics were not uploaded because --no_sub or --testing options were set.')
+        r = "No Response"
+    else:
+        with open(in_iqms, 'r') as h:
+            in_data = load(h)
+        #metadata whitelist
+        whitelist = [u"ContrastBolusIngredient",u"RepetitionTime",u"TaskName",u"Manufacturer",
+                     u"ManufacturersModelName",u"MagneticFieldStrength",u"DeviceSerialNumber",
+                     u"SoftwareVersions",u"HardcopyDeviceSoftwareVersion",u"ReceiveCoilName",
+                     u"GradientSetType",u"MRTransmitCoilSequence",u"MatrixCoilMode",
+                     u"CoilCombinationMethod",u"PulseSequenceType",u"PulseSequenceDetails",
+                     u"NumberShots",u"ParallelReductionFactorInPlane",u"ParallelAcquisitionTechnique",
+                     u"PartialFourier",u"PartialFourierDirection",u"PhaseEncodingDirection",
+                     u"EffectiveEchoSpacing",u"TotalReadoutTime",
+                     u"EchoTime",u"InversionTime",u"SliceTiming",u"SliceEncodingDirection",
+                     u"NumberOfVolumesDiscardedByScanner",u"NumberOfVolumesDiscardedByUser",
+                     u"DelayTime",u"FlipAngle",u"MultibandAccelerationFactor",u"Instructions",
+                     u"TaskDescription",u"CogAtlasID",u"CogPOID",u"InstitutionName",
+                     u"InstitutionAddress",u"ConversionSoftware",u"ConversionSoftwareVersion",
+                     u"md5sum",u"modality",u"mriqc_pred",u"software",u"subject_id",u"version"]
+        # flatten data
+        data = {k:v for k,v in in_data.items() if k != 'metadata'}
+        # Filter Metadata values that aren't in whitelist
+        try:
+            data.update({k:v for k,v in in_data['metadata'].items() if k in whitelist})
+        except KeyError:
+            pass
+        # Preemptively adding code to handle settings
+        try:
+            data.update({k:v for k,v in in_data['settings'].items() if k in whitelist})
+        except KeyError:
+            pass
+
+        if email != '':
+            data['email'] = email
+        secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
+        headers = {'token':secret_key,"Content-Type":"application/json"}
+        try:
+            r = requests.put("http://34.201.213.252:5000/measurements/upload",
+                             headers=headers,data = dumps(data))
+            if r.status_code == 201:
+                report_log.info('QC metrics successfully uploaded.')
+            else:
+                report_log.warn('QC metrics failed to upload. Status %d: %s'%(r.status_code,r.text))
+        except requests.ConnectionError as e :
+            report_log.warn('QC metrics failed to upload due to connection error shown below:\n%s'%e)
+            r = "No Response"
+    return r
+
 
 # def check_reports(dataset, settings, save_failed=True):
 #     """Check if reports have been created"""
