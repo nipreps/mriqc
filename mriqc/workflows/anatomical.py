@@ -95,7 +95,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(), name='conform')
     # 2. Skull-stripping (afni)
-    asw = skullstrip_wf()
+    asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1))
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
