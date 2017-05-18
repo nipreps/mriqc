@@ -78,9 +78,10 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- **Framewise Displacement** (``mean_fd``): expresses instantaneous
-  head-motion. Rotational displacements are calculated as the
-  displacement on the surface of a sphere of radius 50 mm [Power2012]_:
+- **Framewise Displacement**: expresses instantaneous head-motion.
+  MRIQC reports the average FD, labeled as ``fd_mean``.
+  Rotational displacements are calculated as the displacement on the surface of a
+  sphere of radius 50 mm [Power2012]_:
 
   .. math ::
 
@@ -88,11 +89,12 @@ Measures for artifacts and other
 |\\Delta d_{z,t}| + |\\Delta \\alpha_t| + |\\Delta \\beta_t| + |\\Delta \\gamma_t|
 
   Along with the base framewise displacement, MRIQC reports the
-  **number of timepoints above FD threshold** (``num_fd``), and the
-  **percent of FDs above the FD threshold** w.r.t. the full timeseries.
+  **number of timepoints above FD threshold** (``fd_num``), and the
+  **percent of FDs above the FD threshold** w.r.t. the full timeseries (``fd_perc``).
   In both cases, the threshold is set at 0.20mm.
 
-- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, ``ghost_*``):
+- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
+  in the reports as ``gsr_x`` and ``gsr_y``):
   along the two possible phase-encoding axes **x**, **y**:
 
   .. math ::
@@ -104,9 +106,9 @@ Measures for artifacts and other
     :align: center
 
 
-- **Outlier fraction** (``outlier``) - Mean fraction of outliers per fMRI volume
+- **AFNI's outlier ratio** (``aor``) - Mean fraction of outliers per fMRI volume
   as given by AFNI's ``3dToutcount``.
-- **Quality index** (``quality``) - Mean quality index as computed by AFNI's ``3dTqual``.
+- **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
 
 .. topic:: References
 
