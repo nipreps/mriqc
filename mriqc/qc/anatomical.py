@@ -536,11 +536,12 @@ def rpve(pvms, seg):
         pvmap = pvms[lid - 1][seg == lid]
         pvmap[pvmap < 0.] = 0.
         pvmap[pvmap >= 1.] = 0.
+        totalvol = np.sum(pvmap > 0.0)
         upth = np.percentile(pvmap[pvmap > 0], 98)
         loth = np.percentile(pvmap[pvmap > 0], 2)
         pvmap[pvmap < loth] = 0
         pvmap[pvmap > upth] = 0
-        pvfs[k] = pvmap[pvmap > 0].sum()
+        pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
 def summary_stats(img, pvms, bgdata=None):
