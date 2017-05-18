@@ -4,6 +4,16 @@
 Running mriqc
 -------------
 
+Command line interface
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. argparse::
+   :ref: mriqc.bin.mriqc_run.get_parser
+   :prog: mriqc
+   :nodefault:
+   :nodefaultconst:
+
+
 "Bare-metal" installation (Python 2/3)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

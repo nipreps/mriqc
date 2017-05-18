@@ -51,3 +51,4 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 from mriqc.reports.individual import individual_html
 from mriqc.reports.group import gen_html as group_html
+from mriqc.reports.utils import upload_qc_metrics
