@@ -79,6 +79,11 @@ def get_parser():
                            help='hook up the resource profiler callback to nipype')
     g_outputs.add_argument('--use-plugin', action='store', default=None,
                            help='nipype plugin configuration file')
+    g_outputs.add_argument('--no-sub', default=False, action='store_true',
+                           help='Turn off submission of anonymized quality metrics '
+                                'to MRIQC\'s metrics repository.')
+    g_outputs.add_argument('--email', action='store', default='', type=str,
+                           help='Email address to include with quality metric submission.')
 
     # General performance
     g_perfm = parser.add_argument_group('Options to handle performance')
@@ -104,7 +109,6 @@ def get_parser():
                         help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_conf.add_argument('--fft-spikes-detector', action='store_true', default=False,
                         help='Turn on FFT based spike detector (slow).')
-
 
     # ANTs options
     g_ants = parser.add_argument_group('Specific settings for ANTs')
@@ -162,8 +166,15 @@ def main():
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
-        'ica': opts.ica
+        'ica': opts.ica,
+        'no_sub': opts.no_sub or opts.testing,
+        'email': opts.email
     }
+
+    if not settings['no_sub']:
+        MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
+                       ' to MRIQC\'s metrics repository.'
+                       ' Use --no-sub to disable submission.')
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -272,6 +283,11 @@ def main():
                     logger.addHandler(handler)
 
                 workflow.run(**plugin_settings)
+                if not settings['no_sub']:
+                    MRIQC_LOG.warn(
+                        'Anonymized quality metrics have beeen submitted'
+                        ' to MRIQC\'s metrics repository.'
+                        ' Use --no-sub to disable submission.')
                 if callback_log_path is not None:
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
