@@ -167,7 +167,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
-        (iqmswf, upldwf,[('outputnode.out_file','inputnode.in_iqms')]),
+        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 

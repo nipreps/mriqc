@@ -167,15 +167,14 @@ def main():
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
-        'no_sub':opts.no_sub or opts.testing,
-        'email':opts.email
+        'no_sub': opts.no_sub or opts.testing,
+        'email': opts.email
     }
 
     if not settings['no_sub']:
         MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
                        ' to MRIQC\'s metrics repository.'
                        ' Use --no-sub to disable submission.')
-
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
