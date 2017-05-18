@@ -155,7 +155,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
-        (iqmswf, upldwf,[('outputnode.out_file','inputnode.in_iqms')]),
+        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 

@@ -85,6 +85,7 @@ def spectrum_mask(size):
     ftmask[ftmask < 1] = 0
     return ftmask
 
+
 def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
@@ -94,7 +95,6 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     from scipy.ndimage.filters import median_filter
     from scipy.ndimage import generate_binary_structure, binary_erosion
     from statsmodels.robust.scale import mad
-
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -157,8 +157,8 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     out_spikes = op.abspath(out_prefix + '_spikes.tsv')
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
-
     return len(spikes_list), out_spikes, out_fft
+
 
 def upload_wf(settings, name='UploadWorkflow'):
     """Workflow wrapping the upload_qc_metrics function.
@@ -174,18 +174,19 @@ def upload_wf(settings, name='UploadWorkflow'):
     """
     from mriqc.reports import upload_qc_metrics
 
-    no_sub =  settings.get('no_sub',False)
-    email = settings.get('email','')
+    no_sub = settings.get('no_sub', False)
+    email = settings.get('email', '')
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_iqms']),
-        name='inputnode')
-    upld = pe.Node(niu.Function(
-    input_names=['in_iqms', 'no_sub','email'], output_names=['response'],
-    function=upload_qc_metrics), name='UploadMetrics')
+                        name='inputnode')
+    upld = pe.Node(niu.Function(input_names=['in_iqms', 'no_sub', 'email'],
+                                output_names=['response'],
+                                function=upload_qc_metrics),
+                   name='UploadMetrics')
     upld.inputs.email = email
     upld.inputs.no_sub = no_sub
 
-    workflow.connect([(inputnode,upld,[('in_iqms','in_iqms')])])
+    workflow.connect([(inputnode, upld, [('in_iqms', 'in_iqms')])])
 
     return workflow

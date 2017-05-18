@@ -85,9 +85,9 @@ def main():
     g_input.add_argument('--profile', action='store_true', default=False,
                          help='hook up the resource profiler callback to nipype')
     g_input.add_argument('--hmc-afni', action='store_true', default=True,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
+                         help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
     g_input.add_argument('--hmc-fsl', action='store_true', default=False,
-                        help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
+                         help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_input.add_argument(
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
@@ -158,15 +158,14 @@ def main():
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
-        'no_sub':opts.no_sub or opts.testing,
-        'email':opts.email
+        'no_sub': opts.no_sub or opts.testing,
+        'email': opts.email
     }
 
-    if settings['no_sub'] == False:
+    if not settings['no_sub']:
         MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
                        ' to MRIQC\'s metrics repository.'
                        ' Use --no-sub to disable submission.')
-
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -313,7 +312,7 @@ def main():
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
 
-    if settings['no_sub'] == False:
+    if not settings['no_sub']:
         MRIQC_LOG.warn('Anonymized quality metrics have beeen submitted'
                        ' to MRIQC\'s metrics repository.'
                        ' Use --no-sub to disable submission.')
