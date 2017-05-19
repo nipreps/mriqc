@@ -43,7 +43,7 @@ from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
 from mriqc import DEFAULTS
-from mriqc.workflows.utils import fwhm_dict, slice_wise_fft, upload_wf
+from mriqc.workflows.utils import slice_wise_fft, upload_wf
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
@@ -202,6 +202,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 
     """
+    from mriqc.workflows.utils import _tofloat
+
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
 
@@ -246,6 +248,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, outliers, [('hmc_epi', 'in_file'),
                                ('brainmask', 'mask')]),
         (dvnode, measures, [('out_all', 'in_dvars')]),
+        (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
         (outliers, outputnode, [('out_file', 'outliers')])
     ])
@@ -265,7 +268,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
 

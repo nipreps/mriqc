@@ -7,13 +7,15 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-21 18:41:13
+# @Last Modified time: 2017-05-17 15:12:23
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 
+def _tofloat(inlist):
+    return [float(el) for el in inlist]
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""

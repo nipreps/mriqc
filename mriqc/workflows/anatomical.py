@@ -55,7 +55,7 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
 from mriqc import DEFAULTS
-from mriqc.workflows.utils import fwhm_dict, upload_wf
+from mriqc.workflows.utils import upload_wf
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
 
@@ -236,6 +236,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         wf = compute_iqms(settings={'output_dir': 'out'})
 
     """
+    from mriqc.workflows.utils import _tofloat
+
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
@@ -292,9 +294,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (inputnode, invt, [('orig', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
+        (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (measures, datasink, [('out_qc', 'root')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])

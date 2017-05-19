@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-21 18:59:13
+# @Last Modified time: 2017-05-17 16:54:26
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -40,6 +40,8 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
                              desc='partial volume maps from FSL FAST')
     in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
     mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    in_fwhm = traits.List(traits.Float, mandatory=True,
+                          desc='smoothness estimated with AFNI')
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -48,6 +50,7 @@ class StructuralQCOutputSpec(TraitedSpec):
     rpve = traits.Dict(desc='partial volume fractions')
     size = traits.Dict(desc='image sizes')
     spacing = traits.Dict(desc='image sizes')
+    fwhm = traits.Dict(desc='full width half-maximum measure')
     inu = traits.Dict(desc='summary statistics of the bias field')
     snr = traits.Dict
     snrd = traits.Dict
@@ -130,6 +133,12 @@ class StructuralQC(SimpleInterface):
         pvmdata = []
         for fname in self.inputs.in_pvms:
             pvmdata.append(nb.load(fname).get_data().astype(np.float32))
+
+        # FWHM
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.get_header().get_zooms()[:3])
+        self._results['fwhm'] = {
+            'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
+            'avg': float(np.average(fwhm))}
 
         # ICVs
         self._results['icvs'] = volume_fraction(pvmdata)
