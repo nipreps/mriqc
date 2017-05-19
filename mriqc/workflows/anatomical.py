@@ -55,7 +55,7 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
 from mriqc import DEFAULTS
-from mriqc.workflows.utils import fwhm_dict
+from mriqc.workflows.utils import upload_wf
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
 
@@ -95,7 +95,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(), name='conform')
     # 2. Skull-stripping (afni)
-    asw = skullstrip_wf(unifize=True)
+    asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=True)
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
@@ -109,6 +109,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
     repwf = individual_reports(settings)
+    # Upload metrics
+    upldwf = upload_wf(settings)
 
     # Connect all nodes
     workflow.connect([
@@ -153,6 +155,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
+        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
@@ -233,6 +236,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         wf = compute_iqms(settings={'output_dir': 'out'})
 
     """
+    from mriqc.workflows.utils import _tofloat
+
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
@@ -289,14 +294,13 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (inputnode, invt, [('orig', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
+        (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (measures, datasink, [('out_qc', 'root')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
-        (fwhm, datasink, [(('fwhm', fwhm_dict), 'root0')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
-
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """

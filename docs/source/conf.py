@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'mriqc.sphinxext.plot_workflow',
+    'sphinxarg.ext', # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
 

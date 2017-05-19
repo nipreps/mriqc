@@ -14,29 +14,24 @@ import os
 import os.path as op
 from multiprocessing import cpu_count
 
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
 
 from mriqc import __version__, MRIQC_LOG
 from mriqc.utils.misc import check_folder
 
 DEFAULT_MEM_GB = 8
 
-def main():
-    """Entry point"""
-    from nipype import config as ncfg
-    from nipype.pipeline.engine import Workflow
+def get_parser():
+    """Build parser object"""
+    from argparse import ArgumentParser
+    from argparse import RawTextHelpFormatter
     from mriqc import DEFAULTS
-    from mriqc.utils.bids import collect_bids_data
-    from mriqc.workflows.core import build_workflow
-    # from mriqc.reports.utils import check_reports
 
-    parser = ArgumentParser(description='MRI Quality Control',
+    parser = ArgumentParser(description='MRIQC: MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
 
-    parser.add_argument('-v', '--version', action='version',
-                        version='mriqc v{}'.format(__version__))
-
+    # Arguments as specified by BIDS-Apps
+    # required, positional arguments
+    # IMPORTANT: they must go directly with the parser object
     parser.add_argument('bids_dir', action='store',
                         help='The directory with the input dataset '
                              'formatted according to the BIDS standard.')
@@ -50,58 +45,73 @@ def main():
                              'Multiple participant level analyses can be run independently '
                              '(in parallel) using the same output_dir.',
                         choices=['participant', 'group'])
-    parser.add_argument('--participant_label', '--subject_list', '-S', action='store',
-                        help='The label(s) of the participant(s) that should be analyzed. '
-                             'The label corresponds to sub-<participant_label> from the '
-                             'BIDS spec (so it does not include "sub-"). If this parameter '
-                             'is not provided all subjects should be analyzed. Multiple '
-                             'participants can be specified with a space separated list.',
-                        nargs="*")
 
-    g_input = parser.add_argument_group('mriqc specific inputs')
-    g_input.add_argument('-m', '--modalities', action='store', nargs='*',
-                         choices=['T1w', 'bold', 'T2w'],
-                         default=['T1w', 'bold', 'T2w'])
-    g_input.add_argument('-s', '--session-id', action='store')
-    g_input.add_argument('-r', '--run-id', action='store')
-    g_input.add_argument('--nthreads', action='store', type=int,
-                         help='number of threads')
-    g_input.add_argument('--n_procs', action='store', default=0,
-                         type=int, help='number of threads')
-    g_input.add_argument('--mem_gb', action='store', default=0, type=int,
+    # optional arguments
+    parser.add_argument('-v', '--version', action='version',
+                        version='mriqc v{}'.format(__version__))
+
+    # BIDS selectors
+    g_bids = parser.add_argument_group('Options for filtering BIDS queries')
+    g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='+',
+                        help='one or more participant identifiers (the sub- prefix can be '
+                             'removed)')
+    g_bids.add_argument('--session-id', action='store', nargs='+',
+                        help='select a specific session to be processed')
+    g_bids.add_argument('--run-id', action='store', type=str, nargs='+',
+                        help='select a specific run to be processed')
+    g_bids.add_argument('--task-id', action='store', nargs='+', type=str,
+                        help='select a specific task to be processed')
+    g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
+                        choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
+                        help='select one of the supported MRI types')
+
+    # Control instruments
+    g_outputs = parser.add_argument_group('Instrumental options')
+    g_outputs.add_argument('-w', '--work-dir', action='store',
+                           default=op.join(os.getcwd(), 'work'))
+    g_outputs.add_argument('--report-dir', action='store')
+    g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
+    g_outputs.add_argument('--write-graph', action='store_true', default=False,
+                           help='Write workflow graph.')
+    g_outputs.add_argument('--dry-run', action='store_true', default=False,
+                           help='Do not run the workflow.')
+    g_outputs.add_argument('--profile', action='store_true', default=False,
+                           help='hook up the resource profiler callback to nipype')
+    g_outputs.add_argument('--use-plugin', action='store', default=None,
+                           help='nipype plugin configuration file')
+    g_outputs.add_argument('--no-sub', default=False, action='store_true',
+                           help='Turn off submission of anonymized quality metrics '
+                                'to MRIQC\'s metrics repository.')
+    g_outputs.add_argument('--email', action='store', default='', type=str,
+                           help='Email address to include with quality metric submission.')
+
+    # General performance
+    g_perfm = parser.add_argument_group('Options to handle performance')
+    g_perfm.add_argument('--n_procs', '--nprocs', '--n_cpus', '--nprocs',
+                         action='store', default=0, type=int, help='number of threads')
+    g_perfm.add_argument('--mem_gb', action='store', default=0, type=int,
                          help='available total memory')
-    g_input.add_argument('--write-graph', action='store_true', default=False,
-                         help='Write workflow graph.')
-    g_input.add_argument('--dry-run', action='store_true', default=False,
-                         help='Do not run the workflow.')
-    g_input.add_argument('--use-plugin', action='store', default=None,
-                         help='nipype plugin configuration file')
-    g_input.add_argument('--ica', action='store_true', default=False,
-                         help='Run ICA on the raw data and include the components'
-                              'in the individual reports (slow but potentially very insightful)')
-
-    g_input.add_argument('--testing', action='store_true', default=False,
+    g_perfm.add_argument('--testing', action='store_true', default=False,
                          help='use testing settings for a minimal footprint')
-    g_input.add_argument('--profile', action='store_true', default=False,
-                         help='hook up the resource profiler callback to nipype')
-    g_input.add_argument('--hmc-afni', action='store_true', default=True,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
-    g_input.add_argument('--hmc-fsl', action='store_true', default=False,
-                        help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
-    g_input.add_argument(
+    g_perfm.add_argument(
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
-    g_input.add_argument('--fft-spikes-detector', action='store_true', default=False,
-                         help='Turn on FFT based spike detector (slow).')
 
-    g_outputs = parser.add_argument_group('mriqc specific outputs')
-    g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
-    g_outputs.add_argument('--report-dir', action='store')
-    g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
+    # Workflow settings
+    g_conf = parser.add_argument_group('Workflow configuration')
+    g_conf.add_argument('--ica', action='store_true', default=False,
+                        help='Run ICA on the raw data and include the components'
+                             'in the individual reports (slow but potentially very insightful)')
+    g_conf.add_argument('--hmc-afni', action='store_true', default=True,
+                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
+    g_conf.add_argument('--hmc-fsl', action='store_true', default=False,
+                        help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
+    g_conf.add_argument('--fft-spikes-detector', action='store_true', default=False,
+                        help='Turn on FFT based spike detector (slow).')
 
     # ANTs options
-    g_ants = parser.add_argument_group('specific settings for ANTs registrations')
+    g_ants = parser.add_argument_group('Specific settings for ANTs')
     g_ants.add_argument(
         '--ants-nthreads', action='store', type=int, default=0,
         help='number of threads that will be set in ANTs processes')
@@ -109,7 +119,7 @@ def main():
                         help='path to JSON file with settings for ANTS')
 
     # AFNI head motion correction settings
-    g_afni = parser.add_argument_group('specific settings for AFNI head motion correction')
+    g_afni = parser.add_argument_group('Specific settings for AFNI')
     g_afni.add_argument('--deoblique', action='store_true', default=False,
                         help='Deoblique the functional scans during head motion '
                              'correction preprocessing')
@@ -124,20 +134,24 @@ def main():
                              'considered for preprocessing')
     g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
                         help='Perform slice timing correction')
+    return parser
 
-    opts = parser.parse_args()
+
+def main():
+    """Entry point"""
+    from nipype import config as ncfg
+    from nipype.pipeline.engine import Workflow
+    from mriqc.utils.bids import collect_bids_data
+    from mriqc.workflows.core import build_workflow
+
+    # Run parser
+    opts = get_parser().parse_args()
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
 
     # Number of processes
-    n_procs = 0
-    if opts.nthreads is not None:
-        MRIQC_LOG.warn('Option --nthreads has been deprecated in mriqc 0.8.8. '
-                       'Please use --n_procs instead.')
-        n_procs = opts.nthreads
-    else:
-        n_procs = opts.n_procs
+    n_procs = opts.n_procs
 
     settings = {
         'bids_dir': bids_dir,
@@ -152,8 +166,15 @@ def main():
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
-        'ica': opts.ica
+        'ica': opts.ica,
+        'no_sub': opts.no_sub or opts.testing,
+        'email': opts.email
     }
+
+    if not settings['no_sub']:
+        MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
+                       ' to MRIQC\'s metrics repository.'
+                       ' Use --no-sub to disable submission.')
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -225,8 +246,14 @@ def main():
     # Process data types
     modalities = opts.modalities
 
-    dataset = collect_bids_data(settings['bids_dir'],
-                                participant_label=opts.participant_label)
+    dataset = collect_bids_data(
+        settings['bids_dir'],
+        modalities=modalities,
+        participant_label=opts.participant_label,
+        session=opts.session_id,
+        run=opts.run_id,
+        task=opts.task_id,
+    )
 
     # Set up participant level
     if 'participant' in analysis_levels:
@@ -256,6 +283,11 @@ def main():
                     logger.addHandler(handler)
 
                 workflow.run(**plugin_settings)
+                if not settings['no_sub']:
+                    MRIQC_LOG.warn(
+                        'Anonymized quality metrics have beeen submitted'
+                        ' to MRIQC\'s metrics repository.'
+                        ' Use --no-sub to disable submission.')
                 if callback_log_path is not None:
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
