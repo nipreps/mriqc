@@ -55,6 +55,7 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
 from mriqc import DEFAULTS
+from mriqc.workflows.utils import upload_wf
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink)
 
@@ -108,6 +109,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
     repwf = individual_reports(settings)
+    # Upload metrics
+    upldwf = upload_wf(settings)
 
     # Connect all nodes
     workflow.connect([
@@ -152,6 +155,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
+        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
 
@@ -297,7 +301,6 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
     return workflow
-
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """
