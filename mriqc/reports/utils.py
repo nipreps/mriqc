@@ -135,7 +135,7 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
         r = "No Response"
     else:
         with open(in_iqms, 'r') as h:
-            in_data = load(h) 
+            in_data = load(h)
             #get the modality
             modality = in_data["modality"]
         # metadata whitelist
@@ -171,11 +171,11 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
         headers = {'token': secret_key, "Content-Type": "application/json"}
         try:
-            #if the modality is bold, give it to "bold" endpointt
+            #if the modality is bold, call "bold" endpointt
             if modality == "bold":
                 r = requests.put("http://0.0.0.0/bold",
                              headers=headers, data=dumps(data))
-            #else , give it "T1w" endpoint  
+            #else, call "T1w" endpoint
             else:
                 r = requests.put("http://0.0.0.0/T1w",
                              headers=headers, data=dumps(data))
