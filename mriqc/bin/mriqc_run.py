@@ -110,7 +110,7 @@ def get_parser():
     g_conf.add_argument('--fft-spikes-detector', action='store_true', default=False,
                         help='Turn on FFT based spike detector (slow).')
     g_conf.add_argument('--fd_thres', action='store', default=0.2,
-                         type=float, help='motion threshold for FD computation')
+                        type=float, help='motion threshold for FD computation')
 
     # ANTs options
     g_ants = parser.add_argument_group('Specific settings for ANTs')
