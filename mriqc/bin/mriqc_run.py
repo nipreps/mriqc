@@ -98,6 +98,7 @@ def get_parser():
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
 
+
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
     g_conf.add_argument('--ica', action='store_true', default=False,
@@ -109,6 +110,8 @@ def get_parser():
                         help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_conf.add_argument('--fft-spikes-detector', action='store_true', default=False,
                         help='Turn on FFT based spike detector (slow).')
+    g_conf.add_argument('--fd_thres', action='store', default=0.2,
+                        type=float, help='motion threshold for FD computation')
 
     # ANTs options
     g_ants = parser.add_argument_group('Specific settings for ANTs')
@@ -168,7 +171,8 @@ def main():
         'float32': opts.float32,
         'ica': opts.ica,
         'no_sub': opts.no_sub or opts.testing,
-        'email': opts.email
+        'email': opts.email,
+        'fd_thres': opts.fd_thres,
     }
 
     if not settings['no_sub']:
