@@ -165,7 +165,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os.path as op
 from sys import version_info
 import json
-from math import pi
+from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi, kurtosis  # pylint: disable=E0611
@@ -179,7 +179,7 @@ from six import string_types
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
 
-def snr(img, smask, erode=True, fglabel=1):
+def snr(mu_fg, sigma_fg, n):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -200,19 +200,9 @@ def snr(img, smask, erode=True, fglabel=1):
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, (str, bytes)):
-        fglabel = FSL_FAST_LABELS[fglabel]
+    return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
 
-    fgmask = _prepare_mask(smask, fglabel, erode)
-    fg_mean = np.median(img[fgmask > 0])
-    bgmask = fgmask
-    bg_mean = fg_mean
-    # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
-    bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
-
-    return float(fg_mean / bg_std)
-
-def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
+def snr_dietrich(mu_fg, sigma_air):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
 
@@ -235,21 +225,9 @@ def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, (str, bytes)):
-        fglabel = FSL_FAST_LABELS[fglabel]
+    return float(mu_fg / (sigma_air * sqrt(2/(4 - pi))))
 
-    fgmask = _prepare_mask(smask, fglabel, erode)
-    bgmask = _prepare_mask(airmask, 1, erode)
-
-    fg_mean = np.median(img[fgmask > 0])
-    bg_std = mad(img[bgmask > 0])
-    bg_std *= np.sqrt(2.0/(4.0 - pi))
-    if bg_std < 1.0e-3:
-        return -1.0
-
-    return float(fg_mean / bg_std)
-
-def cnr(img, seg, lbl=None):
+def cnr(mu_wm, mu_gm, sigma_air):
     r"""
     Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)` [Magnota2006]_.
     Higher values are better.
@@ -267,20 +245,10 @@ def cnr(img, seg, lbl=None):
     :return: the computed CNR
 
     """
-    if lbl is None:
-        lbl = FSL_FAST_LABELS
-
-    noise_std = mad(img[seg == lbl['bg']])
-    if noise_std < 1.0:
-        noise_std = np.average(mad(img[seg == lbl['gm']]) +
-                               mad(img[seg == lbl['wm']]) +
-                               mad(img[seg == lbl['csf']]))
-
-    return float(np.abs(np.median(img[seg == lbl['gm']]) - np.median(img[seg == lbl['wm']])) / \
-                 noise_std)
+    return float(abs(mu_wm - mu_gm) / sigma_air)
 
 
-def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
+def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     r"""
     Calculate the :abbr:`CJV (coefficient of joint variation)`, a measure
     related to :abbr:`SNR (Signal-to-Noise Ratio)` and
@@ -299,26 +267,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
 
 
     """
-
-    if seg is None and (wmmask is None or gmmask is None):
-        raise RuntimeError('Masks or segmentation should be provided')
-
-    if seg is not None:
-        if isinstance(wmlabel, string_types):
-            wmlabel = FSL_FAST_LABELS[wmlabel]
-        if isinstance(gmlabel, string_types):
-            gmlabel = FSL_FAST_LABELS[gmlabel]
-
-        wmmask = np.zeros_like(seg)
-        wmmask[seg == wmlabel] = 1
-        gmmask = np.zeros_like(seg)
-        gmmask[seg == gmlabel] = 1
-
-    mu_wm = np.median(img[wmmask > .5])
-    mu_gm = np.median(img[gmmask > .5])
-    sigma_wm = mad(img[wmmask > .5])
-    sigma_gm = mad(img[gmmask > .5])
-    return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
+    return float((sigma_wm + sigma_gm) / abs(mu_wm - mu_gm))
 
 
 def fber(img, air):
@@ -544,14 +493,16 @@ def rpve(pvms, seg):
         pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
-def summary_stats(img, pvms, bgdata=None):
+def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
     """
 
+    # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:
+        # If pvms is from FSL FAST, create the bg mask
         pvms.insert(0, np.array(pvms).sum(axis=0))
     elif dims == 3:
         bgpvm = np.ones_like(pvms)
@@ -560,8 +511,8 @@ def summary_stats(img, pvms, bgdata=None):
         raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
 
-    if bgdata is not None:
-        pvms[0] = bgdata
+    if airmask is not None:
+        pvms[0] = airmask
 
     if len(pvms) == 4:
         labels = list(FSL_FAST_LABELS.items())
@@ -570,12 +521,22 @@ def summary_stats(img, pvms, bgdata=None):
 
     output = {k: {} for k, _ in labels}
     for k, lid in labels:
-        mask = np.where(pvms[lid] > 0.5)
-        output[k]['mean'] = float(img[mask].mean())
-        output[k]['stdv'] = float(img[mask].std())
-        output[k]['p95'] = float(np.percentile(img[mask], 95))
-        output[k]['p05'] = float(np.percentile(img[mask], 5))
-        output[k]['k'] = float(kurtosis(img[mask]))
+        mask = np.zeros_like(img, dtype=np.uint8)
+        mask[pvms[lid] > 0.85] = 1
+
+        if erode:
+            struc = nd.generate_binary_structure(3, 2)
+            mask = nd.binary_erosion(
+                mask, structure=struc).astype(np.uint8)
+
+        output[k]['mean'] = float(img[mask == 1].mean())
+        output[k]['stdv'] = float(img[mask == 1].std())
+        output[k]['median'] = float(np.median(img[mask == 1]))
+        output[k]['mad'] = float(mad(img[mask == 1]))
+        output[k]['p95'] = float(np.percentile(img[mask == 1], 95))
+        output[k]['p05'] = float(np.percentile(img[mask == 1], 5))
+        output[k]['k'] = float(kurtosis(img[mask == 1]))
+        output[k]['n'] = float(mask.sum())
     return output
 
 def _prepare_mask(mask, label, erode=True):

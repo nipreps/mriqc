@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-19 16:36:34
+# @Last Modified time: 2017-05-22 14:39:19
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -75,46 +75,53 @@ class StructuralQC(SimpleInterface):
     input_spec = StructuralQCInputSpec
     output_spec = StructuralQCOutputSpec
 
-    def _run_interface(self, runtime):  # pylint: disable=R0914
-        imnii = nb.load(self.inputs.in_file)
-        imdata = np.nan_to_num(imnii.get_data())
+    def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
+        imnii = nb.load(self.inputs.in_noinu)
         erode = np.all(np.array(imnii.get_header().get_zooms()[:3],
-                                dtype=np.float32) < 1.2)
-
-        # Cast to float32
-        imdata = imdata.astype(np.float32)
-
-        # Remove negative values
-        imdata[imdata < 0] = 0
+                                dtype=np.float32) < 1.9)
 
         # Load image corrected for INU
-        inudata = np.nan_to_num(nb.load(self.inputs.in_noinu).get_data())
+        inudata = np.nan_to_num(imnii.get_data())
         inudata[inudata < 0] = 0
 
+        # Load binary segmentation from FSL FAST
         segnii = nb.load(self.inputs.in_segm)
         segdata = segnii.get_data().astype(np.uint8)
 
+        # Load air, artifacts and head masks
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
         headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
+
+        # Load Partial Volume Maps (pvms) from FSL FAST
+        pvmdata = []
+        for fname in self.inputs.in_pvms:
+            pvmdata.append(nb.load(fname).get_data().astype(np.float32))
+
+        # Summary stats
+        stats = summary_stats(inudata, pvmdata, airdata, erode=erode)
+        self._results['summary'] = stats
+
 
         # SNR
         snrvals = []
         self._results['snr'] = {}
         for tlabel in ['csf', 'wm', 'gm']:
-            snrvals.append(snr(inudata, segdata, fglabel=tlabel, erode=erode))
+            snrvals.append(snr(stats[tlabel]['median'], stats[tlabel]['stdv'], stats[tlabel]['n']))
             self._results['snr'][tlabel] = snrvals[-1]
         self._results['snr']['total'] = float(np.mean(snrvals))
 
         snrvals = []
         self._results['snrd'] = {
-            tlabel: snr_dietrich(inudata, segdata, airdata, fglabel=tlabel, erode=erode)
+            tlabel: snr_dietrich(stats[tlabel]['median'], stats['bg']['mad'])
             for tlabel in ['csf', 'wm', 'gm']}
         self._results['snrd']['total'] = float(
             np.mean([val for _, val in list(self._results['snrd'].items())]))
 
         # CNR
-        self._results['cnr'] = cnr(inudata, segdata)
+        self._results['cnr'] = cnr(stats['wm']['median'],
+                                   stats['gm']['median'],
+                                   stats['bg']['mad'])
 
         # FBER
         self._results['fber'] = fber(inudata, headdata)
@@ -129,11 +136,14 @@ class StructuralQC(SimpleInterface):
         self._results['qi_1'] = art_qi1(airdata, artdata)
 
         # CJV
-        self._results['cjv'] = cjv(inudata, seg=segdata)
+        self._results['cjv'] = cjv(
+            # mu_wm, mu_gm, sigma_wm, sigma_gm
+            stats['wm']['median'],
+            stats['gm']['median'],
+            stats['wm']['mad'],
+            stats['gm']['mad']
+        )
 
-        pvmdata = []
-        for fname in self.inputs.in_pvms:
-            pvmdata.append(nb.load(fname).get_data().astype(np.float32))
 
         # FWHM
         fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.get_header().get_zooms()[:3])
@@ -147,8 +157,6 @@ class StructuralQC(SimpleInterface):
         # RPVE
         self._results['rpve'] = rpve(pvmdata, segdata)
 
-        # Summary stats
-        self._results['summary'] = summary_stats(inudata, pvmdata, airdata)
 
         # Image specs
         self._results['size'] = {'x': int(inudata.shape[0]),
