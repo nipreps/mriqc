@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-17 16:54:26
+# @Last Modified time: 2017-05-19 16:36:34
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -17,6 +17,7 @@ import scipy.ndimage as nd
 from builtins import zip
 
 from nipype import logging
+from nipype.utils.filemanip import fname_presuffix
 from nipype.interfaces.base import (traits, TraitedSpec, File,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
@@ -122,7 +123,7 @@ class StructuralQC(SimpleInterface):
         self._results['efc'] = efc(inudata)
 
         # M2WM
-        self._results['wm2max'] = wm2max(imdata, segdata)
+        self._results['wm2max'] = wm2max(inudata, segdata)
 
         # Artifacts
         self._results['qi_1'] = art_qi1(airdata, artdata)
@@ -147,18 +148,18 @@ class StructuralQC(SimpleInterface):
         self._results['rpve'] = rpve(pvmdata, segdata)
 
         # Summary stats
-        self._results['summary'] = summary_stats(imdata, pvmdata, airdata)
+        self._results['summary'] = summary_stats(inudata, pvmdata, airdata)
 
         # Image specs
-        self._results['size'] = {'x': int(imdata.shape[0]),
-                                 'y': int(imdata.shape[1]),
-                                 'z': int(imdata.shape[2])}
+        self._results['size'] = {'x': int(inudata.shape[0]),
+                                 'y': int(inudata.shape[1]),
+                                 'z': int(inudata.shape[2])}
         self._results['spacing'] = {
             i: float(v) for i, v in zip(
                 ['x', 'y', 'z'], imnii.get_header().get_zooms()[:3])}
 
         try:
-            self._results['size']['t'] = int(imdata.shape[3])
+            self._results['size']['t'] = int(inudata.shape[3])
         except IndexError:
             pass
 
@@ -276,6 +277,51 @@ class ComputeQI2(SimpleInterface):
         self._results['qi2'] = qi2
         self._results['out_file'] = out_file
         return runtime
+
+
+class HarmonizeInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='input data (after bias correction)')
+    wm_mask = File(exists=True, mandatory=True, desc='white-matter mask')
+    erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
+
+
+class HarmonizeOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='input data (after intensity harmonization)')
+
+
+class Harmonize(SimpleInterface):
+    """
+    Computes the artifact mask using the method described in [Mortamet2009]_.
+    """
+    input_spec = HarmonizeInputSpec
+    output_spec = HarmonizeOutputSpec
+
+    def _run_interface(self, runtime):
+
+        in_file = nb.load(self.inputs.in_file)
+        wm_mask = nb.load(self.inputs.wm_mask).get_data()
+        wm_mask[wm_mask < 0.9] = 0
+        wm_mask[wm_mask > 0] = 1
+        wm_mask = wm_mask.astype(np.uint8)
+
+        if self.inputs.erodemsk:
+            # Create a structural element to be used in an opening operation.
+            struc = nd.generate_binary_structure(3, 2)
+            # Perform an opening operation on the background data.
+            wm_mask = nd.binary_opening(wm_mask, structure=struc).astype(np.uint8)
+
+        data = in_file.get_data()
+        data *= 1000.0 / np.median(data[wm_mask > 0])
+
+        out_file = fname_presuffix(self.inputs.in_file,
+                                   suffix='_harmonized', newpath='.')
+        in_file.__class__(data, in_file.affine, in_file.header).to_filename(
+            out_file)
+
+        self._results['out_file'] = out_file
+
+        return runtime
+
 
 
 def artifact_mask(imdata, airdata, distance, zscore=10.):

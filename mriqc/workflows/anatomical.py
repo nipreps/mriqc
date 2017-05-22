@@ -95,7 +95,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(), name='conform')
     # 2. Skull-stripping (afni)
-    asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1))
+    asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=False)
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
@@ -237,6 +237,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     """
     from mriqc.workflows.utils import _tofloat
+    from mriqc.interfaces.anatomical import Harmonize
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -252,6 +253,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     # AFNI check smoothing
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
+
+    # Harmonize
+    homog = pe.Node(Harmonize(), name='harmonize')
 
     # Mortamet's QI2
     getqi2 = pe.Node(ComputeQI2(erodemsk=settings.get('testing', False)),
@@ -272,6 +276,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                        name='datasink')
     datasink.inputs.modality = modality
 
+    def _getwm(inlist):
+        return inlist[-1]
+
     workflow.connect([
         (inputnode, datasink, [('subject_id', 'subject_id'),
                                ('session_id', 'session_id'),
@@ -281,8 +288,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                                ('metadata', 'metadata')]),
         (inputnode, getqi2, [('orig', 'in_file'),
                              ('airmask', 'air_msk')]),
-        (inputnode, measures, [('inu_corrected', 'in_noinu'),
-                               ('in_inu', 'in_bias'),
+        (inputnode, homog, [('inu_corrected', 'in_file'),
+                            (('pvms', _getwm), 'wm_mask')]),
+        (inputnode, measures, [('in_inu', 'in_bias'),
                                ('orig', 'in_file'),
                                ('airmask', 'air_msk'),
                                ('headmask', 'head_msk'),
@@ -293,12 +301,13 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                            ('brainmask', 'mask')]),
         (inputnode, invt, [('orig', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
+        (homog, measures, [('out_file', 'in_noinu')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
         (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (measures, datasink, [('out_qc', 'root')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
-        (datasink, outputnode, [('out_file', 'out_file')])
+        (datasink, outputnode, [('out_file', 'out_file')]),
     ])
     return workflow
 

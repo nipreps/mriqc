@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from mriqc.interfaces.anatomical import StructuralQC, ArtifactMask, ComputeQI2
+from mriqc.interfaces.anatomical import StructuralQC, ArtifactMask, ComputeQI2, Harmonize
 from mriqc.interfaces.functional import FunctionalQC, Spikes
 from mriqc.interfaces.bids import ReadSidecarJSON, IQMFileSink
 from mriqc.interfaces.viz import PlotMosaic, PlotContours, PlotSpikes
