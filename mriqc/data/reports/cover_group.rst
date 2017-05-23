@@ -11,4 +11,4 @@
 
 For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
-`user guide <http://mriqc.readthedocs.org/en/latest/userguide.html>`_.
+`user guide <http://mriqc.readthedocs.org/en/latest/>`_.
