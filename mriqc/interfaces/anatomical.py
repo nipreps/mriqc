@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-22 17:19:52
+# @Last Modified time: 2017-05-22 18:40:09
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -36,6 +36,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
+    rot_msk = File(exists=True, mandatory=True, desc='rotation mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
@@ -97,6 +98,7 @@ class StructuralQC(SimpleInterface):
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
         headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
+        rotdata = nb.load(self.inputs.rot_msk).get_data().astype(np.uint8)
 
         # SNR
         snrvals = []
@@ -117,10 +119,10 @@ class StructuralQC(SimpleInterface):
         self._results['cnr'] = cnr(inudata, segdata)
 
         # FBER
-        self._results['fber'] = fber(inudata, headdata)
+        self._results['fber'] = fber(inudata, headdata, rotdata)
 
         # EFC
-        self._results['efc'] = efc(inudata)
+        self._results['efc'] = efc(inudata, rotdata)
 
         # M2WM
         self._results['wm2max'] = wm2max(inudata, segdata)
