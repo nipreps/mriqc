@@ -321,7 +321,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
-def fber(img, air):
+def fber(img, headmask, rotmask=None):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
@@ -337,15 +337,20 @@ def fber(img, air):
 
     """
 
-    fg_mu = (np.abs(img[air > 0]) ** 2).mean()
-    bg_mu = (np.abs(img[air < 1]) ** 2).mean()
+    fg_mu = np.median(np.abs(img[headmask > 0]) ** 2)
+
+    airmask = np.ones_like(headmask, dtype=np.uint8)
+    airmask[headmask > 0] = 0
+    if rotmask is not None:
+        airmask[rotmask > 0] = 0
+    bg_mu = np.median(np.abs(img[airmask == 1]) ** 2)
     if bg_mu < 1.0e-3:
-        return -1.0
+        return 0
     return float(fg_mu / bg_mu)
 
 
 
-def efc(img):
+def efc(img, framemask=None):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
@@ -370,16 +375,21 @@ def efc(img):
 
     """
 
+    if framemask is None:
+        framemask = np.zeros_like(img, dtype=np.uint8)
+
+    n_vox = np.sum(1 - framemask)
     # Calculate the maximum value of the EFC (which occurs any time all
     # voxels have the same value)
-    efc_max = 1.0 * np.prod(img.shape) * (1.0 / np.sqrt(np.prod(img.shape))) * \
-                np.log(1.0 / np.sqrt(np.prod(img.shape)))
+    efc_max = 1.0 * n_vox * (1.0 / np.sqrt(n_vox)) * \
+                np.log(1.0 / np.sqrt(n_vox))
 
     # Calculate the total image energy
-    b_max = np.sqrt((img**2).sum())
+    b_max = np.sqrt((img[framemask == 0]**2).sum())
 
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
-    return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
+    return float((1.0 / efc_max) * np.sum((img[framemask == 0] / b_max) * np.log(
+        (img[framemask == 0] + 1e-16) / b_max)))
 
 
 def wm2max(img, seg):

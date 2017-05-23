@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-02-01 15:53:32
+# @Last Modified time: 2017-05-23 09:00:47
 """ Helpers in report generation"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 
@@ -66,23 +66,6 @@ def unfold_columns(indict, prefix=None):
                     subdict[skey], prefix=prefix + [skey])
 
     return data
-
-def anat_flags(iqms_dict):
-    """Anatomical flags"""
-    msk_vals = []
-    for k in ['snrd_csf', 'snrd_gm', 'snrd_wm', 'fber']:
-        iqm = iqms_dict[k]
-        msk_vals.append(iqm < 0.)
-
-    flag = ''
-    if any(msk_vals):
-        flag = 'Noise variance in the background is very low'
-        if all(msk_vals):
-            flag += (' for all measures: <span class="warning">'
-                     'the original file could be masked</span>.')
-        else:
-            flag += '.'
-    return flag
 
 
 def read_report_snippet(in_file):

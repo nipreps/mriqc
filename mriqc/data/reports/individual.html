@@ -100,11 +100,6 @@ span.qa-pass {
 <h1>MRIQC: individual {{ modality }}
 report</h1>
 
-{% if exclude_index > 0 %}
-    <p><span class="problematic">Non-steady state (strong T1 contrast) has been detected in the first {{ exclude_index }} volumes</span>.
-    They were excluded before generating any QC measures and plots.</p>
-{% endif %}
-
 <h2>Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
