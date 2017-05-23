@@ -119,6 +119,8 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
     else:
         with open(in_iqms, 'r') as h:
             in_data = load(h)
+            #get the modality
+            modality = in_data["modality"]
         # metadata whitelist
         whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
                      "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
@@ -152,7 +154,13 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
         headers = {'token': secret_key, "Content-Type": "application/json"}
         try:
-            r = requests.put("http://34.201.213.252:5000/measurements/upload",
+            #if the modality is bold, call "bold" endpointt
+            if modality == "bold":
+                r = requests.put("http://0.0.0.0/bold",
+                             headers=headers, data=dumps(data))
+            #else, call "T1w" endpoint
+            else:
+                r = requests.put("http://0.0.0.0/T1w",
                              headers=headers, data=dumps(data))
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
