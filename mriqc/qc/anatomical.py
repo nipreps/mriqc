@@ -168,7 +168,7 @@ import json
 from math import pi
 import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import chi, kurtosis  # pylint: disable=E0611
+from scipy.stats import chi2, kurtosis  # pylint: disable=E0611
 from statsmodels.robust.scale import mad
 
 
@@ -465,8 +465,8 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     }
 
     # Fit central chi distribution
-    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[max_pos])
-    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
+    param = chi2.fit(data[data > 0], 4*ncoils, loc=bin_centers[max_pos])
+    pdf_fitted = chi2.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
     json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
     # Find t2 (intensity at half width, right side)
