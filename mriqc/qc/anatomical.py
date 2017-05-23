@@ -321,7 +321,7 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
     return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
 
 
-def fber(img, headmask, rotmask):
+def fber(img, headmask, rotmask=None):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
@@ -341,15 +341,16 @@ def fber(img, headmask, rotmask):
 
     airmask = np.ones_like(headmask, dtype=np.uint8)
     airmask[headmask > 0] = 0
-    airmask[rotmask > 0] = 0
-    bg_mu = np.median(np.abs(img[airmask < 1]) ** 2)
+    if rotmask is not None:
+        airmask[rotmask > 0] = 0
+    bg_mu = np.median(np.abs(img[airmask == 1]) ** 2)
     if bg_mu < 1.0e-3:
         return 0
     return float(fg_mu / bg_mu)
 
 
 
-def efc(img, framemask):
+def efc(img, framemask=None):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
@@ -373,6 +374,9 @@ def efc(img, framemask):
     :param numpy.ndarray img: input data
 
     """
+
+    if framemask is None:
+        framemask = np.zeros_like(img, dtype=np.uint8)
 
     n_vox = np.sum(1 - framemask)
     # Calculate the maximum value of the EFC (which occurs any time all
