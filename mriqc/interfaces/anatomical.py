@@ -6,8 +6,6 @@
 # @Author: oesteban
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
-# @Last Modified time: 2017-05-22 14:39:19
 """ Nipype interfaces to support anatomical workflow """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
@@ -18,7 +16,7 @@ from builtins import zip
 
 from nipype import logging
 from nipype.utils.filemanip import fname_presuffix
-from nipype.interfaces.base import (traits, TraitedSpec, File,
+from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
                                     InputMultiPath, BaseInterfaceInputSpec)
 
 from niworkflows.interfaces.base import SimpleInterface
@@ -36,6 +34,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
+    rot_msk = File(exists=True, mandatory=True, desc='rotation mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
                              desc='partial volume maps from FSL FAST')
@@ -92,6 +91,7 @@ class StructuralQC(SimpleInterface):
         airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
         artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
         headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
+        rotdata = nb.load(self.inputs.rot_msk).get_data().astype(np.uint8)
 
         # Load Partial Volume Maps (pvms) from FSL FAST
         pvmdata = []
@@ -124,10 +124,10 @@ class StructuralQC(SimpleInterface):
                                    stats['bg']['mad'])
 
         # FBER
-        self._results['fber'] = fber(inudata, headdata)
+        self._results['fber'] = fber(inudata, headdata, rotdata)
 
         # EFC
-        self._results['efc'] = efc(inudata)
+        self._results['efc'] = efc(inudata, rotdata)
 
         # M2WM
         self._results['wm2max'] = wm2max(inudata, segdata)
@@ -199,6 +199,7 @@ class StructuralQC(SimpleInterface):
 class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     head_mask = File(exists=True, mandatory=True, desc='head mask')
+    rot_mask = File(exists=True, desc='a rotation mask')
     nasion_post_mask = File(exists=True, mandatory=True,
                             desc='nasion to posterior of cerebellum mask')
 
@@ -236,6 +237,11 @@ class ArtifactMask(SimpleInterface):
         airdata[npdata == 1] = 0
         dist[npdata == 1] = 0
         dist /= dist.max()
+
+        # Apply rotation mask (if supplied)
+        if isdefined(self.inputs.rot_mask):
+            rotmskdata = nb.load(self.inputs.rot_mask).get_data()
+            airdata[rotmskdata == 1] = 0
 
         # Run the artifact detection
         qi1_img = artifact_mask(imdata, airdata, dist)
@@ -316,7 +322,7 @@ class Harmonize(SimpleInterface):
             # Create a structural element to be used in an opening operation.
             struc = nd.generate_binary_structure(3, 2)
             # Perform an opening operation on the background data.
-            wm_mask = nd.binary_opening(wm_mask, structure=struc).astype(np.uint8)
+            wm_mask = nd.binary_erosion(wm_mask, structure=struc).astype(np.uint8)
 
         data = in_file.get_data()
         data *= 1000.0 / np.median(data[wm_mask > 0])
@@ -330,6 +336,58 @@ class Harmonize(SimpleInterface):
 
         return runtime
 
+
+class RotationMaskInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='input data')
+
+class RotationMaskOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='rotation mask (if any)')
+
+
+class RotationMask(SimpleInterface):
+    """
+    Computes the artifact mask using the method described in [Mortamet2009]_.
+    """
+    input_spec = RotationMaskInputSpec
+    output_spec = RotationMaskOutputSpec
+
+    def _run_interface(self, runtime):
+        in_file = nb.load(self.inputs.in_file)
+        data = in_file.get_data()
+        mask = np.zeros_like(data, dtype=np.uint8)
+        mask[data <= 0] = 1
+
+        # Pad one pixel to control behavior on borders of binary_opening
+        mask = np.pad(mask, pad_width=(1,), mode='constant', constant_values=1)
+
+        # Remove noise
+        struc = nd.generate_binary_structure(3, 2)
+        mask = nd.binary_opening(mask, structure=struc).astype(
+            np.uint8)
+
+        # Remove small objects
+        label_im, nb_labels = nd.label(mask)
+        if nb_labels > 2:
+            sizes = nd.sum(mask, label_im, list(range(nb_labels + 1)))
+            ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+            for _, label in ordered[2:]:
+                mask[label_im == label] = 0
+
+        # Un-pad
+        mask = mask[1:-1, 1:-1, 1:-1]
+
+        # If mask is small, clean-up
+        if mask.sum() < 500:
+            mask = np.zeros_like(mask, dtype=np.uint8)
+
+        out_img = in_file.__class__(mask, in_file.affine, in_file.header)
+        out_img.header.set_data_dtype(np.uint8)
+
+        out_file = fname_presuffix(self.inputs.in_file,
+                                   suffix='_rotmask', newpath='.')
+        out_img.to_filename(out_file)
+        self._results['out_file'] = out_file
+        return runtime
 
 
 def artifact_mask(imdata, airdata, distance, zscore=10.):

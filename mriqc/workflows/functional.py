@@ -163,7 +163,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                         ('outputnode.out_file', 'inputnode.hmc_epi')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
                       ('outputnode.report', 'inputnode.mni_report')]),
-        (reorient_and_discard, repwf, [('exclude_index', 'inputnode.exclude_index')]),
+        (reorient_and_discard, iqmswf, [('exclude_index', 'inputnode.exclude_index')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
@@ -210,12 +210,14 @@ def compute_iqms(settings, name='ComputeIQMs'):
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
-        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'fd_thres', 'in_tsnr', 'metadata']), name='inputnode')
+        'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'fd_thres', 'in_tsnr', 'metadata',
+        'exclude_index']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
                          name='outputnode')
-    #Set FD threshold
-    inputnode.inputs.fd_thres=settings.get('fd_thres',0.2)
+
+    # Set FD threshold
+    inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Compute DVARS
@@ -255,6 +257,13 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (outliers, outputnode, [('out_file', 'outliers')])
     ])
 
+    # Add metadata
+    addmeta = pe.Node(niu.Function(function=_add_metadata), name='add_metadata')
+    addmeta.inputs.settings = {
+        'fd_thres': settings.get('fd_thres', 0.2),
+        'hmc_fsl': settings.get('hmc_fsl', True),
+    }
+
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
         modality='bold', out_dir=deriv_dir), name='datasink')
@@ -265,8 +274,11 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('task_id', 'task_id'),
                                ('acq_id', 'acq_id'),
                                ('rec_id', 'rec_id'),
-                               ('run_id', 'run_id'),
-                               ('metadata', 'metadata')]),
+                               ('run_id', 'run_id')]),
+        (inputnode, addmeta, [('metadata', 'in_meta'),
+                              ('exclude_index', 'exclude_index')]),
+        (measures, addmeta, [('out_qc', 'in_iqms')]),
+        (addmeta, datasink, [('out', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
@@ -316,10 +328,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'fd_thres', 'epi_parc',
         'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
-        'exclude_index', 'mni_report', 'ica_report']),
+        'mni_report', 'ica_report']),
         name='inputnode')
-    #Set FD threshold
-    inputnode.inputs.fd_thres=settings.get('fd_thres',0.2)
+
+    # Set FD threshold
+    inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
 
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
@@ -332,7 +345,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
                      'fd', 'fd_thres', 'dvars', 'outliers'],
         output_names=['out_file'], function=_big_plot), name='BigPlot')
-    bigplot.interface.estimated_memory_gb =biggest_file_gb * 3.5
+    bigplot.interface.estimated_memory_gb = biggest_file_gb * 3.5
 
     workflow.connect([
         (inputnode, spikes_bg, [('orig', 'in_file')]),
@@ -365,15 +378,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
                                + int(settings.get('ica', False))),
                      name='MergePlots')
     rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots', 'exclude_index', 'wf_details'],
-        output_names=['out_file'], function=individual_html), name='GenerateReport')
-    wf_details = []
-    if settings.get('hmc_fsl', True):
-        wf_details.append('Framewise Displacement was computed using FSL <code>mcflirt</code>')
-    else:
-        wf_details.append('Framewise Displacement was computed using AFNI <code>3dvolreg</code>')
-
-    rnode.inputs.wf_details = wf_details
+        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
+        function=individual_html), name='GenerateReport')
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
@@ -381,8 +387,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     dsplots.inputs.container = 'reports'
 
     workflow.connect([
-        (inputnode, rnode, [('in_iqms', 'in_iqms'),
-                            ('exclude_index', 'exclude_index')]),
+        (inputnode, rnode, [('in_iqms', 'in_iqms')]),
         (inputnode, mosaic_mean, [('epi_mean', 'in_file')]),
         (inputnode, mosaic_stddev, [('in_stddev', 'in_file')]),
         (mosaic_mean, mplots, [('out_file', 'in1')]),
@@ -568,7 +573,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
         ])
     else:
         drop_trs = pe.Node(niu.IdentityInterface(fields=['out_file']),
-                              name='drop_trs')
+                           name='drop_trs')
         workflow.connect([
             (inputnode, drop_trs, [('in_file', 'out_file')]),
         ])
@@ -802,6 +807,12 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
     return out_file, out_plot
 
+
+def _add_metadata(in_meta, in_iqms, settings, exclude_index):
+    out_metadata = in_meta
+    out_metadata['settings'] = settings
+    out_metadata['settings']['exclude_index'] = exclude_index
+    return out_metadata
 
 def _mean(inlist):
     import numpy as np
