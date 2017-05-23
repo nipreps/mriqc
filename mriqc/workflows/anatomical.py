@@ -57,7 +57,7 @@ from niworkflows.interfaces.registration import RobustMNINormalizationRPT as Rob
 from mriqc import DEFAULTS
 from mriqc.workflows.utils import upload_wf
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                              ConformImage, ComputeQI2, IQMFileSink)
+                              ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 
 from mriqc.utils.misc import check_folder
 WFLOGGER = logging.getLogger('workflow')
@@ -495,6 +495,8 @@ def airmsk_wf(name='AirMaskWorkflow'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'artifact_msk']),
                          name='outputnode')
 
+    rotmsk = pe.Node(RotationMask(), name='RotationMask')
+
     invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
                                         interpolation='Linear', float=True), name='invert_xfm')
     invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
@@ -504,8 +506,10 @@ def airmsk_wf(name='AirMaskWorkflow'):
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
     workflow.connect([
+        (inputnode, rotmsk, [('in_file', 'in_file')]),
         (inputnode, qi1, [('in_file', 'in_file'),
                           ('head_mask', 'head_mask')]),
+        (rotmsk, qi1, [('out_file', 'rot_mask')]),
         (inputnode, invt, [('in_mask', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
         (invt, binarize, [('output_image', 'in_file')]),
