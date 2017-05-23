@@ -71,7 +71,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     acq_id = traits.Either(None, Str, usedefault=True)
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, Str, usedefault=True)
-    md5sum = Str()
+    metadata = traits.Dict()
     save_extra = traits.Bool(True, usedefault=True, desc='save extra metadata')
 
     root = traits.Dict(desc='output root dictionary')
@@ -195,8 +195,11 @@ class IQMFileSink(SimpleInterface):
             id_dict['version'] = version
             id_dict['software'] = 'mriqc'
 
+        if isdefined(self.inputs.metadata) and self.inputs.metadata:
+            id_dict.update(self.inputs.metadata)
+            IFLOGGER.warn('metadata = %s', id_dict)
 
-        if self._out_dict.get('metadata', None) is None:
+        if self._out_dict.get('metadata') is None:
             self._out_dict['metadata'] = {}
 
         self._out_dict['metadata'].update(id_dict)

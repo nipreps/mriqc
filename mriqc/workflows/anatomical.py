@@ -252,6 +252,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
+    # Add metadata
+    addmeta = pe.Node(niu.Function(function=_add_metadata), name='add_metadata')
+
     # AFNI check smoothing
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
@@ -286,8 +289,10 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                                ('session_id', 'session_id'),
                                ('acq_id', 'acq_id'),
                                ('rec_id', 'rec_id'),
-                               ('run_id', 'run_id'),
-                               ('metadata', 'metadata')]),
+                               ('run_id', 'run_id')]),
+        (inputnode, addmeta, [('metadata', 'in_meta'),
+                               ('airmask', 'air_msk'),
+                               ('rotmask', 'rot_msk')]),
         (inputnode, getqi2, [('orig', 'in_file'),
                              ('airmask', 'air_msk')]),
         (inputnode, homog, [('inu_corrected', 'in_file'),
@@ -308,6 +313,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (invt, measures, [('output_image', 'mni_tpms')]),
         (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (measures, datasink, [('out_qc', 'root')]),
+        (measures, addmeta, [('out_qc', 'in_iqms')]),
+        (addmeta, datasink, [('out', 'metadata')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
@@ -523,6 +530,23 @@ def airmsk_wf(name='AirMaskWorkflow'):
     ])
     return workflow
 
+
+def _add_metadata(in_meta, in_iqms, air_msk, rot_msk):
+    import nibabel as nb
+    import numpy as np
+    out_metadata = in_meta
+
+    air_msk_size = nb.load(air_msk).get_data().astype(
+        np.uint8).sum()
+    rot_msk_size = nb.load(rot_msk).get_data().astype(
+        np.uint8).sum()
+
+    out_metadata['warnings'] = {
+        'small_air_mask': bool(air_msk_size < 5e5),
+        'large_rot_frame': bool(rot_msk_size > 500),
+    }
+
+    return out_metadata
 
 def _binarize(in_file, threshold=0.5, out_file=None):
     import os.path as op
