@@ -178,16 +178,21 @@ def upload_wf(settings, name='UploadWorkflow'):
 
     no_sub = settings.get('no_sub', False)
     email = settings.get('email', '')
+    mriqc_webapi = settings.get('mriqc_webapi')
+    upload_strict= settings.get('upload_strict')
+
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_iqms']),
                         name='inputnode')
-    upld = pe.Node(niu.Function(input_names=['in_iqms', 'no_sub', 'email'],
+    upld = pe.Node(niu.Function(input_names=['in_iqms', 'no_sub', 'email', 'mriqc_webapi','upload_strict'],
                                 output_names=['response'],
                                 function=upload_qc_metrics),
                    name='UploadMetrics')
     upld.inputs.email = email
     upld.inputs.no_sub = no_sub
+    upld.inputs.mriqc_webapi = mriqc_webapi
+    upld.inputs.upload_strict = upload_strict
 
     workflow.connect([(inputnode, upld, [('in_iqms', 'in_iqms')])])
 
