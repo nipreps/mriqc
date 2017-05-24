@@ -25,6 +25,13 @@ Preliminaries
     (`see this issue <https://github.com/poldracklab/mriqc/issues/388#issuecomment-281208441>`_).
 
 
+.. warning ::
+
+    On Windows installations, before using the ``-v`` switch to mount volumes into
+    the container, it is necessary to `enable shared drives
+    <https://docs.docker.com/docker-for-windows/#shared-drives>`_.
+
+
 
 .. _docker_run_mriqc:
 
