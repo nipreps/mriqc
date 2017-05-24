@@ -492,9 +492,9 @@ def rpve(pvms, seg):
     for k, lid in list(FSL_FAST_LABELS.items()):
         if lid == 0:
             continue
-        pvmap = pvms[lid - 1][seg == lid]
+        pvmap = pvms[lid - 1]
         pvmap[pvmap < 0.] = 0.
-        pvmap[pvmap >= 1.] = 0.
+        pvmap[pvmap >= 1.] = 1.
         totalvol = np.sum(pvmap > 0.0)
         upth = np.percentile(pvmap[pvmap > 0], 98)
         loth = np.percentile(pvmap[pvmap > 0], 2)
@@ -513,26 +513,25 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:
         # If pvms is from FSL FAST, create the bg mask
-        pvms.insert(0, np.array(pvms).sum(axis=0))
+        stats_pvms = [np.array(pvms).sum(axis=0)] + pvms
     elif dims == 3:
-        bgpvm = np.ones_like(pvms)
-        pvms = [bgpvm - pvms, pvms]
+        stats_pvms = [np.ones_like(pvms) - pvms] + pvms
     else:
         raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
 
     if airmask is not None:
-        pvms[0] = airmask
+        stats_pvms[0] = airmask
 
-    if len(pvms) == 4:
+    if len(stats_pvms) == 4:
         labels = list(FSL_FAST_LABELS.items())
-    elif len(pvms) == 2:
+    elif len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
     output = {k: {} for k, _ in labels}
     for k, lid in labels:
         mask = np.zeros_like(img, dtype=np.uint8)
-        mask[pvms[lid] > 0.85] = 1
+        mask[stats_pvms[lid] > 0.85] = 1
 
         if erode:
             struc = nd.generate_binary_structure(3, 2)

@@ -83,7 +83,7 @@ class FunctionalQC(SimpleInterface):
         mskdata[mskdata > 0] = 1
 
         # SNR
-        self._results['snr'] = float(snr(epidata, mskdata, fglabel=1))
+        self._results['snr'] = snr(epidata, mskdata)
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
