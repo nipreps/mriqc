@@ -184,6 +184,7 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False,
             else:
                 report_log.error('the image modality is neither bold nor T1w, in qc_metric_upload()')
                 #execution ? 
+                r = "No Response"
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
             else:
