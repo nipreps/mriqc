@@ -135,6 +135,8 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
     else:
         with open(in_iqms, 'r') as h:
             in_data = load(h)
+            metadata = in_data.pop('metadata')
+            in_data.update(metadata)
             #get the modality
             modality = in_data.get("modality")
         # metadata whitelist
@@ -172,11 +174,11 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
         try:
             #if the modality is bold, call "bold" endpointt
             if modality == "bold":
-                r = requests.put(mriqc_webapi+"/bold",
+                r = requests.post(mriqc_webapi+"/bold",
                              headers=headers, data=dumps(data))
             #else, call "T1w" endpoint
             elif modality == 'T1w':
-                r = requests.put(mriqc_webapi+"/T1w",
+                r = requests.post(mriqc_webapi+"/T1w",
                              headers=headers, data=dumps(data))
             else:
                 report_log.warn('the image modality is neither bold nor T1w, in qc_metric_upload()')
