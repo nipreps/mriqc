@@ -1,3 +1,17 @@
+0.9.5
+=====
+
+  * [ENH] Refactored structural metrics calculation (#513)
+  * [ENH] Calculate rotation mask (#515)
+  * [ENH] Intensity harmonization in the anatomical workflow (#510)
+  * [ENH] Set N4BiasFieldCorrection number of threads (#506)
+  * [ENH] Convert FWHM in pixel units (#503)
+  * [ENH] Add MRIQC client for feature crowdsourcing (#464)
+  * [DOC] Fix functional feature labels in documentation (docs_only) (#507)
+  * [FIX] New implementation for the rPVE feature (normalization, left-tail values) (#505)
+  * [ENH] Parse BIDS selectors (run, task, etc.), improve CLI (#504)
+
+
 0.9.4
 =====
 
