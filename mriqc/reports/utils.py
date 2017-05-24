@@ -139,7 +139,7 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False,
         with open(in_iqms, 'r') as h:
             in_data = load(h)
             #get the modality
-            modality = in_data["modality"]
+            modality = in_data.get("modality")
         # metadata whitelist
         whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
                      "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
