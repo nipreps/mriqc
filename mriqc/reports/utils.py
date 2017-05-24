@@ -135,10 +135,9 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
     else:
         with open(in_iqms, 'r') as h:
             in_data = load(h)
-            metadata = in_data.pop('metadata')
-            in_data.update(metadata)
-            #get the modality
-            modality = in_data.get("modality")
+            # metadata = in_data.pop('metadata')
+            # in_data.update(metadata)
+            # modality = in_data.get("modality")
         # metadata whitelist
         whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
                      "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
@@ -156,6 +155,8 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
                      "md5sum", "modality", "mriqc_pred", "software", "subject_id", "version"]
         # flatten data
         data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
+        modality = data.get("modality")
+
         # Filter Metadata values that aren't in whitelist
         try:
             data.update({k: v for k, v in list(in_data['metadata'].items()) if k in whitelist})
