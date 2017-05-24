@@ -89,11 +89,7 @@ def get_parser():
                            help='default mriqc-webapi is http://34.201.213.252:5000' )
 
     g_outputs.add_argument('--upload-strict', action='store_true', default=False,
-                           help='upload will fail if if upload is stric')
-
-
-    
-
+                           help='upload will fail if if upload is strict')
     # General performance
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n_procs', '--nprocs', '--n_cpus', '--nprocs',

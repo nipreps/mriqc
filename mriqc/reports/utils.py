@@ -109,18 +109,15 @@ def read_report_snippet(in_file):
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
 
-def upload_qc_metrics(in_iqms, email='', no_sub=False, 
-    mriqc_webapi='http://34.201.213.252:5000', upload_strict=False):
+def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.201.213.252:5000', upload_strict=False):
     """Upload qc metrics to remote repository.
-
     Arguments:
     in_iqms -- Path to the qc metric json file as a string
 
     Keyword arguments:
     email -- email address to be included with the metric submission, defaults to empty string
     no_sub -- Flag from settings indicating whether or not metrics should be submitted. If False, metrics will be submitted. If True, metrics will not be submitted. Defaults to False.
-    mriqc_webapi -- the default mriqcWebAPI url 
-    upload_strict -- the client should fail if it's strict mode
+    mriqc_webapi -- the default mriqcWebAPI url upload_strict -- the client should fail if it's strict mode
     Returns:
     either returns response object if a response was successfully sent
     or it returns the string "No Response"
@@ -182,9 +179,10 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False,
                 r = requests.put(mriqc_webapi+"/T1w",
                              headers=headers, data=dumps(data))
             else:
-                report_log.error('the image modality is neither bold nor T1w, in qc_metric_upload()')
-                #execution ? 
+                report_log.warn('the image modality is neither bold nor T1w, in qc_metric_upload()')
                 r = "No Response"
+                return r
+                
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
             else:
