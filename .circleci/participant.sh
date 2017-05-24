@@ -20,8 +20,7 @@ if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
     docker run -i --rm=false -v ${SCRATCH}:/scratch -w /root/src/mriqc/docs \
                --entrypoint=sphinx-build poldracklab/mriqc:latest -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
                | tee ${SCRATCH}/docs/builddocs.log
-    cat ${SCRATCH}/docs/builddocs.log && \
-    if grep -q "ERROR" ${SCRATCH}/docs/builddocs.log; then exit_docs=1; fi
+    exit_docs=$( grep -qi "build succeeded." ${SCRATCH}/docs/builddocs.log; echo $? )
 fi
 
 if [ "$( grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $?)" == "0" ]; then

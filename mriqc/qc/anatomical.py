@@ -234,8 +234,8 @@ def cnr(mu_wm, mu_gm, sigma_air):
 
     .. math::
 
-        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sqrt{\sigma_B^2 + \
-\sigma_\text{WM}^2 + \sigma_\text{GM}^2}},
+        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sqrt{\sigma_B^2 +
+        \sigma_\text{WM}^2 + \sigma_\text{GM}^2}},
 
     where :math:`\sigma_B` is the standard deviation of the noise distribution within
     the air (background) mask.
