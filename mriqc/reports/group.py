@@ -53,14 +53,14 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
             (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
             (['tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm'], None),
-            (['summary_bg_mean', 'summary_bg_stdv', 'summary_bg_k',
-              'summary_bg_p05', 'summary_bg_p95'], None),
-            (['summary_csf_mean', 'summary_csf_stdv', 'summary_csf_k',
-              'summary_csf_p05', 'summary_csf_p95'], None),
-            (['summary_gm_mean', 'summary_gm_stdv', 'summary_gm_k',
-              'summary_gm_p05', 'summary_gm_p95'], None),
-            (['summary_wm_mean', 'summary_wm_stdv', 'summary_wm_k',
-              'summary_wm_p05', 'summary_wm_p95'], None)
+            (['summary_bg_mean', 'summary_bg_median', 'summary_bg_stdv', 'summary_bg_mad',
+              'summary_bg_k', 'summary_bg_p05', 'summary_bg_p95'], None),
+            (['summary_csf_mean', 'summary_csf_median', 'summary_csf_stdv', 'summary_csf_mad',
+              'summary_csf_k', 'summary_csf_p05', 'summary_csf_p95'], None),
+            (['summary_gm_mean', 'summary_gm_median', 'summary_gm_stdv', 'summary_gm_mad',
+              'summary_gm_k', 'summary_gm_p05', 'summary_gm_p95'], None),
+            (['summary_wm_mean', 'summary_wm_median', 'summary_wm_stdv', 'summary_wm_mad',
+              'summary_wm_k', 'summary_wm_p05', 'summary_wm_p95'], None)
         ],
         'T2w': [
             (['cjv'], None),

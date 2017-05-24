@@ -78,12 +78,16 @@ class FunctionalQC(SimpleInterface):
         # Get EPI data (with mc done) and get it ready
         msknii = nb.load(self.inputs.in_mask)
         mskdata = np.nan_to_num(msknii.get_data())
-        mskdata = mskdata.astype(np.uint8)
         mskdata[mskdata < 0] = 0
         mskdata[mskdata > 0] = 1
+        mskdata = mskdata.astype(np.uint8)
+
+        # Summary stats
+        stats = summary_stats(epidata, mskdata, erode=True)
+        self._results['summary'] = stats
 
         # SNR
-        self._results['snr'] = snr(epidata, mskdata)
+        self._results['snr'] = snr(stats['fg']['median'], stats['fg']['stdv'], stats['fg']['n'])
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
@@ -98,8 +102,6 @@ class FunctionalQC(SimpleInterface):
         for axis in epidir:
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
-        # Summary stats
-        self._results['summary'] = summary_stats(epidata, mskdata)
 
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1,

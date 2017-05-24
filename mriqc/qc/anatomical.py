@@ -234,7 +234,8 @@ def cnr(mu_wm, mu_gm, sigma_air):
 
     .. math::
 
-        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B},
+        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sqrt{\sigma_B^2 + \
+\sigma_\text{WM}^2 + \sigma_\text{GM}^2}},
 
     where :math:`\sigma_B` is the standard deviation of the noise distribution within
     the air (background) mask.
@@ -341,7 +342,7 @@ def efc(img, framemask=None):
         (img[framemask == 0] + 1e-16) / b_max)))
 
 
-def wm2max(img, seg):
+def wm2max(img, mu_wm):
     r"""
     Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
     defined as the maximum intensity found in the volume w.r.t. the
@@ -353,9 +354,7 @@ def wm2max(img, seg):
         \text{WM2MAX} = \frac{\mu_\text{WM}}{P_{99.95}(X)}
 
     """
-    wmmask = np.zeros_like(seg)
-    wmmask[seg == FSL_FAST_LABELS['wm']] = 1
-    return float(np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95))
+    return float(mu_wm / np.percentile(img.reshape(-1), 99.95))
 
 def art_qi1(airmask, artmask):
     r"""
@@ -515,7 +514,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         # If pvms is from FSL FAST, create the bg mask
         stats_pvms = [np.array(pvms).sum(axis=0)] + pvms
     elif dims == 3:
-        stats_pvms = [np.ones_like(pvms) - pvms] + pvms
+        stats_pvms = [np.ones_like(pvms) - pvms, pvms]
     else:
         raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
@@ -523,9 +522,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     if airmask is not None:
         stats_pvms[0] = airmask
 
-    if len(stats_pvms) == 4:
-        labels = list(FSL_FAST_LABELS.items())
-    elif len(stats_pvms) == 2:
+    labels = list(FSL_FAST_LABELS.items())
+    if len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
     output = {k: {} for k, _ in labels}

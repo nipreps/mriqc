@@ -11,6 +11,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os.path as op
 import numpy as np
 import nibabel as nb
+from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
@@ -119,9 +120,10 @@ class StructuralQC(SimpleInterface):
             np.mean([val for _, val in list(self._results['snrd'].items())]))
 
         # CNR
-        self._results['cnr'] = cnr(stats['wm']['median'],
-                                   stats['gm']['median'],
-                                   stats['bg']['mad'])
+        self._results['cnr'] = cnr(
+            stats['wm']['median'], stats['gm']['median'],
+            sqrt(sum(stats[k]['stdv'] ** 2 for k in ['bg', 'gm', 'wm']))
+        )
 
         # FBER
         self._results['fber'] = fber(inudata, headdata, rotdata)
@@ -130,7 +132,7 @@ class StructuralQC(SimpleInterface):
         self._results['efc'] = efc(inudata, rotdata)
 
         # M2WM
-        self._results['wm2max'] = wm2max(inudata, segdata)
+        self._results['wm2max'] = wm2max(inudata, stats['wm']['median'])
 
         # Artifacts
         self._results['qi_1'] = art_qi1(airdata, artdata)
