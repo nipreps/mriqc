@@ -33,7 +33,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
                        --verbose-reports --profile \
-                       --mriqc-webapi http://localhost:80 --upload-strict"
+                       --mriqc-webapi http://localhost:${MRIQC_API_PORT} --upload-strict"
 
 case $CIRCLE_NODE_INDEX in
     0)
