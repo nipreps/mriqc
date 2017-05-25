@@ -1,2 +1,2 @@
 numpy>=1.12.0
-git+https://github.com/poldracklab/niworkflows.git@b267a6c8680ab6587e55bf345a314ef4ffb3a419#egg=niworkflows
+git+https://github.com/poldracklab/niworkflows.git@e5fff38fcf34e7cb7b45ac55b8b2954e3d24a77e#egg=niworkflows
