@@ -8,6 +8,7 @@ machine:
     DOCKER_TAG: "latest"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
+    SECRET_KEY: CI
   services:
     - docker
 
@@ -15,6 +16,7 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
+    - "~/mriqcwebapi"
 
   pre:
     # Download test data
@@ -23,6 +25,11 @@ dependencies:
     - mkdir -p $SCRATCH && sudo setfacl -d -m group:ubuntu:rwx $SCRATCH && sudo setfacl -m group:ubuntu:rwx $SCRATCH
     - if [[ ! -d ~/data/${TEST_DATA_NAME} ]]; then wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}" && tar xzf ${TEST_DATA_NAME}.tar.gz -C ~/data/; fi
     - docker load --input $HOME/docker/cache.tar || true
+    # Prepare MRIQCWebAPI
+    - pip install docker-compose
+    - pushd $HOME; git clone https://github.com/poldracklab/mriqcwebapi.git; pushd mriqcwebapi; git checkout 0.1.0; popd; popd
+    - docker-compose -f $HOME/mriqcwebapi/mriqcwebapi/dockereve-master/docker-compose.yml build
+    - docker-compose -f $HOME/mriqcwebapi/mriqcwebapi/dockereve-master/docker-compose.yml up -d
   override:
     - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - ? |
@@ -77,7 +84,7 @@ deployment:
                   echo "This is not a release candidate, pushing ${DOCKER_IMAGE}:${DOCKER_TAG}"
                   docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
               fi
-          fi 
+          fi
         :
           timeout: 21600
       - |
