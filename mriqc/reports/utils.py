@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-23 09:00:47
+# @Last Modified time: 2017-05-25 08:55:02
 """ Helpers in report generation"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 
@@ -122,77 +122,80 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
     if no_sub:
         report_log.info(
             'QC metrics were not uploaded because --no_sub or --testing options were set.')
+        return "No Response"
+
+
+    with open(in_iqms, 'r') as h:
+        in_data = load(h)
+        # metadata = in_data.pop('metadata')
+        # in_data.update(metadata)
+        # modality = in_data.get("modality")
+    # metadata whitelist
+    whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
+                 "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
+                 "SoftwareVersions", "HardcopyDeviceSoftwareVersion", "ReceiveCoilName",
+                 "GradientSetType", "MRTransmitCoilSequence", "MatrixCoilMode",
+                 "CoilCombinationMethod", "PulseSequenceType", "PulseSequenceDetails",
+                 "NumberShots", "ParallelReductionFactorInPlane", "ParallelAcquisitionTechnique",
+                 "PartialFourier", "PartialFourierDirection", "PhaseEncodingDirection",
+                 "EffectiveEchoSpacing", "TotalReadoutTime",
+                 "EchoTime", "InversionTime", "SliceTiming", "SliceEncodingDirection",
+                 "NumberOfVolumesDiscardedByScanner", "NumberOfVolumesDiscardedByUser",
+                 "DelayTime", "FlipAngle", "MultibandAccelerationFactor", "Instructions",
+                 "TaskDescription", "CogAtlasID", "CogPOID", "InstitutionName",
+                 "InstitutionAddress", "ConversionSoftware", "ConversionSoftwareVersion",
+                 "md5sum", "modality", "mriqc_pred", "software", "subject_id", "version"]
+    # flatten data
+    data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
+
+
+    modality = in_data['metadata'].get('modality', 'None')
+    if modality not in ('T1w', 'bold'):
+        errmsg = ('Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w", '
+                  '(found "%s")' % modality)
+        if upload_strict:
+            raise RuntimeError(errmsg)
+
+        report_log.warn(errmsg)
+        return "No Response"
+
+    # Filter Metadata values that aren't in whitelist
+    try:
+        data.update({k: v for k, v in list(
+            in_data['metadata'].items()) if k in whitelist})
+    except KeyError:
+        pass
+    # Preemptively adding code to handle settings
+    try:
+        data.update({k: v for k, v in list(
+            in_data['settings'].items()) if k in whitelist})
+    except KeyError:
+        pass
+
+    if email:
+        data['email'] = email
+
+    secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
+    headers = {'token': secret_key, "Content-Type": "application/json"}
+    try:
+        # if the modality is bold, call "bold" endpointt
+        r = requests.post('{}/{}'.format(mriqc_webapi, modality),
+                          headers=headers, data=dumps(data))
+
+        if r.status_code == 201:
+            report_log.info('QC metrics successfully uploaded.')
+        else:
+            report_log.warn('QC metrics failed to upload. Status %d: %s',
+                            r.status_code, r.text)
+    except requests.ConnectionError as e:
+        # strict upload = fail the client
+        errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % e
+        if upload_strict:
+            report_log.error(errmsg)
+            raise e
+
+        report_log.warn(errmsg)
         r = "No Response"
-    else:
-        with open(in_iqms, 'r') as h:
-            in_data = load(h)
-            # metadata = in_data.pop('metadata')
-            # in_data.update(metadata)
-            # modality = in_data.get("modality")
-        # metadata whitelist
-        whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
-                     "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
-                     "SoftwareVersions", "HardcopyDeviceSoftwareVersion", "ReceiveCoilName",
-                     "GradientSetType", "MRTransmitCoilSequence", "MatrixCoilMode",
-                     "CoilCombinationMethod", "PulseSequenceType", "PulseSequenceDetails",
-                     "NumberShots", "ParallelReductionFactorInPlane", "ParallelAcquisitionTechnique",
-                     "PartialFourier", "PartialFourierDirection", "PhaseEncodingDirection",
-                     "EffectiveEchoSpacing", "TotalReadoutTime",
-                     "EchoTime", "InversionTime", "SliceTiming", "SliceEncodingDirection",
-                     "NumberOfVolumesDiscardedByScanner", "NumberOfVolumesDiscardedByUser",
-                     "DelayTime", "FlipAngle", "MultibandAccelerationFactor", "Instructions",
-                     "TaskDescription", "CogAtlasID", "CogPOID", "InstitutionName",
-                     "InstitutionAddress", "ConversionSoftware", "ConversionSoftwareVersion",
-                     "md5sum", "modality", "mriqc_pred", "software", "subject_id", "version"]
-        # flatten data
-        data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
-        modality = data.get("modality")
-
-        if modality is None or modality not in ('T1w', 'bold'):
-            errmsg = 'Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w"'
-            if upload_strict:
-                raise RuntimeError(errmsg)
-
-            report_log.warn(errmsg)
-            return "No Response"
-
-        # Filter Metadata values that aren't in whitelist
-        try:
-            data.update({k: v for k, v in list(
-                in_data['metadata'].items()) if k in whitelist})
-        except KeyError:
-            pass
-        # Preemptively adding code to handle settings
-        try:
-            data.update({k: v for k, v in list(
-                in_data['settings'].items()) if k in whitelist})
-        except KeyError:
-            pass
-
-        if email:
-            data['email'] = email
-
-        secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
-        headers = {'token': secret_key, "Content-Type": "application/json"}
-        try:
-            # if the modality is bold, call "bold" endpointt
-            r = requests.post('{}/{}'.format(mriqc_webapi, modality),
-                              headers=headers, data=dumps(data))
-
-            if r.status_code == 201:
-                report_log.info('QC metrics successfully uploaded.')
-            else:
-                report_log.warn('QC metrics failed to upload. Status %d: %s',
-                                r.status_code, r.text)
-        except requests.ConnectionError as e:
-            # strict upload = fail the client
-            errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % e
-            if upload_strict:
-                report_log.error(errmsg)
-                raise e
-
-            report_log.warn(errmsg)
-            r = "No Response"
     return r
 
 
