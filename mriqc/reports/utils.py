@@ -92,16 +92,15 @@ def read_report_snippet(in_file):
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
 
-def upload_qc_metrics(in_iqms, email='', no_sub=False):
+def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.201.213.252:5000', upload_strict=False):
     """Upload qc metrics to remote repository.
-
     Arguments:
     in_iqms -- Path to the qc metric json file as a string
 
     Keyword arguments:
     email -- email address to be included with the metric submission, defaults to empty string
     no_sub -- Flag from settings indicating whether or not metrics should be submitted. If False, metrics will be submitted. If True, metrics will not be submitted. Defaults to False.
-
+    mriqc_webapi -- the default mriqcWebAPI url upload_strict -- the client should fail if it's strict mode
     Returns:
     either returns response object if a response was successfully sent
     or it returns the string "No Response"
@@ -119,6 +118,9 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
     else:
         with open(in_iqms, 'r') as h:
             in_data = load(h)
+            # metadata = in_data.pop('metadata')
+            # in_data.update(metadata)
+            # modality = in_data.get("modality")
         # metadata whitelist
         whitelist = ["ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
                      "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
@@ -136,6 +138,8 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
                      "md5sum", "modality", "mriqc_pred", "software", "subject_id", "version"]
         # flatten data
         data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
+        modality = data.get("modality")
+
         # Filter Metadata values that aren't in whitelist
         try:
             data.update({k: v for k, v in list(in_data['metadata'].items()) if k in whitelist})
@@ -152,15 +156,32 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False):
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
         headers = {'token': secret_key, "Content-Type": "application/json"}
         try:
-            r = requests.put("http://34.201.213.252:5000/measurements/upload",
+            #if the modality is bold, call "bold" endpointt
+            if modality == "bold":
+                r = requests.post(mriqc_webapi+"/bold",
                              headers=headers, data=dumps(data))
+            #else, call "T1w" endpoint
+            elif modality == 'T1w':
+                r = requests.post(mriqc_webapi+"/T1w",
+                             headers=headers, data=dumps(data))
+            else:
+                report_log.warn('the image modality is neither bold nor T1w, in qc_metric_upload()')
+                r = "No Response"
+                return r
+                
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
             else:
                 report_log.warn('QC metrics failed to upload. Status %d: %s' % (r.status_code, r.text))
         except requests.ConnectionError as e:
-            report_log.warn('QC metrics failed to upload due to connection error shown below:\n%s' % e)
-            r = "No Response"
+            #strict upload = fail the client
+            if upload_strict:
+                report_log.error('QC metrics failed to upload due to connection error shown below:\n%s' % e)
+                r = "No Response"
+                raise e
+            else:
+                report_log.warn('QC metrics failed to upload due to connection error shown below:\n%s' % e)
+                r = "No Response"
     return r
 
 
