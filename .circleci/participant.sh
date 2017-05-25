@@ -32,7 +32,8 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       --verbose-reports --profile"
+                       --verbose-reports --profile \
+                       --mriqc-webap http://localhost:80 --upload-strict"
 
 case $CIRCLE_NODE_INDEX in
     0)
