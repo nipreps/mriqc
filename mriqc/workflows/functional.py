@@ -31,7 +31,6 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os
 import os.path as op
 
 from nipype import logging
@@ -43,7 +42,6 @@ from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
 from mriqc import DEFAULTS
-from mriqc.workflows.utils import slice_wise_fft, upload_wf
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
@@ -130,8 +128,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     iqmswf = compute_iqms(settings)
     # Reports
     repwf = individual_reports(settings)
-    # Upload metrics
-    upldwf = upload_wf(settings)
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
@@ -167,7 +163,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
-        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 
@@ -187,6 +182,19 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
             (reorient_and_discard, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
             (melodic, repwf, [('out_report', 'inputnode.ica_report')])
+        ])
+
+    # Upload metrics
+    if not settings.get('no_sub', False):
+        from mriqc.interfaces.webapi import UploadIQMs
+        upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
+        upldwf.inputs.address = settings.get('webapi_addr')
+        upldwf.inputs.port = settings.get('webapi_port')
+        upldwf.inputs.email = settings.get('email')
+        upldwf.inputs.strict = settings.get('upload_strict', False)
+
+        workflow.connect([
+            (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
         ])
 
     return workflow
@@ -285,8 +293,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')])
     ])
 
+    # FFT spikes finder
     if settings.get('fft_spikes_detector', False):
-        # FFT spikes finder
+        from mriqc.workflows.utils import slice_wise_fft
         spikes_fft = pe.Node(niu.Function(
             input_names=['in_file'],
             output_names=['n_spikes', 'out_spikes', 'out_fft'],

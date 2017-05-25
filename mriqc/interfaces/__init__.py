@@ -14,3 +14,4 @@ from mriqc.interfaces.functional import FunctionalQC, Spikes
 from mriqc.interfaces.bids import ReadSidecarJSON, IQMFileSink
 from mriqc.interfaces.viz import PlotMosaic, PlotContours, PlotSpikes
 from mriqc.interfaces.common import ConformImage, EnsureSize
+from mriqc.interfaces.webapi import UploadIQMs

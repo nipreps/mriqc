@@ -86,8 +86,11 @@ def get_parser():
                            help='Email address to include with quality metric submission.')
 
     g_outputs.add_argument(
-        '--mriqc-webapi', action='store', default='http://34.201.213.252:5000', type=str,
-        help='default mriqc-webapi is http://34.201.213.252:5000' )
+        '--webapi-addr', action='store', default='34.201.213.252', type=str,
+        help='IP address where the MRIQC WebAPI is listening')
+    g_outputs.add_argument(
+        '--webapi-port', action='store', default=5000, type=int,
+        help='port where the MRIQC WebAPI is listening')
 
     g_outputs.add_argument('--upload-strict', action='store_true', default=False,
                            help='upload will fail if if upload is strict')
@@ -176,10 +179,11 @@ def main():
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
-        'no_sub': opts.no_sub or opts.testing,
+        'no_sub': opts.no_sub,
         'email': opts.email,
         'fd_thres': opts.fd_thres,
-        'mriqc_webapi' : opts.mriqc_webapi,
+        'webapi_addr' : opts.webapi_addr,
+        'webapi_port' : opts.webapi_port,
         'upload_strict' : opts.upload_strict,
     }
 

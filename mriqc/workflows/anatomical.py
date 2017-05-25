@@ -55,7 +55,6 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
 from mriqc import DEFAULTS
-from mriqc.workflows.utils import upload_wf
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 
@@ -109,8 +108,6 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
     repwf = individual_reports(settings)
-    # Upload metrics
-    upldwf = upload_wf(settings)
 
     # Connect all nodes
     workflow.connect([
@@ -157,9 +154,21 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.out_noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
-        (iqmswf, upldwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
+
+    # Upload metrics
+    if not settings.get('no_sub', False):
+        from mriqc.interfaces.webapi import UploadIQMs
+        upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
+        upldwf.inputs.email = settings.get('email', '')
+        upldwf.inputs.address = settings.get('webapi_addr')
+        upldwf.inputs.port = settings.get('webapi_port', 5000)
+        upldwf.inputs.strict = settings.get('upload_strict', False)
+
+        workflow.connect([
+            (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
+        ])
 
     return workflow
 
