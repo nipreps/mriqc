@@ -28,8 +28,8 @@ dependencies:
     # Prepare MRIQCWebAPI
     - pip install docker-compose
     - pushd $HOME; git clone https://github.com/poldracklab/mriqcwebapi.git; pushd mriqcwebapi; git checkout 0.1.0; popd; popd
-    - docker-compose -f $HOME/mriqcwebapi/mriqcwebapi/dockereve-master/docker-compose.yml build
-    - docker-compose -f $HOME/mriqcwebapi/mriqcwebapi/dockereve-master/docker-compose.yml up -d
+    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
+    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml up -d
   override:
     - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - ? |
