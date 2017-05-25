@@ -52,7 +52,7 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'nipype',
+    'nipype>=0.13.1',
     'niworkflows',
     'future',
     'scipy',
