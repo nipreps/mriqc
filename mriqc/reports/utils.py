@@ -36,6 +36,7 @@ def iqms2html(indict, table_id):
     result_str += '</table>\n'
     return result_str
 
+
 def unfold_columns(indict, prefix=None):
     """Converts an input dict with flattened keys to an array of columns"""
     if prefix is None:
@@ -72,7 +73,7 @@ def read_report_snippet(in_file):
     """Add a snippet into the report"""
     import os.path as op
     import re
-    from io import open  #pylint: disable=W0622
+    from io import open  # pylint: disable=W0622
 
     is_svg = (op.splitext(op.basename(in_file))[1] == '.svg')
 
@@ -92,18 +93,24 @@ def read_report_snippet(in_file):
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
 
-def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.201.213.252:5000', upload_strict=False):
-    """Upload qc metrics to remote repository.
-    Arguments:
-    in_iqms -- Path to the qc metric json file as a string
 
-    Keyword arguments:
-    email -- email address to be included with the metric submission, defaults to empty string
-    no_sub -- Flag from settings indicating whether or not metrics should be submitted. If False, metrics will be submitted. If True, metrics will not be submitted. Defaults to False.
-    mriqc_webapi -- the default mriqcWebAPI url upload_strict -- the client should fail if it's strict mode
-    Returns:
-    either returns response object if a response was successfully sent
-    or it returns the string "No Response"
+def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.201.213.252:5000',
+                      upload_strict=False):
+    """
+    Upload qc metrics to remote repository.
+
+    :param str in_iqms: Path to the qc metric json file as a string
+    :param str email: email address to be included with the metric submission
+    :param bool no_sub: Flag from settings indicating whether or not metrics should be submitted.
+        If False, metrics will be submitted. If True, metrics will not be submitted.
+    :param str mriqc_webapi: the default mriqcWebAPI url
+    :param bool upload_strict: the client should fail if it's strict mode
+
+    :return: either the response object if a response was successfully sent
+             or it returns the string "No Response"
+    :rtype: object
+
+
     """
     from json import load, dumps
     import requests
@@ -112,8 +119,9 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
     report_log = logging.getLogger('mriqc.report')
     report_log.setLevel(logging.INFO)
 
-    if no_sub is True:
-        report_log.info('QC metrics were not uploaded because --no_sub or --testing options were set.')
+    if no_sub:
+        report_log.info(
+            'QC metrics were not uploaded because --no_sub or --testing options were set.')
         r = "No Response"
     else:
         with open(in_iqms, 'r') as h:
@@ -140,48 +148,51 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
         data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
         modality = data.get("modality")
 
+        if modality is None or modality not in ('T1w', 'bold'):
+            errmsg = 'Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w"'
+            if upload_strict:
+                raise RuntimeError(errmsg)
+
+            report_log.warn(errmsg)
+            return "No Response"
+
         # Filter Metadata values that aren't in whitelist
         try:
-            data.update({k: v for k, v in list(in_data['metadata'].items()) if k in whitelist})
+            data.update({k: v for k, v in list(
+                in_data['metadata'].items()) if k in whitelist})
         except KeyError:
             pass
         # Preemptively adding code to handle settings
         try:
-            data.update({k: v for k, v in list(in_data['settings'].items()) if k in whitelist})
+            data.update({k: v for k, v in list(
+                in_data['settings'].items()) if k in whitelist})
         except KeyError:
             pass
 
-        if email != '':
+        if email:
             data['email'] = email
+
         secret_key = 'ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtwOd7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46'
         headers = {'token': secret_key, "Content-Type": "application/json"}
         try:
-            #if the modality is bold, call "bold" endpointt
-            if modality == "bold":
-                r = requests.post(mriqc_webapi+"/bold",
-                             headers=headers, data=dumps(data))
-            #else, call "T1w" endpoint
-            elif modality == 'T1w':
-                r = requests.post(mriqc_webapi+"/T1w",
-                             headers=headers, data=dumps(data))
-            else:
-                report_log.warn('the image modality is neither bold nor T1w, in qc_metric_upload()')
-                r = "No Response"
-                return r
-                
+            # if the modality is bold, call "bold" endpointt
+            r = requests.post('{}/{}'.format(mriqc_webapi, modality),
+                              headers=headers, data=dumps(data))
+
             if r.status_code == 201:
                 report_log.info('QC metrics successfully uploaded.')
             else:
-                report_log.warn('QC metrics failed to upload. Status %d: %s' % (r.status_code, r.text))
+                report_log.warn('QC metrics failed to upload. Status %d: %s',
+                                r.status_code, r.text)
         except requests.ConnectionError as e:
-            #strict upload = fail the client
+            # strict upload = fail the client
+            errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % e
             if upload_strict:
-                report_log.error('QC metrics failed to upload due to connection error shown below:\n%s' % e)
-                r = "No Response"
+                report_log.error(errmsg)
                 raise e
-            else:
-                report_log.warn('QC metrics failed to upload due to connection error shown below:\n%s' % e)
-                r = "No Response"
+
+            report_log.warn(errmsg)
+            r = "No Response"
     return r
 
 
@@ -205,7 +216,7 @@ def upload_qc_metrics(in_iqms, email='', no_sub=False, mriqc_webapi='http://34.2
 #             components.insert(0, qctype)
 
 #             report_fname = op.join(
-#                 settings['report_dir'], '_'.join(components) + '_report.html')
+# settings['report_dir'], '_'.join(components) + '_report.html')
 
 #             if not op.isfile(report_fname):
 #                 missing[mod].append(
