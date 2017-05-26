@@ -20,7 +20,7 @@ Od7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46\
 # metadata whitelist
 META_WHITELIST = [
     "ContrastBolusIngredient", "RepetitionTime", "TaskName", "Manufacturer",
-    "ManufacturersModelName", "MagneticFieldStrength", "DeviceSerialNumber",
+    "ManufacturerModelName", "MagneticFieldStrength", "DeviceSerialNumber",
     "SoftwareVersions", "HardcopyDeviceSoftwareVersion", "ReceiveCoilName",
     "GradientSetType", "MRTransmitCoilSequence", "MatrixCoilMode",
     "CoilCombinationMethod", "PulseSequenceType", "PulseSequenceDetails",
