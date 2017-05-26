@@ -31,6 +31,8 @@ dependencies:
     - pushd $HOME; git clone https://github.com/poldracklab/mriqcwebapi.git; pushd mriqcwebapi; git checkout 0.1.0; popd; popd
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
+    - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
+    - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
   override:
     - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - ? |
@@ -43,7 +45,6 @@ dependencies:
         timeout: 3200
 test:
   override:
-    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d && sleep 10
     - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
     - bash .circleci/participant.sh :
         parallel: true
@@ -63,6 +64,7 @@ test:
         parallel: true
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+    - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
 
 general:
   artifacts:
