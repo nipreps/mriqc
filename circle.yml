@@ -29,9 +29,8 @@ dependencies:
     # Prepare MRIQCWebAPI
     - pip install docker-compose
     - pushd $HOME; git clone https://github.com/poldracklab/mriqcwebapi.git; pushd mriqcwebapi; git checkout 0.1.0; popd; popd
+    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
-    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d && sleep 50
-    - curl --retry 10 --retry-delay 15 -vkf http://localhost
   override:
     - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - ? |
@@ -44,6 +43,8 @@ dependencies:
         timeout: 3200
 test:
   override:
+    - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d && sleep 10
+    - curl --retry 10 --retry-delay 15 -vkf http://localhost
     - bash .circleci/participant.sh :
         parallel: true
         timeout: 3200
