@@ -30,6 +30,7 @@ fi
 
 DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
+                       --net="host" \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
                        --verbose-reports --profile \
