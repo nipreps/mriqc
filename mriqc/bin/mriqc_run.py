@@ -89,7 +89,7 @@ def get_parser():
         '--webapi-addr', action='store', default='34.201.213.252', type=str,
         help='IP address where the MRIQC WebAPI is listening')
     g_outputs.add_argument(
-        '--webapi-port', action='store', default=5000, type=int,
+        '--webapi-port', action='store', default=80, type=int,
         help='port where the MRIQC WebAPI is listening')
 
     g_outputs.add_argument('--upload-strict', action='store_true', default=False,
@@ -106,7 +106,6 @@ def get_parser():
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
-
 
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
