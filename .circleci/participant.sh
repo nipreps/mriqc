@@ -30,11 +30,10 @@ fi
 
 DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
-                       --net="host" \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
                        --verbose-reports --profile \
-                       --webapi-addr localhost --webapi-port ${MRIQC_API_PORT} --upload-strict"
+                       --webapi-addr $( hostname -I | awk '{print $1}' ) --webapi-port ${MRIQC_API_PORT} --upload-strict"
 
 case $CIRCLE_NODE_INDEX in
     0)

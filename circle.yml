@@ -44,7 +44,7 @@ dependencies:
 test:
   override:
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d && sleep 10
-    - curl --retry 10 --retry-delay 15 -vkf http://localhost
+    - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
     - bash .circleci/participant.sh :
         parallel: true
         timeout: 3200
