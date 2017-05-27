@@ -197,7 +197,6 @@ def generate_csv(derivatives_dir, output_dir, mod):
     """
     Generates a csv file from all json files in the derivatives directory
     """
-    errorlist = []
 
     # If some were found, generate the CSV file and group report
     out_csv = op.join(output_dir, mod + '.csv')
@@ -205,7 +204,6 @@ def generate_csv(derivatives_dir, output_dir, mod):
     if not jsonfiles:
         return None, out_csv
 
-    all_id_fields = []
     datalist = []
     comps = set(list(BIDS_COMP.keys()))
     for jsonfile in jsonfiles:
@@ -218,30 +216,30 @@ def generate_csv(derivatives_dir, output_dir, mod):
             for field in id_fields:
                 dfentry[field] = metadata[field]
             datalist.append(dfentry)
-            all_id_fields += id_fields
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    all_id_fields = list(comps & set(cols))
+    # Generate bids_fields with order (#516)
+    bids_fields = [field for field in list(BIDS_COMP.keys()) if field in cols]
 
     # Sort the dataframe, with failsafe if pandas version is too old
     try:
-        dataframe = dataframe.sort_values(by=all_id_fields)
+        dataframe = dataframe.sort_values(by=bids_fields)
     except AttributeError:
         #pylint: disable=E1101
-        dataframe = dataframe.sort(columns=all_id_fields)
+        dataframe = dataframe.sort(columns=bids_fields)
 
     # Drop duplicates
     try:
         #pylint: disable=E1101
-        dataframe.drop_duplicates(all_id_fields, keep='last', inplace=True)
+        dataframe.drop_duplicates(bids_fields, keep='last', inplace=True)
     except TypeError:
         #pylint: disable=E1101
         dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                   inplace=True)
 
-    ordercols = all_id_fields + sorted(list(set(cols) - set(all_id_fields)))
+    ordercols = bids_fields + sorted(list(set(cols) - set(bids_fields)))
     dataframe[ordercols].to_csv(out_csv, index=False)
     return dataframe, out_csv
 
