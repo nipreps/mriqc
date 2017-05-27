@@ -30,7 +30,7 @@ def individual_html(in_iqms, in_plots=None):
 
         wf_details = []
         if modality == 'bold':
-            exclude_index = sett_dict.pop('exclude_index')
+            exclude_index = metadata.get('dummy_trs')
             if exclude_index is None:
                 report_log.warning('Building bold report: no exclude index was found')
             elif exclude_index > 0:

@@ -97,6 +97,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['fd_num'], '# timepoints'),
             (['fd_perc'], '% timepoints'),
             (['spikes_num'], '# slices'),
+            (['dummy_trs'], '# TRs'),
             (['gcor'], None),
             (['tsnr'], None),
             (['aor'], None),

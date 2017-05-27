@@ -274,9 +274,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                ('task_id', 'task_id'),
                                ('acq_id', 'acq_id'),
                                ('rec_id', 'rec_id'),
-                               ('run_id', 'run_id')]),
-        (inputnode, addmeta, [('metadata', 'in_meta'),
-                              ('exclude_index', 'exclude_index')]),
+                               ('run_id', 'run_id'),
+                               ('exclude_index', 'dummy_trs')]),
+        (inputnode, addmeta, [('metadata', 'in_meta')]),
         (measures, addmeta, [('out_qc', 'in_iqms')]),
         (addmeta, datasink, [('out', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -808,10 +808,9 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     return out_file, out_plot
 
 
-def _add_metadata(in_meta, in_iqms, settings, exclude_index):
+def _add_metadata(in_meta, in_iqms, settings):
     out_metadata = in_meta
     out_metadata['settings'] = settings
-    out_metadata['settings']['exclude_index'] = exclude_index
     return out_metadata
 
 def _mean(inlist):
