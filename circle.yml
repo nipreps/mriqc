@@ -10,6 +10,7 @@ machine:
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
     SECRET_KEY: CI
     MRIQC_API_PORT: 80
+    MRIQC_API_TAG: 0.2.0
   services:
     - docker
 
@@ -17,6 +18,7 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
+    - "~/mriqcwebapi"
 
   pre:
     # Download test data
@@ -27,7 +29,8 @@ dependencies:
     - docker load --input $HOME/docker/cache.tar || true
     # Prepare MRIQCWebAPI
     - pip install docker-compose
-    - pushd $HOME; git clone https://github.com/poldracklab/mriqcwebapi.git; pushd mriqcwebapi; git checkout 2e51bf61b696461d5eae42768034869b586eb6bc; popd; popd
+    - if [[ ! -d $HOME/mriqcwebapi ]]; then cd; git clone https://github.com/poldracklab/mriqcwebapi.git; fi;
+    - cd $HOME/mriqcwebapi && git pull && git checkout ${MRIQC_API_TAG}
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
     - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
