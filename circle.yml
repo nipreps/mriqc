@@ -43,7 +43,7 @@ dependencies:
         done && [ "$e" -eq "0" ]
       :
         timeout: 3200
-    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 ${DOCKER_IMAGE}:${DOCKER_TAG} :
+    - docker save -o $HOME/docker/cache.tar ubuntu:xenial-20161213 ${DOCKER_IMAGE}:${DOCKER_TAG} python:3.4-onbuild tutum/nginx:latest mongo:latest :
         timeout: 3200
 test:
   override:
