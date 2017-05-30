@@ -80,9 +80,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                   sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
     inputnode.iterables = [('in_file', dataset)]
 
-
-    meta = pe.Node(ReadSidecarJSON(), name='metadata')
-
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['qc', 'mosaic', 'out_group', 'out_dvars',
                 'out_fd']), name='outputnode')
@@ -134,7 +131,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     upldwf = upload_wf(settings)
 
     workflow.connect([
-        (inputnode, meta, [('in_file', 'in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
         (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
         (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
         (mean, skullstrip_epi, [('out_file', 'inputnode.in_file')]),
@@ -142,20 +139,13 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
         (skullstrip_epi, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
-        (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
-                        ('session_id', 'inputnode.session_id'),
-                        ('task_id', 'inputnode.task_id'),
-                        ('acq_id', 'inputnode.acq_id'),
-                        ('rec_id', 'inputnode.rec_id'),
-                        ('run_id', 'inputnode.run_id'),
-                        ('out_dict', 'inputnode.metadata')]),
-        (reorient_and_discard, iqmswf, [('out_file', 'inputnode.orig')]),
+        (reorient_and_discard, iqmswf, [('out_file', 'inputnode.in_ras')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
         (skullstrip_epi, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
-        (reorient_and_discard, repwf, [('out_file', 'inputnode.orig')]),
+        (reorient_and_discard, repwf, [('out_file', 'inputnode.in_ras')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
         (skullstrip_epi, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
@@ -209,7 +199,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'task_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'in_file', 'in_ras',
         'epi_mean', 'brainmask', 'hmc_epi', 'hmc_fd', 'fd_thres', 'in_tsnr', 'metadata',
         'exclude_index']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
@@ -258,8 +248,9 @@ def compute_iqms(settings, name='ComputeIQMs'):
     ])
 
     # Add metadata
-    addmeta = pe.Node(niu.Function(function=_add_metadata), name='add_metadata')
-    addmeta.inputs.settings = {
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
+    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
+    addprov.inputs.settings = {
         'fd_thres': settings.get('fd_thres', 0.2),
         'hmc_fsl': settings.get('hmc_fsl', True),
     }
@@ -269,16 +260,17 @@ def compute_iqms(settings, name='ComputeIQMs'):
         modality='bold', out_dir=deriv_dir), name='datasink')
 
     workflow.connect([
-        (inputnode, datasink, [('subject_id', 'subject_id'),
-                               ('session_id', 'session_id'),
-                               ('task_id', 'task_id'),
-                               ('acq_id', 'acq_id'),
-                               ('rec_id', 'rec_id'),
-                               ('run_id', 'run_id'),
-                               ('exclude_index', 'dummy_trs')]),
-        (inputnode, addmeta, [('metadata', 'in_meta')]),
-        (measures, addmeta, [('out_qc', 'in_iqms')]),
-        (addmeta, datasink, [('out', 'metadata')]),
+        (inputnode, datasink, [('exclude_index', 'dummy_trs')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
+        (inputnode, addprov, [('in_file', 'in_file')]),
+        (meta, datasink, [('subject_id', 'subject_id'),
+                        ('session_id', 'session_id'),
+                        ('task_id', 'task_id'),
+                        ('acq_id', 'acq_id'),
+                        ('rec_id', 'rec_id'),
+                        ('run_id', 'run_id'),
+                        ('out_dict', 'metadata')]),
+        (addprov, datasink, [('out', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
@@ -293,7 +285,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
             function=slice_wise_fft), name='SpikesFinderFFT')
 
         workflow.connect([
-            (inputnode, spikes_fft, [('orig', 'in_file')]),
+            (inputnode, spikes_fft, [('in_ras', 'in_file')]),
             (spikes_fft, outputnode, [('out_spikes', 'out_spikes'),
                                       ('out_fft', 'out_fft')]),
             (spikes_fft, datasink, [('n_spikes', 'spikes_num')])
@@ -326,7 +318,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'in_iqms', 'orig', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'fd_thres', 'epi_parc',
+        'in_iqms', 'in_ras', 'hmc_epi', 'epi_mean', 'brainmask', 'hmc_fd', 'fd_thres', 'epi_parc',
         'in_dvars', 'in_stddev', 'outliers', 'in_spikes', 'in_fft',
         'mni_report', 'ica_report']),
         name='inputnode')
@@ -348,8 +340,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     bigplot.interface.estimated_memory_gb = biggest_file_gb * 3.5
 
     workflow.connect([
-        (inputnode, spikes_bg, [('orig', 'in_file')]),
-        (inputnode, spmask, [('orig', 'in_file')]),
+        (inputnode, spikes_bg, [('in_ras', 'in_file')]),
+        (inputnode, spmask, [('in_ras', 'in_file')]),
         (inputnode, bigplot, [('hmc_epi', 'in_func'),
                               ('brainmask', 'in_mask'),
                               ('hmc_fd', 'fd'),
@@ -404,7 +396,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
             name='PlotSpikes')
 
         workflow.connect([
-            (inputnode, mosaic_spikes, [('orig', 'in_file'),
+            (inputnode, mosaic_spikes, [('in_ras', 'in_file'),
                                         ('in_spikes', 'in_spikes'),
                                         ('in_fft', 'in_fft')]),
             (mosaic_spikes, mplots, [('out_file', 'in4')])
@@ -807,11 +799,23 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
     return out_file, out_plot
 
+def _add_provenance(in_file, settings):
+    from mriqc import __version__ as version
+    from copy import deepcopy
+    from nipype.utils.filemanip import hash_infile
+    import nibabel as nb
+    import numpy as np
+    out_prov = {
+        'md5sum': hash_infile(in_file),
+        'version': version,
+        'software': 'mriqc'
+    }
 
-def _add_metadata(in_meta, in_iqms, settings):
-    out_metadata = in_meta
-    out_metadata['settings'] = settings
-    return out_metadata
+    if settings:
+        out_prov['settings'] = settings
+
+    return out_prov
+
 
 def _mean(inlist):
     import numpy as np

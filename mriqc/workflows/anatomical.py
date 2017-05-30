@@ -90,8 +90,6 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
-    meta = pe.Node(ReadSidecarJSON(), name='metadata')
-
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(), name='conform')
     # 2. Skull-stripping (afni)
@@ -115,12 +113,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # Connect all nodes
     workflow.connect([
         (inputnode, to_ras, [('in_file', 'in_file')]),
-        (inputnode, meta, [('in_file', 'in_file')]),
-        (meta, iqmswf, [('subject_id', 'inputnode.subject_id'),
-                        ('session_id', 'inputnode.session_id'),
-                        ('acq_id', 'inputnode.acq_id'),
-                        ('rec_id', 'inputnode.rec_id'),
-                        ('run_id', 'inputnode.run_id')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
         (to_ras, asw, [('out_file', 'inputnode.in_file')]),
         (asw, segment, [('outputnode.out_file', 'in_files')]),
         (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
@@ -136,7 +129,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (to_ras, amw, [('out_file', 'inputnode.in_file')]),
         (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
         (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
-        (to_ras, iqmswf, [('out_file', 'inputnode.orig')]),
+        (to_ras, iqmswf, [('out_file', 'inputnode.in_ras')]),
         (asw, iqmswf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
                        ('outputnode.bias_image', 'inputnode.in_inu'),
                        ('outputnode.out_mask', 'inputnode.brainmask')]),
@@ -145,9 +138,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                        ('outputnode.rot_mask', 'inputnode.rotmask')]),
         (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
                            ('partial_volume_files', 'inputnode.pvms')]),
-        (meta, iqmswf, [('out_dict', 'inputnode.metadata')]),
         (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
-        (to_ras, repwf, [('out_file', 'inputnode.orig')]),
+        (to_ras, repwf, [('out_file', 'inputnode.in_ras')]),
         (asw, repwf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
                       ('outputnode.out_mask', 'inputnode.brainmask')]),
         (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
@@ -243,7 +235,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'subject_id', 'session_id', 'acq_id', 'rec_id', 'run_id', 'orig',
+        'in_file', 'in_ras',
         'brainmask', 'airmask', 'artmask', 'headmask', 'rotmask',
         'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
         'inverse_composite_transform']), name='inputnode')
@@ -252,8 +244,14 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
-    # Add metadata
-    addmeta = pe.Node(niu.Function(function=_add_metadata), name='add_metadata')
+    # Extract metadata
+    meta = pe.Node(ReadSidecarJSON(), name='metadata')
+
+    # Add provenance
+    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
+    addprov.inputs.settings = {
+        'testing': settings.get('testing', False)
+    }
 
     # AFNI check smoothing
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
@@ -285,36 +283,38 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         return inlist[-1]
 
     workflow.connect([
-        (inputnode, datasink, [('subject_id', 'subject_id'),
-                               ('session_id', 'session_id'),
-                               ('acq_id', 'acq_id'),
-                               ('rec_id', 'rec_id'),
-                               ('run_id', 'run_id')]),
-        (inputnode, addmeta, [('metadata', 'in_meta'),
-                               ('airmask', 'air_msk'),
-                               ('rotmask', 'rot_msk')]),
-        (inputnode, getqi2, [('orig', 'in_file'),
+        (inputnode, meta, [('in_file', 'in_file')]),
+        (meta, datasink, [('subject_id', 'subject_id'),
+                          ('session_id', 'session_id'),
+                          ('acq_id', 'acq_id'),
+                          ('rec_id', 'rec_id'),
+                          ('run_id', 'run_id'),
+                          ('out_dict', 'metadata')]),
+
+        (inputnode, addprov, [('in_file', 'in_file'),
+                              ('airmask', 'air_msk'),
+                              ('rotmask', 'rot_msk')]),
+        (inputnode, getqi2, [('in_ras', 'in_file'),
                              ('airmask', 'air_msk')]),
         (inputnode, homog, [('inu_corrected', 'in_file'),
                             (('pvms', _getwm), 'wm_mask')]),
         (inputnode, measures, [('in_inu', 'in_bias'),
-                               ('orig', 'in_file'),
+                               ('in_ras', 'in_file'),
                                ('airmask', 'air_msk'),
                                ('headmask', 'head_msk'),
                                ('artmask', 'artifact_msk'),
                                ('rotmask', 'rot_msk'),
                                ('segmentation', 'in_segm'),
                                ('pvms', 'in_pvms')]),
-        (inputnode, fwhm, [('orig', 'in_file'),
+        (inputnode, fwhm, [('in_ras', 'in_file'),
                            ('brainmask', 'mask')]),
-        (inputnode, invt, [('orig', 'reference_image'),
+        (inputnode, invt, [('in_ras', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
         (homog, measures, [('out_file', 'in_noinu')]),
         (invt, measures, [('output_image', 'mni_tpms')]),
         (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (measures, datasink, [('out_qc', 'root')]),
-        (measures, addmeta, [('out_qc', 'in_iqms')]),
-        (addmeta, datasink, [('out', 'metadata')]),
+        (addprov, datasink, [('out', 'provenance')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
         (getqi2, outputnode, [('out_file', 'out_noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
@@ -342,7 +342,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'orig', 'brainmask', 'headmask', 'airmask', 'artmask', 'rotmask',
+        'in_ras', 'brainmask', 'headmask', 'airmask', 'artmask', 'rotmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
         'mni_report']),
         name='inputnode')
@@ -370,9 +370,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
-        (inputnode, mosaic_zoom, [('orig', 'in_file'),
+        (inputnode, mosaic_zoom, [('in_ras', 'in_file'),
                                   ('brainmask', 'bbox_mask_file')]),
-        (inputnode, mosaic_noise, [('orig', 'in_file')]),
+        (inputnode, mosaic_noise, [('in_ras', 'in_file')]),
         (mosaic_zoom, mplots, [('out_file', "in1")]),
         (mosaic_noise, mplots, [('out_file', "in2")]),
         (mplots, rnode, [('out', 'in_plots')]),
@@ -405,15 +405,15 @@ def individual_reports(settings, name='ReportsWorkflow'):
         out_file='artmask', saturate=True), name='PlotArtmask')
 
     workflow.connect([
-        (inputnode, plot_segm, [('orig', 'in_file'),
+        (inputnode, plot_segm, [('in_ras', 'in_file'),
                                 ('segmentation', 'in_contours')]),
-        (inputnode, plot_bmask, [('orig', 'in_file'),
+        (inputnode, plot_bmask, [('in_ras', 'in_file'),
                                  ('brainmask', 'in_contours')]),
-        (inputnode, plot_headmask, [('orig', 'in_file'),
+        (inputnode, plot_headmask, [('in_ras', 'in_file'),
                                     ('headmask', 'in_contours')]),
-        (inputnode, plot_airmask, [('orig', 'in_file'),
+        (inputnode, plot_airmask, [('in_ras', 'in_file'),
                                    ('airmask', 'in_contours')]),
-        (inputnode, plot_artmask, [('orig', 'in_file'),
+        (inputnode, plot_artmask, [('in_ras', 'in_file'),
                                    ('artmask', 'in_contours')]),
         (inputnode, plot_bgdist, [('noisefit', 'in_file')]),
         (inputnode, mplots, [('mni_report', "in%d" % (pages + 1))]),
@@ -531,22 +531,32 @@ def airmsk_wf(name='AirMaskWorkflow'):
     return workflow
 
 
-def _add_metadata(in_meta, in_iqms, air_msk, rot_msk):
+def _add_provenance(in_file, settings, air_msk, rot_msk):
+    from mriqc import __version__ as version
+    from copy import deepcopy
+    from nipype.utils.filemanip import hash_infile
     import nibabel as nb
     import numpy as np
-    out_metadata = in_meta
 
     air_msk_size = nb.load(air_msk).get_data().astype(
         np.uint8).sum()
     rot_msk_size = nb.load(rot_msk).get_data().astype(
         np.uint8).sum()
 
-    out_metadata['warnings'] = {
-        'small_air_mask': bool(air_msk_size < 5e5),
-        'large_rot_frame': bool(rot_msk_size > 500),
+    out_prov = {
+        'md5sum': hash_infile(in_file),
+        'version': version,
+        'software': 'mriqc',
+        'warnings': {
+            'small_air_mask': bool(air_msk_size < 5e5),
+            'large_rot_frame': bool(rot_msk_size > 500),
+        }
     }
 
-    return out_metadata
+    if settings:
+        out_prov['settings'] = settings
+
+    return out_prov
 
 def _binarize(in_file, threshold=0.5, out_file=None):
     import os.path as op
