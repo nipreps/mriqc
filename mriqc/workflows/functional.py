@@ -203,6 +203,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     """
     from mriqc.workflows.utils import _tofloat
+    from mriqc.interfaces.transitional import GCOR
 
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
@@ -234,6 +235,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
                       name='quality')
     quality.interface.estimated_memory_gb = biggest_file_gb * 3
 
+    gcor = pe.Node(GCOR(), name='gcor', estimated_memory_gb=biggest_file_gb * 2)
+
     measures = pe.Node(FunctionalQC(), name='measures')
     measures.interface.estimated_memory_gb = biggest_file_gb * 3
 
@@ -251,6 +254,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, quality, [('hmc_epi', 'in_file')]),
         (inputnode, outliers, [('hmc_epi', 'in_file'),
                                ('brainmask', 'mask')]),
+        (inputnode, gcor, [('hmc_epi', 'in_file'),
+                           ('brainmask', 'mask')]),
         (dvnode, measures, [('out_all', 'in_dvars')]),
         (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
         (dvnode, outputnode, [('out_all', 'out_dvars')]),
@@ -280,6 +285,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (measures, addmeta, [('out_qc', 'in_iqms')]),
         (addmeta, datasink, [('out', 'metadata')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
+        (gcor, datasink, [(('out', _tofloat), 'gcor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
         (measures, datasink, [('out_qc', 'root')]),
         (datasink, outputnode, [('out_file', 'out_file')])

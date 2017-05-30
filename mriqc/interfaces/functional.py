@@ -18,7 +18,7 @@ from niworkflows.interfaces.base import SimpleInterface
 
 from mriqc.utils.misc import _flatten_dict
 from mriqc.qc.anatomical import snr, fber, efc, summary_stats
-from mriqc.qc.functional import (gsr, gcor)
+from mriqc.qc.functional import gsr
 IFLOGGER = logging.getLogger('interface')
 
 
@@ -43,7 +43,6 @@ class FunctionalQCOutputSpec(TraitedSpec):
     gsr = traits.Dict
     tsnr = traits.Float
     dvars = traits.Dict
-    gcor = traits.Float
     fd = traits.Dict
     fwhm = traits.Dict(desc='full width half-maximum measure')
     size = traits.Dict
@@ -114,9 +113,6 @@ class FunctionalQC(SimpleInterface):
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
         self._results['tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
-
-        # GCOR
-        self._results['gcor'] = gcor(hmcdata, mskdata)
 
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
