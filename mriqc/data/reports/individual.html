@@ -140,6 +140,12 @@ report</h1>
 </div>
 {% endif %}
 
+{% if provenance %}
+<h2>Provenance information</h2>
+<div class="provenance-table">
+{{ provenance }}
+</div>
+{% endif %}
 
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
