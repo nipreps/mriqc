@@ -176,21 +176,6 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     outputnode = pe.Node(niu.IdentityInterface(fields=[
         'inverse_composite_transform', 'out_report']), name='outputnode')
 
-    # Mask inputs for initialization
-    mmask = pe.Node(fsl.ApplyMask(), name='MovingApplyMask')
-    fmask = pe.Node(fsl.ApplyMask(), name='FixedApplyMask')
-    fmask.inputs.in_file = op.join(mni_template,
-                                   '%dmm_%s.nii.gz' % (int(resolution), mod[:2]))
-    fmask.inputs.mask_file = op.join(mni_template,
-                                     '%dmm_brainmask.nii.gz' % int(resolution))
-
-    # Ensure resolution
-    resample = pe.Node(EnsureSize(pixel_size=resolution), 'EnsureSize')
-
-    # Initializer
-    init = pe.Node(AffineInitializer(num_threads=settings.get('ants_nthreads')),
-                   name='NormalizationInit')
-
     # Spatial normalization
     norm = pe.Node(RobustMNINormalization(
         flavor='testing' if settings.get('testing', False) else 'fast',
@@ -204,17 +189,12 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                    num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
                                    settings.get('n_procs', 1)),
                    estimated_memory_gb=3)
+    norm.inputs.fixed_mask = op.join(mni_template,
+                                     '%dmm_brainmask.nii.gz' % int(resolution))
 
     workflow.connect([
-        (inputnode, resample, [('moving_image', 'in_file'),
-                               ('moving_mask', 'in_mask')]),
-        (resample, mmask, [('out_file', 'in_file'),
-                           ('out_mask', 'mask_file')]),
-        (mmask, init, [('out_file', 'moving_image')]),
-        (fmask, init, [('out_file', 'fixed_image')]),
-        (init, norm, [('out_file', 'initial_moving_transform')]),
-        (resample, norm, [('out_file', 'moving_image'),
-                          ('out_mask', 'moving_mask')]),
+        (inputnode, norm, [('moving_image', 'moving_image'),
+                           ('moving_mask', 'moving_mask')]),
         (norm, outputnode, [('inverse_composite_transform', 'inverse_composite_transform'),
                             ('out_report', 'out_report')]),
     ])
