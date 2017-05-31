@@ -30,7 +30,7 @@ dependencies:
     # Prepare MRIQCWebAPI
     - pip install docker-compose
     - if [[ ! -d $HOME/mriqcwebapi ]]; then cd; git clone https://github.com/poldracklab/mriqcwebapi.git; fi;
-    - cd $HOME/mriqcwebapi && git pull origin master && git checkout ${MRIQC_API_TAG}
+    - cd $HOME/mriqcwebapi && git fetch --tags && git checkout ${MRIQC_API_TAG}
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
     - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
