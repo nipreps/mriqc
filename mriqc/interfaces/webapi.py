@@ -47,7 +47,7 @@ META_WHITELIST = [
     'MRTransmitCoilSequence',
     'MagneticFieldStrength',
     'Manufacturer',
-    'ManufacturerModelName',
+    'ManufacturersModelName',
     'MatrixCoilMode',
     'MultibandAccelerationFactor',
     'NumberOfAverages',
@@ -91,7 +91,8 @@ META_WHITELIST = [
 PROV_WHITELIST = [
     'version',
     'md5sum',
-    'software'
+    'software',
+    'settings'
 ]
 
 
@@ -157,33 +158,29 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     from json import load, dumps
     import requests
     from io import open
+    from copy import deepcopy
 
     with open(in_iqms, 'r') as input_json:
         in_data = load(input_json)
 
-    # flatten data
-    data = {k: v for k, v in list(in_data.items()) if k != 'metadata'}
+    # Extract metadata and provenance
+    meta = in_data.pop('bids_meta')
+    prov = in_data.pop('provenance')
 
+    # At this point, data should contain only IQMs
+    data = deepcopy(in_data)
 
-    modality = in_data['metadata'].get('modality', 'None')
+    # Check modality
+    modality = in_data['bids_meta'].get('modality', 'None')
     if modality not in ('T1w', 'bold'):
         errmsg = ('Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w", '
                   '(found "%s")' % modality)
         return Bunch(status_code=1, text=errmsg)
 
-    # Filter Metadata values that aren't in whitelist
-    try:
-        data.update({k: v for k, v in list(
-            in_data['metadata'].items()) if k in META_WHITELIST})
-    except KeyError:
-        pass
-
-    # Preemptively adding code to handle settings
-    try:
-        data.update({k: v for k, v in list(
-            in_data['settings'].items()) if k in META_WHITELIST})
-    except KeyError:
-        pass
+    # Filter metadata values that aren't in whitelist
+    data['bids_meta'] = {k: meta[k] for k in META_WHITELIST}
+    # Filter provenance values that aren't in whitelist
+    data['provenance'] = {k: prov[k] for k in PROV_WHITELIST}
 
     if email:
         data['email'] = email
