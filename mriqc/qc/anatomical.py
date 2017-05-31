@@ -506,13 +506,28 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
+
+    .. warning ::
+
+        Sometimes (with datasets that have been partially processed), the air
+        mask will be empty. In those cases, the background stats will be zero
+        for the mean, median, percentiles and kurtosis, the sum of voxels in
+        the other remaining labels for ``n``, and finally the MAD and the
+        :math:`\sigma` will be calculated as:
+
+        .. math ::
+
+            \sigma_\text{BG} = \sqrt{\sum \sigma_\text{i}^2}
+
+
     """
+    from mriqc import MRIQC_LOG
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:
         # If pvms is from FSL FAST, create the bg mask
-        stats_pvms = [np.array(pvms).sum(axis=0)] + pvms
+        stats_pvms = [np.zeros_like(img)] + pvms
     elif dims == 3:
         stats_pvms = [np.ones_like(pvms) - pvms, pvms]
     else:
@@ -526,7 +541,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     if len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
-    output = {k: {} for k, _ in labels}
+    output = {}
     for k, lid in labels:
         mask = np.zeros_like(img, dtype=np.uint8)
         mask[stats_pvms[lid] > 0.85] = 1
@@ -536,14 +551,37 @@ def summary_stats(img, pvms, airmask=None, erode=True):
             mask = nd.binary_erosion(
                 mask, structure=struc).astype(np.uint8)
 
-        output[k]['mean'] = float(img[mask == 1].mean())
-        output[k]['stdv'] = float(img[mask == 1].std())
-        output[k]['median'] = float(np.median(img[mask == 1]))
-        output[k]['mad'] = float(mad(img[mask == 1]))
-        output[k]['p95'] = float(np.percentile(img[mask == 1], 95))
-        output[k]['p05'] = float(np.percentile(img[mask == 1], 5))
-        output[k]['k'] = float(kurtosis(img[mask == 1]))
-        output[k]['n'] = float(mask.sum())
+        nvox = float(mask.sum())
+        if nvox < 1e3:
+            MRIQC_LOG.warn('calculating summary stats of label "%s" in a very small '
+                           'mask (%d voxels)', k, int(nvox))
+            if k == 'bg':
+                continue
+
+        output[k] = {
+            'mean': float(img[mask == 1].mean()),
+            'stdv': float(img[mask == 1].std()),
+            'median': float(np.median(img[mask == 1])),
+            'mad': float(mad(img[mask == 1])),
+            'p95': float(np.percentile(img[mask == 1], 95)),
+            'p05': float(np.percentile(img[mask == 1], 5)),
+            'k': float(kurtosis(img[mask == 1])),
+            'n': nvox,
+        }
+
+    if 'bg' not in output:
+        output['bg'] = {
+            'mean': 0.,
+            'median': 0.,
+            'p95': 0.,
+            'p05': 0.,
+            'k': 0.,
+            'stdv': sqrt(sum(val['stdv']**2
+                             for _, val in list(output.items()))),
+            'mad': sqrt(sum(val['mad']**2
+                            for _, val in list(output.items()))),
+            'n': sum(val['n'] for _, val in list(output.items()))
+        }
     return output
 
 def _prepare_mask(mask, label, erode=True):
