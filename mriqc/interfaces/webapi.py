@@ -178,9 +178,9 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
         return Bunch(status_code=1, text=errmsg)
 
     # Filter metadata values that aren't in whitelist
-    data['bids_meta'] = {k: meta[k] for k in META_WHITELIST}
+    data['bids_meta'] = {k: meta[k] for k in META_WHITELIST if k in meta}
     # Filter provenance values that aren't in whitelist
-    data['provenance'] = {k: prov[k] for k in PROV_WHITELIST}
+    data['provenance'] = {k: prov[k] for k in PROV_WHITELIST if k in prov}
 
     if email:
         data['email'] = email
