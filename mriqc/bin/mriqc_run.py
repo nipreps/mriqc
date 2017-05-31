@@ -186,11 +186,6 @@ def main():
         'upload_strict' : opts.upload_strict,
     }
 
-    if not settings['no_sub']:
-        MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
-                       ' to MRIQC\'s metrics repository.'
-                       ' Use --no-sub to disable submission.')
-
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
         settings['despike'] = opts.despike
@@ -254,10 +249,6 @@ def main():
             if opts.mem_gb:
                 plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
-    MRIQC_LOG.info(
-        'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
-        __version__, ', '.join(analysis_levels), opts.participant_label, settings)
-
     # Process data types
     modalities = opts.modalities
 
@@ -272,6 +263,11 @@ def main():
 
     # Set up participant level
     if 'participant' in analysis_levels:
+        MRIQC_LOG.info('Participant level started...')
+        MRIQC_LOG.info(
+            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
+
         workflow = Workflow(name='workflow_enumerator')
         workflow.base_dir = settings['work_dir']
 
@@ -297,12 +293,23 @@ def main():
                     handler = logging.FileHandler(callback_log_path)
                     logger.addHandler(handler)
 
+                # Warn about submitting measures BEFORE
+                if not settings['no_sub']:
+                    MRIQC_LOG.warn(
+                        'Anonymized quality metrics will be submitted'
+                        ' to MRIQC\'s metrics repository.'
+                        ' Use --no-sub to disable submission.')
+
+                # run MRIQC
                 workflow.run(**plugin_settings)
+
+                # Warn about submitting measures AFTER
                 if not settings['no_sub']:
                     MRIQC_LOG.warn(
                         'Anonymized quality metrics have beeen submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
+
                 if callback_log_path is not None:
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
@@ -310,10 +317,17 @@ def main():
             raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
                                'BIDS-compliant.' % settings['bids_dir'])
 
+        MRIQC_LOG.info('Participant level finished successfully.')
+
     # Set up group level
     if 'group' in analysis_levels:
         from mriqc.reports import group_html
         from mriqc.utils.misc import generate_csv, generate_pred
+
+        MRIQC_LOG.info('Group level started...')
+        MRIQC_LOG.info(
+            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
         derivatives_dir = op.join(settings['output_dir'], 'derivatives')
@@ -346,6 +360,9 @@ def main():
 
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
+
+        MRIQC_LOG.info('Group level finished successfully.')
+
 
 
 if __name__ == '__main__':
