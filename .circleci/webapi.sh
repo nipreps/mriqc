@@ -31,4 +31,4 @@ docker run -i --entrypoint="/usr/local/miniconda/bin/python" \
               ${DOCKER_IMAGE}:${DOCKER_TAG} \
               /root/src/mriqc/mriqc/bin/mriqcwebapi_test.py \
               ${MODALITY} ${NRECORDS} \
-              --webapi-addr localhost --webapi-port ${MRIQC_API_PORT}
+              --webapi-addr $( hostname -I | awk '{print $1}' ) --webapi-port ${MRIQC_API_PORT}
