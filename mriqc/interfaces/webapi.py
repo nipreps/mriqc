@@ -171,7 +171,7 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     data = deepcopy(in_data)
 
     # Check modality
-    modality = in_data['bids_meta'].get('modality', 'None')
+    modality = meta.get('modality', 'None')
     if modality not in ('T1w', 'bold'):
         errmsg = ('Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w", '
                   '(found "%s")' % modality)
