@@ -169,7 +169,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
 
     for jsonfile in jsonfiles:
         with open(jsonfile, 'r') as jsondata:
-            data = json.load(jsondata).pop('metadata', None)
+            data = json.load(jsondata).pop('bids_meta', None)
 
         if data is None:
             continue
@@ -209,9 +209,9 @@ def generate_csv(derivatives_dir, output_dir, mod):
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
 
-        if (dfentry is not None and dfentry['metadata'].get(
+        if (dfentry is not None and dfentry['bids_meta'].get(
             'modality', 'unknown') == mod):
-            metadata = dfentry.pop('metadata')
+            metadata = dfentry.pop('bids_meta')
             id_fields = list(comps & set(list(metadata.keys())))
             for field in id_fields:
                 dfentry[field] = metadata[field]

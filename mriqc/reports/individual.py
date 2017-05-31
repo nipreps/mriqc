@@ -24,20 +24,21 @@ def individual_html(in_iqms, in_plots=None):
     report_log = logging.getLogger('mriqc.report')
     report_log.setLevel(logging.INFO)
 
-    def _get_details(metadata, modality):
-        warn_dict = metadata.pop('warnings', None)
-        sett_dict = metadata.pop('settings', None)
+    def _get_details(in_iqms, modality):
+        in_prov = in_iqms.pop('provenance', {})
+        warn_dict = in_prov.pop('warnings', None)
+        sett_dict = in_prov.pop('settings', None)
 
         wf_details = []
         if modality == 'bold':
-            exclude_index = metadata.get('dummy_trs')
-            if exclude_index is None:
+            bold_exclude_index = in_iqms.get('dumb_trs')
+            if bold_exclude_index is None:
                 report_log.warning('Building bold report: no exclude index was found')
-            elif exclude_index > 0:
+            elif bold_exclude_index > 0:
                 msg = """\
 <span class="problematic">Non-steady state (strong T1 contrast) has been detected in the \
 first {} volumes</span>. They were excluded before generating any QC measures and plots."""
-                wf_details.append(msg.format(exclude_index))
+                wf_details.append(msg.format(bold_exclude_index))
 
             hmc_fsl = sett_dict.pop('hmc_fsl')
             if hmc_fsl is not None:
@@ -62,7 +63,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                     '<span class="problematic">Detected a zero-filled frame, has the original '
                     'image been rotated?</span>')
 
-        return metadata, wf_details
+        return in_prov, wf_details
 
 
 
@@ -77,9 +78,9 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         in_plots = []
 
     # Extract and prune metadata
-    metadata = iqms_dict.pop('metadata', None)
+    metadata = iqms_dict.pop('bids_meta', None)
     mod = metadata.pop('modality', None)
-    metadata, wf_details = _get_details(metadata, mod)
+    prov, wf_details = _get_details(iqms_dict, mod)
 
     file_id = [metadata.pop(k, None)
                for k in list(BIDS_COMP.keys())]
@@ -95,6 +96,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
         'svg_files': [read_report_snippet(pfile) for pfile in in_plots],
         'workflow_details': wf_details,
+        'provenance': iqms2html(prov, 'provenance-table'),
         'metadata': iqms2html(metadata, 'metadata-table'),
         'pred_qa': pred_qa
     }
