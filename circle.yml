@@ -30,7 +30,7 @@ dependencies:
     # Prepare MRIQCWebAPI
     - pip install docker-compose
     - if [[ ! -d $HOME/mriqcwebapi ]]; then cd; git clone https://github.com/poldracklab/mriqcwebapi.git; fi;
-    - cd $HOME/mriqcwebapi && git pull && git checkout ${MRIQC_API_TAG}
+    - cd $HOME/mriqcwebapi && git pull origin master && git checkout ${MRIQC_API_TAG}
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
     - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
@@ -47,7 +47,6 @@ dependencies:
         timeout: 3200
 test:
   override:
-    - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
     - bash .circleci/participant.sh :
         parallel: true
         timeout: 3200
@@ -66,7 +65,10 @@ test:
         parallel: true
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
-    - docker run -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} --retry 10 --retry-delay 15 -vkf http://$( hostname -I | awk '{print $1}' )
+    - bash .circleci/webapi.sh :
+        parallel: true
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
 
 general:
   artifacts:
