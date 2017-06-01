@@ -12,10 +12,7 @@ from niworkflows.interfaces.base import SimpleInterface
 
 IFLOGGER = logging.getLogger('interface')
 
-SECRET_KEY = """\
-ZUsBaabr6PEbav5DKAHIODEnwpwC58oQTJF7KWvDBPUmBIVFFtw\
-Od7lQBdz9r9ulJTR1BtxBDqDuY0owxK6LbLB1u1b64ZkIMd46\
-"""
+SECRET_KEY = '<secret_token>'
 
 # metadata whitelist
 META_WHITELIST = [
@@ -185,7 +182,7 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     if email:
         data['email'] = email
 
-    headers = {'token': SECRET_KEY, "Content-Type": "application/json"}
+    headers = {'Authorization': SECRET_KEY, "Content-Type": "application/json"}
     try:
         # if the modality is bold, call "bold" endpointt
         response = requests.post(
