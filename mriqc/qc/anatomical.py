@@ -176,6 +176,7 @@ from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
 from six import string_types
 
+DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
 
@@ -225,7 +226,12 @@ def snr_dietrich(mu_fg, sigma_air):
     :return: the computed SNR for the foreground segmentation
 
     """
-    return float(mu_fg / (sigma_air * sqrt(2/(4 - pi))))
+    if sigma_air < 1.0:
+        from mriqc import MRIQC_LOG
+        MRIQC_LOG.warn('SNRd - background sigma is too small (%f)', sigma_air)
+        sigma_air += 1.0
+
+    return float(DIETRICH_FACTOR * mu_fg / sigma_air)
 
 def cnr(mu_wm, mu_gm, sigma_air):
     r"""
@@ -582,6 +588,13 @@ def summary_stats(img, pvms, airmask=None, erode=True):
                             for _, val in list(output.items()))),
             'n': sum(val['n'] for _, val in list(output.items()))
         }
+
+    if 'bg' in output and output['bg']['mad'] == 0.0 and output['bg']['stdv'] > 1.0:
+        MRIQC_LOG.warn('estimated MAD in the background was too small ('
+                       'MAD=%f)', output['bg']['mad'])
+        output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
+
+
     return output
 
 def _prepare_mask(mask, label, erode=True):
