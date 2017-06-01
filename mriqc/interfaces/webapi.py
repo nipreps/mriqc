@@ -201,7 +201,7 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     return response
 
 def _hashfields(data):
-    from haslib import sha256
+    from hashlib import sha256
 
     for name in HASH_BIDS:
         if name in data:
