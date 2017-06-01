@@ -85,6 +85,15 @@ def get_parser():
     g_outputs.add_argument('--email', action='store', default='', type=str,
                            help='Email address to include with quality metric submission.')
 
+    g_outputs.add_argument(
+        '--webapi-addr', action='store', default='34.201.213.252', type=str,
+        help='IP address where the MRIQC WebAPI is listening')
+    g_outputs.add_argument(
+        '--webapi-port', action='store', default=80, type=int,
+        help='port where the MRIQC WebAPI is listening')
+
+    g_outputs.add_argument('--upload-strict', action='store_true', default=False,
+                           help='upload will fail if if upload is strict')
     # General performance
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n_procs', '--nprocs', '--n_cpus', '--nprocs',
@@ -97,7 +106,6 @@ def get_parser():
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
-
 
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
@@ -170,9 +178,12 @@ def main():
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
-        'no_sub': opts.no_sub or opts.testing,
+        'no_sub': opts.no_sub,
         'email': opts.email,
         'fd_thres': opts.fd_thres,
+        'webapi_addr' : opts.webapi_addr,
+        'webapi_port' : opts.webapi_port,
+        'upload_strict' : opts.upload_strict,
     }
 
     if opts.hmc_afni:
