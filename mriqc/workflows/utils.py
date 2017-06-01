@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-30 16:35:52
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
@@ -163,35 +162,3 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
-
-
-def upload_wf(settings, name='UploadWorkflow'):
-    """Workflow wrapping the upload_qc_metrics function.
-
-    Arguments:
-    settings -- dictionary containing mriqc settings
-
-    Keyword arguments:
-    name -- workflow name, defaults to UploadWorkflow
-
-    Returns:
-    workflow with inputnode and UploadMetrics node.
-    """
-    from mriqc.reports import upload_qc_metrics
-
-    no_sub = settings.get('no_sub', False)
-    email = settings.get('email', '')
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_iqms']),
-                        name='inputnode')
-    upld = pe.Node(niu.Function(input_names=['in_iqms', 'no_sub', 'email'],
-                                output_names=['response'],
-                                function=upload_qc_metrics),
-                   name='UploadMetrics')
-    upld.inputs.email = email
-    upld.inputs.no_sub = no_sub
-
-    workflow.connect([(inputnode, upld, [('in_iqms', 'in_iqms')])])
-
-    return workflow

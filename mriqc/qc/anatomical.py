@@ -176,6 +176,7 @@ from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
 from six import string_types
 
+DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
 
@@ -225,7 +226,12 @@ def snr_dietrich(mu_fg, sigma_air):
     :return: the computed SNR for the foreground segmentation
 
     """
-    return float(mu_fg / (sigma_air * sqrt(2/(4 - pi))))
+    if sigma_air < 1.0:
+        from mriqc import MRIQC_LOG
+        MRIQC_LOG.warn('SNRd - background sigma is too small (%f)', sigma_air)
+        sigma_air += 1.0
+
+    return float(DIETRICH_FACTOR * mu_fg / sigma_air)
 
 def cnr(mu_wm, mu_gm, sigma_air):
     r"""
@@ -506,13 +512,28 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
+
+    .. warning ::
+
+        Sometimes (with datasets that have been partially processed), the air
+        mask will be empty. In those cases, the background stats will be zero
+        for the mean, median, percentiles and kurtosis, the sum of voxels in
+        the other remaining labels for ``n``, and finally the MAD and the
+        :math:`\sigma` will be calculated as:
+
+        .. math ::
+
+            \sigma_\text{BG} = \sqrt{\sum \sigma_\text{i}^2}
+
+
     """
+    from mriqc import MRIQC_LOG
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:
         # If pvms is from FSL FAST, create the bg mask
-        stats_pvms = [np.array(pvms).sum(axis=0)] + pvms
+        stats_pvms = [np.zeros_like(img)] + pvms
     elif dims == 3:
         stats_pvms = [np.ones_like(pvms) - pvms, pvms]
     else:
@@ -526,7 +547,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     if len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
-    output = {k: {} for k, _ in labels}
+    output = {}
     for k, lid in labels:
         mask = np.zeros_like(img, dtype=np.uint8)
         mask[stats_pvms[lid] > 0.85] = 1
@@ -536,14 +557,44 @@ def summary_stats(img, pvms, airmask=None, erode=True):
             mask = nd.binary_erosion(
                 mask, structure=struc).astype(np.uint8)
 
-        output[k]['mean'] = float(img[mask == 1].mean())
-        output[k]['stdv'] = float(img[mask == 1].std())
-        output[k]['median'] = float(np.median(img[mask == 1]))
-        output[k]['mad'] = float(mad(img[mask == 1]))
-        output[k]['p95'] = float(np.percentile(img[mask == 1], 95))
-        output[k]['p05'] = float(np.percentile(img[mask == 1], 5))
-        output[k]['k'] = float(kurtosis(img[mask == 1]))
-        output[k]['n'] = float(mask.sum())
+        nvox = float(mask.sum())
+        if nvox < 1e3:
+            MRIQC_LOG.warn('calculating summary stats of label "%s" in a very small '
+                           'mask (%d voxels)', k, int(nvox))
+            if k == 'bg':
+                continue
+
+        output[k] = {
+            'mean': float(img[mask == 1].mean()),
+            'stdv': float(img[mask == 1].std()),
+            'median': float(np.median(img[mask == 1])),
+            'mad': float(mad(img[mask == 1])),
+            'p95': float(np.percentile(img[mask == 1], 95)),
+            'p05': float(np.percentile(img[mask == 1], 5)),
+            'k': float(kurtosis(img[mask == 1])),
+            'n': nvox,
+        }
+
+    if 'bg' not in output:
+        output['bg'] = {
+            'mean': 0.,
+            'median': 0.,
+            'p95': 0.,
+            'p05': 0.,
+            'k': 0.,
+            'stdv': sqrt(sum(val['stdv']**2
+                             for _, val in list(output.items()))),
+            'mad': sqrt(sum(val['mad']**2
+                            for _, val in list(output.items()))),
+            'n': sum(val['n'] for _, val in list(output.items()))
+        }
+
+    if 'bg' in output and output['bg']['mad'] == 0.0 and output['bg']['stdv'] > 1.0:
+        MRIQC_LOG.warn('estimated MAD in the background was too small ('
+                       'MAD=%f)', output['bg']['mad'])
+        output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
+
+
     return output
 
 def _prepare_mask(mask, label, erode=True):
