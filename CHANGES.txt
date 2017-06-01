@@ -1,3 +1,15 @@
+0.9.6
+=====
+
+  * [FIX] Do not mask and antsAffineInitializer twice (#534)
+  * [FIX] Datasets where air (hat) mask is empty (#533)
+  * [ENH] Integration testing for MRIQCWebAPI (#520)
+  * [ENH] Use AFNI to calculate gcor (#531)
+  * [ENH] Refactor derivatives (#530)
+  * [ENH] New bold-IQM: dummy_trs (non-stady state volumes) (#524)
+  * [FIX] Order of BIDS components in IQMs CSV table (#525)
+  * [ENH] Improved logging of mriqc_run (#526)
+
 0.9.5
 =====
 
