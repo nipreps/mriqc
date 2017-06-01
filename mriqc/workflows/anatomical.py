@@ -189,7 +189,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                    num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
                                    settings.get('n_procs', 1)),
                    estimated_memory_gb=3)
-    norm.inputs.fixed_mask = op.join(mni_template,
+    norm.inputs.reference_mask = op.join(mni_template,
                                      '%dmm_brainmask.nii.gz' % int(resolution))
 
     workflow.connect([
