@@ -1,6 +1,7 @@
 0.9.6
 =====
 
+  * [ENH] Test against web API 0.3.2 (#540)
   * [ENH] Change the default Web API address (#539)
   * [ENH] MRIQCWebAPI: hash fields that may have PI (#538)
   * [ENH] Added token authorization to MRIQCWebAPI client (#535)
