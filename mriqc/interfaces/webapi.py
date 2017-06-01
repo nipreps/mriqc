@@ -83,6 +83,7 @@ META_WHITELIST = [
     'run_id',
     'subject_id',
     'task_id',
+    'session_id',
 ]
 
 PROV_WHITELIST = [
@@ -91,6 +92,8 @@ PROV_WHITELIST = [
     'software',
     'settings'
 ]
+
+HASH_BIDS = ['subject_id', 'session_id']
 
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
@@ -179,6 +182,9 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     # Filter provenance values that aren't in whitelist
     data['provenance'] = {k: prov[k] for k in PROV_WHITELIST if k in prov}
 
+    # Hash fields that may contain personal information
+    data['bids_meta'] = _hashfields(data['bids_meta'])
+
     if email:
         data['email'] = email
 
@@ -193,3 +199,12 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
         return Bunch(status_code=1, text=errmsg)
 
     return response
+
+def _hashfields(data):
+    from haslib import sha256
+
+    for name in HASH_BIDS:
+        if name in data:
+            data[name] = sha256(data[name].encode()).hexdigest()
+
+    return data
