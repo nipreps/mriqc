@@ -1,6 +1,7 @@
 0.9.6
 =====
 
+  * [ENH] Added token authorization to MRIQCWebAPI client (#535)
   * [FIX] Do not mask and antsAffineInitializer twice (#534)
   * [FIX] Datasets where air (hat) mask is empty (#533)
   * [ENH] Integration testing for MRIQCWebAPI (#520)
