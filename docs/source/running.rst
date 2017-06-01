@@ -45,6 +45,14 @@ features CSV table) with: ::
 Examples of the generated visual reports are found 
 in :ref:`The MRIQC Reports <reports>`.
 
+.. warning::
+
+	MRIQC by default attempts to upload anonymized quality metrics to publicly accessible 
+  web server (`mriqc.nimh.nih.gov <http://mriqc.nimh.nih.gov/>`_). The uploaded data consists
+  only of calculated quality metrics and scanning parameters and does not include any personal
+  health information or participant identifiers. We try to collect this data to build normal
+  distributions for improved outlier detection, but if you do not wish to participate you can
+  disable the submission with the `--no-sub` flag.
 
 .. topic:: BIDS data organization
 
