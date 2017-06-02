@@ -34,7 +34,6 @@ dependencies:
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
     - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
-    - docker run --env TOKEN="${MRIQC_API_SECRET_TOKEN:-<secret_token>}" -it --entrypoint=/usr/bin/curl ${DOCKER_IMAGE}:${DOCKER_TAG} -fv -H "Authorization: ${TOKEN}" -d @${HOME}/mriqcwebapi/test/T1w/validData/sub-51475_T1w.json http://$( hostname -I | awk '{print $1}' ):${MRIQC_API_PORT}/T1w
   override:
     - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py && grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py; fi
