@@ -314,8 +314,14 @@ def main():
                     from nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
-            raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
-                               'BIDS-compliant.' % settings['bids_dir'])
+            msg = """\
+Error reading BIDS directory ({}), or the dataset is not \
+BIDS-compliant."""
+            if opts.participant_label is not None:
+                msg = """\
+None of the supplied labels (--participant_label) matched with the \
+participants found in the BIDS directory ({})."""
+            raise RuntimeError(msg.format(settings['bids_dir']))
 
         MRIQC_LOG.info('Participant level finished successfully.')
 

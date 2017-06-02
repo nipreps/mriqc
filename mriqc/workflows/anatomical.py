@@ -91,7 +91,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
     # 1. Reorient anatomical image
-    to_ras = pe.Node(ConformImage(), name='conform')
+    to_ras = pe.Node(ConformImage(check_dtype=False), name='conform')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=False)
     # 3. Head mask
