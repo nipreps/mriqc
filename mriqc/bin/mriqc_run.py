@@ -89,7 +89,7 @@ def get_parser():
         '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov', type=str,
         help='IP address where the MRIQC WebAPI is listening')
     g_outputs.add_argument(
-        '--webapi-port', action='store', default=80, type=int,
+        '--webapi-port', action='store', default=443, type=int,
         help='port where the MRIQC WebAPI is listening')
 
     g_outputs.add_argument('--upload-strict', action='store_true', default=False,
