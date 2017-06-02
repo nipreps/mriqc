@@ -16,7 +16,7 @@ def get_parser():
     parser.add_argument('expected', action='store', type=int,
     	                help='number of expected items in the database')
     parser.add_argument(
-        '--webapi-addr', action='store', default='34.201.213.252', type=str,
+        '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov', type=str,
         help='IP address where the MRIQC WebAPI is listening')
     parser.add_argument(
         '--webapi-port', action='store', default=80, type=int,
@@ -32,9 +32,9 @@ def main():
     # Run parser
     opts = get_parser().parse_args()
 
-    endpoint = 'http://{}:{}/{}'.format(opts.webapi_addr,
-                                        opts.webapi_port,
-                                        opts.modality)
+    endpoint = '{}:{}/{}'.format(opts.webapi_url,
+                                 opts.webapi_port,
+                                 opts.modality)
     MRIQC_LOG.info('Sending GET: %s', endpoint)
     resp = get(endpoint).json()
     MRIQC_LOG.info('There are %d records in database', resp['_meta']['total'])

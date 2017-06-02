@@ -179,7 +179,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     if not settings.get('no_sub', False):
         from mriqc.interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
-        upldwf.inputs.address = settings.get('webapi_addr')
+        upldwf.inputs.url = settings.get('webapi_url')
         upldwf.inputs.port = settings.get('webapi_port')
         upldwf.inputs.email = settings.get('email')
         upldwf.inputs.strict = settings.get('upload_strict', False)

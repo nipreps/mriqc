@@ -51,6 +51,7 @@ test:
         timeout: 3200
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+          MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     - bash .circleci/group.sh :
         parallel: true
         environment:
@@ -68,6 +69,7 @@ test:
         parallel: true
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
+          MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
 
 general:
   artifacts:

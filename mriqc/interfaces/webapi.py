@@ -98,7 +98,7 @@ HASH_BIDS = ['subject_id', 'session_id']
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     in_iqms = File(exists=True, mandatory=True, desc='the input IQMs-JSON file')
-    address = Str(mandatory=True, desc='ip address listening')
+    url = Str(mandatory=True, desc='URL (protocol and name) listening')
     port = traits.Int(mandatory=True, desc='MRIQCWebAPI service port')
     email = Str(desc='set sender email')
     strict = traits.Bool(False, usedefault=True,
@@ -120,7 +120,7 @@ class UploadIQMs(SimpleInterface):
 
         response = upload_qc_metrics(
             self.inputs.in_iqms,
-            self.inputs.address,
+            self.inputs.url,
             self.inputs.port,
             email
         )
@@ -138,7 +138,7 @@ class UploadIQMs(SimpleInterface):
         return runtime
 
 
-def upload_qc_metrics(in_iqms, addr, port, email=None):
+def upload_qc_metrics(in_iqms, url, port, email=None):
     """
     Upload qc metrics to remote repository.
 
@@ -192,7 +192,7 @@ def upload_qc_metrics(in_iqms, addr, port, email=None):
     try:
         # if the modality is bold, call "bold" endpointt
         response = requests.post(
-            'http://{}:{}/{}'.format(addr, port, modality),
+            '{}:{}/{}'.format(url, port, modality),
             headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
         errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % err
