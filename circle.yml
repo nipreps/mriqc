@@ -17,7 +17,6 @@ dependencies:
   cache_directories:
     - "~/docker"
     - "~/data"
-    - "~/mriqcwebapi"
 
   pre:
     # Download test data
@@ -28,8 +27,8 @@ dependencies:
     - docker load --input $HOME/docker/cache.tar || true
     # Prepare MRIQCWebAPI
     - pip install docker-compose
-    - if [[ ! -d $HOME/mriqcwebapi ]]; then cd; git clone https://github.com/poldracklab/mriqcwebapi.git; fi;
-    - cd $HOME/mriqcwebapi && git fetch --tags && git checkout ${MRIQC_API_TAG}
+    - rm -rf $HOME/mriqcwebapi
+    - cd $HOME && git clone https://github.com/poldracklab/mriqcwebapi.git && cd $HOME/mriqcwebapi && git checkout ${MRIQC_API_TAG}
     - if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" $HOME/mriqcwebapi/dockereve-master/eve-app/app.py && grep -q -i $MRIQC_API_SECRET_TOKEN $HOME/mriqcwebapi/dockereve-master/eve-app/app.py; fi
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
