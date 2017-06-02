@@ -208,13 +208,16 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
 
     if path and not path.endswith('/'):
         path += '/'
+        if path.startswith('/'):
+            path = path[1:]
 
     headers = {'Authorization': SECRET_KEY, "Content-Type": "application/json"}
+
+    webapi_url = '{}://{}:{}/{}{}'.format(scheme, loc, port, path, modality)
+    IFLOGGER.info('MRIQC Web API: submitting to <%s>', webapi_url)
     try:
         # if the modality is bold, call "bold" endpoint
-        response = requests.post(
-            '{}://{}:{}/{}{}'.format(scheme, loc, port, path, modality),
-            headers=headers, data=dumps(data))
+        response = requests.post(webapi_url, headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
         errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % err
         return Bunch(status_code=1, text=errmsg)

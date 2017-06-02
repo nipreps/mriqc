@@ -86,7 +86,7 @@ def get_parser():
                            help='Email address to include with quality metric submission.')
 
     g_outputs.add_argument(
-        '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov', type=str,
+        '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov/api/v1', type=str,
         help='IP address where the MRIQC WebAPI is listening')
     g_outputs.add_argument(
         '--webapi-port', action='store', type=int,
