@@ -5,7 +5,7 @@ Running mriqc
 -------------
 
 MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
-and therefore it inherently understands the :abbr:`BIDS (brain 
+and therefore it inherently understands the :abbr:`BIDS (brain
 imaging data structure)` standard [BIDS]_ and follows the
 BIDS-Apps standard command line interface: ::
 
@@ -42,21 +42,21 @@ features CSV table) with: ::
   mriqc bids-root/ output-folder/ group
 
 
-Examples of the generated visual reports are found 
+Examples of the generated visual reports are found
 in :ref:`The MRIQC Reports <reports>`.
 
 .. warning::
 
-	MRIQC by default attempts to upload anonymized quality metrics to publicly accessible 
-  web server (`mriqc.nimh.nih.gov <http://mriqc.nimh.nih.gov/>`_). The uploaded data consists
-  only of calculated quality metrics and scanning parameters and does not include any personal
-  health information or participant identifiers. We try to collect this data to build normal
-  distributions for improved outlier detection, but if you do not wish to participate you can
-  disable the submission with the `--no-sub` flag.
+    MRIQC by default attempts to upload anonymized quality metrics to a publicly accessible
+    web server (`mriqc.nimh.nih.gov <http://mriqc.nimh.nih.gov/>`_). The uploaded data consists
+    only of calculated quality metrics and scanning parameters. It removes all personal
+    health information and participant identifiers. We try to collect this data to build normal
+    distributions for improved outlier detection, but if you do not wish to participate you can
+    disable the submission with the ``--no-sub`` flag.
 
 .. topic:: BIDS data organization
 
-    The software automatically finds the data the input folder if it 
+    The software automatically finds the data the input folder if it
     follows the :abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
     A fast and easy way to check that your dataset fulfills the
     :abbr:`BIDS (brain imaging data structure)` standard is
@@ -117,7 +117,7 @@ on ds030 of OpenfMRI:
       <iframe src="_static/bold-1subject-8tasks.html" height="345px" width="100%"></iframe>
 
   Again, we used ``n_procs=10``. The software run for roughly about the same
-  time (47.11 min). Most of the run time, memory usage keeps around a 
+  time (47.11 min). Most of the run time, memory usage keeps around a
   maximum of 10GB. Since we saw a memory consumption of 1-2GB during the
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.
