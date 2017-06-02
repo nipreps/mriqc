@@ -112,6 +112,7 @@ class UploadIQMs(SimpleInterface):
 
     input_spec = UploadIQMsInputSpec
     output_spec = TraitedSpec
+    always_run = True
 
     def _run_interface(self, runtime):
         email = None
