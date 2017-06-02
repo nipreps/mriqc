@@ -20,7 +20,7 @@ if [ "$(grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; th
 fi
 
 MODALITY=T1w
-NRECORDS=5  # 4 from tests plus 1 during set-up
+NRECORDS=4
 if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
     MODALITY=bold
     NRECORDS=9
