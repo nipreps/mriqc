@@ -156,7 +156,9 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.email = settings.get('email', '')
         upldwf.inputs.url = settings.get('webapi_url')
-        upldwf.inputs.port = settings.get('webapi_port')
+        if settings.get('webapi_port'):
+            upldwf.inputs.port = settings.get('webapi_port')
+
         upldwf.inputs.strict = settings.get('upload_strict', False)
 
         workflow.connect([

@@ -8,7 +8,7 @@ from nipype import logging
 from nipype.interfaces.base import (Bunch, traits, isdefined, TraitedSpec,
                                     BaseInterfaceInputSpec, File, Str)
 from niworkflows.interfaces.base import SimpleInterface
-
+from urllib.parse import urlparse
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -99,7 +99,8 @@ HASH_BIDS = ['subject_id', 'session_id']
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     in_iqms = File(exists=True, mandatory=True, desc='the input IQMs-JSON file')
     url = Str(mandatory=True, desc='URL (protocol and name) listening')
-    port = traits.Int(mandatory=True, desc='MRIQCWebAPI service port')
+    port = traits.Int(desc='MRIQCWebAPI service port')
+    path = Str(desc='MRIQCWebAPI endpoint root path')
     email = Str(desc='set sender email')
     strict = traits.Bool(False, usedefault=True,
                          desc='crash if upload was not succesfull')
@@ -119,12 +120,26 @@ class UploadIQMs(SimpleInterface):
         if isdefined(self.inputs.email):
             email = self.inputs.email
 
+        rawurl = self.inputs.url
+        if '://' not in rawurl:
+            rawurl = 'http://'
+        url = urlparse(rawurl)
+
+        if not url.scheme.startswith('http'):
+            raise RuntimeError(
+                'Tried an unknown protocol "%s"' % url.scheme)
+
+        port = url.port
+        if isdefined(self.inputs.port):
+            port = self.inputs.port
+
+        path = url.path
+        if isdefined(self.inputs.path):
+            path = self.inputs.path
+
         response = upload_qc_metrics(
-            self.inputs.in_iqms,
-            self.inputs.url,
-            self.inputs.port,
-            email
-        )
+            self.inputs.in_iqms, url.netloc, path=path,
+            scheme=url.scheme, port=port, email=email)
 
         if response.status_code == 201:
             IFLOGGER.info('QC metrics successfully uploaded.')
@@ -139,15 +154,14 @@ class UploadIQMs(SimpleInterface):
         return runtime
 
 
-def upload_qc_metrics(in_iqms, url, port, email=None):
+def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
+                      port=None, email=None):
     """
     Upload qc metrics to remote repository.
 
     :param str in_iqms: Path to the qc metric json file as a string
+    :param str scheme: the protocol (either http or https)
     :param str email: email address to be included with the metric submission
-    :param bool no_sub: Flag from settings indicating whether or not metrics should be submitted.
-        If False, metrics will be submitted. If True, metrics will not be submitted.
-    :param str mriqc_webapi: the default mriqcWebAPI url
     :param bool upload_strict: the client should fail if it's strict mode
 
     :return: either the response object if a response was successfully sent
@@ -160,6 +174,9 @@ def upload_qc_metrics(in_iqms, url, port, email=None):
     import requests
     from io import open
     from copy import deepcopy
+
+    if port is None:
+        port = 443 if scheme == 'https' else 80
 
     with open(in_iqms, 'r') as input_json:
         in_data = load(input_json)
@@ -189,11 +206,14 @@ def upload_qc_metrics(in_iqms, url, port, email=None):
     if email:
         data['email'] = email
 
+    if path and not path.endswith('/'):
+        path += '/'
+
     headers = {'Authorization': SECRET_KEY, "Content-Type": "application/json"}
     try:
-        # if the modality is bold, call "bold" endpointt
+        # if the modality is bold, call "bold" endpoint
         response = requests.post(
-            '{}:{}/{}'.format(url, port, modality),
+            '{}://{}:{}/{}{}'.format(scheme, loc, port, path, modality),
             headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
         errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % err
