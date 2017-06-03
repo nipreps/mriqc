@@ -1,6 +1,10 @@
 0.9.6
 =====
 
+  * [ENH] Finished setting up `MRIQC Web API <https://mriqc.nimh.nih.gov>`_
+  * [ENH] Better error message when --participant_label is set (#542)
+  * [FIX] Allow --load-classifier option to be empty in mriqc_clf (#544)
+  * [FIX] Borked bias estimation derived from Conform (#541)
   * [ENH] Test against web API 0.3.2 (#540)
   * [ENH] Change the default Web API address (#539)
   * [ENH] MRIQCWebAPI: hash fields that may have PI (#538)
