@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-11 17:36:41
 
 """
 =====================
