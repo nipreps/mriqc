@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-03-07 19:39:20
+# @Last Modified time: 2017-05-15 16:18:06
 
 """
 
@@ -19,11 +19,12 @@ import numpy as np
 import pandas as pd
 
 from mriqc import __version__, logging
-from .data import read_iqms, read_dataset, zscore_dataset
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics.scorer import check_scoring, make_scorer
+from sklearn.metrics import classification_report
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import check_cv
 
@@ -39,7 +40,8 @@ EXCLUDE_COLUMNS = ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spac
 
 class CVHelperBase(object):
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1'):
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
+                 scorer='roc_auc', b_leaveout=True):
         # Initialize some values
         self.param = DEFAULT_TEST_PARAMETERS.copy()
         if param is not None:
@@ -51,6 +53,13 @@ class CVHelperBase(object):
 
         self._Xtrain, self._ftnames = read_dataset(X, Y, rate_label=rate_label)
         self.sites = list(set(self._Xtrain[site_label].values.ravel()))
+        self._scorer = scorer
+        self._balanced_leaveout = True
+        self._Xleftout = None
+
+        if b_leaveout:
+            self._Xtrain, self._Xleftout = balanced_leaveout(self._Xtrain)
+
 
     @property
     def ftnames(self):
@@ -64,10 +73,10 @@ class CVHelperBase(object):
     def fit(self):
         raise NotImplementedError
 
-    def predict_dataset(self, data, out_file=None):
+    def predict_dataset(self, data, out_file=None, thres=0.5):
         raise NotImplementedError
 
-    def predict(self, data):
+    def predict(self, X, thres=0.5):
         raise NotImplementedError
 
     def get_groups(self):
@@ -90,7 +99,7 @@ class CVHelperBase(object):
 class NestedCVHelper(CVHelperBase):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 task_id=None):
+                 task_id=None, scorer='roc_auc'):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rater_1')
 
@@ -150,7 +159,7 @@ class NestedCVHelper(CVHelperBase):
             inner_cv = ModelAndGridSearchCV(self.param, **gs_cv_params)
 
             # Some sklearn's validations
-            scoring = check_scoring(inner_cv, scoring='roc_auc')
+            scoring = check_scoring(inner_cv, scoring=self._scorer)
             cv_outer = check_cv(_cv_build(self.cv_outer), y,
                                 classifier=is_classifier(inner_cv))
 
@@ -184,7 +193,7 @@ class NestedCVHelper(CVHelperBase):
                     'best_score': clf.best_score_,
                     'best_index': clf.best_index_,
                     'cv_results': clf.cv_results_,
-                    'cv_scores': score['test']['roc_auc'],
+                    'cv_scores': score['test']['score'],
                     'cv_accuracy': score['test']['accuracy'],
                     'cv_params': clf.cv_results_['params'],
                     'cv_auc_means': clf.cv_results_['mean_test_score'],
@@ -193,8 +202,8 @@ class NestedCVHelper(CVHelperBase):
                 })
 
                 # Store the outer loop scores
-                if score['test']['roc_auc'] is not None:
-                    outer_cv_scores.append(score['test']['roc_auc'])
+                if score['test']['score'] is not None:
+                    outer_cv_scores.append(score['test']['score'])
                 outer_cv_acc.append(score['test']['accuracy'])
                 split_id += 1
 
@@ -202,11 +211,12 @@ class NestedCVHelper(CVHelperBase):
                 #     '[%s-%szs] Outer CV: roc_auc=%f, accuracy=%f, '
                 #     'Inner CV: best roc_auc=%f, params=%s. ',
                 #     clf.best_model_[0], 'n' if not dozs else '',
-                #     score['test']['roc_auc'] if score['test']['roc_auc'] is not None else -1.0,
+                #     score['test']['score'] if score['test']['score'] is not None else -1.0,
                 #     score['test']['accuracy'],
                 #     clf.best_score_, clf.best_model_[1])
 
-            LOG.info('Outer CV loop finished, roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
+            LOG.info('Outer CV loop finished, %s=%f (+/-%f), accuracy=%f (+/-%f)',
+                     self._scorer,
                      np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
                      np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc))
 
@@ -226,7 +236,8 @@ class NestedCVHelper(CVHelperBase):
 
         # Write out evaluation result
         best_zs = 1 if self._best_model['zscored'] else 0
-        LOG.info('CV - estimated performance: roc_auc=%f (+/-%f), accuracy=%f (+/-%f)',
+        LOG.info('CV - estimated performance: %s=%f (+/-%f), accuracy=%f (+/-%f)',
+                 self._scorer,
                  np.mean(zscore_cv_auc[best_zs]), 2 * np.std(zscore_cv_auc[best_zs]),
                  np.mean(zscore_cv_acc[best_zs]), 2 * np.std(zscore_cv_acc[best_zs]),
         )
@@ -276,7 +287,8 @@ class NestedCVHelper(CVHelperBase):
 
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
-                 site_label='site', rate_label='rater_1', zscored=False):
+                 site_label='site', rate_label='rater_1', zscored=False,
+                 scorer='roc_auc'):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -294,7 +306,7 @@ class CVHelper(CVHelperBase):
         else:
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
-                site_label=site_label, rate_label=rate_label)
+                site_label=site_label, rate_label=rate_label, scorer=scorer)
             if zscored:
                 self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                         excl_columns=[rate_label] + EXCLUDE_COLUMNS)
@@ -322,18 +334,41 @@ class CVHelper(CVHelperBase):
             LOG.info('Classifier was loaded from file, cancelling fitting.')
             return
 
-        LOG.info('Start fitting ...')
+        LOG.info('Start fitting (scoring=%s)...', self._scorer)
         estimator = RFC()
+
+        thescorer = self._scorer
+        if thescorer == 'brier_score_loss':
+            from sklearn.metrics import brier_score_loss
+            thescorer = make_scorer(brier_score_loss, greater_is_better=False,
+                                    needs_proba=True, needs_threshold=False)
         grid = RobustGridSearchCV(
             estimator, self.param['rfc'], error_score=0.5, refit=True,
-            scoring=check_scoring(estimator, scoring='roc_auc'),
+            scoring=check_scoring(estimator, scoring=thescorer),
             n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
 
         X, y, groups = self._generate_sample()
         self._estimator = grid.fit(X, y, groups=groups)
 
-        LOG.info('Model selection - best parameters (roc_auc=%f) %s',
-                 grid.best_score_, grid.best_params_)
+        LOG.info('Model selection - best parameters (%s=%f) %s',
+                 self._scorer, grid.best_score_, grid.best_params_)
+
+        if self._Xleftout is not None:
+            from sklearn.model_selection._validation import _score
+
+            sample_x = np.array([tuple(x) for x in self._Xleftout[self._ftnames].values])
+            labels_y = self._Xleftout[[self._rate_column]].values.ravel().tolist()
+
+            LOG.info('Testing on left-out, balanced subset ...')
+
+            score = _score(self._estimator, sample_x, labels_y,
+                           check_scoring(self._estimator, scoring=self._scorer))
+
+            LOG.info('Performance %s=%f', self._scorer, score)
+
+            LOG.info('Classification report:\n%s',
+                     classification_report(self._estimator.predict(sample_x), labels_y,
+                     target_names=["accept", "exclude"]))
 
     def save(self, filehandler, compress=3):
         """
@@ -359,26 +394,49 @@ class CVHelper(CVHelperBase):
         self._pickled = True
 
 
-    def predict(self, datapoints):
-        return self.estimator.predict(datapoints).astype(int)
+    def predict(self, X, thres=0.5):
+        """Predict class for X.
+        The predicted class of an input sample is a vote by the trees in
+        the forest, weighted by their probability estimates. That is,
+        the predicted class is the one with highest mean probability
+        estimate across the trees.
+        Parameters
+        ----------
+        X : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, its dtype will be converted to
+            ``dtype=np.float32``. If a sparse matrix is provided, it will be
+            converted into a sparse ``csr_matrix``.
+        Returns
+        -------
+        y : array of shape = [n_samples] or [n_samples, n_outputs]
+            The predicted classes.
+        """
+        proba = np.array(self._estimator.predict_proba(X))[:, 1]
+        return (proba > thres).astype(int)
 
-    def predict_dataset(self, data, out_file=None):
+    def predict_dataset(self, data, out_file=None, thres=0.5):
         _xeval, _, bidts = read_iqms(data)
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
-
         pred = _xeval[bidts].copy()
-        pred['prediction'] = self.predict(sample_x).astype(int)
-
+        pred['prediction'] = self.predict(sample_x, thres=thres)
         if out_file is not None:
             pred[bidts + ['prediction']].to_csv(out_file, index=False)
         return pred
 
-    def evaluate(self, scoring='accuracy'):
+    def evaluate(self, scoring='accuracy', matrix=False):
         from sklearn.model_selection._validation import _score
+        from sklearn.utils.multiclass import type_of_target
 
         sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
-        return _score(self._estimator, sample_x, self._Xtest.rate.values.ravel().tolist(),
-                      check_scoring(self._estimator, scoring=scoring))
+        # print(self._estimator.decision_function(sample_x))
+        thescore = _score(self._estimator, sample_x, self._Xtest.rater_1.values.ravel().tolist(),
+                          check_scoring(self._estimator, scoring=scoring))
+        LOG.info('Performance %s=%f', scoring, thescore)
+        if matrix:
+            LOG.info('Classification report (evaluation):\n%s', classification_report(
+                self._estimator.predict(sample_x), self._Xtest.rater_1.values.ravel().tolist(),
+                target_names=["accept", "exclude"]))
+        return thescore
 
 
 def _cv_build(cv_scheme):

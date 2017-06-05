@@ -240,9 +240,9 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
 
     mdata = mdata.loc[mdata[rating_label].notnull()]
     mdata['database'] = ['ABIDE'] * len(mdata.site.values.ravel())
-    mdata['rate'] = [''] * len(mdata[rating_label])
-    mdata.loc[mdata[rating_label] == 0, 'rate'] = 'OK'
-    mdata.loc[mdata[rating_label] == 1, 'rate'] = 'exclude'
+    mdata['rater_1'] = [''] * len(mdata[rating_label])
+    mdata.loc[mdata[rating_label] == 0, 'rater_1'] = 'OK'
+    mdata.loc[mdata[rating_label] == 1, 'rater_1'] = 'exclude'
 
     for col in [rating_label, 'size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']:
         del mdata[col]
@@ -251,7 +251,7 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         except ValueError:
             pass
 
-    zscored = zscore_dataset(mdata, excl_columns=['rate'])
+    zscored = zscore_dataset(mdata, excl_columns=['rater_1'])
 
     sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
@@ -272,14 +272,14 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         ax_zsc = plt.subplot(gs[i, 3])
 
         # plots
-        sn.stripplot(x='site', y=colname, data=mdata, hue='rate', jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=mdata, hue='rater_1', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=ax_nzs)
-        sn.stripplot(x='site', y=colname, data=zscored, hue='rate', jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=zscored, hue='rater_1', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=ax_zsc)
 
-        sn.stripplot(x='database', y=colname, data=mdata, hue='rate', jitter=0.18, alpha=.4,
+        sn.stripplot(x='database', y=colname, data=mdata, hue='rater_1', jitter=0.18, alpha=.4,
                      split=True, palette=palette, ax=axg_nzs)
-        sn.stripplot(x='database', y=colname, data=zscored, hue='rate', jitter=0.18,
+        sn.stripplot(x='database', y=colname, data=zscored, hue='rater_1', jitter=0.18,
                      alpha=.4, split=True, palette=palette, ax=axg_zsc)
 
         ax_nzs.legend_.remove()
