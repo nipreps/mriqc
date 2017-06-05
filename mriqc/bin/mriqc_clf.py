@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-15 16:18:41
-
 """
 mriqc_fit command line interface definition
 
@@ -38,6 +35,7 @@ def main():
     from pkg_resources import resource_filename as pkgrf
     from mriqc.classifier.cv import CVHelper
     from mriqc import logging, LOG_FORMAT
+    from os.path import isfile
 
     warnings.showwarning = warn_redirect
 
@@ -46,8 +44,7 @@ def main():
 
     g_clf = parser.add_mutually_exclusive_group()
     g_clf.add_argument('--train', nargs=2, help='training data tables, X and Y')
-    g_clf.add_argument('--load-classifier', nargs="?",
-                       default=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
+    g_clf.add_argument('--load-classifier', nargs="?", type=str, default='',
                        help='load pickled classifier in')
 
     parser.add_argument('--test-data', help='test data')
@@ -90,9 +87,15 @@ def main():
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
 
-    train = [False] if opts.train is None else [val is not None for val in opts.train]
+    if opts.train is not None:
+        train_exists = [isfile(fname) for fname in opts.train]
+        if len(train_exists) > 0 and not all(train_exists):
+            errors = ['file "%s" not found' % fname
+                      for fexists, fname in zip(train_exists, opts.train)
+                      if not fexists]
+            raise RuntimeError('Errors (%d) loading training set: %s.' % (
+                len(errors), ', '.join(errors)))
 
-    if all(train):
         # Initialize model selection helper
         cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
                             param=parameters, scorer=opts.scorer)
@@ -103,12 +106,23 @@ def main():
         # Pickle if required
         if opts.save_classifier:
             cvhelper.save(opts.save_classifier)
-    elif any(train):
-        raise RuntimeError('Both --train-data and --train-labels must be set')
 
+    # If no training set is given, need a classifier
     else:
-        cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs,
-                            rate_label='rater_1', scorer=opts.scorer)
+        load_classifier = opts.load_classifier
+        if load_classifier is None:
+            load_classifier = pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz')
+
+        if not isfile(load_classifier):
+            msg = 'was not provided'
+            if load_classifier != '':
+                msg = '("%s") was not found' % load_classifier
+            raise RuntimeError(
+                'No training samples were given, and the --load-classifier '
+                'option %s.' % msg)
+
+        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
+                            rate_label='rater_1')
 
     if opts.test_data and opts.test_labels:
         # Set held-out data

@@ -7,12 +7,16 @@ MRIQC
 
 """
 
-__version__ = '99.99.99'
+from datetime import date
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
 __author__ = 'Oscar Esteban'
 __email__ = 'code@oscaresteban.es'
 __maintainer__ = 'Oscar Esteban'
-__copyright__ = ('Copyright 2016, Center for Reproducible Neuroscience, '
-                 'Stanford University')
+__copyright__ = ('Copyright %d, Center for Reproducible Neuroscience, '
+                 'Stanford University') % date.today().year
 __credits__ = 'Oscar Esteban'
 __license__ = '3-clause BSD'
 __status__ = 'Prototype'
@@ -30,23 +34,27 @@ __longdesc__ = ("MRIQC provides a series of image processing workflows "
                 "It is also scheduled to add diffusion MRI to the target "
                 "imaging families.")
 
-URL = 'http://mriqc.readthedocs.org/'
-DOWNLOAD_URL = ('https://pypi.python.org/packages/source/m/mriqc/'
-                'mriqc-{}.tar.gz'.format(__version__))
+__url__ = 'http://mriqc.readthedocs.org/'
+__download__ = ('https://github.com/poldracklab/mriqc/archive/'
+                '{}.tar.gz'.format(__version__))
+
+PACKAGE_NAME = 'mriqc'
 CLASSIFIERS = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',
     'Topic :: Scientific/Engineering :: Image Recognition',
     'License :: OSI Approved :: BSD License',
-    'Programming Language :: Python :: 2.7',
     'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
 ]
 
+SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'nipype',
-    'niworkflows',
+    'nipype>=0.13.1',
+    'niworkflows>=0.0.7',
+    'pybids>=0.1.0',
     'future',
     'scipy',
     'six',
@@ -62,7 +70,7 @@ REQUIRES = [
     'svgutils',
     'nipy',
     'statsmodels',
-    'pybids>=0.1.0'
+    'versioneer',
 ]
 
 LINKS_REQUIRES = []
@@ -74,7 +82,7 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.4', 'mock', 'sphinx_rtd_theme'],
+    'doc': ['sphinx>=1.5,<1.6', 'sphinx_rtd_theme>=0.2.4', 'sphinx-argparse'],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],

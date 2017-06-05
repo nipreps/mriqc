@@ -7,8 +7,8 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-02-01 15:53:32
-""" Helpers in report generation """
+# @Last Modified time: 2017-05-25 13:41:58
+""" Helpers in report generation"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 
@@ -35,6 +35,7 @@ def iqms2html(indict, table_id):
         result_str += '</tr>\n'
     result_str += '</table>\n'
     return result_str
+
 
 def unfold_columns(indict, prefix=None):
     """Converts an input dict with flattened keys to an array of columns"""
@@ -67,29 +68,12 @@ def unfold_columns(indict, prefix=None):
 
     return data
 
-def anat_flags(iqms_dict):
-    """Anatomical flags"""
-    msk_vals = []
-    for k in ['snrd_csf', 'snrd_gm', 'snrd_wm', 'fber']:
-        iqm = iqms_dict[k]
-        msk_vals.append(iqm < 0.)
-
-    flag = ''
-    if any(msk_vals):
-        flag = 'Noise variance in the background is very low'
-        if all(msk_vals):
-            flag += (' for all measures: <span class="warning">'
-                     'the original file could be masked</span>.')
-        else:
-            flag += '.'
-    return flag
-
 
 def read_report_snippet(in_file):
     """Add a snippet into the report"""
     import os.path as op
     import re
-    from io import open  #pylint: disable=W0622
+    from io import open  # pylint: disable=W0622
 
     is_svg = (op.splitext(op.basename(in_file))[1] == '.svg')
 
@@ -108,6 +92,7 @@ def read_report_snippet(in_file):
                     svg_tag_line = i
             corrected.append(line)
         return '\n'.join(corrected[svg_tag_line:])
+
 
 # def check_reports(dataset, settings, save_failed=True):
 #     """Check if reports have been created"""
@@ -129,7 +114,7 @@ def read_report_snippet(in_file):
 #             components.insert(0, qctype)
 
 #             report_fname = op.join(
-#                 settings['report_dir'], '_'.join(components) + '_report.html')
+# settings['report_dir'], '_'.join(components) + '_report.html')
 
 #             if not op.isfile(report_fname):
 #                 missing[mod].append(

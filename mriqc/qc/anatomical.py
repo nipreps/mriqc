@@ -165,7 +165,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os.path as op
 from sys import version_info
 import json
-from math import pi
+from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi, kurtosis  # pylint: disable=E0611
@@ -176,10 +176,11 @@ from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
 from six import string_types
 
+DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
 
-def snr(img, smask, erode=True, fglabel=1):
+def snr(mu_fg, sigma_fg, n):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
     The estimation may be provided with only one foreground region in
@@ -200,19 +201,9 @@ def snr(img, smask, erode=True, fglabel=1):
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, (str, bytes)):
-        fglabel = FSL_FAST_LABELS[fglabel]
+    return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
 
-    fgmask = _prepare_mask(smask, fglabel, erode)
-    fg_mean = np.median(img[fgmask > 0])
-    bgmask = fgmask
-    bg_mean = fg_mean
-    # Manually compute sigma, using Bessel's correction (the - 1 in the normalizer)
-    bg_std = np.sqrt(np.sum((img[bgmask > 0] - bg_mean) ** 2) / (np.sum(bgmask) - 1))
-
-    return float(fg_mean / bg_std)
-
-def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
+def snr_dietrich(mu_fg, sigma_air):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
 
@@ -235,28 +226,22 @@ def snr_dietrich(img, smask, airmask, erode=True, fglabel=1):
     :return: the computed SNR for the foreground segmentation
 
     """
-    if isinstance(fglabel, (str, bytes)):
-        fglabel = FSL_FAST_LABELS[fglabel]
+    if sigma_air < 1.0:
+        from mriqc import MRIQC_LOG
+        MRIQC_LOG.warn('SNRd - background sigma is too small (%f)', sigma_air)
+        sigma_air += 1.0
 
-    fgmask = _prepare_mask(smask, fglabel, erode)
-    bgmask = _prepare_mask(airmask, 1, erode)
+    return float(DIETRICH_FACTOR * mu_fg / sigma_air)
 
-    fg_mean = np.median(img[fgmask > 0])
-    bg_std = mad(img[bgmask > 0])
-    bg_std *= np.sqrt(2.0/(4.0 - pi))
-    if bg_std < 1.0e-3:
-        return -1.0
-
-    return float(fg_mean / bg_std)
-
-def cnr(img, seg, lbl=None):
+def cnr(mu_wm, mu_gm, sigma_air):
     r"""
     Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)` [Magnota2006]_.
     Higher values are better.
 
     .. math::
 
-        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sigma_B},
+        \text{CNR} = \frac{|\mu_\text{GM} - \mu_\text{WM} |}{\sqrt{\sigma_B^2 +
+        \sigma_\text{WM}^2 + \sigma_\text{GM}^2}},
 
     where :math:`\sigma_B` is the standard deviation of the noise distribution within
     the air (background) mask.
@@ -267,20 +252,10 @@ def cnr(img, seg, lbl=None):
     :return: the computed CNR
 
     """
-    if lbl is None:
-        lbl = FSL_FAST_LABELS
-
-    noise_std = mad(img[seg == lbl['bg']])
-    if noise_std < 1.0:
-        noise_std = np.average(mad(img[seg == lbl['gm']]) +
-                               mad(img[seg == lbl['wm']]) +
-                               mad(img[seg == lbl['csf']]))
-
-    return float(np.abs(np.median(img[seg == lbl['gm']]) - np.median(img[seg == lbl['wm']])) / \
-                 noise_std)
+    return float(abs(mu_wm - mu_gm) / sigma_air)
 
 
-def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
+def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     r"""
     Calculate the :abbr:`CJV (coefficient of joint variation)`, a measure
     related to :abbr:`SNR (Signal-to-Noise Ratio)` and
@@ -299,29 +274,10 @@ def cjv(img, seg=None, wmmask=None, gmmask=None, wmlabel='wm', gmlabel='gm'):
 
 
     """
-
-    if seg is None and (wmmask is None or gmmask is None):
-        raise RuntimeError('Masks or segmentation should be provided')
-
-    if seg is not None:
-        if isinstance(wmlabel, string_types):
-            wmlabel = FSL_FAST_LABELS[wmlabel]
-        if isinstance(gmlabel, string_types):
-            gmlabel = FSL_FAST_LABELS[gmlabel]
-
-        wmmask = np.zeros_like(seg)
-        wmmask[seg == wmlabel] = 1
-        gmmask = np.zeros_like(seg)
-        gmmask[seg == gmlabel] = 1
-
-    mu_wm = np.median(img[wmmask > .5])
-    mu_gm = np.median(img[gmmask > .5])
-    sigma_wm = mad(img[wmmask > .5])
-    sigma_gm = mad(img[gmmask > .5])
-    return float((sigma_wm + sigma_gm) / (mu_wm - mu_gm))
+    return float((sigma_wm + sigma_gm) / abs(mu_wm - mu_gm))
 
 
-def fber(img, air):
+def fber(img, headmask, rotmask=None):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
@@ -337,15 +293,20 @@ def fber(img, air):
 
     """
 
-    fg_mu = (np.abs(img[air > 0]) ** 2).mean()
-    bg_mu = (np.abs(img[air < 1]) ** 2).mean()
+    fg_mu = np.median(np.abs(img[headmask > 0]) ** 2)
+
+    airmask = np.ones_like(headmask, dtype=np.uint8)
+    airmask[headmask > 0] = 0
+    if rotmask is not None:
+        airmask[rotmask > 0] = 0
+    bg_mu = np.median(np.abs(img[airmask == 1]) ** 2)
     if bg_mu < 1.0e-3:
-        return -1.0
+        return 0
     return float(fg_mu / bg_mu)
 
 
 
-def efc(img):
+def efc(img, framemask=None):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
@@ -370,19 +331,24 @@ def efc(img):
 
     """
 
+    if framemask is None:
+        framemask = np.zeros_like(img, dtype=np.uint8)
+
+    n_vox = np.sum(1 - framemask)
     # Calculate the maximum value of the EFC (which occurs any time all
     # voxels have the same value)
-    efc_max = 1.0 * np.prod(img.shape) * (1.0 / np.sqrt(np.prod(img.shape))) * \
-                np.log(1.0 / np.sqrt(np.prod(img.shape)))
+    efc_max = 1.0 * n_vox * (1.0 / np.sqrt(n_vox)) * \
+                np.log(1.0 / np.sqrt(n_vox))
 
     # Calculate the total image energy
-    b_max = np.sqrt((img**2).sum())
+    b_max = np.sqrt((img[framemask == 0]**2).sum())
 
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
-    return float((1.0 / efc_max) * np.sum((img / b_max) * np.log((img + 1e-16) / b_max)))
+    return float((1.0 / efc_max) * np.sum((img[framemask == 0] / b_max) * np.log(
+        (img[framemask == 0] + 1e-16) / b_max)))
 
 
-def wm2max(img, seg):
+def wm2max(img, mu_wm):
     r"""
     Calculate the :abbr:`WM2MAX (white-matter-to-max ratio)`,
     defined as the maximum intensity found in the volume w.r.t. the
@@ -394,9 +360,7 @@ def wm2max(img, seg):
         \text{WM2MAX} = \frac{\mu_\text{WM}}{P_{99.95}(X)}
 
     """
-    wmmask = np.zeros_like(seg)
-    wmmask[seg == FSL_FAST_LABELS['wm']] = 1
-    return float(np.median(img[wmmask > 0]) / np.percentile(img.reshape(-1), 99.95))
+    return float(mu_wm / np.percentile(img.reshape(-1), 99.95))
 
 def art_qi1(airmask, artmask):
     r"""
@@ -533,48 +497,104 @@ def rpve(pvms, seg):
     for k, lid in list(FSL_FAST_LABELS.items()):
         if lid == 0:
             continue
-        pvmap = pvms[lid - 1][seg == lid]
+        pvmap = pvms[lid - 1]
         pvmap[pvmap < 0.] = 0.
-        pvmap[pvmap >= 1.] = 0.
+        pvmap[pvmap >= 1.] = 1.
+        totalvol = np.sum(pvmap > 0.0)
         upth = np.percentile(pvmap[pvmap > 0], 98)
         loth = np.percentile(pvmap[pvmap > 0], 2)
         pvmap[pvmap < loth] = 0
         pvmap[pvmap > upth] = 0
-        pvfs[k] = pvmap[pvmap > 0].sum()
+        pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
-def summary_stats(img, pvms, bgdata=None):
+def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the standard deviation, the 95\%
     and the 5\% percentiles of each tissue distribution.
-    """
 
+    .. warning ::
+
+        Sometimes (with datasets that have been partially processed), the air
+        mask will be empty. In those cases, the background stats will be zero
+        for the mean, median, percentiles and kurtosis, the sum of voxels in
+        the other remaining labels for ``n``, and finally the MAD and the
+        :math:`\sigma` will be calculated as:
+
+        .. math ::
+
+            \sigma_\text{BG} = \sqrt{\sum \sigma_\text{i}^2}
+
+
+    """
+    from mriqc import MRIQC_LOG
+
+    # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
     if dims == 4:
-        pvms.insert(0, np.array(pvms).sum(axis=0))
+        # If pvms is from FSL FAST, create the bg mask
+        stats_pvms = [np.zeros_like(img)] + pvms
     elif dims == 3:
-        bgpvm = np.ones_like(pvms)
-        pvms = [bgpvm - pvms, pvms]
+        stats_pvms = [np.ones_like(pvms) - pvms, pvms]
     else:
         raise RuntimeError('Incorrect image dimensions ({0:d})'.format(
             np.array(pvms).ndim))
 
-    if bgdata is not None:
-        pvms[0] = bgdata
+    if airmask is not None:
+        stats_pvms[0] = airmask
 
-    if len(pvms) == 4:
-        labels = list(FSL_FAST_LABELS.items())
-    elif len(pvms) == 2:
+    labels = list(FSL_FAST_LABELS.items())
+    if len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
-    output = {k: {} for k, _ in labels}
+    output = {}
     for k, lid in labels:
-        mask = np.where(pvms[lid] > 0.5)
-        output[k]['mean'] = float(img[mask].mean())
-        output[k]['stdv'] = float(img[mask].std())
-        output[k]['p95'] = float(np.percentile(img[mask], 95))
-        output[k]['p05'] = float(np.percentile(img[mask], 5))
-        output[k]['k'] = float(kurtosis(img[mask]))
+        mask = np.zeros_like(img, dtype=np.uint8)
+        mask[stats_pvms[lid] > 0.85] = 1
+
+        if erode:
+            struc = nd.generate_binary_structure(3, 2)
+            mask = nd.binary_erosion(
+                mask, structure=struc).astype(np.uint8)
+
+        nvox = float(mask.sum())
+        if nvox < 1e3:
+            MRIQC_LOG.warn('calculating summary stats of label "%s" in a very small '
+                           'mask (%d voxels)', k, int(nvox))
+            if k == 'bg':
+                continue
+
+        output[k] = {
+            'mean': float(img[mask == 1].mean()),
+            'stdv': float(img[mask == 1].std()),
+            'median': float(np.median(img[mask == 1])),
+            'mad': float(mad(img[mask == 1])),
+            'p95': float(np.percentile(img[mask == 1], 95)),
+            'p05': float(np.percentile(img[mask == 1], 5)),
+            'k': float(kurtosis(img[mask == 1])),
+            'n': nvox,
+        }
+
+    if 'bg' not in output:
+        output['bg'] = {
+            'mean': 0.,
+            'median': 0.,
+            'p95': 0.,
+            'p05': 0.,
+            'k': 0.,
+            'stdv': sqrt(sum(val['stdv']**2
+                             for _, val in list(output.items()))),
+            'mad': sqrt(sum(val['mad']**2
+                            for _, val in list(output.items()))),
+            'n': sum(val['n'] for _, val in list(output.items()))
+        }
+
+    if 'bg' in output and output['bg']['mad'] == 0.0 and output['bg']['stdv'] > 1.0:
+        MRIQC_LOG.warn('estimated MAD in the background was too small ('
+                       'MAD=%f)', output['bg']['mad'])
+        output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
+
+
     return output
 
 def _prepare_mask(mask, label, erode=True):

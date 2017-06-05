@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-04 14:15:34
+# @Last Modified time: 2017-05-30 16:47:11
 """
 
 Measures for the structural information
@@ -53,8 +53,8 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
     computing the RMS of the temporal difference [Nichols2013]_.
 
 
-- **Global Correlation** (:py:func:`~mriqc.qc.functional.gcor`, ``gcor``) calculates
-  an optimized summary of time-series correlation as in [Saad2013]_:
+- **Global Correlation** (``gcor``) calculates an optimized summary of time-series
+    correlation as in [Saad2013]_ using AFNI's ``@compute_gcor``:
 
   .. math ::
 
@@ -78,9 +78,10 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- **Framewise Displacement** (``mean_fd``): expresses instantaneous
-  head-motion. Rotational displacements are calculated as the
-  displacement on the surface of a sphere of radius 50 mm [Power2012]_:
+- **Framewise Displacement**: expresses instantaneous head-motion.
+  MRIQC reports the average FD, labeled as ``fd_mean``.
+  Rotational displacements are calculated as the displacement on the surface of a
+  sphere of radius 50 mm [Power2012]_:
 
   .. math ::
 
@@ -88,11 +89,12 @@ Measures for artifacts and other
 |\\Delta d_{z,t}| + |\\Delta \\alpha_t| + |\\Delta \\beta_t| + |\\Delta \\gamma_t|
 
   Along with the base framewise displacement, MRIQC reports the
-  **number of timepoints above FD threshold** (``num_fd``), and the
-  **percent of FDs above the FD threshold** w.r.t. the full timeseries.
+  **number of timepoints above FD threshold** (``fd_num``), and the
+  **percent of FDs above the FD threshold** w.r.t. the full timeseries (``fd_perc``).
   In both cases, the threshold is set at 0.20mm.
 
-- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, ``ghost_*``):
+- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
+  in the reports as ``gsr_x`` and ``gsr_y``):
   along the two possible phase-encoding axes **x**, **y**:
 
   .. math ::
@@ -104,9 +106,9 @@ Measures for artifacts and other
     :align: center
 
 
-- **Outlier fraction** (``outlier``) - Mean fraction of outliers per fMRI volume
+- **AFNI's outlier ratio** (``aor``) - Mean fraction of outliers per fMRI volume
   as given by AFNI's ``3dToutcount``.
-- **Quality index** (``quality``) - Mean quality index as computed by AFNI's ``3dTqual``.
+- **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
 
 .. topic:: References
 
@@ -221,38 +223,3 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     ghost = np.mean(epi_data[n2_mask == 1]) - np.mean(epi_data[n2_mask == 2])
     signal = np.median(epi_data[n2_mask == 0])
     return float(ghost/signal)
-
-
-def gcor(func, mask=None):
-    """
-    Compute the :abbr:`GCOR (global correlation)` [Saad2013]_.
-
-    :param numpy.ndarray func: input fMRI dataset, after motion correction
-    :param numpy.ndarray mask: 3D brain mask
-    :return: the computed GCOR value
-
-    """
-    import numpy as np
-    from statsmodels.robust.scale import mad
-
-    # Reshape to N voxels x T timepoints
-    func_v = func.reshape(-1, func.shape[-1])
-
-    if mask is not None:
-        func_v = np.squeeze(func_v.take(np.where(mask.reshape(-1) > 0), axis=0))
-
-    func_sigma = mad(func_v, axis=1)
-    mask = np.zeros_like(func_sigma)
-    mask[func_sigma > 1.e-5] = 1
-
-    # Remove zero-variance voxels across time axis
-    func_v = np.squeeze(func_v.take(np.where(mask > 0), axis=0))
-    func_sigma = func_sigma[mask > 0]
-    func_mean = np.median(func_v, axis=1)
-
-    zscored = func_v - func_mean[..., np.newaxis]
-    zscored /= func_sigma[..., np.newaxis]
-
-    # avg_ts is an N timepoints x 1 vector
-    avg_ts = zscored.mean(axis=0)
-    return float(avg_ts.T.dot(avg_ts) / len(avg_ts))
