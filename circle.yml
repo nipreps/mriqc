@@ -8,7 +8,7 @@ machine:
     DOCKER_TAG: "latest"
     TEST_DATA_NAME: "circle-tests"
     TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
-    MRIQC_API_TAG: 1.0.1
+    MRIQC_API_TAG: 1.0.2
   services:
     - docker
 

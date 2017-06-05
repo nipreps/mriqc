@@ -204,7 +204,7 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
     data['bids_meta'] = _hashfields(data['bids_meta'])
 
     if email:
-        data['email'] = email
+        data['provenance']['email'] = email
 
     if path and not path.endswith('/'):
         path += '/'
