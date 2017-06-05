@@ -5,7 +5,7 @@
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-from nipype.interfaces.base import File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
+from niworkflows.nipype.interfaces.base import File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
 
 class GCORInputSpec(CommandLineInputSpec):
     in_file = File(

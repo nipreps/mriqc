@@ -12,9 +12,10 @@ import re
 import simplejson as json
 from io import open
 from builtins import bytes, str
-from nipype import logging
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
-                                    BaseInterfaceInputSpec, File, Undefined, Str)
+from niworkflows.nipype import logging
+from niworkflows.nipype.interfaces.base import (
+    traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
+    File, Undefined, Str)
 from niworkflows.interfaces.base import SimpleInterface
 from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
 
