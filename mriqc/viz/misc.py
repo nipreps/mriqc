@@ -227,43 +227,57 @@ def raters_variability_plot(y_path, figsize=(22, 22),
                 bbox_inches='tight', pad_inches=0, dpi=300)
     return fig
 
-def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
-                          rating_label='rater_1'):
+def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
+                          rating_label='rater_1', dpi=100):
     import seaborn as sn
     sn.set(style="whitegrid")
 
-    mdata, pp_cols = read_dataset(X, Y, rate_label=rating_label)
+    mdata = []
+    pp_cols = []
+
+    for X, Y, sitename in inputs:
+        sitedata, cols = read_dataset(X, Y, rate_label=rating_label,
+                                      binarize=False, site_name=sitename)
+        sitedata['database'] = [sitename] * len(sitedata)
+
+        if sitename == 'DS030':
+            sitedata['site'] = [sitename] * len(sitedata)
+
+        mdata.append(sitedata)
+        pp_cols.append(cols)
+
+    mdata = pd.concat(mdata)
+    pp_cols = pp_cols[0]
 
     for col in mdata.columns.ravel().tolist():
         if col.startswith('rater_') and col != rating_label:
             del mdata[col]
 
     mdata = mdata.loc[mdata[rating_label].notnull()]
-    mdata['database'] = ['ABIDE'] * len(mdata.site.values.ravel())
-    mdata['rater_1'] = [''] * len(mdata[rating_label])
-    mdata.loc[mdata[rating_label] == 0, 'rater_1'] = 'OK'
-    mdata.loc[mdata[rating_label] == 1, 'rater_1'] = 'exclude'
 
-    for col in [rating_label, 'size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']:
+    for col in ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']:
         del mdata[col]
         try:
             pp_cols.remove(col)
         except ValueError:
             pass
 
-    zscored = zscore_dataset(mdata, excl_columns=['rater_1'])
+    zscored = zscore_dataset(mdata, excl_columns=[rating_label])
 
     sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
 
-    palette = ['limegreen', 'tomato']
     # palette = ['dodgerblue', 'darkorange']
+    palette = ['limegreen', 'tomato']
+    if len(set(mdata[[rating_label]].values.ravel().tolist())) == 3:
+        palette = ['tomato', 'gold', 'limegreen']
+    # pp_cols = pp_cols[:5]
     nrows = len(pp_cols)
 
-    fig = plt.figure(figsize=figsize)
+    fig = plt.figure(figsize=(figsize[0], figsize[1] * nrows))
     # ncols = 2 * (nsites - 1) + 2
     gs = GridSpec(nrows, 4, wspace=0.02)
-    gs.set_width_ratios([nsites, 1, 1, nsites])
+    gs.set_width_ratios([nsites, len(inputs), len(inputs), nsites])
 
     for i, colname in enumerate(pp_cols):
         ax_nzs = plt.subplot(gs[i, 0])
@@ -272,15 +286,15 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         ax_zsc = plt.subplot(gs[i, 3])
 
         # plots
-        sn.stripplot(x='site', y=colname, data=mdata, hue='rater_1', jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=mdata, hue=rating_label, jitter=0.18, alpha=.6,
                      split=True, palette=palette, ax=ax_nzs)
-        sn.stripplot(x='site', y=colname, data=zscored, hue='rater_1', jitter=0.18, alpha=.4,
+        sn.stripplot(x='site', y=colname, data=zscored, hue=rating_label, jitter=0.18, alpha=.6,
                      split=True, palette=palette, ax=ax_zsc)
 
-        sn.stripplot(x='database', y=colname, data=mdata, hue='rater_1', jitter=0.18, alpha=.4,
+        sn.stripplot(x='database', y=colname, data=mdata, hue=rating_label, jitter=0.18, alpha=.6,
                      split=True, palette=palette, ax=axg_nzs)
-        sn.stripplot(x='database', y=colname, data=zscored, hue='rater_1', jitter=0.18,
-                     alpha=.4, split=True, palette=palette, ax=axg_zsc)
+        sn.stripplot(x='database', y=colname, data=zscored, hue=rating_label, jitter=0.18,
+                     alpha=.6, split=True, palette=palette, ax=axg_zsc)
 
         ax_nzs.legend_.remove()
         ax_zsc.legend_.remove()
@@ -330,7 +344,7 @@ def plot_abide_stripplots(X, Y, figsize=(15, 80), out_file=None,
         out_file = fname + '.svg'
 
     fig.savefig(op.abspath(out_file), format=ext[1:],
-                bbox_inches='tight', pad_inches=0, dpi=300)
+                bbox_inches='tight', pad_inches=0, dpi=dpi)
     return fig
 
 def plot_corrmat(in_csv, out_file=None):

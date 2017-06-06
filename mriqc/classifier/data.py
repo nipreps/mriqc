@@ -22,6 +22,32 @@ from mriqc import logging
 from mriqc.utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
+
+def combine_datasets(inputs, rating_label='rater_1'):
+    mdata = []
+    for dataset_x, dataset_y, sitename in inputs:
+        sitedata, _ = read_dataset(
+            dataset_x, dataset_y, rate_label=rating_label,
+            binarize=True, site_name=sitename)
+        sitedata['database'] = [sitename] * len(sitedata)
+
+        if sitename == 'DS030':
+            sitedata['site'] = [sitename] * len(sitedata)
+
+        mdata.append(sitedata)
+
+    mdata = pd.concat(mdata)
+
+    all_cols = mdata.columns.ravel().tolist()
+
+    bids_comps = list(BIDS_COMP.keys())
+    bids_comps_present = list(set(mdata.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+
+    ordered_cols = bids_comps_present + ['database', 'site', 'rater_1']
+    ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
+    return mdata[ordered_cols]
+
 def read_iqms(feat_file):
     """ Reads in the features """
 
@@ -31,6 +57,7 @@ def read_iqms(feat_file):
 
     # Find present bids bits and sort by them
     bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
     x_df = x_df.sort_values(by=bids_comps_present)
 
     # Remove sub- prefix in subject_id
@@ -50,7 +77,8 @@ def read_iqms(feat_file):
 
     return x_df, feat_names, bids_comps_present
 
-def read_labels(label_file, rate_label='rater_1', binarize=True):
+def read_labels(label_file, rate_label='rater_1', binarize=True,
+                site_name=None):
     """ Reads in the labels """
     # Massage labels table to have the appropriate format
 
@@ -61,6 +89,7 @@ def read_labels(label_file, rate_label='rater_1', binarize=True):
 
     # Find present bids bits and sort by them
     bids_comps_present = list(set(y_df.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
     y_df = y_df.sort_values(by=bids_comps_present)
     y_df.subject_id = y_df.subject_id.str.lstrip('sub-')
 
@@ -81,21 +110,52 @@ def read_labels(label_file, rate_label='rater_1', binarize=True):
         y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
         y_df.loc[y_df[rate_label] < 0, rate_label] = 1
 
-    return y_df[bids_comps_present + ['site', rate_label]]
+
+    add_cols = [rate_label]
+    # Set default name
+    if 'site' in y_df.columns.ravel().tolist():
+        add_cols.insert(0, 'site')
+    elif site_name is not None:
+        y_df['site'] = [site_name] * len(y_df)
+        add_cols.insert(0, 'site')
+
+    return y_df[bids_comps_present + add_cols]
 
 
 def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
-                 binarize=True):
+                 binarize=True, site_name=None):
     """ Reads in the features and labels """
 
     x_df, feat_names, _ = read_iqms(feat_file)
-    y_df = read_labels(label_file, rate_label, binarize)
+    y_df = read_labels(label_file, rate_label, binarize,
+                       site_name=site_name)
+
+    # Find present bids bits and sort by them
+    bids_comps = list(BIDS_COMP.keys())
+    bids_comps_x = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_x = [bit for bit in bids_comps if bit in bids_comps_x]
+    bids_comps_y = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_y = [bit for bit in bids_comps if bit in bids_comps_y]
+
+    if bids_comps_x != bids_comps_y:
+        raise RuntimeError('Labels and features cannot be merged')
+
+    x_df['bids_ids'] = x_df.subject_id.values.copy()
+    y_df['bids_ids'] = y_df.subject_id.values.copy()
+
+    for comp in bids_comps_x[1:]:
+        x_df['bids_ids'] = x_df.bids_ids.str.cat(x_df.loc[:, comp].astype(str), sep='_')
+        y_df['bids_ids'] = y_df.bids_ids.str.cat(y_df.loc[:, comp].astype(str), sep='_')
 
     # Remove failed cases from Y, append new columns to X
-    y_df = y_df[y_df['subject_id'].isin(list(x_df.subject_id.values.ravel()))]
+    y_df = y_df[y_df['bids_ids'].isin(list(x_df.bids_ids.values.ravel()))]
+
+    # Drop indexing column
+    del x_df['bids_ids']
+    del y_df['bids_ids']
 
     # Merge Y dataframe into X
-    x_df = pd.merge(x_df, y_df, on='subject_id', how='left')
+    x_df = pd.merge(x_df, y_df, on=bids_comps_x, how='left')
 
     if merged_name is not None:
         x_df.to_csv(merged_name, index=False)
@@ -150,7 +210,7 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
         njobs = cpu_count()
 
     sites = list(set(dataframe[[by]].values.ravel().tolist()))
-    columns = list(dataframe._get_numeric_data().columns.ravel())
+    columns = list(dataframe.select_dtypes([np.number]).columns.ravel())
 
     if excl_columns is None:
         excl_columns = []

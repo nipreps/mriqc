@@ -416,9 +416,11 @@ class CVHelper(CVHelperBase):
         _xeval, _, bidts = read_iqms(data)
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
         pred = _xeval[bidts].copy()
-        pred['prediction'] = self.predict(sample_x, thres=thres)
+        pred['proba'] = np.array(self._estimator.predict_proba(
+            sample_x))[:, 1]
+        pred['prediction'] = (pred['proba'].values > thres).astype(int)
         if out_file is not None:
-            pred[bidts + ['prediction']].to_csv(out_file, index=False)
+            pred[bidts + ['prediction', 'proba']].to_csv(out_file, index=False)
         return pred
 
     def evaluate(self, scoring='accuracy', matrix=False):
