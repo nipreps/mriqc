@@ -94,6 +94,7 @@ def main():
     if opts.save_classifier:
         save_classifier, clf_ext = splitext(opts.save_classifier)
 
+    clf_loaded = False
     if opts.train is not None:
         train_exists = [isfile(fname) for fname in opts.train]
         if len(train_exists) > 0 and not all(train_exists):
@@ -142,7 +143,7 @@ def main():
                                       cvhelper.evaluate(matrix=True)))
 
         # Pickle if required
-        if clf_loaded:
+        if not clf_loaded:
             cvhelper.fit_full()
             if save_classifier:
                 cvhelper.save(save_classifier + '_full' + clf_ext)
