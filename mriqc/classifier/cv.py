@@ -39,7 +39,7 @@ EXCLUDE_COLUMNS = ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spac
 class CVHelperBase(object):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 scorer='roc_auc', b_leaveout=True):
+                 scorer='roc_auc', b_leaveout=False):
         # Initialize some values
         self.param = DEFAULT_TEST_PARAMETERS.copy()
         if param is not None:
@@ -108,9 +108,10 @@ class CVHelperBase(object):
 class NestedCVHelper(CVHelperBase):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 task_id=None, scorer='roc_auc'):
+                 task_id=None, scorer='roc_auc', b_leaveout=False):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
-                                             site_label='site', rate_label='rater_1')
+                                             site_label='site', rate_label='rater_1',
+                                             b_leaveout=b_leaveout)
 
         self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
@@ -297,7 +298,7 @@ class NestedCVHelper(CVHelperBase):
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', zscored=False,
-                 scorer='roc_auc'):
+                 scorer='roc_auc', b_leaveout=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -316,7 +317,8 @@ class CVHelper(CVHelperBase):
         else:
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
-                site_label=site_label, rate_label=rate_label, scorer=scorer)
+                site_label=site_label, rate_label=rate_label, scorer=scorer,
+                b_leaveout=b_leaveout)
 
             self._grand_medians = find_bias(
                 self._Xtrain, excl_columns=[rate_label] + EXCLUDE_COLUMNS)

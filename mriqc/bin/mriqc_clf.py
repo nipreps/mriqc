@@ -50,6 +50,9 @@ def main():
     parser.add_argument('--test-data', help='test data')
     parser.add_argument('--test-labels', help='test labels')
 
+    parser.add_argument('--train-balanced-leaveout', action='store_true', default=False,
+                        help='leave out a balanced, random, sample of training examples')
+
     parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
 
     g_input = parser.add_argument_group('Inputs')
@@ -102,7 +105,8 @@ def main():
 
         # Initialize model selection helper
         cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
-                            param=parameters, scorer=opts.scorer)
+                            param=parameters, scorer=opts.scorer,
+                            b_leaveout=opts.train_balanced_leaveout)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
@@ -127,6 +131,7 @@ def main():
 
         cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
                             rate_label='rater_1')
+        clf_loaded = True
 
     if opts.test_data and opts.test_labels:
         # Set held-out data
@@ -137,9 +142,10 @@ def main():
                                       cvhelper.evaluate(matrix=True)))
 
         # Pickle if required
-        cvhelper.fit_full()
-        if save_classifier:
-            cvhelper.save(save_classifier + '_full' + clf_ext)
+        if clf_loaded:
+            cvhelper.fit_full()
+            if save_classifier:
+                cvhelper.save(save_classifier + '_full' + clf_ext)
 
     if opts.evaluation_data:
         cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
