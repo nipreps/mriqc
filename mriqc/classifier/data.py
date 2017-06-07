@@ -249,3 +249,41 @@ def zscore_site(args):
     dataframe, columns, site = args
     return zscore(dataframe.loc[dataframe.site == site, columns].values,
                   ddof=1, axis=0)
+
+
+def find_bias(dataframe, by='site', excl_columns=None):
+    sites = list(set(dataframe[[by]].values.ravel().tolist()))
+    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+    if excl_columns:
+        numcols = [col for col in numcols if col not in excl_columns]
+
+    LOG.info('Calculating bias of dataset (cols=%s)',
+             ', '.join(['"%s"' % col for col in numcols]))
+
+    site_medians = []
+    for site in sites:
+        site_medians.append(np.median(dataframe.loc[dataframe.site == site, numcols], axis=0))
+
+    return np.median(np.array(site_medians), axis=0)
+
+
+def remove_bias(dataframe, grand_medians, by='site', excl_columns=None):
+    LOG.info('Removing bias of dataset ...')
+
+    all_cols = dataframe.columns.ravel().tolist()
+    if by not in all_cols:
+        dataframe[by] = ['Unknown'] * len(dataframe)
+
+    sites = list(set(dataframe[[by]].values.ravel().tolist()))
+    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+    if excl_columns:
+        numcols = [col for col in numcols if col not in excl_columns]
+
+    for site in sites:
+        vals = dataframe.loc[dataframe.site == site, numcols]
+        site_med = np.median(vals, axis=0)
+        dataframe.loc[dataframe.site == site, numcols] = vals - site_med + grand_medians
+
+    return dataframe

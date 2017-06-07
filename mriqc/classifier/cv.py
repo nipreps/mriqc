@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from mriqc import __version__, logging
-from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_bias, remove_bias
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
@@ -86,13 +86,24 @@ class CVHelperBase(object):
 
         return groups_idx
 
-    def _generate_sample(self, zscored=False):
+    def _generate_sample(self, zscored=False, full=False):
         from sklearn.utils import indexable
         X = self._Xtr_zs.copy() if zscored else self._Xtrain.copy()
-        sample_x = np.array([tuple(x) for x in X[self._ftnames].values])
-        labels_y = X[[self._rate_column]].values.ravel()
+        sample_x = [tuple(x) for x in X[self._ftnames].values]
+        labels_y = X[[self._rate_column]].values.ravel().tolist()
 
-        return indexable(sample_x, labels_y, self.get_groups())
+        if full:
+            X = self._Xtest.copy()
+            LOG.warning('Requested fitting in both train and test '
+                        'datasets, appending %d examples', len(X))
+            sample_x += [tuple(x) for x in X[self._ftnames].values]
+            labels_y += X[[self._rate_column]].values.ravel().tolist()
+
+        groups = None
+        if not full:
+            groups = self.get_groups()
+
+        return indexable(np.array(sample_x), labels_y, groups)
 
 class NestedCVHelper(CVHelperBase):
 
@@ -296,6 +307,7 @@ class CVHelper(CVHelperBase):
         self._zscored = zscored
         self._pickled = False
         self._rate_column = rate_label
+        self._grand_medians = None
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -305,9 +317,15 @@ class CVHelper(CVHelperBase):
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
                 site_label=site_label, rate_label=rate_label, scorer=scorer)
+
+            self._grand_medians = find_bias(
+                self._Xtrain, excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+            self._Xtrain = remove_bias(self._Xtrain, self._grand_medians,
+                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
             if zscored:
-                self._Xtrain = zscore_dataset(self._Xtrain, njobs=n_jobs,
-                                        excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+                self._Xtrain = zscore_dataset(
+                    self._Xtrain, njobs=n_jobs,
+                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
 
 
 
@@ -322,9 +340,25 @@ class CVHelper(CVHelperBase):
 
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
+        if self._grand_medians is not None:
+            self._Xtest = remove_bias(self._Xtest, self._grand_medians,
+                                      excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
+
         if self._zscored:
             self._Xtest = zscore_dataset(self._Xtest, njobs=self.n_jobs,
                                          excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
+
+    def fit_full(self):
+        from sklearn.ensemble import RandomForestClassifier as RFC
+
+        if self._estimator is None:
+            raise RuntimeError('Model should be fit first')
+
+        LOG.info('Fitting full model ...')
+        X, y, groups = self._generate_sample(full=True)
+        self._estimator = RFC(
+            **self._estimator.best_estimator_.get_params()).fit(X, y)
+
 
     def fit(self):
         from sklearn.ensemble import RandomForestClassifier as RFC
@@ -378,6 +412,11 @@ class CVHelper(CVHelperBase):
 
         # Store ftnames
         setattr(self._estimator, '_ftnames', self._ftnames)
+
+        # Store normalization medians
+        setattr(self._estimator, '_grand_medians', self._grand_medians)
+
+        LOG.info('Saving classifier to: %s', filehandler)
         savepkl(self._estimator, filehandler, compress=compress)
 
     def load(self, filehandler):
@@ -389,6 +428,7 @@ class CVHelper(CVHelperBase):
         from sklearn.externals.joblib import load as loadpkl
         self._estimator = loadpkl(filehandler)
         self._ftnames = getattr(self._estimator, '_ftnames')
+        self._grand_medians = getattr(self._estimator, '_grand_medians')
         self._pickled = True
 
 
@@ -414,6 +454,10 @@ class CVHelper(CVHelperBase):
 
     def predict_dataset(self, data, out_file=None, thres=0.5):
         _xeval, _, bidts = read_iqms(data)
+        if self._grand_medians is not None:
+            _xeval = remove_bias(_xeval, self._grand_medians,
+                                 excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
+
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
         pred = _xeval[bidts].copy()
         pred['proba'] = np.array(self._estimator.predict_proba(
