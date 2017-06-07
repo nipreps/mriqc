@@ -357,9 +357,15 @@ class CVHelper(CVHelperBase):
             raise RuntimeError('Model should be fit first')
 
         LOG.info('Fitting full model ...')
-        X, y, groups = self._generate_sample(full=True)
-        self._estimator = RFC(
-            **self._estimator.best_estimator_.get_params()).fit(X, y)
+        sample_x = [tuple(x) for x in self._Xtest[self._ftnames].values]
+        labels_y = self._Xtest[[self._rate_column]].values.ravel().tolist()
+
+        clf_params = self._estimator.best_estimator_.get_params()
+        best_estimator = clone(self._estimator.best_estimator_).set_params(
+            **clf_params)
+        best_estimator.warm_start = True
+        best_estimator.fit(sample_x, labels_y)
+        self._estimator = best_estimator
 
 
     def fit(self):

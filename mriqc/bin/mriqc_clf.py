@@ -36,6 +36,7 @@ def main():
     from mriqc.classifier.cv import CVHelper
     from mriqc import logging, LOG_FORMAT
     from os.path import isfile, splitext
+    LOG = logging.getLogger('mriqc.classifier')
 
     warnings.showwarning = warn_redirect
 
@@ -138,13 +139,18 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        print('%s=%f, accuracy=%f' % (opts.scorer,
-                                      cvhelper.evaluate(scoring=opts.scorer),
-                                      cvhelper.evaluate(matrix=True)))
+        LOG.info('Evaluation on test data: %s=%f, accuracy=%f', opts.scorer,
+                 cvhelper.evaluate(scoring=opts.scorer),
+                 cvhelper.evaluate(matrix=True))
 
         # Pickle if required
         if not clf_loaded:
             cvhelper.fit_full()
+            LOG.info('Evaluation on test data (trained including test data): '
+                     '%s=%f, accuracy=%f', opts.scorer,
+                     cvhelper.evaluate(scoring=opts.scorer),
+                     cvhelper.evaluate(matrix=True))
+
             if save_classifier:
                 cvhelper.save(save_classifier + '_full' + clf_ext)
 
