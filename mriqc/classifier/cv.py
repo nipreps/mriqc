@@ -471,7 +471,6 @@ class CVHelper(CVHelperBase):
 
     def evaluate(self, scoring='accuracy', matrix=False):
         from sklearn.model_selection._validation import _score
-        from sklearn.utils.multiclass import type_of_target
 
         sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
         # print(self._estimator.decision_function(sample_x))
