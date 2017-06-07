@@ -35,7 +35,7 @@ def main():
     from pkg_resources import resource_filename as pkgrf
     from mriqc.classifier.cv import CVHelper
     from mriqc import logging, LOG_FORMAT
-    from os.path import isfile
+    from os.path import isfile, splitext
 
     warnings.showwarning = warn_redirect
 
@@ -87,6 +87,10 @@ def main():
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
 
+    save_classifier = None
+    if opts.save_classifier:
+        save_classifier, clf_ext = splitext(opts.save_classifier)
+
     if opts.train is not None:
         train_exists = [isfile(fname) for fname in opts.train]
         if len(train_exists) > 0 and not all(train_exists):
@@ -104,8 +108,8 @@ def main():
         cvhelper.fit()
 
         # Pickle if required
-        if opts.save_classifier:
-            cvhelper.save(opts.save_classifier)
+        if save_classifier:
+            cvhelper.save(save_classifier + '_train' + clf_ext)
 
     # If no training set is given, need a classifier
     else:
@@ -131,6 +135,11 @@ def main():
         print('%s=%f, accuracy=%f' % (opts.scorer,
                                       cvhelper.evaluate(scoring=opts.scorer),
                                       cvhelper.evaluate(matrix=True)))
+
+        # Pickle if required
+        cvhelper.fit_full()
+        if save_classifier:
+            cvhelper.save(save_classifier + '_full' + clf_ext)
 
     if opts.evaluation_data:
         cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
