@@ -88,8 +88,8 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
     sync &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y; sync && \
-    python -c "from matplotlib import font_manager"
-
+    python -c "from matplotlib import font_manager" && \
+    sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
 # Installing dev requirements (packages that are not in pypi)
 COPY requirements.txt requirements.txt
