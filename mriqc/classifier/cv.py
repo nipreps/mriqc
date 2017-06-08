@@ -46,7 +46,7 @@ EXCLUDE_COLUMNS = [
 class CVHelperBase(object):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 scorer='roc_auc', b_leaveout=False):
+                 scorer='roc_auc', b_leaveout=False, multiclass=False):
         # Initialize some values
         self.param = DEFAULT_TEST_PARAMETERS.copy()
         if param is not None:
@@ -55,8 +55,10 @@ class CVHelperBase(object):
         self.n_jobs = n_jobs
         self._rate_column = rate_label
         self._site_column = site_label
+        self._multiclass = multiclass
 
-        self._Xtrain, self._ftnames = read_dataset(X, Y, rate_label=rate_label)
+        self._Xtrain, self._ftnames = read_dataset(X, Y, rate_label=rate_label,
+                                                   binarize=not self._multiclass)
         self.sites = list(set(self._Xtrain[site_label].values.ravel()))
         self._scorer = scorer
         self._balanced_leaveout = True
@@ -115,10 +117,10 @@ class CVHelperBase(object):
 class NestedCVHelper(CVHelperBase):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 task_id=None, scorer='roc_auc', b_leaveout=False):
+                 task_id=None, scorer='roc_auc', b_leaveout=False, multiclass=False):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rater_1',
-                                             b_leaveout=b_leaveout)
+                                             b_leaveout=b_leaveout, multiclass=False)
 
         self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
@@ -305,7 +307,7 @@ class NestedCVHelper(CVHelperBase):
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', zscored=False,
-                 scorer='roc_auc', b_leaveout=False):
+                 scorer='roc_auc', b_leaveout=False, multiclass=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -324,7 +326,7 @@ class CVHelper(CVHelperBase):
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
                 site_label=site_label, rate_label=rate_label, scorer=scorer,
-                b_leaveout=b_leaveout)
+                b_leaveout=b_leaveout, multiclass=multiclass)
 
 
             self._batch_effect = find_iqrs(
@@ -353,7 +355,8 @@ class CVHelper(CVHelperBase):
         return self._Xtest
 
     def setXtest(self, X, Y):
-        self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
+        self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column,
+                                      binarize=not self._multiclass)
         if self._batch_effect is not None:
             self._Xtest = norm_iqrs(self._Xtest, self._batch_effect,
                                       excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)

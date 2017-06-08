@@ -173,9 +173,16 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
     LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
              feat_file, label_file, nsamples)
 
-    nfails = int(x_df[rate_label].sum())
-    LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
-             nfails, nsamples - nfails, nfails * 100 / nsamples)
+    labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
+    print(labels)
+    lshare = []
+    for l in labels:
+        lshare.append(int(np.sum(x_df[rate_label] == l)))
+
+    LOG.info('Ratings distribution: %s (%s, %s)',
+             '/'.join(['%d' % x for x in lshare]),
+             '/'.join(['%.2f%%' % (100 * x / nsamples) for x in lshare]),
+             'accept/exclude' if len(lshare) == 2 else 'exclude/doubtful/accept')
 
     return x_df, feat_names
 

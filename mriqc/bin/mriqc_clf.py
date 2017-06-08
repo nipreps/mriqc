@@ -53,6 +53,8 @@ def main():
 
     parser.add_argument('--train-balanced-leaveout', action='store_true', default=False,
                         help='leave out a balanced, random, sample of training examples')
+    parser.add_argument('--multiclass', '--ms', action='store_true', default=False,
+                        help='do not binarize labels')
 
     parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
 
@@ -108,7 +110,8 @@ def main():
         # Initialize model selection helper
         cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
                             param=parameters, scorer=opts.scorer,
-                            b_leaveout=opts.train_balanced_leaveout)
+                            b_leaveout=opts.train_balanced_leaveout,
+                            multiclass=opts.multiclass)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
