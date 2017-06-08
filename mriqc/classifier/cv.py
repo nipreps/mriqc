@@ -504,7 +504,7 @@ class CVHelper(CVHelperBase):
                 target_names=["accept", "exclude"]))
 
 
-        if plot_roc:
+        if plot_roc and not self._multiclass:
             plot_roc_curve(
                 labels_y, np.array(self._estimator.predict_proba(sample_x))[:, 1],
                 'roc_iqrs.png')
