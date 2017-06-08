@@ -350,8 +350,6 @@ class CVHelper(CVHelperBase):
                                          excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
     def fit_full(self):
-        from sklearn.ensemble import RandomForestClassifier as RFC
-
         if self._estimator is None:
             raise RuntimeError('Model should be fit first')
 
