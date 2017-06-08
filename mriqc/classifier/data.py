@@ -15,6 +15,7 @@ Reads in and writes CSV files with the IQMs
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+from statsmodels.robust.scale import mad
 import pandas as pd
 from builtins import str
 
@@ -251,15 +252,14 @@ def zscore_site(args):
                   ddof=1, axis=0)
 
 
-def find_bias(dataframe, by='site', excl_columns=None):
+def find_gmed(dataframe, by='site', excl_columns=None):
     sites = list(set(dataframe[[by]].values.ravel().tolist()))
     numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
 
     if excl_columns:
         numcols = [col for col in numcols if col not in excl_columns]
 
-    LOG.info('Calculating bias of dataset (cols=%s)',
-             ', '.join(['"%s"' % col for col in numcols]))
+    LOG.info('Calculating bias of dataset (%d features)', len(numcols))
 
     site_medians = []
     for site in sites:
@@ -268,7 +268,7 @@ def find_bias(dataframe, by='site', excl_columns=None):
     return np.median(np.array(site_medians), axis=0)
 
 
-def remove_bias(dataframe, grand_medians, by='site', excl_columns=None):
+def norm_gmed(dataframe, grand_medians, by='site', excl_columns=None):
     LOG.info('Removing bias of dataset ...')
 
     all_cols = dataframe.columns.ravel().tolist()
@@ -285,5 +285,49 @@ def remove_bias(dataframe, grand_medians, by='site', excl_columns=None):
         vals = dataframe.loc[dataframe.site == site, numcols]
         site_med = np.median(vals, axis=0)
         dataframe.loc[dataframe.site == site, numcols] = vals - site_med + grand_medians
+
+    return dataframe
+
+
+def find_iqrs(dataframe, by='site', excl_columns=None):
+    sites = list(set(dataframe[[by]].values.ravel().tolist()))
+    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+    if excl_columns:
+        numcols = [col for col in numcols if col not in excl_columns]
+
+    LOG.info('Calculating IQR of dataset (%d)', len(numcols))
+
+    meds = []
+    iqrs = []
+    for site in sites:
+        vals = dataframe.loc[dataframe.site == site, numcols]
+        iqrs.append(mad(vals, axis=0))
+        meds.append(np.median(vals, axis=0))
+
+    return [np.median(np.array(meds), axis=0),
+            np.median(np.array(iqrs), axis=0)]
+
+
+def norm_iqrs(dataframe, mean_iqr, by='site', excl_columns=None):
+    LOG.info('Removing bias of dataset ...')
+
+    all_cols = dataframe.columns.ravel().tolist()
+    if by not in all_cols:
+        dataframe[by] = ['Unknown'] * len(dataframe)
+
+    sites = list(set(dataframe[[by]].values.ravel().tolist()))
+    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+    if excl_columns:
+        numcols = [col for col in numcols if col not in excl_columns]
+
+    for site in sites:
+        vals = dataframe.loc[dataframe.site == site, numcols]
+        vals -= np.median(vals, axis=0)
+        iqr = np.percentile(vals, 75, axis=0) - np.percentile(vals, 25, axis=0)
+        vals.iloc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
+        changecols = vals.iloc[:, iqr > 1.e-5].columns.ravel().tolist()
+        dataframe.loc[dataframe.site == site, changecols] = vals
 
     return dataframe

@@ -17,6 +17,48 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 from mriqc.classifier.data import read_dataset, zscore_dataset
 
+def plot_batches(fulldata, out_file=None, excl_columns=None):
+    fulldata = fulldata.select_dtypes([np.number]).copy()
+    if excl_columns:
+        cols = fulldata.columns.ravel().tolist()
+        cols = [col for col in cols if col not in excl_columns]
+        fulldata = fulldata[cols]
+
+    colmin = fulldata.min()
+    fulldata = (fulldata - colmin)
+    colmax = fulldata.max()
+    fulldata = fulldata / colmax
+
+    fig, ax = plt.subplots(figsize=(20, 10))
+    ax.imshow(fulldata.values, cmap=plt.cm.viridis, interpolation='nearest', aspect='auto')
+
+    plt.xticks(range(fulldata.shape[1]), fulldata.columns.ravel().tolist(), rotation='vertical')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.grid(False)
+    if out_file is not None:
+        fig.savefig(out_file)
+    return fig
+
+def plot_roc_curve(true_y, prob_y, out_file=None):
+    from sklearn.metrics import roc_curve
+
+    fpr, tpr, _ = roc_curve(true_y, prob_y)
+
+    fig = plt.figure()
+    plt.plot(fpr[2], tpr[2], color='darkorange', lw=2, label='ROC curve')
+    plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
+    plt.xlim([-0.025, 1.025])
+    plt.ylim([-0.025, 1.025])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('RoC Curve')
+    if out_file is not None:
+        fig.savefig(out_file)
+    return fig
+
 def fill_matrix(matrix, width, value='n/a'):
     if matrix.shape[0] < width:
         nas = np.chararray((1, 3), itemsize=len(value))

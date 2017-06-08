@@ -17,7 +17,9 @@ import numpy as np
 import pandas as pd
 
 from mriqc import __version__, logging
-from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_bias, remove_bias
+from mriqc.viz.misc import plot_batches, plot_roc_curve
+
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_iqrs, norm_iqrs
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
@@ -34,7 +36,12 @@ DEFAULT_TEST_PARAMETERS = {
     'svc_linear': [{'C': [0.1, 1]}],
 }
 
-EXCLUDE_COLUMNS = ['size_x', 'size_y', 'size_z', 'spacing_x', 'spacing_y', 'spacing_z']
+EXCLUDE_COLUMNS = [
+    'size_x', 'size_y', 'size_z',
+    'spacing_x', 'spacing_y', 'spacing_z',
+    'qi_1', 'qi_2',
+    'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm',
+]
 
 class CVHelperBase(object):
 
@@ -308,7 +315,7 @@ class CVHelper(CVHelperBase):
         self._zscored = zscored
         self._pickled = False
         self._rate_column = rate_label
-        self._grand_medians = None
+        self._batch_effect = None
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -320,10 +327,16 @@ class CVHelper(CVHelperBase):
                 site_label=site_label, rate_label=rate_label, scorer=scorer,
                 b_leaveout=b_leaveout)
 
-            self._grand_medians = find_bias(
+
+            self._batch_effect = find_iqrs(
                 self._Xtrain, excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            self._Xtrain = remove_bias(self._Xtrain, self._grand_medians,
-                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+
+            plot_batches(self._Xtrain[self._ftnames], 'before.png',
+                         excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+            self._Xtrain = norm_iqrs(self._Xtrain, self._batch_effect,
+                                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
+            plot_batches(self._Xtrain[self._ftnames], 'after_iqrs.png',
+                         excl_columns=[rate_label] + EXCLUDE_COLUMNS)
             if zscored:
                 self._Xtrain = zscore_dataset(
                     self._Xtrain, njobs=n_jobs,
@@ -342,8 +355,8 @@ class CVHelper(CVHelperBase):
 
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
-        if self._grand_medians is not None:
-            self._Xtest = remove_bias(self._Xtest, self._grand_medians,
+        if self._batch_effect is not None:
+            self._Xtest = norm_iqrs(self._Xtest, self._batch_effect,
                                       excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
         if self._zscored:
@@ -351,8 +364,6 @@ class CVHelper(CVHelperBase):
                                          excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
     def fit_full(self):
-        from sklearn.ensemble import RandomForestClassifier as RFC
-
         if self._estimator is None:
             raise RuntimeError('Model should be fit first')
 
@@ -422,7 +433,7 @@ class CVHelper(CVHelperBase):
         setattr(self._estimator, '_ftnames', self._ftnames)
 
         # Store normalization medians
-        setattr(self._estimator, '_grand_medians', self._grand_medians)
+        setattr(self._estimator, '_batch_effect', self._batch_effect)
 
         LOG.info('Saving classifier to: %s', filehandler)
         savepkl(self._estimator, filehandler, compress=compress)
@@ -436,7 +447,7 @@ class CVHelper(CVHelperBase):
         from sklearn.externals.joblib import load as loadpkl
         self._estimator = loadpkl(filehandler)
         self._ftnames = getattr(self._estimator, '_ftnames')
-        self._grand_medians = getattr(self._estimator, '_grand_medians')
+        self._batch_effect = getattr(self._estimator, '_batch_effect', None)
         self._pickled = True
 
 
@@ -462,8 +473,8 @@ class CVHelper(CVHelperBase):
 
     def predict_dataset(self, data, out_file=None, thres=0.5):
         _xeval, _, bidts = read_iqms(data)
-        if self._grand_medians is not None:
-            _xeval = remove_bias(_xeval, self._grand_medians,
+        if self._batch_effect is not None:
+            _xeval = norm_iqrs(_xeval, self._batch_effect,
                                  excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
@@ -473,20 +484,27 @@ class CVHelper(CVHelperBase):
         pred['prediction'] = (pred['proba'].values > thres).astype(int)
         if out_file is not None:
             pred[bidts + ['prediction', 'proba']].to_csv(out_file, index=False)
+
         return pred
 
     def evaluate(self, scoring='accuracy', matrix=False):
         from sklearn.model_selection._validation import _score
 
         sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
+        labels_y = self._Xtest.rater_1.values.ravel().tolist()
         # print(self._estimator.decision_function(sample_x))
-        thescore = _score(self._estimator, sample_x, self._Xtest.rater_1.values.ravel().tolist(),
+        thescore = _score(self._estimator, sample_x, labels_y,
                           check_scoring(self._estimator, scoring=scoring))
         LOG.info('Performance %s=%f', scoring, thescore)
         if matrix:
             LOG.info('Classification report (evaluation):\n%s', classification_report(
-                self._estimator.predict(sample_x), self._Xtest.rater_1.values.ravel().tolist(),
+                self._estimator.predict(sample_x), labels_y,
                 target_names=["accept", "exclude"]))
+
+
+        plot_roc_curve(
+            labels_y, np.array(self._estimator.predict_proba(sample_x))[:, 1],
+            'roc_iqrs.png')
         return thescore
 
 
