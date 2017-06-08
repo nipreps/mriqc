@@ -19,7 +19,7 @@ import pandas as pd
 from mriqc import __version__, logging
 from mriqc.viz.misc import plot_batches, plot_roc_curve
 
-from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_gmed, norm_gmed
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_iqrs, norm_iqrs
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
@@ -327,14 +327,14 @@ class CVHelper(CVHelperBase):
                 b_leaveout=b_leaveout)
 
 
-            self._batch_effect = find_gmed(
+            self._batch_effect = find_iqrs(
                 self._Xtrain, excl_columns=[rate_label] + EXCLUDE_COLUMNS)
 
             plot_batches(self._Xtrain[self._ftnames], 'before.png',
                          excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            self._Xtrain = norm_gmed(self._Xtrain, self._batch_effect,
+            self._Xtrain = norm_iqrs(self._Xtrain, self._batch_effect,
                                     excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            plot_batches(self._Xtrain[self._ftnames], 'after_gmed.png',
+            plot_batches(self._Xtrain[self._ftnames], 'after_iqrs.png',
                          excl_columns=[rate_label] + EXCLUDE_COLUMNS)
             if zscored:
                 self._Xtrain = zscore_dataset(
@@ -355,7 +355,7 @@ class CVHelper(CVHelperBase):
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column)
         if self._batch_effect is not None:
-            self._Xtest = norm_gmed(self._Xtest, self._batch_effect,
+            self._Xtest = norm_iqrs(self._Xtest, self._batch_effect,
                                       excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
         if self._zscored:
@@ -473,7 +473,7 @@ class CVHelper(CVHelperBase):
     def predict_dataset(self, data, out_file=None, thres=0.5):
         _xeval, _, bidts = read_iqms(data)
         if self._batch_effect is not None:
-            _xeval = norm_gmed(_xeval, self._batch_effect,
+            _xeval = norm_iqrs(_xeval, self._batch_effect,
                                  excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
         sample_x = np.array([tuple(x) for x in _xeval[self._ftnames].values])
@@ -504,7 +504,7 @@ class CVHelper(CVHelperBase):
         if plot_roc:
             plot_roc_curve(
                 labels_y, np.array(self._estimator.predict_proba(sample_x))[:, 1],
-                'roc_gmed.png')
+                'roc_iqrs.png')
         return thescore
 
 
