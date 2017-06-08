@@ -48,7 +48,7 @@ def plot_roc_curve(true_y, prob_y, out_file=None):
     fpr, tpr, _ = roc_curve(true_y, prob_y)
 
     fig = plt.figure()
-    plt.plot(fpr[2], tpr[2], color='darkorange', lw=2, label='ROC curve')
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve')
     plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
     plt.xlim([-0.025, 1.025])
     plt.ylim([-0.025, 1.025])

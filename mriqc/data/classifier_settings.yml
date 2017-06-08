@@ -3,5 +3,5 @@ rfc:
   max_features: ["sqrt", 0.33]
   min_samples_split: [2, 5, 10]
   n_estimators: [700, 1000, 2000]
-  class_weight: ["balanced"]
+  class_weight: ["balanced", "balanced_subsample"]
   bootstrap: [true]
