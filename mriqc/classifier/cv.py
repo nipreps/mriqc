@@ -313,7 +313,6 @@ class CVHelper(CVHelperBase):
         if load_clf is not None:
             self.n_jobs = n_jobs
             self.load(load_clf)
-            self._ftnames = getattr(self._estimator, '_ftnames')
         else:
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
@@ -436,7 +435,7 @@ class CVHelper(CVHelperBase):
         from sklearn.externals.joblib import load as loadpkl
         self._estimator = loadpkl(filehandler)
         self._ftnames = getattr(self._estimator, '_ftnames')
-        self._grand_medians = getattr(self._estimator, '_grand_medians')
+        self._grand_medians = getattr(self._estimator, '_grand_medians', None)
         self._pickled = True
 
 
