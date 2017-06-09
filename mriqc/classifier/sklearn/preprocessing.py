@@ -33,21 +33,26 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
         self._scaler = scaler
         self._columns = columns
 
+    def _numeric_cols(self, X):
+        columns = self._columns
+        numcols = list(X.select_dtypes([np.number]).columns.ravel())
+
+        if not columns:
+            return numcols
+        return [col for col in columns if col in numcols]
+
     def fit(self, X, y=None):
-        if self._columns:
-            self._scaler.fit(X[self._columns], y)
-        else:
-            self._scaler.fit(X, y)
+        columns = self._numeric_cols(X)
+        self._scaler.fit(X[columns], y)
         return self
 
     def transform(self, X, y=None):
-        if not self._columns:
-            return self._scaler.transform(X)
+        columns = self._numeric_cols(X)
 
         col_order = X.columns
         scaled_x = pd.DataFrame(self._scaler.transform(
-            X[self._columns]), columns=self._columns)
-        unscaled_x = X.ix[:, ~X.columns.isin(self._columns)]
+            X[columns]), columns=columns)
+        unscaled_x = X.ix[:, ~X.columns.isin(columns)]
         return pd.concat([unscaled_x, scaled_x], axis=1)[col_order]
 
 
@@ -71,25 +76,25 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         self._scaler = []
 
     def fit(self, X, y=None):
-        groups, ngroups, columns = self._get_groups(X)
+        groups, ngroups, colmask = self._get_groups(X)
 
         for gid in list(range(ngroups)):
             mask = groups == gid
             scaler = clone(self._base_scaler)
-            scaler.fit(X.iloc[mask, columns], y)
+            scaler.fit(X.ix[mask, colmask], y)
             self._scaler.append(scaler)
 
         return self
 
     def transform(self, X, y=None):
-        groups, _, columns = self._get_groups(X)
+        groups, _, colmask = self._get_groups(X)
 
         dataframes = []
         for gid, scaler in enumerate(self._scaler):
             mask = groups == gid
 
             scaled_x = pd.DataFrame(scaler.transform(
-                X.iloc[mask, columns]))
+                X.ix[mask, colmask]))
             dataframes.append(scaled_x)
 
         scaled = pd.concat(dataframes, axis=0)
@@ -109,10 +114,11 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         glist = list(set(groups))
         ngroups = len(glist)
         groups = np.array([glist.index(group) for group in groups])
-        return groups, ngroups, columns
+        colmask = X.columns.isin(columns)
+        return groups, ngroups, colmask
 
 
-class BatchScaler(BaseEstimator, TransformerMixin):
+class BatchScaler(GroupsScaler, TransformerMixin):
     """
     Wraps a data transformation to run group-wise.
 
@@ -127,14 +133,52 @@ class BatchScaler(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, scaler, groups, columns=None):
-        self._scaler = ColumnsScaler(GroupsScaler(scaler, groups=groups),
-                                     columns=columns)
+        self._base_scaler = scaler
+        self._groups = groups
+        self._columns = columns
+        self._scaler = []
 
     def fit(self, X, y=None):
-        return self._scaler.fit(X, y)
+        groups, ngroups, colmask = self._get_groups(X)
+
+        for gid in list(range(ngroups)):
+            mask = groups == gid
+            scaler = clone(self._base_scaler)
+            scaler.fit(X.ix[mask, colmask], y)
+            self._scaler.append(scaler)
+
+        return self
 
     def transform(self, X, y=None):
-        return self._scaler.transform(X, y)
+        col_order = X.columns
+        groups, _, colmask = self._get_groups(X)
+        colnames = col_order[colmask]
+
+        tmp_x = X.copy()
+
+        dataframes = []
+        for gid, scaler in enumerate(self._scaler):
+            mask = groups == gid
+            tmp_x.ix[mask, colmask] = scaler.transform(
+                tmp_x.ix[mask, colmask])
+
+        return tmp_x[col_order]
+
+    def _get_groups(self, X):
+        columns = X.columns.ravel().tolist()
+
+        if self._columns:
+            columns = self._columns
+
+        groups = self._groups
+        if isinstance(self._groups, str):
+            groups = X[[self._groups]].values.ravel().tolist()
+
+        glist = list(set(groups))
+        ngroups = len(glist)
+        groups = np.array([glist.index(group) for group in groups])
+        colmask = X.columns.isin(columns)
+        return groups, ngroups, colmask
 
 
 class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
