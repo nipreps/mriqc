@@ -295,7 +295,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 # always keep the noise index, which is n_feature (assuming 0 based python index)
                 #idx_keep = np.concatenate((idx_keep[:, np.newaxis], np.array([[n_feature]])), axis=0)
                 idx_keep = np.ravel(idx_keep)
-                LOG.info('Feature selection: keep %d features', len(idx_keep))
+                LOG.debug('Feature selection: keep %d features', len(idx_keep))
 
             # fail safe
             if counter >= n_winnow:
@@ -306,6 +306,9 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.idx_keep_ = idx_keep[:-1]
         self.mask_ = np.asarray(
             [True if i in idx_keep[:-1] else False for i in range(n_feature)])
+
+        LOG.info('Feature selection: removed %s', ', '.join(
+            ['"%s"' % col for col in np.array(features)[~self.mask_]]))
 
         return self
 
