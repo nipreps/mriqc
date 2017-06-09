@@ -11,6 +11,8 @@ Extensions to the sklearn's default data preprocessing filters
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
+from mriqc import logging
+LOG = logging.getLogger('mriqc.classifier')
 
 
 class ColumnsScaler(BaseEstimator, TransformerMixin):
@@ -182,12 +184,12 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
     https://gist.github.com/satra/c6eb113055810f19709fa7c5ebd23de8
 
     """
-    import scipy
-    import scipy.stats
-    import sklearn
-    import sklearn.utils
-    import sklearn.utils.validation
-    import sklearn.metrics
+    def __init__(self, features=None):
+        self._features = features
+        self.importances_ = None
+        self.importances_snr_ = None
+        self.idx_keep_ = None
+        self.mask_ = None
 
     def fit(self, X, y):
         """Fit the model with X.
@@ -204,16 +206,21 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.mask_ : array
             Logical array of features to keep
         """
+        from sklearn.metrics import roc_auc_score
+        from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
         n_winnow = 10
         clf_flag = True
         n_estimators = 1000
 
-        X_input = X.copy()
+        features = self._features
+        if not features:
+            features = X.columns.ravel().tolist()
 
-        n_sample = np.shape(X_input)[0]
+        X_input = X[features].copy()
+
+        n_sample, n_feature = np.shape(X_input)
         # Add "1" to the col dimension to account for always keeping the noise
         # vector inside the loop
-        n_feature = np.shape(X)[1]
         idx_keep = np.arange(n_feature + 1)
 
         counter = 0
@@ -227,12 +234,12 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
             if clf_flag:
                 noise_feature = np.random.normal(
                     loc=0, scale=10.0, size=(n_sample, 1))
-                noise_score = sklearn.metrics.roc_auc_score(
+                noise_score = roc_auc_score(
                     y, noise_feature, average='macro', sample_weight=None)
                 while (noise_score > 0.6) or (noise_score < 0.4):
                     noise_feature = np.random.normal(
                         loc=0, scale=10.0, size=(n_sample, 1))
-                    noise_score = sklearn.metrics.roc_auc_score(
+                    noise_score = roc_auc_score(
                         y, noise_feature, average='macro', sample_weight=None)
             else:
                 noise_feature = np.random.normal(
@@ -246,7 +253,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
 
             # Initialize estimator
             if clf_flag:
-                clf = sklearn.ensemble.ExtraTreesClassifier(
+                clf = ExtraTreesClassifier(
                     n_estimators=n_estimators,
                     criterion='gini',
                     max_depth=None,
@@ -257,30 +264,30 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                     oob_score=False, n_jobs=1, random_state=None, verbose=0,
                     warm_start=False, class_weight=None)
             else:
-                clf = sklearn.ensemble.ExtraTreesRegressor(
+                clf = ExtraTreesRegressor(
                     n_estimators=n_estimators, criterion='mse', max_depth=None, min_samples_split=2,
                     min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features='auto',
                     max_leaf_nodes=None, min_impurity_split=1e-07, bootstrap=False,
                     oob_score=False, n_jobs=1, random_state=None, verbose=0, warm_start=False)
 
             clf.fit(X[:, idx_keep], y)
-            print('done fitting once')
+            LOG.debug('done fitting once')
             importances = clf.feature_importances_
 
             k = 1
             if np.all(importances[0:-1] > k*importances[-1]):
-                print('all good')
+                LOG.debug('all good')
                 # all features better than noise
                 # comment out to force counter renditions of winnowing
                 #noise_flag = False
             elif np.all(k*importances[-1] > importances[0:-1]):
-                print('all bad')
+                LOG.debug('all bad')
                 # noise better than all features aka no feature better than noise
                 # Leave as separate if clause in case want to do something different than when all feat > noise
                 # comment out to force counter renditions of winnowing
                 # noise_flag = False # just take everything
             else:
-                print('some good')
+                LOG.debug('some good')
                 # Tracer()()
                 idx_keep = idx_keep[importances >= (k * importances[-1])]
                 # use >= so when saving, can always drop last index
@@ -288,7 +295,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 # always keep the noise index, which is n_feature (assuming 0 based python index)
                 #idx_keep = np.concatenate((idx_keep[:, np.newaxis], np.array([[n_feature]])), axis=0)
                 idx_keep = np.ravel(idx_keep)
-                print(np.shape(idx_keep))
+                LOG.info('Feature selection: keep %d features', len(idx_keep))
 
             # fail safe
             if counter >= n_winnow:
@@ -328,9 +335,8 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         -------
         X_new : array-like, shape (n_samples, n_components)
         """
-        sklearn.utils.validation.check_is_fitted(
-            self, ['mask_'], all_or_any=all)
-
-        X = sklearn.utils.check_array(X)
-
+        from sklearn.utils import check_array
+        from sklearn.utils.validation import check_is_fitted
+        check_is_fitted(self, ['mask_'], all_or_any=all)
+        X = check_array(X)
         return X[:, self.mask_]
