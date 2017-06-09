@@ -133,10 +133,9 @@ class BatchScaler(GroupsScaler, TransformerMixin):
     """
 
     def __init__(self, scaler, groups, columns=None):
-        self._base_scaler = scaler
-        self._groups = groups
+        super(BatchScaler, self).__init__(scaler,
+                                          groups=groups)
         self._columns = columns
-        self._scaler = []
 
     def fit(self, X, y=None):
         groups, ngroups, colmask = self._get_groups(X)
@@ -152,11 +151,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
     def transform(self, X, y=None):
         col_order = X.columns
         groups, _, colmask = self._get_groups(X)
-        colnames = col_order[colmask]
-
         tmp_x = X.copy()
-
-        dataframes = []
         for gid, scaler in enumerate(self._scaler):
             mask = groups == gid
             tmp_x.ix[mask, colmask] = scaler.transform(
