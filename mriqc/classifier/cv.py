@@ -20,7 +20,7 @@ from mriqc import __version__, logging
 from mriqc.viz.misc import plot_batches, plot_roc_curve
 
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_iqrs, norm_iqrs
-from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
+from .sklearn.model_selection import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
 from sklearn.base import is_classifier, clone
 from sklearn.metrics.scorer import check_scoring, make_scorer
@@ -501,7 +501,8 @@ class CVHelper(CVHelperBase):
         if matrix:
             LOG.info('Classification report (evaluation):\n%s', classification_report(
                 self._estimator.predict(sample_x), labels_y,
-                target_names=["accept", "exclude"]))
+                target_names=["exclude", "doubtful", "accept"] if self._multiclass
+                              else ["accept", "exclude"]))
 
 
         if plot_roc and not self._multiclass:
