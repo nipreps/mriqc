@@ -379,27 +379,29 @@ class CVHelper(CVHelperBase):
             LOG.info('Classifier was loaded from file, cancelling fitting.')
             return
 
-        LOG.info('Cross-validation - fitting for %s ...', self._scorer)
+        LOG.info('Cross-validation - setting up pipeline')
         clf = RFC()
-        grid = RobustGridSearchCV(
-            clf, self.param['rfc'], error_score=0.5, refit=True,
-            scoring=check_scoring(clf, scoring=self._scorer),
-            n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
-
         pre_steps = [
             ('std', mcsp.BatchScaler(
                 RobustScaler(), by='site',
                 columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
             ('pandas', mcsp.PandasAdaptor(columns=self._ftnames)),
             ('ft_sel', mcsp.CustFsNoiseWinnow()),
+            ('rfc', clf)
         ]
+        pipe = Pipeline(pre_steps)
 
-        pipe = Pipeline(pre_steps + [('grid', grid)])
+        LOG.info('Cross-validation - fitting for %s ...', self._scorer)
+        grid = RobustGridSearchCV(
+            pipe, self.param['rfc'], error_score=0.5, refit=True,
+            scoring=check_scoring(pipe, scoring=self._scorer),
+            n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
 
-        self._estimator = pipe.fit(
+
+        self._estimator = grid.fit(
             self._Xtrain,
             self._Xtrain[[self._rate_column]].values.ravel().tolist(),
-            grid__groups=self.get_groups()
+            groups=self.get_groups()
         )
 
         LOG.info('Cross-validation - best parameters (%s=%f) %s',
