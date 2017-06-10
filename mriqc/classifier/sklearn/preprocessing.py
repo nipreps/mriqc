@@ -152,7 +152,8 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     X.ix[mask, self._colmask], y)
             else:
                 colmask = self._colmask
-                del colmask[self._colnames.index(self._by)]
+                if self._by in self._colnames and len(colmask) == len(self._colnames):
+                    del colmask[self._colnames.index(self._by)]
 
                 scaler = clone(self._base_scaler)
                 new_x.ix[:, colmask] = scaler.fit_transform(
@@ -215,7 +216,8 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
     https://gist.github.com/satra/c6eb113055810f19709fa7c5ebd23de8
 
     """
-    def __init__(self):
+    def __init__(self, disable=False):
+        self.disable_ = disable
         self.importances_ = None
         self.importances_snr_ = None
         self.idx_keep_ = None
@@ -238,6 +240,11 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         """
         from sklearn.metrics import roc_auc_score
         from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
+
+        if self.disable_:
+            self.mask_ = np.zeros(X.shape[1], dtype=bool)
+            return self
+
         n_winnow = 10
         clf_flag = True
         n_estimators = 1000
@@ -333,7 +340,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.mask_ = np.asarray(
             [True if i in idx_keep[:-1] else False for i in range(n_feature)])
 
-        LOG.info('Feature selection: %d features survived', np.sum(self.mask_))
+        LOG.info('Feature selection: %d features survived', np.sum(~self.mask_))
         return self
 
     def fit_transform(self, X, y=None):

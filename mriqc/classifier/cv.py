@@ -334,15 +334,14 @@ class NestedCVHelper(CVHelperBase):
 
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
-                 site_label='site', rate_label='rater_1', zscored=False,
-                 scorer='roc_auc', b_leaveout=False, multiclass=False):
+                 site_label='site', rate_label='rater_1', scorer='roc_auc',
+                 b_leaveout=False, multiclass=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
 
         self._estimator = None
         self._Xtest = None
-        self._zscored = zscored
         self._pickled = False
         self._rate_column = rate_label
         self._batch_effect = None
@@ -370,23 +369,11 @@ class CVHelper(CVHelperBase):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column,
                                       binarize=not self._multiclass)
 
-    def fit_full(self):
-        if self._estimator is None:
-            raise RuntimeError('Model should be fit first')
-
-        LOG.info('Fitting full model ...')
-        sample_x = [tuple(x) for x in self._Xtest[self._ftnames].values]
-        labels_y = self._Xtest[[self._rate_column]].values.ravel().tolist()
-
-        clf_params = self._estimator.best_estimator_.get_params()
-        best_estimator = clone(self._estimator.best_estimator_).set_params(
-            **clf_params)
-        best_estimator.warm_start = True
-        best_estimator.fit(sample_x, labels_y)
-        self._estimator = best_estimator
-
-
     def fit(self):
+        """
+        Fits the cross-validation helper
+        """
+
         from sklearn.ensemble import RandomForestClassifier as RFC
         if self._pickled:
             LOG.info('Classifier was loaded from file, cancelling fitting.')
@@ -409,7 +396,7 @@ class CVHelper(CVHelperBase):
 
         pipe = Pipeline(pre_steps + [('grid', grid)])
 
-        trained = pipe.fit(
+        self._estimator = pipe.fit(
             self._Xtrain,
             self._Xtrain[[self._rate_column]].values.ravel().tolist(),
             grid__groups=self.get_groups()
@@ -418,40 +405,60 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - best parameters (%s=%f) %s',
                  self._scorer, grid.best_score_, grid.best_params_)
 
-        self._estimator = pipe
-
         if self._Xleftout is None:
             return self
 
         LOG.info('Testing on left-out, balanced subset ...')
         test_y = self._Xleftout[self._rate_column].values.ravel()
-        prob_y = trained.predict_proba(self._Xleftout)
+        prob_y = self._estimator.predict_proba(self._Xleftout)
         pred_y = (prob_y[:, 1] > 0.5).astype(int)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(pred_y, test_y,
                  target_names=["accept", "exclude"]))
-        score = _score(trained, self._Xleftout, test_y,
-                       check_scoring(trained, scoring=self._scorer))
+        score = self._score(self._Xleftout, test_y)
         LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
-
         LOG.info('Fitting full model (train + balanced left-out) ...')
 
         # Rewrite clf
         clf = clone(clf).set_params(**grid.best_params_)
         pipe = Pipeline(pre_steps + [('rfc', clf)])
         X = pd.concat([self._Xtrain, self._Xleftout], axis=0)
-        trained = pipe.fit(X, X[[self._rate_column]].values.ravel().tolist())
+        self._estimator = pipe.fit(X, X[[self._rate_column]].values.ravel().tolist())
 
         LOG.info('Testing on left-out with full model, balanced subset ...')
-        prob_y = trained.predict_proba(self._Xleftout)
+        prob_y = self._estimator.predict_proba(self._Xleftout)
         pred_y = (prob_y[:, 1] > 0.5).astype(int)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(pred_y, test_y,
                  target_names=["accept", "exclude"]))
-        score = self._score(self._Xleftout, test_y, clf=trained)
-
+        score = self._score(self._Xleftout, test_y)
         LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
-        self._estimator = trained
+
+
+    def fit_full(self):
+        """
+        Completes the training of the model with the examples
+        from the left-out dataset
+        """
+
+        if self._estimator is None:
+            raise RuntimeError('Model should be fit first')
+
+        LOG.info('Fitting full model ...')
+        print(self._estimator.get_params())
+        print(self._estimator.get_params(False))
+        self._estimator.set_params(rfc__warm_start=True)
+        labels_y = self._Xtest[[self._rate_column]].values.ravel()
+        self._estimator = self._estimator.fit(self._Xtest, labels_y)
+
+        LOG.info('Testing on left-out with full model')
+        prob_y = self._estimator.predict_proba(self._Xtest)
+        pred_y = (prob_y[:, 1] > 0.5).astype(int)
+        LOG.info('Classification report:\n%s',
+                 slm.classification_report(pred_y, labels_y,
+                 target_names=["accept", "exclude"]))
+        score = self._score(self._Xtest, labels_y)
+        LOG.info('Full model performance on left-out (%s=%f)', self._scorer, score)
 
     def _score(self, X, y, scoring=None, clf=None):
         if scoring is None:
