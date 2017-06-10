@@ -143,8 +143,8 @@ def main():
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
         LOG.info('Evaluation on test data: %s=%f, accuracy=%f', opts.scorer,
-                 cvhelper.evaluate(scoring=opts.scorer, plot_roc=True),
-                 cvhelper.evaluate(matrix=True))
+                 cvhelper.evaluate(matrix=True, scoring=opts.scorer, plot_roc=True),
+                 cvhelper.evaluate())
 
         # Pickle if required
         if not clf_loaded:

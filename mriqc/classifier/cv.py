@@ -20,11 +20,15 @@ from mriqc import __version__, logging
 from mriqc.viz.misc import plot_batches, plot_roc_curve
 
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_iqrs, norm_iqrs
+from .sklearn import preprocessing as mcsp
 from .sklearn.model_selection import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 
+from sklearn.preprocessing import RobustScaler
+from sklearn import metrics as slm
 from sklearn.base import is_classifier, clone
-from sklearn.metrics.scorer import check_scoring, make_scorer
-from sklearn.metrics import classification_report
+from sklearn.pipeline import Pipeline
+from sklearn.metrics.scorer import check_scoring
+from sklearn.model_selection._validation import _score
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import check_cv
 
@@ -41,6 +45,30 @@ EXCLUDE_COLUMNS = [
     'spacing_x', 'spacing_y', 'spacing_z',
     'qi_1', 'qi_2',
     'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm',
+]
+
+FEATURE_NAMES =[
+    'cjv', 'cnr', 'efc', 'fber',
+    'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z',
+    'icvs_csf', 'icvs_gm', 'icvs_wm',
+    'inu_med', 'inu_range',
+    'qi_1', 'qi_2',
+    'rpve_csf', 'rpve_gm', 'rpve_wm',
+    'size_x', 'size_y', 'size_z',
+    'snr_csf', 'snr_gm', 'snr_total', 'snr_wm',
+    'snrd_csf', 'snrd_gm', 'snrd_total', 'snrd_wm',
+    'spacing_x', 'spacing_y', 'spacing_z',
+    'summary_bg_k', 'summary_bg_mad', 'summary_bg_mean', 'summary_bg_median', 'summary_bg_n', 'summary_bg_p05', 'summary_bg_p95', 'summary_bg_stdv',
+    'summary_csf_k', 'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median', 'summary_csf_n', 'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv',
+    'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median', 'summary_gm_n', 'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv',
+    'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median', 'summary_wm_n', 'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv',
+    'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm',
+    'wm2max'
+]
+FEATURE_NORM = [
+    'cjv', 'cnr', 'efc', 'fber', 'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z',
+    'snr_csf', 'snr_gm', 'snr_total', 'snr_wm', 'snrd_csf', 'snrd_gm', 'snrd_total', 'snrd_wm',
+    'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median', 'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv', 'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median', 'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv', 'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median', 'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv'
 ]
 
 class CVHelperBase(object):
@@ -329,22 +357,6 @@ class CVHelper(CVHelperBase):
                 b_leaveout=b_leaveout, multiclass=multiclass)
 
 
-            self._batch_effect = find_iqrs(
-                self._Xtrain, excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-
-            plot_batches(self._Xtrain[self._ftnames], 'before.png',
-                         excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            self._Xtrain = norm_iqrs(self._Xtrain, self._batch_effect,
-                                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            plot_batches(self._Xtrain[self._ftnames], 'after_iqrs.png',
-                         excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-            if zscored:
-                self._Xtrain = zscore_dataset(
-                    self._Xtrain, njobs=n_jobs,
-                    excl_columns=[rate_label] + EXCLUDE_COLUMNS)
-
-
-
     @property
     def estimator(self):
         return self._estimator
@@ -357,13 +369,6 @@ class CVHelper(CVHelperBase):
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column,
                                       binarize=not self._multiclass)
-        if self._batch_effect is not None:
-            self._Xtest = norm_iqrs(self._Xtest, self._batch_effect,
-                                      excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
-
-        if self._zscored:
-            self._Xtest = zscore_dataset(self._Xtest, njobs=self.n_jobs,
-                                         excl_columns=[self._rate_column] + EXCLUDE_COLUMNS)
 
     def fit_full(self):
         if self._estimator is None:
@@ -387,41 +392,76 @@ class CVHelper(CVHelperBase):
             LOG.info('Classifier was loaded from file, cancelling fitting.')
             return
 
-        LOG.info('Start fitting (scoring=%s)...', self._scorer)
-        estimator = RFC()
-
-        thescorer = self._scorer
-        if thescorer == 'brier_score_loss':
-            from sklearn.metrics import brier_score_loss
-            thescorer = make_scorer(brier_score_loss, greater_is_better=False,
-                                    needs_proba=True, needs_threshold=False)
+        LOG.info('Cross-validation - fitting for %s ...', self._scorer)
+        clf = RFC()
         grid = RobustGridSearchCV(
-            estimator, self.param['rfc'], error_score=0.5, refit=True,
-            scoring=check_scoring(estimator, scoring=thescorer),
+            clf, self.param['rfc'], error_score=0.5, refit=True,
+            scoring=check_scoring(clf, scoring=self._scorer),
             n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
 
-        X, y, groups = self._generate_sample()
-        self._estimator = grid.fit(X, y, groups=groups)
+        pre_steps = [
+            ('std', mcsp.BatchScaler(
+                RobustScaler(), by='site',
+                columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
+            ('pandas', mcsp.PandasAdaptor(columns=self._ftnames)),
+            ('ft_sel', mcsp.CustFsNoiseWinnow()),
+        ]
 
-        LOG.info('Model selection - best parameters (%s=%f) %s',
+        pipe = Pipeline(pre_steps + [('grid', grid)])
+
+        trained = pipe.fit(
+            self._Xtrain,
+            self._Xtrain[[self._rate_column]].values.ravel().tolist(),
+            grid__groups=self.get_groups()
+        )
+
+        LOG.info('Cross-validation - best parameters (%s=%f) %s',
                  self._scorer, grid.best_score_, grid.best_params_)
 
-        if self._Xleftout is not None:
-            from sklearn.model_selection._validation import _score
+        self._estimator = pipe
 
-            sample_x = np.array([tuple(x) for x in self._Xleftout[self._ftnames].values])
-            labels_y = self._Xleftout[[self._rate_column]].values.ravel().tolist()
+        if self._Xleftout is None:
+            return self
 
-            LOG.info('Testing on left-out, balanced subset ...')
+        LOG.info('Testing on left-out, balanced subset ...')
+        test_y = self._Xleftout[self._rate_column].values.ravel()
+        prob_y = trained.predict_proba(self._Xleftout)
+        pred_y = (prob_y[:, 1] > 0.5).astype(int)
+        LOG.info('Classification report:\n%s',
+                 slm.classification_report(pred_y, test_y,
+                 target_names=["accept", "exclude"]))
+        score = _score(trained, self._Xleftout, test_y,
+                       check_scoring(trained, scoring=self._scorer))
+        LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
 
-            score = _score(self._estimator, sample_x, labels_y,
-                           check_scoring(self._estimator, scoring=self._scorer))
+        LOG.info('Fitting full model (train + balanced left-out) ...')
 
-            LOG.info('Performance %s=%f', self._scorer, score)
+        # Rewrite clf
+        clf = clone(clf).set_params(**grid.best_params_)
+        pipe = Pipeline(pre_steps + [('rfc', clf)])
+        X = pd.concat([self._Xtrain, self._Xleftout], axis=0)
+        trained = pipe.fit(X, X[[self._rate_column]].values.ravel().tolist())
 
-            LOG.info('Classification report:\n%s',
-                     classification_report(self._estimator.predict(sample_x), labels_y,
-                     target_names=["accept", "exclude"]))
+        LOG.info('Testing on left-out with full model, balanced subset ...')
+        prob_y = trained.predict_proba(self._Xleftout)
+        pred_y = (prob_y[:, 1] > 0.5).astype(int)
+        LOG.info('Classification report:\n%s',
+                 slm.classification_report(pred_y, test_y,
+                 target_names=["accept", "exclude"]))
+        score = self._score(self._Xleftout, test_y, clf=trained)
+
+        LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
+        self._estimator = trained
+
+    def _score(self, X, y, scoring=None, clf=None):
+        if scoring is None:
+            scoring = self._scorer
+
+        if clf is None:
+            clf = self._estimator
+
+        return _score(clf, X, y, check_scoring(clf, scoring=scoring))
+
 
     def save(self, filehandler, compress=3):
         """
@@ -492,24 +532,29 @@ class CVHelper(CVHelperBase):
     def evaluate(self, scoring='accuracy', matrix=False, plot_roc=False):
         from sklearn.model_selection._validation import _score
 
-        sample_x = np.array([tuple(x) for x in self._Xtest[self._ftnames].values])
-        labels_y = self._Xtest.rater_1.values.ravel().tolist()
-        # print(self._estimator.decision_function(sample_x))
-        thescore = _score(self._estimator, sample_x, labels_y,
-                          check_scoring(self._estimator, scoring=scoring))
-        LOG.info('Performance %s=%f', scoring, thescore)
+        LOG.info('Testing on evaluation (left-out) dataset ...')
+        test_y = self._Xtest[self._rate_column].values.ravel()
+
+        if 'site' not in self._Xtest.columns.ravel().tolist():
+            self._Xtest['site'] = ['Test'] * len(self._Xtest)
+            LOG.info('Adding site name')
+
+        prob_y = self._estimator.predict_proba(self._Xtest)
+        pred_y = (prob_y[:, 1] > 0.5).astype(int)
+
         if matrix:
-            LOG.info('Classification report (evaluation):\n%s', classification_report(
-                self._estimator.predict(sample_x), labels_y,
-                target_names=["exclude", "doubtful", "accept"] if self._multiclass
-                              else ["accept", "exclude"]))
+            LOG.info(
+                'Classification report:\n%s', slm.classification_report(
+                    pred_y, test_y,
+                    target_names=["exclude", "doubtful", "accept"] if self._multiclass
+                                  else ["accept", "exclude"]))
+        score = self._score(self._Xtest, test_y, scoring=scoring)
+        LOG.info('Performance on balanced left-out (%s=%f)', scoring, score)
 
 
         if plot_roc and not self._multiclass:
-            plot_roc_curve(
-                labels_y, np.array(self._estimator.predict_proba(sample_x))[:, 1],
-                'roc_iqrs.png')
-        return thescore
+            plot_roc_curve(test_y, prob_y[:, 1], 'roc_iqrs.png')
+        return score
 
 
 def _cv_build(cv_scheme):

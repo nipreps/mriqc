@@ -15,6 +15,36 @@ from mriqc import logging
 LOG = logging.getLogger('mriqc.classifier')
 
 
+class PandasAdaptor(BaseEstimator, TransformerMixin):
+    """
+    Wraps a data transformation to run only in specific
+    columns [`source <https://stackoverflow.com/a/41461843/6820620>`_].
+
+    Example
+    -------
+
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> from mriqc.classifier.sklearn.preprocessing import PandasAdaptor
+        >>> tfm = PandasAdaptor(StandardScaler(),
+                                  columns=['duration', 'num_operations'])
+        >>> scaled = tfm.fit_transform(churn_d)
+
+    """
+
+    def __init__(self, columns):
+        self._columns = columns
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        try:
+            return X[self._columns].values
+        except (IndexError, KeyError):
+            return X
+
+
+
 class ColumnsScaler(BaseEstimator, TransformerMixin):
     """
     Wraps a data transformation to run only in specific
@@ -72,52 +102,64 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, groups):
+    def __init__(self, scaler, by):
         self._base_scaler = scaler
-        self._groups = groups
-        self._scaler = []
+        self._by = by
+        self._scalers = {}
+        self._groups = None
+        self._colnames = None
+        self._colmask = None
 
     def fit(self, X, y=None):
-        groups, ngroups, colmask = self._get_groups(X)
+        self._colmask = [True] * X.shape[1]
+        self._colnames = X.columns.ravel().tolist()
 
-        for gid in list(range(ngroups)):
-            mask = groups == gid
+        # Identify batches
+        groups = X[[self._by]].values.ravel().tolist()
+        self._colmask[X.columns.get_loc(self._by)] = False
+
+        # Convert groups to IDs
+        glist = list(set(groups))
+        self._groups = np.array([glist.index(group)
+                                 for group in groups])
+
+        for gid, batch in enumerate(list(set(groups))):
             scaler = clone(self._base_scaler)
-            scaler.fit(X.ix[mask, colmask], y)
-            self._scaler.append(scaler)
+            mask = self._groups == gid
+            if not np.any(mask):
+                continue
+            self._scalers[batch] = scaler.fit(
+                X.ix[mask, self._colmask], y)
 
         return self
 
     def transform(self, X, y=None):
-        groups, _, colmask = self._get_groups(X)
-
-        dataframes = []
-        for gid, scaler in enumerate(self._scaler):
-            mask = groups == gid
-
-            scaled_x = pd.DataFrame(scaler.transform(
-                X.ix[mask, colmask]))
-            dataframes.append(scaled_x)
-
-        scaled = pd.concat(dataframes, axis=0)
-
-        if isinstance(self._groups, str):
-            scaled[self._groups] = X[[self._groups]].values
-
-        return scaled
-
-    def _get_groups(self, X):
-        columns = X.columns.ravel().tolist()
-        groups = self._groups
-        if isinstance(self._groups, str):
-            groups = X[[self._groups]].values.ravel().tolist()
-            columns.remove(self._groups)
+        if self._by in X.columns.ravel().tolist():
+            groups = X[[self._by]].values.ravel().tolist()
+        else:
+            groups = ['Unknown'] * X.shape[0]
 
         glist = list(set(groups))
-        ngroups = len(glist)
         groups = np.array([glist.index(group) for group in groups])
-        colmask = X.columns.isin(columns)
-        return groups, ngroups, colmask
+        new_x = X.copy()
+        for gid, batch in enumerate(glist):
+            if batch in self._scalers:
+                mask = groups == gid
+                if not np.any(mask):
+                    continue
+                scaler = self._scalers[batch]
+                new_x.ix[mask, self._colmask] = scaler.transform(
+                    X.ix[mask, self._colmask], y)
+            else:
+                colmask = self._colmask
+                del colmask[self._colnames.index(self._by)]
+
+                scaler = clone(self._base_scaler)
+                new_x.ix[:, colmask] = scaler.fit_transform(
+                    X.ix[:, colmask])
+
+
+        return new_x
 
 
 class BatchScaler(GroupsScaler, TransformerMixin):
@@ -134,48 +176,37 @@ class BatchScaler(GroupsScaler, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, groups, columns=None):
-        super(BatchScaler, self).__init__(scaler,
-                                          groups=groups)
+    def __init__(self, scaler, by, columns=None):
+        super(BatchScaler, self).__init__(scaler, by=by)
         self._columns = columns
+        self._ftmask = None
 
     def fit(self, X, y=None):
-        groups, ngroups, colmask = self._get_groups(X)
+        # Find features mask
+        self._ftmask = [True] * X.shape[1]
+        if self._columns:
+            self._ftmask = X.columns.isin(self._columns)
 
-        for gid in list(range(ngroups)):
-            mask = groups == gid
-            scaler = clone(self._base_scaler)
-            scaler.fit(X.ix[mask, colmask], y)
-            self._scaler.append(scaler)
-
+        fitmsk = self._ftmask
+        fitmsk[X.columns.get_loc(self._by)] = True
+        super(BatchScaler, self).fit(X[X.columns[self._ftmask]], y)
         return self
 
     def transform(self, X, y=None):
-        col_order = X.columns
-        groups, _, colmask = self._get_groups(X)
-        tmp_x = X.copy()
-        for gid, scaler in enumerate(self._scaler):
-            mask = groups == gid
-            tmp_x.ix[mask, colmask] = scaler.transform(
-                tmp_x.ix[mask, colmask])
+        new_x = X.copy()
 
-        return tmp_x[col_order]
-
-    def _get_groups(self, X):
-        columns = X.columns.ravel().tolist()
-
-        if self._columns:
+        try:
+            columns = new_x.columns.ravel().tolist()
+        except AttributeError:
             columns = self._columns
+            print(new_x.shape[1], len(columns), sum(self._ftmask))
 
-        groups = self._groups
-        if isinstance(self._groups, str):
-            groups = X[[self._groups]].values.ravel().tolist()
+        if not self._by in columns:
+            new_x[self._by] = ['Unknown'] * new_x.shape[0]
 
-        glist = list(set(groups))
-        ngroups = len(glist)
-        groups = np.array([glist.index(group) for group in groups])
-        colmask = X.columns.isin(columns)
-        return groups, ngroups, colmask
+        new_x.ix[:, self._ftmask] = super(BatchScaler, self).transform(
+            new_x[new_x.columns[self._ftmask]], y)
+        return new_x
 
 
 class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
@@ -184,8 +215,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
     https://gist.github.com/satra/c6eb113055810f19709fa7c5ebd23de8
 
     """
-    def __init__(self, features=None):
-        self._features = features
+    def __init__(self):
         self.importances_ = None
         self.importances_snr_ = None
         self.idx_keep_ = None
@@ -212,11 +242,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         clf_flag = True
         n_estimators = 1000
 
-        features = self._features
-        if not features:
-            features = X.columns.ravel().tolist()
-
-        X_input = X[features].copy()
+        X_input = X.copy()
 
         n_sample, n_feature = np.shape(X_input)
         # Add "1" to the col dimension to account for always keeping the noise
@@ -307,9 +333,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.mask_ = np.asarray(
             [True if i in idx_keep[:-1] else False for i in range(n_feature)])
 
-        LOG.info('Feature selection: removed %s', ', '.join(
-            ['"%s"' % col for col in np.array(features)[~self.mask_]]))
-
+        LOG.info('Feature selection: %d features survived', np.sum(self.mask_))
         return self
 
     def fit_transform(self, X, y=None):
@@ -324,7 +348,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         X_new : array-like, shape (n_samples, n_components)
         """
         self = self.fit(X, y)
-        return X[:, self.mask_]
+        return X[:, ~self.mask_]
 
     def transform(self, X, y=None):
         """Apply dimensionality reduction to X.
@@ -342,4 +366,4 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         from sklearn.utils.validation import check_is_fitted
         check_is_fitted(self, ['mask_'], all_or_any=all)
         X = check_array(X)
-        return X[:, self.mask_]
+        return X[:, ~self.mask_]

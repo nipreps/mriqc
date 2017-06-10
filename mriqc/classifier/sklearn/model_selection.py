@@ -190,9 +190,9 @@ class RobustGridSearchCV(GridSearchCV):
         n_splits = cv.get_n_splits(X, y, groups)
         if self.verbose > 0 and isinstance(parameter_iterable, Sized):
             n_candidates = len(parameter_iterable)
-            print("Fitting {0} folds for each of {1} candidates, totalling"
-                  " {2} fits".format(n_splits, n_candidates,
-                                     n_candidates * n_splits))
+            LOG.info(
+                "Fitting %d folds for each of %d candidates, totalling"
+                  " %d fits", n_splits, n_candidates, n_candidates * n_splits)
 
         base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
