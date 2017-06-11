@@ -16,16 +16,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import pandas as pd
 
-from mriqc import __version__, logging
-from mriqc.viz.misc import plot_roc_curve
-
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
-
 from .sklearn import (ModelAndGridSearchCV, RobustGridSearchCV,
                       preprocessing as mcsp)
 from .sklearn.cv_nested import nested_fit_and_score
 
-from sklearn.preprocessing import RobustScaler
 from sklearn import metrics as slm
 from sklearn.base import is_classifier, clone
 from sklearn.pipeline import Pipeline
@@ -33,6 +28,9 @@ from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection._validation import _score
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import check_cv
+
+from mriqc import __version__, logging
+from mriqc.viz.misc import plot_roc_curve
 
 from builtins import object, str
 
@@ -384,7 +382,7 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - setting up pipeline')
         clf = RFC()
         pre_steps = [
-            ('std', mcsp.BatchScaler(RobustScaler(), by='site')),
+            ('std', mcsp.BatchRobustScaler(by='site')),
             ('pandas', mcsp.PandasAdaptor()),
             ('ft_sel', mcsp.CustFsNoiseWinnow()),
             ('rfc', clf)

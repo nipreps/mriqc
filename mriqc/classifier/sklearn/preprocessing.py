@@ -11,6 +11,8 @@ Extensions to the sklearn's default data preprocessing filters
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.preprocessing import RobustScaler
+
 from mriqc import logging
 LOG = logging.getLogger('mriqc.classifier')
 
@@ -31,10 +33,12 @@ class PandasAdaptor(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, columns):
+    def __init__(self, columns=None):
         self._columns = columns
 
     def fit(self, X, y=None):
+        if self._columns is None:
+            self._columns = X.columns.ravel().tolist()
         return self
 
     def transform(self, X, y=None):
@@ -209,6 +213,13 @@ class BatchScaler(GroupsScaler, TransformerMixin):
             new_x[new_x.columns[self._ftmask]], y)
         return new_x
 
+class BatchRobustScaler(BatchScaler, TransformerMixin):
+    def __init__(self, by=None, columns=None, with_centering=True, with_scaling=True,
+                 quantile_range=(25.0, 75.0)):
+        super(BatchRobustScaler, self).__init__(
+            RobustScaler(with_centering=with_centering, with_scaling=with_scaling,
+                         quantile_range=quantile_range),
+            by=by, columns=columns)
 
 class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
     """
