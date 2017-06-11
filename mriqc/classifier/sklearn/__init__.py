@@ -4,3 +4,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # @Author: oesteban
 # @Date:   2017-06-08 17:07:37
+
+from .parameters import ModelParameterGrid
+from .cv import RobustGridSearchCV
+from .cv_nested import ModelAndGridSearchCV

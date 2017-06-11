@@ -17,11 +17,13 @@ import numpy as np
 import pandas as pd
 
 from mriqc import __version__, logging
-from mriqc.viz.misc import plot_batches, plot_roc_curve
+from mriqc.viz.misc import plot_roc_curve
 
-from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_iqrs, norm_iqrs
-from .sklearn import preprocessing as mcsp
-from .sklearn.model_selection import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
+
+from .sklearn import (ModelAndGridSearchCV, RobustGridSearchCV,
+                      preprocessing as mcsp)
+from .sklearn.cv_nested import nested_fit_and_score
 
 from sklearn.preprocessing import RobustScaler
 from sklearn import metrics as slm
@@ -382,18 +384,22 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - setting up pipeline')
         clf = RFC()
         pre_steps = [
-            ('std', mcsp.BatchScaler(
-                RobustScaler(), by='site',
-                columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
-            ('pandas', mcsp.PandasAdaptor(columns=self._ftnames)),
+            ('std', mcsp.BatchScaler(RobustScaler(), by='site')),
+            ('pandas', mcsp.PandasAdaptor()),
             ('ft_sel', mcsp.CustFsNoiseWinnow()),
             ('rfc', clf)
         ]
         pipe = Pipeline(pre_steps)
 
+
+        params = [{'rfc__' + k: v for k, v in list(p.items())} for p in self.param['rfc']]
+        params[0]['std__by'] = 'site'
+        params[0]['std__columns'] = [ft for ft in self._ftnames if ft in FEATURE_NORM]
+        params[0]['pandas__columns'] = self._ftnames
+
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
         grid = RobustGridSearchCV(
-            pipe, self.param['rfc'], error_score=0.5, refit=True,
+            pipe, params, error_score=0.5, refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
             n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
 

@@ -33,7 +33,7 @@ def main():
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
-    from mriqc.classifier.cv import CVHelper
+    from mriqc.classifier.helper import CVHelper
     from mriqc import logging, LOG_FORMAT
     from os.path import isfile, splitext
     LOG = logging.getLogger('mriqc.classifier')

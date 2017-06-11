@@ -102,7 +102,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by):
+    def __init__(self, scaler, by=None):
         self._base_scaler = scaler
         self._by = by
         self._scalers = {}
@@ -177,7 +177,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by, columns=None):
+    def __init__(self, scaler, by=None, columns=None):
         super(BatchScaler, self).__init__(scaler, by=by)
         self._columns = columns
         self._ftmask = None
@@ -374,3 +374,85 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         check_is_fitted(self, ['mask_'], all_or_any=all)
         X = check_array(X)
         return X[:, ~self.mask_]
+
+
+# DEPRECATED CODE
+# def find_gmed(dataframe, by='site', excl_columns=None):
+#     sites = list(set(dataframe[[by]].values.ravel().tolist()))
+#     numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+#     if excl_columns:
+#         numcols = [col for col in numcols if col not in excl_columns]
+
+#     LOG.info('Calculating bias of dataset (%d features)', len(numcols))
+
+#     site_medians = []
+#     for site in sites:
+#         site_medians.append(np.median(dataframe.loc[dataframe.site == site, numcols], axis=0))
+
+#     return np.median(np.array(site_medians), axis=0)
+
+
+# def norm_gmed(dataframe, grand_medians, by='site', excl_columns=None):
+#     LOG.info('Removing bias of dataset ...')
+
+#     all_cols = dataframe.columns.ravel().tolist()
+#     if by not in all_cols:
+#         dataframe[by] = ['Unknown'] * len(dataframe)
+
+#     sites = list(set(dataframe[[by]].values.ravel().tolist()))
+#     numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+#     if excl_columns:
+#         numcols = [col for col in numcols if col not in excl_columns]
+
+#     for site in sites:
+#         vals = dataframe.loc[dataframe.site == site, numcols]
+#         site_med = np.median(vals, axis=0)
+#         dataframe.loc[dataframe.site == site, numcols] = vals - site_med + grand_medians
+
+#     return dataframe
+
+
+# def find_iqrs(dataframe, by='site', excl_columns=None):
+#     sites = list(set(dataframe[[by]].values.ravel().tolist()))
+#     numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+#     if excl_columns:
+#         numcols = [col for col in numcols if col not in excl_columns]
+
+#     LOG.info('Calculating IQR of dataset (%d)', len(numcols))
+
+#     meds = []
+#     iqrs = []
+#     for site in sites:
+#         vals = dataframe.loc[dataframe.site == site, numcols]
+#         iqrs.append(mad(vals, axis=0))
+#         meds.append(np.median(vals, axis=0))
+
+#     return [np.median(np.array(meds), axis=0),
+#             np.median(np.array(iqrs), axis=0)]
+
+
+# def norm_iqrs(dataframe, mean_iqr, by='site', excl_columns=None):
+#     LOG.info('Removing bias of dataset ...')
+
+#     all_cols = dataframe.columns.ravel().tolist()
+#     if by not in all_cols:
+#         dataframe[by] = ['Unknown'] * len(dataframe)
+
+#     sites = list(set(dataframe[[by]].values.ravel().tolist()))
+#     numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
+
+#     if excl_columns:
+#         numcols = [col for col in numcols if col not in excl_columns]
+
+#     for site in sites:
+#         vals = dataframe.loc[dataframe.site == site, numcols]
+#         vals -= np.median(vals, axis=0)
+#         iqr = np.percentile(vals, 75, axis=0) - np.percentile(vals, 25, axis=0)
+#         vals.iloc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
+#         changecols = vals.iloc[:, iqr > 1.e-5].columns.ravel().tolist()
+#         dataframe.loc[dataframe.site == site, changecols] = vals
+
+#     return dataframe
