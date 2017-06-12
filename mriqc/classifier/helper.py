@@ -35,6 +35,7 @@ from mriqc.viz.misc import plot_roc_curve
 from builtins import object, str
 
 LOG = logging.getLogger('mriqc.classifier')
+LOG.setLevel(logging.INFO)
 
 DEFAULT_TEST_PARAMETERS = {
     'svc_linear': [{'C': [0.1, 1]}],
@@ -74,7 +75,7 @@ FEATURE_NORM = [
 class CVHelperBase(object):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 scorer='roc_auc', b_leaveout=False, multiclass=False):
+                 scorer='roc_auc', b_leaveout=False, multiclass=False, verbosity=0):
         # Initialize some values
         self.param = DEFAULT_TEST_PARAMETERS.copy()
         if param is not None:
@@ -91,6 +92,7 @@ class CVHelperBase(object):
         self._scorer = scorer
         self._balanced_leaveout = True
         self._Xleftout = None
+        self._verbosity = verbosity
 
         if b_leaveout:
             self._Xtrain, self._Xleftout = balanced_leaveout(self._Xtrain)
@@ -145,10 +147,12 @@ class CVHelperBase(object):
 class NestedCVHelper(CVHelperBase):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
-                 task_id=None, scorer='roc_auc', b_leaveout=False, multiclass=False):
+                 task_id=None, scorer='roc_auc', b_leaveout=False, multiclass=False,
+                 verbosity=0):
         super(NestedCVHelper, self).__init__(X, Y, param=param, n_jobs=n_jobs,
                                              site_label='site', rate_label='rater_1',
-                                             b_leaveout=b_leaveout, multiclass=False)
+                                             b_leaveout=b_leaveout, multiclass=False,
+                                             verbosity=verbosity)
 
         self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
                                       excl_columns=[rate_label] + EXCLUDE_COLUMNS)
@@ -335,7 +339,7 @@ class NestedCVHelper(CVHelperBase):
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', scorer='roc_auc',
-                 b_leaveout=False, multiclass=False):
+                 b_leaveout=False, multiclass=False, verbosity=0):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -353,7 +357,7 @@ class CVHelper(CVHelperBase):
             super(CVHelper, self).__init__(
                 X, Y, param=param, n_jobs=n_jobs,
                 site_label=site_label, rate_label=rate_label, scorer=scorer,
-                b_leaveout=b_leaveout, multiclass=multiclass)
+                b_leaveout=b_leaveout, multiclass=multiclass, verbosity=verbosity)
 
 
     @property
@@ -390,21 +394,24 @@ class CVHelper(CVHelperBase):
         ])
 
 
-        prep_params = [{
-            'std__by': ['site'],
-            'std__with_centering': [False],
-            'std__with_scaling': [False],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'pandas__columns': [self._ftnames],
-            'ft_sel__disable': [True]
-        }, {
-            'std__by': ['site'],
-            'std__with_centering': [True],
-            'std__with_scaling': [True],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'pandas__columns': [self._ftnames],
-            'ft_sel__disable': [False]
-        }, {
+        prep_params = [
+        # {
+        #     'std__by': ['site'],
+        #     'std__with_centering': [False],
+        #     'std__with_scaling': [False],
+        #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+        #     'pandas__columns': [self._ftnames],
+        #     'ft_sel__disable': [True]
+        # },
+        # {
+        #     'std__by': ['site'],
+        #     'std__with_centering': [True],
+        #     'std__with_scaling': [True],
+        #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+        #     'pandas__columns': [self._ftnames],
+        #     'ft_sel__disable': [False]
+        # },
+        {
             'std__by': ['site'],
             'std__with_centering': [True],
             'std__with_scaling': [True],
@@ -421,7 +428,8 @@ class CVHelper(CVHelperBase):
         grid = RobustGridSearchCV(
             pipe, params, error_score=0.5, refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
-            n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1), verbose=0)
+            n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1),
+            verbose=self._verbosity)
 
 
         self._estimator = grid.fit(
@@ -430,8 +438,9 @@ class CVHelper(CVHelperBase):
             groups=self.get_groups()
         ).best_estimator_
 
-        LOG.info('Cross-validation - best parameters (%s=%f) %s',
-                 self._scorer, grid.best_score_, grid.best_params_)
+        LOG.info('Cross-validation - best %s=%f', self._scorer,
+                 grid.best_score_)
+        LOG.log(18, 'Cross-validation - best model\n%s', grid.best_params_)
 
         if self._Xleftout is None:
             return self

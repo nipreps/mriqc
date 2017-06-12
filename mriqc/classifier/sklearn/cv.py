@@ -51,9 +51,8 @@ class RobustGridSearchCV(GridSearchCV):
 
         if self.verbose > 0 and isinstance(parameter_iterable, Sized):
             n_candidates = len(parameter_iterable)
-            LOG.info(
-                "Fitting %d folds for each of %d candidates, totalling"
-                  " %d fits", n_splits, n_candidates, n_candidates * n_splits)
+            LOG.log(19, "Fitting %d folds for each of %d candidates, totalling"
+                    " %d fits", n_splits, n_candidates, n_candidates * n_splits)
         pre_dispatch = self.pre_dispatch
 
         cv_iter = list(cv.split(X, y, groups))
@@ -174,29 +173,19 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     parameters = parameters if parameters is not None else {}
     fit_params = fit_params if fit_params is not None else {}
 
-    msg = 'CV loop' + '.' * 20 + ' [start]'
+    LOG.log(19, 'CV loop %s [start]', '.' * 50)
 
     # Create split
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
-
-    if verbose > 2:
-        msg += '\n\t* Loop started %d/%d (train/test) samples' % (len(X_train), len(X_test))
-        if y_train is not None:
-            msg += '\n\t* Imbalances %.2f%%/%.2f%% (train/test positive rate)' % (
-                (1 - sum(y_train) / len(X_train)) * 100, (1 - sum(y_test) / len(X_test)) * 100)
-        msg += '\n\t* Fit parameters: %s' % str(fit_params)
-        msg += '\n\t* Model parameters: %s' % str(parameters)
-    if verbose > 1:
-        LOG.info(msg)
 
     if y_test is not None:
         tp = sum(y_test)
         if tp == len(y_test) or not tp:
             LOG.debug('Fold does not have any "%s" test samples.',
                      'accept' if tp == 0 else 'exclude')
-            if verbose > 1:
-                LOG.info('CV loop' + '.' * 20 + ' [skip]')
+
+            LOG.log(19, 'CV loop %s [skip]', '.' * 50)
             return None
 
     # Set model parameters
@@ -206,6 +195,7 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     fit_params = dict([(k, _index_param_value(X, v, train))
                       for k, v in fit_params.items()])
 
+
     start_time = time.time()
     try:
         if y_train is None:
@@ -213,7 +203,7 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
         else:
             estimator.fit(X_train, y_train, **fit_params)
     except Exception:
-        LOG.info('CV loop' + '.' * 20 + ' [error]')
+        LOG.error('CV loop %s [error]', '.' * 50)
         raise
 
     fit_time = time.time() - start_time
@@ -225,15 +215,28 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     if return_train_score:
         train_score = _score(estimator, X_train, y_train, scorer)
 
-    msg = '-- loop exited'
-    if verbose > 3:
-        msg += "\n\t* score=%f" % test_score
+    msg = ''
+    if verbose > 2:
+        msg += '\n%s* Loop started %d/%d (train/test) samples' % (
+            ' ' * 4, len(X_train), len(X_test))
+
+        if y_train is not None:
+            msg += '\n%s* Imbalances %.2f%%/%.2f%% (train/test positive rate)' % (
+                ' ' * 4, (1 - sum(y_train) / len(X_train)) * 100,
+                (1 - sum(y_test) / len(X_test)) * 100)
+
+        msg += '\n%s* Model parameters: %s' % (' ' * 4, str(parameters))
     if verbose > 2:
         total_time = score_time + fit_time
-        msg += "\n\t* total=%s" % logger.short_format_time(total_time)
-        LOG.info(msg)
-    if verbose > 1:
-        LOG.info('CV loop' + '.' * 20 + ' [done]')
+        msg += "\n%s* total=%s" % (' ' * 4, logger.short_format_time(total_time))
+    if verbose > 3:
+        msg += "\n%s* score=%f" % (' ' * 4, test_score)
+
+    if msg:
+        msg += '\n' + ' ' * 4
+
+    msg += 'CV loop %s [done]' % '.' * 50
+    LOG.log(19, msg)
 
     ret = [train_score, test_score] if return_train_score else [test_score]
 

@@ -7,7 +7,7 @@ mriqc_fit command line interface definition
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from sys import version_info
+from sys import version_info, stdout
 import warnings
 
 PY3 = version_info[0] > 2
@@ -36,7 +36,6 @@ def main():
     from mriqc.classifier.helper import CVHelper
     from mriqc import logging, LOG_FORMAT, MRIQC_LOG
     from os.path import isfile, splitext
-    LOG = logging.getLogger('mriqc.classifier')
 
     warnings.showwarning = warn_redirect
 
@@ -67,8 +66,9 @@ def main():
     g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
-    g_input.add_argument('--log-level', action='store', default='INFO',
-                         choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+    g_input.add_argument("-v", "--verbose", dest="verbose_count",
+                         action="count", default=0,
+                         help="increases log verbosity for each occurence.")
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
@@ -77,15 +77,26 @@ def main():
 
     g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
                          help='decision threshold of the classifier')
-
-
     opts = parser.parse_args()
+
+    log_level = int(max(3 - opts.verbose_count, 0) * 10)
+    if opts.verbose_count > 1:
+        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+    print(log_level)
+
+    LOG = logging.getLogger('mriqc.classifier')
+    LOG.setLevel(log_level)
+    stdhl = logging.StreamHandler(stdout)
+    stdhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
+    LOG.addHandler(stdhl)
 
     if opts.log_file is not None:
         fhl = logging.FileHandler(opts.log_file)
-        fhl.setLevel(opts.log_level)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
-        MRIQC_LOG.addHandler(fhl)
+        LOG.addHandler(fhl)
+
+    LOG.debug('debug trace')
+    LOG.log(5, 'very high verbosity output')
 
     parameters = None
     if opts.parameters is not None:
@@ -110,7 +121,8 @@ def main():
         cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
                             param=parameters, scorer=opts.scorer,
                             b_leaveout=opts.train_balanced_leaveout,
-                            multiclass=opts.multiclass)
+                            multiclass=opts.multiclass,
+                            verbosity=opts.verbose_count)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()

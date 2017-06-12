@@ -30,12 +30,6 @@ from .__about__ import (
 LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
 MRIQC_LOG = logging.getLogger()
 
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG,
-    format=LOG_FORMAT,
-)
-
 DEFAULTS = {
     'ants_nthreads': 6,
     'float32': False
