@@ -381,22 +381,42 @@ class CVHelper(CVHelperBase):
 
         LOG.info('Cross-validation - setting up pipeline')
         clf = RFC()
-        pre_steps = [
+        pipe = Pipeline([
             ('std', mcsp.BatchRobustScaler(
                 by='site', columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
             ('pandas', mcsp.PandasAdaptor(columns=self._ftnames)),
             ('ft_sel', mcsp.CustFsNoiseWinnow()),
             ('rfc', clf)
+        ])
+
+
+        prep_params = [{
+            'std__by': ['site'],
+            'std__with_centering': [False],
+            'std__with_scaling': [False],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'pandas__columns': [self._ftnames],
+            'ft_sel__disable': [True]
+        }, {
+            'std__by': ['site'],
+            'std__with_centering': [True],
+            'std__with_scaling': [True],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'pandas__columns': [self._ftnames],
+            'ft_sel__disable': [False]
+        }, {
+            'std__by': ['site'],
+            'std__with_centering': [True],
+            'std__with_scaling': [True],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'pandas__columns': [self._ftnames],
+            'ft_sel__disable': [True]
+        },
         ]
-        pipe = Pipeline(pre_steps)
-        pipe.set_params(**{
-            'std__by': 'site',
-            'std__with_scaling': False,
-            'std__columns': [ft for ft in self._ftnames if ft in FEATURE_NORM],
-            'pandas__columns': self._ftnames,
-            'ft_sel__disable': True
-        })
-        params = [{'rfc__' + k: v for k, v in list(p.items())} for p in self.param['rfc']]
+        rfc_params = {'rfc__' + k: v for k, v in list(self.param['rfc'][0].items())}
+
+        params = [{**prep, **rfc_params} for prep in prep_params]
+
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
         grid = RobustGridSearchCV(
             pipe, params, error_score=0.5, refit=True,
