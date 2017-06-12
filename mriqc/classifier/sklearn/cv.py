@@ -31,7 +31,7 @@ from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
     logger)
 
-from mriqc import logging
+from ... import logging
 from builtins import object, zip
 try:
     from sklearn.utils.fixes import MaskedArray
@@ -169,11 +169,12 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     """
 
     """
+    logtrace = '\nCV loop {:.>108}'.format
 
     parameters = parameters if parameters is not None else {}
     fit_params = fit_params if fit_params is not None else {}
 
-    LOG.log(19, 'CV loop %s [start]', '.' * 50)
+    LOG.log(19, logtrace(' [start]'))
 
     # Create split
     X_train, y_train = _safe_split(estimator, X, y, train)
@@ -185,7 +186,7 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
             LOG.debug('Fold does not have any "%s" test samples.',
                      'accept' if tp == 0 else 'exclude')
 
-            LOG.log(19, 'CV loop %s [skip]', '.' * 50)
+            LOG.log(19, logtrace(' [skip]'))
             return None
 
     # Set model parameters
@@ -203,7 +204,7 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
         else:
             estimator.fit(X_train, y_train, **fit_params)
     except Exception:
-        LOG.error('CV loop %s [error]', '.' * 50)
+        LOG.log(19, logtrace(' [error]'))
         raise
 
     fit_time = time.time() - start_time
@@ -233,9 +234,11 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
         msg += "\n%s* score=%f" % (' ' * 4, test_score)
 
     if msg:
-        msg += '\n' + ' ' * 4
+        msg += '\n'
 
-    msg += 'CV loop %s [done]' % '.' * 50
+    msg += '{:>112}'.format(logtrace(' [done]'))
+
+    # Make sure this long message gets printed together
     LOG.log(19, msg)
 
     ret = [train_score, test_score] if return_train_score else [test_score]

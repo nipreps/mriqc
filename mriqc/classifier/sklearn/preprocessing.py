@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.preprocessing import RobustScaler
 
-from mriqc import logging
+from ... import logging
 LOG = logging.getLogger('mriqc.classifier')
 
 
