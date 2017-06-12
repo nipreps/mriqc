@@ -9,6 +9,7 @@ assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
+import sys
 import logging
 
 from .__about__ import (
@@ -26,11 +27,14 @@ from .__about__ import (
     __download__,
 )
 
-
 LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
-logging.basicConfig(level=logging.DEBUG,
-                    format=LOG_FORMAT)
 MRIQC_LOG = logging.getLogger()
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    format=LOG_FORMAT,
+)
 
 DEFAULTS = {
     'ants_nthreads': 6,
