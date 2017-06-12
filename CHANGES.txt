@@ -1,3 +1,5 @@
+  * ANNOUNCEMENT: Dropped support for Python<=3.4
+
 0.9.6
 =====
 

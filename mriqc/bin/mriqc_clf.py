@@ -34,7 +34,7 @@ def main():
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
     from mriqc.classifier.helper import CVHelper
-    from mriqc import logging, LOG_FORMAT
+    from mriqc import logging, LOG_FORMAT, MRIQC_LOG
     from os.path import isfile, splitext
     LOG = logging.getLogger('mriqc.classifier')
 
@@ -82,11 +82,10 @@ def main():
     opts = parser.parse_args()
 
     if opts.log_file is not None:
-        filelogger = logging.getLogger()
         fhl = logging.FileHandler(opts.log_file)
+        fhl.setLevel(opts.log_level)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
-        filelogger.addHandler(fhl)
-        filelogger.setLevel(opts.log_level)
+        MRIQC_LOG.addHandler(fhl)
 
     parameters = None
     if opts.parameters is not None:
