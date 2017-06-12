@@ -82,17 +82,14 @@ def main():
     log_level = int(max(3 - opts.verbose_count, 0) * 10)
     if opts.verbose_count > 1:
         log_level = int(max(25 - 5 * opts.verbose_count, 1))
-    print(log_level)
 
     LOG = logging.getLogger('mriqc.classifier')
     LOG.setLevel(log_level)
-    stdhl = logging.StreamHandler(stdout)
-    stdhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
-    LOG.addHandler(stdhl)
 
     if opts.log_file is not None:
         fhl = logging.FileHandler(opts.log_file)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
+        fhl.setLevel(log_level)
         LOG.addHandler(fhl)
 
     LOG.debug('debug trace')

@@ -33,7 +33,6 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 
-from nipype import logging
 from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
@@ -41,15 +40,15 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc import DEFAULTS
-from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
+from .. import DEFAULTS, logging
+from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from ..utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
 
 
 DEFAULT_FD_RADIUS = 50.
-WFLOGGER = logging.getLogger('workflow')
+WFLOGGER = logging.getLogger('mriqc.workflow')
 
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     """
