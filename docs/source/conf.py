@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'nipype.sphinxext.plot_workflow',
+    'niworkflows.nipype.sphinxext.plot_workflow',
     'sphinxarg.ext', # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
@@ -71,6 +71,8 @@ autodoc_mock_imports = [
     'nilearn.plotting',
     'nilearn.signal',
     'nilearn.spatial',
+    'niworkflows.interfaces.masks.scipy.ndimage',
+    'mriqc.qc.anatomical.scipy.ndimage',
 ]
 
 suppress_warnings = ['image.nonlocal_uri']
