@@ -14,8 +14,6 @@ Extends sklearn's GridSearchCV to a model search object
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-import warnings
-import numbers
 import time
 
 from functools import partial
@@ -31,7 +29,7 @@ from sklearn.model_selection._search import (
 )
 from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
-    FitFailedWarning, logger)
+    logger)
 
 from mriqc import logging
 from builtins import object, zip

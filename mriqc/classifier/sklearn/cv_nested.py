@@ -22,7 +22,6 @@ from functools import partial
 from collections import Sized
 import numpy as np
 
-from sklearn.base import is_classifier, clone
 from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._search import (
     BaseSearchCV, check_scoring, indexable,
