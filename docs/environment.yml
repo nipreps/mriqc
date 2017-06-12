@@ -12,8 +12,4 @@ dependencies:
 - jinja2=2.8
 - sphinx>=1.5,<1.6
 - sphinx_rtd_theme>=0.2.4
-
-- pip:
-    - git+https://github.com/nipy/nipype.git@f92a333b0d191773aa9cefd87fba869b87ab1414#egg=nipype
-    - git+https://github.com/poldracklab/niworkflows.git@178cdafd547cbad4656b06ff09f959d488fbcbe4#egg=niworkflows
-
+- niworkflows>=0.1.2
