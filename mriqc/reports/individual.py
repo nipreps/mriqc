@@ -22,7 +22,6 @@ def individual_html(in_iqms, in_plots=None):
     from mriqc import logging
     from io import open  #pylint: disable=W0622
     report_log = logging.getLogger('mriqc.report')
-    report_log.setLevel(logging.INFO)
 
     def _get_details(in_iqms, modality):
         in_prov = in_iqms.pop('provenance', {})
