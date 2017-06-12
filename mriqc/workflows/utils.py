@@ -10,8 +10,6 @@
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
-from nipype.pipeline import engine as pe
-from nipype.interfaces import utility as niu
 
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
@@ -22,7 +20,7 @@ def _tofloat(inlist):
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from nipype.interfaces.base import isdefined
+    from niworkflows.nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 

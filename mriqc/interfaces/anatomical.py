@@ -15,10 +15,10 @@ from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
-from nipype import logging
-from nipype.utils.filemanip import fname_presuffix
-from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
-                                    InputMultiPath, BaseInterfaceInputSpec)
+from niworkflows.nipype import logging
+from niworkflows.nipype.utils.filemanip import fname_presuffix
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec)
 
 from niworkflows.interfaces.base import SimpleInterface
 from mriqc.utils.misc import _flatten_dict

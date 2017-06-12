@@ -10,9 +10,9 @@ import nibabel as nb
 from nilearn.signal import clean
 from builtins import zip
 
-from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
-                                    BaseInterfaceInputSpec)
-from nipype import logging
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, File, isdefined, BaseInterfaceInputSpec)
+from niworkflows.nipype import logging
 
 from niworkflows.interfaces.base import SimpleInterface
 

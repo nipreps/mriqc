@@ -1,2 +1,2 @@
 numpy>=1.12.0
-niworkflows>=0.0.7
+niworkflows>=0.1.2

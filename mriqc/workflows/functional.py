@@ -33,12 +33,11 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 
-from nipype.pipeline import engine as pe
-from nipype.algorithms import confounds as nac
-from nipype.interfaces import io as nio
-from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
-from nipype.interfaces import afni
+from niworkflows.nipype.pipeline import engine as pe
+from niworkflows.nipype.algorithms import confounds as nac
+from niworkflows.nipype.interfaces import io as nio
+from niworkflows.nipype.interfaces import utility as niu
+from niworkflows.nipype.interfaces import afni, ants, fsl
 
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
@@ -491,9 +490,8 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
         ])
 
     else:
-        from nipype.interfaces.fsl import BET, ErodeImage
-        bet_msk = pe.Node(BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(ErodeImage(), name='erode')
+        bet_msk = pe.Node(fsl.BET(mask=True, functional=True), name='bet_msk')
+        erode = pe.Node(fsl.ErodeImage(), name='erode')
 
         # Connect brain mask extraction
         workflow.connect([
@@ -700,7 +698,6 @@ def epi_mni_align(settings, name='SpatialNormalization'):
       wf = epi_mni_align({})
 
     """
-    from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
     from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
     from pkg_resources import resource_filename as pkgrf
@@ -721,7 +718,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
 
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
-    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads,
@@ -735,7 +732,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
                    estimated_memory_gb=3)
 
     # Warp segmentation into EPI space
-    invt = pe.Node(ApplyTransforms(float=True,
+    invt = pe.Node(ants.ApplyTransforms(float=True,
         input_image=op.join(mni_template, '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
                    name='ResampleSegmentation')
@@ -817,10 +814,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
 def _add_provenance(in_file, settings):
     from mriqc import __version__ as version
-    from copy import deepcopy
-    from nipype.utils.filemanip import hash_infile
-    import nibabel as nb
-    import numpy as np
+    from niworkflows.nipype.utils.filemanip import hash_infile
     out_prov = {
         'md5sum': hash_infile(in_file),
         'version': version,

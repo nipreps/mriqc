@@ -42,13 +42,10 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os.path as op
 
-from nipype.pipeline import engine as pe
-from nipype.interfaces import io as nio
-from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
-from nipype.interfaces import ants
-from nipype.interfaces import afni
-
+from niworkflows.nipype.pipeline import engine as pe
+from niworkflows.nipype.interfaces import io as nio
+from niworkflows.nipype.interfaces import utility as niu
+from niworkflows.nipype.interfaces import fsl, ants, afni
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
@@ -171,8 +168,6 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     A simple workflow to perform spatial normalization
 
     """
-    from mriqc.interfaces.common import EnsureSize
-    from nipype.interfaces.ants import AffineInitializer
     from niworkflows.data import getters as niwgetters
 
     # Have some settings handy
@@ -448,7 +443,7 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
         ])
 
     else:
-        from nipype.interfaces.dipy import Denoise
+        from niworkflows.nipype.interfaces.dipy import Denoise
         enhance = pe.Node(niu.Function(
             input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
         estsnr = pe.Node(niu.Function(
@@ -523,8 +518,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
 def _add_provenance(in_file, settings, air_msk, rot_msk):
     from mriqc import __version__ as version
-    from copy import deepcopy
-    from nipype.utils.filemanip import hash_infile
+    from niworkflows.nipype.utils.filemanip import hash_infile
     import nibabel as nb
     import numpy as np
 

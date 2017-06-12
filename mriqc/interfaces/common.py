@@ -10,9 +10,9 @@ from pkg_resources import resource_filename as pkgrf
 import numpy as np
 import nibabel as nb
 
-from nipype import logging
-from nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
-from nipype.interfaces.ants import ApplyTransforms
+from niworkflows.nipype import logging
+from niworkflows.nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
+from niworkflows.nipype.interfaces.ants import ApplyTransforms
 from niworkflows.interfaces.base import SimpleInterface
 
 IFLOGGER = logging.getLogger('interface')
