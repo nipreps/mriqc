@@ -41,7 +41,7 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl
 from nipype.interfaces import afni
 
-from mriqc import DEFAULTS
+from .. import DEFAULTS
 from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
@@ -817,7 +817,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     return out_file, out_plot
 
 def _add_provenance(in_file, settings):
-    from mriqc import __version__ as version
+    from .. import __version__ as version
     from copy import deepcopy
     from nipype.utils.filemanip import hash_infile
     import nibabel as nb

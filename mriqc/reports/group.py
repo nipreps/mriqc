@@ -15,7 +15,7 @@ from sys import version_info
 import pandas as pd
 from builtins import zip, object, str  # pylint: disable=W0622
 
-from mriqc import logging
+from .. import logging
 from mriqc.utils.misc import BIDS_COMP
 
 from io import open
@@ -29,7 +29,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
-    from mriqc import __version__ as ver
+    from .. import __version__ as ver
     from mriqc.data import GroupTemplate
     from mriqc.utils.misc import check_folder
 

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import pandas as pd
 
-from mriqc import __version__, logging
+from .. import __version__, logging
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout, find_bias, remove_bias
 from .sklearn_extension import ModelAndGridSearchCV, RobustGridSearchCV, nested_fit_and_score
 

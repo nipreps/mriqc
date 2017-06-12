@@ -15,7 +15,7 @@ import os.path as op
 from multiprocessing import cpu_count
 
 
-from mriqc import __version__, MRIQC_LOG
+from .. import __version__, MRIQC_LOG
 from mriqc.utils.misc import check_folder
 
 DEFAULT_MEM_GB = 8
@@ -24,7 +24,7 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from mriqc import DEFAULTS
+    from .. import DEFAULTS
 
     parser = ArgumentParser(description='MRIQC: MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)

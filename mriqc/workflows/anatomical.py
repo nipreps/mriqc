@@ -54,7 +54,7 @@ from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
-from mriqc import DEFAULTS
+from .. import DEFAULTS
 from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                               ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 
@@ -524,7 +524,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
 
 def _add_provenance(in_file, settings, air_msk, rot_msk):
-    from mriqc import __version__ as version
+    from .. import __version__ as version
     from copy import deepcopy
     from nipype.utils.filemanip import hash_infile
     import nibabel as nb

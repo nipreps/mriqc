@@ -15,11 +15,11 @@ def individual_html(in_iqms, in_plots=None):
     import os.path as op  #pylint: disable=W0404
     import datetime
     from json import load
-    from mriqc import __version__ as ver
+    from .. import __version__ as ver
     from mriqc.utils.misc import BIDS_COMP
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
-    from mriqc import logging
+    from .. import logging
     from io import open  #pylint: disable=W0622
     report_log = logging.getLogger('mriqc.report')
     report_log.setLevel(logging.INFO)
