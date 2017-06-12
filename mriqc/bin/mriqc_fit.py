@@ -38,7 +38,7 @@ def main():
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
-    from mriqc.classifier.cv import NestedCVHelper
+    from ..classifier.cv import NestedCVHelper
     from .. import logging, LOG_FORMAT
 
     warnings.showwarning = warn_redirect

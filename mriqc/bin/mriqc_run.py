@@ -16,7 +16,7 @@ from multiprocessing import cpu_count
 
 
 from .. import __version__, MRIQC_LOG
-from mriqc.utils.misc import check_folder
+from ..utils.misc import check_folder
 
 DEFAULT_MEM_GB = 8
 
@@ -152,8 +152,8 @@ def main():
     """Entry point"""
     from nipype import config as ncfg
     from nipype.pipeline.engine import Workflow
-    from mriqc.utils.bids import collect_bids_data
-    from mriqc.workflows.core import build_workflow
+    from ..utils.bids import collect_bids_data
+    from ..workflows.core import build_workflow
 
     # Run parser
     opts = get_parser().parse_args()
@@ -327,8 +327,8 @@ participants found in the BIDS directory ({})."""
 
     # Set up group level
     if 'group' in analysis_levels:
-        from mriqc.reports import group_html
-        from mriqc.utils.misc import generate_csv, generate_pred
+        from ..reports import group_html
+        from ..utils.misc import generate_csv, generate_pred
 
         MRIQC_LOG.info('Group level started...')
         MRIQC_LOG.info(

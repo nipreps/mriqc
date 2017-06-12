@@ -16,9 +16,9 @@ from nipype import logging
 
 from niworkflows.interfaces.base import SimpleInterface
 
-from mriqc.utils.misc import _flatten_dict
-from mriqc.qc.anatomical import snr, fber, efc, summary_stats
-from mriqc.qc.functional import gsr
+from ..utils.misc import _flatten_dict
+from ..qc.anatomical import snr, fber, efc, summary_stats
+from ..qc.functional import gsr
 IFLOGGER = logging.getLogger('interface')
 
 

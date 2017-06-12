@@ -19,7 +19,7 @@ import pandas as pd
 from builtins import str
 
 from .. import logging
-from mriqc.utils.misc import BIDS_COMP
+from ..utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
 

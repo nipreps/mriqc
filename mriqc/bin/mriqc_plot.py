@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
 from .. import __version__
-from mriqc.reports import workflow_report
+from ..reports import workflow_report
 
 def main():
     """Entry point"""

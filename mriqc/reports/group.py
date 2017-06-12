@@ -13,11 +13,11 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 from sys import version_info
 import pandas as pd
-from builtins import zip, object, str  # pylint: disable=W0622
 
 from .. import logging
-from mriqc.utils.misc import BIDS_COMP
+from ..utils.misc import BIDS_COMP
 
+from builtins import zip, object, str  # pylint: disable=W0622
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')

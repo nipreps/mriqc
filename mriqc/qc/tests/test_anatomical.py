@@ -18,9 +18,9 @@ from shutil import rmtree
 import numpy as np
 import pytest
 from scipy.stats import rice
-from mriqc.qc.anatomical import snr, snr_dietrich, cjv, art_qi2
 from builtins import object
 # from numpy.testing import allclose
+from ..anatomical import snr, snr_dietrich, cjv, art_qi2
 
 
 class GroundTruth(object):
