@@ -150,8 +150,8 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from nipype import config as ncfg, logging as nlog
-    from nipype.pipeline.engine import Workflow
+    from niworkflows.nipype import config as ncfg, logging as nlog
+    from niworkflows.nipype.pipeline.engine import Workflow
     from mriqc.utils.bids import collect_bids_data
     from mriqc import logging
     from mriqc.workflows.core import build_workflow
@@ -301,7 +301,7 @@ def main():
             if not opts.dry_run:
                 if plugin_settings['plugin'] == 'MultiProc' and opts.profile:
                     import logging
-                    from nipype.pipeline.plugins.callback_log import log_nodes_cb
+                    from niworkflows.nipype.pipeline.plugins.callback_log import log_nodes_cb
                     plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
                     callback_log_path = op.join(log_dir, 'run_stats.log')
                     logger = logging.getLogger('callback')
@@ -327,7 +327,7 @@ def main():
                         ' Use --no-sub to disable submission.')
 
                 if callback_log_path is not None:
-                    from nipype.utils.draw_gantt_chart import generate_gantt_chart
+                    from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             msg = """\
