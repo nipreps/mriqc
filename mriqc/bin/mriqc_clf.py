@@ -149,10 +149,10 @@ def main():
         # Pickle if required
         if not clf_loaded:
             cvhelper.fit_full()
-            LOG.info('Evaluation on test data (trained including test data): '
-                     '%s=%f, accuracy=%f', opts.scorer,
-                     cvhelper.evaluate(scoring=opts.scorer),
-                     cvhelper.evaluate(matrix=True))
+            # LOG.info('Evaluation on test data (trained including test data): '
+            #          '%s=%f, accuracy=%f', opts.scorer,
+            #          cvhelper.evaluate(scoring=opts.scorer),
+            #          cvhelper.evaluate(matrix=True))
 
             if save_classifier:
                 cvhelper.save(save_classifier + '_full' + clf_ext)

@@ -32,37 +32,37 @@ from sklearn.model_selection._search import (
 from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
     FitFailedWarning, logger)
-from sklearn.utils.fixes import MaskedArray
 
 from mriqc import logging
 from builtins import object, zip
+try:
+    from sklearn.utils.fixes import MaskedArray
+except ImportError:
+    from numpy.ma import MaskedArray
 
 LOG = logging.getLogger('mriqc.classifier')
 
 class RobustGridSearchCV(GridSearchCV):
     def _fit(self, X, y, groups, parameter_iterable):
         """Actual fitting,  performing the search over parameters."""
-
-        estimator = self.estimator
-        cv = check_cv(self.cv, y, classifier=is_classifier(estimator))
+        cv = check_cv(self.cv, y, classifier=is_classifier(self.estimator))
         self.scorer_ = check_scoring(self.estimator, scoring=self.scoring)
 
         X, y, groups = indexable(X, y, groups)
         n_splits = cv.get_n_splits(X, y, groups)
+
         if self.verbose > 0 and isinstance(parameter_iterable, Sized):
             n_candidates = len(parameter_iterable)
             LOG.info(
                 "Fitting %d folds for each of %d candidates, totalling"
                   " %d fits", n_splits, n_candidates, n_candidates * n_splits)
-
-        base_estimator = clone(self.estimator)
         pre_dispatch = self.pre_dispatch
 
         cv_iter = list(cv.split(X, y, groups))
         out = Parallel(
             n_jobs=self.n_jobs, verbose=self.verbose,
             pre_dispatch=pre_dispatch
-        )(delayed(_robust_fit_and_score)(clone(base_estimator), X, y, self.scorer_,
+        )(delayed(_robust_fit_and_score)(clone(self.estimator), X, y, self.scorer_,
                                   train, test, self.verbose, parameters,
                                   fit_params=self.fit_params,
                                   return_train_score=self.return_train_score,
@@ -71,6 +71,14 @@ class RobustGridSearchCV(GridSearchCV):
                                   error_score=self.error_score)
           for parameters in parameter_iterable
           for train, test in cv_iter)
+
+        # Clean up skipped loops
+        out = [i for i in out if i is not None]
+
+        if len(out) < (n_splits * len(parameter_iterable)):
+            old_splits = n_splits
+            n_splits = len(out) // len(parameter_iterable)
+            LOG.warning("Some splits were skipped (%d)", old_splits - n_splits)
 
         # if one choose to see train score, "out" will contain train score info
         if self.return_train_score:
@@ -147,7 +155,7 @@ class RobustGridSearchCV(GridSearchCV):
         if self.refit:
             # fit the best estimator using the entire dataset
             # clone first to work around broken estimators
-            best_estimator = clone(base_estimator).set_params(
+            best_estimator = clone(self.estimator).set_params(
                 **best_parameters)
             if y is not None:
                 best_estimator.fit(X, y, **self.fit_params)
@@ -164,67 +172,70 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     """
 
     """
-    if verbose > 1:
-        if parameters is None:
-            msg = ''
-        else:
-            msg = '%s' % (', '.join('%s=%s' % (k, v)
-                          for k, v in parameters.items()))
-        print("[CV] %s %s" % (msg, (64 - len(msg)) * '.'))
 
-    # Adjust length of sample weights
+    parameters = parameters if parameters is not None else {}
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict([(k, _index_param_value(X, v, train))
-                      for k, v in fit_params.items()])
 
-    if parameters is not None:
-        estimator.set_params(**parameters)
+    msg = 'CV loop' + '.' * 20 + ' [start]'
 
-    start_time = time.time()
-
+    # Create split
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
 
+    if verbose > 2:
+        msg += '\n\t* Loop started %d/%d (train/test) samples' % (len(X_train), len(X_test))
+        if y_train is not None:
+            msg += '\n\t* Imbalances %.2f%%/%.2f%% (train/test positive rate)' % (
+                (1 - sum(y_train) / len(X_train)) * 100, (1 - sum(y_test) / len(X_test)) * 100)
+        msg += '\n\t* Fit parameters: %s' % str(fit_params)
+        msg += '\n\t* Model parameters: %s' % str(parameters)
+    if verbose > 1:
+        LOG.info(msg)
+
+    if y_test is not None:
+        tp = sum(y_test)
+        if tp == len(y_test) or not tp:
+            LOG.debug('Fold does not have any "%s" test samples.',
+                     'accept' if tp == 0 else 'exclude')
+            if verbose > 1:
+                LOG.info('CV loop' + '.' * 20 + ' [skip]')
+            return None
+
+    # Set model parameters
+    estimator.set_params(**parameters)
+
+    # Adjust length of sample weights
+    fit_params = dict([(k, _index_param_value(X, v, train))
+                      for k, v in fit_params.items()])
+
+    start_time = time.time()
     try:
         if y_train is None:
             estimator.fit(X_train, **fit_params)
         else:
             estimator.fit(X_train, y_train, **fit_params)
+    except Exception:
+        LOG.info('CV loop' + '.' * 20 + ' [error]')
+        raise
 
-    except Exception as e:
-        # Note fit time as time until error
-        fit_time = time.time() - start_time
-        score_time = 0.0
-        if error_score == 'raise':
-            raise
-        elif isinstance(error_score, numbers.Number):
-            test_score = error_score
-            if return_train_score:
-                train_score = error_score
-            warnings.warn("Classifier fit failed. The score on this train-test"
-                          " partition for these parameters will be set to %f. "
-                          "Details: \n%r" % (error_score, e), FitFailedWarning)
-        else:
-            raise ValueError("error_score must be the string 'raise' or a"
-                             " numeric value. (Hint: if using 'raise', please"
-                             " make sure that it has been spelled correctly.)")
-
+    fit_time = time.time() - start_time
+    if len(set(y_test)) == 1:
+        test_score = 0.5
     else:
-        fit_time = time.time() - start_time
-        if len(set(y_test)) == 1:
-            test_score = 0.5
-        else:
-            test_score = _score(estimator, X_test, y_test, scorer)
-        score_time = time.time() - start_time - fit_time
-        if return_train_score:
-            train_score = _score(estimator, X_train, y_train, scorer)
+        test_score = _score(estimator, X_test, y_test, scorer)
+    score_time = time.time() - start_time - fit_time
+    if return_train_score:
+        train_score = _score(estimator, X_train, y_train, scorer)
 
+    msg = '-- loop exited'
+    if verbose > 3:
+        msg += "\n\t* score=%f" % test_score
     if verbose > 2:
-        msg += ", score=%f" % test_score
-    if verbose > 1:
         total_time = score_time + fit_time
-        end_msg = "%s, total=%s" % (msg, logger.short_format_time(total_time))
-        print("[CV] %s %s" % ((64 - len(end_msg)) * '.', end_msg))
+        msg += "\n\t* total=%s" % logger.short_format_time(total_time)
+        LOG.info(msg)
+    if verbose > 1:
+        LOG.info('CV loop' + '.' * 20 + ' [done]')
 
     ret = [train_score, test_score] if return_train_score else [test_score]
 

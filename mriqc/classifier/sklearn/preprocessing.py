@@ -34,16 +34,16 @@ class PandasAdaptor(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, columns=None):
-        self._columns = columns
+        self.columns = columns
 
     def fit(self, X, y=None):
-        if self._columns is None:
-            self._columns = X.columns.ravel().tolist()
+        if self.columns is None:
+            self.columns = X.columns.ravel().tolist()
         return self
 
     def transform(self, X, y=None):
         try:
-            return X[self._columns].values
+            return X[self.columns].values
         except (IndexError, KeyError):
             return X
 
@@ -67,10 +67,10 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
 
     def __init__(self, scaler, columns=None):
         self._scaler = scaler
-        self._columns = columns
+        self.columns = columns
 
     def _numeric_cols(self, X):
-        columns = self._columns
+        columns = self.columns
         numcols = list(X.select_dtypes([np.number]).columns.ravel())
 
         if not columns:
@@ -106,9 +106,9 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by=None):
+    def __init__(self, scaler, by='site'):
+        self.by = by
         self._base_scaler = scaler
-        self._by = by
         self._scalers = {}
         self._groups = None
         self._colnames = None
@@ -119,8 +119,8 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         self._colnames = X.columns.ravel().tolist()
 
         # Identify batches
-        groups = X[[self._by]].values.ravel().tolist()
-        self._colmask[X.columns.get_loc(self._by)] = False
+        groups = X[[self.by]].values.ravel().tolist()
+        self._colmask[X.columns.get_loc(self.by)] = False
 
         # Convert groups to IDs
         glist = list(set(groups))
@@ -138,8 +138,8 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        if self._by in X.columns.ravel().tolist():
-            groups = X[[self._by]].values.ravel().tolist()
+        if self.by in X.columns.ravel().tolist():
+            groups = X[[self.by]].values.ravel().tolist()
         else:
             groups = ['Unknown'] * X.shape[0]
 
@@ -156,8 +156,8 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     X.ix[mask, self._colmask], y)
             else:
                 colmask = self._colmask
-                if self._by in self._colnames and len(colmask) == len(self._colnames):
-                    del colmask[self._colnames.index(self._by)]
+                if self.by in self._colnames and len(colmask) == len(self._colnames):
+                    del colmask[self._colnames.index(self.by)]
 
                 scaler = clone(self._base_scaler)
                 new_x.ix[:, colmask] = scaler.fit_transform(
@@ -181,20 +181,21 @@ class BatchScaler(GroupsScaler, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by=None, columns=None):
+    def __init__(self, scaler, by='site', columns=None):
         super(BatchScaler, self).__init__(scaler, by=by)
-        self._columns = columns
-        self._ftmask = None
+        self.columns = columns
+        self.ftmask_ = None
 
     def fit(self, X, y=None):
         # Find features mask
-        self._ftmask = [True] * X.shape[1]
-        if self._columns:
-            self._ftmask = X.columns.isin(self._columns)
+        self.ftmask_ = [True] * X.shape[1]
+        if self.columns:
+            self.ftmask_ = X.columns.isin(self.columns)
 
-        fitmsk = self._ftmask
-        fitmsk[X.columns.get_loc(self._by)] = True
-        super(BatchScaler, self).fit(X[X.columns[self._ftmask]], y)
+        fitmsk = self.ftmask_
+        if self.by in X.columns:
+            fitmsk[X.columns.get_loc(self.by)] = True
+        super(BatchScaler, self).fit(X[X.columns[self.ftmask_]], y)
         return self
 
     def transform(self, X, y=None):
@@ -203,19 +204,23 @@ class BatchScaler(GroupsScaler, TransformerMixin):
         try:
             columns = new_x.columns.ravel().tolist()
         except AttributeError:
-            columns = self._columns
-            print(new_x.shape[1], len(columns), sum(self._ftmask))
+            columns = self.columns
+            print(new_x.shape[1], len(columns), sum(self.ftmask_))
 
-        if not self._by in columns:
-            new_x[self._by] = ['Unknown'] * new_x.shape[0]
+        if not self.by in columns:
+            new_x[self.by] = ['Unknown'] * new_x.shape[0]
 
-        new_x.ix[:, self._ftmask] = super(BatchScaler, self).transform(
-            new_x[new_x.columns[self._ftmask]], y)
+        new_x.ix[:, self.ftmask_] = super(BatchScaler, self).transform(
+            new_x[new_x.columns[self.ftmask_]], y)
         return new_x
 
 class BatchRobustScaler(BatchScaler, TransformerMixin):
-    def __init__(self, by=None, columns=None, with_centering=True, with_scaling=True,
-                 quantile_range=(25.0, 75.0)):
+    def __init__(self, by='site', columns=None, with_centering=True, with_scaling=True,
+                 quantile_range=(25.0, 75.0), copy=True):
+        self.with_centering = with_centering
+        self.with_scaling = with_scaling
+        self.quantile_range = quantile_range
+        self.copy = True
         super(BatchRobustScaler, self).__init__(
             RobustScaler(with_centering=with_centering, with_scaling=with_scaling,
                          quantile_range=quantile_range),
@@ -228,7 +233,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
 
     """
     def __init__(self, disable=False):
-        self.disable_ = disable
+        self.disable = disable
         self.importances_ = None
         self.importances_snr_ = None
         self.idx_keep_ = None
@@ -252,7 +257,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         from sklearn.metrics import roc_auc_score
         from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
 
-        if self.disable_:
+        if self.disable:
             self.mask_ = np.zeros(X.shape[1], dtype=bool)
             return self
 
@@ -351,7 +356,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.mask_ = np.asarray(
             [True if i in idx_keep[:-1] else False for i in range(n_feature)])
 
-        LOG.info('Feature selection: %d features survived', np.sum(~self.mask_))
+        LOG.debug('Feature selection: %d features survived', np.sum(~self.mask_))
         return self
 
     def fit_transform(self, X, y=None):

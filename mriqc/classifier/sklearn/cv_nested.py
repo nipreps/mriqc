@@ -31,12 +31,15 @@ from sklearn.model_selection._search import (
 from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
     FitFailedWarning, logger)
-from sklearn.utils.fixes import MaskedArray
 
 from mriqc import logging
 from .parameters import ModelParameterGrid
 
 from builtins import object, zip
+try:
+    from sklearn.utils.fixes import MaskedArray
+except ImportError:
+    from numpy.ma import MaskedArray
 
 LOG = logging.getLogger('mriqc.classifier')
 

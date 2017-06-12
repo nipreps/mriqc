@@ -382,19 +382,21 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - setting up pipeline')
         clf = RFC()
         pre_steps = [
-            ('std', mcsp.BatchRobustScaler(by='site')),
-            ('pandas', mcsp.PandasAdaptor()),
+            ('std', mcsp.BatchRobustScaler(
+                by='site', columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
+            ('pandas', mcsp.PandasAdaptor(columns=self._ftnames)),
             ('ft_sel', mcsp.CustFsNoiseWinnow()),
             ('rfc', clf)
         ]
         pipe = Pipeline(pre_steps)
-
-
+        pipe.set_params(**{
+            'std__by': 'site',
+            'std__with_scaling': False,
+            'std__columns': [ft for ft in self._ftnames if ft in FEATURE_NORM],
+            'pandas__columns': self._ftnames,
+            'ft_sel__disable': True
+        })
         params = [{'rfc__' + k: v for k, v in list(p.items())} for p in self.param['rfc']]
-        params[0]['std__by'] = 'site'
-        params[0]['std__columns'] = [ft for ft in self._ftnames if ft in FEATURE_NORM]
-        params[0]['pandas__columns'] = self._ftnames
-
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
         grid = RobustGridSearchCV(
             pipe, params, error_score=0.5, refit=True,
@@ -406,7 +408,7 @@ class CVHelper(CVHelperBase):
             self._Xtrain,
             self._Xtrain[[self._rate_column]].values.ravel().tolist(),
             groups=self.get_groups()
-        )
+        ).best_estimator_
 
         LOG.info('Cross-validation - best parameters (%s=%f) %s',
                  self._scorer, grid.best_score_, grid.best_params_)
@@ -426,10 +428,9 @@ class CVHelper(CVHelperBase):
         LOG.info('Fitting full model (train + balanced left-out) ...')
 
         # Rewrite clf
-        clf = clone(clf).set_params(**grid.best_params_)
-        pipe = Pipeline(pre_steps + [('rfc', clf)])
+        self._estimator.rfc__warm_start = True
         X = pd.concat([self._Xtrain, self._Xleftout], axis=0)
-        self._estimator = pipe.fit(X, X[[self._rate_column]].values.ravel().tolist())
+        self._estimator = self._estimator.fit(X, X[[self._rate_column]].values.ravel().tolist())
 
         LOG.info('Testing on left-out with full model, balanced subset ...')
         prob_y = self._estimator.predict_proba(self._Xleftout)
@@ -451,9 +452,7 @@ class CVHelper(CVHelperBase):
             raise RuntimeError('Model should be fit first')
 
         LOG.info('Fitting full model ...')
-        print(self._estimator.get_params())
-        print(self._estimator.get_params(False))
-        self._estimator.set_params(rfc__warm_start=True)
+        self._estimator.rfc__warm_start = True
         labels_y = self._Xtest[[self._rate_column]].values.ravel()
         self._estimator = self._estimator.fit(self._Xtest, labels_y)
 
@@ -550,7 +549,6 @@ class CVHelper(CVHelperBase):
 
         if 'site' not in self._Xtest.columns.ravel().tolist():
             self._Xtest['site'] = ['Test'] * len(self._Xtest)
-            LOG.info('Adding site name')
 
         prob_y = self._estimator.predict_proba(self._Xtest)
         pred_y = (prob_y[:, 1] > 0.5).astype(int)
@@ -562,7 +560,7 @@ class CVHelper(CVHelperBase):
                     target_names=["exclude", "doubtful", "accept"] if self._multiclass
                                   else ["accept", "exclude"]))
         score = self._score(self._Xtest, test_y, scoring=scoring)
-        LOG.info('Performance on balanced left-out (%s=%f)', scoring, score)
+        LOG.info('Performance on evaluation set (%s=%f)', scoring, score)
 
 
         if plot_roc and not self._multiclass:
