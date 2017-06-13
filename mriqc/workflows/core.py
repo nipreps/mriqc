@@ -8,8 +8,8 @@
 # @Email:  code@oscaresteban.es
 """ The core module combines the existing workflows """
 from __future__ import print_function, division, absolute_import, unicode_literals
-from mriqc.workflows.anatomical import anat_qc_workflow
-from mriqc.workflows.functional import fmri_qc_workflow
+from .anatomical import anat_qc_workflow
+from .functional import fmri_qc_workflow
 import os
 
 

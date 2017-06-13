@@ -30,4 +30,4 @@ docker run -i -v ~/data:/data:ro \
            -v $SCRATCH:/scratch -w /scratch \
            ${DOCKER_IMAGE}:${DOCKER_TAG} \
            /data/${TEST_DATA_NAME} out/ group \
-           -m ${MODALITY}
+           -m ${MODALITY} -v

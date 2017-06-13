@@ -42,24 +42,19 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os.path as op
 
-from niworkflows.nipype import logging
 from niworkflows.nipype.pipeline import engine as pe
 from niworkflows.nipype.interfaces import io as nio
 from niworkflows.nipype.interfaces import utility as niu
-from niworkflows.nipype.interfaces import fsl
-from niworkflows.nipype.interfaces import ants
-from niworkflows.nipype.interfaces import afni
-
+from niworkflows.nipype.interfaces import fsl, ants, afni
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
-from mriqc import DEFAULTS
-from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                              ConformImage, ComputeQI2, IQMFileSink, RotationMask)
-
-from mriqc.utils.misc import check_folder
-WFLOGGER = logging.getLogger('workflow')
+from .. import DEFAULTS, logging
+from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
+                          ConformImage, ComputeQI2, IQMFileSink, RotationMask)
+from ..utils.misc import check_folder
+WFLOGGER = logging.getLogger('mriqc.workflow')
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     """
