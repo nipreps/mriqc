@@ -207,7 +207,6 @@ class BatchScaler(GroupsScaler, TransformerMixin):
             columns = new_x.columns.ravel().tolist()
         except AttributeError:
             columns = self.columns
-            print(new_x.shape[1], len(columns), sum(self.ftmask_))
 
         if not self.by in columns:
             new_x[self.by] = ['Unknown'] * new_x.shape[0]
@@ -476,10 +475,7 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
             # Remove feature
             self.mask_[rm_feat] = score >= min_score
-            print(score, rm_feat, score >= min_score)
-            if score >= min_score:
-                LOG.info('reset %d', rm_feat)
-            else:
+            if score < min_score:
                 min_score = score
 
             i += 1
