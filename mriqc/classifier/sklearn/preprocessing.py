@@ -464,13 +464,10 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
                 sample_weight=None)
 
             if score < self.target_auc:
-                reason = 'score'
                 break
             if np.sum(~self.mask_) >= max_remove:
-                reason = 'max_remove'
                 break
             if self.max_iter is not None and i >= self.max_iter:
-                reason = 'max_iter'
                 break
 
             importances = np.zeros(self.mask_.shape)
