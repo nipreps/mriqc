@@ -5,7 +5,7 @@ $( eval VERSION := $( shell python version.py ))
 
 .PHONY: clean-pyc
 clean-pyc:
-		find . -name '__pycache__' -type d -exec rm -r {} +
+		find . -name '__pycache__' -type d -exec rm -rf {} +
 		find . -name '*.pyc' -exec rm --force {} +
 		find . -name '*.pyo' -exec rm --force {} +
 		find . -name '*~' -exec rm --force  {} +

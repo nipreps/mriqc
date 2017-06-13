@@ -32,7 +32,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       --verbose-reports --profile \
+                       -v --verbose-reports --profile \
                        --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict"
 
 case $CIRCLE_NODE_INDEX in

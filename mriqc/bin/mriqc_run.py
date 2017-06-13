@@ -13,10 +13,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os
 import os.path as op
 from multiprocessing import cpu_count
-
-
-from .. import __version__, MRIQC_LOG
-from ..utils.misc import check_folder
+from .. import __version__
 
 DEFAULT_MEM_GB = 8
 
@@ -47,7 +44,7 @@ def get_parser():
                         choices=['participant', 'group'])
 
     # optional arguments
-    parser.add_argument('-v', '--version', action='version',
+    parser.add_argument('--version', action='version',
                         version='mriqc v{}'.format(__version__))
 
     # BIDS selectors
@@ -84,6 +81,9 @@ def get_parser():
                                 'to MRIQC\'s metrics repository.')
     g_outputs.add_argument('--email', action='store', default='', type=str,
                            help='Email address to include with quality metric submission.')
+    g_outputs.add_argument("-v", "--verbose", dest="verbose_count",
+                           action="count", default=0,
+                           help="increases log verbosity for each occurence, debug level is -vvv")
 
     g_outputs.add_argument(
         '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov/api/v1', type=str,
@@ -150,14 +150,24 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from niworkflows.nipype import config as ncfg
+    from niworkflows.nipype import config as ncfg, logging as nlog
     from niworkflows.nipype.pipeline.engine import Workflow
     from ..utils.bids import collect_bids_data
+    from .. import logging
     from ..workflows.core import build_workflow
-
+    from ..utils.misc import check_folder
 
     # Run parser
     opts = get_parser().parse_args()
+
+    # Retrieve logging level
+    log_level = int(max(3 - opts.verbose_count, 0) * 10)
+    if opts.verbose_count > 1:
+        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+    print(log_level)
+
+    logging.getLogger().setLevel(log_level)
+    log = logging.getLogger('mriqc.cli')
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
@@ -225,6 +235,11 @@ def main():
         'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
     })
 
+    # Set nipype logging level
+    nlog.getLogger('workflow').setLevel(log_level)
+    nlog.getLogger('interface').setLevel(log_level)
+    nlog.getLogger('filemanip').setLevel(log_level)
+
     callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
@@ -264,8 +279,8 @@ def main():
 
     # Set up participant level
     if 'participant' in analysis_levels:
-        MRIQC_LOG.info('Participant level started...')
-        MRIQC_LOG.info(
+        log.info('Participant level started...')
+        log.info(
             'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
             __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
@@ -275,7 +290,7 @@ def main():
         wf_list = []
         for mod in modalities:
             if not dataset[mod]:
-                MRIQC_LOG.warn('No %s scans were found in %s', mod, settings['bids_dir'])
+                log.warning('No %s scans were found in %s', mod, settings['bids_dir'])
                 continue
 
             wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
@@ -296,7 +311,7 @@ def main():
 
                 # Warn about submitting measures BEFORE
                 if not settings['no_sub']:
-                    MRIQC_LOG.warn(
+                    log.warning(
                         'Anonymized quality metrics will be submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
@@ -306,7 +321,7 @@ def main():
 
                 # Warn about submitting measures AFTER
                 if not settings['no_sub']:
-                    MRIQC_LOG.warn(
+                    log.warning(
                         'Anonymized quality metrics have beeen submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
@@ -324,15 +339,15 @@ None of the supplied labels (--participant_label) matched with the \
 participants found in the BIDS directory ({})."""
             raise RuntimeError(msg.format(settings['bids_dir']))
 
-        MRIQC_LOG.info('Participant level finished successfully.')
+        log.info('Participant level finished successfully.')
 
     # Set up group level
     if 'group' in analysis_levels:
         from ..reports import group_html
         from ..utils.misc import generate_csv, generate_pred
 
-        MRIQC_LOG.info('Group level started...')
-        MRIQC_LOG.info(
+        log.info('Group level started...')
+        log.info(
             'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
             __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
@@ -346,29 +361,29 @@ participants found in the BIDS directory ({})."""
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
-                MRIQC_LOG.warn(
+                log.warning(
                     'No IQM-JSON files were found for the %s data type in %s. The group-level '
                     'report was not generated.', mod, derivatives_dir)
                 continue
 
-            MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
+            log.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
 
             # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             # if out_pred is not None:
-            #     MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
+            #     log.info('Predicted QA CSV table for the %s data generated (%s)',
             #                    mod, out_pred)
 
             out_html = op.join(reports_dir, mod + '_group.html')
             group_html(out_csv, mod,
                        csv_failed=op.join(settings['output_dir'], 'failed_' + mod + '.csv'),
                        out_file=out_html)
-            MRIQC_LOG.info('Group-%s report generated (%s)', mod, out_html)
+            log.info('Group-%s report generated (%s)', mod, out_html)
             n_group_reports += 1
 
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
 
-        MRIQC_LOG.info('Group level finished successfully.')
+        log.info('Group level finished successfully.')
 
 
 

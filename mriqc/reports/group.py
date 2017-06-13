@@ -21,7 +21,7 @@ from builtins import zip, object, str  # pylint: disable=W0622
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
-MRIQC_REPORT_LOG.setLevel(logging.INFO)
+
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
@@ -30,8 +30,8 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import datetime
     from pkg_resources import resource_filename as pkgrf
     from .. import __version__ as ver
-    from mriqc.data import GroupTemplate
-    from mriqc.utils.misc import check_folder
+    from ..data import GroupTemplate
+    from ..utils.misc import check_folder
 
     if version_info[0] > 2:
         from io import StringIO as TextIO
