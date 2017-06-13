@@ -72,6 +72,20 @@ FEATURE_NORM = [
     'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median', 'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv', 'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median', 'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv', 'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median', 'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv'
 ]
 
+FEATURE_RF_CORR = [
+    'cjv', 'cnr', 'efc', 'fber', 'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z', 'icvs_csf', 'icvs_gm', 'icvs_wm',
+    'qi_1', 'qi_2', 'rpve_csf', 'rpve_gm', 'rpve_wm', 'snr_csf', 'snr_gm', 'snr_total', 'snr_wm',
+    'snrd_csf', 'snrd_gm', 'snrd_total', 'snrd_wm',
+    'summary_bg_k', 'summary_bg_stdv',
+    'summary_csf_k', 'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median',
+    'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv',
+    'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median',
+    'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv',
+    'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median',
+    'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv',
+    'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm'
+]
+
 class CVHelperBase(object):
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
