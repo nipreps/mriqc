@@ -6,5 +6,5 @@
 # @Date:   2017-06-08 17:07:37
 
 from .parameters import ModelParameterGrid
-from .cv import RobustGridSearchCV
 from .cv_nested import ModelAndGridSearchCV
+from ._split import RobustLeavePGroupsOut

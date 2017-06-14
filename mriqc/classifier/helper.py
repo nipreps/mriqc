@@ -17,9 +17,10 @@ import numpy as np
 import pandas as pd
 
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
-from .sklearn import (ModelAndGridSearchCV, RobustGridSearchCV,
-                      preprocessing as mcsp)
+
+from .sklearn import (ModelAndGridSearchCV, preprocessing as mcsp)
 from .sklearn.cv_nested import nested_fit_and_score
+from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
 from sklearn import metrics as slm
 from sklearn.base import is_classifier, clone
@@ -27,7 +28,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection._validation import _score
-from sklearn.model_selection import LeavePGroupsOut, RepeatedStratifiedKFold, GridSearchCV
+from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.model_selection._split import check_cv
 
 from mriqc import __version__, logging
@@ -387,6 +388,8 @@ class CVHelper(CVHelperBase):
     def setXtest(self, X, Y):
         self._Xtest, _ = read_dataset(X, Y, rate_label=self._rate_column,
                                       binarize=not self._multiclass)
+        if 'site' not in self._Xtest.columns.ravel().tolist():
+            self._Xtest['site'] = ['TestSite'] * len(self._Xtest)
 
     def fit(self):
         """
@@ -407,9 +410,9 @@ class CVHelper(CVHelperBase):
         pipe = Pipeline([
             ('std', mcsp.BatchRobustScaler(
                 by='site', columns=[ft for ft in self._ftnames if ft in FEATURE_NORM])),
-            ('pandas', mcsp.PandasAdaptor(
-                columns=[ft for ft in self._ftnames if ft in FEATURE_RF_CORR])),
-            ('ft_sel', mcsp.CustFsNoiseWinnow()),
+            ('sel_cols', mcsp.PandasAdaptor(columns=self._ftnames + ['site'])),
+            ('ft_sites', mcsp.SiteCorrelationSelector()),
+            ('ft_noise', mcsp.CustFsNoiseWinnow()),
             ('rfc', clf)
         ])
 
@@ -420,7 +423,8 @@ class CVHelper(CVHelperBase):
         #     'std__with_scaling': [False],
         #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
         #     'pandas__columns': [self._ftnames],
-        #     'ft_sel__disable': [True]
+        #     'ft_sites__disable': [True],
+        #     'ft_noise__disable': [True],
         # },
         # {
         #     'std__by': ['site'],
@@ -428,42 +432,44 @@ class CVHelper(CVHelperBase):
         #     'std__with_scaling': [True],
         #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
         #     'pandas__columns': [self._ftnames],
-        #     'ft_sel__disable': [False]
+        #     'ft_sites__disable': [True],
+        #     'ft_noise__disable': [True],
         # },
         {
             'std__by': ['site'],
             'std__with_centering': [True],
             'std__with_scaling': [True],
             'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'pandas__columns': [self._ftnames],
-            'ft_sel__disable': [True]
+            'sel_cols__columns': [self._ftnames + ['site']],
+            'ft_sites__disable': [False],
+            'ft_noise__disable': [True],
         },
         ]
+
         rfc_params = {'rfc__' + k: v for k, v in list(self.param['rfc'][0].items())}
-
         params = [{**prep, **rfc_params} for prep in prep_params]
-
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
 
         fit_args = {}
-        if not self._multiclass:
-            grid = RobustGridSearchCV(
-                pipe, params, error_score=0.5, refit=True,
-                scoring=check_scoring(pipe, scoring=self._scorer),
-                n_jobs=self.n_jobs, cv=LeavePGroupsOut(n_groups=1),
-                verbose=self._verbosity)
-            fit_args['groups'] = self.get_groups()
-        else:
-            kfold = RepeatedStratifiedKFold().split(
+        if False:
+            folds = RepeatedStratifiedKFold(n_splits=2, n_repeats=1).split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
-            grid = GridSearchCV(
-                pipe, params, error_score=0.5, refit=True,
-                scoring=check_scoring(pipe, scoring=self._scorer),
-                n_jobs=self.n_jobs, cv=kfold,
-                verbose=self._verbosity)
+        else:
+            fit_args['groups'] = self.get_groups()
+            folds = LeavePGroupsOut(n_groups=1).split(
+                self._Xtrain, y=self._Xtrain[[self._rate_column]].values.ravel().tolist(),
+                groups=fit_args['groups'])
+
+        grid = GridSearchCV(
+            pipe, params, error_score=0.5, refit=True,
+            scoring=check_scoring(pipe, scoring=self._scorer),
+            n_jobs=self.n_jobs, cv=folds, verbose=self._verbosity)
 
         self._estimator = grid.fit(self._Xtrain, train_y,
                                    **fit_args).best_estimator_
+
+        # if not self._estimator.get_params()['ft_sites__disable']:
+        #     try1 = scaled[features + ['site']].columns[select.mask_].ravel().tolist()
 
         LOG.info('Cross-validation - best %s=%f', self._scorer,
                  grid.best_score_)
@@ -510,29 +516,26 @@ class CVHelper(CVHelperBase):
         Completes the training of the model with the examples
         from the left-out dataset
         """
-
         if self._estimator is None:
             raise RuntimeError('Model should be fit first')
-
-        LOG.info('Fitting full model ...')
-        self._estimator.rfc__warm_start = True
-
         target_names = ["accept", "exclude"]
-        labels_y = self._Xtest[[self._rate_column]].values.ravel()
+
+        X = pd.concat([self._Xtrain, self._Xtest], axis=0)
+        labels_y = X[[self._rate_column]].values.ravel().tolist()
+
         if self._multiclass:
             labels_y = LabelBinarizer().fit_transform(labels_y)
             target_names = ["exclude", "doubtful", "accept"]
 
-
-        self._estimator = self._estimator.fit(self._Xtest, labels_y)
+        LOG.info('Fitting full model ...')
+        self._estimator = self._estimator.fit(X, labels_y)
 
         LOG.info('Testing on left-out with full model')
-        prob_y = self._estimator.predict_proba(self._Xtest)
-        pred_y = self._estimator.predict(self._Xtest)
+        pred_y = self._estimator.predict(X)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(labels_y, pred_y,
                  target_names=target_names))
-        score = self._score(self._Xtest, labels_y)
+        score = self._score(X, labels_y)
         LOG.info('Full model performance on left-out (%s=%f)', self._scorer, score)
 
     def _score(self, X, y, scoring=None, clf=None):
@@ -611,7 +614,7 @@ class CVHelper(CVHelperBase):
 
         return pred
 
-    def evaluate(self, scoring=None, matrix=False, plot_roc=False):
+    def evaluate(self, scoring=None, matrix=False, out_roc=None):
         from sklearn.model_selection._validation import _score
 
         if scoring is None:
@@ -625,12 +628,7 @@ class CVHelper(CVHelperBase):
             target_names = ["exclude", "doubtful", "accept"]
             test_y = LabelBinarizer().fit_transform(test_y)
 
-        if 'site' not in self._Xtest.columns.ravel().tolist():
-            self._Xtest['site'] = ['Test'] * len(self._Xtest)
-
-        prob_y = self._estimator.predict_proba(self._Xtest)
         pred_y = self._estimator.predict(self._Xtest)
-
         scores = [self._score(self._Xtest, test_y, scoring=s) for s in scoring]
 
         LOG.info('Performance on evaluation set (%s)',
@@ -651,8 +649,10 @@ class CVHelper(CVHelperBase):
                     test_y, pred_y, target_names=target_names))
 
 
-        if plot_roc:
-            plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y, 'roc_iqrs.png')
+        if out_roc is not None:
+            prob_y = self._estimator.predict_proba(self._Xtest)
+            plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y,
+                           out_roc)
         return scores
 
 
