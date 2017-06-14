@@ -1,7 +1,4 @@
 TEST_PATH=./
-DOCKER_IMAGE=poldracklab/mriqc
-VERSION := $(shell python version.py)
-$( eval VERSION := $( shell python version.py ))
 
 .PHONY: clean-pyc
 clean-pyc:
@@ -33,21 +30,12 @@ test: clean-pyc
 dist: clean-build clean-pyc
 		python setup.py sdist
 
-.PHONY: docker-build
-docker-build:
-		docker build \
-			-f ./docker/Dockerfile_py27 \
-			-t $(DOCKER_IMAGE):$(VERSION)-python27 -t $(DOCKER_IMAGE):latest -t $(DOCKER_IMAGE):$(VERSION) .
-		docker build \
-			-f ./docker/Dockerfile_py35 \
-			-t $(DOCKER_IMAGE):$(VERSION)-python35 .
-
 .PHONY: docker
-docker: docker-build
-		docker push $(DOCKER_IMAGE):$(VERSION)-python27
-		docker push $(DOCKER_IMAGE):$(VERSION)
-		docker push $(DOCKER_IMAGE):latest
-		docker push $(DOCKER_IMAGE):$(VERSION)-python35
+docker:
+		docker build -t poldracklab/mriqc:$(MRIQC_VERSION) \
+			--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+			--build-arg VCS_REF=`git rev-parse --short HEAD` \
+			--build-arg VERSION=$(MRIQC_VERSION) .
 
 .PHONY: release
 release: clean-build tag docker
@@ -60,5 +48,5 @@ singularity: docker
     	-v /var/run/docker.sock:/var/run/docker.sock \
     	-v $(shell pwd)/build/singularity:/output \
     	singularityware/docker2singularity \
-    	$(DOCKER_IMAGE):$(VERSION)
+    	poldracklab/mriqc:$(MRIQC_VERSION)
 
