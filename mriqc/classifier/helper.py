@@ -14,7 +14,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import datetime
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
@@ -453,6 +453,7 @@ class CVHelper(CVHelperBase):
 
         fit_args = {}
         if self._kfold:
+            # Set n_splits=2, n_repeats=1 for testing
             folds = RepeatedStratifiedKFold().split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
         else:
@@ -475,17 +476,21 @@ class CVHelper(CVHelperBase):
         # if not self._estimator.get_params()['ft_sites__disable']:
         #     try1 = scaled[features + ['site']].columns[select.mask_].ravel().tolist()
 
-        LOG.info('Cross-validation - best %s=%f', self._scorer,
-                 grid.best_score_)
-        LOG.log(18, 'Cross-validation - best model\n%s',
-                grid.best_params_)
-
-        cv_out_file = os.path.abspath('mriqc_clf-%s_cv-%s_%s.npz',
-                                      'm' if self._multiclass else 'b',
-                                      'kfold' if self._kfold else 'loso',
-                                      datetime.now().strftime('%Y%m%d-%H%M%S'))
+        cv_out_file = os.path.abspath('mriqc_clf-%s_cv-%s_%s.npz' % (
+            'm' if self._multiclass else 'b',
+            'kfold' if self._kfold else 'loso',
+            datetime.now().strftime('%Y%m%d-%H%M%S')))
         np.savez(cv_out_file, grid.cv_results_)
 
+        best_pos = np.argmin(grid.cv_results_['rank_test_score'])
+        LOG.info('CV Finished - Best score=%s, mean=%.3f, std=%.3f (saved to %s).',
+                 os.path.basename(cv_out_file),
+                 self._scorer, grid.best_score_,
+                 grid.cv_results_['mean_test_score'][best_pos],
+                 grid.cv_results_['std_test_score'][best_pos],
+        )
+        LOG.log(18, 'Cross-validation - best model\n%s',
+                grid.best_params_)
 
         # Save estimator and leave if done
         self._estimator = grid.best_estimator_
