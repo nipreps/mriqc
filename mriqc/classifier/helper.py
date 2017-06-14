@@ -13,9 +13,10 @@
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
+import datetime
 import numpy as np
 import pandas as pd
-
 from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
 
 from .sklearn import (ModelAndGridSearchCV, preprocessing as mcsp)
@@ -451,7 +452,7 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
 
         fit_args = {}
-        if self._kfold or self._multiclass:
+        if self._kfold:
             folds = RepeatedStratifiedKFold().split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
         else:
@@ -461,20 +462,33 @@ class CVHelper(CVHelperBase):
                 groups=fit_args['groups'])
 
         grid = GridSearchCV(
-            pipe, params, error_score=0.5, refit=True,
+            pipe, params,
+            error_score=0.5,
+            refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
-            n_jobs=self.n_jobs, cv=folds, verbose=self._verbosity)
+            n_jobs=self.n_jobs,
+            cv=folds,
+            verbose=self._verbosity).fit(
+                self._Xtrain, train_y, **fit_args)
 
-        self._estimator = grid.fit(self._Xtrain, train_y,
-                                   **fit_args).best_estimator_
 
         # if not self._estimator.get_params()['ft_sites__disable']:
         #     try1 = scaled[features + ['site']].columns[select.mask_].ravel().tolist()
 
         LOG.info('Cross-validation - best %s=%f', self._scorer,
                  grid.best_score_)
-        LOG.log(18, 'Cross-validation - best model\n%s', grid.best_params_)
+        LOG.log(18, 'Cross-validation - best model\n%s',
+                grid.best_params_)
 
+        cv_out_file = os.path.abspath('mriqc_clf-%s_cv-%s_%s.npz',
+                                      'm' if self._multiclass else 'b',
+                                      'kfold' if self._kfold else 'loso',
+                                      datetime.now().strftime('%Y%m%d-%H%M%S'))
+        np.savez(cv_out_file, grid.cv_results_)
+
+
+        # Save estimator and leave if done
+        self._estimator = grid.best_estimator_
         if self._Xleftout is None:
             return self
 
