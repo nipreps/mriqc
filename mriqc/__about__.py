@@ -73,7 +73,7 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'https://github.com/scikit-learn/scikit-learn/tarball/master#sklearn-0.19.0dev0'
+    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev'
 ]
 
 TESTS_REQUIRES = [
@@ -87,7 +87,7 @@ EXTRA_REQUIRES = {
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
-    'classifier': ['scikit-learn', 'sklearn']
+    'classifier': ['scikit-learn']
 }
 
 # Enable a handle to install all extra dependencies at once

@@ -97,7 +97,8 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
 
 # Installing dev requirements (packages that are not in pypi)
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt && \
+RUN pip uninstall -y scikit-learn && \
+    pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
 # Precaching atlases after niworkflows is available
