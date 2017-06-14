@@ -483,11 +483,11 @@ class CVHelper(CVHelperBase):
         np.savez(cv_out_file, grid.cv_results_)
 
         best_pos = np.argmin(grid.cv_results_['rank_test_score'])
-        LOG.info('CV Finished - Best score=%s, mean=%.3f, std=%.3f (saved to %s).',
-                 os.path.basename(cv_out_file),
+        LOG.info('CV Finished - Best %s=%s, mean=%.3f, std=%.3f (saved to %s).',
                  self._scorer, grid.best_score_,
                  grid.cv_results_['mean_test_score'][best_pos],
                  grid.cv_results_['std_test_score'][best_pos],
+                 os.path.basename(cv_out_file),
         )
         LOG.log(18, 'Cross-validation - best model\n%s',
                 grid.best_params_)
