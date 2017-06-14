@@ -33,7 +33,6 @@ dependencies:
     - docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
     - nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d" && sleep 10
   override:
-    - echo "${CIRCLE_TAG:-$CIRCLE_SHA1}" > mriqc/VERSION
     - if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py && grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py; fi
     - ? |
         e=1 && for i in {1..5}; do
