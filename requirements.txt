@@ -1,2 +1,2 @@
 numpy>=1.12.0
-niworkflows>=0.1.2
+git+https://github.com/effigies/niworkflows.git@97341d7404e2ef4b26b896aee32c817c216e9a45#egg=niworkflows
