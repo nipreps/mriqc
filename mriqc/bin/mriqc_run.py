@@ -317,7 +317,9 @@ def main():
                         ' Use --no-sub to disable submission.')
 
                 # run MRIQC
-                workflow.run(**plugin_settings)
+                plugin_mod = getattr(sys.modules['niworkflows.nipype.pipeline.plugins'],
+                                     '%sPlugin' % plugin_settings['plugin'])
+                workflow.run(pluggin=plugin_mod(plugin_args=plugin_settings['plugin_args']))
 
                 # Warn about submitting measures AFTER
                 if not settings['no_sub']:
