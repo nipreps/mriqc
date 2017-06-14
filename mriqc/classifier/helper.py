@@ -355,7 +355,7 @@ class NestedCVHelper(CVHelperBase):
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', scorer='roc_auc',
-                 b_leaveout=False, multiclass=False, verbosity=0):
+                 b_leaveout=False, multiclass=False, verbosity=0, kfold=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -365,6 +365,7 @@ class CVHelper(CVHelperBase):
         self._pickled = False
         self._rate_column = rate_label
         self._batch_effect = None
+        self._kfold = kfold
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -417,24 +418,24 @@ class CVHelper(CVHelperBase):
         ])
 
         prep_params = [
-        # {
-        #     'std__by': ['site'],
-        #     'std__with_centering': [False],
-        #     'std__with_scaling': [False],
-        #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-        #     'pandas__columns': [self._ftnames],
-        #     'ft_sites__disable': [True],
-        #     'ft_noise__disable': [True],
-        # },
-        # {
-        #     'std__by': ['site'],
-        #     'std__with_centering': [True],
-        #     'std__with_scaling': [True],
-        #     'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-        #     'pandas__columns': [self._ftnames],
-        #     'ft_sites__disable': [True],
-        #     'ft_noise__disable': [True],
-        # },
+        {
+            'std__by': ['site'],
+            'std__with_centering': [False],
+            'std__with_scaling': [False],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'pandas__columns': [self._ftnames],
+            'ft_sites__disable': [True],
+            'ft_noise__disable': [True],
+        },
+        {
+            'std__by': ['site'],
+            'std__with_centering': [True],
+            'std__with_scaling': [True],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'pandas__columns': [self._ftnames],
+            'ft_sites__disable': [True],
+            'ft_noise__disable': [True],
+        },
         {
             'std__by': ['site'],
             'std__with_centering': [True],
@@ -451,8 +452,8 @@ class CVHelper(CVHelperBase):
         LOG.info('Cross-validation - fitting for %s ...', self._scorer)
 
         fit_args = {}
-        if False:
-            folds = RepeatedStratifiedKFold(n_splits=2, n_repeats=1).split(
+        if self._kfold or self._multiclass:
+            folds = RepeatedStratifiedKFold().split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
         else:
             fit_args['groups'] = self.get_groups()

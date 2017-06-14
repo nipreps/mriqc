@@ -68,6 +68,7 @@ def main():
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
+    g_input.add_argument('-K', '--kfold', action='store_true', default=False)
 
     g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
 
@@ -125,7 +126,8 @@ def main():
                             param=parameters, scorer=opts.scorer,
                             b_leaveout=opts.train_balanced_leaveout,
                             multiclass=opts.multiclass,
-                            verbosity=opts.verbose_count)
+                            verbosity=opts.verbose_count,
+                            kfold=opts.kfold)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
