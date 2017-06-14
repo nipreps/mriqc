@@ -156,8 +156,7 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
-                          plot_roc=False)
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'])
 
         # Pickle if required
         if not clf_loaded:

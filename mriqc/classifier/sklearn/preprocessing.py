@@ -337,8 +337,6 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 # always keep the noise index, which is n_feature (assuming 0 based python index)
                 #idx_keep = np.concatenate((idx_keep[:, np.newaxis], np.array([[n_feature]])), axis=0)
                 idx_keep = np.ravel(idx_keep)
-                LOG.log(19, 'Feature selection: %d features better than noise feature',
-                        len(idx_keep) - 1)
 
             # fail safe
             if counter >= self.n_winnow:
@@ -348,6 +346,8 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.importances_snr_ = importances[:-1]/importances[-1]
         self.idx_keep_ = idx_keep[:-1]
         self.mask_[self.idx_keep_] = True
+        LOG.info('Feature selection: %d of %d features better than noise feature',
+                 self.mask_.astype(int).sum(), len(self.mask_))
         return self
 
     def fit_transform(self, X, y=None):
@@ -390,12 +390,13 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
     """
     def __init__(self, target_auc=0.6, disable=False,
-                 max_iter=None, max_remove=0.7):
+                 max_iter=None, max_remove=0.7, site_col=-1):
         self.disable = disable
         self.target_auc = target_auc
         self.mask_ = None
         self.max_remove = max_remove if max_remove > 0 else None
         self.max_iter = max_iter
+        self.site_col = site_col
 
 
     def fit(self, X, y, n_jobs=1):
@@ -416,18 +417,23 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         from sklearn.ensemble import ExtraTreesClassifier
         from sklearn.model_selection import train_test_split
 
-        self.mask_ = np.ones(X.shape[1], dtype=bool)
+        n_feature = np.shape(X)[1]
+        self.mask_ = np.ones(n_feature, dtype=bool)
+        self.mask_[self.site_col] = False  # Always remove site
+        n_feature -= 1  # Remove site
+
         if self.disable:
             return self
 
-        n_feature = np.shape(X)[1]
         X_input = X.copy()
+        sites = X[:, self.site_col].tolist()
+        if len(set(sites)) == 1:
+            return self
 
-        if len(set(list(y))) > 2:
-            y = LabelBinarizer().fit_transform(y)
+        y_input = LabelBinarizer().fit_transform(sites)
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X_input, y, test_size=0.33, random_state=42)
+            X_input, y_input, test_size=0.33, random_state=42)
 
         max_remove = n_feature - 5
         if self.max_remove < 1.0:
@@ -480,7 +486,8 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
             i += 1
 
-        LOG.info('Feature selection: %d features survived', np.sum(self.mask_))
+        LOG.info('Feature selection: kept %d of %d features',
+                 np.sum(self.mask_), n_feature)
         return self
 
     def fit_transform(self, X, y=None, n_jobs=1):
@@ -512,8 +519,10 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         from sklearn.utils import check_array
         from sklearn.utils.validation import check_is_fitted
         check_is_fitted(self, ['mask_'], all_or_any=all)
-        X = check_array(X)
-        return X[:, self.mask_]
+        if hasattr(X, 'columns'):
+            X = X.values
+        X = check_array(X[:, self.mask_])
+        return X
 
 
 def _generate_noise(n_sample, y, clf_flag=True):
