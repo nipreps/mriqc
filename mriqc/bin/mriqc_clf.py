@@ -36,7 +36,7 @@ def main():
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
     from mriqc.classifier.helper import CVHelper
-    from mriqc import logging, LOG_FORMAT, MRIQC_LOG
+    from mriqc import logging, LOG_FORMAT
     from os.path import isfile, splitext
 
     warnings.showwarning = warn_redirect

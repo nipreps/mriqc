@@ -413,7 +413,7 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         self.mask_ : array
             Logical array of features to keep
         """
-        from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
+        from sklearn.ensemble import ExtraTreesClassifier
         from sklearn.model_selection import train_test_split
 
         self.mask_ = np.ones(X.shape[1], dtype=bool)
