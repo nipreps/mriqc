@@ -10,7 +10,6 @@ MRIQC
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import sys
 import os
 import os.path as op
 from multiprocessing import cpu_count
@@ -153,7 +152,6 @@ def main():
     """Entry point"""
     from niworkflows.nipype import config as ncfg, logging as nlog
     from niworkflows.nipype.pipeline.engine import Workflow
-    from niworkflows.nipype.pipeline import plugins as npp
     from mriqc.utils.bids import collect_bids_data
     from mriqc import logging
     from mriqc.workflows.core import build_workflow
@@ -319,10 +317,7 @@ def main():
                         ' Use --no-sub to disable submission.')
 
                 # run MRIQC
-                name = 'niworkflows.nipype.pipeline.plugins'
-                __import__(name)
-                Plugin = getattr(sys.modules[name], '%sPlugin' % plugin_settings['plugin'])
-                workflow.run(plugin=Plugin(plugin_args=plugin_settings['plugin_args']))
+                workflow.run(**plugin_settings)
 
                 # Warn about submitting measures AFTER
                 if not settings['no_sub']:
