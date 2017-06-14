@@ -7,8 +7,10 @@ mriqc_fit command line interface definition
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from sys import version_info, stdout
+from sys import version_info
 import warnings
+import matplotlib
+matplotlib.use('Agg')
 
 PY3 = version_info[0] > 2
 
@@ -150,9 +152,8 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        LOG.info('Evaluation on test data: %s=%f, accuracy=%f', opts.scorer,
-                 cvhelper.evaluate(matrix=True, scoring=opts.scorer, plot_roc=True),
-                 cvhelper.evaluate())
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
+                          plot_roc=True)
 
         # Pickle if required
         if not clf_loaded:

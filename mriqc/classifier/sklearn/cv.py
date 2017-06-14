@@ -180,14 +180,14 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
     X_train, y_train = _safe_split(estimator, X, y, train)
     X_test, y_test = _safe_split(estimator, X, y, test, train)
 
-    if y_test is not None:
-        tp = sum(y_test)
-        if tp == len(y_test) or not tp:
-            LOG.debug('Fold does not have any "%s" test samples.',
-                     'accept' if tp == 0 else 'exclude')
+    y_test_arr = np.array(y_test)
+    if np.ndim(np.array(y_train)) == 1:
+        y_test_arr = np.array([1 - y_test_arr, y_test_arr]).T
 
-            LOG.log(19, logtrace(' [skip]'))
-            return None
+    if not np.all(y_test_arr.sum(0) > 0):
+        LOG.debug('Only one class present in y_true (%s)', y_test_arr.sum(0))
+        LOG.log(19, logtrace(' [skip]'))
+        return None
 
     # Set model parameters
     estimator.set_params(**parameters)
@@ -208,10 +208,8 @@ def _robust_fit_and_score(estimator, X, y, scorer, train, test, verbose,
         raise
 
     fit_time = time.time() - start_time
-    if len(set(y_test)) == 1:
-        test_score = 0.5
-    else:
-        test_score = _score(estimator, X_test, y_test, scorer)
+
+    test_score = _score(estimator, X_test, y_test, scorer)
     score_time = time.time() - start_time - fit_time
     if return_train_score:
         train_score = _score(estimator, X_train, y_train, scorer)
