@@ -419,21 +419,12 @@ class CVHelper(CVHelperBase):
         prep_params = [
         {
             'std__by': ['site'],
-            'std__with_centering': [False],
-            'std__with_scaling': [False],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'pandas__columns': [self._ftnames],
-            'ft_sites__disable': [True],
-            'ft_noise__disable': [True],
-        },
-        {
-            'std__by': ['site'],
             'std__with_centering': [True],
             'std__with_scaling': [True],
             'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'pandas__columns': [self._ftnames],
-            'ft_sites__disable': [True],
-            'ft_noise__disable': [True],
+            'sel_cols__columns': [self._ftnames + ['site']],
+            'ft_sites__disable': [False],
+            'ft_noise__disable': [False],
         },
         {
             'std__by': ['site'],
@@ -442,6 +433,15 @@ class CVHelper(CVHelperBase):
             'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
             'sel_cols__columns': [self._ftnames + ['site']],
             'ft_sites__disable': [False],
+            'ft_noise__disable': [True],
+        },
+        {
+            'std__by': ['site'],
+            'std__with_centering': [True],
+            'std__with_scaling': [True],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'sel_cols__columns': [self._ftnames + ['site']],
+            'ft_sites__disable': [True],
             'ft_noise__disable': [True],
         },
         ]
