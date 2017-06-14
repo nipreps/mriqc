@@ -27,7 +27,6 @@ from sklearn.base import is_classifier, clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection._validation import _score
 from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.model_selection._split import check_cv
 
@@ -539,16 +538,6 @@ class CVHelper(CVHelperBase):
         score = self._score(X, labels_y)
         LOG.info('Full model performance on left-out (%s=%f)', self._scorer, score)
 
-    def _score(self, X, y, scoring=None, clf=None):
-        if scoring is None:
-            scoring = self._scorer
-
-        if clf is None:
-            clf = self._estimator
-
-        return _score(clf, X, y, check_scoring(clf, scoring=scoring))
-
-
     def save(self, filehandler, compress=3):
         """
         Pickle the estimator, adding the feature names
@@ -616,7 +605,9 @@ class CVHelper(CVHelperBase):
         return pred
 
     def evaluate(self, scoring=None, matrix=False, out_roc=None):
-        from sklearn.model_selection._validation import _score
+        """
+        Evaluate the internal estimator on the test data
+        """
 
         if scoring is None:
             scoring = ['accuracy']
@@ -655,6 +646,17 @@ class CVHelper(CVHelperBase):
             plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y,
                            out_roc)
         return scores
+
+    def _score(self, X, y, scoring=None, clf=None):
+        from sklearn.model_selection._validation import _score
+
+        if scoring is None:
+            scoring = self._scorer
+
+        if clf is None:
+            clf = self._estimator
+
+        return _score(clf, X, y, check_scoring(clf, scoring=scoring))
 
 
 def _cv_build(cv_scheme):
