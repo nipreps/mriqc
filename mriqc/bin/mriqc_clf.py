@@ -14,7 +14,11 @@ matplotlib.use('Agg')
 
 PY3 = version_info[0] > 2
 
-from sklearn.metrics.base import UndefinedMetricWarning
+try:
+    from sklearn.metrics.base import UndefinedMetricWarning
+except ImportError:
+    from sklearn.exceptions import UndefinedMetricWarning
+
 warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
@@ -153,7 +157,7 @@ def main():
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
         cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
-                          plot_roc=True)
+                          plot_roc=False)
 
         # Pickle if required
         if not clf_loaded:

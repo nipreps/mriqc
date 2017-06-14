@@ -10,7 +10,11 @@ RUN apt-get update && \
                     curl \
                     bzip2 \
                     ca-certificates \
-                    xvfb \
+                    xvfb  \
+                    cython3 \
+                    build-essential \
+                    autoconf \
+                    libtool \
                     pkg-config && \
     curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /root/.neurodebian.gpg && \
@@ -21,7 +25,7 @@ RUN apt-get update && \
 RUN apt-get install -y --no-install-recommends \
                     fsl-core=5.0.9-1~nd+1+nd16.04+1 \
                     fsl-mni152-templates=5.0.7-2 \
-                    afni=16.2.07~dfsg.1-2~nd16.04+1
+                    afni=16.2.07~dfsg.1-5~nd16.04+1
 
 ENV FSLDIR=/usr/share/fsl/5.0 \
     FSLOUTPUTTYPE=NIFTI_GZ \
@@ -73,8 +77,8 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
     sync && \
     conda install -c conda-forge -y \
                      numpy=1.12.0 \
+                     cython \
                      scipy=0.19.0 \
-                     scikit-learn=0.18.1 \
                      matplotlib=2.0.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \

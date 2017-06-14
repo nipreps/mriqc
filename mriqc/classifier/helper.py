@@ -27,7 +27,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection._validation import _score
-from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold, GridSearchCV
+from sklearn.model_selection import LeavePGroupsOut, RepeatedStratifiedKFold, GridSearchCV
 from sklearn.model_selection._split import check_cv
 
 from mriqc import __version__, logging
@@ -454,7 +454,7 @@ class CVHelper(CVHelperBase):
                 verbose=self._verbosity)
             fit_args['groups'] = self.get_groups()
         else:
-            kfold = StratifiedKFold(n_splits=10, shuffle=True).split(
+            kfold = RepeatedStratifiedKFold().split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
             grid = GridSearchCV(
                 pipe, params, error_score=0.5, refit=True,
@@ -652,7 +652,7 @@ class CVHelper(CVHelperBase):
 
 
         if plot_roc:
-            plot_roc_curve(test_y, prob_y[:, 1], 'roc_iqrs.png')
+            plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y, 'roc_iqrs.png')
         return scores
 
 

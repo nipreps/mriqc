@@ -73,7 +73,9 @@ REQUIRES = [
     'versioneer',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+    'https://github.com/scikit-learn/scikit-learn/tarball/master#sklearn-0.19.0dev0'
+]
 
 TESTS_REQUIRES = [
     'mock',
