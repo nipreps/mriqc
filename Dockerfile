@@ -108,7 +108,10 @@ RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09
 
 # Installing MRIQC
 COPY . /root/src/mriqc
-RUN cd /root/src/mriqc && pip install .[classifier,duecredit,tests,doc] && \
+ARG VERSION
+RUN cd /root/src/mriqc && \
+    echo "${VERSION}" > mriqc/VERSION && \
+    pip install .[all] && \
     rm -rf ~/.cache/pip
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
@@ -116,7 +119,6 @@ ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 # Store metadata
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="MRIQC" \
       org.label-schema.description="MRIQC - Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain" \
