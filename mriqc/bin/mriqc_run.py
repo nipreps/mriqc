@@ -320,7 +320,7 @@ def main():
 
                 # run MRIQC
                 Plugin = getattr(npp, '%sPlugin' % plugin_settings['plugin'])
-                workflow.run(pluggin=Plugin(plugin_args=plugin_settings['plugin_args']))
+                workflow.run(plugin=Plugin(plugin_args=plugin_settings['plugin_args']))
 
                 # Warn about submitting measures AFTER
                 if not settings['no_sub']:
