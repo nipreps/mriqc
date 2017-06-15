@@ -153,10 +153,9 @@ def main():
     """Entry point"""
     from niworkflows.nipype import config as ncfg, logging as nlog
     from niworkflows.nipype.pipeline.engine import Workflow
-    
+
     from .. import logging
     from ..utils.bids import collect_bids_data
-    from .. import logging
     from ..workflows.core import build_workflow
     from ..utils.misc import check_folder
 
