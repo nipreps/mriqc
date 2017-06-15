@@ -48,6 +48,13 @@ def combine_datasets(inputs, rating_label='rater_1'):
     ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
     return mdata[ordered_cols]
 
+def get_bids_cols(dataframe):
+    """ Returns columns corresponding to BIDS bits """
+    bids_comps = list(BIDS_COMP.keys())
+    bids_comps_present = list(set(dataframe.columns.ravel().tolist()) & set(bids_comps))
+    return [bit for bit in bids_comps if bit in bids_comps_present]
+
+
 def read_iqms(feat_file):
     """ Reads in the features """
 

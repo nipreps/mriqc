@@ -36,12 +36,12 @@ def main():
     """Entry point"""
     import yaml
     from io import open
+    from os.path import isfile, splitext
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
-    from ..classifier.cv import CVHelper
     from .. import logging, LOG_FORMAT
-    from os.path import isfile, splitext
+    from ..classifier.helper import CVHelper
 
     warnings.showwarning = warn_redirect
 
@@ -69,8 +69,7 @@ def main():
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('-K', '--kfold', action='store_true', default=False)
-
-    g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
+    g_input.add_argument('--debug', action='store_true', default=False)
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
     g_input.add_argument("-v", "--verbose", dest="verbose_count",
@@ -107,10 +106,6 @@ def main():
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
 
-    save_classifier = None
-    if opts.save_classifier:
-        save_classifier, clf_ext = splitext(opts.save_classifier)
-
     clf_loaded = False
     if opts.train is not None:
         train_exists = [isfile(fname) for fname in opts.train]
@@ -127,14 +122,13 @@ def main():
                             b_leaveout=opts.train_balanced_leaveout,
                             multiclass=opts.multiclass,
                             verbosity=opts.verbose_count,
-                            kfold=opts.kfold)
+                            kfold=opts.kfold, debug=opts.debug)
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
 
         # Pickle if required
-        if save_classifier:
-            cvhelper.save(save_classifier + '_train' + clf_ext)
+        cvhelper.save(suffix='data-train_estimator')
 
     # If no training set is given, need a classifier
     else:
@@ -158,18 +152,13 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'])
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
+                          save_pred=True)
 
         # Pickle if required
         if not clf_loaded:
             cvhelper.fit_full()
-            # LOG.info('Evaluation on test data (trained including test data): '
-            #          '%s=%f, accuracy=%f', opts.scorer,
-            #          cvhelper.evaluate(scoring=opts.scorer),
-            #          cvhelper.evaluate(matrix=True))
-
-            if save_classifier:
-                cvhelper.save(save_classifier + '_full' + clf_ext)
+            cvhelper.save(suffix='data-all_estimator')
 
     if opts.evaluation_data:
         cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
