@@ -345,7 +345,7 @@ participants found in the BIDS directory ({})."""
     # Set up group level
     if 'group' in analysis_levels:
         from ..reports import group_html
-        from ..utils.misc import generate_csv, generate_pred
+        from ..utils.misc import generate_csv  # , generate_pred
 
         log.info('Group level started...')
         log.info(

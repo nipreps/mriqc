@@ -20,7 +20,7 @@ import pytest
 from scipy.stats import rice
 from builtins import object
 # from numpy.testing import allclose
-from ..anatomical import snr, snr_dietrich, cjv, art_qi2
+from ..anatomical import art_qi2
 
 
 class GroundTruth(object):
