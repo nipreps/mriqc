@@ -27,8 +27,7 @@ if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
 fi
 
 echo "Checking records in MRIQC Web API"
-docker run -i --entrypoint="/usr/local/miniconda/bin/python" \
+docker run -i --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
               ${DOCKER_IMAGE}:${DOCKER_TAG} \
-              /root/src/mriqc/mriqc/bin/mriqcwebapi_test.py \
               ${MODALITY} ${NRECORDS} \
               --webapi-url http://${MRIQC_API_HOST}/api/v1/${MODALITY}

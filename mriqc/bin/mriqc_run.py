@@ -13,7 +13,8 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os
 import os.path as op
 from multiprocessing import cpu_count
-from mriqc import __version__
+
+from .. import __version__
 
 DEFAULT_MEM_GB = 8
 
@@ -21,7 +22,7 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from mriqc import DEFAULTS
+    from .. import DEFAULTS
 
     parser = ArgumentParser(description='MRIQC: MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -152,10 +153,11 @@ def main():
     """Entry point"""
     from niworkflows.nipype import config as ncfg, logging as nlog
     from niworkflows.nipype.pipeline.engine import Workflow
-    from mriqc.utils.bids import collect_bids_data
-    from mriqc import logging
-    from mriqc.workflows.core import build_workflow
-    from mriqc.utils.misc import check_folder
+
+    from .. import logging
+    from ..utils.bids import collect_bids_data
+    from ..workflows.core import build_workflow
+    from ..utils.misc import check_folder
 
     # Run parser
     opts = get_parser().parse_args()
@@ -343,8 +345,8 @@ participants found in the BIDS directory ({})."""
 
     # Set up group level
     if 'group' in analysis_levels:
-        from mriqc.reports import group_html
-        from mriqc.utils.misc import generate_csv, generate_pred
+        from ..reports import group_html
+        from ..utils.misc import generate_csv  # , generate_pred
 
         log.info('Group level started...')
         log.info(

@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from mriqc.classifier.data import read_dataset, zscore_dataset
+from ..classifier.data import read_dataset, zscore_dataset
 
 def plot_batches(fulldata, out_file=None, excl_columns=None):
     fulldata = fulldata.select_dtypes([np.number]).copy()

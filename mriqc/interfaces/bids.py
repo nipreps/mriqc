@@ -17,7 +17,7 @@ from niworkflows.nipype.interfaces.base import (
     traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
     File, Undefined, Str)
 from niworkflows.interfaces.base import SimpleInterface
-from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
+from ..utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
 
@@ -191,7 +191,7 @@ class IQMFileSink(SimpleInterface):
         if self.inputs.modality == 'T1w':
             from pkg_resources import resource_filename as pkgrf
             import numpy as np
-            from mriqc.classifier.cv import CVHelper
+            from ..classifier.cv import CVHelper
 
             cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
                                 n_jobs=1)

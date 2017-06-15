@@ -17,7 +17,6 @@ import os
 from datetime import datetime
 import numpy as np
 import pandas as pd
-from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
 
 from .sklearn import (ModelAndGridSearchCV, preprocessing as mcsp)
 from .sklearn.cv_nested import nested_fit_and_score
@@ -31,8 +30,9 @@ from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.model_selection._split import check_cv
 
-from mriqc import __version__, logging
-from mriqc.viz.misc import plot_roc_curve
+from .. import __version__, logging
+from .data import read_iqms, read_dataset, zscore_dataset, balanced_leaveout
+from ..viz.misc import plot_roc_curve
 
 from builtins import object, str
 

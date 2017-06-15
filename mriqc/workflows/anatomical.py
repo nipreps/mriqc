@@ -56,6 +56,7 @@ from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
 from ..utils.misc import check_folder
 WFLOGGER = logging.getLogger('mriqc.workflow')
 
+
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     """
     One-subject-one-session-one-run pipeline to extract the NR-IQMs from
@@ -147,7 +148,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     # Upload metrics
     if not settings.get('no_sub', False):
-        from mriqc.interfaces.webapi import UploadIQMs
+        from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.email = settings.get('email', '')
         upldwf.inputs.url = settings.get('webapi_url')
@@ -215,8 +216,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         wf = compute_iqms(settings={'output_dir': 'out'})
 
     """
-    from mriqc.workflows.utils import _tofloat
-    from mriqc.interfaces.anatomical import Harmonize
+    from .utils import _tofloat
+    from ..interfaces.anatomical import Harmonize
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -316,8 +317,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         wf = individual_reports(settings={'output_dir': 'out'})
 
     """
-    from mriqc.interfaces import PlotMosaic
-    from mriqc.reports import individual_html
+    from ..interfaces import PlotMosaic
+    from ..reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
@@ -367,8 +368,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     if not verbose:
         return workflow
 
-    from mriqc.interfaces.viz import PlotContours
-    from mriqc.viz.utils import plot_bg_dist
+    from ..interfaces.viz import PlotContours
+    from ..viz.utils import plot_bg_dist
     plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
                           function=plot_bg_dist), name='PlotBackground')
 
