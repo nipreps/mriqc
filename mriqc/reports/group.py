@@ -21,7 +21,7 @@ from builtins import zip, object, str  # pylint: disable=W0622
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
-MRIQC_REPORT_LOG.setLevel(logging.INFO)
+
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
