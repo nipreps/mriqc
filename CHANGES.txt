@@ -1,3 +1,21 @@
+  * [ENH] Second revision of the classifier (#555):
+    * Set matplotlib plugin to `agg` in docker image
+    * Migrate scalings to sklearn pipelining system
+    * Add Satra's feature selection for RFC
+    * Make model selection compatible with sklearn `Pipeline`
+    * Multiclass classification
+    * Add feature selection filter based on Sites prediction (requires pinning to development sklearn-0.19)
+    * Add `RobustLeavePGroupsOut`, replace `RobustGridSearchCV` with the standard `GridSearchCV` of sklearn.
+    * Choice between `RepeatedStratifiedKFold` and `RobustLeavePGroupsOut` in `mriqc_clf`
+    * Write cross-validation results to an `.npz` file.
+  * [ENH] First revision of the classifier (#553):
+    * Add the possibility of changing the scorer function.
+    * Unifize labels for raters in data tables (to `rater_1`)
+    * Add the possibility of setting a custom decision threshold
+    * Write the probabilities in the prediction file
+    * Revised `mriqc_clf` processing flow
+    * Revised labels file for ds030.
+    * Add IQMs for ABIDE and DS030 calculated with MRIQC 0.9.6.
   * ANNOUNCEMENT: Dropped support for Python<=3.4
 
 0.9.6
