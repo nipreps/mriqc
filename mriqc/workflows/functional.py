@@ -175,7 +175,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     # Upload metrics
     if not settings.get('no_sub', False):
-        from mriqc.interfaces.webapi import UploadIQMs
+        from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.url = settings.get('webapi_url')
         if settings.get('webapi_port'):
@@ -200,8 +200,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 
     """
-    from mriqc.workflows.utils import _tofloat
-    from mriqc.interfaces.transitional import GCOR
+    from .utils import _tofloat
+    from ..interfaces.transitional import GCOR
 
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
@@ -293,7 +293,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # FFT spikes finder
     if settings.get('fft_spikes_detector', False):
-        from mriqc.workflows.utils import slice_wise_fft
+        from .utils import slice_wise_fft
         spikes_fft = pe.Node(niu.Function(
             input_names=['in_file'],
             output_names=['n_spikes', 'out_spikes', 'out_fft'],
@@ -320,8 +320,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
       wf = individual_reports(settings={'output_dir': 'out'})
 
     """
-    from mriqc.interfaces import PlotMosaic, PlotSpikes
-    from mriqc.reports import individual_html
+    from ..interfaces import PlotMosaic, PlotSpikes
+    from ..reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
@@ -439,8 +439,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
-    from mriqc.interfaces.viz import PlotContours
-    from mriqc.viz.utils import plot_bg_dist
+    from ..interfaces.viz import PlotContours
+    from ..viz.utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,

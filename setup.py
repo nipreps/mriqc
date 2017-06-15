@@ -87,6 +87,7 @@ def main():
             'nib-hash=mriqc.bin.nib_hash:main',
             'participants=mriqc.bin.subject_wrangler:main',
             'mriqc_labeler=mriqc.bin.labeler:main',
+            'mriqcwebapi_test=mriqc.bin.mriqcwebapi_test:main',
         ]},
         packages=find_packages(exclude=['*.tests']),
         package_data=pkg_data,

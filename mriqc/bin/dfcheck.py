@@ -19,7 +19,7 @@ import pandas as pd
 
 def main():
     """Entry point"""
-    from mriqc.classifier.data import read_iqms
+    from ..classifier.data import read_iqms
     parser = ArgumentParser(description='compare two pandas dataframes',
                             formatter_class=RawTextHelpFormatter)
     g_input = parser.add_argument_group('Inputs')

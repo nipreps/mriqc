@@ -24,7 +24,7 @@ def get_parser():
 def main():
     """Entry point"""
     from requests import get
-    from mriqc import MRIQC_LOG
+    from .. import MRIQC_LOG
 
     # Run parser
     opts = get_parser().parse_args()

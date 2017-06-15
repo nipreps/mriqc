@@ -19,8 +19,8 @@ import os.path as op
 from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 
-from mriqc import __version__
-from mriqc.reports import workflow_report
+from .. import __version__
+from ..reports import workflow_report
 
 def main():
     """Entry point"""

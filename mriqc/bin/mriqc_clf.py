@@ -17,7 +17,7 @@ warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    from mriqc import logging
+    from .. import logging
     LOG = logging.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
@@ -33,8 +33,8 @@ def main():
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
-    from mriqc.classifier.cv import CVHelper
-    from mriqc import logging, LOG_FORMAT
+    from ..classifier.cv import CVHelper
+    from .. import logging, LOG_FORMAT
     from os.path import isfile, splitext
     LOG = logging.getLogger('mriqc.classifier')
 
