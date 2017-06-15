@@ -13,6 +13,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import os
 import os.path as op
 from multiprocessing import cpu_count
+
 from .. import __version__
 
 DEFAULT_MEM_GB = 8
@@ -152,6 +153,8 @@ def main():
     """Entry point"""
     from niworkflows.nipype import config as ncfg, logging as nlog
     from niworkflows.nipype.pipeline.engine import Workflow
+    
+    from .. import logging
     from ..utils.bids import collect_bids_data
     from .. import logging
     from ..workflows.core import build_workflow
@@ -344,7 +347,7 @@ participants found in the BIDS directory ({})."""
     # Set up group level
     if 'group' in analysis_levels:
         from ..reports import group_html
-        from ..utils.misc import generate_csv, generate_pred
+        from ..utils.misc import generate_csv  # , generate_pred
 
         log.info('Group level started...')
         log.info(

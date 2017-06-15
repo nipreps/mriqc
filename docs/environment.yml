@@ -12,4 +12,6 @@ dependencies:
 - jinja2=2.8
 - sphinx>=1.5,<1.6
 - sphinx_rtd_theme>=0.2.4
-- niworkflows>=0.1.2
+
+- pip:
+    - git+https://github.com/effigies/niworkflows.git@97341d7404e2ef4b26b896aee32c817c216e9a45#egg=niworkflows
