@@ -93,11 +93,6 @@ class CVHelperBase(object):
     def predict(self, X, thres=0.5, return_proba=True):
         raise NotImplementedError
 
-    def get_groups(self):
-        """Generate the index of sites"""
-        gnames = list(set(self.sites))
-        return [gnames.index(g) for g in self.sites]
-
 
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
@@ -125,14 +120,14 @@ class CVHelper(CVHelperBase):
                 multiclass=multiclass, verbosity=verbosity, debug=debug)
 
         self._leaveout = b_leaveout
-
-        self._base_name = 'mclf_run-%s_ver-%s_class-%d_cv-%s' % (
+        self._model = model
+        self._base_name = 'mclf_run-%s_mod-%s_ver-%s_class-%d_cv-%s' % (
             datetime.now().strftime('%Y%m%d-%H%M%S'),
+            self._model,
             re.sub('[\+_@]', '.', __version__),
             3 if self._multiclass else 2,
             'kfold' if self._kfold else 'loso',
         )
-        self._model = model
 
     @property
     def estimator(self):
@@ -207,7 +202,7 @@ class CVHelper(CVHelperBase):
             folds = RepeatedStratifiedKFold(**kf_params).split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
         else:
-            fit_args['groups'] = self.get_groups()
+            fit_args['groups'] = get_groups(self._Xtrain)
             folds = LeavePGroupsOut(n_groups=1).split(
                 self._Xtrain, y=self._Xtrain[[self._rate_column]].values.ravel().tolist(),
                 groups=fit_args['groups'])
@@ -482,22 +477,13 @@ class CVHelper(CVHelperBase):
                 'std__with_scaling': [True],
                 'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
                 'sel_cols__columns': [self._ftnames + ['site']],
-                'ft_sites__disable': [False],
-                'ft_noise__disable': [False],
+                'ft_sites__disable': [False, True],
+                'ft_noise__disable': [False, True],
             },
             {
                 'std__by': ['site'],
-                'std__with_centering': [True],
-                'std__with_scaling': [True],
-                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-                'sel_cols__columns': [self._ftnames + ['site']],
-                'ft_sites__disable': [False],
-                'ft_noise__disable': [True],
-            },
-            {
-                'std__by': ['site'],
-                'std__with_centering': [True],
-                'std__with_scaling': [True],
+                'std__with_centering': [True, False],
+                'std__with_scaling': [True, False],
                 'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
                 'sel_cols__columns': [self._ftnames + ['site']],
                 'ft_sites__disable': [True],
@@ -506,7 +492,17 @@ class CVHelper(CVHelperBase):
         ]
 
         if self._debug:
-            preparams = [preparams[-1]]
+            preparams = [
+                {
+                    'std__by': ['site'],
+                    'std__with_centering': [False],
+                    'std__with_scaling': [False],
+                    'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                    'sel_cols__columns': [self._ftnames + ['site']],
+                    'ft_sites__disable': [True],
+                    'ft_noise__disable': [True],
+                },
+            ]
 
         prefix = self._model + '__'
         if self._multiclass:
@@ -517,3 +513,9 @@ class CVHelper(CVHelperBase):
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
         return [{**prep, **modparams} for prep in preparams]
+
+def get_groups(X, label='site'):
+    """Generate the index of sites"""
+    groups = X[label].values.ravel().tolist()
+    gnames = list(set(groups))
+    return [gnames.index(g) for g in groups]
