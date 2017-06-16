@@ -67,6 +67,8 @@ def main():
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
+    g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
+                         default='rfc', help='model')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('-K', '--kfold', action='store_true', default=False)
@@ -118,12 +120,19 @@ def main():
                 len(errors), ', '.join(errors)))
 
         # Initialize model selection helper
-        cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
-                            param=parameters, scorer=opts.scorer,
-                            b_leaveout=opts.train_balanced_leaveout,
-                            multiclass=opts.multiclass,
-                            verbosity=opts.verbose_count,
-                            kfold=opts.kfold, debug=opts.debug)
+        cvhelper = CVHelper(
+            X=opts.train[0],
+            Y=opts.train[1],
+            n_jobs=opts.njobs,
+            param=parameters,
+            scorer=opts.scorer,
+            b_leaveout=opts.train_balanced_leaveout,
+            multiclass=opts.multiclass,
+            verbosity=opts.verbose_count,
+            kfold=opts.kfold,
+            model=opts.model,
+            debug=opts.debug
+        )
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()

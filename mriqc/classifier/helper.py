@@ -30,6 +30,7 @@ from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.multiclass import OneVsRestClassifier
 # xgboost
+# from xgboost.sklearn import XGBModel as XGBClassifier
 from xgboost import XGBClassifier
 
 from .. import __version__, logging
@@ -191,10 +192,10 @@ class CVHelper(CVHelperBase):
         ]
 
         if self._model == 'xgb':
-            steps[-1] = ('xgb', XGBClassifier)
+            steps[-1] = ('xgb', XGBClassifier())
 
         if self._multiclass:
-            steps[-1] = ('rfc', OneVsRestClassifier(steps[-1][1]))
+            steps[-1][1] = OneVsRestClassifier(steps[-1][1])
 
         pipe = Pipeline(steps)
 
