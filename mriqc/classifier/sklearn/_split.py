@@ -6,9 +6,8 @@
 # @Date:   2017-06-14 12:47:30
 
 import numpy as np
-from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold, KFold, )
-                                     # _RepeatedSplits)
-from sklearn.utils import check_random_state
+from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold)
+from sklearn.model_selection._split import _RepeatedSplits
 
 from ... import logging
 LOG = logging.getLogger('mriqc.classifier')
@@ -74,11 +73,11 @@ class BalancedKFold(StratifiedKFold):
 
 
 
-# class RepeatedBalancedKFold(_RepeatedSplits):
-#     """
-#     A repeated K-Fold split, where test folds are balanced
-#     """
+class RepeatedBalancedKFold(_RepeatedSplits):
+    """
+    A repeated K-Fold split, where test folds are balanced
+    """
 
-#     def __init__(self, n_splits=5, n_repeats=10, random_state=None):
-#         super(RepeatedBalancedKFold, self).__init__(
-#             BalancedKFold, n_repeats, random_state, n_splits=n_splits)
+    def __init__(self, n_splits=5, n_repeats=10, random_state=None):
+        super(RepeatedBalancedKFold, self).__init__(
+            BalancedKFold, n_repeats, random_state, n_splits=n_splits)
