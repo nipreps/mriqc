@@ -21,9 +21,11 @@ from ..utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
 
+
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='the input nifti file')
     fields = traits.List(Str, desc='get only certain fields')
+
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
     subject_id = Str()
@@ -33,6 +35,7 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     rec_id = Str()
     run_id = Str()
     out_dict = traits.Dict()
+
 
 class ReadSidecarJSON(SimpleInterface):
     """
@@ -89,6 +92,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
 
 class IQMFileSinkOutputSpec(TraitedSpec):
     out_file = File(desc='the output JSON file containing the IQMs')
+
 
 class IQMFileSink(SimpleInterface):
     input_spec = IQMFileSinkInputSpec
@@ -188,19 +192,6 @@ class IQMFileSink(SimpleInterface):
         if isdefined(self.inputs.provenance) and self.inputs.provenance:
             prov_dict.update(self.inputs.provenance)
 
-        if self.inputs.modality == 'T1w':
-            from pkg_resources import resource_filename as pkgrf
-            import numpy as np
-            from ..classifier.cv import CVHelper
-
-            cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
-                                n_jobs=1)
-
-            features = tuple([self._out_dict.get(key, None)
-                              for key in cvhelper.ftnames])
-            prov_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
-
-
         if self._out_dict.get('provenance') is None:
             self._out_dict['provenance'] = {}
         self._out_dict['provenance'].update(prov_dict)
@@ -210,7 +201,6 @@ class IQMFileSink(SimpleInterface):
                                ensure_ascii=False))
 
         return runtime
-
 
 
 def get_metadata_for_nifti(in_file):
@@ -268,6 +258,7 @@ def get_metadata_for_nifti(in_file):
                 merged_param_dict.update(param_dict)
 
     return merged_param_dict
+
 
 def _process_name(name, val):
     if '.' in name:

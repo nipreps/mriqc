@@ -35,6 +35,10 @@ logging.basicConfig(
     format=LOG_FORMAT,
 )
 
+# Add two levels of verbosity to info
+logging.addLevelName(19, 'INFO')
+logging.addLevelName(18, 'INFO')
+
 DEFAULTS = {
     'ants_nthreads': 6,
     'float32': False

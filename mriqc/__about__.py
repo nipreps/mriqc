@@ -72,7 +72,9 @@ REQUIRES = [
     'versioneer',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev'
+]
 
 TESTS_REQUIRES = [
     'mock',
@@ -85,7 +87,7 @@ EXTRA_REQUIRES = {
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
-    'classifier': ['scikit-learn', 'sklearn']
+    'classifier': ['scikit-learn', 'xgboost']
 }
 
 # Enable a handle to install all extra dependencies at once

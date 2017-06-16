@@ -48,6 +48,14 @@ def combine_datasets(inputs, rating_label='rater_1'):
     ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
     return mdata[ordered_cols]
 
+
+def get_bids_cols(dataframe):
+    """ Returns columns corresponding to BIDS bits """
+    bids_comps = list(BIDS_COMP.keys())
+    bids_comps_present = list(set(dataframe.columns.ravel().tolist()) & set(bids_comps))
+    return [bit for bit in bids_comps if bit in bids_comps_present]
+
+
 def read_iqms(feat_file):
     """ Reads in the features """
 
@@ -76,6 +84,7 @@ def read_iqms(feat_file):
             feat_names.remove(col)
 
     return x_df, feat_names, bids_comps_present
+
 
 def read_labels(label_file, rate_label='rater_1', binarize=True,
                 site_name=None):
@@ -109,7 +118,6 @@ def read_labels(label_file, rate_label='rater_1', binarize=True,
     if binarize:
         y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
         y_df.loc[y_df[rate_label] < 0, rate_label] = 1
-
 
     add_cols = [rate_label]
     # Set default name
@@ -172,11 +180,19 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
     LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
              feat_file, label_file, nsamples)
 
-    nfails = int(x_df[rate_label].sum())
-    LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
-             nfails, nsamples - nfails, nfails * 100 / nsamples)
+    # Inform about ratings distribution
+    labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
+    ldist = []
+    for l in labels:
+        ldist.append(int(np.sum(x_df[rate_label] == l)))
+
+    LOG.info('Ratings distribution: %s (%s, %s)',
+             '/'.join(['%d' % x for x in ldist]),
+             '/'.join(['%.2f%%' % (100 * x / nsamples) for x in ldist]),
+             'accept/exclude' if len(ldist) == 2 else 'exclude/doubtful/accept')
 
     return x_df, feat_names
+
 
 def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     sites = list(set(dataframe[[site_column]].values.ravel()))
@@ -196,7 +212,6 @@ def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     left_out = dataframe.iloc[pos_draw + neg_draw].copy()
     dataframe = dataframe.drop(dataframe.index[pos_draw + neg_draw])
     return dataframe, left_out
-
 
 
 def zscore_dataset(dataframe, excl_columns=None, by='site',
@@ -243,47 +258,10 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
 
     return zs_df
 
+
 def zscore_site(args):
     """ z-scores only one site """
     from scipy.stats import zscore
     dataframe, columns, site = args
     return zscore(dataframe.loc[dataframe.site == site, columns].values,
                   ddof=1, axis=0)
-
-
-def find_bias(dataframe, by='site', excl_columns=None):
-    sites = list(set(dataframe[[by]].values.ravel().tolist()))
-    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
-
-    if excl_columns:
-        numcols = [col for col in numcols if col not in excl_columns]
-
-    LOG.info('Calculating bias of dataset (cols=%s)',
-             ', '.join(['"%s"' % col for col in numcols]))
-
-    site_medians = []
-    for site in sites:
-        site_medians.append(np.median(dataframe.loc[dataframe.site == site, numcols], axis=0))
-
-    return np.median(np.array(site_medians), axis=0)
-
-
-def remove_bias(dataframe, grand_medians, by='site', excl_columns=None):
-    LOG.info('Removing bias of dataset ...')
-
-    all_cols = dataframe.columns.ravel().tolist()
-    if by not in all_cols:
-        dataframe[by] = ['Unknown'] * len(dataframe)
-
-    sites = list(set(dataframe[[by]].values.ravel().tolist()))
-    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
-
-    if excl_columns:
-        numcols = [col for col in numcols if col not in excl_columns]
-
-    for site in sites:
-        vals = dataframe.loc[dataframe.site == site, numcols]
-        site_med = np.median(vals, axis=0)
-        dataframe.loc[dataframe.site == site, numcols] = vals - site_med + grand_medians
-
-    return dataframe

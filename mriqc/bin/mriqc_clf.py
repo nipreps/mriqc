@@ -9,13 +9,21 @@ mriqc_fit command line interface definition
 from __future__ import absolute_import, division, print_function, unicode_literals
 from sys import version_info
 import warnings
+import matplotlib
+matplotlib.use('Agg')
 
 PY3 = version_info[0] > 2
 
-from sklearn.metrics.base import UndefinedMetricWarning
+try:
+    from sklearn.metrics.base import UndefinedMetricWarning
+except ImportError:
+    from sklearn.exceptions import UndefinedMetricWarning
+
 warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
+
+
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
     from .. import logging
     LOG = logging.getLogger('mriqc.warnings')
@@ -25,18 +33,16 @@ def warn_redirect(message, category, filename, lineno, file=None, line=None):
         cached_warnings.append(category)
 
 
-
 def main():
     """Entry point"""
     import yaml
     from io import open
+    from os.path import isfile
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf
-    from ..classifier.cv import CVHelper
     from .. import logging, LOG_FORMAT
-    from os.path import isfile, splitext
-    LOG = logging.getLogger('mriqc.classifier')
+    from ..classifier.helper import CVHelper
 
     warnings.showwarning = warn_redirect
 
@@ -53,20 +59,25 @@ def main():
 
     parser.add_argument('--train-balanced-leaveout', action='store_true', default=False,
                         help='leave out a balanced, random, sample of training examples')
+    parser.add_argument('--multiclass', '--ms', action='store_true', default=False,
+                        help='do not binarize labels')
 
     parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
 
     g_input = parser.add_argument_group('Inputs')
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
+    g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
+                         default='rfc', help='model')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
-
-    g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
+    g_input.add_argument('-K', '--kfold', action='store_true', default=False)
+    g_input.add_argument('--debug', action='store_true', default=False)
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
-    g_input.add_argument('--log-level', action='store', default='INFO',
-                         choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+    g_input.add_argument("-v", "--verbose", dest="verbose_count",
+                         action="count", default=0,
+                         help="increases log verbosity for each occurence.")
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
@@ -75,25 +86,28 @@ def main():
 
     g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
                          help='decision threshold of the classifier')
-
-
     opts = parser.parse_args()
 
+    log_level = int(max(3 - opts.verbose_count, 0) * 10)
+    if opts.verbose_count > 1:
+        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+
+    LOG = logging.getLogger('mriqc.classifier')
+    LOG.setLevel(log_level)
+
     if opts.log_file is not None:
-        filelogger = logging.getLogger()
         fhl = logging.FileHandler(opts.log_file)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
-        filelogger.addHandler(fhl)
-        filelogger.setLevel(opts.log_level)
+        fhl.setLevel(log_level)
+        LOG.addHandler(fhl)
+
+    LOG.debug('debug trace')
+    LOG.log(5, 'very high verbosity output')
 
     parameters = None
     if opts.parameters is not None:
         with open(opts.parameters) as paramfile:
             parameters = yaml.load(paramfile)
-
-    save_classifier = None
-    if opts.save_classifier:
-        save_classifier, clf_ext = splitext(opts.save_classifier)
 
     clf_loaded = False
     if opts.train is not None:
@@ -106,16 +120,25 @@ def main():
                 len(errors), ', '.join(errors)))
 
         # Initialize model selection helper
-        cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
-                            param=parameters, scorer=opts.scorer,
-                            b_leaveout=opts.train_balanced_leaveout)
+        cvhelper = CVHelper(
+            X=opts.train[0],
+            Y=opts.train[1],
+            n_jobs=opts.njobs,
+            param=parameters,
+            scorer=opts.scorer,
+            b_leaveout=opts.train_balanced_leaveout,
+            multiclass=opts.multiclass,
+            verbosity=opts.verbose_count,
+            kfold=opts.kfold,
+            model=opts.model,
+            debug=opts.debug
+        )
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
 
         # Pickle if required
-        if save_classifier:
-            cvhelper.save(save_classifier + '_train' + clf_ext)
+        cvhelper.save(suffix='data-train_estimator')
 
     # If no training set is given, need a classifier
     else:
@@ -139,20 +162,13 @@ def main():
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate
-        LOG.info('Evaluation on test data: %s=%f, accuracy=%f', opts.scorer,
-                 cvhelper.evaluate(scoring=opts.scorer),
-                 cvhelper.evaluate(matrix=True))
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
+                          save_pred=True)
 
         # Pickle if required
         if not clf_loaded:
             cvhelper.fit_full()
-            LOG.info('Evaluation on test data (trained including test data): '
-                     '%s=%f, accuracy=%f', opts.scorer,
-                     cvhelper.evaluate(scoring=opts.scorer),
-                     cvhelper.evaluate(matrix=True))
-
-            if save_classifier:
-                cvhelper.save(save_classifier + '_full' + clf_ext)
+            cvhelper.save(suffix='data-all_estimator')
 
     if opts.evaluation_data:
         cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
