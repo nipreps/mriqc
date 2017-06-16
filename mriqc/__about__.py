@@ -87,7 +87,7 @@ EXTRA_REQUIRES = {
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
-    'classifier': ['scikit-learn']
+    'classifier': ['scikit-learn', 'xgboost']
 }
 
 # Enable a handle to install all extra dependencies at once

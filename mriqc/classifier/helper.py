@@ -18,10 +18,10 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import re
-
+# sklearn overrides
 from .sklearn import preprocessing as mcsp
 from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
-
+# sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
@@ -29,6 +29,8 @@ from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.multiclass import OneVsRestClassifier
+# xgboost
+from xgboost import XGBClassifier
 
 from .. import __version__, logging
 from .data import read_dataset, get_bids_cols
@@ -100,7 +102,7 @@ class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, kfold=False,
-                 debug=False):
+                 debug=False, model='rfc'):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -129,6 +131,7 @@ class CVHelper(CVHelperBase):
             3 if self._multiclass else 2,
             'kfold' if self._kfold else 'loso',
         )
+        self._model = model
 
     @property
     def estimator(self):
@@ -187,8 +190,11 @@ class CVHelper(CVHelperBase):
             ('rfc', RFC())
         ]
 
+        if self._model == 'xgb':
+            steps[-1] = ('xgb', XGBClassifier)
+
         if self._multiclass:
-            steps[-1] = ('rfc', OneVsRestClassifier(RFC()))
+            steps[-1] = ('rfc', OneVsRestClassifier(steps[-1][1]))
 
         pipe = Pipeline(steps)
 
@@ -467,8 +473,8 @@ class CVHelper(CVHelperBase):
 
         return _score(clf, X, y, check_scoring(clf, scoring=scoring))
 
-    def _get_params(self, debug=False):
-        prep_params = [
+    def _get_params(self):
+        preparams = [
             {
                 'std__by': ['site'],
                 'std__with_centering': [True],
@@ -499,15 +505,14 @@ class CVHelper(CVHelperBase):
         ]
 
         if self._debug:
-            prep_params = [prep_params[-1]]
+            preparams = [preparams[-1]]
 
-        prefix = 'rfc__'
+        prefix = self._model + '__'
         if self._multiclass:
-            prefix = 'rfc__estimator__'
+            prefix += 'estimator__'
 
-        rfc_params = {prefix + k: v for k, v in list(self.param['rfc'][0].items())}
-
+        modparams = {prefix + k: v for k, v in list(self.param[self._model][0].items())}
         if self._debug:
-            rfc_params = {k: [v[0]] for k, v in list(rfc_params.items())}
+            modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
-        return [{**prep, **rfc_params} for prep in prep_params]
+        return [{**prep, **modparams} for prep in preparams]
