@@ -6,10 +6,13 @@
 # @Date:   2017-06-14 12:47:30
 
 import numpy as np
-from sklearn.model_selection import LeavePGroupsOut
+from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold, KFold, )
+                                     # _RepeatedSplits)
+from sklearn.utils import check_random_state
 
 from ... import logging
 LOG = logging.getLogger('mriqc.classifier')
+
 
 class RobustLeavePGroupsOut(LeavePGroupsOut):
     """
@@ -44,3 +47,38 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
     def get_n_splits(self, X, y, groups):
         return len(self._splits)
+
+
+class BalancedKFold(StratifiedKFold):
+    """
+    A balanced K-Fold split
+    """
+
+    def split(self, X, y, groups=None):
+        splits = super(BalancedKFold, self).split(X, y, groups)
+
+        for train_index, test_index in splits:
+            split_y = y[test_index]
+            classes_y, y_inversed = np.unique(split_y, return_inverse=True)
+            min_y = min(np.bincount(y_inversed))
+            new_index = np.zeros(min_y * len(classes_y), dtype=int)
+
+            for cls in classes_y:
+                cls_index = test_index[split_y == cls]
+                if len(cls_index) > min_y:
+                    cls_index = np.random.choice(
+                        cls_index, size=min_y, replace=False)
+
+                new_index[cls * min_y:(cls + 1) * min_y] = cls_index
+            yield train_index, new_index
+
+
+
+# class RepeatedBalancedKFold(_RepeatedSplits):
+#     """
+#     A repeated K-Fold split, where test folds are balanced
+#     """
+
+#     def __init__(self, n_splits=5, n_repeats=10, random_state=None):
+#         super(RepeatedBalancedKFold, self).__init__(
+#             BalancedKFold, n_repeats, random_state, n_splits=n_splits)
