@@ -129,6 +129,9 @@ class CVHelper(CVHelperBase):
             'kfold' if self._kfold else 'loso',
         )
 
+        LOG.info('Results will be saved as %s',
+                 os.path.abspath(self._gen_fname(suffix='*')))
+
     @property
     def estimator(self):
         return self._estimator
@@ -172,8 +175,7 @@ class CVHelper(CVHelperBase):
         if self._leaveout:
             raise NotImplementedError
 
-        LOG.info('CV [Setting up pipeline] - Results: %s',
-                 os.path.abspath(self._gen_fname(suffix='*')))
+        LOG.info('CV [Setting up pipeline] - scorer: %s', self._scorer)
 
         feat_sel = self._ftnames + ['site']
 
@@ -193,9 +195,6 @@ class CVHelper(CVHelperBase):
             steps[-1][1] = OneVsRestClassifier(steps[-1][1])
 
         pipe = Pipeline(steps)
-
-        LOG.info('Cross-validation - fitting for %s ...', self._scorer)
-
         fit_args = {}
         if self._kfold or self._debug:
             kf_params = {} if not self._debug else {'n_splits': 2, 'n_repeats': 1}
@@ -221,34 +220,39 @@ class CVHelper(CVHelperBase):
                  cv_results=grid.cv_results_)
 
         best_pos = np.argmin(grid.cv_results_['rank_test_score'])
-        LOG.info('CV - Best %s=%s, mean=%.3f, std=%.3f.',
+
+        # Save estimator and get its parameters
+        self._estimator = grid.best_estimator_
+        cvparams = self._estimator.get_params()
+
+        LOG.info('CV [Best model] %s=%s, mean=%.3f, std=%.3f.',
                  self._scorer, grid.best_score_,
                  grid.cv_results_['mean_test_score'][best_pos],
                  grid.cv_results_['std_test_score'][best_pos],
                  )
-        LOG.log(18, 'CV - best model parameters\n%s',
-                grid.best_params_)
+        LOG.log(18, 'CV [Best model] parameters\n%s', cvparams)
 
-        # Save estimator and leave if done
-        self._estimator = grid.best_estimator_
+        if cvparams.get(self._model + '__oob_score', False):
+            LOG.info('CV [Best model] OOB %s=%.3f', self._scorer,
+                     self._estimator.named_steps[self._model].oob_score_)
 
         # Report feature selection
         selected = np.array(feat_sel).copy()
-        if not self._estimator.get_params()['ft_sites__disable']:
+        if not cvparams['ft_sites__disable']:
             sitesmask = self._estimator.named_steps['ft_sites'].mask_
             selected = self._Xtrain[feat_sel].columns.ravel()[sitesmask]
-            LOG.info('CV - Features after SiteCorrelationSelector: %s',
+            LOG.info('CV [Feat. sel.] SiteCorrelation selected %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
-            LOG.info('CV - Feature selection based on site was disabled.')
+            LOG.info('CV [Feat. sel.] SiteCorrelation disabled.')
 
-        if not self._estimator.get_params()['ft_noise__disable']:
+        if not cvparams['ft_noise__disable']:
             winnowmask = self._estimator.named_steps['ft_noise'].mask_
             selected = selected[winnowmask]
-            LOG.info('CV - Features after Winnow: %s',
+            LOG.info('CV [Feat. sel.] NoiseWinnow selected %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
-            LOG.info('CV - Feature selection based on Winnow was disabled.')
+            LOG.info('CV [Feat. sel.] NoiseWinnow disabled.')
 
         # If leaveout, test and refit
         if self._leaveout:
