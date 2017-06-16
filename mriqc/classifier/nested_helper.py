@@ -7,30 +7,22 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-from datetime import datetime
 import numpy as np
 import pandas as pd
-import re
 
-from .sklearn import (ModelAndGridSearchCV, preprocessing as mcsp)
-from .sklearn.cv_nested import nested_fit_and_score
+from .sklearn.cv_nested import nested_fit_and_score, ModelAndGridSearchCV
 from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
-from sklearn import metrics as slm
 from sklearn.base import is_classifier, clone
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
+from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection._split import check_cv
 
 from .helper import CVHelperBase
-from .. import __version__, logging
-from .data import read_dataset, zscore_dataset, get_bids_cols
-from ..viz.misc import plot_roc_curve
+from .. import logging
+from .data import zscore_dataset
 
-from builtins import object, str
+from builtins import str
 
 LOG = logging.getLogger('mriqc.classifier')
 LOG.setLevel(logging.INFO)
@@ -46,7 +38,7 @@ EXCLUDE_COLUMNS = [
     'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm',
 ]
 
-FEATURE_NAMES =[
+FEATURE_NAMES = [
     'cjv', 'cnr', 'efc', 'fber',
     'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z',
     'icvs_csf', 'icvs_gm', 'icvs_wm',
@@ -83,6 +75,7 @@ FEATURE_RF_CORR = [
     'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv',
     'tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm'
 ]
+
 
 class NestedCVHelper(CVHelperBase):
 
@@ -214,7 +207,6 @@ class NestedCVHelper(CVHelperBase):
             zscore_cv_auc.append(outer_cv_scores)
             zscore_cv_acc.append(outer_cv_acc)
 
-
         # Select best performing model
         best_inner_loops = [model['best_score'] for model in self._models]
         best_idx = np.argmax(best_inner_loops)
@@ -229,9 +221,11 @@ class NestedCVHelper(CVHelperBase):
         best_zs = 1 if self._best_model['zscored'] else 0
         LOG.info('CV - estimated performance: %s=%f (+/-%f), accuracy=%f (+/-%f)',
                  self._scorer,
-                 np.mean(zscore_cv_auc[best_zs]), 2 * np.std(zscore_cv_auc[best_zs]),
-                 np.mean(zscore_cv_acc[best_zs]), 2 * np.std(zscore_cv_acc[best_zs]),
-        )
+                 np.mean(zscore_cv_auc[best_zs]), 2 *
+                 np.std(zscore_cv_auc[best_zs]),
+                 np.mean(zscore_cv_acc[best_zs]), 2 *
+                 np.std(zscore_cv_acc[best_zs]),
+                 )
 
     def get_inner_cv_scores(self):
         # Compose a dataframe object

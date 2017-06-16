@@ -22,6 +22,8 @@ except ImportError:
 warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
+
+
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
     from .. import logging
     LOG = logging.getLogger('mriqc.warnings')
@@ -31,12 +33,11 @@ def warn_redirect(message, category, filename, lineno, file=None, line=None):
         cached_warnings.append(category)
 
 
-
 def main():
     """Entry point"""
     import yaml
     from io import open
-    from os.path import isfile, splitext
+    from os.path import isfile
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
     from pkg_resources import resource_filename as pkgrf

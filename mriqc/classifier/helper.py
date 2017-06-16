@@ -19,25 +19,22 @@ import numpy as np
 import pandas as pd
 import re
 
-from .sklearn import (ModelAndGridSearchCV, preprocessing as mcsp)
-from .sklearn.cv_nested import nested_fit_and_score
+from .sklearn import preprocessing as mcsp
 from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
 from sklearn import metrics as slm
-from sklearn.base import is_classifier, clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
-from sklearn.model_selection._split import check_cv
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.multiclass import OneVsRestClassifier
 
 from .. import __version__, logging
-from .data import read_dataset, zscore_dataset, get_bids_cols
+from .data import read_dataset, get_bids_cols
 from ..viz.misc import plot_roc_curve
 
-from builtins import object, str
+from builtins import object
 
 LOG = logging.getLogger('mriqc.classifier')
 LOG.setLevel(logging.INFO)
@@ -45,10 +42,19 @@ LOG.setLevel(logging.INFO)
 FEATURE_NORM = [
     'cjv', 'cnr', 'efc', 'fber', 'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z',
     'snr_csf', 'snr_gm', 'snr_total', 'snr_wm', 'snrd_csf', 'snrd_gm', 'snrd_total', 'snrd_wm',
-    'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median', 'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv', 'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median', 'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv', 'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median', 'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv'
+    'summary_csf_mad', 'summary_csf_mean', 'summary_csf_median',
+    'summary_csf_p05', 'summary_csf_p95', 'summary_csf_stdv',
+    'summary_gm_k', 'summary_gm_mad', 'summary_gm_mean', 'summary_gm_median',
+    'summary_gm_p05', 'summary_gm_p95', 'summary_gm_stdv',
+    'summary_wm_k', 'summary_wm_mad', 'summary_wm_mean', 'summary_wm_median',
+    'summary_wm_p05', 'summary_wm_p95', 'summary_wm_stdv'
 ]
 
+
 class CVHelperBase(object):
+    """
+    A base helper to build cross-validation schemes
+    """
 
     def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
                  scorer='roc_auc', multiclass=False, verbosity=0, debug=False):
@@ -67,11 +73,9 @@ class CVHelperBase(object):
         self._balanced_leaveout = True
         self._verbosity = verbosity
 
-
     @property
     def ftnames(self):
         return self._ftnames
-
 
     @property
     def rate_column(self):
@@ -83,7 +87,7 @@ class CVHelperBase(object):
     def predict_dataset(self, data, out_file=None, thres=0.5):
         raise NotImplementedError
 
-    def predict(self, X, thres=0.5):
+    def predict(self, X, thres=0.5, return_proba=True):
         raise NotImplementedError
 
     def get_groups(self):
@@ -129,7 +133,6 @@ class CVHelper(CVHelperBase):
     @property
     def estimator(self):
         return self._estimator
-
 
     @property
     def Xtest(self):
@@ -220,7 +223,7 @@ class CVHelper(CVHelperBase):
                  self._scorer, grid.best_score_,
                  grid.cv_results_['mean_test_score'][best_pos],
                  grid.cv_results_['std_test_score'][best_pos],
-        )
+                 )
         LOG.log(18, 'CV - best model parameters\n%s',
                 grid.best_params_)
 
@@ -231,7 +234,7 @@ class CVHelper(CVHelperBase):
         selected = np.array(feat_sel).copy()
         if not self._estimator.get_params()['ft_sites__disable']:
             sitesmask = self._estimator.named_steps['ft_sites'].mask_
-            selected = self._Xtrain[feat_sel].columns[sitesmask]
+            selected = self._Xtrain[feat_sel].columns.ravel()[sitesmask]
             LOG.info('CV - Features after SiteCorrelationSelector: %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
@@ -239,7 +242,7 @@ class CVHelper(CVHelperBase):
 
         if not self._estimator.get_params()['ft_noise__disable']:
             winnowmask = self._estimator.named_steps['ft_noise'].mask_
-            selected = selected[sitesmask]
+            selected = selected[winnowmask]
             LOG.info('CV - Features after Winnow: %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
@@ -264,7 +267,7 @@ class CVHelper(CVHelperBase):
 
         LOG.info('Classification report:\n%s',
                  slm.classification_report(leaveout_y, pred_y,
-                 target_names=target_names))
+                                           target_names=target_names))
         score = self._score(leaveout_x, leaveout_y)
         LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
 
@@ -281,10 +284,9 @@ class CVHelper(CVHelperBase):
         prob_y, pred_y = self.predict(leaveout_x)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(leaveout_y, pred_y,
-                 target_names=target_names))
+                                           target_names=target_names))
         score = self._score(leaveout_x, leaveout_y)
         LOG.info('Performance on balanced left-out (%s=%f)', self._scorer, score)
-
 
     def fit_full(self):
         """
@@ -309,7 +311,7 @@ class CVHelper(CVHelperBase):
         pred_y = self._estimator.predict(X)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(labels_y, pred_y,
-                 target_names=target_names))
+                                           target_names=target_names))
         score = self._score(X, labels_y)
         LOG.info('Full model performance on left-out (%s=%f)', self._scorer, score)
 
@@ -321,7 +323,6 @@ class CVHelper(CVHelperBase):
 
         if scoring is None:
             scoring = ['accuracy']
-
 
         LOG.info('Testing on evaluation (left-out) dataset ...')
         test_y = self._Xtest[[self._rate_column]].values.ravel()
@@ -358,7 +359,7 @@ class CVHelper(CVHelperBase):
                            self._gen_fname(suffix='data-test_roc', ext='png'))
         return scores
 
-    def predict(self, X, return_proba=True, thres=0.5):
+    def predict(self, X, thres=0.5, return_proba=True):
         """Predict class for X.
         The predicted class of an input sample is a vote by the trees in
         the forest, weighted by their probability estimates. That is,
@@ -387,7 +388,6 @@ class CVHelper(CVHelperBase):
 
         return pred
 
-
     def predict_dataset(self, data, site='unseen', save_pred=False,
                         thres=0.5):
         from .data import read_iqms
@@ -408,19 +408,17 @@ class CVHelper(CVHelperBase):
 
         if self._multiclass:
             probs = ['proba_%d' % i
-                    for i in list(range(prob_y.shape[1]))]
-            preds = ['pred_%d' % i
                      for i in list(range(prob_y.shape[1]))]
+            predf['pred_y'] = (np.argmax(pred_y, axis=1) - 1).astype(int)
 
             for i, col in enumerate(probs):
                 predf[col] = prob_y[:, i]
 
-            cols = probs
+            cols = probs + ['pred_y']
         else:
             cols = ['prob_y', 'pred_y']
             predf['prob_y'] = prob_y[:, 1]
             predf['pred_y'] = pred_y
-
 
         predf[bidts + cols].to_csv(
             self._gen_fname(suffix=suffix, ext='csv'),
@@ -471,33 +469,33 @@ class CVHelper(CVHelperBase):
 
     def _get_params(self, debug=False):
         prep_params = [
-        {
-            'std__by': ['site'],
-            'std__with_centering': [True],
-            'std__with_scaling': [True],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'sel_cols__columns': [self._ftnames + ['site']],
-            'ft_sites__disable': [False],
-            'ft_noise__disable': [False],
-        },
-        {
-            'std__by': ['site'],
-            'std__with_centering': [True],
-            'std__with_scaling': [True],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'sel_cols__columns': [self._ftnames + ['site']],
-            'ft_sites__disable': [False],
-            'ft_noise__disable': [True],
-        },
-        {
-            'std__by': ['site'],
-            'std__with_centering': [True],
-            'std__with_scaling': [True],
-            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-            'sel_cols__columns': [self._ftnames + ['site']],
-            'ft_sites__disable': [True],
-            'ft_noise__disable': [True],
-        },
+            {
+                'std__by': ['site'],
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                'sel_cols__columns': [self._ftnames + ['site']],
+                'ft_sites__disable': [False],
+                'ft_noise__disable': [False],
+            },
+            {
+                'std__by': ['site'],
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                'sel_cols__columns': [self._ftnames + ['site']],
+                'ft_sites__disable': [False],
+                'ft_noise__disable': [True],
+            },
+            {
+                'std__by': ['site'],
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                'sel_cols__columns': [self._ftnames + ['site']],
+                'ft_sites__disable': [True],
+                'ft_noise__disable': [True],
+            },
         ]
 
         if self._debug:
