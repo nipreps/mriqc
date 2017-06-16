@@ -283,7 +283,7 @@ class CVHelper(CVHelperBase):
         self._estimator = self._estimator.fit(self._Xtrain, test_yall)
 
         LOG.info('Testing on left-out with full model, balanced subset ...')
-        prob_y, pred_y = self.predict(leaveout_x)
+        _, pred_y = self.predict(leaveout_x)
         LOG.info('Classification report:\n%s',
                  slm.classification_report(leaveout_y, pred_y,
                                            target_names=target_names))
