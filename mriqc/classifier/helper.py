@@ -87,7 +87,7 @@ class CVHelperBase(object):
     def fit(self):
         raise NotImplementedError
 
-    def predict_dataset(self, data, out_file=None, thres=0.5):
+    def predict_dataset(self, data, thres=0.5, save_pred=False, site=None):
         raise NotImplementedError
 
     def predict(self, X, thres=0.5, return_proba=True):
@@ -265,7 +265,7 @@ class CVHelper(CVHelperBase):
         LOG.info('Testing on left-out, balanced subset ...')
 
         # Predict
-        prob_y, pred_y = self.predict(leaveout_x)
+        _, pred_y = self.predict(leaveout_x)
 
         LOG.info('Classification report:\n%s',
                  slm.classification_report(leaveout_y, pred_y,
@@ -390,10 +390,13 @@ class CVHelper(CVHelperBase):
 
         return pred
 
-    def predict_dataset(self, data, site='unseen', save_pred=False,
-                        thres=0.5):
+    def predict_dataset(self, data, thres=0.5, save_pred=False, site=None):
         from .data import read_iqms
         _xeval, _, _ = read_iqms(data)
+
+        if site is None:
+            site = 'unseen'
+
         if 'site' not in _xeval.columns.ravel():
             _xeval['site'] = [site] * len(_xeval)
 
