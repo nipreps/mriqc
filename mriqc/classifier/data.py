@@ -48,6 +48,7 @@ def combine_datasets(inputs, rating_label='rater_1'):
     ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
     return mdata[ordered_cols]
 
+
 def get_bids_cols(dataframe):
     """ Returns columns corresponding to BIDS bits """
     bids_comps = list(BIDS_COMP.keys())
@@ -84,6 +85,7 @@ def read_iqms(feat_file):
 
     return x_df, feat_names, bids_comps_present
 
+
 def read_labels(label_file, rate_label='rater_1', binarize=True,
                 site_name=None):
     """ Reads in the labels """
@@ -116,7 +118,6 @@ def read_labels(label_file, rate_label='rater_1', binarize=True,
     if binarize:
         y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
         y_df.loc[y_df[rate_label] < 0, rate_label] = 1
-
 
     add_cols = [rate_label]
     # Set default name
@@ -179,7 +180,6 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
     LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
              feat_file, label_file, nsamples)
 
-
     # Inform about ratings distribution
     labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
     ldist = []
@@ -192,6 +192,7 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
              'accept/exclude' if len(ldist) == 2 else 'exclude/doubtful/accept')
 
     return x_df, feat_names
+
 
 def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     sites = list(set(dataframe[[site_column]].values.ravel()))
@@ -211,7 +212,6 @@ def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     left_out = dataframe.iloc[pos_draw + neg_draw].copy()
     dataframe = dataframe.drop(dataframe.index[pos_draw + neg_draw])
     return dataframe, left_out
-
 
 
 def zscore_dataset(dataframe, excl_columns=None, by='site',
@@ -257,6 +257,7 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
         zs_df[nan_columns] = dataframe[nan_columns].values
 
     return zs_df
+
 
 def zscore_site(args):
     """ z-scores only one site """
