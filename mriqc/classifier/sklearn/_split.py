@@ -56,6 +56,7 @@ class BalancedKFold(StratifiedKFold):
     def split(self, X, y, groups=None):
         splits = super(BalancedKFold, self).split(X, y, groups)
 
+        y = np.array(y)
         for train_index, test_index in splits:
             split_y = y[test_index]
             classes_y, y_inversed = np.unique(split_y, return_inverse=True)

@@ -71,7 +71,8 @@ def main():
                          default='rfc', help='model')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
-    g_input.add_argument('-K', '--kfold', action='store_true', default=False)
+    g_input.add_argument('--cv', action='store', default='loso',
+                         choices=['kfold', 'loso', 'balanced-kfold'])
     g_input.add_argument('--debug', action='store_true', default=False)
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
@@ -129,7 +130,7 @@ def main():
             b_leaveout=opts.train_balanced_leaveout,
             multiclass=opts.multiclass,
             verbosity=opts.verbose_count,
-            kfold=opts.kfold,
+            split=opts.cv,
             model=opts.model,
             debug=opts.debug
         )

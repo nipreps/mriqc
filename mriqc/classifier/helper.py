@@ -20,7 +20,7 @@ import pandas as pd
 import re
 # sklearn overrides
 from .sklearn import preprocessing as mcsp
-from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
+from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut, RepeatedBalancedKFold
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
@@ -97,7 +97,7 @@ class CVHelperBase(object):
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label='rater_1', scorer='roc_auc',
-                 b_leaveout=False, multiclass=False, verbosity=0, kfold=False,
+                 b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
                  debug=False, model='rfc'):
 
         if (X is None or Y is None) and load_clf is None:
@@ -108,7 +108,7 @@ class CVHelper(CVHelperBase):
         self._pickled = False
         self._rate_column = rate_label
         self._batch_effect = None
-        self._kfold = kfold
+        self._split = split
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -126,7 +126,7 @@ class CVHelper(CVHelperBase):
             self._model,
             re.sub('[\+_@]', '.', __version__),
             3 if self._multiclass else 2,
-            'kfold' if self._kfold else 'loso',
+            self._split,
         )
 
         LOG.info('Results will be saved as %s',
@@ -196,15 +196,22 @@ class CVHelper(CVHelperBase):
 
         pipe = Pipeline(steps)
         fit_args = {}
-        if self._kfold or self._debug:
+        if self._split == 'kfold':
             kf_params = {} if not self._debug else {'n_splits': 2, 'n_repeats': 1}
             folds = RepeatedStratifiedKFold(**kf_params).split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
-        else:
+        elif self._split == 'loso':
             fit_args['groups'] = get_groups(self._Xtrain)
             folds = LeavePGroupsOut(n_groups=1).split(
                 self._Xtrain, y=self._Xtrain[[self._rate_column]].values.ravel().tolist(),
                 groups=fit_args['groups'])
+        elif self._split == 'balanced-kfold':
+            kf_params = {'n_splits': 10, 'n_repeats': 3}
+            if self._debug:
+                kf_params = {'n_splits': 3, 'n_repeats': 1}
+
+            folds = RepeatedBalancedKFold(**kf_params).split(
+                self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
 
         grid = GridSearchCV(
             pipe, self._get_params(),
