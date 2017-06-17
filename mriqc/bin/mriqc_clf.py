@@ -26,10 +26,10 @@ cached_warnings = []
 
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
     from .. import logging
-    LOG = logging.getLogger('mriqc.warnings')
+    log = logging.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
-        LOG.debug('captured warning (%s): %s', category, message)
+        log.debug('captured warning (%s): %s', category, message)
         cached_warnings.append(category)
 
 
@@ -72,7 +72,7 @@ def main():
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('--cv', action='store', default='loso',
-                         choices=['kfold', 'loso', 'balanced-kfold'])
+                         choices=['kfold', 'loso', 'balanced-kfold', 'batch'])
     g_input.add_argument('--debug', action='store_true', default=False)
 
     g_input.add_argument('--log-file', action='store', help='write log to this file')
@@ -93,17 +93,14 @@ def main():
     if opts.verbose_count > 1:
         log_level = int(max(25 - 5 * opts.verbose_count, 1))
 
-    LOG = logging.getLogger('mriqc.classifier')
-    LOG.setLevel(log_level)
+    log = logging.getLogger('mriqc.classifier')
+    log.setLevel(log_level)
 
     if opts.log_file is not None:
         fhl = logging.FileHandler(opts.log_file)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
         fhl.setLevel(log_level)
-        LOG.addHandler(fhl)
-
-    LOG.debug('debug trace')
-    LOG.log(5, 'very high verbosity output')
+        log.addHandler(fhl)
 
     parameters = None
     if opts.parameters is not None:
@@ -135,6 +132,9 @@ def main():
             debug=opts.debug
         )
 
+        if opts.cv == 'batch':
+            cvhelper.setXtest(opts.test_data, opts.test_labels)
+
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
 
@@ -159,7 +159,7 @@ def main():
                             rate_label='rater_1')
         clf_loaded = True
 
-    if opts.test_data and opts.test_labels:
+    if opts.test_data and opts.test_labels and opts.cv != 'batch':
         # Set held-out data
         cvhelper.setXtest(opts.test_data, opts.test_labels)
         # Evaluate

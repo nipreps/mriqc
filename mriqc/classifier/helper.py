@@ -20,7 +20,9 @@ import pandas as pd
 import re
 # sklearn overrides
 from .sklearn import preprocessing as mcsp
-from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut, RepeatedBalancedKFold
+from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
+                             RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold,
+                             PartiallyHeldOutKFold)
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
@@ -168,10 +170,6 @@ class CVHelper(CVHelperBase):
             LOG.info('Classifier was loaded from file, cancelling fitting.')
             return
 
-        train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
-        if self._multiclass:
-            train_y = LabelBinarizer().fit_transform(train_y)
-
         if self._leaveout:
             raise NotImplementedError
 
@@ -192,9 +190,13 @@ class CVHelper(CVHelperBase):
             steps[-1] = ('xgb', XGBClassifier())
 
         if self._multiclass:
+            # If multiclass: binarize labels and wrap classifier
+            steps.insert(3, ('bin', LabelBinarizer()))
             steps[-1][1] = OneVsRestClassifier(steps[-1][1])
 
         pipe = Pipeline(steps)
+
+        # Prepare data splits for CV
         fit_args = {}
         if self._split == 'kfold':
             kf_params = {} if not self._debug else {'n_splits': 2, 'n_repeats': 1}
@@ -212,6 +214,22 @@ class CVHelper(CVHelperBase):
 
             folds = RepeatedBalancedKFold(**kf_params).split(
                 self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
+        elif self._split == 'batch':
+            # Get test label
+            test_site = list(set(self._Xtest.site.values.ravel().tolist()))[0]
+            # Merge test and train
+            self._Xtrain = pd.concat((self._Xtrain, self._Xtest), axis=0)
+            test_mask = self._Xtrain.site.values.ravel() == test_site
+
+            kf_params = {'n_splits': 5, 'n_repeats': 1}
+            if self._debug:
+                kf_params = {'n_splits': 3, 'n_repeats': 1}
+
+            folds = RepeatedPartiallyHeldOutKFold(**kf_params).split(
+                self._Xtrain.values, self._Xtrain[[self._rate_column]].values.ravel(),
+                groups=test_mask.astype(int))
+
+        train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
 
         grid = GridSearchCV(
             pipe, self._get_params(),
