@@ -191,7 +191,7 @@ class CVHelper(CVHelperBase):
         if self._multiclass:
             # If multiclass: binarize labels and wrap classifier
             steps.insert(3, ('bin', LabelBinarizer()))
-            steps[-1][1] = OneVsRestClassifier(steps[-1][1])
+            steps[-1] = (steps[-1][0], OneVsRestClassifier(steps[-1][1]))
 
         pipe = Pipeline(steps)
 
