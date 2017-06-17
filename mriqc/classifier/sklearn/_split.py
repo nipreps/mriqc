@@ -6,6 +6,7 @@
 # @Date:   2017-06-14 12:47:30
 
 import numpy as np
+from sklearn.utils import indexable
 from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold)
 from sklearn.model_selection._split import _RepeatedSplits
 
@@ -73,7 +74,6 @@ class BalancedKFold(StratifiedKFold):
             yield train_index, new_index
 
 
-
 class RepeatedBalancedKFold(_RepeatedSplits):
     """
     A repeated K-Fold split, where test folds are balanced
@@ -82,3 +82,37 @@ class RepeatedBalancedKFold(_RepeatedSplits):
     def __init__(self, n_splits=5, n_repeats=10, random_state=None):
         super(RepeatedBalancedKFold, self).__init__(
             BalancedKFold, n_repeats, random_state, n_splits=n_splits)
+
+
+class PartiallyHeldOutKFold(StratifiedKFold):
+    """
+    A K-Fold split on the test set where the train splits are
+    augmented with the original train set (in whole).
+    """
+    def split(self, X, y, groups=None):
+        if groups is None:
+            raise RuntimeError(
+                'A mask for train (0) and test (1) sets is required')
+
+        X, y, groups = indexable(X, y, groups)
+        train_idx = np.arange(len(X))[~groups.astype(bool)]
+        test_idx = np.arange(len(X))[groups.astype(bool)]
+        test_x = X[test_idx, :]
+        test_y = np.array(y)[test_idx]
+        split = super(PartiallyHeldOutKFold, self).split(
+            test_x, test_y)
+
+        offset = test_idx[0]
+        for test_train, test_test in split:
+            test_train = np.concatenate((train_idx, test_train + offset))
+            yield test_train, test_test
+
+
+class RepeatedPartiallyHeldOutKFold(_RepeatedSplits):
+    """
+    A repeated RepeatedPartiallyHeldOutKFold split
+    """
+
+    def __init__(self, n_splits=5, n_repeats=10, random_state=None):
+        super(RepeatedPartiallyHeldOutKFold, self).__init__(
+            PartiallyHeldOutKFold, n_repeats, random_state, n_splits=n_splits)
