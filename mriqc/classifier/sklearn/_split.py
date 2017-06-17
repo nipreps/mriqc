@@ -8,7 +8,7 @@
 import numpy as np
 from sklearn.utils import indexable
 from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold)
-from sklearn.model_selection._split import _RepeatedSplits, _BaseKFold
+from sklearn.model_selection._split import _RepeatedSplits
 
 from ... import logging
 LOG = logging.getLogger('mriqc.classifier')

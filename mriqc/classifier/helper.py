@@ -21,8 +21,7 @@ import re
 # sklearn overrides
 from .sklearn import preprocessing as mcsp
 from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
-                             RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold,
-                             PartiallyHeldOutKFold)
+                             RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
