@@ -4,7 +4,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # @Author: oesteban
 # @Date:   2017-06-19 10:06:20
-import numpy as np
 import pandas as pd
 
 def get_parser():
