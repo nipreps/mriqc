@@ -87,56 +87,77 @@ def read_iqms(feat_file):
 
 
 def read_labels(label_file, rate_label='rater_1', binarize=True,
-                site_name=None):
-    """ Reads in the labels """
-    # Massage labels table to have the appropriate format
+                site_name=None, rate_selection='random',
+                collapse=True):
+    """
+    Reads in the labels. Massage labels table to have the
+    appropriate format
+    """
+
+    if isinstance(rate_label, str):
+        rate_label = [rate_label]
+    output_labels = rate_label
 
     bids_comps = list(BIDS_COMP.keys())
-
     y_df = pd.read_csv(label_file, index_col=False,
                        dtype={col: str for col in bids_comps})
 
     # Find present bids bits and sort by them
-    bids_comps_present = list(set(y_df.columns.ravel().tolist()) & set(bids_comps))
-    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+    bids_comps_present = get_bids_cols(y_df)
     y_df = y_df.sort_values(by=bids_comps_present)
     y_df.subject_id = y_df.subject_id.str.lstrip('sub-')
+    y_df[rate_label] = y_df[rate_label].apply(pd.to_numeric, errors='raise')
 
-    # Convert string labels to ints
-    try:
-        y_df.loc[y_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = -1
-        y_df.loc[y_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = -1
-        y_df.loc[y_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 1
-        y_df.loc[y_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 1
-    except AttributeError:
-        pass
+    if len(rate_label) == 2:
+        np.random.seed(42)
+        ratermask_1 = ~np.isnan(y_df[[rate_label[0]]].values.ravel())
+        ratermask_2 = ~np.isnan(y_df[[rate_label[1]]].values.ravel())
 
-    y_df[[rate_label]] = y_df[[rate_label]].apply(pd.to_numeric, errors='raise')
+        all_rated = (ratermask_1 & ratermask_2)
+        mergey = np.array(y_df[[rate_label[0]]].values.ravel().tolist())
+        mergey[ratermask_2] = y_df[[rate_label[1]]].values.ravel()[ratermask_2]
+
+        subsmpl = np.random.choice(np.where(all_rated)[0], int(0.5 * np.sum(all_rated)),
+                                   replace=False)
+        all_rated[subsmpl] = False
+        mergey[all_rated] = y_df[[rate_label[0]]].values.ravel()[all_rated]
+        y_df['merged_ratings'] = mergey.astype(int)
+
+        # Set default name
+        if collapse:
+            cols = [('indv_%s' % c) if c.startswith('rater') else
+                    c for c in y_df.columns.ravel().tolist()]
+            cols[y_df.columns.get_loc('merged_ratings')] = rate_label[0]
+            y_df.columns = cols
+            output_labels = [rate_label[0]]
+        else:
+            output_labels = rate_label
+            output_labels.insert(0, 'merged_ratings')
 
     if binarize:
-        y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
-        y_df.loc[y_df[rate_label] < 0, rate_label] = 1
+        mask = y_df[output_labels[0]] >= 0
+        y_df.loc[mask, output_labels[0]] = 0
+        y_df.loc[~mask, output_labels[0]] = 1
 
-    add_cols = [rate_label]
-    # Set default name
     if 'site' in y_df.columns.ravel().tolist():
-        add_cols.insert(0, 'site')
+        output_labels.insert(0, 'site')
     elif site_name is not None:
         y_df['site'] = [site_name] * len(y_df)
-        add_cols.insert(0, 'site')
+        output_labels.insert(0, 'site')
 
-    return y_df[bids_comps_present + add_cols]
+    return y_df[bids_comps_present + output_labels]
 
 
-def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
-                 binarize=True, site_name=None):
+def read_dataset(feat_file, label_file, merged_name=None,
+                 binarize=True, site_name=None, rate_label='rater_1',
+                 rate_selection='random'):
     """ Reads in the features and labels """
 
     x_df, feat_names, _ = read_iqms(feat_file)
-    y_df = read_labels(label_file, rate_label, binarize,
-                       site_name=site_name)
+    y_df = read_labels(label_file, rate_label, binarize, collapse=True,
+                       site_name=site_name, rate_selection=rate_selection)
+    if isinstance(rate_label, (list, tuple)):
+        rate_label = rate_label[0]
 
     # Find present bids bits and sort by them
     bids_comps = list(BIDS_COMP.keys())

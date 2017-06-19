@@ -60,7 +60,8 @@ class CVHelperBase(object):
     A base helper to build cross-validation schemes
     """
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site', rate_label='rater_1',
+    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site',
+                 rate_label=None, rate_selection='random',
                  scorer='roc_auc', multiclass=False, verbosity=0, debug=False):
         # Initialize some values
         self.param = param
@@ -70,8 +71,13 @@ class CVHelperBase(object):
         self._multiclass = multiclass
         self._debug = debug
 
-        self._Xtrain, self._ftnames = read_dataset(X, Y, rate_label=rate_label,
-                                                   binarize=not self._multiclass)
+        if rate_label is None:
+            rate_label = ['rater_1', 'rater_2']
+        self._rate_column = rate_label[0]
+
+        self._Xtrain, self._ftnames = read_dataset(
+            X, Y, rate_label=rate_label, rate_selection=rate_selection,
+            binarize=not self._multiclass)
         self.sites = list(set(self._Xtrain[site_label].values.ravel()))
         self._scorer = scorer
         self._balanced_leaveout = True
@@ -97,7 +103,7 @@ class CVHelperBase(object):
 
 class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
-                 site_label='site', rate_label='rater_1', scorer='roc_auc',
+                 site_label='site', rate_label=None, scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
                  debug=False, model='rfc'):
 
@@ -107,7 +113,6 @@ class CVHelper(CVHelperBase):
         self._estimator = None
         self._Xtest = None
         self._pickled = False
-        self._rate_column = rate_label
         self._batch_effect = None
         self._split = split
 

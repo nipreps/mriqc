@@ -155,8 +155,7 @@ def main():
                 'No training samples were given, and the --load-classifier '
                 'option %s.' % msg)
 
-        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
-                            rate_label='rater_1')
+        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs)
         clf_loaded = True
 
     if opts.test_data and opts.test_labels and opts.cv != 'batch':
