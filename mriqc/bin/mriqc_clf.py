@@ -139,7 +139,8 @@ def main():
         )
 
         if opts.cv == 'batch':
-            cvhelper.setXtest(opts.test_data, opts.test_labels)
+            # Do not set x_test unless we are going to run batch exp.
+            cvhelper.setXtest(test_path[0], test_path[1])
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
