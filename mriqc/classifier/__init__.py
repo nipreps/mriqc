@@ -77,7 +77,7 @@ Command line of ``mriqc_clf``
 .. toctree::
     :maxdepth: 3
 
-    cv/helpers
+    cv/helper
     cv/data
 
 """

@@ -48,7 +48,9 @@ extensions = [
 ]
 
 # Mock modules in autodoc:
-autodoc_mock_imports = []
+autodoc_mock_imports = [
+    'xgboost',
+]
 # autodoc_mock_imports = [
 #     'scipy',
 #     'scipy.cluster',
