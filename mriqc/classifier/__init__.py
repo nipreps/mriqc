@@ -26,12 +26,32 @@ mode:
 
   ::
 
-      mriqc_clf --train aMRIQC_train.csv labels.csv --log-file fit_clf.log --save-classifier myclassifier.pklz
+      mriqc_clf --train aMRIQC_train.csv labels.csv --log-file
 
 where ``aMRIQC_train.csv`` contains the IQMs calculated by ``mriqc`` and ``labels.csv`` contains
 the matching ratings assigned by an expert.
-The labels can be numerical (``-1``= exclude, ``0``= doubtful, ``1`` = accept) or textual ("bad", "fail" can be
-used for exclude; "may be" or "maybe" for doubtful and "ok", "good" for accept).
+The labels must be numerical (``-1``= exclude, ``0``= doubtful, ``1`` = accept).
+With the flat ``--multiclass`` the flags are not binarized.
+Otherwise ``0`` and ``1`` will be mapped to ``0`` (accept) and ``-1`` will be mapped
+to ``1`` (reject).
+
+Removing all arguments of the ``--train`` flag we instruct ``mriqc_clf`` to run cross-validation
+for model selection and train the winner model on the ABIDE dataset:
+
+  ::
+
+      mriqc_clf --train --log-file
+
+
+Model selection can be followed by testing on a left out dataset using the flag ``--test``.
+If test is provided empty (without paths to samples and labels), then the default
+features and labels for ds030 are used:
+
+  ::
+
+      mriqc_clf --train --test --log-file
+
+
 
 The trained classifier can be then used for prediction on unseen data with
 the command at the top, indicating now which classifier should be used:
@@ -44,11 +64,20 @@ the command at the top, indicating now which classifier should be used:
 Predictions are stored as a CSV file, containing the BIDS identifiers as
 indexing columns and the predicted quality label under the ``prediction`` column.
 
+Command line of ``mriqc_clf``
+-----------------------------
+
+.. argparse::
+   :ref: mriqc.bin.mriqc_clf.get_parser
+   :prog: mriqc
+   :nodefault:
+   :nodefaultconst:
+
 
 .. toctree::
     :maxdepth: 3
 
-    cv/helpers
+    cv/helper
     cv/data
 
 """
