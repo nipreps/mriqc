@@ -36,36 +36,28 @@ def warn_redirect(message, category, filename, lineno, file=None, line=None):
         cached_warnings.append(category)
 
 
-def main():
-    """Entry point"""
-    import yaml
-    import re
-    from io import open
-    from datetime import datetime
+def get_parser():
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import logging, LOG_FORMAT, __version__
-    from ..classifier.helper import CVHelper
-
-    warnings.showwarning = warn_redirect
-
     parser = ArgumentParser(description='MRIQC model selection and held-out evaluation',
                             formatter_class=RawTextHelpFormatter)
 
     g_clf = parser.add_mutually_exclusive_group()
-    g_clf.add_argument('--train', nargs='*', help='training data tables, X and Y')
+    g_clf.add_argument('--train', nargs='*',
+                       help='training data tables, X and Y, leave empty for ABIDE.')
     g_clf.add_argument('--load-classifier', nargs="?", type=str, default='',
-                       help='load pickled classifier in')
+                       help='load a previously saved classifier')
 
-    parser.add_argument('--test', nargs='*', help='test data tables, X and Y')
+    parser.add_argument('--test', nargs='*',
+                        help='test data tables, X and Y, leave empty for DS030.')
+    parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
+
     parser.add_argument('--train-balanced-leaveout', action='store_true', default=False,
                         help='leave out a balanced, random, sample of training examples')
     parser.add_argument('--multiclass', '--ms', action='store_true', default=False,
                         help='do not binarize labels')
 
-    parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
-
-    g_input = parser.add_argument_group('Inputs')
+    g_input = parser.add_argument_group('Options')
     g_input.add_argument('-P', '--parameters', action='store',
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
     g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
@@ -76,8 +68,9 @@ def main():
                          choices=['kfold', 'loso', 'balanced-kfold', 'batch'])
     g_input.add_argument('--debug', action='store_true', default=False)
 
-    g_input.add_argument('--log-file', nargs="?", action='store',
-                         help='write log to this file', default='')
+    g_input.add_argument('--log-file', nargs="?", action='store', default='',
+                         help='write log to this file, leave empty for a default log name')
+
     g_input.add_argument("-v", "--verbose", dest="verbose_count",
                          action="count", default=0,
                          help="increases log verbosity for each occurence.")
@@ -89,8 +82,22 @@ def main():
 
     g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
                          help='decision threshold of the classifier')
-    opts = parser.parse_args()
 
+    return parser
+
+
+def main():
+    """Entry point"""
+    import yaml
+    import re
+    from io import open
+    from datetime import datetime
+    from .. import logging, LOG_FORMAT, __version__
+    from ..classifier.helper import CVHelper
+
+    warnings.showwarning = warn_redirect
+
+    opts = get_parser().parse_args()
     train_path = _parse_set(opts.train, default='abide')
     test_path = _parse_set(opts.test, default='ds030')
 
