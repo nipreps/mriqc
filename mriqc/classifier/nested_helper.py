@@ -20,7 +20,6 @@ from sklearn.model_selection._split import check_cv
 
 from .helper import CVHelperBase
 from .. import logging
-from .data import zscore_dataset
 
 from builtins import str
 
@@ -86,9 +85,6 @@ class NestedCVHelper(CVHelperBase):
                                              site_label='site', rate_label='rater_1',
                                              multiclass=False,
                                              verbosity=verbosity)
-
-        self._Xtr_zs = zscore_dataset(self._Xtrain, njobs=n_jobs,
-                                      excl_columns=[rate_label] + EXCLUDE_COLUMNS)
         self._models = []
         self._best_clf = {}
         self._best_model = {}
@@ -131,81 +127,73 @@ class NestedCVHelper(CVHelperBase):
         gs_cv_params = {'n_jobs': self.n_jobs, 'cv': _cv_build(self.cv_inner),
                         'verbose': 0}
 
-        zscore_cv_auc = []
-        zscore_cv_acc = []
+        outer_cv_scores = []
+        outer_cv_acc = []
+
+        # The inner CV loop is a grid search on clf_params
+        LOG.info('Creating ModelAndGridSearchCV')
+        inner_cv = ModelAndGridSearchCV(self.param, **gs_cv_params)
+
+        # Some sklearn's validations
+        scoring = check_scoring(inner_cv, scoring=self._scorer)
+        cv_outer = check_cv(_cv_build(self.cv_outer), y,
+                            classifier=is_classifier(inner_cv))
+
+        # Outer CV loop
+        LOG.info('Starting nested cross-validation ...')
         split_id = 0
-        for dozs in [False, True]:
-            LOG.info('Generate %sz-scored sample ...', '' if dozs else 'non ')
-            X, y, groups = self._generate_sample(zscored=dozs)
+        for train, test in list(cv_outer.split(X, y, groups)):
+            # Find the groups in the train set, in case inner CV is LOSO.
+            fit_params = None
+            if self.cv_inner.get('type') == 'loso':
+                train_groups = [groups[i] for i in train]
+                fit_params = {'groups': train_groups}
 
-            # The inner CV loop is a grid search on clf_params
-            LOG.info('Creating ModelAndGridSearchCV')
-            inner_cv = ModelAndGridSearchCV(self.param, **gs_cv_params)
+            result = nested_fit_and_score(
+                clone(inner_cv), X, y, scoring, train, test, fit_params=fit_params, verbose=1)
 
-            # Some sklearn's validations
-            scoring = check_scoring(inner_cv, scoring=self._scorer)
-            cv_outer = check_cv(_cv_build(self.cv_outer), y,
-                                classifier=is_classifier(inner_cv))
+            # Test group has no positive cases
+            if result is None:
+                continue
 
-            # Outer CV loop
-            outer_cv_scores = []
-            outer_cv_acc = []
-            LOG.info('Starting nested cross-validation ...')
-            for train, test in list(cv_outer.split(X, y, groups)):
-                # Find the groups in the train set, in case inner CV is LOSO.
-                fit_params = None
-                if self.cv_inner.get('type') == 'loso':
-                    train_groups = [groups[i] for i in train]
-                    fit_params = {'groups': train_groups}
+            score, clf = result
+            test_group = list(set(groups[i] for i in test))[0]
+            self._models.append({
+                # 'clf_type': clf_str,
+                'outer_split_id': split_id,
+                'left-out-sites': self.sites[test_group],
+                'best_model': clf.best_model_,
+                'best_params': clf.best_params_,
+                'best_score': clf.best_score_,
+                'best_index': clf.best_index_,
+                'cv_results': clf.cv_results_,
+                'cv_scores': score['test']['score'],
+                'cv_accuracy': score['test']['accuracy'],
+                'cv_params': clf.cv_results_['params'],
+                'cv_auc_means': clf.cv_results_['mean_test_score'],
+                'cv_splits': {'split%03d' % i: clf.cv_results_['split%d_test_score' % i]
+                              for i in list(range(clf.n_splits_))}
+            })
 
-                result = nested_fit_and_score(
-                    clone(inner_cv), X, y, scoring, train, test, fit_params=fit_params, verbose=1)
+            # Store the outer loop scores
+            if score['test']['score'] is not None:
+                outer_cv_scores.append(score['test']['score'])
+            outer_cv_acc.append(score['test']['accuracy'])
+            split_id += 1
 
-                # Test group has no positive cases
-                if result is None:
-                    continue
+            # LOG.info(
+            #     '[%s-%szs] Outer CV: roc_auc=%f, accuracy=%f, '
+            #     'Inner CV: best roc_auc=%f, params=%s. ',
+            #     clf.best_model_[0], 'n' if not dozs else '',
+            #     score['test']['score'] if score['test']['score'] is not None else -1.0,
+            #     score['test']['accuracy'],
+            #     clf.best_score_, clf.best_model_[1])
 
-                score, clf = result
-                test_group = list(set(groups[i] for i in test))[0]
-                self._models.append({
-                    # 'clf_type': clf_str,
-                    'zscored': int(dozs),
-                    'outer_split_id': split_id,
-                    'left-out-sites': self.sites[test_group],
-                    'best_model': clf.best_model_,
-                    'best_params': clf.best_params_,
-                    'best_score': clf.best_score_,
-                    'best_index': clf.best_index_,
-                    'cv_results': clf.cv_results_,
-                    'cv_scores': score['test']['score'],
-                    'cv_accuracy': score['test']['accuracy'],
-                    'cv_params': clf.cv_results_['params'],
-                    'cv_auc_means': clf.cv_results_['mean_test_score'],
-                    'cv_splits': {'split%03d' % i: clf.cv_results_['split%d_test_score' % i]
-                                  for i in list(range(clf.n_splits_))}
-                })
+        LOG.info('Outer CV loop finished, %s=%f (+/-%f), accuracy=%f (+/-%f)',
+                 self._scorer,
+                 np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
+                 np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc))
 
-                # Store the outer loop scores
-                if score['test']['score'] is not None:
-                    outer_cv_scores.append(score['test']['score'])
-                outer_cv_acc.append(score['test']['accuracy'])
-                split_id += 1
-
-                # LOG.info(
-                #     '[%s-%szs] Outer CV: roc_auc=%f, accuracy=%f, '
-                #     'Inner CV: best roc_auc=%f, params=%s. ',
-                #     clf.best_model_[0], 'n' if not dozs else '',
-                #     score['test']['score'] if score['test']['score'] is not None else -1.0,
-                #     score['test']['accuracy'],
-                #     clf.best_score_, clf.best_model_[1])
-
-            LOG.info('Outer CV loop finished, %s=%f (+/-%f), accuracy=%f (+/-%f)',
-                     self._scorer,
-                     np.mean(outer_cv_scores), 2 * np.std(outer_cv_scores),
-                     np.mean(outer_cv_acc), 2 * np.std(outer_cv_acc))
-
-            zscore_cv_auc.append(outer_cv_scores)
-            zscore_cv_acc.append(outer_cv_acc)
 
         # Select best performing model
         best_inner_loops = [model['best_score'] for model in self._models]
@@ -268,25 +256,6 @@ class NestedCVHelper(CVHelperBase):
             columns.insert(0, 'task_id')
 
         return pd.DataFrame(cvdict)[columns]
-
-    def _generate_sample(self, zscored=False, full=False):
-        from sklearn.utils import indexable
-        X = self._Xtr_zs.copy() if zscored else self._Xtrain.copy()
-        sample_x = [tuple(x) for x in X[self._ftnames].values]
-        labels_y = X[[self._rate_column]].values.ravel().tolist()
-
-        if full:
-            X = self._Xtest.copy()
-            LOG.warning('Requested fitting in both train and test '
-                        'datasets, appending %d examples', len(X))
-            sample_x += [tuple(x) for x in X[self._ftnames].values]
-            labels_y += X[[self._rate_column]].values.ravel().tolist()
-
-        groups = None
-        if not full:
-            groups = self.get_groups()
-
-        return indexable(np.array(sample_x), labels_y, groups)
 
 
 def _cv_build(cv_scheme):

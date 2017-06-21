@@ -15,7 +15,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from ..classifier.data import read_dataset, zscore_dataset
+from ..classifier.data import read_dataset
+from ..classifier.helper import FEATURE_NORM
+from ..classifier.sklearn.preprocessing import BatchRobustScaler
+
 
 def plot_batches(fulldata, out_file=None, excl_columns=None):
     fulldata = fulldata.select_dtypes([np.number]).copy()
@@ -304,7 +307,8 @@ def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
         except ValueError:
             pass
 
-    zscored = zscore_dataset(mdata, excl_columns=[rating_label])
+    zscored = BatchRobustScaler(
+        by='site', columns=FEATURE_NORM).fit_transform(mdata)
 
     sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
