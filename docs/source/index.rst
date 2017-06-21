@@ -23,6 +23,7 @@ Contents
    docker
    reports
    workflows
+   classifier
 
 
 Indices and tables

@@ -5,9 +5,9 @@
 
 """
 
-============================================================
-:mod:`mriqc.classifier.cv` -- MRIQC Cross-validation Helpers
-============================================================
+================================================================
+:mod:`mriqc.classifier.helper` -- MRIQC Cross-validation Helpers
+================================================================
 
 
 """
@@ -105,7 +105,7 @@ class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label=None, scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
-                 debug=False, model='rfc'):
+                 debug=False, model='rfc', basename=None):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -116,6 +116,10 @@ class CVHelper(CVHelperBase):
         self._batch_effect = None
         self._split = split
 
+        self._leaveout = b_leaveout
+        self._model = model
+        self._base_name = basename
+
         if load_clf is not None:
             self.n_jobs = n_jobs
             self.load(load_clf)
@@ -124,19 +128,6 @@ class CVHelper(CVHelperBase):
                 X, Y, param=param, n_jobs=n_jobs,
                 site_label=site_label, rate_label=rate_label, scorer=scorer,
                 multiclass=multiclass, verbosity=verbosity, debug=debug)
-
-        self._leaveout = b_leaveout
-        self._model = model
-        self._base_name = 'mclf_run-%s_mod-%s_ver-%s_class-%d_cv-%s' % (
-            datetime.now().strftime('%Y%m%d-%H%M%S'),
-            self._model,
-            re.sub('[\+_@]', '.', __version__),
-            3 if self._multiclass else 2,
-            self._split,
-        )
-
-        LOG.info('Results will be saved as %s',
-                 os.path.abspath(self._gen_fname(suffix='*')))
 
     @property
     def estimator(self):
@@ -395,21 +386,14 @@ class CVHelper(CVHelperBase):
         return scores
 
     def predict(self, X, thres=0.5, return_proba=True):
-        """Predict class for X.
+        """
+
+        Predict class for X.
         The predicted class of an input sample is a vote by the trees in
         the forest, weighted by their probability estimates. That is,
         the predicted class is the one with highest mean probability
         estimate across the trees.
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            The input samples. Internally, its dtype will be converted to
-            ``dtype=np.float32``. If a sparse matrix is provided, it will be
-            converted into a sparse ``csr_matrix``.
-        Returns
-        -------
-        y : array of shape = [n_samples] or [n_samples, n_outputs]
-            The predicted classes.
+
         """
         proba = np.array(self._estimator.predict_proba(X))
 
