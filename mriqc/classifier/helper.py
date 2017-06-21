@@ -106,7 +106,7 @@ class CVHelper(CVHelperBase):
     def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
                  site_label='site', rate_label=None, scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
-                 debug=False, model='rfc', basename=None):
+                 debug=False, model='rfc', basename=None, nested_cv=False):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -119,7 +119,7 @@ class CVHelper(CVHelperBase):
         self._leaveout = b_leaveout
         self._model = model
         self._base_name = basename
-        self._nestedcv = True
+        self._nestedcv = nested_cv
 
         if load_clf is not None:
             self.n_jobs = n_jobs
