@@ -195,20 +195,14 @@ class CVHelper(CVHelperBase):
         fit_args = {}
         if self._split == 'kfold':
             kf_params = {} if not self._debug else {'n_splits': 2, 'n_repeats': 1}
-            folds = RepeatedStratifiedKFold(**kf_params).split(
-                self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
+            splits = RepeatedStratifiedKFold(**kf_params)
         elif self._split == 'loso':
-            fit_args['groups'] = get_groups(self._Xtrain)
-            folds = LeavePGroupsOut(n_groups=1).split(
-                self._Xtrain, y=self._Xtrain[[self._rate_column]].values.ravel().tolist(),
-                groups=fit_args['groups'])
+            splits = LeavePGroupsOut(n_groups=1, groups=get_groups(self._Xtrain))
         elif self._split == 'balanced-kfold':
             kf_params = {'n_splits': 10, 'n_repeats': 3}
             if self._debug:
                 kf_params = {'n_splits': 3, 'n_repeats': 1}
-
-            folds = RepeatedBalancedKFold(**kf_params).split(
-                self._Xtrain, self._Xtrain[[self._rate_column]].values.ravel().tolist())
+            splits = RepeatedBalancedKFold(**kf_params)
         elif self._split == 'batch':
             # Get test label
             test_site = list(set(self._Xtest.site.values.ravel().tolist()))[0]
@@ -219,10 +213,8 @@ class CVHelper(CVHelperBase):
             kf_params = {'n_splits': 5, 'n_repeats': 1}
             if self._debug:
                 kf_params = {'n_splits': 3, 'n_repeats': 1}
-
-            folds = RepeatedPartiallyHeldOutKFold(**kf_params).split(
-                self._Xtrain.values, self._Xtrain[[self._rate_column]].values.ravel(),
-                groups=test_mask.astype(int))
+            kf_params['groups'] = test_mask.astype(int).tolist()
+            splits = RepeatedPartiallyHeldOutKFold(**kf_params)
 
         train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
 
@@ -232,7 +224,7 @@ class CVHelper(CVHelperBase):
             refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
             n_jobs=self.n_jobs,
-            cv=folds,
+            cv=splits,
             verbose=self._verbosity).fit(
                 self._Xtrain, train_y, **fit_args)
 
