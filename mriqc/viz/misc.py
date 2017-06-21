@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
 from ..classifier.data import read_dataset
-from ..classifier.helper import FEATURE_NORM
 from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
 
@@ -275,6 +274,8 @@ def raters_variability_plot(y_path, figsize=(22, 22),
 def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
                           rating_label='rater_1', dpi=100):
     import seaborn as sn
+    from ..classifier.helper import FEATURE_NORM
+
     sn.set(style="whitegrid")
 
     mdata = []
