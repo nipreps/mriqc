@@ -27,7 +27,8 @@ from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV
+from sklearn.model_selection import (RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV,
+                                     cross_val_score)
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.multiclass import OneVsRestClassifier
 # xgboost
@@ -115,10 +116,10 @@ class CVHelper(CVHelperBase):
         self._pickled = False
         self._batch_effect = None
         self._split = split
-
         self._leaveout = b_leaveout
         self._model = model
         self._base_name = basename
+        self._nestedcv = True
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -197,7 +198,7 @@ class CVHelper(CVHelperBase):
             kf_params = {} if not self._debug else {'n_splits': 2, 'n_repeats': 1}
             splits = RepeatedStratifiedKFold(**kf_params)
         elif self._split == 'loso':
-            splits = LeavePGroupsOut(n_groups=1, groups=get_groups(self._Xtrain))
+            splits = LeavePGroupsOut(n_groups=1)
         elif self._split == 'balanced-kfold':
             kf_params = {'n_splits': 10, 'n_repeats': 3}
             if self._debug:
@@ -218,16 +219,27 @@ class CVHelper(CVHelperBase):
 
         train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
 
-        grid = GridSearchCV(
-            pipe, self._get_params(),
+        grid = RandomizedSearchCV(
+            pipe, self._get_params_dist(),
             error_score=0.5,
             refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
             n_jobs=self.n_jobs,
             cv=splits,
-            verbose=self._verbosity).fit(
-                self._Xtrain, train_y, **fit_args)
+            verbose=self._verbosity)
 
+        if self._nestedcv:
+            outer_cv = LeavePGroupsOut(n_groups=1)
+            nested_score = cross_val_score(
+                grid,
+                X=self._Xtrain,
+                y=train_y,
+                cv=outer_cv
+            )
+            LOG.info('Nested CV [average %s=%s] - %s', self._scorer, np.average(nested_score),
+                     ', '.join('%.3f' % v for v in nested_score))
+
+        grid.fit(self._Xtrain, train_y, **fit_args)
         np.savez(os.path.abspath(self._gen_fname(suffix='cvres', ext='npz')),
                  cv_results=grid.cv_results_)
 
@@ -526,8 +538,23 @@ class CVHelper(CVHelperBase):
 
         return [{**prep, **modparams} for prep in preparams]
 
-def get_groups(X, label='site'):
-    """Generate the index of sites"""
-    groups = X[label].values.ravel().tolist()
-    gnames = list(set(groups))
-    return [gnames.index(g) for g in groups]
+    def _get_params_dist(self):
+        preparams = {
+            'std__by': ['site'],
+            'std__with_centering': [True, False],
+            'std__with_scaling': [True, False],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'sel_cols__columns': [self._ftnames + ['site']],
+            'ft_sites__disable': [False, True],
+            'ft_noise__disable': [False, True],
+        }
+
+        prefix = self._model + '__'
+        if self._multiclass:
+            prefix += 'estimator__'
+
+        modparams = {prefix + k: v for k, v in list(self.param[self._model][0].items())}
+        if self._debug:
+            modparams = {k: [v[0]] for k, v in list(modparams.items())}
+
+        return {**preparams, **modparams}
