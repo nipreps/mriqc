@@ -35,8 +35,9 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
         if groups is None:
             from ..data import get_groups
-            groups = get_groups(X)
+            groups, gnames = get_groups(X)
             self._groups = groups
+            LOG.info('CV split: group names: %s', ', '.join(['"%s"' % g for g in gnames]))
 
         self._splits = list(super(RobustLeavePGroupsOut, self).split(
             X, y=y, groups=groups))
@@ -53,6 +54,10 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
                         ' are totally missing', len(rmfold))
 
         return self._splits
+
+    @property
+    def groups(self):
+        return self._groups
 
     def get_n_splits(self, X, y, groups):
         return len(self.split(X, y, groups))

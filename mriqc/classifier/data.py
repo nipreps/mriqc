@@ -26,7 +26,7 @@ def get_groups(X, label='site'):
     """Generate the index of sites"""
     groups = X[label].values.ravel().tolist()
     gnames = list(set(groups))
-    return [gnames.index(g) for g in groups]
+    return [gnames.index(g) for g in groups], gnames
 
 def combine_datasets(inputs, rating_label='rater_1'):
     mdata = []

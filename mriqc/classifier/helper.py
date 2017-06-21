@@ -22,13 +22,14 @@ import re
 from .sklearn import preprocessing as mcsp
 from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
                              RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
+from .sklearn._validation import cross_val_score
+
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import (RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV,
-                                     cross_val_score)
+from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.multiclass import OneVsRestClassifier
 # xgboost
@@ -221,6 +222,7 @@ class CVHelper(CVHelperBase):
 
         grid = RandomizedSearchCV(
             pipe, self._get_params_dist(),
+            n_iter=1 if self._debug else 50,
             error_score=0.5,
             refit=True,
             scoring=check_scoring(pipe, scoring=self._scorer),
@@ -230,14 +232,22 @@ class CVHelper(CVHelperBase):
 
         if self._nestedcv:
             outer_cv = LeavePGroupsOut(n_groups=1)
-            nested_score = cross_val_score(
+            nested_score, group_order = cross_val_score(
                 grid,
                 X=self._Xtrain,
                 y=train_y,
-                cv=outer_cv
+                cv=outer_cv,
+                scoring=['roc_auc', 'accuracy'],
             )
-            LOG.info('Nested CV [average %s=%s] - %s', self._scorer, np.average(nested_score),
-                     ', '.join('%.3f' % v for v in nested_score))
+
+            nested_means = np.average(nested_score, axis=0)
+            LOG.info('Nested CV [avg] %s=%s, accuracy=%s', self._scorer, nested_means[0],
+                     nested_means[1])
+            LOG.info('Nested CV %s=%s.', self._scorer,
+                     ', '.join('%.3f' % v for v in nested_score[:, 0].tolist()))
+            LOG.info('Nested CV accuracy=%s.',
+                     ', '.join('%.3f' % v for v in nested_score[:, 1].tolist()))
+            LOG.info('Nested CV groups=%s', group_order)
 
         grid.fit(self._Xtrain, train_y, **fit_args)
         np.savez(os.path.abspath(self._gen_fname(suffix='cvres', ext='npz')),
@@ -555,6 +565,15 @@ class CVHelper(CVHelperBase):
 
         modparams = {prefix + k: v for k, v in list(self.param[self._model][0].items())}
         if self._debug:
+            preparams = {
+                'std__by': ['site'],
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                'sel_cols__columns': [self._ftnames + ['site']],
+                'ft_sites__disable': [True],
+                'ft_noise__disable': [True],
+            }
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
         return {**preparams, **modparams}
