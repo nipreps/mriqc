@@ -22,6 +22,11 @@ from .. import logging
 from ..utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
+def get_groups(X, label='site'):
+    """Generate the index of sites"""
+    groups = X[label].values.ravel().tolist()
+    gnames = list(set(groups))
+    return [gnames.index(g) for g in groups]
 
 def combine_datasets(inputs, rating_label='rater_1'):
     mdata = []
