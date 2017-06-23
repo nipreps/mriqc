@@ -11,6 +11,7 @@ from sys import version_info
 from os.path import isfile, abspath
 import warnings
 from pkg_resources import resource_filename as pkgrf
+
 import matplotlib
 matplotlib.use('Agg')
 
@@ -58,10 +59,10 @@ def get_parser():
                         help='do not binarize labels')
 
     g_input = parser.add_argument_group('Options')
-    g_input.add_argument('-P', '--parameters', action='store',
-                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
-    g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
-                         default='rfc', help='model')
+    g_input.add_argument('-P', '--parameters', action='store')
+    g_input.add_argument('-M', '--model', action='store', default='rfc',
+                         choices=['rfc', 'xgb', 'svc_lin', 'svc_rbf'],
+                         help='model under test')
     g_input.add_argument('--nested_cv', action='store_true', default=False,
                          help='run nested cross-validation before held-out')
     g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
@@ -93,9 +94,7 @@ def get_parser():
 
 def main():
     """Entry point"""
-    import yaml
     import re
-    from io import open
     from datetime import datetime
     from .. import logging, LOG_FORMAT, __version__
     from ..classifier.helper import CVHelper
@@ -127,11 +126,6 @@ def main():
         fhl.setLevel(log_level)
         log.addHandler(fhl)
 
-    parameters = None
-    if opts.parameters is not None:
-        with open(opts.parameters) as paramfile:
-            parameters = yaml.load(paramfile)
-
     clf_loaded = False
     if opts.train is not None:
         # Initialize model selection helper
@@ -139,7 +133,6 @@ def main():
             X=train_path[0],
             Y=train_path[1],
             n_jobs=opts.njobs,
-            param=parameters,
             scorer=opts.scorer,
             b_leaveout=opts.train_balanced_leaveout,
             multiclass=opts.multiclass,
@@ -150,6 +143,7 @@ def main():
             basename=base_name,
             nested_cv=opts.nested_cv,
             nested_cv_kfold=opts.nested_cv_kfold,
+            param_file=opts.parameters,
         )
 
         if opts.cv == 'batch':

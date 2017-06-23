@@ -37,7 +37,6 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
             from ..data import get_groups
             groups, gnames = get_groups(X)
             self._groups = groups
-            LOG.info('CV split: group names: %s', ', '.join(['"%s"' % g for g in gnames]))
 
         self._splits = list(super(RobustLeavePGroupsOut, self).split(
             X, y=y, groups=groups))
