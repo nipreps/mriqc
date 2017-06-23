@@ -62,6 +62,11 @@ def get_parser():
                          default=pkgrf('mriqc', 'data/classifier_settings.yml'))
     g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
                          default='rfc', help='model')
+    g_input.add_argument('--nested_cv', action='store_true', default=False,
+                         help='run nested cross-validation before held-out')
+    g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
+                         help='run nested cross-validation before held-out, '
+                              'using 10-fold split in the outer loop')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('--cv', action='store', default='loso',
@@ -143,6 +148,8 @@ def main():
             model=opts.model,
             debug=opts.debug,
             basename=base_name,
+            nested_cv=opts.nested_cv,
+            nested_cv_kfold=opts.nested_cv_kfold,
         )
 
         if opts.cv == 'batch':
