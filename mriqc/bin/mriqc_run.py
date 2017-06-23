@@ -194,9 +194,9 @@ def main():
         'no_sub': opts.no_sub,
         'email': opts.email,
         'fd_thres': opts.fd_thres,
-        'webapi_url' : opts.webapi_url,
-        'webapi_port' : opts.webapi_port,
-        'upload_strict' : opts.upload_strict,
+        'webapi_url': opts.webapi_url,
+        'webapi_port': opts.webapi_port,
+        'upload_strict': opts.upload_strict,
     }
 
     if opts.hmc_afni:
