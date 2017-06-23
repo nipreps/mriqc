@@ -47,7 +47,9 @@ def cross_val_score(estimator, X, y=None, groups=None, scoring=None, cv=None,
                                               fit_params)
                       for train, test in splits)
 
-    group_order = [np.array(cv.groups)[test].tolist()[0] for _, test in splits]
+    group_order = []
+    if hasattr(cv, 'groups'):
+        group_order = [np.array(cv.groups)[test].tolist()[0] for _, test in splits]
     return np.squeeze(np.array(scores)), group_order
 
 
