@@ -35,7 +35,7 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
         if groups is None:
             from ..data import get_groups
-            groups, gnames = get_groups(X)
+            groups, _ = get_groups(X)
             self._groups = groups
 
         self._splits = list(super(RobustLeavePGroupsOut, self).split(

@@ -117,6 +117,12 @@ def main():
         re.sub(r'[\+_@]', '.', __version__),
         3 if opts.multiclass else 2, opts.cv,
     )
+
+    if opts.nested_cv_kfold:
+        base_name += '_ncv-kfold'
+    elif opts.nested_cv:
+        base_name += '_ncv-loso'
+
     log.info('Results will be saved as %s', abspath(base_name + '*'))
 
     if opts.log_file is None or len(opts.log_file) > 0:
