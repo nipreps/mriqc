@@ -155,7 +155,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     continue
                 scaler = self._scalers[batch]
                 new_x.ix[mask, self._colmask] = scaler.transform(
-                    X.ix[mask, self._colmask], y)
+                    X.ix[mask, self._colmask])
             else:
                 colmask = self._colmask
                 if self.by in self._colnames and len(colmask) == len(self._colnames):

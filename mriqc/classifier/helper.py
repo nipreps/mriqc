@@ -397,7 +397,7 @@ class CVHelper(CVHelperBase):
             if self._nestedcv_kfold:
                 outer_cv = RepeatedStratifiedKFold(n_repeats=1, n_splits=10)
 
-            n_iter = 32 if self._model == 'svc_lin' else 50
+            n_iter = 32 if self._model in ['svc_lin', 'xgb'] else 50
             grid = RandomizedSearchCV(
                 pipe, self._get_params_dist(),
                 n_iter=n_iter if not self._debug else 1,
