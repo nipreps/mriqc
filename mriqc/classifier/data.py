@@ -36,7 +36,7 @@ def combine_datasets(inputs, rating_label='rater_1'):
             binarize=True, site_name=sitename)
         sitedata['database'] = [sitename] * len(sitedata)
 
-        if sitename == 'DS030':
+        if 'site' not in sitedata.columns.ravel().tolist():
             sitedata['site'] = [sitename] * len(sitedata)
 
         mdata.append(sitedata)
