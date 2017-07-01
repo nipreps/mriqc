@@ -190,7 +190,8 @@ from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import (RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV,
+                                     permutation_test_score, PredefinedSplit)
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.svm import SVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
@@ -269,7 +270,7 @@ class CVHelper(CVHelperBase):
                  site_label='site', rate_label=None, scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
                  debug=False, model='rfc', basename=None, nested_cv=False,
-                 nested_cv_kfold=False):
+                 nested_cv_kfold=False, permutation_test=0):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -284,6 +285,7 @@ class CVHelper(CVHelperBase):
         self._base_name = basename
         self._nestedcv = nested_cv
         self._nestedcv_kfold = nested_cv_kfold
+        self._permutation_test = permutation_test
 
         if load_clf is not None:
             self.n_jobs = n_jobs
@@ -390,7 +392,18 @@ class CVHelper(CVHelperBase):
             kf_params['groups'] = test_mask.astype(int).tolist()
             splits = RepeatedPartiallyHeldOutKFold(**kf_params)
 
+
         train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
+
+        grid = RandomizedSearchCV(
+            pipe, self._get_params_dist(),
+            n_iter=1 if self._debug else 50,
+            error_score=0.5,
+            refit=True,
+            scoring=check_scoring(pipe, scoring=self._scorer),
+            n_jobs=self.n_jobs,
+            cv=splits,
+            verbose=self._verbosity)
 
         if self._nestedcv or self._nestedcv_kfold:
             outer_cv = LeavePGroupsOut(n_groups=1)
@@ -434,6 +447,18 @@ class CVHelper(CVHelperBase):
                 n_jobs=self.n_jobs,
                 cv=splits,
                 verbose=self._verbosity)
+
+        if self._permutation_test:
+            # Get test label
+            test_site = list(set(self._Xtest.site.values.ravel().tolist()))[0]
+            # Merge test and train
+            self._Xtrain = pd.concat((self._Xtrain, self._Xtest), axis=0)
+            train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
+            test_fold = (self._Xtrain.site.values.ravel() == test_site).astype(int) - 1
+            score, permutation_scores, pvalue = permutation_test_score(
+                grid, self._Xtrain, train_y, scoring=self._scorer, cv=PredefinedSplit(test_fold),
+                n_permutations=self._permutation_test, n_jobs=1)
+            LOG.info(('Classification score %f (pvalue=%f)', score, pvalue))
 
         grid.fit(self._Xtrain, train_y, **fit_args)
         np.savez(os.path.abspath(self._gen_fname(suffix='cvres', ext='npz')),
