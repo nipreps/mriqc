@@ -471,23 +471,30 @@ class CVHelper(CVHelperBase):
             LOG.info('CV [Best model] OOB %s=%.3f', self._scorer,
                      self._estimator.named_steps[self._model].oob_score_)
 
-        # Report feature selection
+        # Report preprocessing selections
+        prep_msg = ' * Robust scaling (centering): %s.\n' % (
+            'enabled' if cvparams['std__with_centering'] else 'disabled')
+        prep_msg += ' * Robust scaling (scaling): %s.\n' % (
+            'enabled' if cvparams['std__with_scaling'] else 'disabled')
+        prep_msg += ' * SiteCorrelation feature selection: %s.\n' % (
+            'disabled' if cvparams['ft_sites__disable'] else 'enabled')
+        prep_msg += ' * Winnow feature selection: %s.\n' % (
+            'disabled' if cvparams['ft_noise__disable'] else 'enabled')
+
         selected = np.array(feat_sel).copy()
         if not cvparams['ft_sites__disable']:
             sitesmask = self._estimator.named_steps['ft_sites'].mask_
             selected = self._Xtrain[feat_sel].columns.ravel()[sitesmask]
-            LOG.info('CV [Preprocessing] SiteCorrelation selected %s',
-                     ', '.join(['"%s"' % f for f in selected]))
-        else:
-            LOG.info('CV [Preprocessing] SiteCorrelation disabled.')
-
         if not cvparams['ft_noise__disable']:
             winnowmask = self._estimator.named_steps['ft_noise'].mask_
             selected = selected[winnowmask]
-            LOG.info('CV [Feat. sel.] NoiseWinnow selected %s',
-                     ', '.join(['"%s"' % f for f in selected]))
-        else:
-            LOG.info('CV [Preprocessing] NoiseWinnow disabled.')
+
+        selected = selected.tolist()
+        if 'site' in selected:
+            selected.remove('site')
+
+        LOG.info('CV [Preprocessing]:\n%s * Features selected: %s.',
+                 prep_msg, ', '.join(['"%s"' % f for f in selected]))
 
         # If leaveout, test and refit
         if self._leaveout:
