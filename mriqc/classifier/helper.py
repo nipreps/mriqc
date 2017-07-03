@@ -110,8 +110,10 @@ Two more evaluations, now using :abbr:`LoSo (leave-one-site-out)` in the outer l
   ::
 
       Nested CV [avg] roc_auc=0.710537391399, accuracy=0.759618741224
-      Nested CV roc_auc=0.780, 0.716, 0.829, 0.877, 0.391, 0.632, 0.679, 0.634, 0.665, 0.472, 0.690, 0.963, 0.917, 0.528, 0.813, 0.743, 0.751.
-      Nested CV accuracy=0.796, 0.421, 0.869, 0.583, 0.852, 0.625, 0.807, 0.767, 0.703, 0.357, 0.832, 0.964, 0.911, 0.947, 0.750, 0.870, 0.860.
+      Nested CV roc_auc=0.780, 0.716, 0.829, 0.877, 0.391, 0.632, 0.679, 0.634, 0.665, \
+0.472, 0.690, 0.963, 0.917, 0.528, 0.813, 0.743, 0.751.
+      Nested CV accuracy=0.796, 0.421, 0.869, 0.583, 0.852, 0.625, 0.807, 0.767, 0.703, \
+0.357, 0.832, 0.964, 0.911, 0.947, 0.750, 0.870, 0.860.
       ...
       CV [Best model] roc_auc=0.872377212756, mean=0.872, std=0.019.
       ...
@@ -140,8 +142,10 @@ And finally :abbr:`LoSo (leave-one-site-out)` in both outer and inner loops:
   ::
 
       Nested CV [avg] roc_auc=0.715716013846, accuracy=0.752136647911
-      Nested CV roc_auc=0.963, 0.756, 0.554, 0.685, 0.673, 0.659, 0.584, 0.764, 0.787, 0.764, 0.883, 0.843, 0.846, 0.431, 0.599, 0.910, 0.465.
-      Nested CV accuracy=0.964, 0.898, 0.852, 0.789, 0.531, 0.821, 0.767, 0.947, 0.722, 0.842, 0.528, 0.778, 0.869, 0.357, 0.766, 0.931, 0.425.
+      Nested CV roc_auc=0.963, 0.756, 0.554, 0.685, 0.673, 0.659, 0.584, 0.764, \
+0.787, 0.764, 0.883, 0.843, 0.846, 0.431, 0.599, 0.910, 0.465.
+      Nested CV accuracy=0.964, 0.898, 0.852, 0.789, 0.531, 0.821, 0.767, 0.947, \
+0.722, 0.842, 0.528, 0.778, 0.869, 0.357, 0.766, 0.931, 0.425.
       ...
       CV [Best model] roc_auc=0.712039797411, mean=0.712, std=0.124.
       ...
@@ -177,22 +181,25 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import re
+from pkg_resources import resource_filename as pkgrf
+
 # sklearn overrides
 from .sklearn import preprocessing as mcsp
 from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
                              RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
-from .sklearn._validation import cross_val_score
+from .sklearn._validation import cross_val_score, permutation_test_score
 
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import (RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV,
+                                     PredefinedSplit)
 from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 # xgboost
-# from xgboost.sklearn import XGBModel as XGBClassifier
 from xgboost import XGBClassifier
 
 from .. import __version__, logging
@@ -221,11 +228,11 @@ class CVHelperBase(object):
     A base helper to build cross-validation schemes
     """
 
-    def __init__(self, X, Y, param=None, n_jobs=-1, site_label='site',
+    def __init__(self, X, Y, param_file=None, n_jobs=-1, site_label='site',
                  rate_label=None, rate_selection='random',
                  scorer='roc_auc', multiclass=False, verbosity=0, debug=False):
         # Initialize some values
-        self.param = param
+        self._param_file = param_file
         self.n_jobs = n_jobs
         self._rate_column = rate_label
         self._site_column = site_label
@@ -263,11 +270,11 @@ class CVHelperBase(object):
 
 
 class CVHelper(CVHelperBase):
-    def __init__(self, X=None, Y=None, load_clf=None, param=None, n_jobs=-1,
+    def __init__(self, X=None, Y=None, load_clf=None, param_file=None, n_jobs=-1,
                  site_label='site', rate_label=None, scorer='roc_auc',
                  b_leaveout=False, multiclass=False, verbosity=0, split='kfold',
                  debug=False, model='rfc', basename=None, nested_cv=False,
-                 nested_cv_kfold=False):
+                 nested_cv_kfold=False, permutation_test=0):
 
         if (X is None or Y is None) and load_clf is None:
             raise RuntimeError('Either load_clf or X & Y should be supplied')
@@ -282,13 +289,14 @@ class CVHelper(CVHelperBase):
         self._base_name = basename
         self._nestedcv = nested_cv
         self._nestedcv_kfold = nested_cv_kfold
+        self._permutation_test = permutation_test
 
         if load_clf is not None:
             self.n_jobs = n_jobs
             self.load(load_clf)
         else:
             super(CVHelper, self).__init__(
-                X, Y, param=param, n_jobs=n_jobs,
+                X, Y, param_file=param_file, n_jobs=n_jobs,
                 site_label=site_label, rate_label=rate_label, scorer=scorer,
                 multiclass=multiclass, verbosity=verbosity, debug=debug)
 
@@ -320,6 +328,18 @@ class CVHelper(CVHelperBase):
 
         return self._base_name + suffix + ext
 
+    def _get_model(self):
+        if self._model == 'xgb':
+            return XGBClassifier()
+
+        if self._model == 'svc_rbf':
+            return SVC()
+
+        if self._model == 'svc_lin':
+            return LinearSVC()
+
+        return RFC()
+
     def fit(self):
         """
         Fits the cross-validation helper
@@ -341,11 +361,8 @@ class CVHelper(CVHelperBase):
             ('sel_cols', mcsp.PandasAdaptor(columns=self._ftnames + ['site'])),
             ('ft_sites', mcsp.SiteCorrelationSelector()),
             ('ft_noise', mcsp.CustFsNoiseWinnow()),
-            ('rfc', RFC())
+            (self._model, self._get_model())
         ]
-
-        if self._model == 'xgb':
-            steps[-1] = ('xgb', XGBClassifier())
 
         if self._multiclass:
             # If multiclass: binarize labels and wrap classifier
@@ -380,7 +397,6 @@ class CVHelper(CVHelperBase):
             splits = RepeatedPartiallyHeldOutKFold(**kf_params)
 
         train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
-
         grid = RandomizedSearchCV(
             pipe, self._get_params_dist(),
             n_iter=1 if self._debug else 50,
@@ -391,10 +407,21 @@ class CVHelper(CVHelperBase):
             cv=splits,
             verbose=self._verbosity)
 
-        if self._nestedcv or self._nested_cv_kfold:
+        if self._nestedcv or self._nestedcv_kfold:
             outer_cv = LeavePGroupsOut(n_groups=1)
             if self._nestedcv_kfold:
                 outer_cv = RepeatedStratifiedKFold(n_repeats=1, n_splits=10)
+
+            n_iter = 32 if self._model in ['svc_lin', 'xgb'] else 50
+            grid = RandomizedSearchCV(
+                pipe, self._get_params_dist(),
+                n_iter=n_iter if not self._debug else 1,
+                error_score=0.5,
+                refit=True,
+                scoring=check_scoring(pipe, scoring=self._scorer),
+                n_jobs=self.n_jobs,
+                cv=splits,
+                verbose=self._verbosity)
 
             nested_score, group_order = cross_val_score(
                 grid,
@@ -405,13 +432,23 @@ class CVHelper(CVHelperBase):
             )
 
             nested_means = np.average(nested_score, axis=0)
-            LOG.info('Nested CV [avg] %s=%s, accuracy=%s', self._scorer, nested_means[0],
-                     nested_means[1])
+            nested_std = np.std(nested_score, axis=0)
+            LOG.info('Nested CV [avg] %s=%.3f (+/-%.3f), accuracy=%.3f (+/-%.3f)', self._scorer,
+                     nested_means[0], nested_std[0], nested_means[1], nested_std[1])
             LOG.info('Nested CV %s=%s.', self._scorer,
                      ', '.join('%.3f' % v for v in nested_score[:, 0].tolist()))
             LOG.info('Nested CV accuracy=%s.',
                      ', '.join('%.3f' % v for v in nested_score[:, 1].tolist()))
             LOG.info('Nested CV groups=%s', group_order)
+        else:
+            grid = GridSearchCV(
+                pipe, self._get_params(),
+                error_score=0.5,
+                refit=True,
+                scoring=check_scoring(pipe, scoring=self._scorer),
+                n_jobs=self.n_jobs,
+                cv=splits,
+                verbose=self._verbosity)
 
         grid.fit(self._Xtrain, train_y, **fit_args)
         np.savez(os.path.abspath(self._gen_fname(suffix='cvres', ext='npz')),
@@ -434,23 +471,30 @@ class CVHelper(CVHelperBase):
             LOG.info('CV [Best model] OOB %s=%.3f', self._scorer,
                      self._estimator.named_steps[self._model].oob_score_)
 
-        # Report feature selection
+        # Report preprocessing selections
+        prep_msg = ' * Robust scaling (centering): %s.\n' % (
+            'enabled' if cvparams['std__with_centering'] else 'disabled')
+        prep_msg += ' * Robust scaling (scaling): %s.\n' % (
+            'enabled' if cvparams['std__with_scaling'] else 'disabled')
+        prep_msg += ' * SiteCorrelation feature selection: %s.\n' % (
+            'disabled' if cvparams['ft_sites__disable'] else 'enabled')
+        prep_msg += ' * Winnow feature selection: %s.\n' % (
+            'disabled' if cvparams['ft_noise__disable'] else 'enabled')
+
         selected = np.array(feat_sel).copy()
         if not cvparams['ft_sites__disable']:
             sitesmask = self._estimator.named_steps['ft_sites'].mask_
             selected = self._Xtrain[feat_sel].columns.ravel()[sitesmask]
-            LOG.info('CV [Feat. sel.] SiteCorrelation selected %s',
-                     ', '.join(['"%s"' % f for f in selected]))
-        else:
-            LOG.info('CV [Feat. sel.] SiteCorrelation disabled.')
-
         if not cvparams['ft_noise__disable']:
             winnowmask = self._estimator.named_steps['ft_noise'].mask_
             selected = selected[winnowmask]
-            LOG.info('CV [Feat. sel.] NoiseWinnow selected %s',
-                     ', '.join(['"%s"' % f for f in selected]))
-        else:
-            LOG.info('CV [Feat. sel.] NoiseWinnow disabled.')
+
+        selected = selected.tolist()
+        if 'site' in selected:
+            selected.remove('site')
+
+        LOG.info('CV [Preprocessing]:\n%s * Features selected: %s.',
+                 prep_msg, ', '.join(['"%s"' % f for f in selected]))
 
         # If leaveout, test and refit
         if self._leaveout:
@@ -561,6 +605,25 @@ class CVHelper(CVHelperBase):
         if save_roc:
             plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y,
                            self._gen_fname(suffix='data-test_roc', ext='png'))
+
+        # Run a permutation test
+        if self._permutation_test:
+            # Merge test and train
+            concatenated_x = pd.concat((self._Xtrain, self._Xtest), axis=0)
+            concatenated_y = concatenated_x[[self._rate_column]].values.ravel().tolist()
+            test_fold = [-1] * len(self._Xtrain) + [0] * len(self._Xtest)
+
+            permutation_scores = permutation_test_score(
+                self._estimator, concatenated_x, concatenated_y,
+                scoring='accuracy', cv=PredefinedSplit(test_fold),
+                n_permutations=self._permutation_test, n_jobs=1)
+
+            score = scores[scoring.index('accuracy')]
+            pvalue = (np.sum(permutation_scores >=
+                      score) + 1.0) / (self._permutation_test + 1)
+            LOG.info('Permutation test (N=%d) for accuracy score %f (pvalue=%f)',
+                     self._permutation_test, score, pvalue)
+
         return scores
 
     def predict(self, X, thres=0.5, return_proba=True):
@@ -573,6 +636,14 @@ class CVHelper(CVHelperBase):
         estimate across the trees.
 
         """
+        if self._model == 'svc_lin':
+            from sklearn.base import clone
+            from sklearn.calibration import CalibratedClassifierCV
+            clf = CalibratedClassifierCV(clone(self._estimator).set_param(
+                **self._estimator.get_param()))
+            train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
+            self._estimator = clf.fit(self._Xtrain, train_y)
+
         proba = np.array(self._estimator.predict_proba(X))
 
         if proba.shape[1] > 2:
@@ -706,7 +777,11 @@ class CVHelper(CVHelperBase):
         if self._multiclass:
             prefix += 'estimator__'
 
-        modparams = {prefix + k: v for k, v in list(self.param[self._model][0].items())}
+        clfparams = _load_parameters(
+            (pkgrf('mriqc', 'data/classifier_settings.yml')
+                if self._param_file is None else self._param_file)
+        )
+        modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
         if self._debug:
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
@@ -727,7 +802,11 @@ class CVHelper(CVHelperBase):
         if self._multiclass:
             prefix += 'estimator__'
 
-        modparams = {prefix + k: v for k, v in list(self.param[self._model][0].items())}
+        clfparams = _load_parameters(
+            (pkgrf('mriqc', 'data/model_selection.yml')
+                if self._param_file is None else self._param_file)
+        )
+        modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
         if self._debug:
             preparams = {
                 'std__by': ['site'],
@@ -741,3 +820,12 @@ class CVHelper(CVHelperBase):
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
         return {**preparams, **modparams}
+
+
+def _load_parameters(param_file):
+    """Load parameters from file"""
+    import yaml
+    from io import open
+    with open(param_file) as paramfile:
+        parameters = yaml.load(paramfile)
+    return parameters

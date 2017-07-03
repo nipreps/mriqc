@@ -11,6 +11,7 @@ from sys import version_info
 from os.path import isfile, abspath
 import warnings
 from pkg_resources import resource_filename as pkgrf
+
 import matplotlib
 matplotlib.use('Agg')
 
@@ -58,15 +59,17 @@ def get_parser():
                         help='do not binarize labels')
 
     g_input = parser.add_argument_group('Options')
-    g_input.add_argument('-P', '--parameters', action='store',
-                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
-    g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
-                         default='rfc', help='model')
+    g_input.add_argument('-P', '--parameters', action='store')
+    g_input.add_argument('-M', '--model', action='store', default='rfc',
+                         choices=['rfc', 'xgb', 'svc_lin', 'svc_rbf'],
+                         help='model under test')
     g_input.add_argument('--nested_cv', action='store_true', default=False,
                          help='run nested cross-validation before held-out')
     g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
                          help='run nested cross-validation before held-out, '
                               'using 10-fold split in the outer loop')
+    g_input.add_argument('--perm', action='store', default=0, type=int,
+                         help='permutation test: number of permutations')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('--cv', action='store', default='loso',
@@ -93,9 +96,7 @@ def get_parser():
 
 def main():
     """Entry point"""
-    import yaml
     import re
-    from io import open
     from datetime import datetime
     from .. import logging, LOG_FORMAT, __version__
     from ..classifier.helper import CVHelper
@@ -118,6 +119,12 @@ def main():
         re.sub(r'[\+_@]', '.', __version__),
         3 if opts.multiclass else 2, opts.cv,
     )
+
+    if opts.nested_cv_kfold:
+        base_name += '_ncv-kfold'
+    elif opts.nested_cv:
+        base_name += '_ncv-loso'
+
     log.info('Results will be saved as %s', abspath(base_name + '*'))
 
     if opts.log_file is None or len(opts.log_file) > 0:
@@ -127,11 +134,6 @@ def main():
         fhl.setLevel(log_level)
         log.addHandler(fhl)
 
-    parameters = None
-    if opts.parameters is not None:
-        with open(opts.parameters) as paramfile:
-            parameters = yaml.load(paramfile)
-
     clf_loaded = False
     if opts.train is not None:
         # Initialize model selection helper
@@ -139,7 +141,6 @@ def main():
             X=train_path[0],
             Y=train_path[1],
             n_jobs=opts.njobs,
-            param=parameters,
             scorer=opts.scorer,
             b_leaveout=opts.train_balanced_leaveout,
             multiclass=opts.multiclass,
@@ -150,9 +151,11 @@ def main():
             basename=base_name,
             nested_cv=opts.nested_cv,
             nested_cv_kfold=opts.nested_cv_kfold,
+            param_file=opts.parameters,
+            permutation_test=opts.perm,
         )
 
-        if opts.cv == 'batch':
+        if opts.cv == 'batch' or opts.perm:
             # Do not set x_test unless we are going to run batch exp.
             cvhelper.setXtest(test_path[0], test_path[1])
 
