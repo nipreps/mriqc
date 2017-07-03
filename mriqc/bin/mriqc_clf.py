@@ -68,7 +68,7 @@ def get_parser():
     g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
                          help='run nested cross-validation before held-out, '
                               'using 10-fold split in the outer loop')
-    g_input.add_argument('--perm', action='store', default=0,
+    g_input.add_argument('--perm', action='store', default=0, type=int,
                          help='permutation test: number of permutations')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')

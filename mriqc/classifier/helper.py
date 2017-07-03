@@ -110,8 +110,10 @@ Two more evaluations, now using :abbr:`LoSo (leave-one-site-out)` in the outer l
   ::
 
       Nested CV [avg] roc_auc=0.710537391399, accuracy=0.759618741224
-      Nested CV roc_auc=0.780, 0.716, 0.829, 0.877, 0.391, 0.632, 0.679, 0.634, 0.665, 0.472, 0.690, 0.963, 0.917, 0.528, 0.813, 0.743, 0.751.
-      Nested CV accuracy=0.796, 0.421, 0.869, 0.583, 0.852, 0.625, 0.807, 0.767, 0.703, 0.357, 0.832, 0.964, 0.911, 0.947, 0.750, 0.870, 0.860.
+      Nested CV roc_auc=0.780, 0.716, 0.829, 0.877, 0.391, 0.632, 0.679, 0.634, 0.665, \
+0.472, 0.690, 0.963, 0.917, 0.528, 0.813, 0.743, 0.751.
+      Nested CV accuracy=0.796, 0.421, 0.869, 0.583, 0.852, 0.625, 0.807, 0.767, 0.703, \
+0.357, 0.832, 0.964, 0.911, 0.947, 0.750, 0.870, 0.860.
       ...
       CV [Best model] roc_auc=0.872377212756, mean=0.872, std=0.019.
       ...
@@ -140,8 +142,10 @@ And finally :abbr:`LoSo (leave-one-site-out)` in both outer and inner loops:
   ::
 
       Nested CV [avg] roc_auc=0.715716013846, accuracy=0.752136647911
-      Nested CV roc_auc=0.963, 0.756, 0.554, 0.685, 0.673, 0.659, 0.584, 0.764, 0.787, 0.764, 0.883, 0.843, 0.846, 0.431, 0.599, 0.910, 0.465.
-      Nested CV accuracy=0.964, 0.898, 0.852, 0.789, 0.531, 0.821, 0.767, 0.947, 0.722, 0.842, 0.528, 0.778, 0.869, 0.357, 0.766, 0.931, 0.425.
+      Nested CV roc_auc=0.963, 0.756, 0.554, 0.685, 0.673, 0.659, 0.584, 0.764, \
+0.787, 0.764, 0.883, 0.843, 0.846, 0.431, 0.599, 0.910, 0.465.
+      Nested CV accuracy=0.964, 0.898, 0.852, 0.789, 0.531, 0.821, 0.767, 0.947, \
+0.722, 0.842, 0.528, 0.778, 0.869, 0.357, 0.766, 0.931, 0.425.
       ...
       CV [Best model] roc_auc=0.712039797411, mean=0.712, std=0.124.
       ...
@@ -183,7 +187,7 @@ from pkg_resources import resource_filename as pkgrf
 from .sklearn import preprocessing as mcsp
 from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
                              RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
-from .sklearn._validation import cross_val_score
+from .sklearn._validation import cross_val_score, permutation_test_score
 
 # sklearn module
 from sklearn import metrics as slm
@@ -191,7 +195,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.metrics.scorer import check_scoring
 from sklearn.model_selection import (RepeatedStratifiedKFold, GridSearchCV, RandomizedSearchCV,
-                                     permutation_test_score, PredefinedSplit)
+                                     PredefinedSplit)
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.svm import SVC, LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
@@ -392,9 +396,7 @@ class CVHelper(CVHelperBase):
             kf_params['groups'] = test_mask.astype(int).tolist()
             splits = RepeatedPartiallyHeldOutKFold(**kf_params)
 
-
         train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
-
         grid = RandomizedSearchCV(
             pipe, self._get_params_dist(),
             n_iter=1 if self._debug else 50,
@@ -448,18 +450,6 @@ class CVHelper(CVHelperBase):
                 cv=splits,
                 verbose=self._verbosity)
 
-        if self._permutation_test:
-            # Get test label
-            test_site = list(set(self._Xtest.site.values.ravel().tolist()))[0]
-            # Merge test and train
-            self._Xtrain = pd.concat((self._Xtrain, self._Xtest), axis=0)
-            train_y = self._Xtrain[[self._rate_column]].values.ravel().tolist()
-            test_fold = (self._Xtrain.site.values.ravel() == test_site).astype(int) - 1
-            score, permutation_scores, pvalue = permutation_test_score(
-                grid, self._Xtrain, train_y, scoring=self._scorer, cv=PredefinedSplit(test_fold),
-                n_permutations=self._permutation_test, n_jobs=1)
-            LOG.info(('Classification score %f (pvalue=%f)', score, pvalue))
-
         grid.fit(self._Xtrain, train_y, **fit_args)
         np.savez(os.path.abspath(self._gen_fname(suffix='cvres', ext='npz')),
                  cv_results=grid.cv_results_)
@@ -486,10 +476,10 @@ class CVHelper(CVHelperBase):
         if not cvparams['ft_sites__disable']:
             sitesmask = self._estimator.named_steps['ft_sites'].mask_
             selected = self._Xtrain[feat_sel].columns.ravel()[sitesmask]
-            LOG.info('CV [Feat. sel.] SiteCorrelation selected %s',
+            LOG.info('CV [Preprocessing] SiteCorrelation selected %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
-            LOG.info('CV [Feat. sel.] SiteCorrelation disabled.')
+            LOG.info('CV [Preprocessing] SiteCorrelation disabled.')
 
         if not cvparams['ft_noise__disable']:
             winnowmask = self._estimator.named_steps['ft_noise'].mask_
@@ -497,7 +487,7 @@ class CVHelper(CVHelperBase):
             LOG.info('CV [Feat. sel.] NoiseWinnow selected %s',
                      ', '.join(['"%s"' % f for f in selected]))
         else:
-            LOG.info('CV [Feat. sel.] NoiseWinnow disabled.')
+            LOG.info('CV [Preprocessing] NoiseWinnow disabled.')
 
         # If leaveout, test and refit
         if self._leaveout:
@@ -608,6 +598,25 @@ class CVHelper(CVHelperBase):
         if save_roc:
             plot_roc_curve(self._Xtest[[self._rate_column]].values.ravel(), prob_y,
                            self._gen_fname(suffix='data-test_roc', ext='png'))
+
+        # Run a permutation test
+        if self._permutation_test:
+            # Merge test and train
+            concatenated_x = pd.concat((self._Xtrain, self._Xtest), axis=0)
+            concatenated_y = concatenated_x[[self._rate_column]].values.ravel().tolist()
+            test_fold = [-1] * len(self._Xtrain) + [0] * len(self._Xtest)
+
+            permutation_scores = permutation_test_score(
+                self._estimator, concatenated_x, concatenated_y,
+                scoring='accuracy', cv=PredefinedSplit(test_fold),
+                n_permutations=self._permutation_test, n_jobs=1)
+
+            score = scores[scoring.index('accuracy')]
+            pvalue = (np.sum(permutation_scores >=
+                      score) + 1.0) / (self._permutation_test + 1)
+            LOG.info('Permutation test (N=%d) for accuracy score %f (pvalue=%f)',
+                     self._permutation_test, score, pvalue)
+
         return scores
 
     def predict(self, X, thres=0.5, return_proba=True):

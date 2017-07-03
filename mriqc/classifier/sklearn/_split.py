@@ -108,7 +108,6 @@ class PartiallyHeldOutKFold(StratifiedKFold):
         super(PartiallyHeldOutKFold, self).__init__(
             n_splits=n_splits, shuffle=shuffle, random_state=random_state)
 
-
     def split(self, X, y, groups=None):
         if groups is None:
             groups = self._groups
