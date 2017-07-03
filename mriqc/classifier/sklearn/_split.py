@@ -35,9 +35,8 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
         if groups is None:
             from ..data import get_groups
-            groups, gnames = get_groups(X)
+            groups, _ = get_groups(X)
             self._groups = groups
-            LOG.info('CV split: group names: %s', ', '.join(['"%s"' % g for g in gnames]))
 
         self._splits = list(super(RobustLeavePGroupsOut, self).split(
             X, y=y, groups=groups))
@@ -108,7 +107,6 @@ class PartiallyHeldOutKFold(StratifiedKFold):
         self._groups = groups
         super(PartiallyHeldOutKFold, self).__init__(
             n_splits=n_splits, shuffle=shuffle, random_state=random_state)
-
 
     def split(self, X, y, groups=None):
         if groups is None:
