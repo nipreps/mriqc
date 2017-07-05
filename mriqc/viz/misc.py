@@ -527,6 +527,56 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     fig.savefig(out_file, format=ext[1:], bbox_inches='tight', pad_inches=0, dpi=100)
     return fig
 
+def inter_rater_variability(y1, y2, figsize=(4, 4), normed=True,
+                            raters=['Rater 1', 'Rater 2'],
+                            labels=['exclude', 'doubtful', 'accept'],
+                            out_file=None):
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["font.sans-serif"] = "FreeSans"
+    plt.rcParams['font.size'] = 25
+    plt.rcParams['axes.labelsize'] = 20
+    plt.rcParams['axes.titlesize'] = 25
+    plt.rcParams['xtick.labelsize'] = 15
+    plt.rcParams['ytick.labelsize'] = 15
+    # fig = plt.figure(figsize=(3.5, 3))
+
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_aspect("equal")
+
+    nbins = len(set(y1 + y2))
+    if nbins == 2:
+        labels = [labels[0], labels[-1]]
+    hist, xbins, ybins, im = plt.hist2d(y1, y2, bins=nbins, cmap=plt.cm.viridis)
+    xcenters = (xbins[:-1] + xbins[1:]) * 0.5
+    ycenters = (ybins[:-1] + ybins[1:]) * 0.5
+
+    total = np.sum(hist.reshape(-1))
+    celfmt = '%d%%' if normed else '%d'
+    for i, x in enumerate(xcenters):
+        for j, y in enumerate(ycenters):
+            val = hist[i, j]
+            if normed:
+                val = 100 * hist[i, j] / total
+
+            ax.text(x, y, celfmt % val,
+                    ha="center", va="center", fontweight="bold",
+                    color='w' if hist[i, j] < 15 else 'k')
+
+    # plt.colorbar(pad=0.10)
+    plt.grid(False)
+    plt.xticks(xcenters, labels)
+    plt.yticks(ycenters, labels, rotation='vertical', va='center')
+    plt.xlabel(raters[0])
+    plt.ylabel(raters[1])
+    ax.yaxis.tick_right()
+    ax.xaxis.set_label_position("top")
+
+    if out_file is not None:
+        fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
+
+    return fig
+
 
 def plot_artifact(image_path, figsize=(20, 20), vmax=None, cut_coords=None, display_mode='ortho',
                   size=None):
