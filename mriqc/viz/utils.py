@@ -71,6 +71,8 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
                 horizontalalignment='right', verticalalignment='bottom',
                 size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
 
+    return ax
+
 
 def plot_slice_tern(dslice, prev=None, post=None,
                     spacing=None, cmap='Greys_r', label=None, ax=None,
