@@ -104,8 +104,6 @@ def main():
     warnings.showwarning = warn_redirect
 
     opts = get_parser().parse_args()
-    train_path = _parse_set(opts.train, default='abide')
-    test_path = _parse_set(opts.test, default='ds030')
 
     log_level = int(max(3 - opts.verbose_count, 0) * 10)
     if opts.verbose_count > 1:
@@ -135,8 +133,11 @@ def main():
         log.addHandler(fhl)
 
     clf_loaded = False
+    test_path = _parse_set(opts.test, default='ds030')
+
     if opts.train is not None:
         # Initialize model selection helper
+        train_path = _parse_set(opts.train, default='abide')
         cvhelper = CVHelper(
             X=train_path[0],
             Y=train_path[1],
@@ -169,7 +170,10 @@ def main():
     else:
         load_classifier = opts.load_classifier
         if load_classifier is None:
-            load_classifier = pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz')
+            load_classifier = pkgrf(
+                'mriqc',
+                'data/mclf_run-20170703-190702_mod-rfc_ver-0.9.7.clf-3.3_class-2_cv-'
+                'loso_data-all_estimator.pklz')
 
         if not isfile(load_classifier):
             msg = 'was not provided'
@@ -179,7 +183,8 @@ def main():
                 'No training samples were given, and the --load-classifier '
                 'option %s.' % msg)
 
-        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs)
+        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
+                            rate_label=['rater_1'], basename=base_name)
         clf_loaded = True
 
     if test_path and opts.cv != 'batch':

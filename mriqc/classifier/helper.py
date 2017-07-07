@@ -294,6 +294,8 @@ class CVHelper(CVHelperBase):
         if load_clf is not None:
             self.n_jobs = n_jobs
             self.load(load_clf)
+            self._rate_column = rate_label[0]
+            self._multiclass = multiclass
         else:
             super(CVHelper, self).__init__(
                 X, Y, param_file=param_file, n_jobs=n_jobs,
@@ -594,6 +596,9 @@ class CVHelper(CVHelperBase):
             '%d (%s)' % (n, c) for n, c in zip(pred_totals, target_names))))
 
         if matrix:
+            LOG.info(
+                'Confusion matrix:\n%s', slm.confusion_matrix(
+                    test_y, pred_y))
             LOG.info(
                 'Classification report:\n%s', slm.classification_report(
                     test_y, pred_y, target_names=target_names))
