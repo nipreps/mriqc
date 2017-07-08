@@ -528,9 +528,7 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     return fig
 
 def inter_rater_variability(y1, y2, figsize=(4, 4), normed=True,
-                            raters=['Rater 1', 'Rater 2'],
-                            labels=['exclude', 'doubtful', 'accept'],
-                            out_file=None):
+                            raters=None, labels=None, out_file=None):
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = "FreeSans"
     plt.rcParams['font.size'] = 25
@@ -540,14 +538,27 @@ def inter_rater_variability(y1, y2, figsize=(4, 4), normed=True,
     plt.rcParams['ytick.labelsize'] = 15
     # fig = plt.figure(figsize=(3.5, 3))
 
+    if raters is None:
+        raters = ['Rater 1', 'Rater 2']
+
+    if labels is None:
+        labels = ['exclude', 'doubtful', 'accept']
 
     fig, ax = plt.subplots(figsize=figsize)
     ax.set_aspect("equal")
 
     nbins = len(set(y1 + y2))
     if nbins == 2:
-        labels = [labels[0], labels[-1]]
-    hist, xbins, ybins, im = plt.hist2d(y1, y2, bins=nbins, cmap=plt.cm.viridis)
+        xlabels = [labels[0], labels[-1]]
+        ylabels = [labels[0], labels[-1]]
+
+
+    # Reverse x
+    y1 = (np.array(y1) * -1).tolist()
+    ylabels = labels
+    xlabels = list(reversed(labels))
+
+    hist, xbins, ybins, _ = plt.hist2d(y1, y2, bins=nbins, cmap=plt.cm.viridis)
     xcenters = (xbins[:-1] + xbins[1:]) * 0.5
     ycenters = (ybins[:-1] + ybins[1:]) * 0.5
 
@@ -565,8 +576,8 @@ def inter_rater_variability(y1, y2, figsize=(4, 4), normed=True,
 
     # plt.colorbar(pad=0.10)
     plt.grid(False)
-    plt.xticks(xcenters, labels)
-    plt.yticks(ycenters, labels, rotation='vertical', va='center')
+    plt.xticks(xcenters, xlabels)
+    plt.yticks(ycenters, ylabels, rotation='vertical', va='center')
     plt.xlabel(raters[0])
     plt.ylabel(raters[1])
     ax.yaxis.tick_right()
