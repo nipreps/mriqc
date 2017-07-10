@@ -113,6 +113,8 @@ RUN cd /root/src/mriqc && \
     echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
     rm -rf ~/.cache/pip
+    
+RUN ldconfig
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
