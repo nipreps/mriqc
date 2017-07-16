@@ -23,9 +23,9 @@ RUN apt-get update && \
 # Installing Neurodebian packages (FSL, AFNI, git)
 RUN apt-get update  && \
     apt-get install -y --no-install-recommends \
-                    fsl-core=5.0.9-4~nd16.04+1 \
+                    fsl-core \
                     fsl-mni152-templates \
-                    afni=16.2.07~dfsg.1-5~nd16.04+1
+                    afni
 
 ENV FSLDIR=/usr/share/fsl/5.0 \
     FSLOUTPUTTYPE=NIFTI_GZ \
@@ -113,7 +113,7 @@ RUN cd /root/src/mriqc && \
     echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
     rm -rf ~/.cache/pip
-    
+
 RUN ldconfig
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
