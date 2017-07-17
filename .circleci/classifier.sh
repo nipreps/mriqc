@@ -20,9 +20,9 @@ if [ "$(grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; th
 fi
 
 if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
-	echo "Testing classifier"
+	echo "Testing the classifier"
 	docker run -i -v $SCRATCH:/scratch -w /scratch \
 	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
 	           ${DOCKER_IMAGE}:${DOCKER_TAG} \
-	           --load-classifier -X /scratch/out/T1w.csv -o /scratch/out/predicted.csv
+	           --load-classifier -X /scratch/out/T1w.csv -v
 fi

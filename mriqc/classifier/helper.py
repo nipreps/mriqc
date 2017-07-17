@@ -296,6 +296,7 @@ class CVHelper(CVHelperBase):
             self.load(load_clf)
             self._rate_column = rate_label[0]
             self._multiclass = multiclass
+            self._base_name = basename[:24]
         else:
             super(CVHelper, self).__init__(
                 X, Y, param_file=param_file, n_jobs=n_jobs,
@@ -675,8 +676,7 @@ class CVHelper(CVHelperBase):
         if save_pred:
             self._save_pred_table(_xeval, prob_y, pred_y,
                                   suffix='data-%s_pred' % site)
-
-        return pred
+        return pred_y
 
     def _save_pred_table(self, sample, prob_y, pred_y, suffix):
         bidts = get_bids_cols(sample)

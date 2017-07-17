@@ -85,9 +85,6 @@ def get_parser():
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
-    g_input.add_argument('-o', '--output', action='store', default='predicted_qa.csv',
-                         help='file containing the labels assigned by the classifier')
-
     g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
                          help='decision threshold of the classifier')
 
@@ -123,7 +120,6 @@ def main():
     elif opts.nested_cv:
         base_name += '_ncv-loso'
 
-    log.info('Results will be saved as %s', abspath(base_name + '*'))
 
     if opts.log_file is None or len(opts.log_file) > 0:
         log_file = opts.log_file if opts.log_file else base_name + '.log'
@@ -133,7 +129,6 @@ def main():
         log.addHandler(fhl)
 
     clf_loaded = False
-    test_path = _parse_set(opts.test, default='ds030')
 
     if opts.train is not None:
         # Initialize model selection helper
@@ -157,6 +152,7 @@ def main():
         )
 
         if opts.cv == 'batch' or opts.perm:
+            test_path = _parse_set(opts.test, default='ds030')
             # Do not set x_test unless we are going to run batch exp.
             cvhelper.setXtest(test_path[0], test_path[1])
 
@@ -187,6 +183,7 @@ def main():
                             rate_label=['rater_1'], basename=base_name)
         clf_loaded = True
 
+    test_path = _parse_set(opts.test, default='ds030')
     if test_path and opts.cv != 'batch':
         # Set held-out data
         cvhelper.setXtest(test_path[0], test_path[1])
@@ -200,7 +197,10 @@ def main():
             cvhelper.save(suffix='data-all_estimator')
 
     if opts.evaluation_data:
-        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
+        cvhelper.predict_dataset(opts.evaluation_data, save_pred=True,
+                                 thres=opts.threshold)
+
+    log.info('Results saved as %s', abspath(cvhelper._base_name + '*'))
 
 
 def _parse_set(arg, default):
@@ -211,6 +211,9 @@ def _parse_set(arg, default):
 
     if arg is not None and len(arg) not in (0, 2):
         raise RuntimeError('Wrong number of parameters.')
+
+    if arg is None:
+        return None
 
     if len(arg) == 2:
         train_exists = [isfile(fname) for fname in arg]
