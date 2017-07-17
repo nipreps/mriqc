@@ -68,6 +68,10 @@ test:
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
           MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
+    - bash .circleci/classifier.sh :
+        parallel: true
+        environment:
+          GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
 
 general:
   artifacts:
