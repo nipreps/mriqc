@@ -290,18 +290,18 @@ def main():
     if opts.T1w_file:
         dataset=dict()
         dataset['T1w'] = [settings['bids_dir']]
-        dataset['bold'] = list()
-        dataset['T2w'] = list()
+        modalities=['T1w']
+
     elif opts.T2w_file:
         dataset=dict()
-        dataset['T1w'] = list()
-        dataset['bold'] = list()
         dataset['T2w'] = [settings['bids_dir']]
+        modalities=['T2w']
+
     elif opts.bold_file:
         dataset=dict()
-        dataset['T1w'] = list()
         dataset['bold'] = [settings['bids_dir']]
-        dataset['T2w'] = list()
+        modalities=['bold']
+
     else:
         dataset = collect_bids_data(
             settings['bids_dir'],
