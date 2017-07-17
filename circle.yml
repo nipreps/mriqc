@@ -97,6 +97,7 @@ deployment:
           timeout: 21600
       - |
         if [[ "$PYPI_PASS" != "" ]]; then
+            echo "${CIRCLE_TAG}" > mriqc/VERSION
             printf "[distutils]\nindex-servers =\n    pypi\n\n[pypi]\nusername:$PYPI_USER\npassword:$PYPI_PASS\n" > ~/.pypirc
             python setup.py sdist upload -r pypi
         fi
