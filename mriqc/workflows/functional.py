@@ -33,23 +33,21 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 
-from nipype import logging
-from nipype.pipeline import engine as pe
-from nipype.algorithms import confounds as nac
-from nipype.interfaces import io as nio
-from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
-from nipype.interfaces import afni
+from niworkflows.nipype.pipeline import engine as pe
+from niworkflows.nipype.algorithms import confounds as nac
+from niworkflows.nipype.interfaces import io as nio
+from niworkflows.nipype.interfaces import utility as niu
+from niworkflows.nipype.interfaces import afni, ants, fsl
 
-from mriqc import DEFAULTS
-from mriqc.interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from mriqc.utils.misc import check_folder, reorient_and_discard_non_steady
+from .. import DEFAULTS, logging
+from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from ..utils.misc import check_folder, reorient_and_discard_non_steady
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
 
 
 DEFAULT_FD_RADIUS = 50.
-WFLOGGER = logging.getLogger('workflow')
+WFLOGGER = logging.getLogger('mriqc.workflow')
 
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     """
@@ -177,7 +175,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     # Upload metrics
     if not settings.get('no_sub', False):
-        from mriqc.interfaces.webapi import UploadIQMs
+        from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.url = settings.get('webapi_url')
         if settings.get('webapi_port'):
@@ -202,8 +200,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
 
     """
-    from mriqc.workflows.utils import _tofloat
-    from mriqc.interfaces.transitional import GCOR
+    from .utils import _tofloat
+    from ..interfaces.transitional import GCOR
 
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
@@ -295,7 +293,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # FFT spikes finder
     if settings.get('fft_spikes_detector', False):
-        from mriqc.workflows.utils import slice_wise_fft
+        from .utils import slice_wise_fft
         spikes_fft = pe.Node(niu.Function(
             input_names=['in_file'],
             output_names=['n_spikes', 'out_spikes', 'out_fft'],
@@ -322,8 +320,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
       wf = individual_reports(settings={'output_dir': 'out'})
 
     """
-    from mriqc.interfaces import PlotMosaic, PlotSpikes
-    from mriqc.reports import individual_html
+    from ..interfaces import PlotMosaic, PlotSpikes
+    from ..reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
@@ -441,8 +439,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
-    from mriqc.interfaces.viz import PlotContours
-    from mriqc.viz.utils import plot_bg_dist
+    from ..interfaces.viz import PlotContours
+    from ..viz.utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
@@ -492,9 +490,8 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
         ])
 
     else:
-        from nipype.interfaces.fsl import BET, ErodeImage
-        bet_msk = pe.Node(BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(ErodeImage(), name='erode')
+        bet_msk = pe.Node(fsl.BET(mask=True, functional=True), name='bet_msk')
+        erode = pe.Node(fsl.ErodeImage(), name='erode')
 
         # Connect brain mask extraction
         workflow.connect([
@@ -701,7 +698,6 @@ def epi_mni_align(settings, name='SpatialNormalization'):
       wf = epi_mni_align({})
 
     """
-    from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
     from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
     from pkg_resources import resource_filename as pkgrf
@@ -722,7 +718,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
 
     epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
 
-    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads,
@@ -736,7 +732,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
                    estimated_memory_gb=3)
 
     # Warp segmentation into EPI space
-    invt = pe.Node(ApplyTransforms(float=True,
+    invt = pe.Node(ants.ApplyTransforms(float=True,
         input_image=op.join(mni_template, '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
                    name='ResampleSegmentation')
@@ -818,10 +814,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
 def _add_provenance(in_file, settings):
     from mriqc import __version__ as version
-    from copy import deepcopy
-    from nipype.utils.filemanip import hash_infile
-    import nibabel as nb
-    import numpy as np
+    from niworkflows.nipype.utils.filemanip import hash_infile
     out_prov = {
         'md5sum': hash_infile(in_file),
         'version': version,

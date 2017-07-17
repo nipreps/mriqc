@@ -149,6 +149,7 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
         fname = op.join(out_path, fname)
     return op.abspath(fname + '.' + ext)
 
+
 def generate_pred(derivatives_dir, output_dir, mod):
     """
     Reads the metadata in the JIQM (json iqm) files and
@@ -210,11 +211,12 @@ def generate_csv(derivatives_dir, output_dir, mod):
         dfentry = _read_and_save(jsonfile)
 
         if (dfentry is not None and dfentry['bids_meta'].get(
-            'modality', 'unknown') == mod):
+                'modality', 'unknown') == mod):
             metadata = dfentry.pop('bids_meta')
             id_fields = list(comps & set(list(metadata.keys())))
             for field in id_fields:
                 dfentry[field] = metadata[field]
+            dfentry.pop('provenance', None)
             datalist.append(dfentry)
 
     dataframe = pd.DataFrame(datalist)

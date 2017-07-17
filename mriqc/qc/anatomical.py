@@ -227,7 +227,7 @@ def snr_dietrich(mu_fg, sigma_air):
 
     """
     if sigma_air < 1.0:
-        from mriqc import MRIQC_LOG
+        from .. import MRIQC_LOG
         MRIQC_LOG.warn('SNRd - background sigma is too small (%f)', sigma_air)
         sigma_air += 1.0
 
@@ -527,7 +527,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
 
     """
-    from mriqc import MRIQC_LOG
+    from .. import MRIQC_LOG
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim

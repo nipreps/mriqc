@@ -13,15 +13,15 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 from sys import version_info
 import pandas as pd
+
+from .. import logging
+from ..utils.misc import BIDS_COMP
+
 from builtins import zip, object, str  # pylint: disable=W0622
-
-from mriqc import logging
-from mriqc.utils.misc import BIDS_COMP
-
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
-MRIQC_REPORT_LOG.setLevel(logging.INFO)
+
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
@@ -29,9 +29,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
-    from mriqc import __version__ as ver
-    from mriqc.data import GroupTemplate
-    from mriqc.utils.misc import check_folder
+    from .. import __version__ as ver
+    from ..data import GroupTemplate
+    from ..utils.misc import check_folder
 
     if version_info[0] > 2:
         from io import StringIO as TextIO

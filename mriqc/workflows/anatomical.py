@@ -42,24 +42,20 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from builtins import zip, range
 import os.path as op
 
-from nipype import logging
-from nipype.pipeline import engine as pe
-from nipype.interfaces import io as nio
-from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl
-from nipype.interfaces import ants
-from nipype.interfaces import afni
-
+from niworkflows.nipype.pipeline import engine as pe
+from niworkflows.nipype.interfaces import io as nio
+from niworkflows.nipype.interfaces import utility as niu
+from niworkflows.nipype.interfaces import fsl, ants, afni
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
-from mriqc import DEFAULTS
-from mriqc.interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                              ConformImage, ComputeQI2, IQMFileSink, RotationMask)
+from .. import DEFAULTS, logging
+from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
+                          ConformImage, ComputeQI2, IQMFileSink, RotationMask)
+from ..utils.misc import check_folder
+WFLOGGER = logging.getLogger('mriqc.workflow')
 
-from mriqc.utils.misc import check_folder
-WFLOGGER = logging.getLogger('workflow')
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     """
@@ -152,7 +148,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     # Upload metrics
     if not settings.get('no_sub', False):
-        from mriqc.interfaces.webapi import UploadIQMs
+        from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.email = settings.get('email', '')
         upldwf.inputs.url = settings.get('webapi_url')
@@ -173,8 +169,6 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     A simple workflow to perform spatial normalization
 
     """
-    from mriqc.interfaces.common import EnsureSize
-    from nipype.interfaces.ants import AffineInitializer
     from niworkflows.data import getters as niwgetters
 
     # Have some settings handy
@@ -222,8 +216,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         wf = compute_iqms(settings={'output_dir': 'out'})
 
     """
-    from mriqc.workflows.utils import _tofloat
-    from mriqc.interfaces.anatomical import Harmonize
+    from .utils import _tofloat
+    from ..interfaces.anatomical import Harmonize
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -323,8 +317,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
         wf = individual_reports(settings={'output_dir': 'out'})
 
     """
-    from mriqc.interfaces import PlotMosaic
-    from mriqc.reports import individual_html
+    from ..interfaces import PlotMosaic
+    from ..reports import individual_html
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
@@ -374,8 +368,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
     if not verbose:
         return workflow
 
-    from mriqc.interfaces.viz import PlotContours
-    from mriqc.viz.utils import plot_bg_dist
+    from ..interfaces.viz import PlotContours
+    from ..viz.utils import plot_bg_dist
     plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
                           function=plot_bg_dist), name='PlotBackground')
 
@@ -450,7 +444,7 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
         ])
 
     else:
-        from nipype.interfaces.dipy import Denoise
+        from niworkflows.nipype.interfaces.dipy import Denoise
         enhance = pe.Node(niu.Function(
             input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
         estsnr = pe.Node(niu.Function(
@@ -525,8 +519,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
 def _add_provenance(in_file, settings, air_msk, rot_msk):
     from mriqc import __version__ as version
-    from copy import deepcopy
-    from nipype.utils.filemanip import hash_infile
+    from niworkflows.nipype.utils.filemanip import hash_infile
     import nibabel as nb
     import numpy as np
 

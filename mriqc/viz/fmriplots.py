@@ -14,7 +14,7 @@ from matplotlib.colorbar import ColorbarBase
 import seaborn as sns
 from seaborn import color_palette
 
-from mriqc.viz.utils import DINA4_LANDSCAPE
+from .utils import DINA4_LANDSCAPE
 sns.set_style("whitegrid")
 
 class fMRIPlot(object):

@@ -73,6 +73,17 @@ MRIQC is part of the MRI image analysis and reproducibility platform offered by
 the CRN. This pipeline derives from, and is heavily influenced by, the
 `PCP Quality Assessment Protocol <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`_.
 
+Citation
+--------
+
+When using MRIQC, please include the following citation:
+
+.. topic:: **Reference**
+
+    Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
+    *MRIQC: Predicting Quality in Manual MRI Assessment Protocols Using No-Reference Image Quality Measures*;
+    bioRxiv 111294; doi:`10.1101/111294 <https://doi.org/10.1101/111294>`_.
+
 
 Support and communication
 -------------------------

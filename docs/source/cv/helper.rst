@@ -2,7 +2,7 @@
 .. _crossvalidation:
 
 
-.. automodule:: mriqc.classifier.cv
+.. automodule:: mriqc.classifier.helper
     :members:
     :undoc-members:
     :show-inheritance:

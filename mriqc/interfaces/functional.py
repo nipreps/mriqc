@@ -10,15 +10,15 @@ import nibabel as nb
 from nilearn.signal import clean
 from builtins import zip
 
-from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
-                                    BaseInterfaceInputSpec)
-from nipype import logging
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, File, isdefined, BaseInterfaceInputSpec)
+from niworkflows.nipype import logging
 
 from niworkflows.interfaces.base import SimpleInterface
 
-from mriqc.utils.misc import _flatten_dict
-from mriqc.qc.anatomical import snr, fber, efc, summary_stats
-from mriqc.qc.functional import gsr
+from ..utils.misc import _flatten_dict
+from ..qc.anatomical import snr, fber, efc, summary_stats
+from ..qc.functional import gsr
 IFLOGGER = logging.getLogger('interface')
 
 

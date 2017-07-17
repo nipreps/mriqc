@@ -18,10 +18,15 @@ import numpy as np
 import pandas as pd
 from builtins import str
 
-from mriqc import logging
-from mriqc.utils.misc import BIDS_COMP
+from .. import logging
+from ..utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
+def get_groups(X, label='site'):
+    """Generate the index of sites"""
+    groups = X[label].values.ravel().tolist()
+    gnames = sorted(list(set(groups)))
+    return [gnames.index(g) for g in groups], gnames
 
 def combine_datasets(inputs, rating_label='rater_1'):
     mdata = []
@@ -31,7 +36,7 @@ def combine_datasets(inputs, rating_label='rater_1'):
             binarize=True, site_name=sitename)
         sitedata['database'] = [sitename] * len(sitedata)
 
-        if sitename == 'DS030':
+        if 'site' not in sitedata.columns.ravel().tolist():
             sitedata['site'] = [sitename] * len(sitedata)
 
         mdata.append(sitedata)
@@ -47,6 +52,14 @@ def combine_datasets(inputs, rating_label='rater_1'):
     ordered_cols = bids_comps_present + ['database', 'site', 'rater_1']
     ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
     return mdata[ordered_cols]
+
+
+def get_bids_cols(dataframe):
+    """ Returns columns corresponding to BIDS bits """
+    bids_comps = list(BIDS_COMP.keys())
+    bids_comps_present = list(set(dataframe.columns.ravel().tolist()) & set(bids_comps))
+    return [bit for bit in bids_comps if bit in bids_comps_present]
+
 
 def read_iqms(feat_file):
     """ Reads in the features """
@@ -77,58 +90,79 @@ def read_iqms(feat_file):
 
     return x_df, feat_names, bids_comps_present
 
+
 def read_labels(label_file, rate_label='rater_1', binarize=True,
-                site_name=None):
-    """ Reads in the labels """
-    # Massage labels table to have the appropriate format
+                site_name=None, rate_selection='random',
+                collapse=True):
+    """
+    Reads in the labels. Massage labels table to have the
+    appropriate format
+    """
+
+    if isinstance(rate_label, str):
+        rate_label = [rate_label]
+    output_labels = rate_label
 
     bids_comps = list(BIDS_COMP.keys())
-
     y_df = pd.read_csv(label_file, index_col=False,
                        dtype={col: str for col in bids_comps})
 
     # Find present bids bits and sort by them
-    bids_comps_present = list(set(y_df.columns.ravel().tolist()) & set(bids_comps))
-    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+    bids_comps_present = get_bids_cols(y_df)
     y_df = y_df.sort_values(by=bids_comps_present)
     y_df.subject_id = y_df.subject_id.str.lstrip('sub-')
+    y_df[rate_label] = y_df[rate_label].apply(pd.to_numeric, errors='raise')
 
-    # Convert string labels to ints
-    try:
-        y_df.loc[y_df[rate_label].str.contains('fail', case=False, na=False), rate_label] = -1
-        y_df.loc[y_df[rate_label].str.contains('exclude', case=False, na=False), rate_label] = -1
-        y_df.loc[y_df[rate_label].str.contains('maybe', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('may be', case=False, na=False), rate_label] = 0
-        y_df.loc[y_df[rate_label].str.contains('ok', case=False, na=False), rate_label] = 1
-        y_df.loc[y_df[rate_label].str.contains('good', case=False, na=False), rate_label] = 1
-    except AttributeError:
-        pass
+    if len(rate_label) == 2:
+        np.random.seed(42)
+        ratermask_1 = ~np.isnan(y_df[[rate_label[0]]].values.ravel())
+        ratermask_2 = ~np.isnan(y_df[[rate_label[1]]].values.ravel())
 
-    y_df[[rate_label]] = y_df[[rate_label]].apply(pd.to_numeric, errors='raise')
+        all_rated = (ratermask_1 & ratermask_2)
+        mergey = np.array(y_df[[rate_label[0]]].values.ravel().tolist())
+        mergey[ratermask_2] = y_df[[rate_label[1]]].values.ravel()[ratermask_2]
+
+        subsmpl = np.random.choice(np.where(all_rated)[0], int(0.5 * np.sum(all_rated)),
+                                   replace=False)
+        all_rated[subsmpl] = False
+        mergey[all_rated] = y_df[[rate_label[0]]].values.ravel()[all_rated]
+        y_df['merged_ratings'] = mergey.astype(int)
+
+        # Set default name
+        if collapse:
+            cols = [('indv_%s' % c) if c.startswith('rater') else
+                    c for c in y_df.columns.ravel().tolist()]
+            cols[y_df.columns.get_loc('merged_ratings')] = rate_label[0]
+            y_df.columns = cols
+            output_labels = [rate_label[0]]
+        else:
+            output_labels = rate_label
+            output_labels.insert(0, 'merged_ratings')
 
     if binarize:
-        y_df.loc[y_df[rate_label] >= 0, rate_label] = 0
-        y_df.loc[y_df[rate_label] < 0, rate_label] = 1
+        mask = y_df[output_labels[0]] >= 0
+        y_df.loc[mask, output_labels[0]] = 0
+        y_df.loc[~mask, output_labels[0]] = 1
 
-
-    add_cols = [rate_label]
-    # Set default name
     if 'site' in y_df.columns.ravel().tolist():
-        add_cols.insert(0, 'site')
+        output_labels.insert(0, 'site')
     elif site_name is not None:
         y_df['site'] = [site_name] * len(y_df)
-        add_cols.insert(0, 'site')
+        output_labels.insert(0, 'site')
 
-    return y_df[bids_comps_present + add_cols]
+    return y_df[bids_comps_present + output_labels]
 
 
-def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
-                 binarize=True, site_name=None):
+def read_dataset(feat_file, label_file, merged_name=None,
+                 binarize=True, site_name=None, rate_label='rater_1',
+                 rate_selection='random'):
     """ Reads in the features and labels """
 
     x_df, feat_names, _ = read_iqms(feat_file)
-    y_df = read_labels(label_file, rate_label, binarize,
-                       site_name=site_name)
+    y_df = read_labels(label_file, rate_label, binarize, collapse=True,
+                       site_name=site_name, rate_selection=rate_selection)
+    if isinstance(rate_label, (list, tuple)):
+        rate_label = rate_label[0]
 
     # Find present bids bits and sort by them
     bids_comps = list(BIDS_COMP.keys())
@@ -172,11 +206,19 @@ def read_dataset(feat_file, label_file, rate_label='rater_1', merged_name=None,
     LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
              feat_file, label_file, nsamples)
 
-    nfails = int(x_df[rate_label].sum())
-    LOG.info('Ratings distribution: "fail"=%d / "ok"=%d (%f%% failed)',
-             nfails, nsamples - nfails, nfails * 100 / nsamples)
+    # Inform about ratings distribution
+    labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
+    ldist = []
+    for l in labels:
+        ldist.append(int(np.sum(x_df[rate_label] == l)))
+
+    LOG.info('Ratings distribution: %s (%s, %s)',
+             '/'.join(['%d' % x for x in ldist]),
+             '/'.join(['%.2f%%' % (100 * x / nsamples) for x in ldist]),
+             'accept/exclude' if len(ldist) == 2 else 'exclude/doubtful/accept')
 
     return x_df, feat_names
+
 
 def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     sites = list(set(dataframe[[site_column]].values.ravel()))
@@ -196,7 +238,6 @@ def balanced_leaveout(dataframe, site_column='site', rate_label='rater_1'):
     left_out = dataframe.iloc[pos_draw + neg_draw].copy()
     dataframe = dataframe.drop(dataframe.index[pos_draw + neg_draw])
     return dataframe, left_out
-
 
 
 def zscore_dataset(dataframe, excl_columns=None, by='site',
@@ -243,47 +284,10 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
 
     return zs_df
 
+
 def zscore_site(args):
     """ z-scores only one site """
     from scipy.stats import zscore
     dataframe, columns, site = args
     return zscore(dataframe.loc[dataframe.site == site, columns].values,
                   ddof=1, axis=0)
-
-
-def find_bias(dataframe, by='site', excl_columns=None):
-    sites = list(set(dataframe[[by]].values.ravel().tolist()))
-    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
-
-    if excl_columns:
-        numcols = [col for col in numcols if col not in excl_columns]
-
-    LOG.info('Calculating bias of dataset (cols=%s)',
-             ', '.join(['"%s"' % col for col in numcols]))
-
-    site_medians = []
-    for site in sites:
-        site_medians.append(np.median(dataframe.loc[dataframe.site == site, numcols], axis=0))
-
-    return np.median(np.array(site_medians), axis=0)
-
-
-def remove_bias(dataframe, grand_medians, by='site', excl_columns=None):
-    LOG.info('Removing bias of dataset ...')
-
-    all_cols = dataframe.columns.ravel().tolist()
-    if by not in all_cols:
-        dataframe[by] = ['Unknown'] * len(dataframe)
-
-    sites = list(set(dataframe[[by]].values.ravel().tolist()))
-    numcols = dataframe.select_dtypes([np.number]).columns.ravel().tolist()
-
-    if excl_columns:
-        numcols = [col for col in numcols if col not in excl_columns]
-
-    for site in sites:
-        vals = dataframe.loc[dataframe.site == site, numcols]
-        site_med = np.median(vals, axis=0)
-        dataframe.loc[dataframe.site == site, numcols] = vals - site_med + grand_medians
-
-    return dataframe
