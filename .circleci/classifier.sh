@@ -20,12 +20,14 @@ if [ "$(grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $? )" == "0" ]; th
 fi
 
 if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
+	# Train the classifier
 	docker run -i -v $SCRATCH:/scratch -w /scratch \
 	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
 	           ${DOCKER_IMAGE}:${DOCKER_TAG} \
 	           --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170703-190702_mod-rfc_ver-0.9.7.clf-3.3_class-2_cv-loso_data-all_settings.yml -v
-	# docker run -i -v $SCRATCH:/scratch -w /scratch \
-	#            --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
-	#            ${DOCKER_IMAGE}:${DOCKER_TAG} \
-	#            --load-classifier -X /scratch/out/T1w.csv -v
+	# Run the classifier on the test data
+	docker run -i -v $SCRATCH:/scratch -w /scratch \
+	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
+	           ${DOCKER_IMAGE}:${DOCKER_TAG} \
+	           --load-classifier $( ls $SCRATCH/mclf_run-*_class-2_cv-loso_data-all_estimator.pklz ) -X /scratch/out/T1w.csv -v
 fi
