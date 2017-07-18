@@ -670,10 +670,18 @@ class CVHelper(CVHelperBase):
         if site is None:
             site = 'unseen'
 
-        if 'site' not in _xeval.columns.ravel():
-            _xeval['site'] = [site] * len(_xeval)
+        columns = _xeval.columns.ravel().tolist()
 
-        prob_y, pred_y = self.predict(_xeval)
+        if 'site' not in columns:
+            _xeval['site'] = [site] * len(_xeval)
+            columns.append('site')
+
+        # Classifier is trained with rate_1 as last column
+        if 'rate_1' not in columns:
+            _xeval['rate_1'] = [np.nan] * len(_xeval)
+            columns.append('rate_1')
+
+        prob_y, pred_y = self.predict(_xeval[columns])
         if save_pred:
             self._save_pred_table(_xeval, prob_y, pred_y,
                                   suffix='data-%s_pred' % site)
