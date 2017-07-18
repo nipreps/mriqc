@@ -95,6 +95,11 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
     python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+# Unless otherwise specified each process should only use one thread - nipype
+# will handle parallelization
+ENV MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
+
 # Installing dev requirements (packages that are not in pypi)
 COPY requirements.txt requirements.txt
 RUN pip uninstall -y scikit-learn && \
