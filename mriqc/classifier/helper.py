@@ -642,6 +642,7 @@ class CVHelper(CVHelperBase):
         estimate across the trees.
 
         """
+
         if self._model == 'svc_lin':
             from sklearn.base import clone
             from sklearn.calibration import CalibratedClassifierCV

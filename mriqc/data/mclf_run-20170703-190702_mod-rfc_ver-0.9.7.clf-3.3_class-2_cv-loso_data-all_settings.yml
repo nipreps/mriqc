@@ -1,0 +1,24 @@
+std:
+- with_centering: [true]
+  with_scaling: [true]
+
+ft_noise:
+- disable: [true]
+
+ft_sites:
+- disable: [false]
+
+rfc:
+- bootstrap: [true]
+  class_weight: ["balanced"]
+  criterion: ["gini"]
+  max_depth: [null]
+  max_features: ["sqrt"]
+  max_leaf_nodes: [null]
+  min_impurity_decrease: [0.0]
+  min_impurity_split: [null]
+  min_samples_leaf: [10]
+  min_samples_split: [2]
+  min_weight_fraction_leaf: [0.0]
+  n_estimators: [50]
+  oob_score: [true]
