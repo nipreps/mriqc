@@ -1,12 +1,11 @@
-std:
-- with_centering: [true]
-  with_scaling: [true]
-
-ft_noise:
-- disable: [true]
-
-ft_sites:
-- disable: [false]
+preproc:
+  - std:
+      with_centering: [true]
+      with_scaling: [true]
+    ft_noise:
+      disable: [true]
+    ft_sites:
+      disable: [false]
 
 rfc:
 - bootstrap: [true]
