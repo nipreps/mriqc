@@ -753,23 +753,14 @@ class CVHelper(CVHelperBase):
             'sel_cols__columns': [self._ftnames + ['site']],
         }
 
+        # Load in classifier parameters
         clfparams = _load_parameters(
             (pkgrf('mriqc', 'data/classifier_settings.yml')
                 if self._param_file is None else self._param_file)
         )
 
-        prefix = self._model + '__'
-        if self._multiclass:
-            prefix += 'estimator__'
-
-        if 'preproc' not in clfparams:
-            preparams = [{
-                'std__with_centering': [True],
-                'std__with_scaling': [True],
-                'ft_sites__disable': [False],
-                'ft_noise__disable': [False],
-            }]
-        else:
+        # Read preprocessing parameters
+        if 'preproc' in clfparams:
             preparams = []
             for el in clfparams['preproc']:
                 pcombination = {}
@@ -777,12 +768,27 @@ class CVHelper(CVHelperBase):
                     for k, v in list(subel.items()):
                         pcombination[pref + '__' + k] = v
                 preparams.append(pcombination)
+        else:
+            preparams = [{
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'ft_sites__disable': [False],
+                'ft_noise__disable': [False],
+            }]
 
         # Set base parameters
         preparams = [{**baseparam, **prep} for prep in preparams]
+
+        # Extract this model parameters
+        prefix = self._model + '__'
+        if self._multiclass:
+            prefix += 'estimator__'
         modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
+
+        # Merge model parameters + preprocessing
         modparams = [{**prep, **modparams} for prep in preparams]
 
+        # Evaluate just one model if debug
         if self._debug:
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
