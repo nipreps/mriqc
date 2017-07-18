@@ -230,7 +230,7 @@ def main():
     analysis_levels = opts.analysis_level
 
     # In case direct file path is given (instead of bids dir) we do not want group level
-    if (opts.participant_label is None) & opts.T1w_file is False & opts.T2w_file is False & opts.bold_file is False :
+    if (opts.participant_label is None) & (opts.T1w_file is False) & (opts.T2w_file is False) & (opts.bold_file is False) :
         analysis_levels.append('group')
 
     analysis_levels = list(set(analysis_levels))
