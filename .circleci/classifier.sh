@@ -29,5 +29,5 @@ if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
 	docker run -i -v $SCRATCH:/scratch -w /scratch \
 	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
 	           ${DOCKER_IMAGE}:${DOCKER_TAG} \
-	           --load-classifier $( ls $SCRATCH/mclf_run-*_class-2_cv-loso_data-all_estimator.pklz ) -X /scratch/out/T1w.csv -v
+	           --load-classifier $( basename `ls $SCRATCH/mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/out/T1w.csv -v
 fi
