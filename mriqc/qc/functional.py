@@ -17,15 +17,31 @@ Measures for the structural information
 Definitions are given in the
 :ref:`summary of structural IQMs <iqms_t1w>`.
 
+.. _iqms_efc:
+
 - **Entropy-focus criterion** (:py:func:`~mriqc.qc.anatomical.efc`).
+
+.. _iqms_fber:
+
 - **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
+
+.. _iqms_fwhm:
+
 - **Full-width half maximum smoothness** (``fwhm_*``).
+
+.. _iqms_snr:
+
 - **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
+
+.. _iqms_summary:
+
 - **Summary statistics** (:py:func:`~mriqc.qc.anatomical.summary_stats`).
 
 
 Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_dvars:
 
 - **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
   RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
@@ -52,6 +68,7 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
     normalized across time by that voxel standard deviation across time, before
     computing the RMS of the temporal difference [Nichols2013]_.
 
+.. _iqms_gcor:
 
 - **Global Correlation** (``gcor``) calculates an optimized summary of time-series
     correlation as in [Saad2013]_ using AFNI's ``@compute_gcor``:
@@ -62,6 +79,8 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
   where :math:`\\mathbf{g}_u` is the average of all unit-variance time series in a
   :math:`T` (\# timepoints) :math:`\\times` :math:`N` (\# voxels) matrix.
+
+.. _iqms_tsnr:
 
 - **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is a simplified
   interpretation of the tSNR definition [Kruger2001]_. We report the median value
@@ -78,6 +97,9 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_fd:
+
 - **Framewise Displacement**: expresses instantaneous head-motion.
   MRIQC reports the average FD, labeled as ``fd_mean``.
   Rotational displacements are calculated as the displacement on the surface of a
@@ -93,6 +115,8 @@ Measures for artifacts and other
   **percent of FDs above the FD threshold** w.r.t. the full timeseries (``fd_perc``).
   In both cases, the threshold is set at 0.20mm.
 
+.. _iqms_gsr:
+
 - **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
   in the reports as ``gsr_x`` and ``gsr_y``):
   along the two possible phase-encoding axes **x**, **y**:
@@ -105,9 +129,13 @@ Measures for artifacts and other
     :width: 200px
     :align: center
 
+.. _iqms_aor:
 
 - **AFNI's outlier ratio** (``aor``) - Mean fraction of outliers per fMRI volume
   as given by AFNI's ``3dToutcount``.
+
+.. _iqms_aqi:
+
 - **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
 
 .. topic:: References
