@@ -68,6 +68,10 @@ function makeDistroChart(settings) {
         iqmName = iqmName.substr(0, iqmName.lastIndexOf('_'))
     }
     chart.settings.axisLabels.yAxis = iqmName.toUpperCase()
+    if (iqmName.toLowerCase().startsWith('fd') || iqmName.toLowerCase().startsWith('spikes')) {
+        chart.settings.constrainExtremes = true
+    }
+
     units = chart.data[0][chart.settings.unitsName]
     if (units) {
         chart.settings.axisLabels.yAxis += ' (' + units + ')'
