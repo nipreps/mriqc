@@ -408,7 +408,13 @@ function makeDistroChart(settings) {
             .style("font-size", "16px")
             .append("a")
             .attr("xlink:href", function(d) {
-                return "http://mriqc.readthedocs.io/en/latest/measures.html"
+                label = chart.yAxisLable.toLowerCase()
+                charidx = label.indexOf(' ')
+                if (charidx > 1) { label = label.substr(0, charidx); }
+                charidx = label.indexOf('_')
+                if (charidx > 1) { label = label.substr(0, charidx); }
+
+                return "http://mriqc.readthedocs.io/en/stable/iqms/t1w.html#iqms-" + label
             })
             .text(chart.yAxisLable)
             .on("mouseover", function () {
