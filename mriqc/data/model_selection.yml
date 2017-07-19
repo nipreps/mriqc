@@ -1,3 +1,13 @@
+std:
+- with_centering: [true, false]
+  with_scaling: [true, false]
+
+ft_noise:
+- disable: [true, false]
+
+ft_sites:
+- disable: [true, false]
+
 rfc:
 - n_estimators: [50, 1000]
   max_features: ["sqrt", 0.33]

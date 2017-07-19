@@ -296,6 +296,7 @@ class CVHelper(CVHelperBase):
             self.load(load_clf)
             self._rate_column = rate_label[0]
             self._multiclass = multiclass
+            self._base_name = basename[:24]
         else:
             super(CVHelper, self).__init__(
                 X, Y, param_file=param_file, n_jobs=n_jobs,
@@ -641,6 +642,7 @@ class CVHelper(CVHelperBase):
         estimate across the trees.
 
         """
+
         if self._model == 'svc_lin':
             from sklearn.base import clone
             from sklearn.calibration import CalibratedClassifierCV
@@ -668,15 +670,22 @@ class CVHelper(CVHelperBase):
         if site is None:
             site = 'unseen'
 
-        if 'site' not in _xeval.columns.ravel():
-            _xeval['site'] = [site] * len(_xeval)
+        columns = _xeval.columns.ravel().tolist()
 
-        prob_y, pred_y = self.predict(_xeval)
+        if 'site' not in columns:
+            _xeval['site'] = [site] * len(_xeval)
+            columns.append('site')
+
+        # Classifier is trained with rate_1 as last column
+        if 'rate_1' not in columns:
+            _xeval['rate_1'] = [np.nan] * len(_xeval)
+            columns.append('rate_1')
+
+        prob_y, pred_y = self.predict(_xeval[columns])
         if save_pred:
             self._save_pred_table(_xeval, prob_y, pred_y,
                                   suffix='data-%s_pred' % site)
-
-        return pred
+        return pred_y
 
     def _save_pred_table(self, sample, prob_y, pred_y, suffix):
         bidts = get_bids_cols(sample)
@@ -744,53 +753,54 @@ class CVHelper(CVHelperBase):
         return _score(clf, X, y, check_scoring(clf, scoring=scoring))
 
     def _get_params(self):
-        preparams = [
-            {
-                'std__by': ['site'],
-                'std__with_centering': [True],
-                'std__with_scaling': [True],
-                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-                'sel_cols__columns': [self._ftnames + ['site']],
-                'ft_sites__disable': [False, True],
-                'ft_noise__disable': [False, True],
-            },
-            {
-                'std__by': ['site'],
-                'std__with_centering': [True, False],
-                'std__with_scaling': [True, False],
-                'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-                'sel_cols__columns': [self._ftnames + ['site']],
-                'ft_sites__disable': [True],
-                'ft_noise__disable': [True],
-            },
-        ]
 
-        if self._debug:
-            preparams = [
-                {
-                    'std__by': ['site'],
-                    'std__with_centering': [False],
-                    'std__with_scaling': [False],
-                    'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
-                    'sel_cols__columns': [self._ftnames + ['site']],
-                    'ft_sites__disable': [True],
-                    'ft_noise__disable': [True],
-                },
-            ]
+        # Some baseline parameters
+        baseparam = {
+            'std__by': ['site'],
+            'std__columns': [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            'sel_cols__columns': [self._ftnames + ['site']],
+        }
 
-        prefix = self._model + '__'
-        if self._multiclass:
-            prefix += 'estimator__'
-
+        # Load in classifier parameters
         clfparams = _load_parameters(
             (pkgrf('mriqc', 'data/classifier_settings.yml')
                 if self._param_file is None else self._param_file)
         )
+
+        # Read preprocessing parameters
+        if 'preproc' in clfparams:
+            preparams = []
+            for el in clfparams['preproc']:
+                pcombination = {}
+                for pref, subel in list(el.items()):
+                    for k, v in list(subel.items()):
+                        pcombination[pref + '__' + k] = v
+                preparams.append(pcombination)
+        else:
+            preparams = [{
+                'std__with_centering': [True],
+                'std__with_scaling': [True],
+                'ft_sites__disable': [False],
+                'ft_noise__disable': [False],
+            }]
+
+        # Set base parameters
+        preparams = [{**baseparam, **prep} for prep in preparams]
+
+        # Extract this model parameters
+        prefix = self._model + '__'
+        if self._multiclass:
+            prefix += 'estimator__'
         modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
+
+        # Merge model parameters + preprocessing
+        modparams = [{**prep, **modparams} for prep in preparams]
+
+        # Evaluate just one model if debug
         if self._debug:
             modparams = {k: [v[0]] for k, v in list(modparams.items())}
 
-        return [{**prep, **modparams} for prep in preparams]
+        return modparams
 
     def _get_params_dist(self):
         preparams = {
