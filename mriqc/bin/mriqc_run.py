@@ -166,7 +166,6 @@ def main():
     log_level = int(max(3 - opts.verbose_count, 0) * 10)
     if opts.verbose_count > 1:
         log_level = int(max(25 - 5 * opts.verbose_count, 1))
-    print(log_level)
 
     logging.getLogger().setLevel(log_level)
     log = logging.getLogger('mriqc.cli')
