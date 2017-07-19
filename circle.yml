@@ -70,6 +70,7 @@ test:
           MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     - bash .circleci/classifier.sh :
         parallel: true
+        timeout: 3200
         environment:
           GIT_COMMIT_MSG: $( git log --format=oneline -n 1 $CIRCLE_SHA1 )
 
