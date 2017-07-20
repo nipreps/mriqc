@@ -6,6 +6,8 @@
 Welcome to mriqc's documentation!
 =================================
 
+.. image :: _static/OHBM2017-poster.png
+
 .. include:: ../../README.rst
    :start-line: 3
    :end-line: 39

@@ -81,8 +81,13 @@ When using MRIQC, please include the following citation:
 .. topic:: **Reference**
 
     Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
-    *MRIQC: Predicting Quality in Manual MRI Assessment Protocols Using No-Reference Image Quality Measures*;
+    *MRIQC: Advancing the Automatic Prediction of Image Quality in MRI from Unseen Sites*;
     bioRxiv 111294; doi:`10.1101/111294 <https://doi.org/10.1101/111294>`_.
+
+An additional resource to check out is our recent poster at OHBM:
+
+    Esteban O, Gorgolewski K and Poldrack R. MRIQC: automatic prediction of quality and visual reporting of MRI scans. F1000Research 2017, 6:1128 (poster). doi: `10.7490/f1000research.1114419.1
+    <https://doi.org/10.7490/f1000research.1114419.1>`_.
 
 
 Support and communication
