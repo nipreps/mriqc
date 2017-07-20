@@ -418,7 +418,7 @@ function makeDistroChart(settings) {
                 charidx = label.indexOf('_')
                 if (charidx > 1) { label = label.substr(0, charidx); }
 
-                return "http://mriqc.readthedocs.io/en/stable/iqms/t1w.html#iqms-" + label
+                return "http://mriqc.readthedocs.io/en/latest/iqms/" + chart.settings.modality.toLowerCase() + ".html#iqms-" + label
             })
             .text(chart.yAxisLable)
             .on("mouseover", function () {

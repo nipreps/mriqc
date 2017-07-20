@@ -9,7 +9,7 @@ r"""
 Measures based on noise measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _iqms_struc_cjv:
+.. _iqms_cjv:
 
 - :py:func:`~mriqc.qc.anatomical.cjv` -- **coefficient of joint variation**
   (:abbr:`CJV (coefficient of joint variation)`):
@@ -18,7 +18,7 @@ Measures based on noise measurements
   Higher values are related to the presence of heavy head motion and large
   :abbr:`INU (intensity non-uniformity)` artifacts. Lower values are better.
 
-.. _iqms_struc_cnr:
+.. _iqms_cnr:
 
 - :py:func:`~mriqc.qc.anatomical.cnr` -- **contrast-to-noise ratio**
   (:abbr:`CNR (contrast-to-noise Ratio)`): The ``cnr`` [Magnota2006]_,
@@ -26,19 +26,19 @@ Measures based on noise measurements
   to evaluate how separated the tissue distributions of GM and WM are.
   Higher values indicate better quality.
 
-.. _iqms_struc_snr:
+.. _iqms_snr:
 
 - :py:func:`~mriqc.qc.anatomical.snr` -- **signal-to-noise ratio**
   (:abbr:`SNR (signal-to-noise Ratio)`): calculated within the
   tissue mask.
 
-.. _iqms_struc_snr_dietrich:
+.. _iqms_snrd:
 
 - :py:func:`~mriqc.qc.anatomical.snr_dietrich`: **Dietrich's SNR**
   (:abbr:`SNRd (signal-to-noise Ratio, Dietrich 2007)`) as proposed
   by [Dietrich2007]_, using the air background as reference.
 
-.. _iqms_struc_qi2:
+.. _iqms_qi2:
 
 - :py:func:`~mriqc.qc.anatomical.art_qi2`: **Mortamet's quality index 2**
   (:abbr:`QI2 (quality index 2)`) is a calculation of the goodness-of-fit
@@ -48,6 +48,8 @@ Measures based on noise measurements
 
 Measures based on information theory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_efc:
 
 - :py:func:`~mriqc.qc.anatomical.efc`:
   The :abbr:`EFC (Entropy Focus Criterion)`
@@ -59,6 +61,8 @@ Measures based on information theory
   :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
   different dimensions.
 
+.. _iqms_fber:
+
 - :py:func:`~mriqc.qc.anatomical.fber`:
   The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
   defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
@@ -67,9 +71,13 @@ Measures based on information theory
 Measures targeting specific artifacts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _iqms_inu:
+
 - **inu_\*** (*nipype interface to N4ITK*): summary statistics (max, min and median)
   of the :abbr:`INU (intensity non-uniformity)` field as extracted by the N4ITK algorithm
   [Tustison2010]_. Values closer to 1.0 are better.
+
+.. _iqms_qi:
 
 - :py:func:`~mriqc.qc.anatomical.art_qi1`:
   Detect artifacts in the image using the method described in [Mortamet2009]_.
@@ -79,6 +87,8 @@ Measures targeting specific artifacts
   .. figure:: ../resources/mortamet-mrm2009.png
 
     The workflow to compute the artifact detection from [Mortamet2009]_.
+
+.. _iqms_wm2max:
 
 - :py:func:`~mriqc.qc.anatomical.wm2max`:
   The white-matter to maximum intensity ratio is the median intensity
@@ -91,6 +101,8 @@ Measures targeting specific artifacts
 Other measures
 ^^^^^^^^^^^^^^
 
+.. _iqms_fwhm:
+
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
   the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
   Lower values are better. Uses the gaussian width estimator filter implemented in
@@ -100,20 +112,28 @@ Other measures
 
       \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
 
+.. _iqms_icvs:
+
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
   the
   :abbr:`ICV (intracranial volume)` fractions of :abbr:`CSF (cerebrospinal fluid)`,
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. They should move within
   a normative range.
 
+.. _iqms_rpve:
+
 - :py:func:`~mriqc.qc.anatomical.rpve` (**rpve_\***): the
   :abbr:`rPVe (residual partial voluming error)` of :abbr:`CSF (cerebrospinal fluid)`,
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. Lower values are better.
+
+.. _iqms_summary:
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
   Mean, standard deviation, 5% percentile and 95% percentile of the distribution
   of background, :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and
   :abbr:`WM (white-matter)`.
+
+.. _iqms_tpm:
 
 - **overlap_\*_\***:
   The overlap of the :abbr:`TPMs (tissue probability maps)` estimated from the image and
