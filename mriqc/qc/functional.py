@@ -138,6 +138,11 @@ Measures for artifacts and other
 
 - **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
 
+.. _iqms_dummy:
+
+- **Number of *dummy* scans** (``dummy``) - A number of volumes in the begining of the
+  fMRI timeseries identified as non-steady state.
+
 .. topic:: References
 
   .. [Atkinson1997] Atkinson et al., *Automatic correction of motion artifacts
