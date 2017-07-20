@@ -7,7 +7,7 @@ Experiment 0: What makes a good cross-validation split in this application?
 We first wanted to understand what kind of data split we should use to benchmark
 the results we get using the classifier.
 
-In a very naive approach, we use ``mriqc_clf`` to check if there are differences
+In a very simplistic approach, we use ``mriqc_clf`` to check if there are differences
 between our :abbr:`LoSo (leave-one-site-out)` splits or a sandard 10-fold.
 For that, we use the arguments ``--nested_cv`` and ``--nested_cv_kfold`` respectively.
 Please note we are using the ``--debug`` flag to reduce the number of hyperparameters
