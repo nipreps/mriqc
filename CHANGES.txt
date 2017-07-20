@@ -1,7 +1,11 @@
+0.9.7
+=====
+
+  * [ENH] Clip outliers in FD and SPIKES group plots (#593)
   * [ENH] Second revision of the classifier (#555):
     * Set matplotlib plugin to `agg` in docker image
     * Migrate scalings to sklearn pipelining system
-    * Add Satra's feature selection for RFC
+    * Add Satra's feature selection for RFC (with thanks to S. Ghosh for his suggestion)
     * Make model selection compatible with sklearn `Pipeline`
     * Multiclass classification
     * Add feature selection filter based on Sites prediction (requires pinning to development sklearn-0.19)
