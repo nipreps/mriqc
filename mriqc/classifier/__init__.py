@@ -12,6 +12,7 @@ Using the classifier
 
     cv/base
     cv/data
+    cv/helper
 
 Cross-validation in MRIQC
 -------------------------
@@ -19,7 +20,7 @@ Cross-validation in MRIQC
 .. toctree::
     :maxdepth: 3
 
-    cv/helper
+    cv/experiments
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
