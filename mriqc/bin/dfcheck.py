@@ -72,7 +72,22 @@ def main():
         chng_df = pd.DataFrame({'iqm': cols, 'from': changed_from, 'to': changed_to})
         table = pd.concat([bids_df, chng_df], axis=1)
         print(table[ref_bids + ['iqm', 'from', 'to']].to_string(index=False))
-        sys.exit('Output CSV file changed one or more values')
+
+        corr = pd.DataFrame()
+        corr['iqms'] = ref_names
+        corr['cc'] = [float(np.corrcoef(ref_df[[var]].values.ravel(),
+                                        tst_df[[var]].values.ravel(),
+                                        rowvar=False)[0, 1])
+                      for var in ref_names]
+
+        if np.any(corr.cc < 0.95):
+            print('IQMs with Pearson correlation < 0.95:')
+            print(corr[corr.cc < 0.95])
+            sys.exit('Output CSV file changed one or more values')
+        else:
+            print('All IQMs show a Pearson correlation >= 0.95')
+
+
 
     sys.exit(0)
 
