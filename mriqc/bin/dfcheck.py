@@ -27,6 +27,8 @@ def main():
                          required=True, help='input data frame')
     g_input.add_argument('-r', '--reference-csv', action='store',
                          required=True, help='reference dataframe')
+    g_input.add_argument('--tolerance', type=float, default=1.e-5,
+                         help='relative tolerance for comparison')
 
     opts = parser.parse_args()
 
@@ -45,10 +47,22 @@ def main():
     ref_df = ref_df.sort_values(by=ref_bids)
     tst_df = tst_df.sort_values(by=tst_bids)
 
-    diff = ref_df[ref_names].values != tst_df[tst_names].values
+    if len(ref_df) != len(tst_df):
+        print('Input datases have different lengths (input %d, reference %d).' % (
+            len(ref_df), len(tst_df)))
+        tst_rows = tst_df[tst_bids]
+        ref_rows = ref_df[ref_bids]
+
+        print(tst_rows.shape, ref_rows.shape)
+
+        tst_keep = np.sum(tst_rows.isin(ref_rows).values.ravel().tolist())
+        print(tst_keep)
+
+    diff = ~np.isclose(ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance)
     if np.any(diff):
-        ne_stacked = (ref_df[ref_names] != tst_df[ref_names]).stack()
-        changed = ne_stacked[ne_stacked]
+        ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
+        #ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()
+        # changed = ne_stacked[ne_stacked]
         # changed.set_index(ref_bids)
         difference_locations = np.where(diff)
         changed_from = ref_df[ref_names].values[difference_locations]
