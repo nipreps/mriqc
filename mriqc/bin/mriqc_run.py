@@ -125,7 +125,7 @@ def get_parser():
     # ANTs options
     g_ants = parser.add_argument_group('Specific settings for ANTs')
     g_ants.add_argument(
-        '--ants-nthreads', action='store', type=int, default=0,
+        '--ants-nthreads', action='store', type=int, default=1,
         help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')

@@ -21,6 +21,10 @@
     * Revised labels file for ds030.
     * Add IQMs for ABIDE and DS030 calculated with MRIQC 0.9.6.
   * ANNOUNCEMENT: Dropped support for Python<=3.4
+  * WARNING (#596): 
+    We have changed the default number of threads for ANTs. Using parallelism with ANTs
+    causes numerical instability on the calculated measures. The most sensitive metrics to this
+    problem are the kurtosis calculations on the intensities of regions and qi_2.
 
 0.9.6
 =====
