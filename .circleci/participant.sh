@@ -37,7 +37,7 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
 
 case $CIRCLE_NODE_INDEX in
     0)
-        ${DOCKER_RUN} -m T1w --n_procs 2 --ants-nthreads 1
+        ${DOCKER_RUN} -m T1w --n_procs 2
         ;;
     1)
         # Run tests in bold build which is shorter
@@ -46,7 +46,7 @@ case $CIRCLE_NODE_INDEX in
                    --ignore=src/ \
                    --junitxml=/scratch/tests.xml \
                    /root/src/mriqc && \
-        ${DOCKER_RUN} -m bold --testing --n_procs 2 --ants-nthreads 1 --ica
+        ${DOCKER_RUN} -m bold --testing --n_procs 2 --ica
         exit $(( $? + $exit_docs ))
         ;;
 esac
