@@ -206,7 +206,7 @@ def main():
 def _parse_set(arg, default):
     if arg is not None and len(arg) == 0:
         return [pkgrf('mriqc', 'data/csv/%s' % name) for name in (
-            'x_%s-0.9.6-2017-06-03-99db97c9be2e.csv' % default,
+            'x_%s.csv' % default,
             'y_%s.csv' % default)]
 
     if arg is not None and len(arg) not in (0, 2):
