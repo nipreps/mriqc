@@ -24,7 +24,7 @@ if [ "$CIRCLE_NODE_INDEX" == "0" ]; then
 	docker run -i -v $SCRATCH:/scratch -w /scratch \
 	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \
 	           ${DOCKER_IMAGE}:${DOCKER_TAG} \
-	           --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170703-190702_mod-rfc_ver-0.9.7.clf-3.3_class-2_cv-loso_data-all_settings.yml -v
+	           --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
 	# Run the classifier on the test data
 	docker run -i -v $SCRATCH:/scratch -w /scratch \
 	           --entrypoint="/usr/local/miniconda/bin/mriqc_clf" \

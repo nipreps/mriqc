@@ -168,7 +168,7 @@ def main():
         if load_classifier is None:
             load_classifier = pkgrf(
                 'mriqc',
-                'data/mclf_run-20170703-190702_mod-rfc_ver-0.9.7.clf-3.3_class-2_cv-'
+                'data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-'
                 'loso_data-all_estimator.pklz')
 
         if not isfile(load_classifier):
