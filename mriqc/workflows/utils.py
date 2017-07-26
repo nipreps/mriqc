@@ -7,20 +7,20 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2017-05-17 15:12:23
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
-from nipype.pipeline import engine as pe
-from nipype.interfaces import utility as niu
 
 def _tofloat(inlist):
-    return [float(el) for el in inlist]
+    if isinstance(inlist, (list, tuple)):
+        return [float(el) for el in inlist]
+    else:
+        return float(inlist)
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from nipype.interfaces.base import isdefined
+    from niworkflows.nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
@@ -160,35 +160,3 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
-
-
-def upload_wf(settings, name='UploadWorkflow'):
-    """Workflow wrapping the upload_qc_metrics function.
-
-    Arguments:
-    settings -- dictionary containing mriqc settings
-
-    Keyword arguments:
-    name -- workflow name, defaults to UploadWorkflow
-
-    Returns:
-    workflow with inputnode and UploadMetrics node.
-    """
-    from mriqc.reports import upload_qc_metrics
-
-    no_sub = settings.get('no_sub', False)
-    email = settings.get('email', '')
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_iqms']),
-                        name='inputnode')
-    upld = pe.Node(niu.Function(input_names=['in_iqms', 'no_sub', 'email'],
-                                output_names=['response'],
-                                function=upload_qc_metrics),
-                   name='UploadMetrics')
-    upld.inputs.email = email
-    upld.inputs.no_sub = no_sub
-
-    workflow.connect([(inputnode, upld, [('in_iqms', 'in_iqms')])])
-
-    return workflow

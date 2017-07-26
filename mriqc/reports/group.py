@@ -13,15 +13,15 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 from sys import version_info
 import pandas as pd
+
+from .. import logging
+from ..utils.misc import BIDS_COMP
+
 from builtins import zip, object, str  # pylint: disable=W0622
-
-from mriqc import logging
-from mriqc.utils.misc import BIDS_COMP
-
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
-MRIQC_REPORT_LOG.setLevel(logging.INFO)
+
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
@@ -29,9 +29,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
-    from mriqc import __version__ as ver
-    from mriqc.data import GroupTemplate
-    from mriqc.utils.misc import check_folder
+    from .. import __version__ as ver
+    from ..data import GroupTemplate
+    from ..utils.misc import check_folder
 
     if version_info[0] > 2:
         from io import StringIO as TextIO
@@ -47,20 +47,20 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['wm2max'], None),
             (['snr_csf', 'snr_gm', 'snr_wm'], None),
             (['snrd_csf', 'snrd_gm', 'snrd_wm'], None),
-            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'vox'),
             (['qi_1', 'qi_2'], None),
             (['inu_range', 'inu_med'], None),
             (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
             (['rpve_csf', 'rpve_gm', 'rpve_wm'], None),
             (['tpm_overlap_csf', 'tpm_overlap_gm', 'tpm_overlap_wm'], None),
-            (['summary_bg_mean', 'summary_bg_stdv', 'summary_bg_k',
-              'summary_bg_p05', 'summary_bg_p95'], None),
-            (['summary_csf_mean', 'summary_csf_stdv', 'summary_csf_k',
-              'summary_csf_p05', 'summary_csf_p95'], None),
-            (['summary_gm_mean', 'summary_gm_stdv', 'summary_gm_k',
-              'summary_gm_p05', 'summary_gm_p95'], None),
-            (['summary_wm_mean', 'summary_wm_stdv', 'summary_wm_k',
-              'summary_wm_p05', 'summary_wm_p95'], None)
+            (['summary_bg_mean', 'summary_bg_median', 'summary_bg_stdv', 'summary_bg_mad',
+              'summary_bg_k', 'summary_bg_p05', 'summary_bg_p95'], None),
+            (['summary_csf_mean', 'summary_csf_median', 'summary_csf_stdv', 'summary_csf_mad',
+              'summary_csf_k', 'summary_csf_p05', 'summary_csf_p95'], None),
+            (['summary_gm_mean', 'summary_gm_median', 'summary_gm_stdv', 'summary_gm_mad',
+              'summary_gm_k', 'summary_gm_p05', 'summary_gm_p95'], None),
+            (['summary_wm_mean', 'summary_wm_median', 'summary_wm_stdv', 'summary_wm_mad',
+              'summary_wm_k', 'summary_wm_p05', 'summary_wm_p95'], None)
         ],
         'T2w': [
             (['cjv'], None),
@@ -97,6 +97,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['fd_num'], '# timepoints'),
             (['fd_perc'], '% timepoints'),
             (['spikes_num'], '# slices'),
+            (['dummy_trs'], '# TRs'),
             (['gcor'], None),
             (['tsnr'], None),
             (['aor'], None),

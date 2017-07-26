@@ -12,18 +12,20 @@ import re
 import simplejson as json
 from io import open
 from builtins import bytes, str
-from nipype import logging
-from nipype.interfaces.base import (traits, isdefined, TraitedSpec, DynamicTraitedSpec,
-                                    BaseInterfaceInputSpec, File, Undefined, Str)
-from nipype.utils.filemanip import hash_infile
+from niworkflows.nipype import logging
+from niworkflows.nipype.interfaces.base import (
+    traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
+    File, Undefined, Str)
 from niworkflows.interfaces.base import SimpleInterface
-from mriqc.utils.misc import BIDS_COMP, BIDS_EXPR
+from ..utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
+
 
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='the input nifti file')
     fields = traits.List(Str, desc='get only certain fields')
+
 
 class ReadSidecarJSONOutputSpec(TraitedSpec):
     subject_id = Str()
@@ -32,8 +34,8 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     acq_id = Str()
     rec_id = Str()
     run_id = Str()
-    md5sum = Str()
     out_dict = traits.Dict()
+
 
 class ReadSidecarJSON(SimpleInterface):
     """
@@ -48,7 +50,6 @@ class ReadSidecarJSON(SimpleInterface):
         output_keys = [key for key in list(self.output_spec().get().keys()) if key.endswith('_id')]
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
-        metadata['md5sum'] = hash_infile(self.inputs.in_file)
         for key in output_keys:
             id_value = outputs.get(key)
             if id_value is not None:
@@ -71,8 +72,8 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     acq_id = traits.Either(None, Str, usedefault=True)
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, Str, usedefault=True)
-    md5sum = Str()
-    save_extra = traits.Bool(True, usedefault=True, desc='save extra metadata')
+    metadata = traits.Dict()
+    provenance = traits.Dict()
 
     root = traits.Dict(desc='output root dictionary')
     out_dir = File(desc='the output directory')
@@ -91,6 +92,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
 
 class IQMFileSinkOutputSpec(TraitedSpec):
     out_file = File(desc='the output JSON file containing the IQMs')
+
 
 class IQMFileSink(SimpleInterface):
     input_spec = IQMFileSinkInputSpec
@@ -169,44 +171,36 @@ class IQMFileSink(SimpleInterface):
                     'Output "%s" is not a dictionary (value="%s"), '
                     'discarding output.', root_key, str(val))
 
+        # Fill in the "bids_meta" key
         id_dict = {}
         for comp in list(BIDS_COMP.keys()):
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
-
-        # Predict QA from IQMs and add to metadata
-        if self.inputs.modality == 'T1w':
-            from pkg_resources import resource_filename as pkgrf
-            import numpy as np
-            from mriqc.classifier.cv import CVHelper
-
-            cvhelper = CVHelper(load_clf=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
-                                n_jobs=1)
-
-            features = tuple([self._out_dict.get(key, None)
-                              for key in cvhelper.ftnames])
-            id_dict['mriqc_pred'] = int(cvhelper.predict(np.array([features]))[0])
-
         id_dict['modality'] = self.inputs.modality
 
-        if self.inputs.save_extra:
-            from mriqc import __version__ as version
-            id_dict['version'] = version
-            id_dict['software'] = 'mriqc'
+        if isdefined(self.inputs.metadata) and self.inputs.metadata:
+            id_dict.update(self.inputs.metadata)
 
+        if self._out_dict.get('bids_meta') is None:
+            self._out_dict['bids_meta'] = {}
+        self._out_dict['bids_meta'].update(id_dict)
 
-        if self._out_dict.get('metadata', None) is None:
-            self._out_dict['metadata'] = {}
+        # Fill in the "provenance" key
+        # Predict QA from IQMs and add to metadata
+        prov_dict = {}
+        if isdefined(self.inputs.provenance) and self.inputs.provenance:
+            prov_dict.update(self.inputs.provenance)
 
-        self._out_dict['metadata'].update(id_dict)
+        if self._out_dict.get('provenance') is None:
+            self._out_dict['provenance'] = {}
+        self._out_dict['provenance'].update(prov_dict)
 
         with open(out_file, 'w') as f:
             f.write(json.dumps(self._out_dict, sort_keys=True, indent=2,
                                ensure_ascii=False))
 
         return runtime
-
 
 
 def get_metadata_for_nifti(in_file):
@@ -264,6 +258,7 @@ def get_metadata_for_nifti(in_file):
                 merged_param_dict.update(param_dict)
 
     return merged_param_dict
+
 
 def _process_name(name, val):
     if '.' in name:

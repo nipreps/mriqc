@@ -14,9 +14,7 @@ import os
 import os.path as op
 from multiprocessing import cpu_count
 
-
-from mriqc import __version__, MRIQC_LOG
-from mriqc.utils.misc import check_folder
+from .. import __version__
 
 DEFAULT_MEM_GB = 8
 
@@ -24,7 +22,7 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from mriqc import DEFAULTS
+    from .. import DEFAULTS
 
     parser = ArgumentParser(description='MRIQC: MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -47,7 +45,7 @@ def get_parser():
                         choices=['participant', 'group'])
 
     # optional arguments
-    parser.add_argument('-v', '--version', action='version',
+    parser.add_argument('--version', action='version',
                         version='mriqc v{}'.format(__version__))
 
     # BIDS selectors
@@ -84,7 +82,19 @@ def get_parser():
                                 'to MRIQC\'s metrics repository.')
     g_outputs.add_argument('--email', action='store', default='', type=str,
                            help='Email address to include with quality metric submission.')
+    g_outputs.add_argument("-v", "--verbose", dest="verbose_count",
+                           action="count", default=0,
+                           help="increases log verbosity for each occurence, debug level is -vvv")
 
+    g_outputs.add_argument(
+        '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov/api/v1', type=str,
+        help='IP address where the MRIQC WebAPI is listening')
+    g_outputs.add_argument(
+        '--webapi-port', action='store', type=int,
+        help='port where the MRIQC WebAPI is listening')
+
+    g_outputs.add_argument('--upload-strict', action='store_true', default=False,
+                           help='upload will fail if if upload is strict')
     # General performance
     g_perfm = parser.add_argument_group('Options to handle performance')
     g_perfm.add_argument('--n_procs', '--nprocs', '--n_cpus', '--nprocs',
@@ -97,7 +107,6 @@ def get_parser():
         '-f', '--float32', action='store_true', default=DEFAULTS['float32'],
         help="Cast the input data to float32 if it's represented in higher precision "
              "(saves space and improves perfomance)")
-
 
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
@@ -116,7 +125,7 @@ def get_parser():
     # ANTs options
     g_ants = parser.add_argument_group('Specific settings for ANTs')
     g_ants.add_argument(
-        '--ants-nthreads', action='store', type=int, default=0,
+        '--ants-nthreads', action='store', type=int, default=1,
         help='number of threads that will be set in ANTs processes')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
@@ -142,13 +151,24 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from nipype import config as ncfg
-    from nipype.pipeline.engine import Workflow
-    from mriqc.utils.bids import collect_bids_data
-    from mriqc.workflows.core import build_workflow
+    from niworkflows.nipype import config as ncfg, logging as nlog
+    from niworkflows.nipype.pipeline.engine import Workflow
+
+    from .. import logging
+    from ..utils.bids import collect_bids_data
+    from ..workflows.core import build_workflow
+    from ..utils.misc import check_folder
 
     # Run parser
     opts = get_parser().parse_args()
+
+    # Retrieve logging level
+    log_level = int(max(3 - opts.verbose_count, 0) * 10)
+    if opts.verbose_count > 1:
+        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+
+    logging.getLogger().setLevel(log_level)
+    log = logging.getLogger('mriqc.cli')
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
@@ -170,15 +190,13 @@ def main():
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
-        'no_sub': opts.no_sub or opts.testing,
+        'no_sub': opts.no_sub,
         'email': opts.email,
         'fd_thres': opts.fd_thres,
+        'webapi_url': opts.webapi_url,
+        'webapi_port': opts.webapi_port,
+        'upload_strict': opts.upload_strict,
     }
-
-    if not settings['no_sub']:
-        MRIQC_LOG.warn('Anonymized quality metrics will be submitted'
-                       ' to MRIQC\'s metrics repository.'
-                       ' Use --no-sub to disable submission.')
 
     if opts.hmc_afni:
         settings['deoblique'] = opts.deoblique
@@ -218,6 +236,11 @@ def main():
         'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
     })
 
+    # Set nipype logging level
+    nlog.getLogger('workflow').setLevel(log_level)
+    nlog.getLogger('interface').setLevel(log_level)
+    nlog.getLogger('filemanip').setLevel(log_level)
+
     callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
@@ -243,10 +266,6 @@ def main():
             if opts.mem_gb:
                 plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
-    MRIQC_LOG.info(
-        'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
-        __version__, ', '.join(analysis_levels), opts.participant_label, settings)
-
     # Process data types
     modalities = opts.modalities
 
@@ -261,13 +280,18 @@ def main():
 
     # Set up participant level
     if 'participant' in analysis_levels:
+        log.info('Participant level started...')
+        log.info(
+            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
+
         workflow = Workflow(name='workflow_enumerator')
         workflow.base_dir = settings['work_dir']
 
         wf_list = []
         for mod in modalities:
             if not dataset[mod]:
-                MRIQC_LOG.warn('No %s scans were found in %s', mod, settings['bids_dir'])
+                log.warning('No %s scans were found in %s', mod, settings['bids_dir'])
                 continue
 
             wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
@@ -278,7 +302,7 @@ def main():
             if not opts.dry_run:
                 if plugin_settings['plugin'] == 'MultiProc' and opts.profile:
                     import logging
-                    from nipype.pipeline.plugins.callback_log import log_nodes_cb
+                    from niworkflows.nipype.pipeline.plugins.callback_log import log_nodes_cb
                     plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
                     callback_log_path = op.join(log_dir, 'run_stats.log')
                     logger = logging.getLogger('callback')
@@ -286,23 +310,47 @@ def main():
                     handler = logging.FileHandler(callback_log_path)
                     logger.addHandler(handler)
 
-                workflow.run(**plugin_settings)
+                # Warn about submitting measures BEFORE
                 if not settings['no_sub']:
-                    MRIQC_LOG.warn(
+                    log.warning(
+                        'Anonymized quality metrics will be submitted'
+                        ' to MRIQC\'s metrics repository.'
+                        ' Use --no-sub to disable submission.')
+
+                # run MRIQC
+                workflow.run(**plugin_settings)
+
+                # Warn about submitting measures AFTER
+                if not settings['no_sub']:
+                    log.warning(
                         'Anonymized quality metrics have beeen submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
+
                 if callback_log_path is not None:
-                    from nipype.utils.draw_gantt_chart import generate_gantt_chart
+                    from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
-            raise RuntimeError('Error reading BIDS directory (%s), or the dataset is not '
-                               'BIDS-compliant.' % settings['bids_dir'])
+            msg = """\
+Error reading BIDS directory ({}), or the dataset is not \
+BIDS-compliant."""
+            if opts.participant_label is not None:
+                msg = """\
+None of the supplied labels (--participant_label) matched with the \
+participants found in the BIDS directory ({})."""
+            raise RuntimeError(msg.format(settings['bids_dir']))
+
+        log.info('Participant level finished successfully.')
 
     # Set up group level
     if 'group' in analysis_levels:
-        from mriqc.reports import group_html
-        from mriqc.utils.misc import generate_csv, generate_pred
+        from ..reports import group_html
+        from ..utils.misc import generate_csv  # , generate_pred
+
+        log.info('Group level started...')
+        log.info(
+            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
+            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
 
         reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
         derivatives_dir = op.join(settings['output_dir'], 'derivatives')
@@ -314,27 +362,30 @@ def main():
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
-                MRIQC_LOG.warn(
+                log.warning(
                     'No IQM-JSON files were found for the %s data type in %s. The group-level '
                     'report was not generated.', mod, derivatives_dir)
                 continue
 
-            MRIQC_LOG.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
+            log.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
 
             # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             # if out_pred is not None:
-            #     MRIQC_LOG.info('Predicted QA CSV table for the %s data generated (%s)',
+            #     log.info('Predicted QA CSV table for the %s data generated (%s)',
             #                    mod, out_pred)
 
             out_html = op.join(reports_dir, mod + '_group.html')
             group_html(out_csv, mod,
                        csv_failed=op.join(settings['output_dir'], 'failed_' + mod + '.csv'),
                        out_file=out_html)
-            MRIQC_LOG.info('Group-%s report generated (%s)', mod, out_html)
+            log.info('Group-%s report generated (%s)', mod, out_html)
             n_group_reports += 1
 
         if n_group_reports == 0:
             raise Exception("No data found. No group level reports were generated.")
+
+        log.info('Group level finished successfully.')
+
 
 
 if __name__ == '__main__':

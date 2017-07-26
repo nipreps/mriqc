@@ -149,6 +149,7 @@ def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='js
         fname = op.join(out_path, fname)
     return op.abspath(fname + '.' + ext)
 
+
 def generate_pred(derivatives_dir, output_dir, mod):
     """
     Reads the metadata in the JIQM (json iqm) files and
@@ -169,7 +170,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
 
     for jsonfile in jsonfiles:
         with open(jsonfile, 'r') as jsondata:
-            data = json.load(jsondata).pop('metadata', None)
+            data = json.load(jsondata).pop('bids_meta', None)
 
         if data is None:
             continue
@@ -197,7 +198,6 @@ def generate_csv(derivatives_dir, output_dir, mod):
     """
     Generates a csv file from all json files in the derivatives directory
     """
-    errorlist = []
 
     # If some were found, generate the CSV file and group report
     out_csv = op.join(output_dir, mod + '.csv')
@@ -205,43 +205,43 @@ def generate_csv(derivatives_dir, output_dir, mod):
     if not jsonfiles:
         return None, out_csv
 
-    all_id_fields = []
     datalist = []
     comps = set(list(BIDS_COMP.keys()))
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
 
-        if (dfentry is not None and dfentry['metadata'].get(
-            'modality', 'unknown') == mod):
-            metadata = dfentry.pop('metadata')
+        if (dfentry is not None and dfentry['bids_meta'].get(
+                'modality', 'unknown') == mod):
+            metadata = dfentry.pop('bids_meta')
             id_fields = list(comps & set(list(metadata.keys())))
             for field in id_fields:
                 dfentry[field] = metadata[field]
+            dfentry.pop('provenance', None)
             datalist.append(dfentry)
-            all_id_fields += id_fields
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
 
-    all_id_fields = list(comps & set(cols))
+    # Generate bids_fields with order (#516)
+    bids_fields = [field for field in list(BIDS_COMP.keys()) if field in cols]
 
     # Sort the dataframe, with failsafe if pandas version is too old
     try:
-        dataframe = dataframe.sort_values(by=all_id_fields)
+        dataframe = dataframe.sort_values(by=bids_fields)
     except AttributeError:
         #pylint: disable=E1101
-        dataframe = dataframe.sort(columns=all_id_fields)
+        dataframe = dataframe.sort(columns=bids_fields)
 
     # Drop duplicates
     try:
         #pylint: disable=E1101
-        dataframe.drop_duplicates(all_id_fields, keep='last', inplace=True)
+        dataframe.drop_duplicates(bids_fields, keep='last', inplace=True)
     except TypeError:
         #pylint: disable=E1101
         dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                   inplace=True)
 
-    ordercols = all_id_fields + sorted(list(set(cols) - set(all_id_fields)))
+    ordercols = bids_fields + sorted(list(set(cols) - set(bids_fields)))
     dataframe[ordercols].to_csv(out_csv, index=False)
     return dataframe, out_csv
 

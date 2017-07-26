@@ -16,12 +16,6 @@ for open-source software distribution.
 .. image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
   :target: https://www.codacy.com/app/code_3/mriqc
 
-.. image:: https://coveralls.io/repos/github/poldracklab/mriqc/badge.svg?branch=master
-  :target: https://coveralls.io/github/poldracklab/mriqc?branch=master
-
-.. image:: https://codecov.io/gh/poldracklab/mriqc/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/poldracklab/mriqc
-
 .. image:: https://img.shields.io/pypi/v/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: Latest Version
@@ -37,6 +31,12 @@ for open-source software distribution.
 .. image:: https://img.shields.io/pypi/l/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: License
+
+
+.. tip::
+     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
+     installation!
+
 
 
 About
@@ -72,6 +72,22 @@ software engineering principles:
 MRIQC is part of the MRI image analysis and reproducibility platform offered by
 the CRN. This pipeline derives from, and is heavily influenced by, the
 `PCP Quality Assessment Protocol <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`_.
+
+Citation
+--------
+
+When using MRIQC, please include the following citation:
+
+.. topic:: **Reference**
+
+    Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
+    *MRIQC: Advancing the Automatic Prediction of Image Quality in MRI from Unseen Sites*;
+    bioRxiv 111294; doi:`10.1101/111294 <https://doi.org/10.1101/111294>`_.
+
+An additional resource to check out is our recent poster at OHBM:
+
+    Esteban O, Gorgolewski K and Poldrack R. MRIQC: automatic prediction of quality and visual reporting of MRI scans. F1000Research 2017, 6:1128 (poster). doi: `10.7490/f1000research.1114419.1
+    <https://doi.org/10.7490/f1000research.1114419.1>`_.
 
 
 Support and communication

@@ -2,118 +2,228 @@
 # -*- coding: utf-8 -*-
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2017-02-23 11:27:30
-
 """
 mriqc_fit command line interface definition
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from sys import version_info
+from os.path import isfile, abspath
 import warnings
+from pkg_resources import resource_filename as pkgrf
+
+import matplotlib
+matplotlib.use('Agg')
+
 
 PY3 = version_info[0] > 2
 
-from sklearn.metrics.base import UndefinedMetricWarning
+try:
+    from sklearn.metrics.base import UndefinedMetricWarning
+except ImportError:
+    from sklearn.exceptions import UndefinedMetricWarning
+
 warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
+
+
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    from mriqc import logging
-    LOG = logging.getLogger('mriqc.warnings')
+    from .. import logging
+    log = logging.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
-        LOG.debug('captured warning (%s): %s', category, message)
+        log.debug('captured warning (%s): %s', category, message)
         cached_warnings.append(category)
 
 
-
-def main():
-    """Entry point"""
-    import yaml
-    from io import open
+def get_parser():
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from pkg_resources import resource_filename as pkgrf
-    from mriqc.classifier.cv import CVHelper
-    from mriqc import logging, LOG_FORMAT
-
-    warnings.showwarning = warn_redirect
-
     parser = ArgumentParser(description='MRIQC model selection and held-out evaluation',
                             formatter_class=RawTextHelpFormatter)
 
     g_clf = parser.add_mutually_exclusive_group()
-    g_clf.add_argument('--train', nargs=2, help='training data tables, X and Y')
-    g_clf.add_argument('--load-classifier', nargs="?",
-                       default=pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz'),
-                       help='load pickled classifier in')
+    g_clf.add_argument('--train', nargs='*',
+                       help='training data tables, X and Y, leave empty for ABIDE.')
+    g_clf.add_argument('--load-classifier', nargs="?", type=str, default='',
+                       help='load a previously saved classifier')
 
-    parser.add_argument('--test-data', help='test data')
-    parser.add_argument('--test-labels', help='test labels')
-
+    parser.add_argument('--test', nargs='*',
+                        help='test data tables, X and Y, leave empty for DS030.')
     parser.add_argument('-X', '--evaluation-data', help='classify this CSV table of IQMs')
 
-    g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-P', '--parameters', action='store',
-                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
+    parser.add_argument('--train-balanced-leaveout', action='store_true', default=False,
+                        help='leave out a balanced, random, sample of training examples')
+    parser.add_argument('--multiclass', '--ms', action='store_true', default=False,
+                        help='do not binarize labels')
 
-    g_input.add_argument('--save-classifier', action='store', help='write pickled classifier out')
+    g_input = parser.add_argument_group('Options')
+    g_input.add_argument('-P', '--parameters', action='store')
+    g_input.add_argument('-M', '--model', action='store', default='rfc',
+                         choices=['rfc', 'xgb', 'svc_lin', 'svc_rbf'],
+                         help='model under test')
+    g_input.add_argument('--nested_cv', action='store_true', default=False,
+                         help='run nested cross-validation before held-out')
+    g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
+                         help='run nested cross-validation before held-out, '
+                              'using 10-fold split in the outer loop')
+    g_input.add_argument('--perm', action='store', default=0, type=int,
+                         help='permutation test: number of permutations')
 
-    g_input.add_argument('--log-file', action='store', help='write log to this file')
-    g_input.add_argument('--log-level', action='store', default='INFO',
-                         choices=['CRITICAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'])
+    g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
+    g_input.add_argument('--cv', action='store', default='loso',
+                         choices=['kfold', 'loso', 'balanced-kfold', 'batch'])
+    g_input.add_argument('--debug', action='store_true', default=False)
+
+    g_input.add_argument('--log-file', nargs="?", action='store', default='',
+                         help='write log to this file, leave empty for a default log name')
+
+    g_input.add_argument("-v", "--verbose", dest="verbose_count",
+                         action="count", default=0,
+                         help="increases log verbosity for each occurence.")
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
-    g_input.add_argument('-o', '--output', action='store', default='predicted_qa.csv',
-                         help='file containing the labels assigned by the classifier')
+    g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
+                         help='decision threshold of the classifier')
+
+    return parser
 
 
-    opts = parser.parse_args()
+def main():
+    """Entry point"""
+    import re
+    from datetime import datetime
+    from .. import logging, LOG_FORMAT, __version__
+    from ..classifier.helper import CVHelper
 
-    if opts.log_file is not None:
-        filelogger = logging.getLogger()
-        fhl = logging.FileHandler(opts.log_file)
+    warnings.showwarning = warn_redirect
+
+    opts = get_parser().parse_args()
+
+    log_level = int(max(3 - opts.verbose_count, 0) * 10)
+    if opts.verbose_count > 1:
+        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+
+    log = logging.getLogger('mriqc.classifier')
+    log.setLevel(log_level)
+
+    base_name = 'mclf_run-%s_mod-%s_ver-%s_class-%d_cv-%s' % (
+        datetime.now().strftime('%Y%m%d-%H%M%S'), opts.model,
+        re.sub(r'[\+_@]', '.', __version__),
+        3 if opts.multiclass else 2, opts.cv,
+    )
+
+    if opts.nested_cv_kfold:
+        base_name += '_ncv-kfold'
+    elif opts.nested_cv:
+        base_name += '_ncv-loso'
+
+
+    if opts.log_file is None or len(opts.log_file) > 0:
+        log_file = opts.log_file if opts.log_file else base_name + '.log'
+        fhl = logging.FileHandler(log_file)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
-        filelogger.addHandler(fhl)
-        filelogger.setLevel(opts.log_level)
+        fhl.setLevel(log_level)
+        log.addHandler(fhl)
 
-    parameters = None
-    if opts.parameters is not None:
-        with open(opts.parameters) as paramfile:
-            parameters = yaml.load(paramfile)
+    clf_loaded = False
 
-    train = [False] if opts.train is None else [val is not None for val in opts.train]
-
-    if all(train):
+    if opts.train is not None:
         # Initialize model selection helper
-        cvhelper = CVHelper(X=opts.train[0], Y=opts.train[1], n_jobs=opts.njobs,
-                            param=parameters)
+        train_path = _parse_set(opts.train, default='abide')
+        cvhelper = CVHelper(
+            X=train_path[0],
+            Y=train_path[1],
+            n_jobs=opts.njobs,
+            scorer=opts.scorer,
+            b_leaveout=opts.train_balanced_leaveout,
+            multiclass=opts.multiclass,
+            verbosity=opts.verbose_count,
+            split=opts.cv,
+            model=opts.model,
+            debug=opts.debug,
+            basename=base_name,
+            nested_cv=opts.nested_cv,
+            nested_cv_kfold=opts.nested_cv_kfold,
+            param_file=opts.parameters,
+            permutation_test=opts.perm,
+        )
+
+        if opts.cv == 'batch' or opts.perm:
+            test_path = _parse_set(opts.test, default='ds030')
+            # Do not set x_test unless we are going to run batch exp.
+            cvhelper.setXtest(test_path[0], test_path[1])
 
         # Perform model selection before setting held-out data, for hygene
         cvhelper.fit()
 
         # Pickle if required
-        if opts.save_classifier:
-            cvhelper.save(opts.save_classifier)
-    elif any(train):
-        raise RuntimeError('Both --train-data and --train-labels must be set')
+        cvhelper.save(suffix='data-train_estimator')
 
+    # If no training set is given, need a classifier
     else:
-        cvhelper = CVHelper(load_clf=opts.load_classifier, n_jobs=opts.njobs,
-                            rate_label='rate')
+        load_classifier = opts.load_classifier
+        if load_classifier is None:
+            load_classifier = pkgrf(
+                'mriqc',
+                'data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-'
+                'loso_data-all_estimator.pklz')
 
-    if opts.test_data and opts.test_labels:
+        if not isfile(load_classifier):
+            msg = 'was not provided'
+            if load_classifier != '':
+                msg = '("%s") was not found' % load_classifier
+            raise RuntimeError(
+                'No training samples were given, and the --load-classifier '
+                'option %s.' % msg)
+
+        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
+                            rate_label=['rater_1'], basename=base_name)
+        clf_loaded = True
+
+    test_path = _parse_set(opts.test, default='ds030')
+    if test_path and opts.cv != 'batch':
         # Set held-out data
-        cvhelper.setXtest(opts.test_data, opts.test_labels)
+        cvhelper.setXtest(test_path[0], test_path[1])
         # Evaluate
-        print('roc_auc=%f, accuracy=%f' % (cvhelper.evaluate(scoring='roc_auc'),
-                                           cvhelper.evaluate()))
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, 'accuracy'],
+                          save_pred=True)
+
+        # Pickle if required
+        if not clf_loaded:
+            cvhelper.fit_full()
+            cvhelper.save(suffix='data-all_estimator')
 
     if opts.evaluation_data:
-        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output)
+        cvhelper.predict_dataset(opts.evaluation_data, save_pred=True,
+                                 thres=opts.threshold)
+
+    log.info('Results saved as %s', abspath(cvhelper._base_name + '*'))
+
+
+def _parse_set(arg, default):
+    if arg is not None and len(arg) == 0:
+        return [pkgrf('mriqc', 'data/csv/%s' % name) for name in (
+            'x_%s.csv' % default,
+            'y_%s.csv' % default)]
+
+    if arg is not None and len(arg) not in (0, 2):
+        raise RuntimeError('Wrong number of parameters.')
+
+    if arg is None:
+        return None
+
+    if len(arg) == 2:
+        train_exists = [isfile(fname) for fname in arg]
+        if len(train_exists) > 0 and not all(train_exists):
+            errors = ['file "%s" not found' % fname
+                      for fexists, fname in zip(train_exists, arg)
+                      if not fexists]
+            raise RuntimeError('Errors (%d) loading training set: %s.' % (
+                len(errors), ', '.join(errors)))
+    return arg
 
 
 if __name__ == '__main__':

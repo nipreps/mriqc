@@ -68,6 +68,10 @@ function makeDistroChart(settings) {
         iqmName = iqmName.substr(0, iqmName.lastIndexOf('_'))
     }
     chart.settings.axisLabels.yAxis = iqmName.toUpperCase()
+    if (iqmName.toLowerCase().startsWith('fd') || iqmName.toLowerCase().startsWith('spikes')) {
+        chart.settings.constrainExtremes = true
+    }
+
     units = chart.data[0][chart.settings.unitsName]
     if (units) {
         chart.settings.axisLabels.yAxis += ' (' + units + ')'
@@ -408,7 +412,13 @@ function makeDistroChart(settings) {
             .style("font-size", "16px")
             .append("a")
             .attr("xlink:href", function(d) {
-                return "http://mriqc.readthedocs.io/en/latest/measures.html"
+                label = chart.yAxisLable.toLowerCase()
+                charidx = label.indexOf(' ')
+                if (charidx > 1) { label = label.substr(0, charidx); }
+                charidx = label.indexOf('_')
+                if (charidx > 1) { label = label.substr(0, charidx); }
+
+                return "http://mriqc.readthedocs.io/en/latest/iqms/" + chart.settings.modality.toLowerCase() + ".html#iqms-" + label
             })
             .text(chart.yAxisLable)
             .on("mouseover", function () {
