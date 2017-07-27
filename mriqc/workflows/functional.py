@@ -440,7 +440,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Verbose-reporting goes here
     from ..interfaces.viz import PlotContours
-    from ..viz.utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,

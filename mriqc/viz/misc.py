@@ -19,6 +19,34 @@ from ..classifier.data import read_dataset
 from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
 
+def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
+    fig, ax = plt.subplots()
+
+    _ = ax.plot(x_grid, ref_pdf, linewidth=2, alpha=0.5, label='background', color='dodgerblue')
+
+    refmax = np.percentile(ref_data, 99.95)
+    x_max = x_grid[-1]
+
+    _ = ax.hist(ref_data, 40 * max(int(refmax / x_max), 1),
+                fc='dodgerblue', histtype='stepfilled',
+                alpha=0.2, normed=True)
+    fit_pdf[fit_pdf > 1.0] = np.nan
+    _ = ax.plot(x_grid, fit_pdf, linewidth=2, alpha=0.5, label='chi2', color='darkorange')
+
+    ylims = ax.get_ylim()
+    _ = ax.axvline(x_grid[-cutoff_idx], ymax=ref_pdf[-cutoff_idx] / ylims[1], color='dodgerblue')
+    plt.xlabel('Intensity within "hat" mask')
+    plt.ylabel('Frequency')
+    ax.set_xlim([0, x_max])
+    plt.legend()
+
+
+    if out_file is None:
+        out_file = op.abspath('qi2_plot.svg')
+
+    fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
+    return out_file
+
 def plot_batches(fulldata, cols=None, out_file=None, site_labels='left'):
     fulldata = fulldata.sort_values(by=['database', 'site']).copy()
     sites = fulldata.site.values.ravel().tolist()
