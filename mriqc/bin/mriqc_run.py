@@ -127,6 +127,9 @@ def get_parser():
     g_ants.add_argument(
         '--ants-nthreads', action='store', type=int, default=1,
         help='number of threads that will be set in ANTs processes')
+    g_ants.add_argument(
+        '--ants-float', action='store_true', default=False,
+        help='use float number precision on ANTs computations')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
 
@@ -185,6 +188,7 @@ def main():
         'fft_spikes_detector': opts.fft_spikes_detector,
         'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
+        'ants_float': opts.ants_float,
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
