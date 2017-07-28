@@ -32,12 +32,12 @@ DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \
-                       -v --verbose-reports --profile \
+                       -v --verbose-reports --profile --n_procs 2 --ants-nthreads 2 \
                        --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict"
 
 case $CIRCLE_NODE_INDEX in
     0)
-        ${DOCKER_RUN} -m T1w --n_procs 2
+        ${DOCKER_RUN} -m T1w
         ;;
     1)
         # Run tests in bold build which is shorter
@@ -46,7 +46,7 @@ case $CIRCLE_NODE_INDEX in
                    --ignore=src/ \
                    --junitxml=/scratch/tests.xml \
                    /root/src/mriqc && \
-        ${DOCKER_RUN} -m bold --testing --n_procs 2 --ica
+        ${DOCKER_RUN} -m bold --testing --ica
         exit $(( $? + $exit_docs ))
         ;;
 esac
