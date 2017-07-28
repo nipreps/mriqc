@@ -73,7 +73,8 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev'
+    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev',
+    'https://github.com/oesteban/niworkflows.git@df08f0347b902022fc569cb19965092f588dabf5#egg=niworkflows-0.1.5-dev',
 ]
 
 TESTS_REQUIRES = [
