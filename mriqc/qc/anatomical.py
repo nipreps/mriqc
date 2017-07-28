@@ -422,9 +422,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
     """
 
     from sklearn.neighbors import KernelDensity
-    import matplotlib.pyplot as plt
     from scipy.stats import chi2
-    import pomegranate as pg
     from mriqc.viz.misc import plot_qi2
 
     # S. Ogawa was born
@@ -447,7 +445,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
     x_grid = np.linspace(0.0, np.percentile(data, 99), 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(bandwidth=0.03*np.percentile(data, 98),
+    kde_skl = KernelDensity(bandwidth=0.05*np.percentile(data, 98),
                             kernel='gaussian').fit(modelx[:, np.newaxis])
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
