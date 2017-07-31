@@ -103,5 +103,4 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
     for mod in modalities:
         imaging_data[mod] = [x.filename for x in layout.get(**queries[mod])]
 
-    print(imaging_data)
     return imaging_data
