@@ -6,23 +6,28 @@
 Welcome to mriqc's documentation!
 =================================
 
+
 .. include:: ../../README.rst
    :start-line: 3
-   :end-line: 39
+   :end-line: 40
+
+
+.. image :: _static/OHBM2017-poster.png
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    about
    install
    running
-   measures
    docker
+   measures
    reports
    workflows
+   classifier
 
 
 Indices and tables

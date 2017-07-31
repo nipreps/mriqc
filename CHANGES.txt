@@ -1,7 +1,88 @@
-Next release
-============
+0.9.7
+=====
 
-* [ENH] Updated fs2gif script (#465)
+  * [ENH] Clip outliers in FD and SPIKES group plots (#593)
+  * [ENH] Second revision of the classifier (#555):
+    * Set matplotlib plugin to `agg` in docker image
+    * Migrate scalings to sklearn pipelining system
+    * Add Satra's feature selection for RFC (with thanks to S. Ghosh for his suggestion)
+    * Make model selection compatible with sklearn `Pipeline`
+    * Multiclass classification
+    * Add feature selection filter based on Sites prediction (requires pinning to development sklearn-0.19)
+    * Add `RobustLeavePGroupsOut`, replace `RobustGridSearchCV` with the standard `GridSearchCV` of sklearn.
+    * Choice between `RepeatedStratifiedKFold` and `RobustLeavePGroupsOut` in `mriqc_clf`
+    * Write cross-validation results to an `.npz` file.
+  * [ENH] First revision of the classifier (#553):
+    * Add the possibility of changing the scorer function.
+    * Unifize labels for raters in data tables (to `rater_1`)
+    * Add the possibility of setting a custom decision threshold
+    * Write the probabilities in the prediction file
+    * Revised `mriqc_clf` processing flow
+    * Revised labels file for ds030.
+    * Add IQMs for ABIDE and DS030 calculated with MRIQC 0.9.6.
+  * ANNOUNCEMENT: Dropped support for Python<=3.4
+  * WARNING (#596): 
+    We have changed the default number of threads for ANTs. Using parallelism with ANTs
+    causes numerical instability on the calculated measures. The most sensitive metrics to this
+    problem are the kurtosis calculations on the intensities of regions and qi_2.
+
+0.9.6
+=====
+
+  * [ENH] Finished setting up `MRIQC Web API <https://mriqc.nimh.nih.gov>`_
+  * [ENH] Better error message when --participant_label is set (#542)
+  * [FIX] Allow --load-classifier option to be empty in mriqc_clf (#544)
+  * [FIX] Borked bias estimation derived from Conform (#541)
+  * [ENH] Test against web API 0.3.2 (#540)
+  * [ENH] Change the default Web API address (#539)
+  * [ENH] MRIQCWebAPI: hash fields that may have PI (#538)
+  * [ENH] Added token authorization to MRIQCWebAPI client (#535)
+  * [FIX] Do not mask and antsAffineInitializer twice (#534)
+  * [FIX] Datasets where air (hat) mask is empty (#533)
+  * [ENH] Integration testing for MRIQCWebAPI (#520)
+  * [ENH] Use AFNI to calculate gcor (#531)
+  * [ENH] Refactor derivatives (#530)
+  * [ENH] New bold-IQM: dummy_trs (non-stady state volumes) (#524)
+  * [FIX] Order of BIDS components in IQMs CSV table (#525)
+  * [ENH] Improved logging of mriqc_run (#526)
+
+0.9.5
+=====
+
+  * [ENH] Refactored structural metrics calculation (#513)
+  * [ENH] Calculate rotation mask (#515)
+  * [ENH] Intensity harmonization in the anatomical workflow (#510)
+  * [ENH] Set N4BiasFieldCorrection number of threads (#506)
+  * [ENH] Convert FWHM in pixel units (#503)
+  * [ENH] Add MRIQC client for feature crowdsourcing (#464)
+  * [DOC] Fix functional feature labels in documentation (docs_only) (#507)
+  * [FIX] New implementation for the rPVE feature (normalization, left-tail values) (#505)
+  * [ENH] Parse BIDS selectors (run, task, etc.), improve CLI (#504)
+
+
+0.9.4
+=====
+
+  * ANNOUNCEMENT: Dropped Python 2 support
+  * [ENH] Use versioneer to handle versions (#500)
+  * [ENH] Speed up spatial normalization (#495)
+  * [ENH] Resampling of hat mask and TPMs with linear interp (#498)
+  * [TST] Build documentation in CircleCI (#484)
+  * [ENH] Use full-resolution T1w images from ABIDE (#486)
+  * [TST] Parallelize tests (#493)
+  * [TST] Binding /etc/localtime stopped working in docker 1.9.1 (#492)
+  * [TST] Downgrade docker to 1.9.1 in circle (build_only) (#491)
+  * [TST] Check for changes in intermediate nifti files (#485)
+  * [FIX] Erroneous flag --n_proc in CircleCI (#490)
+  * [ENH] Add build_only tag to circle builds (#488)
+  * [ENH] Update Dockerfile (#482)
+  * [FIX] Ignore --profile flag with Linear plugin (#483)
+  * [DOC] Deep revision of the documentation (#479)
+  * [ENH] Minor improvements: SpatialNormalization and segmentation (#472)
+  * [ENH] Fixed typo for neurodebian install via apt-get (#478)
+  * [ENH] Updating fs2gif script (#465)
+  * [ENH] RF: Use niworkflows.interface.SimpleInterface (#468)
+  * [ENH] Add reproducibility of metrics tracking (#466)
 
 Release 0.9.3
 =============

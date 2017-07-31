@@ -1,4 +1,4 @@
-subject_id,site,check-1,check-2,check-3,comments,average,completed,rate
+subject_id,site,check-1,check-2,check-3,comments,average,completed,rater_1
 sub-10150,UCLA,1.0,1.0,0.0,,0.666666666667,,ok
 sub-10159,UCLA,-1.0,-1.0,-1.0,smoothlowqualityartifacterror,-1.0,,exclude
 sub-10171,UCLA,-1.0,0.0,0.0,lowquality,-0.333333333333,,maybe

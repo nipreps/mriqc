@@ -11,14 +11,13 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import os.path as op
-import nibabel as nb
 import numpy as np
-from nipype.interfaces.base import (traits, TraitedSpec, File,
-                                    BaseInterfaceInputSpec, isdefined)
+from niworkflows.nipype.interfaces.base import (traits, TraitedSpec, File,
+                                                BaseInterfaceInputSpec, isdefined)
 from niworkflows.interfaces.base import SimpleInterface
 from io import open # pylint: disable=W0622
-from mriqc.utils.misc import split_ext
-from mriqc.viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
+from ..utils.misc import split_ext
+from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):

@@ -25,6 +25,13 @@ Preliminaries
     (`see this issue <https://github.com/poldracklab/mriqc/issues/388#issuecomment-281208441>`_).
 
 
+.. warning ::
+
+    On Windows installations, before using the ``-v`` switch to mount volumes into
+    the container, it is necessary to `enable shared drives
+    <https://docs.docker.com/docker-for-windows/#shared-drives>`_.
+
+
 
 .. _docker_run_mriqc:
 
@@ -63,6 +70,14 @@ Running mriqc
    If the argument :code:`--participant_label` is not provided, then all
    subjects will be processed and the group level analysis will
    automatically be executed without need of running the command in item 3.
+
+
+.. warning::
+
+    For security reasons, we recommend to run the docker command with the options
+    ``--read-only --tmpfs /run --tmpfs /tmp``. This will run the docker image in
+    read-only mode, and map the temporal folders ``/run`` and ``/tmp`` to the temporal
+    folder of the host.
 
 
 
