@@ -62,8 +62,8 @@ def main():
     g_input.add_argument('-m', '--modalities', action='store', nargs='*',
                          choices=['T1w', 'bold', 'T2w'],
                          default=['T1w', 'bold', 'T2w'])
-    g_input.add_argument('-s', '--session-id', action='store')
-    g_input.add_argument('-r', '--run-id', action='store')
+    g_input.add_argument('-s', '--session-id', action='store', nargs='*')
+    g_input.add_argument('-r', '--run-id', action='store', nargs='*')
     g_input.add_argument('--nthreads', action='store', type=int,
                          help='number of threads')
     g_input.add_argument('--n_procs', action='store', default=0,
@@ -219,14 +219,19 @@ def main():
                 plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
     MRIQC_LOG.info(
-        'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
-        __version__, ', '.join(analysis_levels), opts.participant_label, settings)
+        'Running MRIQC: {} (analysis_levels=[{}], participant_label={}, session-id={}, run-id={}, modality={})\n\t'
+        'Settings={}'.format(__version__, ', '.join(analysis_levels), opts.participant_label, opts.session_id,
+                             opts.run_id, opts.modalities, settings)
+    )
 
     # Process data types
     modalities = opts.modalities
 
     dataset = collect_bids_data(settings['bids_dir'],
-                                participant_label=opts.participant_label)
+                                participant_label=opts.participant_label,
+                                session=opts.session_id,
+                                run=opts.run_id,
+                                modalities=modalities)
 
     # Set up participant level
     if 'participant' in analysis_levels:
@@ -235,10 +240,6 @@ def main():
 
         wf_list = []
         for mod in modalities:
-            if not dataset[mod]:
-                MRIQC_LOG.warn('No %s scans were found in %s', mod, settings['bids_dir'])
-                continue
-
             wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
 
         if wf_list:
