@@ -10,18 +10,22 @@ RUN apt-get update && \
                     curl \
                     bzip2 \
                     ca-certificates \
-                    xvfb \
+                    xvfb  \
+                    cython3 \
+                    build-essential \
+                    autoconf \
+                    libtool \
                     pkg-config && \
     curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key add /root/.neurodebian.gpg && \
-    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true) && \
-    apt-get update
+    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
 
 # Installing Neurodebian packages (FSL, AFNI, git)
-RUN apt-get install -y --no-install-recommends \
-                    fsl-core=5.0.9-1~nd+1+nd16.04+1 \
-                    fsl-mni152-templates=5.0.7-2 \
-                    afni=16.2.07~dfsg.1-2~nd16.04+1
+RUN apt-get update  && \
+    apt-get install -y --no-install-recommends \
+                    fsl-core \
+                    fsl-mni152-templates \
+                    afni
 
 ENV FSLDIR=/usr/share/fsl/5.0 \
     FSLOUTPUTTYPE=NIFTI_GZ \
@@ -73,8 +77,8 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
     sync && \
     conda install -c conda-forge -y \
                      numpy=1.12.0 \
+                     cython \
                      scipy=0.19.0 \
-                     scikit-learn=0.18.1 \
                      matplotlib=2.0.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
@@ -88,12 +92,18 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
     sync &&  \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y; sync && \
-    python -c "from matplotlib import font_manager"
+    python -c "from matplotlib import font_manager" && \
+    sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+# Unless otherwise specified each process should only use one thread - nipype
+# will handle parallelization
+ENV MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
 
 # Installing dev requirements (packages that are not in pypi)
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt && \
+RUN pip uninstall -y scikit-learn && \
+    pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
 # Precaching atlases after niworkflows is available
@@ -103,15 +113,19 @@ RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09
 
 # Installing MRIQC
 COPY . /root/src/mriqc
-RUN cd /root/src/mriqc && pip install .[classifier,duecredit,tests,doc] && \
+ARG VERSION
+RUN cd /root/src/mriqc && \
+    echo "${VERSION}" > mriqc/VERSION && \
+    pip install .[all] && \
     rm -rf ~/.cache/pip
+
+RUN ldconfig
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
 # Store metadata
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="MRIQC" \
       org.label-schema.description="MRIQC - Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain" \

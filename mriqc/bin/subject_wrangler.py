@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from textwrap import dedent
 
-from mriqc import __version__
+from .. import __version__
 
 def main():
     """Entry point"""

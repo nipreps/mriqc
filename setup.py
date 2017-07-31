@@ -30,12 +30,27 @@ def main():
         EXTRA_REQUIRES,
     )
 
+    pkg_data = {
+        'mriqc': ['data/*.yml',
+                  'data/*.tfm',
+                  'data/csv/*.csv',
+                  'data/mclf_*.pklz',
+                  'data/reports/*.rst',
+                  'data/reports/*.html',
+                  'data/reports/resources/*',
+                  'data/reports/embed_resources/*',
+                  'data/tests/*',
+                  'data/mni/*.nii.gz'
+        ]
+    }
+
     version = None
     cmdclass = {}
     root_dir = os.path.dirname(os.path.realpath(__file__))
     if os.path.isfile(os.path.join(root_dir, 'mriqc', 'VERSION')):
         with open(os.path.join(root_dir, 'mriqc', 'VERSION')) as vfile:
             version = vfile.readline().strip()
+        pkg_data['mriqc'].insert(0, 'VERSION')
 
     if version is None:
         import versioneer
@@ -60,27 +75,20 @@ def main():
         extras_require=EXTRA_REQUIRES,
         url=__url__,
         download_url=__download__,
-        entry_points={'console_scripts': ['mriqc=mriqc.bin.mriqc_run:main',
-                                          'mriqc_fit=mriqc.bin.mriqc_fit:main',
-                                          'mriqc_clf=mriqc.bin.mriqc_clf:main',
-                                          'mriqc_plot=mriqc.bin.mriqc_plot:main',
-                                          'abide2bids=mriqc.bin.abide2bids:main',
-                                          'fs2gif=mriqc.bin.fs2gif:main',
-                                          'dfcheck=mriqc.bin.dfcheck:main',
-                                          'nib-hash=mriqc.bin.nib_hash:main',
-                                          'participants=mriqc.bin.subject_wrangler:main']},
+        entry_points={'console_scripts': [
+            'mriqc=mriqc.bin.mriqc_run:main',
+            'mriqc_clf=mriqc.bin.mriqc_clf:main',
+            'mriqc_plot=mriqc.bin.mriqc_plot:main',
+            'abide2bids=mriqc.bin.abide2bids:main',
+            'fs2gif=mriqc.bin.fs2gif:main',
+            'dfcheck=mriqc.bin.dfcheck:main',
+            'nib-hash=mriqc.bin.nib_hash:main',
+            'participants=mriqc.bin.subject_wrangler:main',
+            'mriqc_labeler=mriqc.bin.labeler:main',
+            'mriqcwebapi_test=mriqc.bin.mriqcwebapi_test:main',
+        ]},
         packages=find_packages(exclude=['*.tests']),
-        package_data={'mriqc': ['data/*.yml',
-                                'data/*.tfm',
-                                'data/csv/*.csv',
-                                'data/rfc-nzs-abide-1.0.pklz',
-                                'data/rfc-nzs-full-1.0.pklz',
-                                'data/reports/*.rst',
-                                'data/reports/*.html',
-                                'data/reports/resources/*',
-                                'data/reports/embed_resources/*',
-                                'data/tests/*',
-                                'data/mni/*.nii.gz']},
+        package_data=pkg_data,
         zip_safe=False,
         cmdclass=cmdclass,
     )

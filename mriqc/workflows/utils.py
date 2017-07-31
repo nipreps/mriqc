@@ -7,16 +7,20 @@
 # @Date:   2016-01-05 17:15:12
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-21 18:41:13
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range
 
+def _tofloat(inlist):
+    if isinstance(inlist, (list, tuple)):
+        return [float(el) for el in inlist]
+    else:
+        return float(inlist)
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from nipype.interfaces.base import isdefined
+    from niworkflows.nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
@@ -83,6 +87,7 @@ def spectrum_mask(size):
     ftmask[ftmask < 1] = 0
     return ftmask
 
+
 def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
@@ -92,7 +97,6 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     from scipy.ndimage.filters import median_filter
     from scipy.ndimage import generate_binary_structure, binary_erosion
     from statsmodels.robust.scale import mad
-
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -154,6 +158,5 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 
     out_spikes = op.abspath(out_prefix + '_spikes.tsv')
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
-
 
     return len(spikes_list), out_spikes, out_fft

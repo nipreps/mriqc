@@ -4,65 +4,91 @@
 Running mriqc
 -------------
 
-"Bare-metal" installation (Python 2/3)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The software automatically finds the data the input folder if it follows the
-:abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
-A fast and easy way to check that your dataset fulfills the
-:abbr:`BIDS (brain imaging data structure)` standard is
-the `BIDS validator <http://incf.github.io/bids-validator/>`_.
-
-Since ``mriqc`` follows the [BIDSApps]_ specification, the execution is
-split in two consecutive steps: a first level (or ``participant``) followed
-by a second level (or ``group`` level).
-In the ``participant`` level, all individual images to be processed are run
-through the pipeline, and the :ref:`MRIQC measures <measures>` are extracted and
-the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
-In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
-first place are combined in a table and the group reports are generated.
-
-The first (``participant``) level is executed as follows: ::
-
-  mriqc bids-dataset/ out/ participant
+.. tip::
+     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
+     installation!
 
 
-Please note the keyword ``participant`` as fourth positional argument.
-It is possible to run ``mriqc`` on specific subjects using ::
+MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
+and therefore it inherently understands the :abbr:`BIDS (brain
+imaging data structure)` standard [BIDS]_ and follows the
+BIDS-Apps standard command line interface: ::
 
-  mriqc bids-dataset/ out/ participant --participant_label S001 S002
+  mriqc bids-root/ output-folder/ participant
 
-where ``S001`` and ``S002`` are subject identifiers, corresponding to the folders
-``sub-S001`` and ``sub-S002`` in the :abbr:`BIDS (brain imaging data structure)` tree.
-Here, it is also accepted to use the ``sub-`` prefix ::
 
-  mriqc bids-dataset/ out/ participant --participant_label sub-S001 sub-S002
-
+That simple command runs MRIQC on all the *T1w* and *BOLD* images found
+under the BIDS-compliant folder ``bids-root/``.
+The last ``participant`` keyword indicates that the first level analysis
+is run. (i.e. extracting the :abbr:`IQMs (image quality metrics)` from the
+images retrieved within ``bids-root/``).
+The second level (``group``) is automatically run if no particular subject
+is provided for analysis.
 
 .. note::
 
-   If the argument :code:`--participant_label` is not provided, then all
+   If the argument :code:`--participant-label` is not provided, then all
    subjects will be processed and the group level analysis will
    automatically be executed without need of running the command in item 3.
 
-After running the ``participant`` level with the :code:`--participant_label` argument,
-the ``group`` level will not be automatically triggered.
-To run the group level analysis: ::
 
-  mriqc bids-dataset/ out/ group
+To specify one particular subject, the ``--participant-label`` argument
+can be used: ::
+
+  mriqc bids-root/ output-folder/ participant --participant-label S01 S02 S03
+
+That command will run MRIQC only on the subjects indicated: only
+``bids-root/sub-S01``, ``bids-root/sub-S02``, and ``bids-root/sub-S03``
+will be processed.
+In this case, the ``group`` level will not be triggered automatically.
+We generate the ``group`` level results (the group level report and the
+features CSV table) with: ::
+
+  mriqc bids-root/ output-folder/ group
 
 
-Examples of the generated visual reports are found in `mriqc.org <http://mriqc.org>`_.
+Examples of the generated visual reports are found
+in :ref:`The MRIQC Reports <reports>`.
+
+.. warning::
+
+    MRIQC by default attempts to upload anonymized quality metrics to a publicly accessible
+    web server (`mriqc.nimh.nih.gov <http://mriqc.nimh.nih.gov/>`_). The uploaded data consists
+    only of calculated quality metrics and scanning parameters. It removes all personal
+    health information and participant identifiers. We try to collect this data to build normal
+    distributions for improved outlier detection, but if you do not wish to participate you can
+    disable the submission with the ``--no-sub`` flag.
+
+.. topic:: BIDS data organization
+
+    The software automatically finds the data the input folder if it
+    follows the :abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
+    A fast and easy way to check that your dataset fulfills the
+    :abbr:`BIDS (brain imaging data structure)` standard is
+    the `BIDS validator <http://incf.github.io/bids-validator/>`_.
 
 
-Depending on the input images, the resulting outputs will vary as described next.
+.. topic:: BIDS-App levels
+
+    In the ``participant`` level, all individual images to be processed are run
+    through the pipeline, and the :ref:`MRIQC measures <measures>` are extracted and
+    the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
+    In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
+    first place are combined in a table and the group reports are generated.
 
 
-Containerized versions
+
+Command line interface
 ^^^^^^^^^^^^^^^^^^^^^^
 
-If you have Docker installed, the quickest way to get ``mriqc`` to work
-is following :ref:`the running with docker guide <docker>`.
+.. argparse::
+   :ref: mriqc.bin.mriqc_run.get_parser
+   :prog: mriqc
+   :nodefault:
+   :nodefaultconst:
+
+
 
 Running MRIQC on HPC clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,7 +123,7 @@ on ds030 of OpenfMRI:
       <iframe src="_static/bold-1subject-8tasks.html" height="345px" width="100%"></iframe>
 
   Again, we used ``n_procs=10``. The software run for roughly about the same
-  time (47.11 min). Most of the run time, memory usage keeps around a 
+  time (47.11 min). Most of the run time, memory usage keeps around a
   maximum of 10GB. Since we saw a memory consumption of 1-2GB during the
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.

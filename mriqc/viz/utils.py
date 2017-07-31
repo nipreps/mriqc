@@ -14,19 +14,13 @@ import math
 import os.path as op
 import numpy as np
 import nibabel as nb
-import pandas as pd
 
-from nilearn.plotting import plot_anat, plot_roi
-
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
 
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
-from .svg import combine_svg, svg2str
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -76,6 +70,8 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
         ax.text(.98, .01, label, color=fgcolor, transform=ax.transAxes,
                 horizontalalignment='right', verticalalignment='bottom',
                 size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+
+    return ax
 
 
 def plot_slice_tern(dslice, prev=None, post=None,

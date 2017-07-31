@@ -10,15 +10,15 @@ import nibabel as nb
 from nilearn.signal import clean
 from builtins import zip
 
-from nipype.interfaces.base import (traits, TraitedSpec, File, isdefined,
-                                    BaseInterfaceInputSpec)
-from nipype import logging
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, File, isdefined, BaseInterfaceInputSpec)
+from niworkflows.nipype import logging
 
 from niworkflows.interfaces.base import SimpleInterface
 
-from mriqc.utils.misc import _flatten_dict
-from mriqc.qc.anatomical import snr, fber, efc, summary_stats
-from mriqc.qc.functional import (gsr, gcor)
+from ..utils.misc import _flatten_dict
+from ..qc.anatomical import snr, fber, efc, summary_stats
+from ..qc.functional import gsr
 IFLOGGER = logging.getLogger('interface')
 
 
@@ -32,6 +32,8 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_fd = File(exists=True, mandatory=True, desc='motion parameters for FD computation')
     fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
     in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
+    in_fwhm = traits.List(traits.Float, mandatory=True,
+                          desc='smoothness estimated with AFNI')
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -41,8 +43,8 @@ class FunctionalQCOutputSpec(TraitedSpec):
     gsr = traits.Dict
     tsnr = traits.Float
     dvars = traits.Dict
-    gcor = traits.Float
     fd = traits.Dict
+    fwhm = traits.Dict(desc='full width half-maximum measure')
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
@@ -75,12 +77,16 @@ class FunctionalQC(SimpleInterface):
         # Get EPI data (with mc done) and get it ready
         msknii = nb.load(self.inputs.in_mask)
         mskdata = np.nan_to_num(msknii.get_data())
-        mskdata = mskdata.astype(np.uint8)
         mskdata[mskdata < 0] = 0
         mskdata[mskdata > 0] = 1
+        mskdata = mskdata.astype(np.uint8)
+
+        # Summary stats
+        stats = summary_stats(epidata, mskdata, erode=True)
+        self._results['summary'] = stats
 
         # SNR
-        self._results['snr'] = float(snr(epidata, mskdata, fglabel=1))
+        self._results['snr'] = snr(stats['fg']['median'], stats['fg']['stdv'], stats['fg']['n'])
         # FBER
         self._results['fber'] = fber(epidata, mskdata)
         # EFC
@@ -95,8 +101,6 @@ class FunctionalQC(SimpleInterface):
         for axis in epidir:
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
-        # Summary stats
-        self._results['summary'] = summary_stats(epidata, mskdata)
 
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1,
@@ -110,9 +114,6 @@ class FunctionalQC(SimpleInterface):
         tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
         self._results['tsnr'] = float(np.median(tsnr_data[mskdata > 0]))
 
-        # GCOR
-        self._results['gcor'] = gcor(hmcdata, mskdata)
-
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
         num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
@@ -121,6 +122,12 @@ class FunctionalQC(SimpleInterface):
             'num': int(num_fd),
             'perc': float(num_fd * 100 / (len(fd_data) + 1))
         }
+
+        # FWHM
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.get_header().get_zooms()[:3])
+        self._results['fwhm'] = {
+            'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
+            'avg': float(np.average(fwhm))}
 
         # Image specs
         self._results['size'] = {'x': int(hmcdata.shape[0]),

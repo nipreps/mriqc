@@ -1,0 +1,45 @@
+std:
+- with_centering: [true, false]
+  with_scaling: [true, false]
+
+ft_noise:
+- disable: [true, false]
+
+ft_sites:
+- disable: [true, false]
+
+rfc:
+- n_estimators: [50, 1000]
+  max_features: ["sqrt", 0.33]
+  max_depth: [5, null]
+  min_samples_split: [2, 50]
+  min_samples_leaf: [1, 10]
+  class_weight: ["balanced"]
+  bootstrap: [true]
+  oob_score: [true]
+
+xgb:
+- silent: [0]
+  nthread: [1]
+  learning_rate: [0.3]
+  gamma: [0, 1.0]
+  max_depth: [6]
+  min_child_weight: [1]
+  max_delta_step: [0]
+  subsample: [1]
+  colsample_bytree: [1]
+  colsample_bylevel: [1]
+  reg_lambda: [1]
+  reg_alpha: [0]
+  scale_pos_weight: [1]
+
+svc_lin:
+- C: [0.01, 1000]
+  class_weight: ["balanced"]
+
+svc_rbf:
+- C: [0.01, 1000]
+  gamma: [0.0001, 0.01]
+  kernel: [rbf]
+  probability: [true]
+  class_weight: ["balanced"]

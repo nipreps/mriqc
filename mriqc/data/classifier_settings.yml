@@ -1,4 +1,26 @@
+preproc:
+  - std:
+      with_centering: [true, false]
+      with_scaling: [true, false]
+    ft_noise:
+      disable: [true]
+    ft_sites:
+      disable: [true]
+
+  - std:
+      with_centering: [true]
+      with_scaling: [true]
+    ft_noise:
+      disable: [false, true]
+    ft_sites:
+      disable: [false, true]
+
 rfc:
-- max_depth: [null, 5, 20, 40]
-  min_samples_split: [2, 3, 5, 10]
-  n_estimators: [100, 150, 200, 250]
+- n_estimators: [50, 150, 400, 1000]
+  max_features: ["sqrt"]
+  max_depth: [10, null]
+  min_samples_split: [2, 10]
+  min_samples_leaf: [1, 10]
+  class_weight: [null, "balanced"]
+  bootstrap: [true]
+  oob_score: [true]
