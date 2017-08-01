@@ -22,7 +22,7 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import DEFAULTS
+    from mriqc import DEFAULTS
 
     parser = ArgumentParser(description='MRIQC: MRI Quality Control',
                             formatter_class=RawTextHelpFormatter)
@@ -335,7 +335,7 @@ def main():
                     from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
-            msg = 'Error reading BIDS directory ({}), or the dataset is not' \
+            msg = 'Error reading BIDS directory ({}), or the dataset is not ' \
                   'BIDS-compliant.'
 
             if opts.participant_label or opts.session_id or opts.run_id or opts.task_id:

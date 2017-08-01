@@ -27,10 +27,6 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
     if queries is None:
         queries = deepcopy(DEFAULT_QUERIES)
 
-    # Find all subjects
-    participant_label = participant_label if participant_label else layout.unique('subject')
-
-    # Set subjects
     if participant_label:
         subjects = ["{}".format(sub) for sub in participant_label]
         subjects = [sub[4:] if sub.startswith('sub-') else sub
@@ -47,9 +43,6 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
         for key in queries.keys():
             queries[key]['subject'] = 'sub-\\(' + '|'.join(subjects) + '\\){1}'
 
-    # Find all sessions
-    session = session if session else layout.unique('session')
-
     if session:
         sessions = ["{}".format(ses) for ses in session]
         sessions = [ses[4:] if ses.startswith('ses-') else ses
@@ -65,9 +58,6 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
 
         for key in queries.keys():
             queries[key]['session'] = 'ses-\\(' + '|'.join(sessions) + '\\){1}'
-
-    # Find all runs
-    run = run if run else layout.unique('run')
 
     if run:
         runs = ["{}".format(run) for run in run]
@@ -89,14 +79,14 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
         for key in queries.keys():
             queries[key]['run'] = '\\(run-' + '|'.join(runs) + '\\){1}'
 
-    # Set modalities
-    if modalities is None:
-        modalities = deepcopy(DEFAULT_MODALITIES)
-
     if task:
         if isinstance(task, list) and len(task) == 1:
             task = task[0]
         queries['bold']['task'] = task
+
+    # Set modalities
+    if not modalities:
+        modalities = deepcopy(DEFAULT_MODALITIES)
 
     # Start querying
     imaging_data = {}
