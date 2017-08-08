@@ -37,12 +37,6 @@ for open-source software distribution.
     :alt: License
 
 
-.. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
-     installation!
-
-
-
 About
 -----
 
