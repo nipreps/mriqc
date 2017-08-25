@@ -6,6 +6,10 @@ MRIQC is developed by `the Poldrack Lab at Stanford University
 Neuroscience (CRN) <http://reproducibility.stanford.edu>`_, as well as
 for open-source software distribution.
 
+.. image:: http://bids.neuroimaging.io/openneuro_badge.svg
+  :target: https://openneuro.org
+  :alt: Available in OpenNeuro!
+
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
@@ -31,12 +35,6 @@ for open-source software distribution.
 .. image:: https://img.shields.io/pypi/l/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: License
-
-
-.. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
-     installation!
-
 
 
 About
