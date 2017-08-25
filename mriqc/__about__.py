@@ -54,6 +54,7 @@ REQUIRES = [
     'numpy>=1.12.0',
     'niworkflows>=0.1.4',
     'pybids>=0.1.0',
+    'scikit-learn>=0.19.0',
     'future',
     'scipy',
     'six',
@@ -72,9 +73,7 @@ REQUIRES = [
     'versioneer',
 ]
 
-LINKS_REQUIRES = [
-    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev'
-]
+LINKS_REQUIRES = []
 
 TESTS_REQUIRES = [
     'mock',
@@ -87,7 +86,7 @@ EXTRA_REQUIRES = {
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
-    'classifier': ['scikit-learn', 'xgboost']
+    'classifier': ['xgboost']
 }
 
 # Enable a handle to install all extra dependencies at once
