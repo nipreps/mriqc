@@ -75,6 +75,7 @@ REQUIRES = [
 
 LINKS_REQUIRES = []
 
+
 TESTS_REQUIRES = [
     'mock',
     'codecov',

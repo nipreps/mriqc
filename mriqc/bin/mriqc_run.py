@@ -53,7 +53,7 @@ def get_parser():
     g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='+',
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
-    g_bids.add_argument('--session-id', action='store', nargs='+',
+    g_bids.add_argument('--session-id', action='store', nargs='+', type=str,
                         help='select a specific session to be processed')
     g_bids.add_argument('--run-id', action='store', type=str, nargs='+',
                         help='select a specific run to be processed')
@@ -127,6 +127,9 @@ def get_parser():
     g_ants.add_argument(
         '--ants-nthreads', action='store', type=int, default=1,
         help='number of threads that will be set in ANTs processes')
+    g_ants.add_argument(
+        '--ants-float', action='store_true', default=False,
+        help='use float number precision on ANTs computations')
     g_ants.add_argument('--ants-settings', action='store',
                         help='path to JSON file with settings for ANTS')
 
@@ -185,6 +188,7 @@ def main():
         'fft_spikes_detector': opts.fft_spikes_detector,
         'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
+        'ants_float': opts.ants_float,
         'output_dir': op.abspath(opts.output_dir),
         'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
@@ -331,13 +335,24 @@ def main():
                     from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
                     generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
-            msg = """\
-Error reading BIDS directory ({}), or the dataset is not \
-BIDS-compliant."""
-            if opts.participant_label is not None:
-                msg = """\
-None of the supplied labels (--participant_label) matched with the \
-participants found in the BIDS directory ({})."""
+            msg = 'Error reading BIDS directory ({}), or the dataset is not ' \
+                  'BIDS-compliant.'
+
+            if opts.participant_label or opts.session_id or opts.run_id or opts.task_id:
+
+                msg = 'The combination of supplied labels'
+
+                if opts.participant_label is not None:
+                    msg += ' (--participant_label {})'.format(" ".join(opts.participant_label))
+                if opts.session_id is not None:
+                    msg += ' (--session-id {})'.format(" ".join(opts.session_id))
+                if opts.run_id is not None:
+                    msg += ' (--run-id {})'.format(" ".join(opts.run_id))
+                if opts.task_id is not None:
+                    msg += ' (--task-id {})'.format(" ".join(opts.task_id))
+
+                msg += ' did not result in matches within the BIDS directory ({}).'
+
             raise RuntimeError(msg.format(settings['bids_dir']))
 
         log.info('Participant level finished successfully.')
@@ -385,7 +400,6 @@ participants found in the BIDS directory ({})."""
             raise Exception("No data found. No group level reports were generated.")
 
         log.info('Group level finished successfully.')
-
 
 
 if __name__ == '__main__':

@@ -186,6 +186,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     norm = pe.Node(RobustMNINormalization(
         flavor='testing' if settings.get('testing', False) else 'fast',
         num_threads=settings.get('ants_nthreads'),
+        float=settings.get('ants_float', False),
         template=tpl_id,
         template_resolution=2,
         reference=mod[:2],
