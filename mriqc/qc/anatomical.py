@@ -196,9 +196,10 @@ from io import open  # pylint: disable=W0622
 from builtins import zip, range, str, bytes  # pylint: disable=W0622
 from six import string_types
 
-DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
+DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
+
 
 def snr(mu_fg, sigma_fg, n):
     r"""
@@ -213,15 +214,15 @@ def snr(mu_fg, sigma_fg, n):
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray fgmask: input foreground mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_fg: standard deviation of foreground.
+    :param int n: number of voxels in foreground mask.
 
-    :return: the computed SNR for the foreground segmentation
+    :return: the computed SNR
 
     """
     return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
+
 
 def snr_dietrich(mu_fg, sigma_air):
     r"""
@@ -237,11 +238,8 @@ def snr_dietrich(mu_fg, sigma_air):
         \text{SNR} = \frac{\mu_F}{\sqrt{\frac{2}{4-\pi}}\,\sigma_\text{air}}.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray smask: input foreground mask or segmentation
-    :param numpy.ndarray airmask: input background mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
 
     :return: the computed SNR for the foreground segmentation
 
@@ -252,6 +250,7 @@ def snr_dietrich(mu_fg, sigma_air):
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
+
 
 def cnr(mu_wm, mu_gm, sigma_air):
     r"""
@@ -267,8 +266,10 @@ def cnr(mu_wm, mu_gm, sigma_air):
     the air (background) mask.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
+
     :return: the computed CNR
 
     """
@@ -287,9 +288,11 @@ def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
 
         \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{|\mu_\text{WM} - \mu_\text{GM}|}.
 
-    :param numpy.ndarray img: the input data
-    :param numpy.ndarray wmmask: the white matter mask
-    :param numpy.ndarray gmmask: the gray matter mask
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_wm: standard deviation of signal within white-matter mask.
+    :param float sigma_gm: standard deviation of signal within gray-matter mask.
+
     :return: the computed CJV
 
 
@@ -309,7 +312,9 @@ def fber(img, headmask, rotmask=None):
 
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray headmask: a mask of the head (including skull, skin, etc.)
+    :param numpy.ndarray rotmask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
@@ -323,7 +328,6 @@ def fber(img, headmask, rotmask=None):
     if bg_mu < 1.0e-3:
         return 0
     return float(fg_mu / bg_mu)
-
 
 
 def efc(img, framemask=None):
@@ -348,6 +352,8 @@ def efc(img, framemask=None):
         \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
+    :param numpy.ndarray framemask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
