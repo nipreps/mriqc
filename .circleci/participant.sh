@@ -17,7 +17,7 @@ fi
 exit_docs=0
 if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
     mkdir -p ${SCRATCH}/docs
-    docker run -i --rm=false -v ${SCRATCH}:/scratch -w /root/src/mriqc/docs \
+    docker run -i --rm=false -v ${SCRATCH}:/scratch -w /usr/local/src/mriqc/docs \
                --entrypoint=sphinx-build poldracklab/mriqc:latest -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
                | tee ${SCRATCH}/docs/builddocs.log
     exit_docs=$( grep -qi "build succeeded." ${SCRATCH}/docs/builddocs.log; echo $? )
@@ -46,7 +46,7 @@ case $CIRCLE_NODE_INDEX in
                    --entrypoint="py.test"  ${DOCKER_IMAGE}:${DOCKER_TAG} \
                    --ignore=src/ \
                    --junitxml=/scratch/tests.xml \
-                   /root/src/mriqc && \
+                   /usr/local/src/mriqc && \
         ${DOCKER_RUN} -m bold --testing --ica
         exit $(( $? + $exit_docs ))
         ;;

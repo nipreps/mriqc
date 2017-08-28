@@ -101,9 +101,9 @@ ENV MKL_NUM_THREADS=1 \
     OMP_NUM_THREADS=1
 
 # Installing dev requirements (packages that are not in pypi)
+WORKDIR /usr/local/src/mriqc
 COPY requirements.txt requirements.txt
-RUN pip uninstall -y scikit-learn && \
-    pip install -r requirements.txt && \
+RUN pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
 # Precaching atlases after niworkflows is available
@@ -112,10 +112,9 @@ ENV CRN_SHARED_DATA /niworkflows_data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
 
 # Installing MRIQC
-COPY . /root/src/mriqc
+COPY . /usr/local/src/mriqc
 ARG VERSION
-RUN cd /root/src/mriqc && \
-    echo "${VERSION}" > mriqc/VERSION && \
+RUN echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
     rm -rf ~/.cache/pip
 
