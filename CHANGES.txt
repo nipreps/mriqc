@@ -1,8 +1,11 @@
 0.9.8
 =====
 
+With thanks to Jan Varada (@jvarada) for the session/run filtering.
+
   * [ENH] Report recall in cross-validation (requested by reviewer) (#633)
   * [ENH] Hotfixes to 0.9.7 (#635)
+  * [FIX] Implement filters for session, run and task of BIDS input (#612)
 
 0.9.7
 =====
