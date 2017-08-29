@@ -1,3 +1,9 @@
+0.9.8
+=====
+
+  * [ENH] Report recall in cross-validation (requested by reviewer) (#633)
+  * [ENH] Hotfixes to 0.9.7 (#635)
+
 0.9.7
 =====
 
