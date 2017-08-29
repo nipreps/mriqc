@@ -98,7 +98,6 @@ Users can get help using the `mriqc-users google group <https://groups.google.co
 All bugs, concerns and enhancement requests for this software can be submitted here:
 https://github.com/poldracklab/mriqc/issues.
 
-
 Authors
 -------
 
