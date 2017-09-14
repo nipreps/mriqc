@@ -25,7 +25,7 @@ function sendRating() {
             break;
         }
     }
-    var md5sum = "test_md5sum";
+    var md5sum = {{ provenance.md5sum }};
     var name = document.getElementById("ratingName").value;
     var comment = document.getElementById("ratingComment").value;
     var params = {'rating': rating, 'md5sum': md5sum, 'name': name, 'comment': comment};
