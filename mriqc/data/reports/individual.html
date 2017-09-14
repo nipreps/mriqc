@@ -6,6 +6,7 @@
 <meta name="generator" content="MRIQC" />
 <title>MRIQC: individual {{ modality }}
 report</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <style type="text/css">
 body { font-family: helvetica; }
 
@@ -147,9 +148,58 @@ report</h1>
 </div>
 {% endif %}
 
+{% if provenance %}
+<h2>Rate Image</h2>
+<div class="container">
+<form action="javascript:sendRating()">
+    <div class="form-group">
+        <input id="ratingField" type="hidden" required>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating0" value="0" required> Garbage</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating1" value="1"> Exclude</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating2" value="2"> Usable</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating3" value="3"> Good</label></div>
+        Name: <br><input id="ratingName" type="text" class="form-control"><br>
+        Comments: <br><textarea rows="4" id="ratingComment" type="text" class="form-control"></textarea><br>
+        <input type="submit" value="Submit">
+    </div>
+</form>
+<div id="submitResAlert" role="alert"></div>
+<div class="hidden" id="allRatingsDiv">
+<table class="table table-striped">
+<thead>
+    <tr>
+        <td>Rating</td>
+        <td>Count</td>
+    </tr>
+<tbody>
+    <tr>
+        <td>Garbage</td>
+        <td id="allRatings0"></td>
+    </tr>
+    <tr>
+        <td>Exclude</td>
+        <td id="allRatings1"></td>
+    </tr>
+    <tr>
+        <td>Usable</td>
+        <td id="allRatings2"></td>
+    </tr>
+    <tr>
+        <td>Good</td>
+        <td id="allRatings3"></td>
+    </tr>
+</tbody>
+</thead>
+</table>
+
+{% endif %}
+
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
 <a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
 </div>
+{% if provenance %}
+{% include user_rating.js %}
+{% endif %}
 </body>
 </html>
