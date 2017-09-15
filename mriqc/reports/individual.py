@@ -95,6 +95,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'svg_files': [read_report_snippet(pfile) for pfile in in_plots],
         'workflow_details': wf_details,
         'provenance': iqms2html(prov, 'provenance-table'),
+        'md5sum': prov['md5sum'],
         'metadata': iqms2html(metadata, 'metadata-table'),
         'pred_qa': pred_qa
     }
