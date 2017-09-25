@@ -80,7 +80,7 @@ When using MRIQC, please include the following citation:
 
     Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
     *MRIQC: Advancing the Automatic Prediction of Image Quality in MRI from Unseen Sites*;
-    bioRxiv 111294; doi:`10.1101/111294 <https://doi.org/10.1101/111294>`_.
+    PLOS ONE 12(9):e0184661; doi:`10.1371/journal.pone.0184661 <https://doi.org/10.1371/journal.pone.0184661>`_.
 
 An additional resource to check out is our recent poster at OHBM:
 
