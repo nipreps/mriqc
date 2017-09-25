@@ -28,7 +28,23 @@ if [ "$( grep -qiP 'docs[ _]?only' <<< "$GIT_COMMIT_MSG"; echo $?)" == "0" ]; th
     exit $exit_docs
 fi
 
+MODALITY=T1w
+if [ "$CIRCLE_NODE_INDEX" == "1" ]; then
+    MODALITY=bold
+fi
+
+# Add a nipype config file:
+mkdir -p ${HOME}/.nipype ${SCRATCH}/out/logs/nipype-${MODALITY}
+echo "[execution]" > ${HOME}/.nipype/nipype.cfg
+echo "profile_runtime = true" >> ${HOME}/.nipype/nipype.cfg
+echo "[logging]" >> ${HOME}/.nipype/nipype.cfg
+echo "log_to_file = true" >> ${HOME}/.nipype/nipype.cfg
+echo "log_directory = /scratch/out/logs/nipype-${MODALITY}" >> ${HOME}/.nipype/nipype.cfg
+
+
+
 DOCKER_RUN="docker run -i -v $HOME/data:/data:ro \
+                       -v ${HOME}/.nipype:/root/.nipype \
                        -v $SCRATCH:/scratch -w /scratch \
                        ${DOCKER_IMAGE}:${DOCKER_TAG} \
                        /data/${TEST_DATA_NAME} out/ participant \

@@ -5,6 +5,9 @@ out/derivatives/sub-50152_T1w.json
 out/derivatives/sub-50785_T1w.json
 out/derivatives/sub-51187_T1w.json
 out/logs
+out/logs/nipype-T1w
+out/logs/nipype-T1w/pypeline.lock
+out/logs/nipype-T1w/pypeline.log
 out/logs/run_stats.log
 out/logs/run_stats.log.html
 out/reports
