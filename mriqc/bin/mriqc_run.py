@@ -244,7 +244,7 @@ def main():
     # Set nipype logging level
     nlog.getLogger('workflow').setLevel(log_level)
     nlog.getLogger('interface').setLevel(log_level)
-    nlog.getLogger('filemanip').setLevel(log_level)
+    nlog.getLogger('utils').setLevel(log_level)
 
     callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
