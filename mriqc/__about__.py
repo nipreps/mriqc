@@ -52,7 +52,7 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'niworkflows>=0.1.4',
+    'niworkflows',
     'pybids>=0.3.0',
     'scikit-learn>=0.19.0',
     'future',
@@ -73,7 +73,9 @@ REQUIRES = [
     'versioneer',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+    'git+https://github.com/oesteban/niworkflows.git@b4706b891a440fc9df55c8bff0484447754ff746#egg=niworkflows-0.1.8-dev',
+]
 
 
 TESTS_REQUIRES = [
