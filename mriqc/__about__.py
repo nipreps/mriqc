@@ -71,9 +71,13 @@ REQUIRES = [
     'nipy',
     'statsmodels',
     'versioneer',
+    'xvfbwrapper',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+    'git+https://github.com/poldracklab/niworkflows.git'
+    '@a3f13032cef56efb657fc115ad14c515f1b11e61#egg=niworkflows-0.1.8-dev',
+]
 
 
 TESTS_REQUIRES = [
