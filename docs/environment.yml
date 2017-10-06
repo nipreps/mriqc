@@ -14,4 +14,4 @@ dependencies:
 - sphinx_rtd_theme>=0.2.4
 
 - pip:
-    - git+https://github.com/effigies/niworkflows.git@e445713cb7a046f733f2f6de2f0ab55189e7d644#egg=niworkflows-0.1.8-dev
+    - git+https://github.com/effigies/niworkflows.git@#335e878aeedd9d2614770477aeea8b640c1ed7f3egg=niworkflows-0.1.8-dev
