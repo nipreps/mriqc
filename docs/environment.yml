@@ -14,4 +14,4 @@ dependencies:
 - sphinx_rtd_theme>=0.2.4
 
 - pip:
-    - git+https://github.com/poldracklab/niworkflows.git@4395e10405a23a62bb7740719136562e1eee86d0#egg=niworkflows
+    - git+https://github.com/poldracklab/niworkflows.git@2712471d4425b5052622c0b2a40fd6c4c3a3e60b#egg=niworkflows-0.1.8-dev
