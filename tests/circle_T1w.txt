@@ -5,8 +5,6 @@ out/derivatives/sub-50152_T1w.json
 out/derivatives/sub-50785_T1w.json
 out/derivatives/sub-51187_T1w.json
 out/logs
-out/logs/run_stats.log
-out/logs/run_stats.log.html
 out/reports
 out/reports/sub-50137_T1w.html
 out/reports/sub-50152_T1w.html

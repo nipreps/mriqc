@@ -90,6 +90,7 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
                      psutil=5.2.2 \
                      sphinx=1.5.4; \
     sync &&  \
+    chmod -R a+rX /usr/local/miniconda && \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y; sync && \
     python -c "from matplotlib import font_manager" && \
