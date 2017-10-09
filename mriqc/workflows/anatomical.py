@@ -98,7 +98,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
-                      name='segmentation', estimated_memory_gb=3)
+                      name='segmentation', mem_gb=3)
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
@@ -195,7 +195,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                    # Request all MultiProc processes when ants_nthreads > n_procs
                    num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
                                    settings.get('n_procs', 1)),
-                   estimated_memory_gb=3)
+                   mem_gb=3)
     norm.inputs.reference_mask = op.join(mni_template,
                                      '%dmm_brainmask.nii.gz' % int(resolution))
 
