@@ -246,7 +246,6 @@ def main():
     nlog.getLogger('interface').setLevel(log_level)
     nlog.getLogger('utils').setLevel(log_level)
 
-    callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
         from yaml import load as loadyml
@@ -321,10 +320,6 @@ def main():
                         'Anonymized quality metrics have beeen submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
-
-                if callback_log_path is not None:
-                    from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
-                    generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             msg = 'Error reading BIDS directory ({}), or the dataset is not ' \
                   'BIDS-compliant.'
