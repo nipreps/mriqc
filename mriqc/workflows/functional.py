@@ -701,6 +701,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     testing = settings.get('testing', False)
     n_procs = settings.get('n_procs', 1)
     ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
+    atlas_target = settings.get('bold_atlas', 'mni')
 
     # Init template
     mni_template = get_template()
@@ -719,7 +720,10 @@ def epi_mni_align(settings, name='SpatialNormalization'):
         num_threads=ants_nthreads,
         float=settings.get('ants_float', False),
         template='mni_icbm152_nlin_asym_09c',
-        reference_image=pkgrf('mriqc', 'data/mni/2mm_T2_brain.nii.gz'),
+        reference_image=pkgrf(
+            'mriqc',
+            'data/mice/2mm_EPI_brain.nii.gz' if atlas_target == 'mice' else
+            'data/mni/2mm_T2_brain.nii.gz'),
         flavor='testing' if testing else 'precise',
         moving='EPI',
         generate_report=True,),

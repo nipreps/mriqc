@@ -149,6 +149,11 @@ def get_parser():
                              'considered for preprocessing')
     g_afni.add_argument('--correct-slice-timing', action='store_true', default=False,
                         help='Perform slice timing correction')
+
+    # Mice-MRIQC settings
+    g_mice = parser.add_argument_group('Specific settings for MRIQC on rodent data')
+    g_mice.add_argument('--mice', action='store_true', default=False,
+                        help='run MRIQC on mice mode')
     return parser
 
 
@@ -200,6 +205,7 @@ def main():
         'webapi_url': opts.webapi_url,
         'webapi_port': opts.webapi_port,
         'upload_strict': opts.upload_strict,
+        'bold_atlas': 'mice' if opts.mice else 'mni',
     }
 
     if opts.hmc_afni:
