@@ -12,10 +12,11 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os.path as op
 import numpy as np
-from niworkflows.nipype.interfaces.base import (traits, TraitedSpec, File,
-                                                BaseInterfaceInputSpec, isdefined)
-from niworkflows.interfaces.base import SimpleInterface
-from io import open # pylint: disable=W0622
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, File, BaseInterfaceInputSpec, isdefined,
+    SimpleInterface)
+
+from io import open  # pylint: disable=W0622
 from ..utils.misc import split_ext
 from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
 
@@ -37,8 +38,10 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
     vmin = traits.Float(desc='minimum intensity')
     vmax = traits.Float(desc='maximum intensity')
 
+
 class PlotContoursOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='output svg file')
+
 
 class PlotContours(SimpleInterface):
     """ Plot contours """
@@ -154,5 +157,3 @@ class PlotSpikes(SimpleInterface):
             self.inputs.in_file, self.inputs.in_fft, spikes_list,
             out_file=out_file)
         return runtime
-
-

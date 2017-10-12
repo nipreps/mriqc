@@ -6,8 +6,9 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 from niworkflows.nipype import logging
 from niworkflows.nipype.interfaces.base import (
-    Bunch, traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File, Str)
-from niworkflows.interfaces.base import SimpleInterface
+    Bunch, traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File, Str,
+    SimpleInterface
+)
 from urllib.parse import urlparse
 
 IFLOGGER = logging.getLogger('interface')
@@ -223,6 +224,7 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
         return Bunch(status_code=1, text=errmsg)
 
     return response
+
 
 def _hashfields(data):
     from hashlib import sha256
