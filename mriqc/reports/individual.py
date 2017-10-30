@@ -61,7 +61,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                     '<span class="problematic">Detected a zero-filled frame, has the original '
                     'image been rotated?</span>')
 
-        return in_prov, wf_details
+        return in_prov, wf_details, sett_dict
 
 
 
@@ -78,7 +78,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     # Extract and prune metadata
     metadata = iqms_dict.pop('bids_meta', None)
     mod = metadata.pop('modality', None)
-    prov, wf_details = _get_details(iqms_dict, mod)
+    prov, wf_details, settings = _get_details(iqms_dict, mod)
 
     file_id = [metadata.pop(k, None)
                for k in list(BIDS_COMP.keys())]
@@ -94,6 +94,8 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
         'svg_files': [read_report_snippet(pfile) for pfile in in_plots],
         'workflow_details': wf_details,
+        'webapi_url':  prov.pop('webapi_url'),
+        'webapi_port': prov.pop('webapi_port'),
         'provenance': iqms2html(prov, 'provenance-table'),
         'md5sum': prov['md5sum'],
         'metadata': iqms2html(metadata, 'metadata-table'),
