@@ -237,15 +237,15 @@ def main():
     # Set nipype config
     ncfg.update_config({
         'logging': {'log_directory': log_dir, 'log_to_file': True},
-        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt'},
+        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt',
+                      'resource_monitor': opts.profile},
     })
 
     # Set nipype logging level
     nlog.getLogger('workflow').setLevel(log_level)
     nlog.getLogger('interface').setLevel(log_level)
-    nlog.getLogger('filemanip').setLevel(log_level)
+    nlog.getLogger('utils').setLevel(log_level)
 
-    callback_log_path = None
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
         from yaml import load as loadyml
@@ -304,16 +304,6 @@ def main():
             workflow.add_nodes(wf_list)
 
             if not opts.dry_run:
-                if plugin_settings['plugin'] == 'MultiProc' and opts.profile:
-                    import logging
-                    from niworkflows.nipype.pipeline.plugins.callback_log import log_nodes_cb
-                    plugin_settings['plugin_args']['status_callback'] = log_nodes_cb
-                    callback_log_path = op.join(log_dir, 'run_stats.log')
-                    logger = logging.getLogger('callback')
-                    logger.setLevel(logging.DEBUG)
-                    handler = logging.FileHandler(callback_log_path)
-                    logger.addHandler(handler)
-
                 # Warn about submitting measures BEFORE
                 if not settings['no_sub']:
                     log.warning(
@@ -330,10 +320,6 @@ def main():
                         'Anonymized quality metrics have beeen submitted'
                         ' to MRIQC\'s metrics repository.'
                         ' Use --no-sub to disable submission.')
-
-                if callback_log_path is not None:
-                    from niworkflows.nipype.utils.draw_gantt_chart import generate_gantt_chart
-                    generate_gantt_chart(callback_log_path, cores=settings['n_procs'])
         else:
             msg = 'Error reading BIDS directory ({}), or the dataset is not ' \
                   'BIDS-compliant.'

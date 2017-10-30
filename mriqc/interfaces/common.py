@@ -11,11 +11,15 @@ import numpy as np
 import nibabel as nb
 
 from niworkflows.nipype import logging
-from niworkflows.nipype.interfaces.base import traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined
+from niworkflows.nipype.interfaces.base import (
+    traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined,
+    SimpleInterface
+)
 from niworkflows.nipype.interfaces.ants import ApplyTransforms
-from niworkflows.interfaces.base import SimpleInterface
+
 
 IFLOGGER = logging.getLogger('interface')
+
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='input image')
