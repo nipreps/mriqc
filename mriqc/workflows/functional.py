@@ -224,7 +224,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     # AFNI quality measures
     fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='ouliers.out'),
+    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='outliers.out'),
                        name='outliers', mem_gb=biggest_file_gb * 2.5)
 
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
@@ -862,9 +862,9 @@ def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
         in_func, in_mask, in_segm, title=title)
     myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
 
-    # Add AFNI ouliers plot
+    # Add AFNI outliers plot
     myplot.add_confounds([np.nan] + np.loadtxt(outliers, usecols=[0]).tolist(),
-                         {'name': 'ouliers', 'units': '%', 'normalize': False,
+                         {'name': 'outliers', 'units': '%', 'normalize': False,
                           'ylims': (0.0, None)})
 
     # Pick non-standardize dvars
