@@ -106,6 +106,8 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     strict = traits.Bool(False, usedefault=True,
                          desc='crash if upload was not succesfull')
 
+class UploadIQMsOutputSpec(TraitedSpec):
+    api_id = traits.Either(None, traits.Str, desc="Id for report returned by the web api")
 
 class UploadIQMs(SimpleInterface):
     """
@@ -113,7 +115,7 @@ class UploadIQMs(SimpleInterface):
     """
 
     input_spec = UploadIQMsInputSpec
-    output_spec = TraitedSpec
+    output_spec = UploadIQMsOutputSpec
     always_run = True
 
     def _run_interface(self, runtime):
@@ -138,9 +140,20 @@ class UploadIQMs(SimpleInterface):
         if isdefined(self.inputs.path):
             path = self.inputs.path
 
+        self._results['api_id'] = None
+
         response = upload_qc_metrics(
             self.inputs.in_iqms, url.netloc, path=path,
             scheme=url.scheme, port=port, email=email)
+
+        try:
+            self._results['api_id'] = response.json()['_id']
+        except ValueError, KeyError:
+            # response did not give us an ID
+            errmsg = ('QC metrics upload failed to create an ID for the record '
+                      'uplOADED. rEsponse from server follows: {}'.format(response.text))
+            IFLOGGER.warn(errmsg)
+
 
         if response.status_code == 201:
             IFLOGGER.info('QC metrics successfully uploaded.')

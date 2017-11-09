@@ -11,7 +11,7 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-def individual_html(in_iqms, in_plots=None):
+def individual_html(in_iqms, in_plots=None, api_id=None):
     import os.path as op  #pylint: disable=W0404
     import datetime
     from json import load

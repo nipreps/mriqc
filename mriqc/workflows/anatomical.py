@@ -159,6 +159,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
+            (upldwf, repwf, [('api_id', 'inputnode.api_id')]),
         ])
 
     return workflow
@@ -333,7 +334,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_ras', 'brainmask', 'headmask', 'airmask', 'artmask', 'rotmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
-        'mni_report']),
+        'mni_report', 'api_id']),
         name='inputnode')
 
     mosaic_zoom = pe.Node(PlotMosaic(
