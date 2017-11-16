@@ -10,7 +10,6 @@ RUN apt-get update && \
                     curl \
                     bzip2 \
                     ca-certificates \
-                    xvfb  \
                     cython3 \
                     build-essential \
                     autoconf \
@@ -20,12 +19,11 @@ RUN apt-get update && \
     apt-key add /root/.neurodebian.gpg && \
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
 
-# Installing Neurodebian packages (FSL, AFNI, git)
+# Installing Neurodebian packages (FSL, git)
 RUN apt-get update  && \
     apt-get install -y --no-install-recommends \
                     fsl-core \
-                    fsl-mni152-templates \
-                    afni
+                    fsl-mni152-templates
 
 ENV FSLDIR=/usr/share/fsl/5.0 \
     FSLOUTPUTTYPE=NIFTI_GZ \
@@ -34,11 +32,14 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
     LD_LIBRARY_PATH=/usr/lib/fsl/5.0:$LD_LIBRARY_PATH \
     FSLTCLSH=/usr/bin/tclsh \
     FSLWISH=/usr/bin/wish \
-    AFNI_MODELPATH=/usr/lib/afni/models \
-    AFNI_IMSAVE_WARNINGS=NO \
-    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
-    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
     PATH=/usr/lib/fsl/5.0:/usr/lib/afni/bin:$PATH
+
+# Installing AFNI (version 17_3_03 archived on OSF)
+RUN mkdir -p /opt/afni && \
+    curl -o afni.tar.gz -sSLO "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5a0dd9a7b83f69027512a12b" && \
+    tar zxv -C /opt/afni --strip-components=1 -f afni.tar.gz && \
+    rm -rf afni.tar.gz
+ENV PATH=/opt/afni:$PATH
 
 # Installing and setting up ANTs
 RUN mkdir -p /opt/ants && \
