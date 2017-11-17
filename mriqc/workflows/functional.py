@@ -224,7 +224,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # AFNI quality measures
     fwhm_interface = get_fwhmx()
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
+    fwhm = pe.Node(fwhm_interface, name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
     outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='outliers.out'),
                        name='outliers', mem_gb=biggest_file_gb * 2.5)
