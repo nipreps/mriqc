@@ -54,7 +54,7 @@ from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 from ..utils.misc import check_folder
-from distutils.version import StrictVersion
+from .utils import get_fwhmx
 WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
@@ -242,16 +242,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     }
 
     # AFNI check smoothing
-    fwhm_args = {"combine": True,
-                 "detrend": True}
-    afni_version_tpl = afni.Info.version()
-    afni_version = StrictVersion(".".join([str(afni_version_tpl[0]),
-                                           str(afni_version_tpl[1]),
-                                           str(afni_version_tpl[2])]))
-    if afni_version >= StrictVersion("2017.2.3"):
-        fwhm_args['args'] = '-ShowMeClassicFWHM'
-        fwhm_args['acf'] = True
-    fwhm_interface = afni.FWHMx(**fwhm_args)
+    fwhm_interface = get_fwhmx()
 
     fwhm = pe.Node(fwhm_interface, name='smoothness')
 
@@ -318,6 +309,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')]),
     ])
     return workflow
+
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """

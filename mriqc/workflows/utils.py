@@ -9,6 +9,8 @@
 # @Last modified by:   oesteban
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
+from distutils.version import StrictVersion
+from niworkflows.nipype.interfaces import afni
 from builtins import range
 
 def _tofloat(inlist):
@@ -160,3 +162,16 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
+
+def get_fwhmx():
+    fwhm_args = {"combine": True,
+                 "detrend": True}
+    afni_version_tpl = afni.Info.version()
+    afni_version = StrictVersion(".".join([str(afni_version_tpl[0]),
+                                           str(afni_version_tpl[1]),
+                                           str(afni_version_tpl[2])]))
+    if afni_version >= StrictVersion("2017.2.3"):
+        fwhm_args['args'] = '-ShowMeClassicFWHM'
+        fwhm_args['acf'] = True
+    fwhm_interface = afni.FWHMx(**fwhm_args)
+    return fwhm_interface
