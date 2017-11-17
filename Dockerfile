@@ -36,7 +36,7 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
 
 # Installing AFNI (version 17_3_03 archived on OSF)
 RUN apt-get update -qq && apt-get install -yq --no-install-recommends ed gsl-bin libglu1-mesa-dev libglib2.0-0 libglw1-mesa \
-    libgomp1 libjpeg62 libxm4 netpbm tcsh xfonts-base && \
+    libgomp1 libjpeg62 libxm4 netpbm tcsh xfonts-base xvfb && \
     libs_path=/usr/lib/x86_64-linux-gnu && \
     if [ -f $libs_path/libgsl.so.19 ]; then \
            ln $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
