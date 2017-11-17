@@ -70,8 +70,7 @@ REQUIRES = [
     'svgutils',
     'nipy',
     'statsmodels',
-    'versioneer',
-    'xvfbwrapper',
+    'versioneer'
 ]
 
 LINKS_REQUIRES = [

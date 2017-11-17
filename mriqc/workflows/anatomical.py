@@ -241,9 +241,20 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     }
 
     # AFNI check smoothing
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True,
-                              args='-ShowMeClassicFWHM'), name='smoothness')
-    fwhm.inputs.acf = True  # add when AFNI >= 16
+    fwhm_args = {"combine": True,
+                 "detrend": True}
+    afni_version = afni.Info.version()
+    if int(afni_version[0]) >= 17 and \
+       int(afni_version[2]) >= 2 and \
+       int(afni_version[3]) >= 3:
+        fwhm_args['args'] = '-ShowMeClassicFWHM'
+        fwhm_args['acf'] = True
+        fwhm_interface = afni.FWHMx(**fwhm_args)
+        fwhm_interface._redirect_x = False
+    else:
+        fwhm_interface = afni.FWHMx(**fwhm_args)
+
+    fwhm = pe.Node(fwhm_interface, name='smoothness')
 
     # Harmonize
     homog = pe.Node(Harmonize(), name='harmonize')
