@@ -166,10 +166,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 def get_fwhmx():
     fwhm_args = {"combine": True,
                  "detrend": True}
-    afni_version_tpl = afni.Info.version()
-    afni_version = StrictVersion(".".join([str(afni_version_tpl[0]),
-                                           str(afni_version_tpl[1]),
-                                           str(afni_version_tpl[2])]))
+    afni_version = StrictVersion('%s.%s.%s' % afni.Info.version())
     if afni_version >= StrictVersion("2017.2.3"):
         fwhm_args['args'] = '-ShowMeClassicFWHM'
         fwhm_args['acf'] = True

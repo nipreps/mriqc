@@ -71,7 +71,7 @@ REQUIRES = [
     'nipy',
     'statsmodels',
     'versioneer',
-    'xvfbwrapper'
+    'xvfbwrapper',
 ]
 
 LINKS_REQUIRES = [
