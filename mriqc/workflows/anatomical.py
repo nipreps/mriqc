@@ -54,6 +54,7 @@ from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 from ..utils.misc import check_folder
+from .utils import get_fwhmx
 WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
@@ -241,8 +242,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     }
 
     # AFNI check smoothing
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
+    fwhm_interface = get_fwhmx()
+
+    fwhm = pe.Node(fwhm_interface, name='smoothness')
 
     # Harmonize
     homog = pe.Node(Harmonize(), name='harmonize')
@@ -307,6 +309,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')]),
     ])
     return workflow
+
 
 def individual_reports(settings, name='ReportsWorkflow'):
     """

@@ -1,8 +1,12 @@
+0.9.10
+======
+
+  * [FIX] Updated AFNI to 17.3.03. Resolves errors regarding opening display by 3dSkullStrip (#669)
+
 0.9.9
 =====
 
   * [ENH] Update nipype to fix $DISPLAY problem of AFNI's 3dSkullStrip
-
 
 0.9.8
 =====

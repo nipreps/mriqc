@@ -39,6 +39,7 @@ from niworkflows.nipype.interfaces import io as nio
 from niworkflows.nipype.interfaces import utility as niu
 from niworkflows.nipype.interfaces import afni, ants, fsl
 
+from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from ..utils.misc import check_folder, reorient_and_discard_non_steady
@@ -222,7 +223,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
                      mem_gb=biggest_file_gb * 3)
 
     # AFNI quality measures
-    fwhm = pe.Node(afni.FWHMx(combine=True, detrend=True), name='smoothness')
+    fwhm_interface = get_fwhmx()
+    fwhm = pe.Node(fwhm_interface, name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
     outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='outliers.out'),
                        name='outliers', mem_gb=biggest_file_gb * 2.5)
