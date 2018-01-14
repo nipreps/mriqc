@@ -245,6 +245,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     fwhm_interface = get_fwhmx()
 
     fwhm = pe.Node(fwhm_interface, name='smoothness')
+    fwhm.inputs.automask = True
 
     # Harmonize
     homog = pe.Node(Harmonize(), name='harmonize')
@@ -295,8 +296,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                                ('rotmask', 'rot_msk'),
                                ('segmentation', 'in_segm'),
                                ('pvms', 'in_pvms')]),
-        (inputnode, fwhm, [('in_ras', 'in_file'),
-                           ('brainmask', 'mask')]),
+        (inputnode, fwhm, [('in_ras', 'in_file')]),
         (inputnode, invt, [('in_ras', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
         (homog, measures, [('out_file', 'in_noinu')]),
