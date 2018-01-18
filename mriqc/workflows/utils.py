@@ -169,6 +169,5 @@ def get_fwhmx():
     afni_version = StrictVersion('%s.%s.%s' % afni.Info.version())
     if afni_version >= StrictVersion("2017.2.3"):
         fwhm_args['args'] = '-ShowMeClassicFWHM'
-        fwhm_args['acf'] = True
     fwhm_interface = afni.FWHMx(**fwhm_args)
     return fwhm_interface
