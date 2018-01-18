@@ -1,3 +1,8 @@
+0.10.1
+======
+
+  * [FIX] Fixed a bug in reading outputs of 3dFWHMx (#678)
+
 0.9.10
 ======
 
