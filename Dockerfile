@@ -59,12 +59,12 @@ RUN apt-get update -qq && apt-get install -yq --no-install-recommends ed gsl-bin
     rm -rf afni.tar.gz
 ENV PATH=/opt/afni:$PATH
 
-# Installing and setting up ANTs
-RUN mkdir -p /opt/ants && \
-    curl -sSL "https://github.com/stnava/ANTs/releases/download/v2.1.0/Linux_Ubuntu14.04.tar.bz2" \
-    | tar -xjC /opt/ants --strip-components 1
-ENV ANTSPATH=/opt/ants \
-    PATH=/opt/ants:$PATH
+# Installing ANTs 2.2.0.dev73-gc95e7 (NeuroDocker build)
+ENV ANTSPATH=/usr/lib/ants
+RUN mkdir -p $ANTSPATH && \
+    curl -sSL "https://www.dropbox.com/s/xrvp5oo2b2akuii/ANTs-Linux-centos6_x86_64-2.2.0.dev73-gc95e7.tar.gz" \
+    | tar -xzC $ANTSPATH --strip-components 1
+ENV PATH=$ANTSPATH:$PATH
 
 # Installing WEBP tools
 RUN curl -sSLO "http://downloads.webmproject.org/releases/webp/libwebp-0.5.2-linux-x86-64.tar.gz" && \
