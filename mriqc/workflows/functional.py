@@ -15,9 +15,8 @@ The functional workflow
 
 The functional workflow follows the following steps:
 
-#. Conform (reorientations, revise data types) input data, read
-   associated metadata and discard non-steady state frames
-   (:py:func:`mriqc.utils.misc.reorient_and_discard_non_steady`).
+#. Sanitize (revise data types and xforms) input data, read
+   associated metadata and discard non-steady state frames.
 #. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
    AFNI -- :py:func:`hmc_afni`.
 #. Skull-stripping of the time-series (AFNI) --
@@ -42,7 +41,7 @@ from niworkflows.nipype.interfaces import afni, ants, fsl
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from ..utils.misc import check_folder, reorient_and_discard_non_steady
+from ..utils.misc import check_folder
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
 from niworkflows.interfaces import utils as niutils
