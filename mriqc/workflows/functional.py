@@ -167,7 +167,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                          generate_report=True),
                           name="ICA", mem_gb=biggest_file_gb * 5)
         workflow.connect([
-            (reorient_and_discard, melodic, [('out_file', 'in_files')]),
+            (sanitize, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
             (melodic, repwf, [('out_report', 'inputnode.ica_report')])
         ])
