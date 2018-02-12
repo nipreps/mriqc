@@ -45,7 +45,7 @@ Running mriqc
   ::
 
       
-      docker run -it poldracklab/mriqc:latest -v
+      docker run -it poldracklab/mriqc:latest --version
 
 
 2. Run the :code:`participant` level in subjects 001 002 003:
