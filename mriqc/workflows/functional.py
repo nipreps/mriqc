@@ -87,7 +87,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     sanitize = pe.Node(niutils.SanitizeImage(), name="sanitize",
                        mem_gb=biggest_file_gb * 4.0)
-    sanitize.inputs.force_float32 = settings.get("float32", DEFAULTS['float32'])
+    sanitize.inputs.max_32bit = settings.get("float32", DEFAULTS['float32'])
 
     # Workflow --------------------------------------------------------
 
