@@ -1,3 +1,3 @@
 numpy>=1.12.0
-git+https://github.com/chrisfilo/niworkflows.git@cb9e88b82bf31a2bc37770d92cc5c92beb62be07#egg=niworkflows-0.3.1-dev
+niworkflows>=0.3.2
 scikit-learn>=0.19
