@@ -15,9 +15,8 @@ The functional workflow
 
 The functional workflow follows the following steps:
 
-#. Conform (reorientations, revise data types) input data, read
-   associated metadata and discard non-steady state frames
-   (:py:func:`mriqc.utils.misc.reorient_and_discard_non_steady`).
+#. Sanitize (revise data types and xforms) input data, read
+   associated metadata and discard non-steady state frames.
 #. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
    AFNI -- :py:func:`hmc_afni`.
 #. Skull-stripping of the time-series (AFNI) --
@@ -42,9 +41,10 @@ from niworkflows.nipype.interfaces import afni, ants, fsl
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from ..utils.misc import check_folder, reorient_and_discard_non_steady
+from ..utils.misc import check_folder
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
+from niworkflows.interfaces import utils as niutils
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -82,14 +82,12 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         fields=['qc', 'mosaic', 'out_group', 'out_dvars',
                 'out_fd']), name='outputnode')
 
+    non_steady_state_detector = pe.Node(nac.NonSteadyStateDetector(),
+                                        name="non_steady_state_detector")
 
-    reorient_and_discard = pe.Node(niu.Function(input_names=['in_file', 'float32'],
-                                                output_names=['exclude_index',
-                                                              'out_file'],
-                                                function=reorient_and_discard_non_steady),
-                                   name='reorient_and_discard',
-                                   mem_gb=biggest_file_gb * 4.0)
-    reorient_and_discard.inputs.float32 = settings.get("float32", DEFAULTS['float32'])
+    sanitize = pe.Node(niutils.SanitizeImage(), name="sanitize",
+                       mem_gb=biggest_file_gb * 4.0)
+    sanitize.inputs.max_32bit = settings.get("float32", DEFAULTS['float32'])
 
     # Workflow --------------------------------------------------------
 
@@ -126,20 +124,22 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     workflow.connect([
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
-        (inputnode, reorient_and_discard, [('in_file', 'in_file')]),
-        (reorient_and_discard, hmcwf, [('out_file', 'inputnode.in_file')]),
+        (inputnode, sanitize, [('in_file', 'in_file')]),
+        (inputnode, non_steady_state_detector, [('in_file', 'in_file')]),
+        (non_steady_state_detector, sanitize, [('n_volumes_to_discard', 'n_volumes_to_discard')]),
+        (sanitize, hmcwf, [('out_file', 'inputnode.in_file')]),
         (mean, skullstrip_epi, [('out_file', 'inputnode.in_file')]),
         (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [('out_file', 'inputnode.epi_mean')]),
         (skullstrip_epi, ema, [('outputnode.out_file', 'inputnode.epi_mask')]),
-        (reorient_and_discard, iqmswf, [('out_file', 'inputnode.in_ras')]),
+        (sanitize, iqmswf, [('out_file', 'inputnode.in_ras')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
                          ('outputnode.out_fd', 'inputnode.hmc_fd')]),
         (skullstrip_epi, iqmswf, [('outputnode.out_file', 'inputnode.brainmask')]),
         (tsnr, iqmswf, [('tsnr_file', 'inputnode.in_tsnr')]),
-        (reorient_and_discard, repwf, [('out_file', 'inputnode.in_ras')]),
+        (sanitize, repwf, [('out_file', 'inputnode.in_ras')]),
         (mean, repwf, [('out_file', 'inputnode.epi_mean')]),
         (tsnr, repwf, [('stddev_file', 'inputnode.in_stddev')]),
         (skullstrip_epi, repwf, [('outputnode.out_file', 'inputnode.brainmask')]),
@@ -147,7 +147,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                         ('outputnode.out_file', 'inputnode.hmc_epi')]),
         (ema, repwf, [('outputnode.epi_parc', 'inputnode.epi_parc'),
                       ('outputnode.report', 'inputnode.mni_report')]),
-        (reorient_and_discard, iqmswf, [('exclude_index', 'inputnode.exclude_index')]),
+        (non_steady_state_detector, iqmswf, [('n_volumes_to_discard', 'inputnode.exclude_index')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms'),
                          ('outputnode.out_dvars', 'inputnode.in_dvars'),
                          ('outputnode.outliers', 'inputnode.outliers')]),
@@ -167,7 +167,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                          generate_report=True),
                           name="ICA", mem_gb=biggest_file_gb * 5)
         workflow.connect([
-            (reorient_and_discard, melodic, [('out_file', 'in_files')]),
+            (sanitize, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
             (melodic, repwf, [('out_report', 'inputnode.ica_report')])
         ])
