@@ -74,9 +74,14 @@ Running mriqc
 
 .. warning::
 
+    Paths `<bids_dir>` and `<output_dir>` must be absolute.  In particular, specifying relative paths for 
+    `<output_dir>` will generate no error and mriqc will run to completion without error but produce no output.
+    
+.. warning::
+
     For security reasons, we recommend to run the docker command with the options
     ``--read-only --tmpfs /run --tmpfs /tmp``. This will run the docker image in
-    read-only mode, and map the temporal folders ``/run`` and ``/tmp`` to the temporal
+    read-only mode, and map the temporary folders ``/run`` and ``/tmp`` to the temporal
     folder of the host.
 
 
@@ -87,7 +92,7 @@ Explaining the mriqc-docker command line
 Let's dissect this command line:
 
 
-+ :code:`docker run`- instructs the docker engine to get and run certain
++ :code:`docker run`- instructs the docker engine to get and run a certain
   image (which is the last of docker-related arguments:
   :code:`poldracklab/mriqc:latest`)
 + :code:`-v <bids_dir>:/data:ro` - instructs docker to mount the local
