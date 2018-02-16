@@ -1,3 +1,10 @@
+0.10.2 (February 15, 2018)
+==========================
+
+  * [ENH] Add warning about mounting relative paths (#690)
+  * [FIX] Sanitize inputs (#687)
+  * [DOC] Fix documentation to use --version instead of -v (#688)
+
 0.10.1
 ======
 
