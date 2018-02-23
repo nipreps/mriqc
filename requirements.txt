@@ -1,3 +1,3 @@
 numpy>=1.12.0
-git+https://github.com/poldracklab/niworkflows.git@c691f841778b5b3087a33817fdafc93c43af1954#egg=niworkflows-0.3.3-dev
+niworkflows>=0.3.4
 scikit-learn>=0.19

@@ -52,7 +52,7 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'niworkflows>=0.3.2',
+    'niworkflows>=0.3.4',
     'pybids>=0.4.2',
     'scikit-learn>=0.19.0',
     'future',
@@ -74,10 +74,7 @@ REQUIRES = [
     'xvfbwrapper',
 ]
 
-LINKS_REQUIRES = [
-    'git+https://github.com/poldracklab/niworkflows.git'
-    '@cad7fb7cec09b4ac6ad39757697d71a8b1a8b144#egg=niworkflows-0.1.9-dev',
-]
+LINKS_REQUIRES = []
 
 
 TESTS_REQUIRES = [
