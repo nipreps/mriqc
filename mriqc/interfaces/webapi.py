@@ -191,8 +191,8 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
 
     # Check modality
     modality = meta.get('modality', 'None')
-    if modality not in ('T1w', 'bold'):
-        errmsg = ('Submitting to MRIQCWebAPI: image modality should be "bold" or "T1w", '
+    if modality not in ('T1w', 'bold', 'T2w'):
+        errmsg = ('Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
                   '(found "%s")' % modality)
         return Bunch(status_code=1, text=errmsg)
 
