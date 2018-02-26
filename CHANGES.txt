@@ -1,3 +1,10 @@
+0.10.3 (February 26, 2018)
+==========================
+
+  * [ENH] Enable T2w metrics uploads (#696)
+  * [PIN] Updating niworkflows (#698)
+  * [DOC] Option -o is outdated for classifier (#697)
+
 0.10.2 (February 15, 2018)
 ==========================
 
