@@ -53,6 +53,7 @@ SETUP_REQUIRES = []
 REQUIRES = [
     'numpy>=1.12.0',
     'niworkflows>=0.3.4',
+    'grabbit>=0.1.1',
     'pybids>=0.4.2',
     'scikit-learn>=0.19.0',
     'future',
@@ -74,7 +75,9 @@ REQUIRES = [
     'xvfbwrapper',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+    'git+https://github.com/INCF/pybids.git@grabbit-fixes#egg=pybids-0.4.3-dev',
+    ]
 
 
 TESTS_REQUIRES = [
