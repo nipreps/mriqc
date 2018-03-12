@@ -99,7 +99,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
     segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
-                      name='segmentation', mem_gb=3)
+                      name='segmentation', mem_gb=5)
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
