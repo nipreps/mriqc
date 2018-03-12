@@ -11,15 +11,16 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+
 def individual_html(in_iqms, in_plots=None, api_id=None):
-    import os.path as op  #pylint: disable=W0404
+    import os.path as op
     import datetime
     from json import load
     from mriqc import logging, __version__ as ver
     from mriqc.utils.misc import BIDS_COMP
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
-    from io import open  #pylint: disable=W0622
+    from io import open
     report_log = logging.getLogger('mriqc.report')
 
     def _get_details(in_iqms, modality):
@@ -63,8 +64,6 @@ first {} volumes</span>. They were excluded before generating any QC measures an
 
         return in_prov, wf_details, sett_dict
 
-
-
     with open(in_iqms) as jsonfile:
         iqms_dict = load(jsonfile)
 
@@ -78,14 +77,12 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     # Extract and prune metadata
     metadata = iqms_dict.pop('bids_meta', None)
     mod = metadata.pop('modality', None)
-    prov, wf_details, settings = _get_details(iqms_dict, mod)
+    prov, wf_details, _ = _get_details(iqms_dict, mod)
 
     file_id = [metadata.pop(k, None)
                for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
-
-    pred_qa = None #metadata.pop('mriqc_pred', None)
-
+    pred_qa = None  # metadata.pop('mriqc_pred', None)
     config = {
         'modality': mod,
         'sub_id': '_'.join(file_id),
@@ -94,7 +91,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
         'svg_files': [read_report_snippet(pfile) for pfile in in_plots],
         'workflow_details': wf_details,
-        'webapi_url':  prov.pop('webapi_url'),
+        'webapi_url': prov.pop('webapi_url'),
         'webapi_port': prov.pop('webapi_port'),
         'provenance': iqms2html(prov, 'provenance-table'),
         'md5sum': prov['md5sum'],
