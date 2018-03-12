@@ -1,8 +1,31 @@
+0.10.3 (February 26, 2018)
+==========================
+
+  * [ENH] Enable T2w metrics uploads (#696)
+  * [PIN] Updating niworkflows (#698)
+  * [DOC] Option -o is outdated for classifier (#697)
+
+0.10.2 (February 15, 2018)
+==========================
+
+  * [ENH] Add warning about mounting relative paths (#690)
+  * [FIX] Sanitize inputs (#687)
+  * [DOC] Fix documentation to use --version instead of -v (#688)
+
+0.10.1
+======
+
+  * [FIX] Fixed a bug in reading outputs of 3dFWHMx (#678)
+
+0.9.10
+======
+
+  * [FIX] Updated AFNI to 17.3.03. Resolves errors regarding opening display by 3dSkullStrip (#669)
+
 0.9.9
 =====
 
   * [ENH] Update nipype to fix $DISPLAY problem of AFNI's 3dSkullStrip
-
 
 0.9.8
 =====

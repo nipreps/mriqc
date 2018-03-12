@@ -14,4 +14,4 @@ dependencies:
 - sphinx_rtd_theme>=0.2.4
 
 - pip:
-	- niworkflows>=1.8
+	- niworkflows>=0.3.4
