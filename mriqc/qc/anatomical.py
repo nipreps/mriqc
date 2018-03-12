@@ -112,8 +112,9 @@ Other measures
 
   .. math ::
 
-      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}\
-{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}
+      {2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+
 
 .. _iqms_icvs:
 
@@ -144,8 +145,8 @@ Other measures
 
   .. math ::
 
-      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}\
-{\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      {\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
 
 
 .. topic:: References
@@ -344,8 +345,8 @@ def efc(img, framemask=None):
 
     .. math::
 
-        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \
-\ln \left[\frac{x_j}{x_\text{max}}\right]
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}}
+        \ln \left[\frac{x_j}{x_\text{max}}\right]
 
     with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
