@@ -50,6 +50,7 @@ from niworkflows.interfaces import utils as niutils
 DEFAULT_FD_RADIUS = 50.
 WFLOGGER = logging.getLogger('mriqc.workflow')
 
+
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     """
     The fMRI qc workflow
@@ -104,7 +105,6 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
-
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean',
@@ -188,6 +188,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     return workflow
 
+
 def compute_iqms(settings, name='ComputeIQMs'):
     """
     Workflow that actually computes the IQMs
@@ -204,7 +205,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
-
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_file', 'in_ras',
@@ -212,7 +212,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
         'exclude_index']), name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_dvars', 'outliers', 'out_spikes', 'out_fft']),
-                         name='outputnode')
+        name='outputnode')
 
     # Set FD threshold
     inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
@@ -275,12 +275,12 @@ def compute_iqms(settings, name='ComputeIQMs'):
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
         (meta, datasink, [('subject_id', 'subject_id'),
-                        ('session_id', 'session_id'),
-                        ('task_id', 'task_id'),
-                        ('acq_id', 'acq_id'),
-                        ('rec_id', 'rec_id'),
-                        ('run_id', 'run_id'),
-                        ('out_dict', 'metadata')]),
+                          ('session_id', 'session_id'),
+                          ('task_id', 'task_id'),
+                          ('acq_id', 'acq_id'),
+                          ('rec_id', 'rec_id'),
+                          ('run_id', 'run_id'),
+                          ('out_dict', 'metadata')]),
         (addprov, datasink, [('out', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (gcor, datasink, [(('out', _tofloat), 'gcor')]),
@@ -303,8 +303,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
                                       ('out_fft', 'out_fft')]),
             (spikes_fft, datasink, [('n_spikes', 'spikes_num')])
         ])
-
-
     return workflow
 
 
@@ -366,7 +364,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (spmask, spikes_bg, [('out_file', 'in_mask')]),
     ])
 
-
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
         title='EPI mean session',
@@ -378,10 +375,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
         title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
-    mplots = pe.Node(niu.Merge(pages + extra_pages
-                               + int(settings.get('fft_spikes_detector', False))
-                               + int(settings.get('ica', False))),
-                     name='MergePlots')
+    mplots = pe.Node(niu.Merge(pages + extra_pages + int(
+        settings.get('fft_spikes_detector', False)) + int(
+        settings.get('ica', False))), name='MergePlots')
     rnode = pe.Node(niu.Function(
         input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
         function=individual_html), name='GenerateReport')
@@ -420,7 +416,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         if settings.get('fft_spikes_detector', False):
             page_number += 1
         workflow.connect([
-            (inputnode, mplots, [('ica_report', 'in%d'%page_number)])
+            (inputnode, mplots, [('ica_report', 'in%d' % page_number)])
         ])
 
     if not verbose:
@@ -438,7 +434,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Verbose-reporting goes here
     from ..interfaces.viz import PlotContours
-    from ..viz.utils import plot_bg_dist
 
     plot_bmask = pe.Node(PlotContours(
         display_mode='z', levels=[.5], colors=['r'], cut_coords=10,
@@ -679,6 +674,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     return workflow
 
+
 def epi_mni_align(settings, name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
@@ -696,7 +692,9 @@ def epi_mni_align(settings, name='SpatialNormalization'):
 
     """
     from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
-    from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
+    from niworkflows.interfaces.registration import (
+        RobustMNINormalizationRPT as RobustMNINormalization
+    )
     from pkg_resources import resource_filename as pkgrf
 
     # Get settings
@@ -725,15 +723,16 @@ def epi_mni_align(settings, name='SpatialNormalization'):
         flavor='testing' if testing else 'precise',
         moving='EPI',
         generate_report=True,),
-                   name='EPI2MNI',
-                   num_threads=n_procs,
-                   mem_gb=3)
+        name='EPI2MNI',
+        num_threads=n_procs,
+        mem_gb=3)
 
     # Warp segmentation into EPI space
-    invt = pe.Node(ants.ApplyTransforms(float=True,
+    invt = pe.Node(ants.ApplyTransforms(
+        float=True,
         input_image=op.join(mni_template, '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
-                   name='ResampleSegmentation')
+        name='ResampleSegmentation')
 
     workflow.connect([
         (inputnode, invt, [('epi_mean', 'reference_image')]),
@@ -784,7 +783,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
         # Input here is a binarized and intersected mask data from previous section
         dil_mask = nd.binary_dilation(
-            mask_data, iterations=int(mask_data.shape[longest_axis]/9))
+            mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
 
         rep = list(mask_data.shape)
         rep[longest_axis] = -1
@@ -809,6 +808,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
     return out_file, out_plot
+
 
 def _add_provenance(in_file, settings):
     from mriqc import __version__ as version

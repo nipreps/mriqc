@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-04-28 11:16:12
+# @Last Modified time: 2018-03-12 11:48:39
 
 """
 Batch export freesurfer results to animated gifs
@@ -22,11 +22,10 @@ from argparse import ArgumentParser
 from argparse import RawTextHelpFormatter
 from tempfile import mkdtemp
 from errno import EEXIST
-import glob
-from six import string_types
 import numpy as np
 import nibabel as nb
 from skimage import exposure
+
 
 def main():
     """Entry point"""
@@ -111,20 +110,21 @@ set i 0
             nb.Nifti1Image(data, img.get_affine(), img.get_header()).to_filename(modnii)
             sp.call(['mri_convert', modnii, ref_file], cwd=tmp_sub)
 
-
         if not opts.zoom:
             # Export tiffs for left hemisphere
             tcl_file = op.join(tmp_sub, '%s.tcl' % subid)
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
-                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (bbox_min[2], bbox_max[2]))
+                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (
+                    bbox_min[2], bbox_max[2]))
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
                 tclfp.write('    SaveTIFF [format "%s/%s-' % (tmp_sub, subid) + '%03d.tif" $i]\n')
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
-            cmd = ['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl', tcl_file]
+            cmd = ['tkmedit', subid, 'T1.mgz', 'lh.pial', '-aux-surface', 'rh.pial', '-tcl',
+                   tcl_file]
             if opts.use_xvfb:
                 cmd = _xvfb_run() + cmd
 
@@ -141,11 +141,13 @@ set i 0
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
-                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (bbox_min[2], bbox_max[2]))
+                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (
+                    bbox_min[2], bbox_max[2]))
                 tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] + 30, center[1] - 10))
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write('    SaveTIFF [format "%s/%s-lh-' % (tmp_sub, subid) + '%03d.tif" $i]\n')
+                tclfp.write('    SaveTIFF [format "{}/{}-lh-%03d.tif" $i]\n'.format(
+                    tmp_sub, subid))
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
@@ -158,17 +160,18 @@ set i 0
             # Convert to animated gif
             print('Stacking coronal slices')
 
-
             # Export tiffs for right hemisphere
             tcl_file = op.join(tmp_sub, 'rh-%s.tcl' % subid)
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
-                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (bbox_min[2], bbox_max[2]))
+                tclfp.write('for { set slice %d } { $slice < %d } { incr slice } {' % (
+                    bbox_min[2], bbox_max[2]))
                 tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] - 30, center[1] - 10))
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write('    SaveTIFF [format "%s/%s-rh-' % (tmp_sub, subid) + '%03d.tif" $slice]\n')
+                tclfp.write('    SaveTIFF [format "{}/{}-rh-%03d.tif" $slice]\n'.format(
+                    tmp_sub, subid))
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
@@ -185,7 +188,6 @@ set i 0
             sp.call(['convert', '-delay', '10', '-loop', '0', '%s/%s-rh-*.tif' % (tmp_sub, subid),
                      '%s/%s-rh.gif' % (out_dir, subid)])
 
-
         if not opts.keep_temp:
             rmtree(tmp_sub, ignore_errors=True, onerror=_myerror)
 
@@ -200,11 +202,12 @@ def _xvfb_run(wait=5, server_args='-screen 0, 1600x1200x24', logs=None):
         logs = op.join(mkdtemp(), 'fs2gif_xvfb')
 
     return ['xvfb-run',
-            '-a', # automatically get a free server number
+            '-a',  # automatically get a free server number
             '-f {}.out'.format(logs),
             '-e {}.err'.format(logs),
             '--wait={:d}'.format(wait),
             '--server-args="{}"'.format(server_args)]
+
 
 def _myerror(msg):
     print('WARNING: Error deleting temporal files: %s' % msg)
@@ -212,4 +215,3 @@ def _myerror(msg):
 
 if __name__ == '__main__':
     main()
-

@@ -20,19 +20,24 @@ __copyright__ = ('Copyright %d, Center for Reproducible Neuroscience, '
 __credits__ = 'Oscar Esteban'
 __license__ = '3-clause BSD'
 __status__ = 'Prototype'
-__description__ = 'Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain'
-__longdesc__ = ("MRIQC provides a series of image processing workflows "
-                "to extract and compute a series of NR (no-reference), IQMs "
-                "(image quality metrics) to be used in QAPs (quality "
-                "assessment protocols) for MRI (magnetic "
-                "resonance imaging). This open-source neuroimaging data "
-                "processing tool is being developed as a part of the MRI "
-                "image analysis and reproducibility platform offered by the "
-                "CRN. This pipeline derives from, and is heavily influenced "
-                "by, the PCP Quality Assessment Protocol. This tool extracts "
-                "a series of IQMs from structural and functional MRI data. "
-                "It is also scheduled to add diffusion MRI to the target "
-                "imaging families.")
+__description__ = """\
+Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) \
+and functional MRI of the brain\
+"""
+__longdesc__ = """\
+MRIQC provides a series of image processing workflows \
+to extract and compute a series of NR (no-reference), IQMs \
+(image quality metrics) to be used in QAPs (quality \
+assessment protocols) for MRI (magnetic \
+resonance imaging). This open-source neuroimaging data \
+processing tool is being developed as a part of the MRI \
+image analysis and reproducibility platform offered by the \
+CRN. This pipeline derives from, and is heavily influenced \
+by, the PCP Quality Assessment Protocol. This tool extracts \
+a series of IQMs from structural and functional MRI data. \
+It is also scheduled to add diffusion MRI to the target \
+imaging families.\
+"""
 
 __url__ = 'http://mriqc.readthedocs.org/'
 __download__ = ('https://github.com/poldracklab/mriqc/archive/'

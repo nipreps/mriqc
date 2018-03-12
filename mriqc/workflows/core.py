@@ -33,10 +33,11 @@ def build_workflow(dataset, mod, settings=None):
         workflow.write_graph()
     return workflow
 
+
 def _get_biggest_file_size_gb(files):
     max_size = 0
     for file in files:
-        size = os.path.getsize(file)/(1024*1024*1024)
+        size = os.path.getsize(file) / (1024 ** 3)
         if size > max_size:
             max_size = size
     return max_size
