@@ -15,8 +15,7 @@ jobs:
     steps:
       - run:
           name: Install parallel gzip and python3
-          command: |
-            sudo apt update && sudo apt -y install pigz
+          command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
             - docker-v1-{{ .Branch }}-{{ epoch }}
@@ -36,6 +35,7 @@ jobs:
             set +o pipefail
             if [ -f /tmp/cache/docker.tar.gz ]; then
               pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
               docker images
             fi
       - run:
@@ -68,6 +68,13 @@ jobs:
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
       - run:
+          name: Docker save
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest \
+              | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+      - run:
           name: Prepare MRIQCWebAPI
           command: |
             pip3 install docker-compose
@@ -77,19 +84,20 @@ jobs:
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" $HOME/mriqcwebapi/dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN $HOME/mriqcwebapi/dockereve-master/.env
             fi
-            docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml build
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
       - run:
           name: Docker save
           no_output_timeout: 40m
           command: |
             mkdir -p /tmp/cache
-            docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest python:3.4-onbuild tutum/nginx:latest mongo:latest \
-            | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+            docker save python:3.4-onbuild tutum/nginx:latest mongo:latest \
+              | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
           root: /tmp
           paths:
             - cache/docker.tar.gz
+            - cache/webapi.tar.gz
             - src/mriqc
 
   get_data:
