@@ -13,11 +13,13 @@ from distutils.version import StrictVersion
 from niworkflows.nipype.interfaces import afni
 from builtins import range
 
+
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
         return [float(el) for el in inlist]
     else:
         return float(inlist)
+
 
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
@@ -75,7 +77,7 @@ def spectrum_mask(size):
     # ftmask[size[0] - 1, size[1] - 1] = 0
     # ftmask[0, size[1] - 1] = 0
     # ftmask[size[0] - 1, 0] = 0
-    ftmask[size[0]//2, size[1]//2] = 0
+    ftmask[size[0] // 2, size[1] // 2] = 0
 
     # Distance transform
     ftmask = distance(ftmask)
@@ -162,6 +164,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
+
 
 def get_fwhmx():
     fwhm_args = {"combine": True,

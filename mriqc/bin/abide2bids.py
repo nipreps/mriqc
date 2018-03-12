@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:30:00
+# @Last Modified time: 2018-03-12 11:45:42
 
 """
 ABIDE2BIDS downloader tool
@@ -23,6 +23,7 @@ from multiprocessing import Pool
 from argparse import ArgumentParser, RawTextHelpFormatter
 import numpy as np
 
+
 def main():
     """Entry point"""
     parser = ArgumentParser(description='ABIDE2BIDS downloader',
@@ -36,7 +37,6 @@ def main():
                          default=os.getenv('NITRC_USER'))
     g_input.add_argument('-p', '--nitrc-password', action='store',
                          default=os.getenv('NITRC_PASSWORD'))
-
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store',
@@ -132,8 +132,10 @@ def fetch(args):
     print('Successfully processed subject %s from site %s' % (subject_id[4:], site_name))
     return subject_id[4:], site_name
 
+
 def _myerror(msg):
     print('WARNING: Error deleting temporal files: %s' % msg)
+
 
 if __name__ == '__main__':
     main()

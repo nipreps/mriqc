@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-05 12:37:05
+# @Last Modified time: 2018-03-12 11:50:21
 
 """
 Extracts the sha hash of the contents of a nifti file.
@@ -22,6 +22,7 @@ def get_parser():
                             formatter_class=RawTextHelpFormatter)
     parser.add_argument('input_file', action='store', help='input nifti file')
     return parser
+
 
 def get_hash(nii_file):
     """ Compute hash """

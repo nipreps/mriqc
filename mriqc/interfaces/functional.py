@@ -101,7 +101,6 @@ class FunctionalQC(SimpleInterface):
         for axis in epidir:
             self._results['gsr'][axis] = gsr(epidata, mskdata, direction=axis)
 
-
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1,
                                usecols=list(range(3))).mean(axis=0)
@@ -231,9 +230,11 @@ class Spikes(SimpleInterface):
         self._results['num_spikes'] = len(total_spikes)
         return runtime
 
+
 def find_peaks(data):
     t_z = [data[:, :, i, :].mean(axis=0).mean(axis=0) for i in range(data.shape[2])]
     return t_z
+
 
 def find_spikes(data, spike_thresh):
     data -= np.median(np.median(np.median(data, axis=0), axis=0), axis=0)
@@ -256,15 +257,17 @@ def find_spikes(data, spike_thresh):
 def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     from dipy.segment.mask import median_otsu
     mn = data[:, :, :, nskip:].mean(3)
-    _, mask = median_otsu(mn, 3, 2) # oesteban: masked_data was not used
+    _, mask = median_otsu(mn, 3, 2)  # oesteban: masked_data was not used
     mask = np.concatenate((
         np.tile(True, (data.shape[0], data.shape[1], data.shape[2], nskip)),
-        np.tile(np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3]-nskip))),
+        np.tile(np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3] - nskip))),
         axis=3)
     mask_vols = np.zeros((mask.shape[-1]), dtype=int)
     if mask_bad_end_vols:
-        # Some runs have corrupt volumes at the end (e.g., mux scans that are stopped prematurely). Mask those too.
-        # But... motion correction might have interpolated the empty slices such that they aren't exactly zero.
+        # Some runs have corrupt volumes at the end (e.g., mux scans that are stopped
+        # prematurely). Mask those too.
+        # But... motion correction might have interpolated the empty slices such that
+        # they aren't exactly zero.
         # So use the raw data to find these bad volumes.
         # 2015.10.29 RFD: this caused problems with some non-mux EPI scans that (inexplicably)
         # have empty slices at the top of the brain. So we'll disable it for
@@ -275,7 +278,8 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
             slice_max = raw_d.max(0).max(0)
 
         bad = np.any(slice_max == 0, axis=0)
-        # We don't want to miss a bad volume somewhere in the middle, as that could be a valid artifact.
+        # We don't want to miss a bad volume somewhere in the middle,
+        # as that could be a valid artifact.
         # So, only mask bad vols that are contiguous to the end.
         mask_vols = np.array([np.all(bad[i:]) for i in range(bad.shape[0])])
     # Mask out the skip volumes at the beginning
@@ -284,6 +288,7 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     brain = np.ma.masked_array(data, mask=mask)
     good_vols = np.logical_not(mask_vols)
     return brain, mask, good_vols
+
 
 def _robust_zscore(data):
     return ((data - np.atleast_2d(np.median(data, axis=1)).T) /

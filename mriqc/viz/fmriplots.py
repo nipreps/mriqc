@@ -439,7 +439,7 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
                     arrowstyle='wedge,tail_width=.9', lw=0, patchA=None, patchB=None,
                     fc='dimgray', ec='none', relpos=(.1, .5)))
 
-    if not gs_dist is None:
+    if gs_dist is not None:
         ax_dist = plt.subplot(gs_dist)
         sns.displot(tseries, vertical=True, ax=ax_dist)
         ax_dist.set_xlabel('Timesteps')
