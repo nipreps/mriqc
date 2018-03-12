@@ -10,7 +10,7 @@ jobs:
       MRIQC_API_TAG: 1.0.2
 
     docker:
-      - image: circleci/classic:201711-01
+      - image: docker:18.01.0-ce-git
     working_directory: /tmp/src/mriqc
     steps:
       - run:
