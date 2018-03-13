@@ -40,15 +40,17 @@ class GCOR(CommandLine):
     and ever other voxel, over any give mask.
     For complete details, see the `@compute_gcor Documentation.
     <https://afni.nimh.nih.gov/pub/dist/doc/program_help/@compute_gcor.html>`_
+
     Examples
     ========
     >>> from mriqc.interfaces.transitional import GCOR
     >>> gcor = GCOR()
-    >>> gcor.inputs.in_file = 'structural.nii'
+    >>> gcor.inputs.in_file = 'func.nii'
     >>> gcor.inputs.nfirst = 4
     >>> gcor.cmdline  # doctest: +ALLOW_UNICODE
-    '@compute_gcor -nfirst 4 -input structural.nii'
+    '@compute_gcor -nfirst 4 -input func.nii'
     >>> res = gcor.run()  # doctest: +SKIP
+
     """
 
     _cmd = '@compute_gcor'

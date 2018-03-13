@@ -187,7 +187,8 @@ jobs:
               --entrypoint="py.test" \
               poldracklab/mriqc:latest mriqc/ \
               --junitxml=/scratch/tests.xml \
-              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin --ignore=mriqc/classifier/sklearn
+              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin \
+              --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
       - store_test_results:
           path: /home/circleci/out/tests
 
@@ -228,8 +229,6 @@ jobs:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/t1w
-    environment:
-      - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     steps:
       - attach_workspace:
           at: /tmp
@@ -271,7 +270,7 @@ jobs:
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
-                       --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - run:
           name: Run group-level on T1w images
           no_output_timeout: 2h
@@ -308,6 +307,16 @@ jobs:
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/T1w.csv \
               -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
+
+      - run:
+          name: WebAPI - Check records
+          command: |
+            docker run --rm=false -ti \
+              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
+              poldracklab/mriqc:latest \
+              T1w 4 \
+              --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
+
       - store_artifacts:
           path: /tmp/t1w/derivatives
 
@@ -315,8 +324,6 @@ jobs:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/bold
-    environment:
-      - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     steps:
       - attach_workspace:
           at: /tmp
@@ -358,7 +365,7 @@ jobs:
                        -vv --verbose-reports --profile -m bold \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --testing --ica \
-                       --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
 
       - run:
           name: Run group-level on T1w images
@@ -396,6 +403,16 @@ jobs:
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/bold.csv \
               -r /usr/local/src/mriqc/mriqc/data/testdata/bold.csv
+
+      - run:
+          name: WebAPI - Check records
+          command: |
+            docker run --rm=false -ti \
+              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
+              poldracklab/mriqc:latest \
+              bold 9 \
+              --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
+
       - store_artifacts:
           path: /tmp/bold/derivatives
 
