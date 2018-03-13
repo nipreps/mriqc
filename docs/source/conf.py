@@ -18,6 +18,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os
 import sys
+from datetime import datetime
 from sphinx import __version__ as sphinxversion
 from packaging import version as pver  # Avoid distutils.LooseVersion which is deprecated
 
@@ -110,8 +111,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'mriqc'
-copyright = '2017, Oscar Esteban'
-author = 'Oscar Esteban'
+author = 'The MRIQC developers'
+copyright = '2016-%s, %s' % (datetime.now().year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

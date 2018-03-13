@@ -24,6 +24,7 @@ jobs:
             - docker-v1-
           paths:
             - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
 
       - checkout
       - setup_remote_docker
@@ -153,6 +154,7 @@ jobs:
          key: docker-v1-{{ .Branch }}-{{ epoch }}
          paths:
             - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
 
   test_pytest:
     machine:
