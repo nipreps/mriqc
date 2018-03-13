@@ -225,7 +225,7 @@ jobs:
       image: circleci/classic:201711-01
     working_directory: /tmp/t1w
     environment:
-      MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
+      - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     steps:
       - attach_workspace:
           at: /tmp
@@ -235,7 +235,7 @@ jobs:
             - t1w-anat-v1-{{ .Branch }}
             - t1w-anat-v1-master
             - t1w-anat-v1-
-            - run:
+      - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
           command: |
