@@ -216,100 +216,100 @@ jobs:
       - store_artifacts:
           path: /home/circleci/out/docs
 
-  # T1w:
-  #   machine:
-  #     image: circleci/classic:201711-01
-  #   working_directory: /tmp/t1w
-  #   environment:
-  #     - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
+  T1w:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/t1w
+    environment:
+      - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
 
-  #   steps:
-  #     - attach_workspace:
-  #         at: /tmp
-  #     - restore_cache:
-  #         keys:
-  #           - t1w-anat-v1-{{ .Branch }}-{{ epoch }}
-  #           - t1w-anat-v1-{{ .Branch }}
-  #           - t1w-anat-v1-master
-  #           - t1w-anat-v1-
-  #           - run:
-  #         name: Load Docker image layer cache
-  #         no_output_timeout: 30m
-  #         command: |
-  #           docker info
-  #           set +o pipefail
-  #           if [ -f /tmp/cache/docker.tar.gz ]; then
-  #             sudo apt update && sudo apt -y install pigz
-  #             pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-  #             docker images
-  #           fi
-  #     - run:
-  #         name: Start MRIQC WebAPI endpoint
-  #         command: |
-  #           nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d"
-  #         background: true
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - restore_cache:
+          keys:
+            - t1w-anat-v1-{{ .Branch }}-{{ epoch }}
+            - t1w-anat-v1-{{ .Branch }}
+            - t1w-anat-v1-master
+            - t1w-anat-v1-
+            - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Start MRIQC WebAPI endpoint
+          command: |
+            nohup bash -c "docker-compose -f $HOME/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d"
+          background: true
 
-  #     - run:
-  #         name: Run participant-level on T1w images
-  #         no_output_timeout: 2h
-  #         command: |
-  #           mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
-  #           sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/derivatives
-  #           sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/derivatives
-  #           sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/work
-  #           sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/work
-  #           # Run MRIQC
-  #           docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
-  #                      -v $PWD:/scratch -w /scratch \
-  #                      poldracklab/mriqc:latest \
-  #                      /data derivatives/ participant \
-  #                      -vv --verbose-reports --profile -m T1w \
-  #                      --n_procs 2 --ants-nthreads 1 --ants-float \
-  #                      --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict"
-  #     - save_cache:
-  #        key: t1w-anat-v1-{{ .Branch }}-{{ epoch }}
-  #        paths:
-  #           - /tmp/t1w/work
-  #           - /tmp/t1w/derivatives
+      - run:
+          name: Run participant-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/derivatives
+            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/work
+            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/work
+            # Run MRIQC
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports --profile -m T1w \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --webapi-url http://${MRIQC_API_HOST}/api/v1 --upload-strict"
+      - save_cache:
+         key: t1w-anat-v1-{{ .Branch }}-{{ epoch }}
+         paths:
+            - /tmp/t1w/work
+            - /tmp/t1w/derivatives
 
-  #     - run:
-  #         name: Run group-level on T1w images
-  #         no_output_timeout: 2h
-  #         command: |
-  #           docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
-  #                      -v $PWD:/scratch -w /scratch \
-  #                      poldracklab/mriqc:latest \
-  #                      /data derivatives/ group \
-  #                      -m T1w -vv
+      - run:
+          name: Run group-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ group \
+                       -m T1w -vv
 
-  #     - run:
-  #         name: Checking changes on intermediate files of MRIQC
-  #         command: |
-  #           mkdir -p /tmp/t1w/test
-  #           find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
-  #           diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
-  #           exit $?
+      - run:
+          name: Checking changes on intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/t1w/test
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
+            exit $?
 
-  #     - run:
-  #         name: Checking changes on MD5 sums of intermediate files of MRIQC
-  #         command: |
-  #           mkdir -p /tmp/t1w/test
-  #           export HASHCMD="docker run --rm=false -ti -v $PWD:/scratch \
-  #                                      --entrypoint=/usr/local/miniconda/bin/nib-hash \
-  #                                      poldracklab/mriqc:latest"
-  #           find /tmp/t1w/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/t1w/derivatives/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-  #           diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.out
-  #           exit $?
+      - run:
+          name: Checking changes on MD5 sums of intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/t1w/test
+            export HASHCMD="docker run --rm=false -ti -v $PWD:/scratch \
+                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
+                                       poldracklab/mriqc:latest"
+            find /tmp/t1w/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/t1w/derivatives/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.out
+            exit $?
 
-  #     - run:
-  #         name: Checking changes on IQMs
-  #         command: |
-  #           docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-  #             --entrypoint="dfcheck" poldracklab/mriqc:latest \
-  #             -i /scratch/derivatives/T1w.csv \
-  #             -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
-  #     - store_artifacts:
-  #         path: /tmp/t1w/derivatives
+      - run:
+          name: Checking changes on IQMs
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              -i /scratch/derivatives/T1w.csv \
+              -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
 
   deploy:
     machine:
