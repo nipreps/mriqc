@@ -53,8 +53,9 @@ SETUP_REQUIRES = []
 REQUIRES = [
     'numpy>=1.12.0',
     'niworkflows>=0.3.4',
-    'pybids>=0.4.2',
+    'pybids>=0.5.0',
     'scikit-learn>=0.19.0',
+    'scikit-image',
     'future',
     'scipy',
     'six',
@@ -84,7 +85,14 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.5,<1.6', 'sphinx_rtd_theme>=0.2.4', 'sphinx-argparse'],
+    'doc': [
+        'sphinx>=1.5.3',
+        'sphinx_rtd_theme',
+        'sphinx-argparse',
+        'pydotplus',
+        'pydot>=1.2.3',
+        'packaging',
+    ],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],

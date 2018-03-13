@@ -181,7 +181,7 @@ jobs:
               --entrypoint="py.test" \
               poldracklab/mriqc:latest mriqc/ \
               --junitxml=/scratch/tests.xml \
-              --doctest-modules --ignore=docs --ignore=src
+              --doctest-modules --ignore=docs --ignore=src --ignore mriqc/bin
       - store_test_results:
           path: /home/circleci/out/tests
 
@@ -223,8 +223,7 @@ jobs:
       image: circleci/classic:201711-01
     working_directory: /tmp/t1w
     environment:
-      - MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
-
+      MRIQC_API_HOST: $( hostname -I | awk '{print $1}' )
     steps:
       - attach_workspace:
           at: /tmp

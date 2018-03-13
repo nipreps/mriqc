@@ -18,18 +18,20 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os
 import sys
-from mriqc import __version__
+from sphinx import __version__ as sphinxversion
+from packaging import version as pver  # Avoid distutils.LooseVersion which is deprecated
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../../mriqc'))
-sys.path.insert(0, os.getcwd())
+from .__about__ import __version__
+
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.5'
+needs_sphinx = '1.5.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -51,6 +53,17 @@ extensions = [
 autodoc_mock_imports = [
     'xgboost',
 ]
+
+if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
+    autodoc_mock_imports+=[
+        'scipy',
+        'sklearn',
+        'statsmodel',
+        'niworkflows',
+        'nilearn',
+        'seaborn',
+    ]
+
 # autodoc_mock_imports = [
 #     'scipy',
 #     'scipy.cluster',
