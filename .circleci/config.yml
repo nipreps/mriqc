@@ -155,7 +155,7 @@ jobs:
   test_pytest:
     machine:
       image: circleci/classic:201711-01
-    working_directory: /tmp/src/mriqc
+    working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
           at: /tmp
@@ -175,10 +175,12 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
-              --entrypoint="/usr/local/miniconda/bin/py.test" \
-              poldracklab/mriqc:latest . \
-              --doctest-modules --ignore=docs --ignore=setup.py
-      - store_artifacts:
+              -v $PWD:/scratch -w /usr/local/src/mriqc \
+              --entrypoint="py.test" \
+              poldracklab/mriqc:latest mriqc/ \
+              --junitxml=/scratch/tests.xml \
+              --doctest-modules --ignore=docs --ignore=src
+      - store_test_results:
           path: /home/circleci/out/tests
 
 
@@ -204,10 +206,10 @@ jobs:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            docker run -ti --rm=false -v $PWD:/_build_html \
+            docker run -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
+              -w /usr/local/src/mriqc/docs \
               --entrypoint=sphinx-build poldracklab/mriqc:latest \
-              -T -E -b html -d _build/doctrees-readthedocs -W -D \
-              language=en docs/ /_build_html 2>&1 \
+              -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
               | tee $PWD/builddocs.log
             cat $PWD/builddocs.log
             grep -qv "ERROR" $PWD/builddocs.log
@@ -397,15 +399,15 @@ workflows:
             tags:
               only: /.*/
 
-      - bold:
-          requires:
-            - get_data
-            - build
-          filters:
-            branches:
-              ignore: /docs?\/.*/
-            tags:
-              only: /.*/
+      # - bold:
+      #     requires:
+      #       - get_data
+      #       - build
+      #     filters:
+      #       branches:
+      #         ignore: /docs?\/.*/
+      #       tags:
+      #         only: /.*/
 
       - deploy:
           requires:
