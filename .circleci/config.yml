@@ -321,6 +321,16 @@ jobs:
               T1w 4 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
 
+      - run:
+          name: Test classifier
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+                       --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
+            # Run the classifier on the test data
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/T1w.csv -v
       - store_artifacts:
           path: /tmp/t1w/derivatives
 
