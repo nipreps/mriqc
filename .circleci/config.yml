@@ -35,9 +35,11 @@ jobs:
             set +o pipefail
             if [ -f /tmp/cache/docker.tar.gz ]; then
               pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
-              docker images
             fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -238,11 +240,14 @@ jobs:
           command: |
             docker info
             set +o pipefail
+            sudo apt update && sudo apt -y install pigz
             if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
               pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
             fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
