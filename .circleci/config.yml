@@ -183,7 +183,7 @@ jobs:
               --entrypoint="py.test" \
               poldracklab/mriqc:latest mriqc/ \
               --junitxml=/scratch/tests.xml \
-              --doctest-modules --ignore=docs --ignore=src --ignore mriqc/bin
+              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin --ignore=mriqc/classifier/sklearn
       - store_test_results:
           path: /home/circleci/out/tests
 
