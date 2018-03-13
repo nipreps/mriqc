@@ -42,8 +42,8 @@ class GCOR(CommandLine):
     <https://afni.nimh.nih.gov/pub/dist/doc/program_help/@compute_gcor.html>`_
     Examples
     ========
-    >>> from nipype.interfaces import afni
-    >>> gcor = afni.GCOR()
+    >>> from mriqc.interfaces.transitional import GCOR
+    >>> gcor = GCOR()
     >>> gcor.inputs.in_file = 'structural.nii'
     >>> gcor.inputs.nfirst = 4
     >>> gcor.cmdline  # doctest: +ALLOW_UNICODE
