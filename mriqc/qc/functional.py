@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-30 16:47:11
+# @Last Modified time: 2018-03-12 11:44:09
 """
 
 Measures for the structural information
@@ -170,7 +170,8 @@ Measures for artifacts and other
     doi:`10.1002/mrm.1240 <http://dx.doi.org/10.1002/mrm.1240>`_.
 
   .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
+      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research\
+/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
 
   .. [Power2012] Power et al., *Spurious but systematic correlations in
     functional connectivity MRI networks arise from subject motion*,
@@ -191,9 +192,9 @@ mriqc.qc.functional module
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
-import nibabel as nb
 
 RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
+
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
@@ -244,10 +245,10 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     # Roll data of mask through the appropriate axis
     axis = RAS_AXIS_ORDER[direction]
-    n2_mask = np.roll(mask, mask.shape[axis]//2, axis=axis)
+    n2_mask = np.roll(mask, mask.shape[axis] // 2, axis=axis)
 
     # Step 3: remove from n2_mask pixels inside the brain
-    n2_mask = n2_mask * (1-mask)
+    n2_mask = n2_mask * (1 - mask)
 
     # Step 4: non-ghost background region is labeled as 2
     n2_mask = n2_mask + 2 * (1 - n2_mask - mask)
@@ -255,4 +256,4 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     # Step 5: signal is the entire foreground image
     ghost = np.mean(epi_data[n2_mask == 1]) - np.mean(epi_data[n2_mask == 2])
     signal = np.median(epi_data[n2_mask == 0])
-    return float(ghost/signal)
+    return float(ghost / signal)

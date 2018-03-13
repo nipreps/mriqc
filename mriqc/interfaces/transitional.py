@@ -4,8 +4,10 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from __future__ import print_function, division, absolute_import, unicode_literals
+from niworkflows.nipype.interfaces.base import (
+    File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
+)
 
-from niworkflows.nipype.interfaces.base import File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
 
 class GCORInputSpec(CommandLineInputSpec):
     in_file = File(

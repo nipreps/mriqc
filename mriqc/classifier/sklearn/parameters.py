@@ -22,10 +22,12 @@ import numpy as np
 from builtins import object, zip
 from functools import partial, reduce
 
+
 def _len(indict):
     product = partial(reduce, operator.mul)
     return sum(product(len(v) for v in p.values()) if p else 1
                for p in indict)
+
 
 class ModelParameterGrid(object):
     """

@@ -11,15 +11,15 @@
 """ Encapsulates report generation functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+
 def individual_html(in_iqms, in_plots=None):
-    import os.path as op  #pylint: disable=W0404
+    from os import path as op
     import datetime
     from json import load
     from mriqc import logging, __version__ as ver
     from mriqc.utils.misc import BIDS_COMP
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
-    from io import open  #pylint: disable=W0622
     report_log = logging.getLogger('mriqc.report')
 
     def _get_details(in_iqms, modality):
@@ -63,8 +63,6 @@ first {} volumes</span>. They were excluded before generating any QC measures an
 
         return in_prov, wf_details
 
-
-
     with open(in_iqms) as jsonfile:
         iqms_dict = load(jsonfile)
 
@@ -84,8 +82,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
 
-    pred_qa = None #metadata.pop('mriqc_pred', None)
-
+    pred_qa = None  # metadata.pop('mriqc_pred', None)
     config = {
         'modality': mod,
         'sub_id': '_'.join(file_id),

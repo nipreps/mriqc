@@ -17,7 +17,7 @@ import pandas as pd
 from .. import logging
 from ..utils.misc import BIDS_COMP
 
-from builtins import zip, object, str  # pylint: disable=W0622
+from builtins import object  # pylint: disable=W0622
 from io import open
 
 MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
@@ -25,13 +25,10 @@ MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
-    from os import remove
-    from shutil import copy
     import datetime
     from pkg_resources import resource_filename as pkgrf
     from .. import __version__ as ver
     from ..data import GroupTemplate
-    from ..utils.misc import check_folder
 
     if version_info[0] > 2:
         from io import StringIO as TextIO
@@ -127,16 +124,15 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         try:
             failed_df = failed_df.sort_values(by=cols)
         except AttributeError:
-            #pylint: disable=E1101
             failed_df = failed_df.sort(columns=cols)
 
-        failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
+        # myfmt not defined
+        # failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
 
     csv_groups = []
     datacols = dataframe.columns.ravel().tolist()
     for group, units in QCGROUPS[mod]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
-
 
         for iqm in group:
             if iqm in datacols:
@@ -158,21 +154,21 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         out_file = op.abspath('group.html')
     tpl = GroupTemplate()
     tpl.generate_conf({
-            'modality': mod,
-            'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-            'version': ver,
-            'csv_groups': csv_groups,
-            'failed': failed,
-            'boxplots_js': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                       'embed_resources',
-                                                       'boxplots.js'))).read(),
-            'd3_js': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                 'embed_resources',
-                                                 'd3.min.js'))).read(),
-            'boxplots_css': open(pkgrf('mriqc', op.join('data', 'reports',
-                                                        'embed_resources',
-                                                        'boxplots.css'))).read()
-        }, out_file)
+        'modality': mod,
+        'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
+        'version': ver,
+        'csv_groups': csv_groups,
+        'failed': failed,
+        'boxplots_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                   'embed_resources',
+                                                   'boxplots.js'))).read(),
+        'd3_js': open(pkgrf('mriqc', op.join('data', 'reports',
+                                             'embed_resources',
+                                             'd3.min.js'))).read(),
+        'boxplots_css': open(pkgrf('mriqc', op.join('data', 'reports',
+                                                    'embed_resources',
+                                                    'boxplots.css'))).read()
+    }, out_file)
 
     return out_file
 

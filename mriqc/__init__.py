@@ -43,4 +43,3 @@ DEFAULTS = {
     'ants_nthreads': 6,
     'float32': False
 }
-
