@@ -3,11 +3,8 @@ jobs:
 
   build:
     environment:
-      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      SCRATCH: "/scratch"
-      TEST_DATA_NAME: "circle-tests"
-      TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
-      MRIQC_API_TAG: 1.0.2
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - MRIQC_API_TAG: 1.0.2
 
     docker:
       - image: docker:18.01.0-ce-git
@@ -108,6 +105,10 @@ jobs:
     machine:
       # Ubuntu 14.04 with Docker 17.10.0-ce
       image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
     working_directory: /home/circleci/data
     steps:
       - restore_cache:
@@ -228,6 +229,9 @@ jobs:
   T1w:
     machine:
       image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
     working_directory: /tmp/t1w
     steps:
       - attach_workspace:
@@ -323,6 +327,9 @@ jobs:
   bold:
     machine:
       image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
     working_directory: /tmp/bold
     steps:
       - attach_workspace:
