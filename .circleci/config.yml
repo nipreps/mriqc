@@ -1,0 +1,552 @@
+version: 2
+jobs:
+
+  build:
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - MRIQC_API_TAG: 1.0.2
+
+    docker:
+      - image: docker:18.01.0-ce-git
+    working_directory: /tmp/src/mriqc
+    steps:
+      - run:
+          name: Install parallel gzip and python3
+          command: apk add --no-cache pigz python3
+      - restore_cache:
+          keys:
+            - docker-v1-{{ .Branch }}-{{ epoch }}
+            - docker-v1-{{ .Branch }}-
+            - docker-v1-master-
+            - docker-v1-
+          paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
+
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
+      - run:
+          name: Build Docker image
+          no_output_timeout: 60m
+          command: |
+            # Inject MRIQC-WebAPI secret
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+            fi
+            # Get version, update files.
+            THISVERSION=$( python3 get_version.py )
+            if [[ ${THISVERSION:0:1} == "0" ]] ; then
+              echo "WARNING: latest git tag could not be found"
+              echo "Please, make sure you fetch all tags from upstream with"
+              echo "the command ``git fetch --tags --verbose`` and push"
+              echo "them to your fork with ``git push origin --tags``"
+            fi
+            echo "${CIRCLE_TAG:-$THISVERSION}" > mriqc/VERSION
+            # Build docker image
+            e=1 && for i in {1..5}; do
+              docker build \
+                --cache-from=poldracklab/mriqc \
+                --rm=false \
+                -t poldracklab/mriqc:latest \
+                --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+                --build-arg VCS_REF=`git rev-parse --short HEAD` \
+                --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
+              && e=0 && break || sleep 15
+            done && [ "$e" -eq "0" ]
+      - run:
+          name: Docker save
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest \
+              | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+      - run:
+          name: Prepare MRIQCWebAPI
+          command: |
+            pip3 install docker-compose
+            rm -rf /tmp/src/mriqcwebapi
+            cd /tmp/src && git clone https://github.com/poldracklab/mriqcwebapi.git && cd mriqcwebapi && git checkout ${MRIQC_API_TAG}
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" $HOME/mriqcwebapi/dockereve-master/.env
+              grep -q -i $MRIQC_API_SECRET_TOKEN $HOME/mriqcwebapi/dockereve-master/.env
+            fi
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+      - run:
+          name: Docker save
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            docker save python:3.4-onbuild tutum/nginx:latest mongo:latest \
+              | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - cache/docker.tar.gz
+            - cache/webapi.tar.gz
+            - src/mriqc
+            - src/mriqcwebapi
+
+  get_data:
+    machine:
+      # Ubuntu 14.04 with Docker 17.10.0-ce
+      image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
+    working_directory: /home/circleci/data
+    steps:
+      - restore_cache:
+          keys:
+            - data-v1-{{ epoch }}
+            - data-v1-
+      - run:
+          name: Get test data
+          command: |
+            mkdir -p /tmp/data
+            if [[ ! -d /tmp/data/${TEST_DATA_NAME} ]]; then
+              wget --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 0 -q \
+                -O ${TEST_DATA_NAME}.tar.gz "${TEST_DATA_URL}"
+              tar xvzf ${TEST_DATA_NAME}.tar.gz -C /tmp/data/
+            else
+              echo "Dataset ${TEST_DATA_NAME} was cached"
+            fi
+      - run:
+          name: Create Nipype config files
+          command: |
+            mkdir -p /tmp/t1w /tmp/bold
+            printf "[execution]\nstop_on_first_crash = true\nremove_unnecessary_outputs = false\n" > /tmp/t1w/nipype.cfg
+            echo "poll_sleep_duration = 0.2" >> /tmp/t1w/nipype.cfg
+            echo "hash_method = content" >> /tmp/t1w/nipype.cfg
+            cp /tmp/t1w/nipype.cfg /tmp/bold/nipype.cfg
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - data
+            - t1w/nipype.cfg
+            - bold/nipype.cfg
+      - save_cache:
+         key: data-v1-{{ epoch }}
+         paths:
+            - /tmp/data
+            - /tmp/t1w
+            - /tmp/bold
+
+  update_cache:
+    machine:
+      # Ubuntu 14.04 with Docker 17.10.0-ce
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - save_cache:
+         key: docker-v1-{{ .Branch }}-{{ epoch }}
+         paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
+
+  test_pytest:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /home/circleci/out/tests
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Run MRIQC tests
+          no_output_timeout: 2h
+          command: |
+            docker run -ti --rm=false \
+              -v $PWD:/scratch -w /usr/local/src/mriqc \
+              --entrypoint="py.test" \
+              poldracklab/mriqc:latest mriqc/ \
+              --junitxml=/scratch/tests.xml \
+              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin \
+              --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
+      - store_test_results:
+          path: /home/circleci/out/tests
+
+
+  build_docs:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /home/circleci/out/docs
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Build MRIQC documentation
+          no_output_timeout: 2h
+          command: |
+            docker run -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
+              -w /usr/local/src/mriqc/docs \
+              --entrypoint=sphinx-build poldracklab/mriqc:latest \
+              -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
+              | tee $PWD/builddocs.log
+            cat $PWD/builddocs.log
+            grep -qv "ERROR" $PWD/builddocs.log
+      - store_artifacts:
+          path: /home/circleci/out/docs
+
+  T1w:
+    machine:
+      image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+    working_directory: /tmp/t1w
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            pip install docker-compose
+            docker info
+            set +o pipefail
+            sudo apt update && sudo apt -y install pigz
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
+      - run:
+          name: Start MRIQC WebAPI endpoint
+          command: |
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+          background: true
+
+      - run:
+          name: Run participant-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/derivatives
+            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/work
+            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/work
+            # Run MRIQC
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports --profile -m T1w \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - run:
+          name: Run group-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ group \
+                       -m T1w -vv
+
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/t1w/test
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
+            exit $?
+
+      - run:
+          name: Checking changes on MD5 sums of intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/t1w/test
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
+                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
+                                       poldracklab/mriqc:latest"
+            find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
+            exit $?
+
+      - run:
+          name: Checking changes on IQMs
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              -i /scratch/derivatives/T1w.csv \
+              -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
+
+      - run:
+          name: WebAPI - Check records
+          command: |
+            docker run --rm=false -ti \
+              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
+              poldracklab/mriqc:latest \
+              T1w 4 \
+              --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
+
+      - run:
+          name: Test classifier
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+                       --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
+            # Run the classifier on the test data
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/T1w.csv -v
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
+
+      - store_artifacts:
+          path: /tmp/t1w/test
+
+  bold:
+    machine:
+      image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+    working_directory: /tmp/bold
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            pip install docker-compose
+            set +o pipefail
+            sudo apt update && sudo apt -y install pigz
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
+      - run:
+          name: Start MRIQC WebAPI endpoint
+          command: |
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+          background: true
+
+      - run:
+          name: Run participant-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/bold/work /tmp/bold/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/bold/derivatives
+            sudo setfacl -m group:$(id -gn):rwx /tmp/bold/derivatives
+            sudo setfacl -d -m group:$(id -gn):rwx /tmp/bold/work
+            sudo setfacl -m group:$(id -gn):rwx /tmp/bold/work
+            # Run MRIQC
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports --profile -m bold \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --testing --ica \
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+
+      - run:
+          name: Run group-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       poldracklab/mriqc:latest \
+                       /data derivatives/ group \
+                       -m bold -vv
+
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/bold/test
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
+            exit $?
+
+      - run:
+          name: Checking changes on MD5 sums of intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/bold/test
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
+                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
+                                       poldracklab/mriqc:latest"
+            find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
+            exit $?
+
+      - run:
+          name: Checking changes on IQMs
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              -i /scratch/derivatives/bold.csv \
+              -r /usr/local/src/mriqc/mriqc/data/testdata/bold.csv
+
+      - run:
+          name: WebAPI - Check records
+          command: |
+            docker run --rm=false -ti \
+              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
+              poldracklab/mriqc:latest \
+              bold 9 \
+              --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
+
+      - store_artifacts:
+          path: /tmp/bold/derivatives
+          
+      - store_artifacts:
+          path: /tmp/bold/test
+
+  deploy:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            set +o pipefail
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              sudo apt update && sudo apt -y install pigz
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+              docker images
+            fi
+      - run:
+          name: Deploy to Docker Hub
+          no_output_timeout: 40m
+          command: |
+            if [[ -n "$DOCKER_PASS" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+              docker push poldracklab/mriqc:latest
+              docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG
+              docker push poldracklab/mriqc:$CIRCLE_TAG
+            fi
+      - run:
+          name: Deploy to PyPi
+          command: |
+            pip install "setuptools>=27.0" cython numpy twine future
+            echo "${CIRCLE_TAG}" > mriqc/VERSION
+            python setup.py sdist
+            twine upload dist/*
+            cd wrapper && python setup.py sdist
+            twine upload dist/*
+
+workflows:
+  version: 2
+  build_test_deploy:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+
+      - get_data:
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - build_docs:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+
+      - update_cache:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - test_pytest:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - T1w:
+          requires:
+            - get_data
+            - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - bold:
+          requires:
+            - get_data
+            - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - deploy:
+          requires:
+            - build
+            - test_pytest
+            - build_docs
+            - T1w
+            - bold
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
