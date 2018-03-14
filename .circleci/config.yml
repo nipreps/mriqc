@@ -4,7 +4,7 @@ jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      - MRIQC_API_TAG: 1.0.2
+      - MRIQC_API_TAG: 1.0.3
 
     docker:
       - image: docker:18.01.0-ce-git
@@ -79,10 +79,12 @@ jobs:
           command: |
             pip3 install docker-compose
             rm -rf /tmp/src/mriqcwebapi
-            cd /tmp/src && git clone https://github.com/poldracklab/mriqcwebapi.git && cd mriqcwebapi && git checkout ${MRIQC_API_TAG}
+            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
+            cd /tmp/src/mriqcwebapi
+            git checkout ${MRIQC_API_TAG}
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" $HOME/mriqcwebapi/dockereve-master/.env
-              grep -q -i $MRIQC_API_SECRET_TOKEN $HOME/mriqcwebapi/dockereve-master/.env
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
+              grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
