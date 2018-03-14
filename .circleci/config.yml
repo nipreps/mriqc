@@ -297,10 +297,10 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/t1w/test
-            export HASHCMD="docker run --rm=false -ti -v $PWD:/scratch \
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
-            find /tmp/t1w/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/t1w/derivatives/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
+            find /tmp/t1w/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.out
             exit $?
 
@@ -406,10 +406,10 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/bold/test
-            export HASHCMD="docker run --rm=false -ti -v $PWD:/scratch \
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
-            find /tmp/bold/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/bold/derivatives/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
+            find /tmp/bold/derivatives -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.out
             exit $?
 
