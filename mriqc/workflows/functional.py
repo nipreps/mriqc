@@ -38,13 +38,15 @@ from niworkflows.nipype.interfaces import io as nio
 from niworkflows.nipype.interfaces import utility as niu
 from niworkflows.nipype.interfaces import afni, ants, fsl
 
+from niworkflows.interfaces import segmentation as nws
+from niworkflows.interfaces import registration as nwr
+from niworkflows.interfaces import utils as niutils
+from niworkflows.interfaces.plotting import FMRISummary
+
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
 from ..utils.misc import check_folder
-from niworkflows.interfaces import segmentation as nws
-from niworkflows.interfaces import registration as nwr
-from niworkflows.interfaces import utils as niutils
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -344,12 +346,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask',
                         mem_gb=biggest_file_gb * 2.5)
 
-    bigplot = pe.Node(niu.Function(
-        input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
-                     'fd', 'fd_thres', 'dvars', 'outliers'],
-        output_names=['out_file'], function=_big_plot), name='BigPlot',
-        mem_gb=biggest_file_gb * 3.5)
-
+    bigplot = pe.Node(FMRISummary(), name='BigPlot', mem_gb=biggest_file_gb * 3.5)
     workflow.connect([
         (inputnode, spikes_bg, [('in_ras', 'in_file')]),
         (inputnode, spmask, [('in_ras', 'in_file')]),
@@ -845,41 +842,3 @@ def _parse_tout(in_file):
     import numpy as np
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
-
-
-def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
-              fd, fd_thres, dvars, outliers, out_file=None):
-    import os.path as op
-    import numpy as np
-    from mriqc.viz.fmriplots import fMRIPlot
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_func))
-        if ext == '.gz':
-            fname, _ = op.splitext(fname)
-        out_file = op.abspath('{}_fmriplot.svg'.format(fname))
-
-    title = 'fMRI Summary plot'
-
-    myplot = fMRIPlot(
-        in_func, in_mask, in_segm, title=title)
-    myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
-
-    # Add AFNI outliers plot
-    myplot.add_confounds([np.nan] + np.loadtxt(outliers, usecols=[0]).tolist(),
-                         {'name': 'outliers', 'units': '%', 'normalize': False,
-                          'ylims': (0.0, None)})
-
-    # Pick non-standardize dvars
-    myplot.add_confounds([np.nan] + np.loadtxt(dvars, skiprows=1,
-                                               usecols=[1]).tolist(),
-                         {'name': 'DVARS', 'units': None, 'normalize': False})
-
-    # Add FD
-    myplot.add_confounds([np.nan] + np.loadtxt(fd, skiprows=1,
-                                               usecols=[0]).tolist(),
-                         {'name': 'FD', 'units': 'mm', 'normalize': False,
-                          'cutoff': [fd_thres], 'ylims': (0.0, fd_thres)})
-    myplot.plot()
-    myplot.fig.savefig(out_file, bbox_inches='tight')
-    myplot.fig.clf()
-    return out_file
