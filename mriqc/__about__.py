@@ -57,7 +57,7 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'niworkflows',
+    'niworkflows>=0.3.6',
     'pybids>=0.5',
     'scikit-learn>=0.19.0',
     'future',
@@ -80,8 +80,6 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/poldracklab/niworkflows.git'
-    '@4e90d52fa55bb13c79652daacca9d6829c22ea00#egg=niworkflows-0.3.6-dev',
 ]
 
 
