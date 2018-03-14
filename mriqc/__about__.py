@@ -92,7 +92,7 @@ TESTS_REQUIRES = [
 EXTRA_REQUIRES = {
     'doc': [
         'sphinx>=1.5.3',
-        'sphinx_rtd_theme',
+        'sphinx_rtd_theme>=0.2.4',
         'sphinx-argparse',
         'pydotplus',
         'pydot>=1.2.3',
