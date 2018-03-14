@@ -98,7 +98,7 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
                      numpy=1.12.0 \
                      cython \
                      scipy=0.19.0 \
-                     matplotlib=2.0.0 \
+                     matplotlib=2.2.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
