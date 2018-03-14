@@ -286,7 +286,7 @@ jobs:
                        -m T1w -vv
 
       - run:
-          name: Checking changes on intermediate files of MRIQC
+          name: Checking presence of outputs
           command: |
             mkdir -p /tmp/t1w/test
             find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
@@ -301,7 +301,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.out
+            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -333,6 +333,9 @@ jobs:
                        --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/T1w.csv -v
       - store_artifacts:
           path: /tmp/t1w/derivatives
+
+      - store_artifacts:
+          path: /tmp/t1w/test
 
   bold:
     machine:
@@ -395,7 +398,7 @@ jobs:
                        -m bold -vv
 
       - run:
-          name: Checking changes on intermediate files of MRIQC
+          name: Checking presence of outputs
           command: |
             mkdir -p /tmp/bold/test
             find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
@@ -410,7 +413,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.out
+            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -432,6 +435,9 @@ jobs:
 
       - store_artifacts:
           path: /tmp/bold/derivatives
+          
+      - store_artifacts:
+          path: /tmp/bold/test
 
   deploy:
     machine:
