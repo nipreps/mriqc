@@ -297,7 +297,7 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/t1w/test
-            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch \
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
@@ -385,7 +385,7 @@ jobs:
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
 
       - run:
-          name: Run group-level on T1w images
+          name: Run group-level on BOLD images
           no_output_timeout: 2h
           command: |
             docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
@@ -406,7 +406,7 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/bold/test
-            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch \
+            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
