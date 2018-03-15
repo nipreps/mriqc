@@ -10,6 +10,7 @@
 """ SVG handling utilities """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+
 def svg2str(display_object, dpi=300):
     """
     Serializes a nilearn display object as a string
@@ -21,6 +22,7 @@ def svg2str(display_object, dpi=300):
         facecolor='k', edgecolor='k')
     image_buf.seek(0)
     return image_buf.getvalue()
+
 
 def combine_svg(svg_list, axis='vertical'):
     """
@@ -36,14 +38,13 @@ def combine_svg(svg_list, axis='vertical'):
     # Query the size of each
     sizes = [(int(f.width[:-2]), int(f.height[:-2])) for f in svgs]
 
-
     if axis == 'vertical':
         # Calculate the scale to fit all widths
         scales = [1.0] * len(svgs)
         if not all([width[0] == sizes[0][0] for width in sizes[1:]]):
             ref_size = sizes[0]
             for i, els in enumerate(sizes):
-                scales[i] = ref_size[0]/els[0]
+                scales[i] = ref_size[0] / els[0]
 
         newsizes = [tuple(size)
                     for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
@@ -55,12 +56,11 @@ def combine_svg(svg_list, axis='vertical'):
         if not all([height[0] == sizes[0][1] for height in sizes[1:]]):
             ref_size = sizes[0]
             for i, els in enumerate(sizes):
-                scales[i] = ref_size[1]/els[1]
+                scales[i] = ref_size[1] / els[1]
 
         newsizes = [tuple(size)
                     for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
         totalsize = [np.sum(newsizes, axis=0)[0], newsizes[0][1]]
-
 
     # Compose the views panel: total size is the width of
     # any element (used the first here) and the sum of heights
@@ -82,6 +82,7 @@ def combine_svg(svg_list, axis='vertical'):
             fig.append(r)
 
     return fig
+
 
 def extract_svg(display_object, dpi=300):
     """

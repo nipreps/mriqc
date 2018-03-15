@@ -120,7 +120,6 @@ def main():
     elif opts.nested_cv:
         base_name += '_ncv-loso'
 
-
     if opts.log_file is None or len(opts.log_file) > 0:
         log_file = opts.log_file if opts.log_file else base_name + '.log'
         fhl = logging.FileHandler(log_file)

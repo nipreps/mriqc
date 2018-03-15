@@ -12,8 +12,10 @@ set -e         # Exit immediately if a command exits with a non-zero status.
 set -u         # Treat unset variables as an error when substituting.
 set -x         # Print command traces before executing command.
 
-echo "$1" >> newchanges
-echo $( printf "%${#1}s" | tr " " "=" ) >> newchanges
+# Elaborate today's release header
+HEADER="$1 ($(date '+%B %d, %Y'))"
+echo $HEADER >> newchanges
+echo $( printf "%${#HEADER}s" | tr " " "=" ) >> newchanges
 echo "" >> newchanges
 
 git log --grep="Merge pull request" `git describe --tags --abbrev=0`..HEAD --pretty='format:  * %b %s' | sed  's/Merge pull request \#\([^\d]*\)\ from\ .*/(\#\1)/' >> newchanges

@@ -15,8 +15,8 @@ from builtins import bytes, str
 from niworkflows.nipype import logging
 from niworkflows.nipype.interfaces.base import (
     traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
-    File, Undefined, Str)
-from niworkflows.interfaces.base import SimpleInterface
+    File, Undefined, Str, SimpleInterface
+)
 from ..utils.misc import BIDS_COMP, BIDS_EXPR
 
 IFLOGGER = logging.getLogger('interface')
