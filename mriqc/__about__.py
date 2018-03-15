@@ -57,7 +57,7 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'niworkflows>=0.3.6',
+    'niworkflows>=0.3.6-1',
     'pybids>=0.5',
     'pybids>=0.5.0',
     'scikit-learn>=0.19.0',
