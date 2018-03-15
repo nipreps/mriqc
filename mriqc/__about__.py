@@ -57,7 +57,8 @@ SETUP_REQUIRES = []
 
 REQUIRES = [
     'numpy>=1.12.0',
-    'niworkflows>=0.3.4',
+    'niworkflows>=0.3.6-1',
+    'pybids>=0.5',
     'pybids>=0.5.0',
     'scikit-learn>=0.19.0',
     'scikit-image',
@@ -80,7 +81,8 @@ REQUIRES = [
     'xvfbwrapper',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+]
 
 
 TESTS_REQUIRES = [
