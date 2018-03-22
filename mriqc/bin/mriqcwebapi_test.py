@@ -4,6 +4,7 @@
 # @Date:   2015-11-19 16:44:27
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+
 def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
@@ -12,9 +13,9 @@ def get_parser():
     parser = ArgumentParser(description='MRIQCWebAPI: Check entries',
                             formatter_class=RawTextHelpFormatter)
     parser.add_argument('modality', action='store', choices=['T1w', 'bold'],
-    	                help='number of expected items in the database')
+                        help='number of expected items in the database')
     parser.add_argument('expected', action='store', type=int,
-    	                help='number of expected items in the database')
+                        help='number of expected items in the database')
     parser.add_argument(
         '--webapi-url', action='store', default='https://mriqc.nimh.nih.gov/api/v1/T1w', type=str,
         help='IP address where the MRIQC WebAPI is listening')

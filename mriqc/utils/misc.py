@@ -27,6 +27,7 @@ BIDS_EXPR = """\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
 
+
 def split_ext(in_file, out_file=None):
     import os.path as op
     if out_file is None:
@@ -47,6 +48,7 @@ def check_folder(folder):
             if not exc.errno == EEXIST:
                 raise
     return folder
+
 
 def reorder_csv(csv_file, out_file=None):
     """
@@ -99,7 +101,7 @@ def rotate_files(fname):
     prev.insert(0, fname)
     prev.append('{0}.{1:d}{2}'.format(name, len(prev) - 1, ext))
     for i in reversed(list(range(1, len(prev)))):
-        os.rename(prev[i-1], prev[i])
+        os.rename(prev[i - 1], prev[i])
 
 
 def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
@@ -198,15 +200,12 @@ def generate_csv(derivatives_dir, output_dir, mod):
     try:
         dataframe = dataframe.sort_values(by=bids_fields)
     except AttributeError:
-        #pylint: disable=E1101
         dataframe = dataframe.sort(columns=bids_fields)
 
     # Drop duplicates
     try:
-        #pylint: disable=E1101
         dataframe.drop_duplicates(bids_fields, keep='last', inplace=True)
     except TypeError:
-        #pylint: disable=E1101
         dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
                                   inplace=True)
 

@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-05 12:25:28
+# @Last Modified time: 2018-03-12 11:45:30
 
 """
 Compares pandas dataframes by columns
@@ -60,8 +60,8 @@ def main():
 
     diff = ~np.isclose(ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance)
     if np.any(diff):
-        ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
-        #ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()
+        # ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
+        # ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()
         # changed = ne_stacked[ne_stacked]
         # changed.set_index(ref_bids)
         difference_locations = np.where(diff)
@@ -86,8 +86,6 @@ def main():
             sys.exit('Output CSV file changed one or more values')
         else:
             print('All IQMs show a Pearson correlation >= 0.95')
-
-
 
     sys.exit(0)
 

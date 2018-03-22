@@ -13,14 +13,14 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 
 def individual_html(in_iqms, in_plots=None, api_id=None):
-    import os.path as op
+    from os import path as op
     import datetime
     from json import load
     from mriqc import logging, __version__ as ver
     from mriqc.utils.misc import BIDS_COMP
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
-    from io import open
+
     report_log = logging.getLogger('mriqc.report')
 
     def _get_details(in_iqms, modality):

@@ -1,4 +1,5 @@
 # python cache
+.cache/
 __pycache__/**/*
 __pycache__
 *.pyc
@@ -14,12 +15,14 @@ mriqc.egg-info
 .eggs
 src/**/*
 src/
+notebooks/
 
 # releasing
 Makefile
 
 # git
 .gitignore
+.gitattributes
 .git/**/*
 .git
 
@@ -29,6 +32,12 @@ agave
 notebooks/**/*
 notebooks
 
-# CircleCI venv
+# CircleCI and Travis
 venv/**/*
 venv/
+.circleci/
+.travis.yml
+codecov.yml
+CONTRIBUTING.md
+.pylintrc
+.readthedocs.yml

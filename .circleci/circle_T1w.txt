@@ -1,0 +1,14 @@
+derivatives
+derivatives/sub-50137_T1w.json
+derivatives/sub-50152_T1w.json
+derivatives/sub-50785_T1w.json
+derivatives/sub-51187_T1w.json
+logs
+reports
+reports/sub-50137_T1w.html
+reports/sub-50152_T1w.html
+reports/sub-50785_T1w.html
+reports/sub-51187_T1w.html
+reports/T1w_group.html
+T1w.csv
+/tmp/t1w/derivatives

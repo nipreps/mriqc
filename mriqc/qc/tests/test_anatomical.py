@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:44:02
+# @Last Modified time: 2018-03-12 11:42:23
 """
 Anatomical tests
 """
@@ -40,11 +40,11 @@ class GroundTruth(object):
         test_data[wmdata > 0] = wm_mean
 
         if noise == 'rice':
-            test_data += rice.rvs(0.77, scale=sigma*wm_mean, size=test_data.shape)
+            test_data += rice.rvs(0.77, scale=sigma * wm_mean, size=test_data.shape)
         elif noise == 'rayleigh':
-            test_data += np.random.rayleigh(scale=sigma*wm_mean, size=test_data.shape)
+            test_data += np.random.rayleigh(scale=sigma * wm_mean, size=test_data.shape)
         else:
-            test_data += np.random.normal(0., scale=sigma*wm_mean, size=test_data.shape)
+            test_data += np.random.normal(0., scale=sigma * wm_mean, size=test_data.shape)
 
         return test_data, wmdata, bgdata
 
@@ -68,8 +68,10 @@ def gtruth():
 #     test_data[gmdata > 0] = gm_mean
 #     test_data[wmdata > 0] = wm_mean
 
-#     test_data[wmdata > .5] += np.random.normal(0.0, scale=sigma*wm_mean, size=test_data[wmdata > .5].shape)
-#     test_data[gmdata > .5] += np.random.normal(0.0, scale=sigma*gm_mean, size=test_data[gmdata > .5].shape)
+#     test_data[wmdata > .5] += np.random.normal(
+#         0.0, scale=sigma*wm_mean, size=test_data[wmdata > .5].shape)
+#     test_data[gmdata > .5] += np.random.normal(
+#         0.0, scale=sigma*gm_mean, size=test_data[gmdata > .5].shape)
 
 #     exp_cjv = sigma * (wm_mean + gm_mean) / (wm_mean - gm_mean)
 

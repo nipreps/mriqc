@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-05-05 14:37:34
+# @Last Modified time: 2018-03-12 11:49:52
 
 """
 MRIQC Plot script
@@ -22,6 +22,7 @@ from argparse import RawTextHelpFormatter
 from .. import __version__
 from ..reports import workflow_report
 
+
 def main():
     """Entry point"""
     parser = ArgumentParser(description='MRI Quality Control',
@@ -38,7 +39,8 @@ def main():
 
     g_outputs = parser.add_argument_group('Outputs')
     g_outputs.add_argument('-o', '--output-dir', action='store')
-    g_outputs.add_argument('-w', '--work-dir', action='store', default=op.join(os.getcwd(), 'work'))
+    g_outputs.add_argument('-w', '--work-dir', action='store',
+                           default=op.join(os.getcwd(), 'work'))
 
     opts = parser.parse_args()
     if opts.version:

@@ -65,7 +65,8 @@ Measures based on information theory
 
 - :py:func:`~mriqc.qc.anatomical.fber`:
   The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
-  defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
+  defined as the mean energy of image values within the head relative
+  to outside the head [QAP-measures]_.
   Higher values are better.
 
 Measures targeting specific artifacts
@@ -81,8 +82,9 @@ Measures targeting specific artifacts
 
 - :py:func:`~mriqc.qc.anatomical.art_qi1`:
   Detect artifacts in the image using the method described in [Mortamet2009]_.
-  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity corrupted by artifacts
-  normalized by the number of voxels in the background. Lower values are better.
+  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity
+  corrupted by artifacts normalized by the number of voxels in the background.
+  Lower values are better.
 
   .. figure:: ../resources/mortamet-mrm2009.png
 
@@ -110,7 +112,9 @@ Other measures
 
   .. math ::
 
-      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}
+      {2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+
 
 .. _iqms_icvs:
 
@@ -141,7 +145,8 @@ Other measures
 
   .. math ::
 
-      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}{\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      {\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
 
 
 .. topic:: References
@@ -163,7 +168,8 @@ Other measures
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
 
-  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
+  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*,
+    IEEE Trans Med Imag, 29(6):1310-20,
     2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
 
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
@@ -193,7 +199,7 @@ from statsmodels.robust.scale import mad
 
 
 from io import open  # pylint: disable=W0622
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
+from builtins import zip, range  # pylint: disable=W0622
 from six import string_types
 
 DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
@@ -339,7 +345,8 @@ def efc(img, framemask=None):
 
     .. math::
 
-        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}}
+        \ln \left[\frac{x_j}{x_\text{max}}\right]
 
     with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
@@ -364,7 +371,7 @@ def efc(img, framemask=None):
     # Calculate the maximum value of the EFC (which occurs any time all
     # voxels have the same value)
     efc_max = 1.0 * n_vox * (1.0 / np.sqrt(n_vox)) * \
-                np.log(1.0 / np.sqrt(n_vox))
+        np.log(1.0 / np.sqrt(n_vox))
 
     # Calculate the total image energy
     b_max = np.sqrt((img[framemask == 0]**2).sum())
@@ -388,11 +395,12 @@ def wm2max(img, mu_wm):
     """
     return float(mu_wm / np.percentile(img.reshape(-1), 99.95))
 
+
 def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity corrupted by artifacts
-    normalized by the number of voxels in the background:
+    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
+    corrupted by artifacts normalized by the number of voxels in the background:
 
     .. math ::
 
@@ -447,7 +455,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     dmax = np.percentile(data[data > 0], 99.9)
     hist, bin_edges = np.histogram(data[data > 0], density=True,
                                    range=(0.0, dmax), bins='doane')
-    bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
+    bin_centers = [float(np.mean(bin_edges[i:i + 1])) for i in range(len(bin_edges) - 1)]
     max_pos = np.argmax(hist)
     json_out = {
         'x': bin_centers,
@@ -455,7 +463,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     }
 
     # Fit central chi distribution
-    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[max_pos])
+    param = chi.fit(data[data > 0], 2 * ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
     json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
@@ -507,6 +515,7 @@ def volume_fraction(pvms):
         tissue_vfs[k] /= total
     return {k: float(v) for k, v in list(tissue_vfs.items())}
 
+
 def rpve(pvms, seg):
     """
     Computes the :abbr:`rPVe (residual partial voluming error)`
@@ -533,6 +542,7 @@ def rpve(pvms, seg):
         pvmap[pvmap > upth] = 0
         pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
+
 
 def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
@@ -619,9 +629,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         MRIQC_LOG.warn('estimated MAD in the background was too small ('
                        'MAD=%f)', output['bg']['mad'])
         output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
-
-
     return output
+
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
@@ -643,4 +652,3 @@ def _prepare_mask(mask, label, erode=True):
         fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
 
     return fgmask
-

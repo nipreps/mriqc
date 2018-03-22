@@ -18,6 +18,7 @@ from .. import __version__
 
 DEFAULT_MEM_GB = 8
 
+
 def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser

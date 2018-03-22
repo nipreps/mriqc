@@ -11,10 +11,8 @@ Cross-validation helper
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from datetime import datetime
 import numpy as np
 import pandas as pd
-import re
 from pkg_resources import resource_filename as pkgrf
 
 # sklearn overrides
@@ -36,7 +34,7 @@ from sklearn.multiclass import OneVsRestClassifier
 # xgboost
 from xgboost import XGBClassifier
 
-from .. import __version__, logging
+from .. import logging
 from .data import read_dataset, get_bids_cols
 from ..viz.misc import plot_roc_curve
 
@@ -336,7 +334,8 @@ class CVHelper(CVHelperBase):
 
         # If leaveout, test and refit
         if self._leaveout:
-            self._fit_leaveout(leaveout_x, leaveout_y)
+            raise NotImplementedError
+            # self._fit_leaveout(leaveout_x, leaveout_y)
 
         return self
 

@@ -8,9 +8,9 @@
 # @Email:  code@oscaresteban.es
 """Test utils"""
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os.path as op
-import pytest
-from io import open # pylint: disable=W0622
+# import os.path as op
+# import pytest
+# from io import open # pylint: disable=W0622
 # from mriqc.reports.utils import check_reports
 
 
@@ -37,4 +37,3 @@ from io import open # pylint: disable=W0622
 
 #     check_reports(dataset, settings)
 #     assert True
-

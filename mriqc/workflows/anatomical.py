@@ -45,7 +45,7 @@ import os.path as op
 from niworkflows.nipype.pipeline import engine as pe
 from niworkflows.nipype.interfaces import io as nio
 from niworkflows.nipype.interfaces import utility as niu
-from niworkflows.nipype.interfaces import fsl, ants, afni
+from niworkflows.nipype.interfaces import fsl, ants
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
@@ -76,7 +76,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     """
 
-    workflow = pe.Workflow(name=name+mod)
+    workflow = pe.Workflow(name="%s%s" % (name, mod))
     WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
                   sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
@@ -165,6 +165,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     return workflow
 
+
 def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                           resolution=2.0):
     """
@@ -193,13 +194,13 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
         template_resolution=2,
         reference=mod[:2],
         generate_report=True,),
-                   name='SpatialNormalization',
-                   # Request all MultiProc processes when ants_nthreads > n_procs
-                   num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
-                                   settings.get('n_procs', 1)),
-                   mem_gb=3)
-    norm.inputs.reference_mask = op.join(mni_template,
-                                     '%dmm_brainmask.nii.gz' % int(resolution))
+        name='SpatialNormalization',
+        # Request all MultiProc processes when ants_nthreads > n_procs
+        num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
+                        settings.get('n_procs', 1)),
+        mem_gb=3)
+    norm.inputs.reference_mask = op.join(
+        mni_template, '%dmm_brainmask.nii.gz' % int(resolution))
 
     workflow.connect([
         (inputnode, norm, [('moving_image', 'moving_image'),
@@ -208,6 +209,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                             ('out_report', 'out_report')]),
     ])
     return workflow
+
 
 def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     """
@@ -419,6 +421,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     ])
     return workflow
 
+
 def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
     """
     Computes a head mask as in [Mortamet2009]_.
@@ -432,7 +435,7 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
 
     has_dipy = False
     try:
-        from dipy.denoise import nlmeans
+        from dipy.denoise import nlmeans  # noqa
         has_dipy = True
     except ImportError:
         pass
@@ -459,10 +462,11 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
             function=_estimate_snr), name='EstimateSNR')
         denoise = pe.Node(Denoise(), name='Denoise')
         gradient = pe.Node(niu.Function(
-            input_names=['in_file', 'snr'], output_names=['out_file'], function=image_gradient), name='Grad')
+            input_names=['in_file', 'snr'], output_names=['out_file'],
+            function=image_gradient), name='Grad')
         thresh = pe.Node(niu.Function(
-            input_names=['in_file', 'in_segm'], output_names=['out_file'], function=gradient_threshold),
-                         name='GradientThreshold')
+            input_names=['in_file', 'in_segm'], output_names=['out_file'],
+            function=gradient_threshold), name='GradientThreshold')
 
         workflow.connect([
             (inputnode, estsnr, [('in_file', 'in_file'),
@@ -552,6 +556,7 @@ def _add_provenance(in_file, settings, air_msk, rot_msk):
 
     return out_prov
 
+
 def _binarize(in_file, threshold=0.5, out_file=None):
     import os.path as op
     import numpy as np
@@ -576,12 +581,14 @@ def _binarize(in_file, threshold=0.5, out_file=None):
         out_file)
     return out_file
 
+
 def _estimate_snr(in_file, seg_file):
     import nibabel as nb
     from mriqc.qc.anatomical import snr
     out_snr = snr(nb.load(in_file).get_data(), nb.load(seg_file).get_data(),
                   fglabel='wm')
     return out_snr
+
 
 def _enhance(in_file, out_file=None):
     import os.path as op
@@ -610,6 +617,7 @@ def _enhance(in_file, out_file=None):
 
     return out_file
 
+
 def image_gradient(in_file, snr, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
     import os.path as op
@@ -635,6 +643,7 @@ def image_gradient(in_file, snr, out_file=None):
 
     nb.Nifti1Image(grad, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
     return out_file
+
 
 def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     """ Compute a threshold from the histogram of the magnitude gradient image """
@@ -664,10 +673,10 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(np.uint8)  # pylint: disable=no-member
+    segdata = sim.binary_dilation(
+        segdata, struc, iterations=2, border_value=1).astype(np.uint8)
     mask[segdata > 0] = 1
-
-    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)  # pylint: disable=no-member
+    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
     artmsk = np.zeros_like(mask)

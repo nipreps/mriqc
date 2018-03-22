@@ -41,6 +41,7 @@ class IndividualTemplate(Template):
     def __init__(self):
         super(IndividualTemplate, self).__init__(pkgrf('mriqc', 'data/reports/individual.html'))
 
+
 class GroupTemplate(Template):
     """Specific template for the individual report"""
 
