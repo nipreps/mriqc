@@ -1,12 +1,16 @@
-# .travis.yml
+# vim ft=yaml
 language: python
+sudo: false
+cache:
+  directories:
+    - $HOME/.cache/pip
+
 python:
-  - 2.7
-  - 3.3
-install:
-  - pip install -r requirements.txt
-  - pip install coveralls
+  - 3.6
+
+before_install:
+  - python -m pip install --upgrade pip
+  - pip install "flake8<3.0" flake8-putty
+
 script:
-  coverage run --source=mriqc setup.py test
-after_success:
-  coveralls
+  - flake8 fmriprep wrapper
