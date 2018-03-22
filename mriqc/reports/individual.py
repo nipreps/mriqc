@@ -18,6 +18,7 @@ def individual_html(in_iqms, in_plots=None):
     from json import load
     from mriqc import logging, __version__ as ver
     from mriqc.utils.misc import BIDS_COMP
+    from mriqc.reports import REPORT_TITLES
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
     report_log = logging.getLogger('mriqc.report')
@@ -70,9 +71,6 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     fname = op.splitext(op.basename(in_iqms))[0]
     out_file = op.abspath(fname + '.html')
 
-    if in_plots is None:
-        in_plots = []
-
     # Extract and prune metadata
     metadata = iqms_dict.pop('bids_meta', None)
     mod = metadata.pop('modality', None)
@@ -82,6 +80,12 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                for k in list(BIDS_COMP.keys())]
     file_id = [comp for comp in file_id if comp is not None]
 
+    if in_plots is None:
+        in_plots = []
+    else:
+        in_plots = [(REPORT_TITLES[mod][i], read_report_snippet(v))
+                    for i, v in enumerate(in_plots)]
+
     pred_qa = None  # metadata.pop('mriqc_pred', None)
     config = {
         'modality': mod,
@@ -89,7 +93,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
         'version': ver,
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
-        'svg_files': [read_report_snippet(pfile) for pfile in in_plots],
+        'svg_files': in_plots,
         'workflow_details': wf_details,
         'provenance': iqms2html(prov, 'provenance-table'),
         'metadata': iqms2html(metadata, 'metadata-table'),

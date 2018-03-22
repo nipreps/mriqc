@@ -121,17 +121,21 @@ report</h1>
   </ul>
 </li>
 {% endif %}
-<li>Image parameters:
-{{ imparams }}
-</li>
 </ul>
 
 <h2>Visual reports</h2>
-{% for svg in svg_files %}
+{% for title, svg in svg_files %}
 <div class="embeded-report">
+  <h3>{{ title }}</h3>
 {{ svg }}
 </div>
 {% endfor %}
+
+
+<h2>Extracted Image Quality Metrics (IQMs)</h2>
+<div class="metadata-table">
+{{ imparams }}
+</div>
 
 {% if metadata %}
 <h2>Metadata</h2>
