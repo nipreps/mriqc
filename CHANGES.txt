@@ -1,3 +1,11 @@
+0.10.4 (March 22, 2018)
+=======================
+
+  * [ENH] Various improvements to reports (#708)
+  * [MAINT] Style revision (#704)
+  * [PIN] pybids 0.5 (#700)
+  * [ENH] Increase FAST memory limits (#702)
+
 0.10.3 (February 26, 2018)
 ==========================
 
