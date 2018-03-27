@@ -363,13 +363,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
-        title='EPI mean session',
         cmap='Greys_r'),
         name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
-        title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages + int(
@@ -421,12 +419,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='Zoomed-in EPI mean',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='Enhanced noise in EPI mean',
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
