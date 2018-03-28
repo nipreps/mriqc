@@ -242,8 +242,6 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
     addprov.inputs.settings = {
         'testing': settings.get('testing', False),
-        'webapi_url': settings.get('webapi_url'),
-        'webapi_port': settings.get('webapi_port')
     }
 
     # AFNI check smoothing
