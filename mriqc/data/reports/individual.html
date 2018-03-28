@@ -238,7 +238,7 @@ function sendRating() {
     var ratingReq = new XMLHttpRequest();
     var allRatingsReq = new XMLHttpRequest();
     var aggParam = '{\"$value\":\"' + md5sum + '\"}';
-    allRatingsReq.open("GET", "{{ api_url }}/rating_counts?aggregate=" + aggParam);
+    allRatingsReq.open("GET", "{{ webapi_url }}/rating_counts?aggregate=" + aggParam);
     allRatingsReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     allRatingsReq.setRequestHeader("Authorization", "<secret_token>");
     ratingReq.open("POST", "{{ webapi_url }}/rating");
