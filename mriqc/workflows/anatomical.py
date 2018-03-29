@@ -242,6 +242,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
     addprov.inputs.settings = {
         'testing': settings.get('testing', False),
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port')
     }
 
     # AFNI check smoothing
@@ -543,8 +545,8 @@ def _add_provenance(in_file, settings, air_msk, rot_msk):
             'small_air_mask': bool(air_msk_size < 5e5),
             'large_rot_frame': bool(rot_msk_size > 500),
         },
-        'webapi_url': settings.get('webapi_url'),
-        'webapi_port': settings.get('webapi_port'),
+        'webapi_url': settings.pop('webapi_url'),
+        'webapi_port': settings.pop('webapi_port'),
     }
 
     if settings:
