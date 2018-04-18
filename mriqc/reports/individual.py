@@ -12,7 +12,7 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 
-def individual_html(in_iqms, in_plots=None):
+def individual_html(in_iqms, in_plots=None, api_id=None):
     from os import path as op
     import datetime
     from json import load
@@ -21,6 +21,7 @@ def individual_html(in_iqms, in_plots=None):
     from mriqc.reports import REPORT_TITLES
     from mriqc.reports.utils import iqms2html, read_report_snippet
     from mriqc.data import IndividualTemplate
+
     report_log = logging.getLogger('mriqc.report')
 
     def _get_details(in_iqms, modality):
@@ -62,7 +63,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                     '<span class="problematic">Detected a zero-filled frame, has the original '
                     'image been rotated?</span>')
 
-        return in_prov, wf_details
+        return in_prov, wf_details, sett_dict
 
     with open(in_iqms) as jsonfile:
         iqms_dict = load(jsonfile)
@@ -74,7 +75,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     # Extract and prune metadata
     metadata = iqms_dict.pop('bids_meta', None)
     mod = metadata.pop('modality', None)
-    prov, wf_details = _get_details(iqms_dict, mod)
+    prov, wf_details, _ = _get_details(iqms_dict, mod)
 
     file_id = [metadata.pop(k, None)
                for k in list(BIDS_COMP.keys())]
@@ -98,7 +99,10 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
         'svg_files': in_plots,
         'workflow_details': wf_details,
+        'webapi_url': prov.pop('webapi_url'),
+        'webapi_port': prov.pop('webapi_port'),
         'provenance': iqms2html(prov, 'provenance-table'),
+        'md5sum': prov['md5sum'],
         'metadata': iqms2html(metadata, 'metadata-table'),
         'pred_qa': pred_qa
     }

@@ -809,7 +809,9 @@ def _add_provenance(in_file, settings):
     out_prov = {
         'md5sum': hash_infile(in_file),
         'version': version,
-        'software': 'mriqc'
+        'software': 'mriqc',
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port'),
     }
 
     if settings:

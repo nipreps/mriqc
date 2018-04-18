@@ -160,6 +160,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
+            (upldwf, repwf, [('api_id', 'inputnode.api_id')]),
         ])
 
     return workflow
@@ -240,7 +241,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     # Add provenance
     addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
     addprov.inputs.settings = {
-        'testing': settings.get('testing', False)
+        'testing': settings.get('testing', False),
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port')
     }
 
     # AFNI check smoothing
@@ -336,7 +339,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_ras', 'brainmask', 'headmask', 'airmask', 'artmask', 'rotmask',
         'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
-        'mni_report']),
+        'mni_report', 'api_id']),
         name='inputnode')
 
     mosaic_zoom = pe.Node(PlotMosaic(
@@ -541,7 +544,9 @@ def _add_provenance(in_file, settings, air_msk, rot_msk):
         'warnings': {
             'small_air_mask': bool(air_msk_size < 5e5),
             'large_rot_frame': bool(rot_msk_size > 500),
-        }
+        },
+        'webapi_url': settings.pop('webapi_url'),
+        'webapi_port': settings.pop('webapi_port'),
     }
 
     if settings:
