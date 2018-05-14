@@ -46,7 +46,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'niworkflows.nipype.sphinxext.plot_workflow',
-    'sphinxarg.ext', # argparse extension
+    'sphinxarg.ext',  # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
 
@@ -56,7 +56,7 @@ autodoc_mock_imports = [
 ]
 
 if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
-    autodoc_mock_imports+=[
+    autodoc_mock_imports += [
         'scipy',
         'sklearn',
         'statsmodel',
@@ -269,17 +269,17 @@ htmlhelp_basename = 'mriqcdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
