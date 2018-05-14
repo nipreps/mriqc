@@ -60,9 +60,11 @@ if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
         'scipy',
         'sklearn',
         'statsmodel',
+        'nipype',
         'niworkflows',
         'nilearn',
         'seaborn',
+        'niworkflows.interfaces.registration'
     ]
 
 # autodoc_mock_imports = [
