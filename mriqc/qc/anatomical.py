@@ -195,8 +195,6 @@ from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi, kurtosis  # pylint: disable=E0611
-from statsmodels.robust.scale import mad
-
 
 from io import open  # pylint: disable=W0622
 from builtins import zip, range  # pylint: disable=W0622
@@ -564,6 +562,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     """
     from .. import MRIQC_LOG
+    from statsmodels.robust.scale import mad
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
