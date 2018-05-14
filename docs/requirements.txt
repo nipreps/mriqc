@@ -20,7 +20,7 @@ versioneer
 mock
 codecov
 pytest-xdist
-sphinx>=1.5,<1.6
+sphinx>=1.6
 sphinx_rtd_theme>=0.2.4
 sphinx-argparse
 duecredit
