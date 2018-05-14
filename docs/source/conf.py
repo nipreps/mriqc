@@ -57,6 +57,7 @@ autodoc_mock_imports = [
 
 if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
     autodoc_mock_imports += [
+        'numpy',
         'scipy',
         'sklearn',
         'statsmodel',
