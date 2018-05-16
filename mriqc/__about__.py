@@ -81,6 +81,8 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
+    "git+https://github.com/effigies/niworkflows.git@"
+    "ca92ffdd1a580a61a0e5bb8f2432c698dd28c91c#egg=niworkflows",
 ]
 
 
