@@ -48,6 +48,11 @@ class ReadSidecarJSON(SimpleInterface):
     def _run_interface(self, runtime):
         metadata = get_metadata_for_nifti(self.inputs.in_file)
         output_keys = [key for key in list(self.output_spec().get().keys()) if key.endswith('_id')]
+
+        #in case no json sidecar files exist (ie no BIDS tree)
+        if  self.expr.search(op.basename(self.inputs.in_file))==None:
+            return runtime
+
         outputs = self.expr.search(op.basename(self.inputs.in_file)).groupdict()
 
         for key in output_keys:
@@ -88,6 +93,11 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
             if key in self._outputs:
                 self._outputs[key] = value
             super(IQMFileSinkInputSpec, self).__setattr__(key, value)
+
+        if key=='subject_id':
+            #I can not find where it is set from bids ... dirty fix
+            if str(value)=='<undefined>':
+                self.subject_id='TODO'
 
 
 class IQMFileSinkOutputSpec(TraitedSpec):
@@ -215,6 +225,12 @@ def get_metadata_for_nifti(in_file):
     side_json = fname + '.json'
     fname_comps = op.basename(side_json).split("_")
 
+    #just for an other json file convention (should not interfer) but can be removed
+    dirname,ff = op.split(side_json)
+    rjson = dirname + '/dic_param_'+ff
+    if op.exists(rjson):
+        side_json = rjson
+
     session_comp_list = []
     subject_comp_list = []
     top_comp_list = []
@@ -238,11 +254,14 @@ def get_metadata_for_nifti(in_file):
     else:
         bids_dir = '/'.join(op.dirname(in_file).split('/')[:-2])
 
+
     top_json = op.join(bids_dir, "_".join(top_comp_list))
     potential_json = [top_json]
 
-    subject_json = op.join(bids_dir, sub, "_".join(subject_comp_list))
-    potential_json.append(subject_json)
+    #In case of a non bids structure
+    if sub is not None:
+        subject_json = op.join(bids_dir, sub, "_".join(subject_comp_list))
+        potential_json.append(subject_json)
 
     if ses:
         session_json = op.join(bids_dir, sub, ses, "_".join(session_comp_list))

@@ -64,6 +64,17 @@ def get_parser():
                         choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
                         help='select one of the supported MRI types')
 
+
+    g_bids.add_argument('--T1w_file', action='store_true',default=False,
+                        help='if specify, First positional argument (bids dir) is now directly '
+                             'the full path of T1w anatomical file to be process ')
+    g_bids.add_argument('--T2w_file', action='store_true',default=False,
+                        help='if specify, First positional argument (bids dir) is now directly '
+                             'the full path of T2w anatomical file to be process ')
+    g_bids.add_argument('--bold_file', action='store_true',default=False,
+                        help='if specify, First positional argument (bids dir) is now directly '
+                             'the full path of bold functional file to be process ')
+
     # Control instruments
     g_outputs = parser.add_argument_group('Instrumental options')
     g_outputs.add_argument('-w', '--work-dir', action='store',
@@ -201,6 +212,9 @@ def main():
         'webapi_url': opts.webapi_url,
         'webapi_port': opts.webapi_port,
         'upload_strict': opts.upload_strict,
+        'T1w_file' : opts.T1w_file,
+        'T2w_file' : opts.T2w_file,
+        'bold_file' : opts.bold_file,
     }
 
     if opts.hmc_afni:
@@ -218,8 +232,11 @@ def main():
     log_dir = op.join(settings['output_dir'], 'logs')
 
     analysis_levels = opts.analysis_level
-    if opts.participant_label is None:
+
+    # In case direct file path is given (instead of bids dir) we do not want group level
+    if opts.participant_label is None and not any((opts.T1w_file, opts.T2w_file, opts.bold_file)):
         analysis_levels.append('group')
+
     analysis_levels = list(set(analysis_levels))
     if len(analysis_levels) > 2:
         raise RuntimeError('Error parsing analysis levels, got "%s"' % ', '.join(analysis_levels))
@@ -274,14 +291,30 @@ def main():
     # Process data types
     modalities = opts.modalities
 
-    dataset = collect_bids_data(
-        settings['bids_dir'],
-        modalities=modalities,
-        participant_label=opts.participant_label,
-        session=opts.session_id,
-        run=opts.run_id,
-        task=opts.task_id,
-    )
+    if opts.T1w_file:
+        dataset=dict()
+        dataset['T1w'] = [settings['bids_dir']]
+        modalities=['T1w']
+
+    elif opts.T2w_file:
+        dataset=dict()
+        dataset['T2w'] = [settings['bids_dir']]
+        modalities=['T2w']
+
+    elif opts.bold_file:
+        dataset=dict()
+        dataset['bold'] = [settings['bids_dir']]
+        modalities=['bold']
+
+    else:
+        dataset = collect_bids_data(
+            settings['bids_dir'],
+            modalities=modalities,
+            participant_label=opts.participant_label,
+            session=opts.session_id,
+            run=opts.run_id,
+            task=opts.task_id,
+        )
 
     # Set up participant level
     if 'participant' in analysis_levels:
