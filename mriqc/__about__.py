@@ -56,7 +56,7 @@ CLASSIFIERS = [
 SETUP_REQUIRES = []
 
 REQUIRES = [
-    'niworkflows>=0.3.7',
+    'niworkflows>=0.4.0',
     'pybids>=0.5.0',
     'numpy>=1.12.0',
     'scikit-learn>=0.19.0',
@@ -81,8 +81,6 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    "git+https://github.com/effigies/niworkflows.git@"
-    "4e8f18d79a45db156d441cbc41cf28b953fc5bf1#egg=niworkflows",
 ]
 
 
