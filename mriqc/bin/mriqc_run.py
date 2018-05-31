@@ -155,8 +155,8 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from niworkflows.nipype import config as ncfg, logging as nlog
-    from niworkflows.nipype.pipeline.engine import Workflow
+    from nipype import config as ncfg, logging as nlog
+    from nipype.pipeline.engine import Workflow
 
     from .. import logging
     from ..utils.bids import collect_bids_data

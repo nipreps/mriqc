@@ -4,8 +4,8 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-from niworkflows.nipype import logging
-from niworkflows.nipype.interfaces.base import (
+from nipype import logging
+from nipype.interfaces.base import (
     Bunch, traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File, Str,
     SimpleInterface
 )

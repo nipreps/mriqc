@@ -10,11 +10,11 @@ import nibabel as nb
 from nilearn.signal import clean
 from builtins import zip
 
-from niworkflows.nipype.interfaces.base import (
+from nipype.interfaces.base import (
     traits, TraitedSpec, File, isdefined, BaseInterfaceInputSpec,
     SimpleInterface
 )
-from niworkflows.nipype import logging
+from nipype import logging
 
 from ..utils.misc import _flatten_dict
 from ..qc.anatomical import snr, fber, efc, summary_stats

@@ -45,7 +45,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'niworkflows.nipype.sphinxext.plot_workflow',
+    'nipype.sphinxext.plot_workflow',
     'sphinxarg.ext',  # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
@@ -64,7 +64,7 @@ if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
         'nipype',
         'niworkflows.interfaces.registration',
         'niworkflows.interfaces',
-        'niworkflows.nipype',
+        'nipype',
         'niworkflows',
         'nilearn',
         'seaborn',
