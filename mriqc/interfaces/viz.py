@@ -12,7 +12,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os.path as op
 import numpy as np
-from niworkflows.nipype.interfaces.base import (
+from nipype.interfaces.base import (
     traits, TraitedSpec, File, BaseInterfaceInputSpec, isdefined,
     SimpleInterface)
 

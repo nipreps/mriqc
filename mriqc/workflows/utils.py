@@ -23,7 +23,7 @@ def _tofloat(inlist):
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from niworkflows.nipype.interfaces.base import isdefined
+    from nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
@@ -166,7 +166,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 
 
 def get_fwhmx():
-    from niworkflows.nipype.interfaces.afni import Info, FWHMx
+    from nipype.interfaces.afni import Info, FWHMx
     fwhm_args = {"combine": True,
                  "detrend": True}
     afni_version = StrictVersion('%s.%s.%s' % Info.version())

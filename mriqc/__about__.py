@@ -56,7 +56,7 @@ CLASSIFIERS = [
 SETUP_REQUIRES = []
 
 REQUIRES = [
-    'niworkflows>=0.3.7',
+    'niworkflows>=0.4.0',
     'pybids>=0.5.0',
     'numpy>=1.12.0',
     'scikit-learn>=0.19.0',

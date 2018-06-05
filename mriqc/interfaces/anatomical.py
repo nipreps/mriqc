@@ -15,9 +15,9 @@ from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
-from niworkflows.nipype import logging
-from niworkflows.nipype.utils.filemanip import fname_presuffix
-from niworkflows.nipype.interfaces.base import (
+from nipype import logging
+from nipype.utils.filemanip import fname_presuffix
+from nipype.interfaces.base import (
     traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec,
     SimpleInterface
 )
