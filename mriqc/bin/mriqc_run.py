@@ -274,18 +274,18 @@ def main():
     # Process data types
     modalities = opts.modalities
 
-    dataset = collect_bids_data(
-        settings['bids_dir'],
-        modalities=modalities,
-        participant_label=opts.participant_label,
-        session=opts.session_id,
-        run=opts.run_id,
-        task=opts.task_id,
-    )
-
     # Set up participant level
     if 'participant' in analysis_levels:
-        log.info('Participant level started...')
+        log.info('Participant level started. Checking BIDS dataset...')
+        dataset = collect_bids_data(
+            settings['bids_dir'],
+            modalities=modalities,
+            participant_label=opts.participant_label,
+            session=opts.session_id,
+            run=opts.run_id,
+            task=opts.task_id,
+        )
+        
         log.info(
             'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
             __version__, ', '.join(analysis_levels), opts.participant_label, settings)
