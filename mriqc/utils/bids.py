@@ -60,13 +60,13 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
             queries[key]['session'] = 'ses-\\(' + '|'.join(sessions) + '\\){1}'
 
     if run:
-        runs = ["{}".format(run) for run in run]
-        runs = [run[4:] if run.startswith('run-') else run
-                for run in runs]
-        runs = ["{}\\d*".format(run[:-1]) if run.endswith('*') else run
-                for run in runs]
-        runs = ["\\d*{}".format(run[1:]) if run.startswith('*') else run
-                for run in runs]
+        runs = ["{}".format(r) for r in run]
+        runs = [r[4:] if r.startswith('run-') else r
+                for r in runs]
+        runs = ["{}\\d*".format(r[:-1]) if r.endswith('*') else r
+                for r in runs]
+        runs = ["\\d*{}".format(r[1:]) if r.startswith('*') else r
+                for r in runs]
 
         # For some reason, outer session ids are filtered out
         runs.insert(0, 'null')
