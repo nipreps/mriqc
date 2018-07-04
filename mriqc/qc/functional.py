@@ -11,7 +11,7 @@
 # @Last Modified time: 2018-03-12 11:44:09
 """
 
-Measures for the structural information
+Measures for the spatial information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Definitions are given in the
