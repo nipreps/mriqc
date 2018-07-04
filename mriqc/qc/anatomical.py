@@ -175,7 +175,7 @@ Other measures
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
      Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
-     doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
+     doi:`10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
 
   .. [Forman1995] Forman SD et al., *Improved assessment of significant activation in functional
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
