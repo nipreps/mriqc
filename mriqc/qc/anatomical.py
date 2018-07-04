@@ -9,7 +9,7 @@ r"""
 Measures based on noise measurements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _iqms_struc_cjv:
+.. _iqms_cjv:
 
 - :py:func:`~mriqc.qc.anatomical.cjv` -- **coefficient of joint variation**
   (:abbr:`CJV (coefficient of joint variation)`):
@@ -18,7 +18,7 @@ Measures based on noise measurements
   Higher values are related to the presence of heavy head motion and large
   :abbr:`INU (intensity non-uniformity)` artifacts. Lower values are better.
 
-.. _iqms_struc_cnr:
+.. _iqms_cnr:
 
 - :py:func:`~mriqc.qc.anatomical.cnr` -- **contrast-to-noise ratio**
   (:abbr:`CNR (contrast-to-noise Ratio)`): The ``cnr`` [Magnota2006]_,
@@ -26,19 +26,19 @@ Measures based on noise measurements
   to evaluate how separated the tissue distributions of GM and WM are.
   Higher values indicate better quality.
 
-.. _iqms_struc_snr:
+.. _iqms_snr:
 
 - :py:func:`~mriqc.qc.anatomical.snr` -- **signal-to-noise ratio**
   (:abbr:`SNR (signal-to-noise Ratio)`): calculated within the
   tissue mask.
 
-.. _iqms_struc_snr_dietrich:
+.. _iqms_snrd:
 
 - :py:func:`~mriqc.qc.anatomical.snr_dietrich`: **Dietrich's SNR**
   (:abbr:`SNRd (signal-to-noise Ratio, Dietrich 2007)`) as proposed
   by [Dietrich2007]_, using the air background as reference.
 
-.. _iqms_struc_qi2:
+.. _iqms_qi2:
 
 - :py:func:`~mriqc.qc.anatomical.art_qi2`: **Mortamet's quality index 2**
   (:abbr:`QI2 (quality index 2)`) is a calculation of the goodness-of-fit
@@ -48,6 +48,8 @@ Measures based on noise measurements
 
 Measures based on information theory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_efc:
 
 - :py:func:`~mriqc.qc.anatomical.efc`:
   The :abbr:`EFC (Entropy Focus Criterion)`
@@ -59,26 +61,36 @@ Measures based on information theory
   :abbr:`EFC (Entropy Focus Criterion)` can be compared across images with
   different dimensions.
 
+.. _iqms_fber:
+
 - :py:func:`~mriqc.qc.anatomical.fber`:
   The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
-  defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
+  defined as the mean energy of image values within the head relative
+  to outside the head [QAP-measures]_.
   Higher values are better.
 
 Measures targeting specific artifacts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _iqms_inu:
+
 - **inu_\*** (*nipype interface to N4ITK*): summary statistics (max, min and median)
   of the :abbr:`INU (intensity non-uniformity)` field as extracted by the N4ITK algorithm
   [Tustison2010]_. Values closer to 1.0 are better.
 
+.. _iqms_qi:
+
 - :py:func:`~mriqc.qc.anatomical.art_qi1`:
   Detect artifacts in the image using the method described in [Mortamet2009]_.
-  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity corrupted by artifacts
-  normalized by the number of voxels in the background. Lower values are better.
+  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity
+  corrupted by artifacts normalized by the number of voxels in the background.
+  Lower values are better.
 
   .. figure:: ../resources/mortamet-mrm2009.png
 
     The workflow to compute the artifact detection from [Mortamet2009]_.
+
+.. _iqms_wm2max:
 
 - :py:func:`~mriqc.qc.anatomical.wm2max`:
   The white-matter to maximum intensity ratio is the median intensity
@@ -91,6 +103,8 @@ Measures targeting specific artifacts
 Other measures
 ^^^^^^^^^^^^^^
 
+.. _iqms_fwhm:
+
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
   the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
   Lower values are better. Uses the gaussian width estimator filter implemented in
@@ -98,7 +112,11 @@ Other measures
 
   .. math ::
 
-      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}
+      {2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+
+
+.. _iqms_icvs:
 
 - :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
   the
@@ -106,14 +124,20 @@ Other measures
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. They should move within
   a normative range.
 
+.. _iqms_rpve:
+
 - :py:func:`~mriqc.qc.anatomical.rpve` (**rpve_\***): the
   :abbr:`rPVe (residual partial voluming error)` of :abbr:`CSF (cerebrospinal fluid)`,
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. Lower values are better.
+
+.. _iqms_summary:
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
   Mean, standard deviation, 5% percentile and 95% percentile of the distribution
   of background, :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and
   :abbr:`WM (white-matter)`.
+
+.. _iqms_tpm:
 
 - **overlap_\*_\***:
   The overlap of the :abbr:`TPMs (tissue probability maps)` estimated from the image and
@@ -121,7 +145,8 @@ Other measures
 
   .. math ::
 
-      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}{\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      {\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
 
 
 .. topic:: References
@@ -143,7 +168,8 @@ Other measures
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
 
-  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
+  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*,
+    IEEE Trans Med Imag, 29(6):1310-20,
     2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
 
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
@@ -169,16 +195,15 @@ from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import chi, kurtosis  # pylint: disable=E0611
-from statsmodels.robust.scale import mad
-
 
 from io import open  # pylint: disable=W0622
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
+from builtins import zip, range  # pylint: disable=W0622
 from six import string_types
 
-DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
+DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
+
 
 def snr(mu_fg, sigma_fg, n):
     r"""
@@ -193,15 +218,15 @@ def snr(mu_fg, sigma_fg, n):
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray fgmask: input foreground mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_fg: standard deviation of foreground.
+    :param int n: number of voxels in foreground mask.
 
-    :return: the computed SNR for the foreground segmentation
+    :return: the computed SNR
 
     """
     return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
+
 
 def snr_dietrich(mu_fg, sigma_air):
     r"""
@@ -217,11 +242,8 @@ def snr_dietrich(mu_fg, sigma_air):
         \text{SNR} = \frac{\mu_F}{\sqrt{\frac{2}{4-\pi}}\,\sigma_\text{air}}.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray smask: input foreground mask or segmentation
-    :param numpy.ndarray airmask: input background mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
 
     :return: the computed SNR for the foreground segmentation
 
@@ -232,6 +254,7 @@ def snr_dietrich(mu_fg, sigma_air):
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
+
 
 def cnr(mu_wm, mu_gm, sigma_air):
     r"""
@@ -247,8 +270,10 @@ def cnr(mu_wm, mu_gm, sigma_air):
     the air (background) mask.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
+
     :return: the computed CNR
 
     """
@@ -267,9 +292,11 @@ def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
 
         \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{|\mu_\text{WM} - \mu_\text{GM}|}.
 
-    :param numpy.ndarray img: the input data
-    :param numpy.ndarray wmmask: the white matter mask
-    :param numpy.ndarray gmmask: the gray matter mask
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_wm: standard deviation of signal within white-matter mask.
+    :param float sigma_gm: standard deviation of signal within gray-matter mask.
+
     :return: the computed CJV
 
 
@@ -289,7 +316,9 @@ def fber(img, headmask, rotmask=None):
 
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray headmask: a mask of the head (including skull, skin, etc.)
+    :param numpy.ndarray rotmask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
@@ -305,7 +334,6 @@ def fber(img, headmask, rotmask=None):
     return float(fg_mu / bg_mu)
 
 
-
 def efc(img, framemask=None):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
@@ -315,7 +343,8 @@ def efc(img, framemask=None):
 
     .. math::
 
-        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}}
+        \ln \left[\frac{x_j}{x_\text{max}}\right]
 
     with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
@@ -328,6 +357,8 @@ def efc(img, framemask=None):
         \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
+    :param numpy.ndarray framemask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
@@ -338,7 +369,7 @@ def efc(img, framemask=None):
     # Calculate the maximum value of the EFC (which occurs any time all
     # voxels have the same value)
     efc_max = 1.0 * n_vox * (1.0 / np.sqrt(n_vox)) * \
-                np.log(1.0 / np.sqrt(n_vox))
+        np.log(1.0 / np.sqrt(n_vox))
 
     # Calculate the total image energy
     b_max = np.sqrt((img[framemask == 0]**2).sum())
@@ -362,11 +393,12 @@ def wm2max(img, mu_wm):
     """
     return float(mu_wm / np.percentile(img.reshape(-1), 99.95))
 
+
 def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity corrupted by artifacts
-    normalized by the number of voxels in the background:
+    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
+    corrupted by artifacts normalized by the number of voxels in the background:
 
     .. math ::
 
@@ -421,7 +453,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     dmax = np.percentile(data[data > 0], 99.9)
     hist, bin_edges = np.histogram(data[data > 0], density=True,
                                    range=(0.0, dmax), bins='doane')
-    bin_centers = [float(np.mean(bin_edges[i:i+1])) for i in range(len(bin_edges)-1)]
+    bin_centers = [float(np.mean(bin_edges[i:i + 1])) for i in range(len(bin_edges) - 1)]
     max_pos = np.argmax(hist)
     json_out = {
         'x': bin_centers,
@@ -429,7 +461,7 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     }
 
     # Fit central chi distribution
-    param = chi.fit(data[data > 0], 2*ncoils, loc=bin_centers[max_pos])
+    param = chi.fit(data[data > 0], 2 * ncoils, loc=bin_centers[max_pos])
     pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
     json_out['y_hat'] = [float(v) for v in pdf_fitted]
 
@@ -481,6 +513,7 @@ def volume_fraction(pvms):
         tissue_vfs[k] /= total
     return {k: float(v) for k, v in list(tissue_vfs.items())}
 
+
 def rpve(pvms, seg):
     """
     Computes the :abbr:`rPVe (residual partial voluming error)`
@@ -508,6 +541,7 @@ def rpve(pvms, seg):
         pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
+
 def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the standard deviation, the 95\%
@@ -528,6 +562,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     """
     from .. import MRIQC_LOG
+    from statsmodels.robust.scale import mad
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim
@@ -593,9 +628,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         MRIQC_LOG.warn('estimated MAD in the background was too small ('
                        'MAD=%f)', output['bg']['mad'])
         output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
-
-
     return output
+
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
@@ -617,4 +651,3 @@ def _prepare_mask(mask, label, erode=True):
         fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
 
     return fgmask
-

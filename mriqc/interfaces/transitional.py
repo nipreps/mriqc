@@ -4,8 +4,10 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from __future__ import print_function, division, absolute_import, unicode_literals
+from nipype.interfaces.base import (
+    File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
+)
 
-from niworkflows.nipype.interfaces.base import File, traits, CommandLine, TraitedSpec, CommandLineInputSpec
 
 class GCORInputSpec(CommandLineInputSpec):
     in_file = File(
@@ -38,15 +40,17 @@ class GCOR(CommandLine):
     and ever other voxel, over any give mask.
     For complete details, see the `@compute_gcor Documentation.
     <https://afni.nimh.nih.gov/pub/dist/doc/program_help/@compute_gcor.html>`_
+
     Examples
     ========
-    >>> from nipype.interfaces import afni
-    >>> gcor = afni.GCOR()
-    >>> gcor.inputs.in_file = 'structural.nii'
+    >>> from mriqc.interfaces.transitional import GCOR
+    >>> gcor = GCOR()
+    >>> gcor.inputs.in_file = 'func.nii'
     >>> gcor.inputs.nfirst = 4
     >>> gcor.cmdline  # doctest: +ALLOW_UNICODE
-    '@compute_gcor -nfirst 4 -input structural.nii'
+    '@compute_gcor -nfirst 4 -input func.nii'
     >>> res = gcor.run()  # doctest: +SKIP
+
     """
 
     _cmd = '@compute_gcor'

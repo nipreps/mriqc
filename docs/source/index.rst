@@ -6,21 +6,30 @@
 Welcome to mriqc's documentation!
 =================================
 
+
 .. include:: ../../README.rst
    :start-line: 3
    :end-line: 39
+
+
+.. tip::
+     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
+     installation!
+
+
+.. image :: _static/OHBM2017-poster.png
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    about
    install
    running
-   measures
    docker
+   measures
    reports
    workflows
    classifier

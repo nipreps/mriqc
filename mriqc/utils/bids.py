@@ -8,14 +8,13 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 from copy import deepcopy
 from bids.grabbids import BIDSLayout
 
-from builtins import str, bytes
-
 DEFAULT_MODALITIES = ['bold', 'T1w', 'T2w']
 DEFAULT_QUERIES = {
     'bold': {'modality': 'func', 'type': 'bold', 'extensions': ['nii', 'nii.gz']},
     'T1w': {'modality': 'anat', 'type': 'T1w', 'extensions': ['nii', 'nii.gz']},
     'T2w': {'modality': 'anat', 'type': 'T2w', 'extensions': ['nii', 'nii.gz']}
 }
+
 
 def collect_bids_data(dataset, participant_label=None, session=None, run=None,
                       queries=None, task=None, modalities=None):
@@ -28,41 +27,66 @@ def collect_bids_data(dataset, participant_label=None, session=None, run=None,
     if queries is None:
         queries = deepcopy(DEFAULT_QUERIES)
 
-    # Set modalities
-    if modalities is None:
-        modalities = deepcopy(DEFAULT_MODALITIES)
+    if participant_label:
+        subjects = ["{}".format(sub) for sub in participant_label]
+        subjects = [sub[4:] if sub.startswith('sub-') else sub
+                    for sub in subjects]
+        subjects = ["{}[a-zA-Z0-9]*".format(sub[:-1]) if sub.endswith('*') else (sub + '$')
+                    for sub in subjects]
+        subjects = ["[a-zA-Z0-9]*{}".format(sub[1:]) if sub.startswith('*') else ('^' + sub)
+                    for sub in subjects]
+
+        # For some reason, outer subject ids are filtered out
+        subjects.insert(0, 'null')
+        subjects.append('null')
+
+        for key in queries.keys():
+            queries[key]['subject'] = 'sub-\\(' + '|'.join(subjects) + '\\){1}'
 
     if session:
-        for mod in modalities:
-            queries[mod]['session'] = [session]
+        sessions = ["{}".format(ses) for ses in session]
+        sessions = [ses[4:] if ses.startswith('ses-') else ses
+                    for ses in sessions]
+        sessions = ["{}[a-zA-Z0-9]*".format(ses[:-1]) if ses.endswith('*') else (ses + '$')
+                    for ses in sessions]
+        sessions = ["[a-zA-Z0-9]*{}".format(ses[1:]) if ses.startswith('*') else ('^' + ses)
+                    for ses in sessions]
+
+        # For some reason, outer session ids are filtered out
+        sessions.insert(0, 'null')
+        sessions.append('null')
+
+        for key in queries.keys():
+            queries[key]['session'] = 'ses-\\(' + '|'.join(sessions) + '\\){1}'
 
     if run:
-        for mod in modalities:
-            queries[mod]['run'] = run
+        runs = ["{}".format(r) for r in run]
+        runs = [r[4:] if r.startswith('run-') else r
+                for r in runs]
+        runs = ["{}\\d*".format(r[:-1]) if r.endswith('*') else r
+                for r in runs]
+        runs = ["\\d*{}".format(r[1:]) if r.startswith('*') else r
+                for r in runs]
+
+        # For some reason, outer session ids are filtered out
+        runs.insert(0, 'null')
+        runs.append('null')
+
+        # For some reason, outer subject ids are filtered out
+        participant_label.insert(0, 'null')
+        participant_label.append('null')
+
+        for key in queries.keys():
+            queries[key]['run'] = '\\(run-' + '|'.join(runs) + '\\){1}'
 
     if task:
         if isinstance(task, list) and len(task) == 1:
             task = task[0]
         queries['bold']['task'] = task
 
-    # Set participants
-    if participant_label is not None:
-        if isinstance(participant_label, (bytes, str)):
-            participant_label = [participant_label]
-
-        participant_label = ['{}'.format(sub) for sub in participant_label]
-        participant_label = [sub[4:] if sub.startswith('sub-') else sub
-                             for sub in participant_label]
-        participant_label = [sub[:-1] if sub.endswith('*') else (sub + '$')
-                             for sub in participant_label]
-        participant_label = [sub[1:] if sub.startswith('*') else ('^' + sub)
-                             for sub in participant_label]
-
-        # For some reason, outer subject ids are filtered out
-        participant_label.insert(0, 'null')
-        participant_label.append('null')
-        for key in queries.keys():
-            queries[key]['subject'] = 'sub-\\(' + '|'.join(participant_label) + '\\){1}'
+    # Set modalities
+    if not modalities:
+        modalities = deepcopy(DEFAULT_MODALITIES)
 
     # Start querying
     imaging_data = {}

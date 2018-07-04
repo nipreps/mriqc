@@ -1,0 +1,1 @@
+**Are you new to open source and GitHub?** If so reading the "[How to submit a contribution](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution)" guide will provide a great introduction to contributing to MRIQC and other Open Source projects.

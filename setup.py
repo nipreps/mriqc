@@ -34,8 +34,7 @@ def main():
         'mriqc': ['data/*.yml',
                   'data/*.tfm',
                   'data/csv/*.csv',
-                  'data/rfc-nzs-abide-1.0.pklz',
-                  'data/rfc-nzs-full-1.0.pklz',
+                  'data/mclf_*.pklz',
                   'data/reports/*.rst',
                   'data/reports/*.html',
                   'data/reports/resources/*',
@@ -78,7 +77,6 @@ def main():
         download_url=__download__,
         entry_points={'console_scripts': [
             'mriqc=mriqc.bin.mriqc_run:main',
-            'mriqc_fit=mriqc.bin.mriqc_fit:main',
             'mriqc_clf=mriqc.bin.mriqc_clf:main',
             'mriqc_plot=mriqc.bin.mriqc_plot:main',
             'abide2bids=mriqc.bin.abide2bids:main',

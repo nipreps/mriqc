@@ -180,11 +180,11 @@ class ModelAndGridSearchCV(BaseSearchCV):
             self.best_estimator_ = best_estimator
         return self
 
-def _model_fit_and_score(
-    estimator_str, X, y, scorer, train, test, verbose,
-    parameters, fit_params, return_train_score=False,
-    return_parameters=False, return_n_test_samples=False,
-    return_times=False, error_score='raise'):
+
+def _model_fit_and_score(estimator_str, X, y, scorer, train, test, verbose,
+                         parameters, fit_params, return_train_score=False,
+                         return_parameters=False, return_n_test_samples=False,
+                         return_times=False, error_score='raise'):
     """
 
     """
@@ -349,6 +349,7 @@ def nested_fit_and_score(
         ret['times'] = [fit_time, score_time]
 
     return ret, estimator
+
 
 def _clf_build(clf_type):
     from sklearn import svm

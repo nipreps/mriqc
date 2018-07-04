@@ -11,6 +11,7 @@ from sys import version_info
 from os.path import isfile, abspath
 import warnings
 from pkg_resources import resource_filename as pkgrf
+
 import matplotlib
 matplotlib.use('Agg')
 
@@ -58,10 +59,17 @@ def get_parser():
                         help='do not binarize labels')
 
     g_input = parser.add_argument_group('Options')
-    g_input.add_argument('-P', '--parameters', action='store',
-                         default=pkgrf('mriqc', 'data/classifier_settings.yml'))
-    g_input.add_argument('-M', '--model', action='store', choices=['rfc', 'xgb'],
-                         default='rfc', help='model')
+    g_input.add_argument('-P', '--parameters', action='store')
+    g_input.add_argument('-M', '--model', action='store', default='rfc',
+                         choices=['rfc', 'xgb', 'svc_lin', 'svc_rbf'],
+                         help='model under test')
+    g_input.add_argument('--nested_cv', action='store_true', default=False,
+                         help='run nested cross-validation before held-out')
+    g_input.add_argument('--nested_cv_kfold', action='store_true', default=False,
+                         help='run nested cross-validation before held-out, '
+                              'using 10-fold split in the outer loop')
+    g_input.add_argument('--perm', action='store', default=0, type=int,
+                         help='permutation test: number of permutations')
 
     g_input.add_argument('-S', '--scorer', action='store', default='roc_auc')
     g_input.add_argument('--cv', action='store', default='loso',
@@ -77,9 +85,6 @@ def get_parser():
     g_input.add_argument('--njobs', action='store', default=-1, type=int,
                          help='number of jobs')
 
-    g_input.add_argument('-o', '--output', action='store', default='predicted_qa.csv',
-                         help='file containing the labels assigned by the classifier')
-
     g_input.add_argument('-t', '--threshold', action='store', default=0.5, type=float,
                          help='decision threshold of the classifier')
 
@@ -88,9 +93,7 @@ def get_parser():
 
 def main():
     """Entry point"""
-    import yaml
     import re
-    from io import open
     from datetime import datetime
     from .. import logging, LOG_FORMAT, __version__
     from ..classifier.helper import CVHelper
@@ -98,8 +101,6 @@ def main():
     warnings.showwarning = warn_redirect
 
     opts = get_parser().parse_args()
-    train_path = _parse_set(opts.train, default='abide')
-    test_path = _parse_set(opts.test, default='ds030')
 
     log_level = int(max(3 - opts.verbose_count, 0) * 10)
     if opts.verbose_count > 1:
@@ -113,7 +114,11 @@ def main():
         re.sub(r'[\+_@]', '.', __version__),
         3 if opts.multiclass else 2, opts.cv,
     )
-    log.info('Results will be saved as %s', abspath(base_name + '*'))
+
+    if opts.nested_cv_kfold:
+        base_name += '_ncv-kfold'
+    elif opts.nested_cv:
+        base_name += '_ncv-loso'
 
     if opts.log_file is None or len(opts.log_file) > 0:
         log_file = opts.log_file if opts.log_file else base_name + '.log'
@@ -122,19 +127,15 @@ def main():
         fhl.setLevel(log_level)
         log.addHandler(fhl)
 
-    parameters = None
-    if opts.parameters is not None:
-        with open(opts.parameters) as paramfile:
-            parameters = yaml.load(paramfile)
-
     clf_loaded = False
+
     if opts.train is not None:
         # Initialize model selection helper
+        train_path = _parse_set(opts.train, default='abide')
         cvhelper = CVHelper(
             X=train_path[0],
             Y=train_path[1],
             n_jobs=opts.njobs,
-            param=parameters,
             scorer=opts.scorer,
             b_leaveout=opts.train_balanced_leaveout,
             multiclass=opts.multiclass,
@@ -143,9 +144,14 @@ def main():
             model=opts.model,
             debug=opts.debug,
             basename=base_name,
+            nested_cv=opts.nested_cv,
+            nested_cv_kfold=opts.nested_cv_kfold,
+            param_file=opts.parameters,
+            permutation_test=opts.perm,
         )
 
-        if opts.cv == 'batch':
+        if opts.cv == 'batch' or opts.perm:
+            test_path = _parse_set(opts.test, default='ds030')
             # Do not set x_test unless we are going to run batch exp.
             cvhelper.setXtest(test_path[0], test_path[1])
 
@@ -159,7 +165,10 @@ def main():
     else:
         load_classifier = opts.load_classifier
         if load_classifier is None:
-            load_classifier = pkgrf('mriqc', 'data/rfc-nzs-full-1.0.pklz')
+            load_classifier = pkgrf(
+                'mriqc',
+                'data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-'
+                'loso_data-all_estimator.pklz')
 
         if not isfile(load_classifier):
             msg = 'was not provided'
@@ -169,9 +178,11 @@ def main():
                 'No training samples were given, and the --load-classifier '
                 'option %s.' % msg)
 
-        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs)
+        cvhelper = CVHelper(load_clf=load_classifier, n_jobs=opts.njobs,
+                            rate_label=['rater_1'], basename=base_name)
         clf_loaded = True
 
+    test_path = _parse_set(opts.test, default='ds030')
     if test_path and opts.cv != 'batch':
         # Set held-out data
         cvhelper.setXtest(test_path[0], test_path[1])
@@ -185,17 +196,23 @@ def main():
             cvhelper.save(suffix='data-all_estimator')
 
     if opts.evaluation_data:
-        cvhelper.predict_dataset(opts.evaluation_data, out_file=opts.output, thres=opts.threshold)
+        cvhelper.predict_dataset(opts.evaluation_data, save_pred=True,
+                                 thres=opts.threshold)
+
+    log.info('Results saved as %s', abspath(cvhelper._base_name + '*'))
 
 
 def _parse_set(arg, default):
     if arg is not None and len(arg) == 0:
         return [pkgrf('mriqc', 'data/csv/%s' % name) for name in (
-            'x_%s-0.9.6-2017-06-03-99db97c9be2e.csv' % default,
+            'x_%s.csv' % default,
             'y_%s.csv' % default)]
 
     if arg is not None and len(arg) not in (0, 2):
         raise RuntimeError('Wrong number of parameters.')
+
+    if arg is None:
+        return None
 
     if len(arg) == 2:
         train_exists = [isfile(fname) for fname in arg]

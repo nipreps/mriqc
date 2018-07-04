@@ -9,7 +9,9 @@
 # @Last modified by:   oesteban
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
+from distutils.version import StrictVersion
 from builtins import range
+
 
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
@@ -17,10 +19,11 @@ def _tofloat(inlist):
     else:
         return float(inlist)
 
+
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from niworkflows.nipype.interfaces.base import isdefined
+    from nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
@@ -73,7 +76,7 @@ def spectrum_mask(size):
     # ftmask[size[0] - 1, size[1] - 1] = 0
     # ftmask[0, size[1] - 1] = 0
     # ftmask[size[0] - 1, 0] = 0
-    ftmask[size[0]//2, size[1]//2] = 0
+    ftmask[size[0] // 2, size[1] // 2] = 0
 
     # Distance transform
     ftmask = distance(ftmask)
@@ -160,3 +163,14 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
+
+
+def get_fwhmx():
+    from nipype.interfaces.afni import Info, FWHMx
+    fwhm_args = {"combine": True,
+                 "detrend": True}
+    afni_version = StrictVersion('%s.%s.%s' % Info.version())
+    if afni_version >= StrictVersion("2017.2.3"):
+        fwhm_args['args'] = '-ShowMeClassicFWHM'
+    fwhm_interface = FWHMx(**fwhm_args)
+    return fwhm_interface

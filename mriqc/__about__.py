@@ -20,19 +20,24 @@ __copyright__ = ('Copyright %d, Center for Reproducible Neuroscience, '
 __credits__ = 'Oscar Esteban'
 __license__ = '3-clause BSD'
 __status__ = 'Prototype'
-__description__ = 'Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain'
-__longdesc__ = ("MRIQC provides a series of image processing workflows "
-                "to extract and compute a series of NR (no-reference), IQMs "
-                "(image quality metrics) to be used in QAPs (quality "
-                "assessment protocols) for MRI (magnetic "
-                "resonance imaging). This open-source neuroimaging data "
-                "processing tool is being developed as a part of the MRI "
-                "image analysis and reproducibility platform offered by the "
-                "CRN. This pipeline derives from, and is heavily influenced "
-                "by, the PCP Quality Assessment Protocol. This tool extracts "
-                "a series of IQMs from structural and functional MRI data. "
-                "It is also scheduled to add diffusion MRI to the target "
-                "imaging families.")
+__description__ = """\
+Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) \
+and functional MRI of the brain\
+"""
+__longdesc__ = """\
+MRIQC provides a series of image processing workflows \
+to extract and compute a series of NR (no-reference), IQMs \
+(image quality metrics) to be used in QAPs (quality \
+assessment protocols) for MRI (magnetic \
+resonance imaging). This open-source neuroimaging data \
+processing tool is being developed as a part of the MRI \
+image analysis and reproducibility platform offered by the \
+CRN. This pipeline derives from, and is heavily influenced \
+by, the PCP Quality Assessment Protocol. This tool extracts \
+a series of IQMs from structural and functional MRI data. \
+It is also scheduled to add diffusion MRI to the target \
+imaging families.\
+"""
 
 __url__ = 'http://mriqc.readthedocs.org/'
 __download__ = ('https://github.com/poldracklab/mriqc/archive/'
@@ -51,9 +56,11 @@ CLASSIFIERS = [
 SETUP_REQUIRES = []
 
 REQUIRES = [
+    'niworkflows>=0.4.0',
+    'pybids>=0.5.0',
     'numpy>=1.12.0',
-    'niworkflows>=0.1.2',
-    'pybids>=0.1.0',
+    'scikit-learn>=0.19.0',
+    'scikit-image',
     'future',
     'scipy',
     'six',
@@ -70,11 +77,12 @@ REQUIRES = [
     'nipy',
     'statsmodels',
     'versioneer',
+    'xvfbwrapper',
 ]
 
 LINKS_REQUIRES = [
-    'https://github.com/scikit-learn/scikit-learn/tarball/master#scikit-learn-0.19.0-dev'
 ]
+
 
 TESTS_REQUIRES = [
     'mock',
@@ -83,11 +91,18 @@ TESTS_REQUIRES = [
 ]
 
 EXTRA_REQUIRES = {
-    'doc': ['sphinx>=1.5,<1.6', 'sphinx_rtd_theme>=0.2.4', 'sphinx-argparse'],
+    'doc': [
+        'sphinx>=1.5.3',
+        'sphinx_rtd_theme>=0.2.4',
+        'sphinx-argparse',
+        'pydotplus',
+        'pydot>=1.2.3',
+        'packaging',
+    ],
     'tests': TESTS_REQUIRES,
     'duecredit': ['duecredit'],
     'notebooks': ['ipython', 'jupyter'],
-    'classifier': ['scikit-learn', 'xgboost']
+    'classifier': ['xgboost']
 }
 
 # Enable a handle to install all extra dependencies at once

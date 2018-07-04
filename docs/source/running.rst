@@ -4,6 +4,12 @@
 Running mriqc
 -------------
 
+
+.. tip::
+     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
+     installation!
+
+
 MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
 and therefore it inherently understands the :abbr:`BIDS (brain
 imaging data structure)` standard [BIDS]_ and follows the

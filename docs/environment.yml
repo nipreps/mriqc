@@ -3,15 +3,3 @@ channels:
   - conda-forge
 dependencies:
 - python=3.5
-- numpy>=1.11.0
-- scipy>=0.18.1
-- scikit-learn>=0.19
-- pandas=0.19.1
-- matplotlib=2.0.0
-- traits=4.6
-- jinja2=2.8
-- sphinx>=1.5,<1.6
-- sphinx_rtd_theme>=0.2.4
-
-- pip:
-    - git+https://github.com/poldracklab/niworkflows.git@4395e10405a23a62bb7740719136562e1eee86d0#egg=niworkflows

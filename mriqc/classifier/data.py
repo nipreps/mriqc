@@ -23,6 +23,13 @@ from ..utils.misc import BIDS_COMP
 LOG = logging.getLogger('mriqc.classifier')
 
 
+def get_groups(X, label='site'):
+    """Generate the index of sites"""
+    groups = X[label].values.ravel().tolist()
+    gnames = sorted(list(set(groups)))
+    return [gnames.index(g) for g in groups], gnames
+
+
 def combine_datasets(inputs, rating_label='rater_1'):
     mdata = []
     for dataset_x, dataset_y, sitename in inputs:
@@ -31,7 +38,7 @@ def combine_datasets(inputs, rating_label='rater_1'):
             binarize=True, site_name=sitename)
         sitedata['database'] = [sitename] * len(sitedata)
 
-        if sitename == 'DS030':
+        if 'site' not in sitedata.columns.ravel().tolist():
             sitedata['site'] = [sitename] * len(sitedata)
 
         mdata.append(sitedata)

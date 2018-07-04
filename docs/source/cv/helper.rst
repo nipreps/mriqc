@@ -1,6 +1,5 @@
 
-.. _crossvalidation:
-
+.. _clf-use:
 
 .. automodule:: mriqc.classifier.helper
     :members:

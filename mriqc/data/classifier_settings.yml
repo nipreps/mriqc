@@ -1,3 +1,20 @@
+preproc:
+  - std:
+      with_centering: [true, false]
+      with_scaling: [true, false]
+    ft_noise:
+      disable: [true]
+    ft_sites:
+      disable: [true]
+
+  - std:
+      with_centering: [true]
+      with_scaling: [true]
+    ft_noise:
+      disable: [false, true]
+    ft_sites:
+      disable: [false, true]
+
 rfc:
 - n_estimators: [50, 150, 400, 1000]
   max_features: ["sqrt"]
@@ -7,18 +24,3 @@ rfc:
   class_weight: [null, "balanced"]
   bootstrap: [true]
   oob_score: [true]
-
-xgb:
-- silent: [0]
-  nthread: [1]
-  learning_rate: [0.3]
-  gamma: [0, 1.0]
-  max_depth: [6]
-  min_child_weight: [1]
-  max_delta_step: [0]
-  subsample: [1]
-  colsample_bytree: [1]
-  colsample_bylevel: [1]
-  reg_lambda: [1]
-  reg_alpha: [0]
-  scale_pos_weight: [1]

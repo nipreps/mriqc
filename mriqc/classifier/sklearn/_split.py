@@ -21,13 +21,22 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
     """
 
-    def __init__(self, n_groups):
+    def __init__(self, n_groups, groups=None):
         self._splits = None
+        self._groups = groups
         super(RobustLeavePGroupsOut, self).__init__(n_groups)
 
     def split(self, X, y=None, groups=None):
         if self._splits:
             return self._splits
+
+        if groups is None:
+            groups = self._groups
+
+        if groups is None:
+            from ..data import get_groups
+            groups, _ = get_groups(X)
+            self._groups = groups
 
         self._splits = list(super(RobustLeavePGroupsOut, self).split(
             X, y=y, groups=groups))
@@ -45,8 +54,12 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
         return self._splits
 
+    @property
+    def groups(self):
+        return self._groups
+
     def get_n_splits(self, X, y, groups):
-        return len(self._splits)
+        return len(self.split(X, y, groups))
 
 
 class BalancedKFold(StratifiedKFold):
@@ -89,15 +102,27 @@ class PartiallyHeldOutKFold(StratifiedKFold):
     A K-Fold split on the test set where the train splits are
     augmented with the original train set (in whole).
     """
+    def __init__(self, n_splits=3, shuffle=False, random_state=None, groups=None):
+        self._splits = None
+        self._groups = groups
+        super(PartiallyHeldOutKFold, self).__init__(
+            n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+
     def split(self, X, y, groups=None):
         if groups is None:
-            raise RuntimeError(
-                'A mask for train (0) and test (1) sets is required')
+            groups = self._groups
 
         X, y, groups = indexable(X, y, groups)
-        train_idx = np.arange(len(X))[~groups.astype(bool)]
-        test_idx = np.arange(len(X))[groups.astype(bool)]
-        test_x = X[test_idx, :]
+
+        msk = np.array(groups, dtype=bool)
+        train_idx = np.arange(len(X))[~msk]
+        test_idx = np.arange(len(X))[msk]
+
+        try:
+            test_x = X.as_matrix()[test_idx, :]
+        except AttributeError:
+            test_x = X[test_idx, :]
+
         test_y = np.array(y)[test_idx]
         split = super(PartiallyHeldOutKFold, self).split(
             test_x, test_y)
@@ -113,6 +138,7 @@ class RepeatedPartiallyHeldOutKFold(_RepeatedSplits):
     A repeated RepeatedPartiallyHeldOutKFold split
     """
 
-    def __init__(self, n_splits=5, n_repeats=10, random_state=None):
+    def __init__(self, n_splits=5, n_repeats=10, random_state=None, groups=None):
         super(RepeatedPartiallyHeldOutKFold, self).__init__(
-            PartiallyHeldOutKFold, n_repeats, random_state, n_splits=n_splits)
+            PartiallyHeldOutKFold, n_repeats, random_state, n_splits=n_splits,
+            groups=groups)

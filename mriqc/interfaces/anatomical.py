@@ -15,16 +15,17 @@ from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
-from niworkflows.nipype import logging
-from niworkflows.nipype.utils.filemanip import fname_presuffix
-from niworkflows.nipype.interfaces.base import (
-    traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec)
+from nipype import logging
+from nipype.utils.filemanip import fname_presuffix
+from nipype.interfaces.base import (
+    traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec,
+    SimpleInterface
+)
 
-from niworkflows.interfaces.base import SimpleInterface
 from ..utils.misc import _flatten_dict
 from ..qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
-                                 art_qi2, volume_fraction, rpve, summary_stats,
-                                 cjv, wm2max)
+                             art_qi2, volume_fraction, rpve, summary_stats,
+                             cjv, wm2max)
 IFLOGGER = logging.getLogger('interface')
 
 
@@ -103,7 +104,6 @@ class StructuralQC(SimpleInterface):
         stats = summary_stats(inudata, pvmdata, airdata, erode=erode)
         self._results['summary'] = stats
 
-
         # SNR
         snrvals = []
         self._results['snr'] = {}
@@ -146,7 +146,6 @@ class StructuralQC(SimpleInterface):
             stats['gm']['mad']
         )
 
-
         # FWHM
         fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.get_header().get_zooms()[:3])
         self._results['fwhm'] = {
@@ -158,7 +157,6 @@ class StructuralQC(SimpleInterface):
 
         # RPVE
         self._results['rpve'] = rpve(pvmdata, segdata)
-
 
         # Image specs
         self._results['size'] = {'x': int(inudata.shape[0]),
@@ -182,7 +180,7 @@ class StructuralQC(SimpleInterface):
         bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
         self._results['inu'] = {
             'range': float(np.abs(np.percentile(bias, 95.) - np.percentile(bias, 5.))),
-            'med': float(np.median(bias))}  #pylint: disable=E1101
+            'med': float(np.median(bias))}  # pylint: disable=E1101
 
         mni_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.mni_tpms]
         in_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.in_pvms]
@@ -273,6 +271,7 @@ class ComputeQI2InputSpec(BaseInterfaceInputSpec):
     erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
     ncoils = traits.Int(12, usedefault=True, desc='number of coils')
 
+
 class ComputeQI2OutputSpec(TraitedSpec):
     qi2 = traits.Float(desc='computed QI2 value')
     out_file = File(desc='output plot: noise fit')
@@ -341,6 +340,7 @@ class Harmonize(SimpleInterface):
 
 class RotationMaskInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='input data')
+
 
 class RotationMaskOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='rotation mask (if any)')
@@ -433,5 +433,5 @@ def fuzzy_jaccard(in_tpms, in_mni_tpms):
 
         num = np.min([tpm, mni_tpm], axis=0).sum()
         den = np.max([tpm, mni_tpm], axis=0).sum()
-        overlaps.append(float(num/den))
+        overlaps.append(float(num / den))
     return overlaps

@@ -10,7 +10,6 @@ RUN apt-get update && \
                     curl \
                     bzip2 \
                     ca-certificates \
-                    xvfb  \
                     cython3 \
                     build-essential \
                     autoconf \
@@ -20,12 +19,11 @@ RUN apt-get update && \
     apt-key add /root/.neurodebian.gpg && \
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
 
-# Installing Neurodebian packages (FSL, AFNI, git)
+# Installing Neurodebian packages (FSL, git)
 RUN apt-get update  && \
     apt-get install -y --no-install-recommends \
-                    fsl-core=5.0.9-4~nd16.04+1 \
-                    fsl-mni152-templates \
-                    afni=16.2.07~dfsg.1-5~nd16.04+1
+                    fsl-core \
+                    fsl-mni152-templates
 
 ENV FSLDIR=/usr/share/fsl/5.0 \
     FSLOUTPUTTYPE=NIFTI_GZ \
@@ -34,11 +32,32 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
     LD_LIBRARY_PATH=/usr/lib/fsl/5.0:$LD_LIBRARY_PATH \
     FSLTCLSH=/usr/bin/tclsh \
     FSLWISH=/usr/bin/wish \
-    AFNI_MODELPATH=/usr/lib/afni/models \
-    AFNI_IMSAVE_WARNINGS=NO \
-    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
-    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
     PATH=/usr/lib/fsl/5.0:/usr/lib/afni/bin:$PATH
+
+# Installing AFNI (version 17_3_03 archived on OSF)
+RUN apt-get update -qq && apt-get install -yq --no-install-recommends ed gsl-bin libglu1-mesa-dev libglib2.0-0 libglw1-mesa \
+    libgomp1 libjpeg62 libxm4 netpbm tcsh xfonts-base xvfb && \
+    libs_path=/usr/lib/x86_64-linux-gnu && \
+    if [ -f $libs_path/libgsl.so.19 ]; then \
+           ln $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
+    fi && \
+    echo "Install libxp (not in all ubuntu/debian repositories)" && \
+    apt-get install -yq --no-install-recommends libxp6 \
+    || /bin/bash -c " \
+       curl --retry 5 -o /tmp/libxp6.deb -sSL http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
+       && dpkg -i /tmp/libxp6.deb && rm -f /tmp/libxp6.deb" && \
+    echo "Install libpng12 (not in all ubuntu/debian repositories" && \
+    apt-get install -yq --no-install-recommends libpng12-0 \
+    || /bin/bash -c " \
+       curl -o /tmp/libpng12.deb -sSL http://mirrors.kernel.org/debian/pool/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
+       && dpkg -i /tmp/libpng12.deb && rm -f /tmp/libpng12.deb" && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    mkdir -p /opt/afni && \
+    curl -o afni.tar.gz -sSLO "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5a0dd9a7b83f69027512a12b" && \
+    tar zxv -C /opt/afni --strip-components=1 -f afni.tar.gz && \
+    rm -rf afni.tar.gz
+ENV PATH=/opt/afni:$PATH
 
 # Installing and setting up ANTs
 RUN mkdir -p /opt/ants && \
@@ -79,7 +98,7 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
                      numpy=1.12.0 \
                      cython \
                      scipy=0.19.0 \
-                     matplotlib=2.0.0 \
+                     matplotlib=2.2.0 \
                      pandas=0.19.2 \
                      libxml2=2.9.4 \
                      libxslt=1.1.29 \
@@ -90,15 +109,21 @@ RUN conda install -c conda-forge -y openblas=0.2.19; \
                      psutil=5.2.2 \
                      sphinx=1.5.4; \
     sync &&  \
+    chmod -R a+rX /usr/local/miniconda && \
     chmod +x /usr/local/miniconda/bin/* && \
     conda clean --all -y; sync && \
     python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+# Unless otherwise specified each process should only use one thread - nipype
+# will handle parallelization
+ENV MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
+
 # Installing dev requirements (packages that are not in pypi)
+WORKDIR /usr/local/src/mriqc
 COPY requirements.txt requirements.txt
-RUN pip uninstall -y scikit-learn && \
-    pip install -r requirements.txt && \
+RUN pip install -r requirements.txt && \
     rm -rf ~/.cache/pip
 
 # Precaching atlases after niworkflows is available
@@ -107,12 +132,13 @@ ENV CRN_SHARED_DATA /niworkflows_data
 RUN python -c 'from niworkflows.data.getters import get_mni_icbm152_nlin_asym_09c; get_mni_icbm152_nlin_asym_09c()'
 
 # Installing MRIQC
-COPY . /root/src/mriqc
+COPY . /usr/local/src/mriqc
 ARG VERSION
-RUN cd /root/src/mriqc && \
-    echo "${VERSION}" > mriqc/VERSION && \
+RUN echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
     rm -rf ~/.cache/pip
+
+RUN ldconfig
 
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 

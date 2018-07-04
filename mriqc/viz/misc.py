@@ -15,32 +15,65 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from ..classifier.data import read_dataset, zscore_dataset
+from ..classifier.data import read_dataset
+from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
-def plot_batches(fulldata, out_file=None, excl_columns=None):
-    fulldata = fulldata.select_dtypes([np.number]).copy()
-    if excl_columns:
-        cols = fulldata.columns.ravel().tolist()
-        cols = [col for col in cols if col not in excl_columns]
-        fulldata = fulldata[cols]
 
-    colmin = fulldata.min()
-    fulldata = (fulldata - colmin)
-    colmax = fulldata.max()
-    fulldata = fulldata / colmax
+def plot_batches(fulldata, cols=None, out_file=None, site_labels='left'):
+    fulldata = fulldata.sort_values(by=['database', 'site']).copy()
+    sites = fulldata.site.values.ravel().tolist()
+    if cols is None:
+        numdata = fulldata.select_dtypes([np.number])
+    else:
+        numdata = fulldata[cols]
+
+    numdata = numdata[cols]
+    colmin = numdata.min()
+    numdata = (numdata - colmin)
+    colmax = numdata.max()
+    numdata = numdata / colmax
 
     fig, ax = plt.subplots(figsize=(20, 10))
-    ax.imshow(fulldata.values, cmap=plt.cm.viridis, interpolation='nearest', aspect='auto')
+    ax.imshow(numdata.values, cmap=plt.cm.viridis, interpolation='nearest', aspect='auto')
 
-    plt.xticks(range(fulldata.shape[1]), fulldata.columns.ravel().tolist(), rotation='vertical')
+    locations = []
+    spines = []
+    fulldata['index'] = range(len(fulldata))
+    for site in list(set(sites)):
+        indices = fulldata.loc[fulldata.site == site, 'index'].values.ravel().tolist()
+        locations.append(int(np.average(indices)))
+        spines.append(indices[0])
+
+    if site_labels == 'right':
+        ax.yaxis.tick_right()
+        ax.yaxis.set_label_position("right")
+
+    plt.xticks(range(numdata.shape[1]), numdata.columns.ravel().tolist(), rotation='vertical')
+    plt.yticks(locations, list(set(sites)))
+    for line in spines[1:]:
+        plt.axhline(y=line, color='w', linestyle='-')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.spines['left'].set_visible(False)
+    # ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.grid(False)
+
+    ticks_font = FontProperties(
+        family='FreeSans', style='normal', size=14,
+        weight='normal', stretch='normal')
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(ticks_font)
+
+    ticks_font = FontProperties(
+        family='FreeSans', style='normal', size=12,
+        weight='normal', stretch='normal')
+    for label in ax.get_xticklabels():
+        label.set_fontproperties(ticks_font)
+
     if out_file is not None:
-        fig.savefig(out_file)
+        fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
     return fig
+
 
 def plot_roc_curve(true_y, prob_y, out_file=None):
     from sklearn.metrics import roc_curve
@@ -59,28 +92,26 @@ def plot_roc_curve(true_y, prob_y, out_file=None):
         fig.savefig(out_file)
     return fig
 
+
 def fill_matrix(matrix, width, value='n/a'):
     if matrix.shape[0] < width:
-        nas = np.chararray((1, 3), itemsize=len(value))
+        nraters = matrix.shape[1]
+        nas = np.chararray((1, nraters), itemsize=len(value))
         nas[:] = value
         matrix = np.vstack(tuple([matrix] + [nas] * (width - matrix.shape[0])))
     return matrix
 
-def plot_raters(dataframe, site=None, ax=None, width=101,
-                raters=None):
-    if raters is None:
-        raters = ['rater_1', 'rater_2', 'rater_3']
 
-    if site is not None:
-        dataframe = dataframe.loc[dataframe.site == site]
-
-    dataframe = dataframe[raters].sort_values(by=raters, ascending=True)
+def plot_raters(dataframe, ax=None, width=101, size=0.40):
+    raters = sorted(dataframe.columns.ravel().tolist())
+    dataframe['notnan'] = np.any(np.isnan(dataframe[raters]), axis=1).astype(int)
+    dataframe = dataframe.sort_values(by=['notnan'] + raters, ascending=True)
+    for rater in raters:
+        dataframe[rater] = dataframe[[rater]].astype(str)
 
     matrix = dataframe.as_matrix()
-    nsamples = len(dataframe)
-
-    if matrix.shape[0] < width:
-        matrix = fill_matrix(matrix, width)
+    nsamples, nraters = dataframe.shape
+    matrix = fill_matrix(matrix, width)
 
     nblocks = 1
     if matrix.shape[0] > width:
@@ -97,7 +128,7 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
         matrices[-1] = fill_matrix(matrices[-1], width)
         matrix = np.hstack(tuple(matrices))
 
-    palette = {'1.0': 'limegreen', '0.0': 'gold', '-1.0': 'tomato', 'n/a': 'w'}
+    palette = {'1.0': 'limegreen', '0.0': 'dimgray', '-1.0': 'tomato', 'n/a': 'w'}
 
     ax = ax if ax is not None else plt.gca()
 
@@ -105,46 +136,46 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
     ax.set_aspect('equal', 'box')
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
-
-    size = 0.40
-
     nrows = ((nsamples - 1) // width) + 1
     xlims = (-14.0, width)
-    ylims = (-0.2, nrows * 3.2 + (nrows - 1))
+    ylims = (-0.07 * nraters, nrows * nraters + nraters * .07 + (nrows - 1))
 
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
-    for (x, y), w in np.ndenumerate(matrix):
-        if str(w) not in list(palette.keys()):
-            w = 'n/a'
-        color = palette[str(w)]
-        rect = plt.Circle([x + 0.5, y + 0.5], size,
-                             facecolor=color, edgecolor=color)
-        ax.add_patch(rect)
 
+    offset = 0.5 * (size / .40)
+    for (x, y), w in np.ndenumerate(matrix):
+        if w not in list(palette.keys()):
+            w = 'n/a'
+
+        color = palette[w]
+        rect = plt.Circle([x + offset, y + offset], size,
+                          facecolor=color, edgecolor=color)
+        ax.add_patch(rect)
 
     # text_x = ((nsamples - 1) % width) + 6.5
     text_x = -8.5
     for i, rname in enumerate(raters):
-        good = 100 * sum(dataframe[rname] == 1.0) / nsamples
-        bad = 100 * sum(dataframe[rname] == -1.0) / nsamples
+        nsamples = sum(dataframe[rname] != 'n/a')
+        good = 100 * sum(dataframe[rname] == '1.0') / nsamples
+        bad = 100 * sum(dataframe[rname] == '-1.0') / nsamples
 
         text_y = 1.5 * i + (nrows - 1) * 2.0
         ax.text(text_x, text_y, '%2.0f%%' % good,
-            color='limegreen', weight=1000, size=16,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=ax.transData)
+                color='limegreen', weight=1000, size=16,
+                horizontalalignment='right',
+                verticalalignment='center',
+                transform=ax.transData)
         ax.text(text_x + 3.50, text_y, '%2.0f%%' % max((0.0, 100 - good - bad)),
-            color='dimgray', weight=1000, size=16,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=ax.transData)
+                color='dimgray', weight=1000, size=16,
+                horizontalalignment='right',
+                verticalalignment='center',
+                transform=ax.transData)
         ax.text(text_x + 7.0, text_y, '%2.0f%%' % bad,
-            color='tomato', weight=1000, size=16,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=ax.transData)
+                color='tomato', weight=1000, size=16,
+                horizontalalignment='right',
+                verticalalignment='center',
+                transform=ax.transData)
 
     # ax.autoscale_view()
     ax.invert_yaxis()
@@ -162,7 +193,6 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
 
     ax.set_yticks([0.5 * (ylims[0] + ylims[1])])
     ax.tick_params(axis='y', which='major', pad=15)
-    ax.set_yticklabels([site])
 
     ticks_font = FontProperties(
         family='FreeSans', style='normal', size=20,
@@ -172,17 +202,16 @@ def plot_raters(dataframe, site=None, ax=None, width=101,
 
     return ax
 
-def raters_variability_plot(y_path, figsize=(22, 22),
-                            width=101, out_file=None):
-    rater_types = {'rater_1': float, 'rater_2': float, 'rater_3': float}
-    mdata = pd.read_csv(y_path, index_col=False,
-                        dtype=rater_types)
 
+def raters_variability_plot(mdata, figsize=(22, 22), width=101, out_file=None,
+                            raters=['rater_1', 'rater_2', 'rater_3'], only_overlap=True,
+                            rater_names=['Rater 1', 'Rater 2a', 'Rater 2b']):
+    if only_overlap:
+        mdata = mdata[np.all(~np.isnan(mdata[raters]), axis=1)]
     # Swap raters 2 and 3
-    cols = mdata.columns.ravel().tolist()
-    i, j = cols.index('rater_2'), cols.index('rater_3')
-    cols[j], cols[i] = cols[i], cols[j]
-    mdata.columns = cols
+    # i, j = cols.index('rater_2'), cols.index('rater_3')
+    # cols[j], cols[i] = cols[i], cols[j]
+    # mdata.columns = cols
 
     sites_list = sorted(set(mdata.site.values.ravel().tolist()))
     sites_len = []
@@ -197,8 +226,9 @@ def raters_variability_plot(y_path, figsize=(22, 22),
 
     for s, gsel in zip(sites_list, gs):
         ax = plt.subplot(gsel)
-        plot_raters(mdata, site=s, ax=ax, width=width)
-
+        plot_raters(mdata.loc[mdata.site == s, raters], ax=ax, width=width,
+                    size=.40 if len(raters) == 3 else .80)
+        ax.set_yticklabels([s])
 
     # ax.add_line(Line2D([0.0, width], [8.0, 8.0], color='k'))
     # ax.annotate(
@@ -219,44 +249,46 @@ def raters_variability_plot(y_path, figsize=(22, 22),
     newax.set_yticks([])
 
     nsamples = len(mdata)
-    for i, rater in enumerate(sorted(rater_types.keys())):
+    for i, rater in enumerate(raters):
+        nsamples = len(mdata) - sum(np.isnan(mdata[rater].values))
         good = 100 * sum(mdata[rater] == 1.0) / nsamples
         bad = 100 * sum(mdata[rater] == -1.0) / nsamples
 
         text_x = .92
         text_y = .5 - 0.17 * i
         newax.text(text_x - .36, text_y, '%2.1f%%' % good,
-            color='limegreen', weight=1000, size=25,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=newax.transAxes)
+                   color='limegreen', weight=1000, size=25,
+                   horizontalalignment='right',
+                   verticalalignment='center',
+                   transform=newax.transAxes)
         newax.text(text_x - .18, text_y, '%2.1f%%' % max((0.0, 100 - good - bad)),
-            color='dimgray', weight=1000, size=25,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=newax.transAxes)
+                   color='dimgray', weight=1000, size=25,
+                   horizontalalignment='right',
+                   verticalalignment='center',
+                   transform=newax.transAxes)
         newax.text(text_x, text_y, '%2.1f%%' % bad,
-            color='tomato', weight=1000, size=25,
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=newax.transAxes)
+                   color='tomato', weight=1000, size=25,
+                   horizontalalignment='right',
+                   verticalalignment='center',
+                   transform=newax.transAxes)
 
-        newax.text(1 - text_x, text_y, 'Rater %d' % (i + 1),
-            color='k', size=25,
-            horizontalalignment='left',
-            verticalalignment='center',
-            transform=newax.transAxes)
+        newax.text(1 - text_x, text_y, rater_names[i],
+                   color='k', size=25,
+                   horizontalalignment='left',
+                   verticalalignment='center',
+                   transform=newax.transAxes)
 
     newax.text(0.5, 0.95, 'Imbalance of ratings',
-        color='k', size=25,
-        horizontalalignment='center',
-        verticalalignment='top',
-        transform=newax.transAxes)
+               color='k', size=25,
+               horizontalalignment='center',
+               verticalalignment='top',
+               transform=newax.transAxes)
     newax.text(0.5, 0.85, '(ABIDE, aggregated)',
-        color='k', size=25,
-        horizontalalignment='center',
-        verticalalignment='top',
-        transform=newax.transAxes)
+               color='k', size=25,
+               horizontalalignment='center',
+               verticalalignment='top',
+               transform=newax.transAxes)
+
     if out_file is None:
         out_file = 'raters.svg'
 
@@ -269,9 +301,12 @@ def raters_variability_plot(y_path, figsize=(22, 22),
                 bbox_inches='tight', pad_inches=0, dpi=300)
     return fig
 
+
 def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
                           rating_label='rater_1', dpi=100):
     import seaborn as sn
+    from ..classifier.helper import FEATURE_NORM
+
     sn.set(style="whitegrid")
 
     mdata = []
@@ -304,7 +339,8 @@ def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
         except ValueError:
             pass
 
-    zscored = zscore_dataset(mdata, excl_columns=[rating_label])
+    zscored = BatchRobustScaler(
+        by='site', columns=FEATURE_NORM).fit_transform(mdata)
 
     sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
@@ -366,7 +402,6 @@ def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
         axg_zsc.set_xlabel('', visible=False)
         axg_zsc.set_ylabel('', visible=False)
 
-
         for yt in ax_nzs.yaxis.get_major_ticks()[1:-1]:
             yt.label1.set_visible(False)
 
@@ -389,6 +424,7 @@ def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
                 bbox_inches='tight', pad_inches=0, dpi=dpi)
     return fig
 
+
 def plot_corrmat(in_csv, out_file=None):
     import seaborn as sn
     sn.set(style="whitegrid")
@@ -404,7 +440,7 @@ def plot_corrmat(in_csv, out_file=None):
 
     # Correlation matrix
     corr = dataframe[colnames].corr()
-    corr = corr.dropna((0,1), 'all')
+    corr = corr.dropna((0, 1), 'all')
 
     # Generate a mask for the upper triangle
     mask = np.zeros_like(corr, dtype=np.bool)
@@ -414,7 +450,8 @@ def plot_corrmat(in_csv, out_file=None):
     cmap = sn.diverging_palette(220, 10, as_cmap=True)
 
     # Draw the heatmap with the mask and correct aspect ratio
-    corrplot = sn.clustermap(corr, cmap=cmap, center=0., method='average', square=True, linewidths=.5)
+    corrplot = sn.clustermap(corr, cmap=cmap, center=0.,
+                             method='average', square=True, linewidths=.5)
     plt.setp(corrplot.ax_heatmap.yaxis.get_ticklabels(), rotation='horizontal')
     # , mask=mask, square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
@@ -443,11 +480,11 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
 
     mdata = mdata.loc[mdata.rater.notnull()]
     zscored = zscore_dataset(
-            mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
-                                 'spacing_x', 'spacing_y', 'spacing_z'])
+        mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
+                             'spacing_x', 'spacing_y', 'spacing_z'])
 
-    colnames = [col for col in sorted(pp_cols)
-                if not (col.startswith('spacing') or col.startswith('summary') or col.startswith('size'))]
+    colnames = [col for col in sorted(pp_cols) if not (col.startswith('spacing') or
+                col.startswith('summary') or col.startswith('size'))]
 
     nrows = len(colnames)
     # palette = ['dodgerblue', 'darkorange']
@@ -492,6 +529,67 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     return fig
 
 
+def inter_rater_variability(y1, y2, figsize=(4, 4), normed=True,
+                            raters=None, labels=None, out_file=None):
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["font.sans-serif"] = "FreeSans"
+    plt.rcParams['font.size'] = 25
+    plt.rcParams['axes.labelsize'] = 20
+    plt.rcParams['axes.titlesize'] = 25
+    plt.rcParams['xtick.labelsize'] = 15
+    plt.rcParams['ytick.labelsize'] = 15
+    # fig = plt.figure(figsize=(3.5, 3))
+
+    if raters is None:
+        raters = ['Rater 1', 'Rater 2']
+
+    if labels is None:
+        labels = ['exclude', 'doubtful', 'accept']
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_aspect("equal")
+
+    nbins = len(set(y1 + y2))
+    if nbins == 2:
+        xlabels = [labels[0], labels[-1]]
+        ylabels = [labels[0], labels[-1]]
+
+    # Reverse x
+    y1 = (np.array(y1) * -1).tolist()
+    ylabels = labels
+    xlabels = list(reversed(labels))
+
+    hist, xbins, ybins, _ = plt.hist2d(y1, y2, bins=nbins, cmap=plt.cm.viridis)
+    xcenters = (xbins[:-1] + xbins[1:]) * 0.5
+    ycenters = (ybins[:-1] + ybins[1:]) * 0.5
+
+    total = np.sum(hist.reshape(-1))
+    celfmt = '%d%%' if normed else '%d'
+    for i, x in enumerate(xcenters):
+        for j, y in enumerate(ycenters):
+            val = hist[i, j]
+            if normed:
+                val = 100 * hist[i, j] / total
+
+            ax.text(x, y, celfmt % val,
+                    ha="center", va="center", fontweight="bold",
+                    color='w' if hist[i, j] < 15 else 'k')
+
+    # plt.colorbar(pad=0.10)
+    plt.grid(False)
+    plt.xticks(xcenters, xlabels)
+    plt.yticks(ycenters, ylabels, rotation='vertical', va='center')
+    plt.xlabel(raters[0])
+    plt.ylabel(raters[1])
+    ax.yaxis.tick_right()
+    ax.xaxis.set_label_position("top")
+
+    if out_file is not None:
+        fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
+
+    return fig
+
+
 def plot_artifact(image_path, figsize=(20, 20), vmax=None, cut_coords=None, display_mode='ortho',
                   size=None):
     import nilearn.plotting as nplt
@@ -503,7 +601,6 @@ def plot_artifact(image_path, figsize=(20, 20), vmax=None, cut_coords=None, disp
 
     if size is None:
         size = figsize[0] * 6
-
 
     bg_color = 'k'
     fg_color = 'w'
@@ -535,8 +632,8 @@ def figure1_a(image_path, display_mode='y', vmax=300, cut_coords=None, figsize=(
     if cut_coords is None:
         cut_coords = [15]
 
-    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
-                             figsize=figsize)
+    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax,
+                             cut_coords=cut_coords, figsize=figsize)
 
     ax.add_patch(
         patches.Arrow(
@@ -570,8 +667,8 @@ def figure1_b(image_path, display_mode='z', vmax=400, cut_coords=None, figsize=(
     if cut_coords is None:
         cut_coords = [-24]
 
-    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax, cut_coords=cut_coords,
-                             figsize=figsize)
+    disp, ax = plot_artifact(image_path, display_mode=display_mode, vmax=vmax,
+                             cut_coords=cut_coords, figsize=figsize)
 
     ax.add_patch(
         patches.Arrow(
@@ -620,11 +717,11 @@ def figure1_b(image_path, display_mode='z', vmax=400, cut_coords=None, figsize=(
     )
     return disp
 
+
 def figure1(artifact1, artifact2, out_file):
     from .svg import svg2str, combine_svg
     combine_svg([
         svg2str(figure1_b(artifact2)),
         svg2str(figure1_a(artifact1))
-        ],
+    ],
         axis='vertical').save(out_file)
-

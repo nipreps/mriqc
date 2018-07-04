@@ -8,7 +8,7 @@
 # @Date:   2016-02-23 19:25:39
 # @Email:  code@oscaresteban.es
 # @Last Modified by:   oesteban
-# @Last Modified time: 2017-05-30 16:47:11
+# @Last Modified time: 2018-03-12 11:44:09
 """
 
 Measures for the structural information
@@ -17,15 +17,31 @@ Measures for the structural information
 Definitions are given in the
 :ref:`summary of structural IQMs <iqms_t1w>`.
 
+.. _iqms_efc:
+
 - **Entropy-focus criterion** (:py:func:`~mriqc.qc.anatomical.efc`).
+
+.. _iqms_fber:
+
 - **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
+
+.. _iqms_fwhm:
+
 - **Full-width half maximum smoothness** (``fwhm_*``).
+
+.. _iqms_snr:
+
 - **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
+
+.. _iqms_summary:
+
 - **Summary statistics** (:py:func:`~mriqc.qc.anatomical.summary_stats`).
 
 
 Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_dvars:
 
 - **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
   RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
@@ -52,6 +68,7 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
     normalized across time by that voxel standard deviation across time, before
     computing the RMS of the temporal difference [Nichols2013]_.
 
+.. _iqms_gcor:
 
 - **Global Correlation** (``gcor``) calculates an optimized summary of time-series
     correlation as in [Saad2013]_ using AFNI's ``@compute_gcor``:
@@ -62,6 +79,8 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
   where :math:`\\mathbf{g}_u` is the average of all unit-variance time series in a
   :math:`T` (\# timepoints) :math:`\\times` :math:`N` (\# voxels) matrix.
+
+.. _iqms_tsnr:
 
 - **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is a simplified
   interpretation of the tSNR definition [Kruger2001]_. We report the median value
@@ -78,6 +97,9 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
 Measures for artifacts and other
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _iqms_fd:
+
 - **Framewise Displacement**: expresses instantaneous head-motion.
   MRIQC reports the average FD, labeled as ``fd_mean``.
   Rotational displacements are calculated as the displacement on the surface of a
@@ -93,6 +115,8 @@ Measures for artifacts and other
   **percent of FDs above the FD threshold** w.r.t. the full timeseries (``fd_perc``).
   In both cases, the threshold is set at 0.20mm.
 
+.. _iqms_gsr:
+
 - **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
   in the reports as ``gsr_x`` and ``gsr_y``):
   along the two possible phase-encoding axes **x**, **y**:
@@ -105,10 +129,19 @@ Measures for artifacts and other
     :width: 200px
     :align: center
 
+.. _iqms_aor:
 
 - **AFNI's outlier ratio** (``aor``) - Mean fraction of outliers per fMRI volume
   as given by AFNI's ``3dToutcount``.
+
+.. _iqms_aqi:
+
 - **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
+
+.. _iqms_dummy:
+
+- **Number of *dummy* scans** (``dummy``) - A number of volumes in the begining of the
+  fMRI timeseries identified as non-steady state.
 
 .. topic:: References
 
@@ -137,7 +170,8 @@ Measures for artifacts and other
     doi:`10.1002/mrm.1240 <http://dx.doi.org/10.1002/mrm.1240>`_.
 
   .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
+      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research\
+/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
 
   .. [Power2012] Power et al., *Spurious but systematic correlations in
     functional connectivity MRI networks arise from subject motion*,
@@ -158,9 +192,9 @@ mriqc.qc.functional module
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
-import nibabel as nb
 
 RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
+
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
@@ -211,10 +245,10 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     # Roll data of mask through the appropriate axis
     axis = RAS_AXIS_ORDER[direction]
-    n2_mask = np.roll(mask, mask.shape[axis]//2, axis=axis)
+    n2_mask = np.roll(mask, mask.shape[axis] // 2, axis=axis)
 
     # Step 3: remove from n2_mask pixels inside the brain
-    n2_mask = n2_mask * (1-mask)
+    n2_mask = n2_mask * (1 - mask)
 
     # Step 4: non-ghost background region is labeled as 2
     n2_mask = n2_mask + 2 * (1 - n2_mask - mask)
@@ -222,4 +256,4 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     # Step 5: signal is the entire foreground image
     ghost = np.mean(epi_data[n2_mask == 1]) - np.mean(epi_data[n2_mask == 2])
     signal = np.median(epi_data[n2_mask == 0])
-    return float(ghost/signal)
+    return float(ghost / signal)

@@ -50,7 +50,6 @@ class PandasAdaptor(BaseEstimator, TransformerMixin):
             return X
 
 
-
 class ColumnsScaler(BaseEstimator, TransformerMixin):
     """
     Wraps a data transformation to run only in specific
@@ -155,7 +154,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     continue
                 scaler = self._scalers[batch]
                 new_x.ix[mask, self._colmask] = scaler.transform(
-                    X.ix[mask, self._colmask], y)
+                    X.ix[mask, self._colmask])
             else:
                 colmask = self._colmask
                 if self.by in self._colnames and len(colmask) == len(self._colnames):
@@ -164,8 +163,6 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                 scaler = clone(self._base_scaler)
                 new_x.ix[:, colmask] = scaler.fit_transform(
                     X.ix[:, colmask])
-
-
         return new_x
 
 
@@ -208,12 +205,13 @@ class BatchScaler(GroupsScaler, TransformerMixin):
         except AttributeError:
             columns = self.columns
 
-        if not self.by in columns:
+        if self.by not in columns:
             new_x[self.by] = ['Unknown'] * new_x.shape[0]
 
         new_x.ix[:, self.ftmask_] = super(BatchScaler, self).transform(
             new_x[new_x.columns[self.ftmask_]], y)
         return new_x
+
 
 class BatchRobustScaler(BatchScaler, TransformerMixin):
     def __init__(self, by='site', columns=None, with_centering=True, with_scaling=True,
@@ -227,12 +225,14 @@ class BatchRobustScaler(BatchScaler, TransformerMixin):
                          quantile_range=quantile_range),
             by=by, columns=columns)
 
+
 class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
     """
     Remove features with less importance than a noise feature
     https://gist.github.com/satra/c6eb113055810f19709fa7c5ebd23de8
 
     """
+
     def __init__(self, n_winnow=10, disable=False):
         self.disable = disable
         self.n_winnow = n_winnow
@@ -308,10 +308,11 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 )
             else:
                 clf = ExtraTreesRegressor(
-                    n_estimators=n_estimators, criterion='mse', max_depth=None, min_samples_split=2,
-                    min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features='auto',
-                    max_leaf_nodes=None, min_impurity_decrease=1e-07, bootstrap=False,
-                    oob_score=False, n_jobs=1, random_state=None, verbose=0, warm_start=False)
+                    n_estimators=n_estimators, criterion='mse', max_depth=None,
+                    min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0,
+                    max_features='auto', max_leaf_nodes=None, min_impurity_decrease=1e-07,
+                    bootstrap=False, oob_score=False, n_jobs=1, random_state=None, verbose=0,
+                    warm_start=False)
 
             clf.fit(X[:, idx_keep], y)
             LOG.debug('done fitting once')
@@ -322,12 +323,12 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 LOG.log(19, 'All features (%d) are better than noise', len(idx_keep) - 1)
                 # all features better than noise
                 # comment out to force counter renditions of winnowing
-                #noise_flag = False
-            elif np.all(k*importances[-1] > importances[0:-1]):
+                # noise_flag = False
+            elif np.all(k * importances[-1] > importances[0:-1]):
                 LOG.warn('No features are better than noise')
                 # noise better than all features aka no feature better than noise
-                # Leave as separate if clause in case want to do something different than when all feat > noise
-                # comment out to force counter renditions of winnowing
+                # Leave as separate if clause in case want to do something different than
+                # when all feat > noise. Comment out to force counter renditions of winnowing
                 # noise_flag = False # just take everything
             else:
                 # Tracer()()
@@ -335,7 +336,8 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 # use >= so when saving, can always drop last index
                 importances = importances[importances >= (k * importances[-1])]
                 # always keep the noise index, which is n_feature (assuming 0 based python index)
-                #idx_keep = np.concatenate((idx_keep[:, np.newaxis], np.array([[n_feature]])), axis=0)
+                # idx_keep = np.concatenate((
+                #     idx_keep[:, np.newaxis], np.array([[n_feature]])), axis=0)
                 idx_keep = np.ravel(idx_keep)
 
             # fail safe
@@ -343,7 +345,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 noise_flag = False
 
         self.importances_ = importances[:-1]
-        self.importances_snr_ = importances[:-1]/importances[-1]
+        self.importances_snr_ = importances[:-1] / importances[-1]
         self.idx_keep_ = idx_keep[:-1]
         self.mask_[self.idx_keep_] = True
         LOG.info('Feature selection: %d of %d features better than noise feature',
@@ -389,6 +391,7 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
     https://gist.github.com/satra/c6eb113055810f19709fa7c5ebd23de8
 
     """
+
     def __init__(self, target_auc=0.6, disable=False,
                  max_iter=None, max_remove=0.7, site_col=-1):
         self.disable = disable
@@ -397,7 +400,6 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         self.max_remove = max_remove if max_remove > 0 else None
         self.max_iter = max_iter
         self.site_col = site_col
-
 
     def fit(self, X, y, n_jobs=1):
         """Fit the model with X.

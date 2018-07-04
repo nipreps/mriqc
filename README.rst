@@ -6,6 +6,10 @@ MRIQC is developed by `the Poldrack Lab at Stanford University
 Neuroscience (CRN) <http://reproducibility.stanford.edu>`_, as well as
 for open-source software distribution.
 
+.. image:: http://bids.neuroimaging.io/openneuro_badge.svg
+  :target: https://openneuro.org
+  :alt: Available in OpenNeuro!
+
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
@@ -15,12 +19,6 @@ for open-source software distribution.
 
 .. image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
   :target: https://www.codacy.com/app/code_3/mriqc
-
-.. image:: https://coveralls.io/repos/github/poldracklab/mriqc/badge.svg?branch=master
-  :target: https://coveralls.io/github/poldracklab/mriqc?branch=master
-
-.. image:: https://codecov.io/gh/poldracklab/mriqc/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/poldracklab/mriqc
 
 .. image:: https://img.shields.io/pypi/v/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
@@ -72,6 +70,15 @@ software engineering principles:
 MRIQC is part of the MRI image analysis and reproducibility platform offered by
 the CRN. This pipeline derives from, and is heavily influenced by, the
 `PCP Quality Assessment Protocol <http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`_.
+
+Citation
+--------
+
+.. topic:: **When using MRIQC, please include the following citation:**
+
+    Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
+    *MRIQC: Advancing the Automatic Prediction of Image Quality in MRI from Unseen Sites*;
+    PLOS ONE 12(9):e0184661; doi:`10.1371/journal.pone.0184661 <https://doi.org/10.1371/journal.pone.0184661>`_.
 
 
 Support and communication

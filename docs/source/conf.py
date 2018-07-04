@@ -18,18 +18,21 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import os
 import sys
-from mriqc import __version__
+from datetime import datetime
+from sphinx import __version__ as sphinxversion
+from packaging import version as pver  # Avoid distutils.LooseVersion which is deprecated
+from mriqc.__about__ import __version__
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../../mriqc'))
-sys.path.insert(0, os.getcwd())
+
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.5'
+needs_sphinx = '1.5.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -42,8 +45,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
-    'niworkflows.nipype.sphinxext.plot_workflow',
-    'sphinxarg.ext', # argparse extension
+    'nipype.sphinxext.plot_workflow',
+    'sphinxarg.ext',  # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
 
@@ -51,6 +54,22 @@ extensions = [
 autodoc_mock_imports = [
     'xgboost',
 ]
+
+if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
+    autodoc_mock_imports += [
+        'numpy',
+        'scipy',
+        'sklearn',
+        'statsmodel',
+        'nipype',
+        'niworkflows.interfaces.registration',
+        'niworkflows.interfaces',
+        'nipype',
+        'niworkflows',
+        'nilearn',
+        'seaborn',
+    ]
+
 # autodoc_mock_imports = [
 #     'scipy',
 #     'scipy.cluster',
@@ -97,8 +116,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'mriqc'
-copyright = '2017, Oscar Esteban'
-author = 'Oscar Esteban'
+author = 'The MRIQC developers'
+copyright = '2016-%s, %s' % (datetime.now().year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -255,17 +274,17 @@ htmlhelp_basename = 'mriqcdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
