@@ -19,7 +19,7 @@ from nipype.interfaces.base import (
 )
 from ..utils.misc import BIDS_COMP, BIDS_EXPR
 
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class ReadSidecarJSONInputSpec(BaseInterfaceInputSpec):
