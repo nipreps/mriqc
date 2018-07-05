@@ -12,7 +12,7 @@
 """
 
 Measures for the spatial information
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Definitions are given in the
 :ref:`summary of structural IQMs <iqms_t1w>`.
