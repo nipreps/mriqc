@@ -180,7 +180,7 @@ Other measures
   .. [Forman1995] Forman SD et a., *Improved assessment of significant activation in functional
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
      Magn. Reson. Med. 33 (5), 636–647, 1995.
-     doi:`10.1016/j.neuroimage.2006.03.062 <http://dx.doi.org/10.1016/j.neuroimage.2006.03.062>`_.
+     doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 
 
 mriqc.qc.anatomical module
