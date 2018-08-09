@@ -111,13 +111,13 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b6c9950fed49e001a7885b6"
     working_directory: /home/circleci/data
     steps:
       - restore_cache:
           keys:
-            - data-v1-{{ epoch }}
-            - data-v1-
+            - data-v2-{{ epoch }}
+            - data-v2-
       - run:
           name: Get test data
           command: |
@@ -144,7 +144,7 @@ jobs:
             - t1w/nipype.cfg
             - bold/nipype.cfg
       - save_cache:
-         key: data-v1-{{ epoch }}
+         key: data-v2-{{ epoch }}
          paths:
             - /tmp/data
             - /tmp/t1w
