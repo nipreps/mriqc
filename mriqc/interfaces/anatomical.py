@@ -26,7 +26,7 @@ from ..utils.misc import _flatten_dict
 from ..qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
                              art_qi2, volume_fraction, rpve, summary_stats,
                              cjv, wm2max)
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):

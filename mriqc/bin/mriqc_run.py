@@ -243,9 +243,9 @@ def main():
     })
 
     # Set nipype logging level
-    nlog.getLogger('workflow').setLevel(log_level)
-    nlog.getLogger('interface').setLevel(log_level)
-    nlog.getLogger('utils').setLevel(log_level)
+    nlog.getLogger('nipype.workflow').setLevel(log_level)
+    nlog.getLogger('nipype.interface').setLevel(log_level)
+    nlog.getLogger('nipype.utils').setLevel(log_level)
 
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:
@@ -285,7 +285,7 @@ def main():
             run=opts.run_id,
             task=opts.task_id,
         )
-        
+
         log.info(
             'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
             __version__, ', '.join(analysis_levels), opts.participant_label, settings)

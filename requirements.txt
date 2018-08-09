@@ -1,3 +1,1 @@
-numpy>=1.12.0
-scikit-learn>=0.19
-niworkflows>=0.4.0
+niworkflows>=0.4.2
