@@ -285,7 +285,7 @@ def main():
             run=opts.run_id,
             task=opts.task_id,
         )
-        
+
         log.info(
             'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
             __version__, ', '.join(analysis_levels), opts.participant_label, settings)
