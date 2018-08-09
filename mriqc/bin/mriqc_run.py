@@ -243,9 +243,9 @@ def main():
     })
 
     # Set nipype logging level
-    nlog.getLogger('workflow').setLevel(log_level)
-    nlog.getLogger('interface').setLevel(log_level)
-    nlog.getLogger('utils').setLevel(log_level)
+    nlog.getLogger('nipype.workflow').setLevel(log_level)
+    nlog.getLogger('nipype.interface').setLevel(log_level)
+    nlog.getLogger('nipype.utils').setLevel(log_level)
 
     plugin_settings = {'plugin': 'Linear'}
     if opts.use_plugin is not None:

@@ -19,7 +19,7 @@ from nipype import logging
 from ..utils.misc import _flatten_dict
 from ..qc.anatomical import snr, fber, efc, summary_stats
 from ..qc.functional import gsr
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class FunctionalQCInputSpec(BaseInterfaceInputSpec):

@@ -18,7 +18,7 @@ from nipype.interfaces.base import (
 from nipype.interfaces.ants import ApplyTransforms
 
 
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):

@@ -11,7 +11,7 @@ from nipype.interfaces.base import (
 )
 from urllib.parse import urlparse
 
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 SECRET_KEY = '<secret_token>'
 
