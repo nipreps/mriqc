@@ -479,9 +479,11 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
             del mdata[col]
 
     mdata = mdata.loc[mdata.rater.notnull()]
-    zscored = zscore_dataset(
-        mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
-                             'spacing_x', 'spacing_y', 'spacing_z'])
+    zscored = mdata.copy()
+    # TODO: zscore_dataset was removed
+    # zscored = zscore_dataset(
+    #     mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
+    #                          'spacing_x', 'spacing_y', 'spacing_z'])
 
     colnames = [col for col in sorted(pp_cols) if not (col.startswith('spacing') or
                 col.startswith('summary') or col.startswith('size'))]

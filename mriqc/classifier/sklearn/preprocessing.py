@@ -30,8 +30,8 @@ class PandasAdaptor(BaseEstimator, TransformerMixin):
         >>> from sklearn.preprocessing import StandardScaler
         >>> from mriqc.classifier.sklearn.preprocessing import PandasAdaptor
         >>> tfm = PandasAdaptor(StandardScaler(),
-                                  columns=['duration', 'num_operations'])
-        >>> scaled = tfm.fit_transform(churn_d)
+        ...                     columns=['duration', 'num_operations'])
+        >>> # scaled = tfm.fit_transform(churn_d)
 
     """
 
@@ -61,8 +61,8 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
         >>> from sklearn.preprocessing import StandardScaler
         >>> from mriqc.classifier.sklearn.preprocessing import ColumnsScaler
         >>> tfm = ColumnsScaler(StandardScaler(),
-                                  columns=['duration', 'num_operations'])
-        >>> scaled = tfm.fit_transform(churn_d)
+        ...                     columns=['duration', 'num_operations'])
+        >>> # scaled = tfm.fit_transform(churn_d)
 
     """
 
@@ -103,7 +103,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         >>> from sklearn.preprocessing import StandardScaler
         >>> from mriqc.classifier.sklearn.preprocessing import GroupsScaler
         >>> tfm = GroupsScaler(StandardScaler(), groups='site')
-        >>> scaled = tfm.fit_transform(churn_d)
+        >>> # scaled = tfm.fit_transform(churn_d)
 
     """
 
@@ -176,7 +176,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
         >>> from sklearn.preprocessing import StandardScaler
         >>> from mriqc.classifier.sklearn.preprocessing import BatchScaler
         >>> tfm = BatchScaler(StandardScaler(), groups='site', columns=[''])
-        >>> scaled = tfm.fit_transform(churn_d)
+        >>> # scaled = tfm.fit_transform(churn_d)
 
     """
 
