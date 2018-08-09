@@ -38,9 +38,7 @@ ENV FSLDIR=/usr/share/fsl/5.0 \
 RUN apt-get update -qq && apt-get install -yq --no-install-recommends ed gsl-bin libglu1-mesa-dev libglib2.0-0 libglw1-mesa \
     libgomp1 libjpeg62 libxm4 netpbm tcsh xfonts-base xvfb && \
     libs_path=/usr/lib/x86_64-linux-gnu && \
-    if [ -f $libs_path/libgsl.so.19 ]; then \
-           ln $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
-    fi && \
+    ln -s $libs_path/libgsl.so.19 $libs_path/libgsl.so.0; \
     echo "Install libxp (not in all ubuntu/debian repositories)" && \
     apt-get install -yq --no-install-recommends libxp6 \
     || /bin/bash -c " \
@@ -56,7 +54,8 @@ RUN apt-get update -qq && apt-get install -yq --no-install-recommends ed gsl-bin
     mkdir -p /opt/afni && \
     curl -o afni.tar.gz -sSLO "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5a0dd9a7b83f69027512a12b" && \
     tar zxv -C /opt/afni --strip-components=1 -f afni.tar.gz && \
-    rm -rf afni.tar.gz
+    rm -rf afni.tar.gz && \
+    ldconfig
 ENV PATH=/opt/afni:$PATH
 
 # Installing and setting up ANTs
