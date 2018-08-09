@@ -4,7 +4,7 @@ jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      - MRIQC_API_TAG: 1.0.4
+      - MRIQC_API_TAG: 1.0.5
 
     docker:
       - image: docker:18.01.0-ce-git
