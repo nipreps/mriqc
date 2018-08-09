@@ -2,7 +2,7 @@
 FROM ubuntu:xenial-20161213
 
 # Pre-cache neurodebian key
-COPY docker/files/neurodebian.gpg /root/.neurodebian.gpg
+COPY docker/files/neurodebian.gpg /etc/neurodebian.gpg
 
 # Prepare environment
 RUN apt-get update && \
@@ -16,7 +16,7 @@ RUN apt-get update && \
                     libtool \
                     pkg-config && \
     curl -sSL http://neuro.debian.net/lists/xenial.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key add /root/.neurodebian.gpg && \
+    apt-key add /etc/neurodebian.gpg && \
     (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
 
 # Installing Neurodebian packages (FSL, git)
@@ -137,9 +137,12 @@ RUN echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
     rm -rf ~/.cache/pip
 
-RUN ldconfig
-
+# Run mriqc by default
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
+
+# Best practices
+RUN ldconfig
+WORKDIR /tmp
 
 # Store metadata
 ARG BUILD_DATE
