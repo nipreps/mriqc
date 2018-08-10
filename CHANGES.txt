@@ -1,6 +1,8 @@
 0.12.0 (August 09, 2018)
 ========================
 
+  * [FIX] Reduce tSNR memory requirements (#712)
+  * [DOC] Fix typos in IQM documentation (#725)
   * [PIN] Update MRIQC WebAPI version (#734)
   * [BUG] Fix missing library in singularity images (#733)
   * [PIN] nipype 1.1.0, niworkflows (#726)
