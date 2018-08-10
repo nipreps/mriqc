@@ -287,7 +287,7 @@ def main():
             session=opts.session_id,
             run=opts.run_id,
             task=opts.task_id,
-            type=modalities,
+            bids_type=modalities,
         )
 
         log.info(
