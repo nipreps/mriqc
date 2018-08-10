@@ -117,7 +117,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     ema = epi_mni_align(settings)
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=biggest_file_gb * 4.5)
+    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=biggest_file_gb * 2.5)
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
