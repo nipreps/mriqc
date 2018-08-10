@@ -13,7 +13,7 @@ def collect_bids_data(layout, participant_label=None, session=None, run=None,
                       task=None, bids_type=None):
     """Get files in dataset"""
 
-    bids_type or DEFAULT_TYPES
+    bids_type = bids_type or DEFAULT_TYPES
     if not isinstance(bids_type, (list, tuple)):
         bids_type = [bids_type]
 
