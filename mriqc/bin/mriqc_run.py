@@ -50,19 +50,20 @@ def get_parser():
                         version='mriqc v{}'.format(__version__))
 
     # BIDS selectors
-    g_bids = parser.add_argument_group('Options for filtering BIDS queries')
-    g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='+',
+    g_bids = parser.add_argument_group('Options for filtering the input BIDS dataset')
+    g_bids.add_argument('--participant_label', '--participant-label', action='store', nargs='*',
                         help='one or more participant identifiers (the sub- prefix can be '
                              'removed)')
-    g_bids.add_argument('--session-id', action='store', nargs='+', type=str,
-                        help='select a specific session to be processed')
-    g_bids.add_argument('--run-id', action='store', type=str, nargs='+',
-                        help='select a specific run to be processed')
-    g_bids.add_argument('--task-id', action='store', nargs='+', type=str,
-                        help='select a specific task to be processed')
+    g_bids.add_argument('--session-id', action='store', nargs='*', type=str,
+                        help='filter input dataset by session id')
+    g_bids.add_argument('--run-id', action='store', type=int, nargs='*',
+                        help='filter input dataset by run id '
+                             '(only integer run ids are valid)')
+    g_bids.add_argument('--task-id', action='store', nargs='*', type=str,
+                        help='filter input dataset by task id')
     g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
                         choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
-                        help='select one of the supported MRI types')
+                        help='filter input dataset by MRI type ("T1w", "T2w", or "bold")')
 
     # Control instruments
     g_outputs = parser.add_argument_group('Instrumental options')
@@ -155,6 +156,7 @@ def get_parser():
 
 def main():
     """Entry point"""
+    from bids.grabbids import BIDSLayout
     from nipype import config as ncfg, logging as nlog
     from nipype.pipeline.engine import Workflow
 
@@ -277,13 +279,15 @@ def main():
     # Set up participant level
     if 'participant' in analysis_levels:
         log.info('Participant level started. Checking BIDS dataset...')
+        layout = BIDSLayout(settings['bids_dir'],
+                            exclude=['derivatives', 'sourcedata'])
         dataset = collect_bids_data(
-            settings['bids_dir'],
-            modalities=modalities,
+            layout,
             participant_label=opts.participant_label,
             session=opts.session_id,
             run=opts.run_id,
             task=opts.task_id,
+            type=modalities,
         )
 
         log.info(
