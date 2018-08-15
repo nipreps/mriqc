@@ -389,7 +389,7 @@ def init_mriqc(opts, retval):
             settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
 
     # Overwrite options if --use-plugin provided
-    if opts.use_plugin.exists():
+    if opts.use_plugin and opts.use_plugin.exists():
         from yaml import load as loadyml
         with opts.use_plugin.open() as pfile:
             plugin_settings.update(loadyml(pfile))
