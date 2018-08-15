@@ -96,10 +96,9 @@ class ConformImage(SimpleInterface):
     output_spec = ConformImageOutputSpec
 
     def _run_interface(self, runtime):
-        # load image
-        nii = nb.load(self.inputs.in_file)
+        # Squeeze 4th dimension if possible (#660)
+        nii = nb.squeeze_image(nb.load(self.inputs.in_file))
         hdr = nii.get_header().copy()
-
         if self.inputs.check_ras:
             nii = nb.as_closest_canonical(nii)
 
