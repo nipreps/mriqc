@@ -188,8 +188,8 @@ def main():
       * Analysis levels: {levels}.
     """.format(
         version=__version__,
-        bids_dir=opts.bids_dir.resolve(),
-        output_dir=opts.output_dir.resolve(),
+        bids_dir=opts.bids_dir.expanduser().resolve(),
+        output_dir=opts.output_dir.expanduser().resolve(),
         levels=', '.join(reversed(list(analysis_levels)))
     )
     logger.log(25, INIT_MSG)
@@ -267,7 +267,8 @@ def main():
         # Generate reports
         mod_group_reports = []
         for mod in opts.modalities:
-            dataframe, out_csv = generate_csv(opts.output_dir, mod)
+            dataframe, out_csv = generate_csv(
+                opts.output_dir.expanduser().resolve(), mod)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
@@ -307,8 +308,8 @@ def init_mriqc(opts, retval):
     retval['plugin_settings'] = None
 
     # Build settings dict
-    bids_dir = Path(opts.bids_dir)
-    output_dir = Path(opts.output_dir)
+    bids_dir = Path(opts.bids_dir).expanduser()
+    output_dir = Path(opts.output_dir).expanduser()
 
     # Number of processes
     n_procs = opts.n_procs or cpu_count()
@@ -316,7 +317,7 @@ def init_mriqc(opts, retval):
     settings = {
         'bids_dir': bids_dir.resolve(),
         'output_dir': output_dir.resolve(),
-        'work_dir': opts.work_dir.resolve(),
+        'work_dir': opts.work_dir.expanduser().resolve(),
         'write_graph': opts.write_graph,
         'n_procs': n_procs,
         'testing': opts.testing,
