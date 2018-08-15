@@ -1,4 +1,4 @@
-group_bold.csv
+group_bold.tsv
 group_bold.html
 logs
 sub-ds205s03

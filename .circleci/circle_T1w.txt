@@ -1,4 +1,4 @@
-group_T1w.csv
+group_T1w.tsv
 group_T1w.html
 logs
 sub-50137
