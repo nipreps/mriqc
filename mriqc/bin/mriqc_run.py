@@ -10,12 +10,15 @@ MRIQC
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import os
-import os.path as op
-from multiprocessing import cpu_count
+from os import cpu_count
+import logging
+import gc
+from pathlib import Path
 
 from .. import __version__
 
+logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
+logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 DEFAULT_MEM_GB = 8
 
 
@@ -31,10 +34,10 @@ def get_parser():
     # Arguments as specified by BIDS-Apps
     # required, positional arguments
     # IMPORTANT: they must go directly with the parser object
-    parser.add_argument('bids_dir', action='store',
+    parser.add_argument('bids_dir', action='store', type=Path,
                         help='The directory with the input dataset '
                              'formatted according to the BIDS standard.')
-    parser.add_argument('output_dir', action='store',
+    parser.add_argument('output_dir', action='store', type=Path,
                         help='The directory where the output files '
                              'should be stored. If you are running group level analysis '
                              'this folder should be prepopulated with the results of the'
@@ -67,9 +70,9 @@ def get_parser():
 
     # Control instruments
     g_outputs = parser.add_argument_group('Instrumental options')
-    g_outputs.add_argument('-w', '--work-dir', action='store',
-                           default=op.join(os.getcwd(), 'work'))
-    g_outputs.add_argument('--report-dir', action='store')
+    g_outputs.add_argument('-w', '--work-dir', action='store', default=Path() / 'work',
+                           type=Path, help='change the folder to store intermediate results')
+    g_outputs.add_argument('--report-dir', action='store', type=Path)
     g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
     g_outputs.add_argument('--write-graph', action='store_true', default=False,
                            help='Write workflow graph.')
@@ -77,7 +80,7 @@ def get_parser():
                            help='Do not run the workflow.')
     g_outputs.add_argument('--profile', action='store_true', default=False,
                            help='hook up the resource profiler callback to nipype')
-    g_outputs.add_argument('--use-plugin', action='store', default=None,
+    g_outputs.add_argument('--use-plugin', action='store', default=None, type=Path,
                            help='nipype plugin configuration file')
     g_outputs.add_argument('--no-sub', default=False, action='store_true',
                            help='Turn off submission of anonymized quality metrics '
@@ -156,44 +159,180 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from bids.grabbids import BIDSLayout
-    from nipype import config as ncfg, logging as nlog
-    from nipype.pipeline.engine import Workflow
-
-    from .. import logging
-    from ..utils.bids import collect_bids_data
-    from ..workflows.core import build_workflow
-    from ..utils.misc import check_folder
+    import sys
+    from nipype import logging as nlogging
+    from multiprocessing import set_start_method, Process, Manager
+    set_start_method('forkserver')
 
     # Run parser
     opts = get_parser().parse_args()
 
-    # Retrieve logging level
-    log_level = int(max(3 - opts.verbose_count, 0) * 10)
-    if opts.verbose_count > 1:
-        log_level = int(max(25 - 5 * opts.verbose_count, 1))
+    # Analysis levels
+    analysis_levels = set(opts.analysis_level)
+    if not opts.participant_label:
+        analysis_levels.add('group')
 
-    logging.getLogger().setLevel(log_level)
-    log = logging.getLogger('mriqc.cli')
+    # Retrieve logging level
+    log_level = int(max(25 - 5 * opts.verbose_count, 1))
+
+    # Set logging level
+    logging.getLogger('mriqc').setLevel(log_level)
+    nlogging.getLogger('nipype.workflow').setLevel(log_level)
+    nlogging.getLogger('nipype.interface').setLevel(log_level)
+    nlogging.getLogger('nipype.utils').setLevel(log_level)
+
+    logger = logging.getLogger('mriqc')
+    INIT_MSG = """
+    Running MRIQC version {version}:
+      * BIDS dataset path: {bids_dir}.
+      * Output folder: {output_dir}.
+      * Analysis levels: {levels}.
+    """.format(
+        version=__version__,
+        bids_dir=opts.bids_dir.resolve(),
+        output_dir=opts.output_dir.resolve(),
+        levels=', '.join(reversed(list(analysis_levels)))
+    )
+    logger.log(25, INIT_MSG)
+
+    # Set up participant level
+    if 'participant' in analysis_levels:
+        logger.info('Participant level started. Checking BIDS dataset...')
+
+        # Call build_workflow(opts, retval)
+        with Manager() as mgr:
+            retval = mgr.dict()
+            p = Process(target=init_mriqc, args=(opts, retval))
+            p.start()
+            p.join()
+
+            if p.exitcode != 0:
+                sys.exit(p.exitcode)
+
+            mriqc_wf = retval['workflow']
+            plugin_settings = retval['plugin_settings']
+            subject_list = retval['subject_list']
+
+        if not subject_list:
+            logger.critical(
+                'MRIQC did not find any target image file under the given BIDS '
+                'folder (%s). Please ensure that the dataset is BIDS valid at '
+                'http://incf.github.io/bids-validator/ .', opts.bids_dir.resolve())
+
+            bids_selectors = []
+            for entity in ['participant-label', 'modalities', 'session-id', 'task-id', 'run-id']:
+                values = getattr(opts, entity.replace('-', '_'), None)
+                if values:
+                    bids_selectors += ['--%s %s' % (entity, ' '.join(values))]
+            if bids_selectors:
+                logger.warning(
+                    'The following BIDS entities were selected as filters: %s. '
+                    'Please, check whether their combinations are possible.',
+                    ', '.join(bids_selectors)
+                )
+            sys.exit(1)
+
+        if mriqc_wf is None:
+            logger.error('Failed to create the MRIQC workflow, please report the issue '
+                         'to https://github.com/poldracklab/mriqc/issues')
+            sys.exit(1)
+
+        # Clean up master process before running workflow, which may create forks
+        gc.collect()
+        if not opts.dry_run:
+            # Warn about submitting measures BEFORE
+            if not opts.no_sub:
+                logger.warning(
+                    'Anonymized quality metrics will be submitted'
+                    ' to MRIQC\'s metrics repository.'
+                    ' Use --no-sub to disable submission.')
+
+            # run MRIQC
+            mriqc_wf.run(**plugin_settings)
+
+            # Warn about submitting measures AFTER
+            if not opts.no_sub:
+                logger.warning(
+                    'Anonymized quality metrics have beeen submitted'
+                    ' to MRIQC\'s metrics repository.'
+                    ' Use --no-sub to disable submission.')
+        logger.info('Participant level finished successfully.')
+
+    # Set up group level
+    if 'group' in analysis_levels:
+        from ..reports import group_html
+        from ..utils.misc import generate_csv  # , generate_pred
+
+        logger.info('Group level started...')
+
+        reports_dir = opts.output_dir / 'reports'
+        if opts.reports_dir:
+            reports_dir = opts.reports_dir.resolve()
+        reports_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate reports
+        n_group_reports = 0
+        for mod in opts.modalities:
+            dataframe, out_csv = generate_csv(opts.output_dir, mod)
+
+            # If there are no iqm.json files, nothing to do.
+            if dataframe is None:
+                logger.warning(
+                    'No IQM-JSON files were found for the %s data type in %s. The group-level '
+                    'report was not generated.', mod, opts.output_dir)
+                continue
+
+            logger.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
+
+            # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
+            # if out_pred is not None:
+            #     log.info('Predicted QA CSV table for the %s data generated (%s)',
+            #                    mod, out_pred)
+
+            out_html = reports_dir / ('%s_group.html' % mod)
+            group_html(out_csv, mod,
+                       csv_failed=opts.output_dir / ('%s_failed.csv' % mod),
+                       out_file=out_html)
+            logger.info('Group-%s report generated (%s)', mod, out_html)
+            n_group_reports += 1
+
+        if n_group_reports == 0:
+            raise Exception("No data found. No group level reports were generated.")
+
+        logger.info('Group level finished successfully.')
+
+
+def init_mriqc(opts, retval):
+    """Build the workflow enumerator"""
+
+    from bids.grabbids import BIDSLayout
+    from nipype import config as ncfg
+    from nipype.pipeline.engine import Workflow
+
+    from ..utils.bids import collect_bids_data
+    from ..workflows.core import build_workflow
+
+    retval['workflow'] = None
 
     # Build settings dict
-    bids_dir = op.abspath(opts.bids_dir)
+    bids_dir = Path(opts.bids_dir)
+    output_dir = Path(opts.output_dir)
 
     # Number of processes
-    n_procs = opts.n_procs
+    n_procs = opts.n_procs or cpu_count()
 
     settings = {
-        'bids_dir': bids_dir,
+        'bids_dir': bids_dir.resolve(),
+        'output_dir': output_dir.resolve(),
+        'work_dir': opts.work_dir.resolve(),
         'write_graph': opts.write_graph,
+        'n_procs': n_procs,
         'testing': opts.testing,
         'hmc_afni': opts.hmc_afni,
         'hmc_fsl': opts.hmc_fsl,
         'fft_spikes_detector': opts.fft_spikes_detector,
-        'n_procs': n_procs,
         'ants_nthreads': opts.ants_nthreads,
         'ants_float': opts.ants_float,
-        'output_dir': op.abspath(opts.output_dir),
-        'work_dir': op.abspath(opts.work_dir),
         'verbose_reports': opts.verbose_reports or opts.testing,
         'float32': opts.float32,
         'ica': opts.ica,
@@ -217,180 +356,82 @@ def main():
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
 
-    log_dir = op.join(settings['output_dir'], 'logs')
-
-    analysis_levels = opts.analysis_level
-    if opts.participant_label is None:
-        analysis_levels.append('group')
-    analysis_levels = list(set(analysis_levels))
-    if len(analysis_levels) > 2:
-        raise RuntimeError('Error parsing analysis levels, got "%s"' % ', '.join(analysis_levels))
-
+    log_dir = settings['output_dir'] / 'logs'
     settings['report_dir'] = opts.report_dir
     if not settings['report_dir']:
-        settings['report_dir'] = op.join(settings['output_dir'], 'reports')
+        settings['report_dir'] = settings['output_dir'] / 'reports'
 
-    check_folder(settings['output_dir'])
-    if 'participant' in analysis_levels:
-        check_folder(settings['work_dir'])
-
-    check_folder(log_dir)
-    check_folder(settings['report_dir'])
+    # Create directories
+    log_dir.mkdir(parents=True, exist_ok=True)
+    settings['report_dir'].mkdir(parents=True, exist_ok=True)
+    settings['work_dir'].mkdir(parents=True, exist_ok=True)
 
     # Set nipype config
     ncfg.update_config({
-        'logging': {'log_directory': log_dir, 'log_to_file': True},
-        'execution': {'crashdump_dir': log_dir, 'crashfile_format': 'txt',
-                      'resource_monitor': opts.profile},
+        'logging': {'log_directory': str(log_dir), 'log_to_file': True},
+        'execution': {
+            'crashdump_dir': str(log_dir), 'crashfile_format': 'txt',
+            'resource_monitor': opts.profile},
     })
 
-    # Set nipype logging level
-    nlog.getLogger('nipype.workflow').setLevel(log_level)
-    nlog.getLogger('nipype.interface').setLevel(log_level)
-    nlog.getLogger('nipype.utils').setLevel(log_level)
 
-    plugin_settings = {'plugin': 'Linear'}
-    if opts.use_plugin is not None:
-        from yaml import load as loadyml
-        with open(opts.use_plugin) as pfile:
-            plugin_settings = loadyml(pfile)
-    else:
-        # Setup multiprocessing
-        if settings['n_procs'] == 0:
-            settings['n_procs'] = cpu_count()
+    plugin_settings = {}
+    # Plugin configuration
+    if n_procs == 1:
+        plugin_settings['plugin'] = 'Linear'
 
         if settings['ants_nthreads'] == 0:
-            if settings['n_procs'] > 1:
-                # always leave one extra thread for non ANTs work,
-                # don't use more than 8 threads - the speed up is minimal
-                settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
-            else:
-                settings['ants_nthreads'] = 1
+            settings['ants_nthreads'] = 1
+    else:
+        plugin_settings['plugin'] = 'MultiProc'
+        plugin_settings['plugin_args'] = {'n_procs': n_procs}
+        if opts.mem_gb:
+            plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
-        if settings['n_procs'] > 1:
-            plugin_settings['plugin'] = 'MultiProc'
-            plugin_settings['plugin_args'] = {'n_procs': settings['n_procs']}
-            if opts.mem_gb:
-                plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
+        if settings['ants_nthreads'] == 0:
+            # always leave one extra thread for non ANTs work,
+            # don't use more than 8 threads - the speed up is minimal
+            settings['ants_nthreads'] = min(settings['n_procs'] - 1, 8)
+
+    # Overwrite options if --use-plugin provided
+    if opts.use_plugin.exists():
+        from yaml import load as loadyml
+        with opts.use_plugin.open() as pfile:
+            plugin_settings.update(loadyml(pfile))
 
     # Process data types
     modalities = opts.modalities
 
-    # Set up participant level
-    if 'participant' in analysis_levels:
-        log.info('Participant level started. Checking BIDS dataset...')
-        layout = BIDSLayout(settings['bids_dir'],
-                            exclude=['derivatives', 'sourcedata'])
-        dataset = collect_bids_data(
-            layout,
-            participant_label=opts.participant_label,
-            session=opts.session_id,
-            run=opts.run_id,
-            task=opts.task_id,
-            bids_type=modalities,
-        )
+    layout = BIDSLayout(str(settings['bids_dir']),
+                        exclude=['derivatives', 'sourcedata'])
+    dataset = collect_bids_data(
+        layout,
+        participant_label=opts.participant_label,
+        session=opts.session_id,
+        run=opts.run_id,
+        task=opts.task_id,
+        bids_type=modalities,
+    )
 
-        log.info(
-            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
-            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
+    workflow = Workflow(name='workflow_enumerator')
+    workflow.base_dir = settings['work_dir']
 
-        workflow = Workflow(name='workflow_enumerator')
-        workflow.base_dir = settings['work_dir']
+    wf_list = []
+    subject_list = []
+    for mod in modalities:
+        wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
+        subject_list += dataset[mod]
 
-        wf_list = []
-        for mod in modalities:
-            if not dataset[mod]:
-                log.warning('No %s scans were found in %s', mod, settings['bids_dir'])
-                continue
+    retval['subject_list'] = subject_list
+    if not wf_list:
+        retval['return_code'] = 1
+        return retval
 
-            wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
-
-        if wf_list:
-            workflow.add_nodes(wf_list)
-
-            if not opts.dry_run:
-                # Warn about submitting measures BEFORE
-                if not settings['no_sub']:
-                    log.warning(
-                        'Anonymized quality metrics will be submitted'
-                        ' to MRIQC\'s metrics repository.'
-                        ' Use --no-sub to disable submission.')
-
-                # run MRIQC
-                workflow.run(**plugin_settings)
-
-                # Warn about submitting measures AFTER
-                if not settings['no_sub']:
-                    log.warning(
-                        'Anonymized quality metrics have beeen submitted'
-                        ' to MRIQC\'s metrics repository.'
-                        ' Use --no-sub to disable submission.')
-        else:
-            msg = 'Error reading BIDS directory ({}), or the dataset is not ' \
-                  'BIDS-compliant.'
-
-            if opts.participant_label or opts.session_id or opts.run_id or opts.task_id:
-
-                msg = 'The combination of supplied labels'
-
-                if opts.participant_label is not None:
-                    msg += ' (--participant_label {})'.format(" ".join(opts.participant_label))
-                if opts.session_id is not None:
-                    msg += ' (--session-id {})'.format(" ".join(opts.session_id))
-                if opts.run_id is not None:
-                    msg += ' (--run-id {})'.format(" ".join(opts.run_id))
-                if opts.task_id is not None:
-                    msg += ' (--task-id {})'.format(" ".join(opts.task_id))
-
-                msg += ' did not result in matches within the BIDS directory ({}).'
-
-            raise RuntimeError(msg.format(settings['bids_dir']))
-
-        log.info('Participant level finished successfully.')
-
-    # Set up group level
-    if 'group' in analysis_levels:
-        from ..reports import group_html
-        from ..utils.misc import generate_csv  # , generate_pred
-
-        log.info('Group level started...')
-        log.info(
-            'Running MRIQC-%s (analysis_levels=[%s], participant_label=%s)\n\tSettings=%s',
-            __version__, ', '.join(analysis_levels), opts.participant_label, settings)
-
-        reports_dir = check_folder(op.join(settings['output_dir'], 'reports'))
-        derivatives_dir = op.join(settings['output_dir'], 'derivatives')
-
-        n_group_reports = 0
-        for mod in modalities:
-            dataframe, out_csv = generate_csv(derivatives_dir,
-                                              settings['output_dir'], mod)
-
-            # If there are no iqm.json files, nothing to do.
-            if dataframe is None:
-                log.warning(
-                    'No IQM-JSON files were found for the %s data type in %s. The group-level '
-                    'report was not generated.', mod, derivatives_dir)
-                continue
-
-            log.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
-
-            # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
-            # if out_pred is not None:
-            #     log.info('Predicted QA CSV table for the %s data generated (%s)',
-            #                    mod, out_pred)
-
-            out_html = op.join(reports_dir, mod + '_group.html')
-            group_html(out_csv, mod,
-                       csv_failed=op.join(settings['output_dir'], 'failed_' + mod + '.csv'),
-                       out_file=out_html)
-            log.info('Group-%s report generated (%s)', mod, out_html)
-            n_group_reports += 1
-
-        if n_group_reports == 0:
-            raise Exception("No data found. No group level reports were generated.")
-
-        log.info('Group level finished successfully.')
+    workflow.add_nodes(wf_list)
+    retval['plugin_settings'] = plugin_settings
+    retval['workflow'] = workflow
+    retval['return_code'] = 0
+    return retval
 
 
 if __name__ == '__main__':

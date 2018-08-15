@@ -13,8 +13,12 @@ from errno import EEXIST
 import collections
 import json
 import pandas as pd
-from io import open  # pylint: disable=W0622
-from builtins import range  # pylint: disable=W0622
+
+IMTYPES = {
+    'T1w': 'anat',
+    'T2w': 'anat',
+    'bold': 'func',
+}
 
 BIDS_COMP = collections.OrderedDict([
     ('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
@@ -165,14 +169,14 @@ def generate_pred(derivatives_dir, output_dir, mod):
     return out_csv
 
 
-def generate_csv(derivatives_dir, output_dir, mod):
+def generate_csv(output_dir, mod):
     """
     Generates a csv file from all json files in the derivatives directory
     """
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, mod + '.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
+    out_csv = output_dir / ('%s.csv' % mod)
+    jsonfiles = list(output_dir.glob('sub-*/%s/sub-*_%s.json' % (mod, IMTYPES[mod])))
     if not jsonfiles:
         return None, out_csv
 
