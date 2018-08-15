@@ -1,3 +1,17 @@
+0.13.0 (August 15, 2018)
+========================
+
+  * [MAINT] Overdue refactor (#736) @oesteban
+    * [FIX] Reorganize outputs (closes #396)
+    * [ENH] Memory usage - lessons learned with FMRIPREP (#703)
+    * [FIX] Cannot allocate memory (v 0.9.4) (closes #536)
+    * [FIX] Drop inoperative ``--report-dir`` flag (#550)
+    * [FIX] Drop misleading WARNING of the group-level execution (#714)
+    * [FIX] Expand usernames on input paths (#721)
+    * [MAINT] More robust naming of derivatives (related to #661)
+  * [FIX] Do not fail with spurious 4th dimension on T1w (#738) @oesteban
+  * [ENH] Move on to .tsv files (#737) @oesteban
+
 0.12.1 (August 13, 2018)
 ========================
 
