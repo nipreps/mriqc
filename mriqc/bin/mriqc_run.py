@@ -260,21 +260,20 @@ def main():
     # Set up group level
     if 'group' in analysis_levels:
         from ..reports import group_html
-        from ..utils.misc import generate_csv  # , generate_pred
+        from ..utils.misc import generate_tsv  # , generate_pred
 
         logger.info('Group level started...')
 
         # Generate reports
         mod_group_reports = []
         for mod in opts.modalities:
-            dataframe, out_csv = generate_csv(
+            dataframe, out_tsv = generate_tsv(
                 opts.output_dir.expanduser().resolve(), mod)
-
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
                 continue
 
-            logger.info('Generated summary CSV table for the %s data (%s)', mod, out_csv)
+            logger.info('Generated summary TSV table for the %s data (%s)', mod, out_tsv)
 
             # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             # if out_pred is not None:
@@ -282,7 +281,7 @@ def main():
             #                    mod, out_pred)
 
             out_html = opts.output_dir / ('group_%s.html' % mod)
-            group_html(out_csv, mod,
+            group_html(out_tsv, mod,
                        csv_failed=opts.output_dir / ('group_variant-failed_%s.csv' % mod),
                        out_file=out_html)
             logger.info('Group-%s report generated (%s)', mod, out_html)

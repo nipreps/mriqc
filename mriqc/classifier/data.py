@@ -14,6 +14,7 @@ Reads in and writes CSV files with the IQMs
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from builtins import str
@@ -65,26 +66,36 @@ def get_bids_cols(dataframe):
 
 def read_iqms(feat_file):
     """ Reads in the features """
+    feat_file = Path(feat_file)
 
-    bids_comps = list(BIDS_COMP.keys())
-    x_df = pd.read_csv(feat_file, index_col=False,
-                       dtype={col: str for col in bids_comps})
+    if feat_file.suffix == '.csv':
+        bids_comps = list(BIDS_COMP.keys())
+        x_df = pd.read_csv(feat_file, index_col=False,
+                           dtype={col: str for col in bids_comps})
+        # Find present bids bits and sort by them
+        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
+        bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+        x_df = x_df.sort_values(by=bids_comps_present)
+        # Remove sub- prefix in subject_id
+        x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
 
-    # Find present bids bits and sort by them
-    bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
-    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
-    x_df = x_df.sort_values(by=bids_comps_present)
-
-    # Remove sub- prefix in subject_id
-    x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
-
-    # Remove columns that are not IQMs
-    feat_names = list(x_df._get_numeric_data().columns.ravel())
-    for col in bids_comps:
-        try:
-            feat_names.remove(col)
-        except ValueError:
-            pass
+        # Remove columns that are not IQMs
+        feat_names = list(x_df._get_numeric_data().columns.ravel())
+        for col in bids_comps:
+            try:
+                feat_names.remove(col)
+            except ValueError:
+                pass
+    else:
+        bids_comps_present = ['subject_id']
+        x_df = pd.read_csv(feat_file, index_col=False, sep='\t',
+                           dtype={'bids_name': str})
+        x_df = x_df.sort_values(by=['bids_name'])
+        x_df['subject_id'] = x_df.bids_name.str.lstrip('sub-')
+        x_df = x_df.drop(columns=['bids_name'])
+        x_df.subject_id = ['_'.join(v.split('_')[:-1])
+                           for v in x_df.subject_id.ravel()]
+        feat_names = list(x_df._get_numeric_data().columns.ravel())
 
     for col in feat_names:
         if col.startswith(('size_', 'spacing_', 'Unnamed')):

@@ -5,6 +5,7 @@
 """ Helper functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+from pathlib import Path
 from os import path as op
 from glob import glob
 
@@ -157,53 +158,39 @@ def generate_pred(derivatives_dir, output_dir, mod):
     return out_csv
 
 
-def generate_csv(output_dir, mod):
+def generate_tsv(output_dir, mod):
     """
-    Generates a csv file from all json files in the derivatives directory
+    Generates a tsv file from all json files in the derivatives directory
     """
 
     # If some were found, generate the CSV file and group report
-    out_csv = output_dir / ('group_%s.csv' % mod)
+    out_tsv = output_dir / ('group_%s.tsv' % mod)
     jsonfiles = list(output_dir.glob('sub-*/**/%s/sub-*_%s.json' % (IMTYPES[mod], mod)))
     if not jsonfiles:
-        return None, out_csv
+        return None, out_tsv
 
     datalist = []
-    comps = set(list(BIDS_COMP.keys()))
     for jsonfile in jsonfiles:
         dfentry = _read_and_save(jsonfile)
 
-        if (dfentry is not None and dfentry['bids_meta'].get(
-                'modality', 'unknown') == mod):
-            metadata = dfentry.pop('bids_meta')
-            id_fields = list(comps & set(list(metadata.keys())))
-            for field in id_fields:
-                dfentry[field] = metadata[field]
+        if dfentry is not None:
+            bids_name = str(Path(jsonfile.name).stem)
+            dfentry.pop('bids_meta', None)
             dfentry.pop('provenance', None)
+            dfentry['bids_name'] = bids_name
             datalist.append(dfentry)
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
-
-    # Generate bids_fields with order (#516)
-    bids_fields = [field for field in list(BIDS_COMP.keys()) if field in cols]
-
-    # Sort the dataframe, with failsafe if pandas version is too old
-    try:
-        dataframe = dataframe.sort_values(by=bids_fields)
-    except AttributeError:
-        dataframe = dataframe.sort(columns=bids_fields)
+    dataframe = dataframe.sort_values(by=['bids_name'])
 
     # Drop duplicates
-    try:
-        dataframe.drop_duplicates(bids_fields, keep='last', inplace=True)
-    except TypeError:
-        dataframe.drop_duplicates(['subject_id', 'session_id', 'run_id'], take_last=True,
-                                  inplace=True)
+    dataframe.drop_duplicates(['bids_name'], keep='last', inplace=True)
 
-    ordercols = bids_fields + sorted(list(set(cols) - set(bids_fields)))
-    dataframe[ordercols].to_csv(out_csv, index=False)
-    return dataframe, out_csv
+    # Set filename at front
+    cols.insert(0, cols.pop(cols.index('bids_name')))
+    dataframe[cols].to_csv(out_tsv, index=False, sep='\t')
+    return dataframe, out_tsv
 
 
 def _read_and_save(in_file):

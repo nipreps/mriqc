@@ -1575,7 +1575,6 @@ function makeDistroChart(settings) {
 
             }
 
-
             for (cName in chart.groupObjs) {
 
                 cPlot = chart.groupObjs[cName].dataPlots;
@@ -1589,7 +1588,7 @@ function makeDistroChart(settings) {
                         cPlot.objs.points.pts.push(cPlot.objs.points.g
                             .append("a")
                             .attr("xlink:href", function(d) {
-                                return chart.groupObjs[cName].labels[pt] + "_" + chart.settings["modality"] + ".html"
+                                return chart.groupObjs[cName].labels[pt] + ".html"
                             })
                             .append("circle")
                             .attr("class", "point")
