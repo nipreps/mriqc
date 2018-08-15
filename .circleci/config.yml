@@ -313,7 +313,7 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/group_T1w.csv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/group_T1w.csv
+              -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
 
       - run:
           name: WebAPI - Check records
@@ -425,7 +425,7 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/group_bold.csv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/group_bold.csv
+              -r /usr/local/src/mriqc/mriqc/data/testdata/bold.csv
 
       - run:
           name: WebAPI - Check records
