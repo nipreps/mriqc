@@ -129,7 +129,6 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
     nii = nb.as_closest_canonical(nb.load(in_file))
     fft = nb.load(in_fft).get_data()
 
-
     data = nii.get_data()
     zooms = nii.header.get_zooms()[:2]
     tstep = nii.header.get_zooms()[-1]
@@ -137,7 +136,6 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
 
     if len(spikes_list) > cols * 7:
         cols += 1
-
 
     nspikes = len(spikes_list)
     rows = 1
@@ -158,7 +156,6 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
         if t < (ntpoints - 1):
             post = data[..., z, t + 1]
             psft = fft[..., z, t + 1]
-
 
         ax1 = fig.add_subplot(rows, cols, i + 1)
         divider = make_axes_locatable(ax1)
@@ -229,7 +226,6 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         # img_data = img_data[..., ::2]
         z_vals = z_vals[::2]
 
-
     n_images = len(z_vals)
     nrows = math.ceil(n_images / ncols)
     if plot_sagittal:
@@ -270,7 +266,6 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
                        cmap=msk_cmap, ax=ax, spacing=zooms[:2])
         naxis += 1
 
-
     if plot_sagittal:
         naxis = ncols * (nrows - 1) + 1
 
@@ -305,6 +300,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
     fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
     return out_file
+
 
 def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
 
@@ -479,10 +475,12 @@ def _get_limits(nifti_file, only_plot_noise=False):
 
     return vmin, vmax
 
+
 def _bbox(img_data, bbox_data):
     B = np.argwhere(bbox_data)
     (ystart, xstart, zstart), (ystop, xstop, zstop) = B.min(0), B.max(0) + 1
     return img_data[ystart:ystop, xstart:xstop, zstart:zstop]
+
 
 def get_parula():
     from matplotlib.colors import LinearSegmentedColormap

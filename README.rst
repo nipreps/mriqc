@@ -6,6 +6,10 @@ MRIQC is developed by `the Poldrack Lab at Stanford University
 Neuroscience (CRN) <http://reproducibility.stanford.edu>`_, as well as
 for open-source software distribution.
 
+.. image:: http://bids.neuroimaging.io/openneuro_badge.svg
+  :target: https://openneuro.org
+  :alt: Available in OpenNeuro!
+
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
 
@@ -31,12 +35,6 @@ for open-source software distribution.
 .. image:: https://img.shields.io/pypi/l/mriqc.svg
     :target: https://pypi.python.org/pypi/mriqc/
     :alt: License
-
-
-.. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
-     installation!
-
 
 
 About
@@ -76,18 +74,11 @@ the CRN. This pipeline derives from, and is heavily influenced by, the
 Citation
 --------
 
-When using MRIQC, please include the following citation:
-
-.. topic:: **Reference**
+.. topic:: **When using MRIQC, please include the following citation:**
 
     Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
     *MRIQC: Advancing the Automatic Prediction of Image Quality in MRI from Unseen Sites*;
-    bioRxiv 111294; doi:`10.1101/111294 <https://doi.org/10.1101/111294>`_.
-
-An additional resource to check out is our recent poster at OHBM:
-
-    Esteban O, Gorgolewski K and Poldrack R. MRIQC: automatic prediction of quality and visual reporting of MRI scans. F1000Research 2017, 6:1128 (poster). doi: `10.7490/f1000research.1114419.1
-    <https://doi.org/10.7490/f1000research.1114419.1>`_.
+    PLOS ONE 12(9):e0184661; doi:`10.1371/journal.pone.0184661 <https://doi.org/10.1371/journal.pone.0184661>`_.
 
 
 Support and communication

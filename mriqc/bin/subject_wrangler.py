@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2016-11-15 09:23:35
+# @Last Modified time: 2018-03-12 11:51:32
 
 """
 BIDS-Apps subject wrangler
@@ -23,15 +23,16 @@ from textwrap import dedent
 
 from .. import __version__
 
+
 def main():
     """Entry point"""
-    parser = ArgumentParser(formatter_class=RawTextHelpFormatter, description=dedent(
-'''BIDS-Apps participants wrangler tool
+    parser = ArgumentParser(formatter_class=RawTextHelpFormatter, description=dedent("""\
+BIDS-Apps participants wrangler tool
 ------------------------------------
 
-This command arranges the participant labels in groups for computation, and checks that the
-requested participants have the corresponding folder in the bids_dir.
-'''))
+This command arranges the participant labels in groups for computation, and checks that the \
+requested participants have the corresponding folder in the bids_dir.\
+"""))
 
     parser.add_argument('-v', '--version', action='version',
                         version='mriqc v{}'.format(__version__))
@@ -65,10 +66,10 @@ requested participants have the corresponding folder in the bids_dir.
 
     opts = parser.parse_args()
 
-
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
-    all_subjects = sorted([op.basename(subj)[4:] for subj in glob.glob(op.join(bids_dir, 'sub-*'))])
+    all_subjects = sorted([op.basename(subj)[4:]
+                           for subj in glob.glob(op.join(bids_dir, 'sub-*'))])
 
     subject_list = opts.participant_label
     if subject_list is None or not subject_list:
@@ -96,7 +97,8 @@ requested participants have the corresponding folder in the bids_dir.
     if gsize == 0:
         gsize = len(subject_list)
 
-    groups = [subject_list[i:i+gsize] for i in range(0, len(subject_list), gsize)]
+    groups = [subject_list[i:i + gsize]
+              for i in range(0, len(subject_list), gsize)]
 
     log_arg = ''.format
     if opts.log_groups:

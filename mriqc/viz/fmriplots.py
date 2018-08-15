@@ -17,7 +17,11 @@ from seaborn import color_palette
 from .utils import DINA4_LANDSCAPE
 sns.set_style("whitegrid")
 
+
 class fMRIPlot(object):
+    """
+    Generates the fMRI Summary Plot
+    """
 
     def __init__(self, func, mask, seg=None, tr=None,
                  title=None, figsize=DINA4_LANDSCAPE):
@@ -124,8 +128,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
     ax0.set_xticks([])
 
     colors1 = plt.cm.summer(np.linspace(0., 1., len(cort_gm)))
-    colors2 = plt.cm.autumn(np.linspace(0., 1., len(deep_gm) + 1))[::-1,...]
-    colors3 = plt.cm.winter(np.linspace(0., .5, len(wm_csf)))[::-1,...]
+    colors2 = plt.cm.autumn(np.linspace(0., 1., len(deep_gm) + 1))[::-1, ...]
+    colors3 = plt.cm.winter(np.linspace(0., .5, len(wm_csf)))[::-1, ...]
     cmap = LinearSegmentedColormap.from_list('my_colormap', np.vstack((colors1, colors2, colors3)))
 
     ax0.imshow(newsegm[order, np.newaxis], interpolation='nearest', aspect='auto',
@@ -151,9 +155,8 @@ def fmricarpetplot(func_data, segmentation, outer_gs, tr=None, nskip=0):
     ax1.set_yticklabels([])
 
     # Set 10 frame markers in X axis
-    interval = int(data.shape[-1] + 1) // 10
-    xticks = list(
-        range(0, data.shape[-1])[::interval]) + [data.shape[-1]-1]
+    interval = max((int(data.shape[-1] + 1) // 10, int(data.shape[-1] + 1) // 5, 1))
+    xticks = list(range(0, data.shape[-1])[::interval])
     ax1.set_xticks(xticks)
 
     if notr:
@@ -195,7 +198,7 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
     if ax is None:
         ax = plt.gca()
 
-    if not outer_gs is None:
+    if outer_gs is not None:
         gs = mgs.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs,
                                          width_ratios=[1, 100], wspace=0.0)
         ax = plt.subplot(gs[1])
@@ -279,7 +282,6 @@ def spikesplot(ts_z, outer_gs=None, tr=None, zscored=True, spike_thresh=6., titl
         ax.plot((0, ntsteps - 1), (yticks[0], yticks[0]), 'k:')
         ax.plot((0, ntsteps - 1), (yticks[-1], yticks[-1]), 'k:')
 
-
     for side in ["top", "right"]:
         ax.spines[side].set_color('none')
         ax.spines[side].set_visible(False)
@@ -343,8 +345,8 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
     ax_ts.set_xlim((0, ntsteps - 1))
 
     # Set 10 frame markers in X axis
-    interval = ntsteps // 10
-    xticks = list(range(0, ntsteps)[::interval]) + [ntsteps - 1]
+    interval = max((ntsteps // 10, ntsteps // 5, 1))
+    xticks = list(range(0, ntsteps)[::interval])
     ax_ts.set_xticks(xticks)
 
     if not hide_x:
@@ -358,9 +360,9 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
         ax_ts.set_xticklabels([])
 
     no_scale = notr or not normalize
-    if not name is None:
+    if name is not None:
         var_label = name
-        if not units is None:
+        if units is not None:
             var_label += (' [{}]' if no_scale else ' [{}/s]').format(units)
         ax_ts.set_ylabel(var_label)
 
@@ -437,7 +439,7 @@ def confoundplot(tseries, gs_ts, gs_dist=None, name=None, normalize=True,
                     arrowstyle='wedge,tail_width=.9', lw=0, patchA=None, patchB=None,
                     fc='dimgray', ec='none', relpos=(.1, .5)))
 
-    if not gs_dist is None:
+    if gs_dist is not None:
         ax_dist = plt.subplot(gs_dist)
         sns.displot(tseries, vertical=True, ax=ax_dist)
         ax_dist.set_xlabel('Timesteps')

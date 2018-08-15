@@ -65,7 +65,8 @@ Measures based on information theory
 
 - :py:func:`~mriqc.qc.anatomical.fber`:
   The :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
-  defined as the mean energy of image values within the head relative to outside the head [QAP-measures]_.
+  defined as the mean energy of image values within the head relative
+  to outside the head [QAP-measures]_.
   Higher values are better.
 
 Measures targeting specific artifacts
@@ -81,8 +82,9 @@ Measures targeting specific artifacts
 
 - :py:func:`~mriqc.qc.anatomical.art_qi1`:
   Detect artifacts in the image using the method described in [Mortamet2009]_.
-  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity corrupted by artifacts
-  normalized by the number of voxels in the background. Lower values are better.
+  The :abbr:`QI1 (quality index 1)` is the proportion of voxels with intensity
+  corrupted by artifacts normalized by the number of voxels in the background.
+  Lower values are better.
 
   .. figure:: ../resources/mortamet-mrm2009.png
 
@@ -110,7 +112,9 @@ Other measures
 
   .. math ::
 
-      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}{2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+      \text{FWHM} = \sqrt{-{\left[4 \ln{(1-\frac{\sigma^2_{X^m_{i+1,j}-X^m_{i,j}}}
+      {2\sigma^2_{X^m_{i,j}}}})\right]}^{-1}}
+
 
 .. _iqms_icvs:
 
@@ -141,7 +145,8 @@ Other measures
 
   .. math ::
 
-      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}{\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      \text{JI}^k = \frac{\sum_i \min{(\text{TPM}^k_i, \text{MNI}^k_i)}}
+      {\sum_i \max{(\text{TPM}^k_i, \text{MNI}^k_i)}}
 
 
 .. topic:: References
@@ -163,7 +168,8 @@ Other measures
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
     2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
 
-  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*, IEEE Trans Med Imag, 29(6):1310-20,
+  .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*,
+    IEEE Trans Med Imag, 29(6):1310-20,
     2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
 
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
@@ -192,12 +198,13 @@ from statsmodels.robust.scale import mad
 
 
 from io import open  # pylint: disable=W0622
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
+from builtins import zip, range  # pylint: disable=W0622
 from six import string_types
 
-DIETRICH_FACTOR = 1.0 / sqrt(2/(4 - pi))
+DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
+
 
 def snr(mu_fg, sigma_fg, n):
     r"""
@@ -212,15 +219,15 @@ def snr(mu_fg, sigma_fg, n):
     where :math:`\mu_F` is the mean intensity of the foreground and
     :math:`\sigma_F` is the standard deviation of the same region.
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray fgmask: input foreground mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_fg: standard deviation of foreground.
+    :param int n: number of voxels in foreground mask.
 
-    :return: the computed SNR for the foreground segmentation
+    :return: the computed SNR
 
     """
     return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
+
 
 def snr_dietrich(mu_fg, sigma_air):
     r"""
@@ -236,11 +243,8 @@ def snr_dietrich(mu_fg, sigma_air):
         \text{SNR} = \frac{\mu_F}{\sqrt{\frac{2}{4-\pi}}\,\sigma_\text{air}}.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray smask: input foreground mask or segmentation
-    :param numpy.ndarray airmask: input background mask or segmentation
-    :param bool erode: erode masks before computations.
-    :param str fglabel: foreground label in the segmentation data.
+    :param float mu_fg: mean of foreground.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
 
     :return: the computed SNR for the foreground segmentation
 
@@ -251,6 +255,7 @@ def snr_dietrich(mu_fg, sigma_air):
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
+
 
 def cnr(mu_wm, mu_gm, sigma_air):
     r"""
@@ -266,8 +271,10 @@ def cnr(mu_wm, mu_gm, sigma_air):
     the air (background) mask.
 
 
-    :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
+
     :return: the computed CNR
 
     """
@@ -286,9 +293,11 @@ def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
 
         \text{CJV} = \frac{\sigma_\text{WM} + \sigma_\text{GM}}{|\mu_\text{WM} - \mu_\text{GM}|}.
 
-    :param numpy.ndarray img: the input data
-    :param numpy.ndarray wmmask: the white matter mask
-    :param numpy.ndarray gmmask: the gray matter mask
+    :param float mu_wm: mean of signal within white-matter mask.
+    :param float mu_gm: mean of signal within gray-matter mask.
+    :param float sigma_wm: standard deviation of signal within white-matter mask.
+    :param float sigma_gm: standard deviation of signal within gray-matter mask.
+
     :return: the computed CJV
 
 
@@ -308,7 +317,9 @@ def fber(img, headmask, rotmask=None):
 
 
     :param numpy.ndarray img: input data
-    :param numpy.ndarray seg: input segmentation
+    :param numpy.ndarray headmask: a mask of the head (including skull, skin, etc.)
+    :param numpy.ndarray rotmask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
@@ -324,7 +335,6 @@ def fber(img, headmask, rotmask=None):
     return float(fg_mu / bg_mu)
 
 
-
 def efc(img, framemask=None):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
@@ -334,7 +344,8 @@ def efc(img, framemask=None):
 
     .. math::
 
-        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}} \ln \left[\frac{x_j}{x_\text{max}}\right]
+        \text{E} = - \sum_{j=1}^N \frac{x_j}{x_\text{max}}
+        \ln \left[\frac{x_j}{x_\text{max}}\right]
 
     with :math:`x_\text{max} = \sqrt{\sum_{j=1}^N x^2_j}`.
 
@@ -347,6 +358,8 @@ def efc(img, framemask=None):
         \text{EFC} = \left( \frac{N}{\sqrt{N}} \, \log{\sqrt{N}^{-1}} \right) \text{E}
 
     :param numpy.ndarray img: input data
+    :param numpy.ndarray framemask: a mask of empty voxels inserted after a rotation of
+      data
 
     """
 
@@ -357,7 +370,7 @@ def efc(img, framemask=None):
     # Calculate the maximum value of the EFC (which occurs any time all
     # voxels have the same value)
     efc_max = 1.0 * n_vox * (1.0 / np.sqrt(n_vox)) * \
-                np.log(1.0 / np.sqrt(n_vox))
+        np.log(1.0 / np.sqrt(n_vox))
 
     # Calculate the total image energy
     b_max = np.sqrt((img[framemask == 0]**2).sum())
@@ -381,11 +394,12 @@ def wm2max(img, mu_wm):
     """
     return float(mu_wm / np.percentile(img.reshape(-1), 99.95))
 
+
 def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity corrupted by artifacts
-    normalized by the number of voxels in the background:
+    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
+    corrupted by artifacts normalized by the number of voxels in the background:
 
     .. math ::
 
@@ -488,6 +502,7 @@ def volume_fraction(pvms):
         tissue_vfs[k] /= total
     return {k: float(v) for k, v in list(tissue_vfs.items())}
 
+
 def rpve(pvms, seg):
     """
     Computes the :abbr:`rPVe (residual partial voluming error)`
@@ -514,6 +529,7 @@ def rpve(pvms, seg):
         pvmap[pvmap > upth] = 0
         pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
+
 
 def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
@@ -600,9 +616,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         MRIQC_LOG.warn('estimated MAD in the background was too small ('
                        'MAD=%f)', output['bg']['mad'])
         output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
-
-
     return output
+
 
 def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
@@ -624,4 +639,3 @@ def _prepare_mask(mask, label, erode=True):
         fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
 
     return fgmask
-

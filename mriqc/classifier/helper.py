@@ -11,10 +11,8 @@ Cross-validation helper
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from datetime import datetime
 import numpy as np
 import pandas as pd
-import re
 from pkg_resources import resource_filename as pkgrf
 
 # sklearn overrides
@@ -36,7 +34,7 @@ from sklearn.multiclass import OneVsRestClassifier
 # xgboost
 from xgboost import XGBClassifier
 
-from .. import __version__, logging
+from .. import logging
 from .data import read_dataset, get_bids_cols
 from ..viz.misc import plot_roc_curve
 
@@ -265,13 +263,14 @@ class CVHelper(CVHelperBase):
                 X=self._Xtrain,
                 y=train_y,
                 cv=outer_cv,
-                scoring=['roc_auc', 'accuracy'],
+                scoring=['roc_auc', 'accuracy', 'recall'],
             )
 
             nested_means = np.average(nested_score, axis=0)
             nested_std = np.std(nested_score, axis=0)
-            LOG.info('Nested CV [avg] %s=%.3f (+/-%.3f), accuracy=%.3f (+/-%.3f)', self._scorer,
-                     nested_means[0], nested_std[0], nested_means[1], nested_std[1])
+            LOG.info('Nested CV [avg] %s=%.3f (+/-%.3f), accuracy=%.3f (+/-%.3f), '
+                     'recall=%.3f (+/-%.3f).', self._scorer, nested_means[0], nested_std[0],
+                     nested_means[1], nested_std[1], nested_means[2], nested_std[2])
             LOG.info('Nested CV %s=%s.', self._scorer,
                      ', '.join('%.3f' % v for v in nested_score[:, 0].tolist()))
             LOG.info('Nested CV accuracy=%s.',
@@ -335,7 +334,8 @@ class CVHelper(CVHelperBase):
 
         # If leaveout, test and refit
         if self._leaveout:
-            self._fit_leaveout(leaveout_x, leaveout_y)
+            raise NotImplementedError
+            # self._fit_leaveout(leaveout_x, leaveout_y)
 
         return self
 
