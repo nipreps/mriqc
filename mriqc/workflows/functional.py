@@ -319,9 +319,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
     pages = 5
-    extra_pages = 0
-    if verbose:
-        extra_pages = 4
+    extra_pages = int(verbose) * 4
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[

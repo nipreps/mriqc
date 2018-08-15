@@ -321,9 +321,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
-    extra_pages = 0
-    if verbose:
-        extra_pages = 7
+    extra_pages = int(verbose) * 7
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
