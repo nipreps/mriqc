@@ -163,7 +163,7 @@ def generate_csv(output_dir, mod):
     """
 
     # If some were found, generate the CSV file and group report
-    out_csv = output_dir / ('%s.csv' % mod)
+    out_csv = output_dir / ('group_%s.csv' % mod)
     jsonfiles = list(output_dir.glob('sub-*/**/%s/sub-*_%s.json' % (IMTYPES[mod], mod)))
     if not jsonfiles:
         return None, out_csv

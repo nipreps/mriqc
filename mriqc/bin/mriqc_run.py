@@ -304,6 +304,7 @@ def init_mriqc(opts, retval):
     from ..workflows.core import build_workflow
 
     retval['workflow'] = None
+    retval['plugin_settings'] = None
 
     # Build settings dict
     bids_dir = Path(opts.bids_dir)
