@@ -1,5 +1,5 @@
-group_T1w.tsv
 group_T1w.html
+group_T1w.tsv
 logs
 sub-50137
 sub-50137/anat

@@ -1,5 +1,5 @@
-group_bold.tsv
 group_bold.html
+group_bold.tsv
 logs
 sub-ds205s03
 sub-ds205s03/func
