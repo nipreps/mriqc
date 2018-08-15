@@ -270,18 +270,15 @@ def main():
         reports_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate reports
-        n_group_reports = 0
+        mod_group_reports = []
         for mod in opts.modalities:
             dataframe, out_csv = generate_csv(opts.output_dir, mod)
 
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
-                logger.warning(
-                    'No IQM-JSON files were found for the %s data type in %s. The group-level '
-                    'report was not generated.', mod, opts.output_dir)
                 continue
 
-            logger.info('Summary CSV table for the %s data generated (%s)', mod, out_csv)
+            logger.info('Generated summary CSV table for the %s data (%s)', mod, out_csv)
 
             # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             # if out_pred is not None:
@@ -293,9 +290,9 @@ def main():
                        csv_failed=opts.output_dir / ('%s_failed.csv' % mod),
                        out_file=out_html)
             logger.info('Group-%s report generated (%s)', mod, out_html)
-            n_group_reports += 1
+            mod_group_reports.append(mod)
 
-        if n_group_reports == 0:
+        if not mod_group_reports:
             raise Exception("No data found. No group level reports were generated.")
 
         logger.info('Group level finished successfully.')
