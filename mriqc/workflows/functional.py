@@ -25,6 +25,7 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
+from pathlib import Path
 
 from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
@@ -71,7 +72,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
     WFLOGGER.info('Building fMRI QC workflow, datasets list: %s',
-                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
+                  [str(Path(d).relative_to(settings['bids_dir']))
+                   for d in sorted(dataset)])
     inputnode.iterables = [('in_file', dataset)]
 
     outputnode = pe.Node(niu.IdentityInterface(
@@ -371,7 +373,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
+        base_directory=str(settings['output_dir']), parameterization=False),
+        name='dsplots', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),

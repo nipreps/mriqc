@@ -32,7 +32,7 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 """
 import os.path as op
-
+from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -68,7 +68,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
     workflow = pe.Workflow(name="%s%s" % (name, mod))
     WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
-                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
+                  [str(Path(d).relative_to(settings['bids_dir']))
+                   for d in sorted(dataset)])
 
     # Define workflow, inputs and outputs
     # 0. Get data
@@ -346,7 +347,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
+        base_directory=str(settings['output_dir']), parameterization=False),
+        name='dsplots', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
