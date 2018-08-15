@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 16:15:08
-# @Email:  code@oscaresteban.es
 """
 =======================
 The functional workflow
@@ -380,7 +374,6 @@ def individual_reports(settings, name='ReportsWorkflow'):
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
         base_directory=settings['output_dir'], parameterization=False), name='dsplots')
-    dsplots.inputs.container = 'reports'
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),

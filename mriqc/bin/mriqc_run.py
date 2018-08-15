@@ -72,7 +72,6 @@ def get_parser():
     g_outputs = parser.add_argument_group('Instrumental options')
     g_outputs.add_argument('-w', '--work-dir', action='store', default=Path() / 'work',
                            type=Path, help='change the folder to store intermediate results')
-    g_outputs.add_argument('--report-dir', action='store', type=Path)
     g_outputs.add_argument('--verbose-reports', default=False, action='store_true')
     g_outputs.add_argument('--write-graph', action='store_true', default=False,
                            help='Write workflow graph.')
@@ -357,13 +356,9 @@ def init_mriqc(opts, retval):
         settings['ants_settings'] = opts.ants_settings
 
     log_dir = settings['output_dir'] / 'logs'
-    settings['report_dir'] = opts.report_dir
-    if not settings['report_dir']:
-        settings['report_dir'] = settings['output_dir'] / 'reports'
 
     # Create directories
     log_dir.mkdir(parents=True, exist_ok=True)
-    settings['report_dir'].mkdir(parents=True, exist_ok=True)
     settings['work_dir'].mkdir(parents=True, exist_ok=True)
 
     # Set nipype config
