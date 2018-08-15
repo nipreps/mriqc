@@ -6,6 +6,7 @@
 <meta name="generator" content="MRIQC" />
 <title>MRIQC: individual {{ modality }}
 report</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <style type="text/css">
 body { font-family: helvetica; }
 
@@ -121,17 +122,21 @@ report</h1>
   </ul>
 </li>
 {% endif %}
-<li>Image parameters:
-{{ imparams }}
-</li>
 </ul>
 
 <h2>Visual reports</h2>
-{% for svg in svg_files %}
+{% for title, svg in svg_files %}
 <div class="embeded-report">
+  <h3>{{ title }}</h3>
 {{ svg }}
 </div>
 {% endfor %}
+
+
+<h2>Extracted Image Quality Metrics (IQMs)</h2>
+<div class="metadata-table">
+{{ imparams }}
+</div>
 
 {% if metadata %}
 <h2>Metadata</h2>
@@ -147,9 +152,122 @@ report</h1>
 </div>
 {% endif %}
 
+{% if provenance %}
+<h2>Rate Image</h2>
+<div class="container">
+<form action="javascript:sendRating()">
+    <div class="form-group">
+        <input id="ratingField" type="hidden" required>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating0" value="0" required> Invalid</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating1" value="1"> Exclude</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating2" value="2"> Usable</label></div>
+        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating3" value="3"> Good</label></div>
+        Name: <br><input id="ratingName" type="text" class="form-control"><br>
+        Comments: <br><textarea rows="4" id="ratingComment" type="text" class="form-control"></textarea><br>
+        <input type="submit" value="Submit">
+    </div>
+</form>
+<div id="submitResAlert" role="alert"></div>
+<div class="hidden" id="allRatingsDiv">
+<table class="table table-striped">
+<thead>
+    <tr>
+        <td>Rating</td>
+        <td>Count</td>
+    </tr>
+<tbody>
+    <tr>
+        <td>Invalid</td>
+        <td id="allRatings0"></td>
+    </tr>
+    <tr>
+        <td>Exclude</td>
+        <td id="allRatings1"></td>
+    </tr>
+    <tr>
+        <td>Usable</td>
+        <td id="allRatings2"></td>
+    </tr>
+    <tr>
+        <td>Good</td>
+        <td id="allRatings3"></td>
+    </tr>
+</tbody>
+</thead>
+</table>
+
+{% endif %}
+
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
 <a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
 </div>
+{% if provenance %}
+<script type="text/javascript">
+var sentOnce = false;
+
+function setAllRatings(allRatings) {
+    allRatings['_items'].sort(function(a, b) {
+        if(a['_id'] < b['_id']) return -1;
+        if(a['_id'] > b['_id']) return 1;
+        return 0;
+    });
+    console.log(allRatings);
+    document.getElementById("allRatings0").textContent = allRatings['_items'][0]['count'];
+    document.getElementById("allRatings1").textContent = allRatings['_items'][1]['count'];
+    document.getElementById("allRatings2").textContent = allRatings['_items'][2]['count'];
+    document.getElementById("allRatings3").textContent = allRatings['_items'][3]['count'];
+    document.getElementById("allRatingsDiv").classList.remove("hidden");
+};
+
+function sendRating() {
+    var allRatings;
+    var rating;
+    var radios = document.getElementsByName("inlineRadio");
+    for (var i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+            rating = radios[i].value;
+            break;
+        }
+    }
+    var md5sum = "{{ md5sum }}";
+    var name = document.getElementById("ratingName").value;
+    var comment = document.getElementById("ratingComment").value;
+    var params = {'rating': rating, 'md5sum': md5sum, 'name': name, 'comment': comment};
+
+    var ratingReq = new XMLHttpRequest();
+    var allRatingsReq = new XMLHttpRequest();
+    var aggParam = '{\"$value\":\"' + md5sum + '\"}';
+    allRatingsReq.open("GET", "{{ webapi_url }}/rating_counts?aggregate=" + aggParam);
+    allRatingsReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    allRatingsReq.setRequestHeader("Authorization", "<secret_token>");
+    ratingReq.open("POST", "{{ webapi_url }}/rating");
+    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    ratingReq.setRequestHeader("Authorization", "<secret_token>");
+    ratingReq.onload = function () {
+        status = ratingReq.status;
+        if (status === "201") {
+            sentOnce = true;
+            allRatingsReq.send();
+            setAlert();
+        }
+    };
+    allRatingsReq.onload = function () {
+        console.log(allRatingsReq.response);
+        allRatings = JSON.parse(allRatingsReq.response);
+        setAllRatings(allRatings);
+    };
+    ratingReq.send(JSON.stringify(params));
+};
+
+function setAlert() {
+    alertElem = document.getElementById("submitResAlert");
+    alertElem.textContent = "Submitted"
+    alertElem.className = "alert alert-success"
+
+};
+
+</script>
+{% endif %}
 </body>
 </html>

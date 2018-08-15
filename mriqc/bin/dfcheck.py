@@ -3,7 +3,7 @@
 # @Author: oesteban
 # @Date:   2016-03-16 11:28:27
 # @Last Modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:45:30
+# @Last Modified time: 2018-08-15 10:54:26
 
 """
 Compares pandas dataframes by columns
@@ -12,6 +12,7 @@ Compares pandas dataframes by columns
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
+from pathlib import Path
 from argparse import ArgumentParser, RawTextHelpFormatter
 import numpy as np
 import pandas as pd
@@ -23,9 +24,9 @@ def main():
     parser = ArgumentParser(description='compare two pandas dataframes',
                             formatter_class=RawTextHelpFormatter)
     g_input = parser.add_argument_group('Inputs')
-    g_input.add_argument('-i', '--input-csv', action='store',
+    g_input.add_argument('-i', '--input-csv', action='store', type=Path,
                          required=True, help='input data frame')
-    g_input.add_argument('-r', '--reference-csv', action='store',
+    g_input.add_argument('-r', '--reference-csv', action='store', type=Path,
                          required=True, help='reference dataframe')
     g_input.add_argument('--tolerance', type=float, default=1.e-5,
                          help='relative tolerance for comparison')

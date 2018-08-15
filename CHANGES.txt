@@ -1,3 +1,41 @@
+0.12.1 (August 13, 2018)
+========================
+
+  * [FIX] BIDSLayout queries (#735)
+
+
+0.12.0 (August 09, 2018)
+========================
+
+  * [FIX] Reduce tSNR memory requirements (#712)
+  * [DOC] Fix typos in IQM documentation (#725)
+  * [PIN] Update MRIQC WebAPI version (#734)
+  * [BUG] Fix missing library in singularity images (#733)
+  * [PIN] nipype 1.1.0, niworkflows (#726)
+
+0.11.0 (June 05, 2018)
+======================
+
+  * RF: Resume external nipype dependency (#715)
+
+0.10.6 (May 29, 2018)
+=====================
+
+  * [HOTFIX] Bug #659
+
+0.10.5 (May 28, 2018)
+=====================
+
+  * [ENH] Report feedback (#659)
+
+0.10.4 (March 22, 2018)
+=======================
+
+  * [ENH] Various improvements to reports (#708)
+  * [MAINT] Style revision (#704)
+  * [PIN] pybids 0.5 (#700)
+  * [ENH] Increase FAST memory limits (#702)
+
 0.10.3 (February 26, 2018)
 ==========================
 

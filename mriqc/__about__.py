@@ -56,9 +56,11 @@ CLASSIFIERS = [
 SETUP_REQUIRES = []
 
 REQUIRES = [
+    'nipype>=1.1.1',
+    'niworkflows>=0.4.2',
+    'pybids>=0.6.4',
     'numpy>=1.12.0',
-    'niworkflows>=0.3.4',
-    'pybids>=0.5.0',
+    'pandas>=0.21.0',
     'scikit-learn>=0.19.0',
     'scikit-image',
     'future',
@@ -66,7 +68,6 @@ REQUIRES = [
     'six',
     'matplotlib',
     'nibabel',
-    'pandas',
     'dipy',
     'jinja2',
     'seaborn',
@@ -80,7 +81,8 @@ REQUIRES = [
     'xvfbwrapper',
 ]
 
-LINKS_REQUIRES = []
+LINKS_REQUIRES = [
+]
 
 
 TESTS_REQUIRES = [

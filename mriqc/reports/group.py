@@ -106,13 +106,19 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         ]
     }
 
-    def_comps = list(BIDS_COMP.keys())
-    dataframe = pd.read_csv(csv_file, index_col=False,
-                            dtype={comp: object for comp in def_comps})
+    if csv_file.suffix == '.csv':
+        def_comps = list(BIDS_COMP.keys())
+        dataframe = pd.read_csv(csv_file, index_col=False,
+                                dtype={comp: object for comp in def_comps})
 
-    id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
-    dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,),
-                                                    axis=1)
+        id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
+        dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,),
+                                                        axis=1)
+    else:
+        dataframe = pd.read_csv(csv_file, index_col=False, sep='\t',
+                                dtype={'bids_name': object})
+        dataframe = dataframe.rename(index=str, columns={'bids_name': 'label'})
+
     nPart = len(dataframe)
 
     failed = None

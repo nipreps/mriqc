@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 16:15:08
-# @Email:  code@oscaresteban.es
 """
 =======================
 The functional workflow
@@ -31,20 +25,22 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
+from pathlib import Path
 
-from niworkflows.nipype.pipeline import engine as pe
-from niworkflows.nipype.algorithms import confounds as nac
-from niworkflows.nipype.interfaces import io as nio
-from niworkflows.nipype.interfaces import utility as niu
-from niworkflows.nipype.interfaces import afni, ants, fsl
+from nipype.pipeline import engine as pe
+from nipype.algorithms import confounds as nac
+from nipype.interfaces import io as nio
+from nipype.interfaces import utility as niu
+from nipype.interfaces import afni, ants, fsl
+
+from niworkflows.interfaces import segmentation as nws
+from niworkflows.interfaces import registration as nwr
+from niworkflows.interfaces import utils as niutils
+from niworkflows.interfaces.plotting import FMRISummary
 
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from ..utils.misc import check_folder
-from niworkflows.interfaces import segmentation as nws
-from niworkflows.interfaces import registration as nwr
-from niworkflows.interfaces import utils as niutils
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -76,7 +72,8 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
     WFLOGGER.info('Building fMRI QC workflow, datasets list: %s',
-                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
+                  [str(Path(d).relative_to(settings['bids_dir']))
+                   for d in sorted(dataset)])
     inputnode.iterables = [('in_file', dataset)]
 
     outputnode = pe.Node(niu.IdentityInterface(
@@ -115,7 +112,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     ema = epi_mni_align(settings)
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=biggest_file_gb * 4.5)
+    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=biggest_file_gb * 2.5)
 
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings)
@@ -216,7 +213,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Set FD threshold
     inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS',
@@ -268,13 +264,15 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=deriv_dir), name='datasink')
+        modality='bold', out_dir=str(settings['output_dir'])),
+        name='datasink', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, datasink, [('exclude_index', 'dummy_trs')]),
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
-        (meta, datasink, [('subject_id', 'subject_id'),
+        (meta, datasink, [('relative_path', 'in_file'),
+                          ('subject_id', 'subject_id'),
                           ('session_id', 'session_id'),
                           ('task_id', 'task_id'),
                           ('acq_id', 'acq_id'),
@@ -323,9 +321,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
     pages = 5
-    extra_pages = 0
-    if verbose:
-        extra_pages = 4
+    extra_pages = int(verbose) * 4
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -344,12 +340,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask',
                         mem_gb=biggest_file_gb * 2.5)
 
-    bigplot = pe.Node(niu.Function(
-        input_names=['in_func', 'in_mask', 'in_segm', 'in_spikes_bg',
-                     'fd', 'fd_thres', 'dvars', 'outliers'],
-        output_names=['out_file'], function=_big_plot), name='BigPlot',
-        mem_gb=biggest_file_gb * 3.5)
-
+    bigplot = pe.Node(FMRISummary(), name='BigPlot', mem_gb=biggest_file_gb * 3.5)
     workflow.connect([
         (inputnode, spikes_bg, [('in_ras', 'in_file')]),
         (inputnode, spmask, [('in_ras', 'in_file')]),
@@ -366,13 +357,11 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_mean = pe.Node(PlotMosaic(
         out_file='plot_func_mean_mosaic1.svg',
-        title='EPI mean session',
         cmap='Greys_r'),
         name='PlotMosaicMean')
 
     mosaic_stddev = pe.Node(PlotMosaic(
         out_file='plot_func_stddev_mosaic2_stddev.svg',
-        title='EPI SD session',
         cmap='viridis'), name='PlotMosaicSD')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages + int(
@@ -384,8 +373,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
-    dsplots.inputs.container = 'reports'
+        base_directory=str(settings['output_dir']), parameterization=False),
+        name='dsplots', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
@@ -424,12 +413,10 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='Zoomed-in EPI mean',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='Enhanced noise in EPI mean',
         only_noise=True, cmap='viridis_r'), name='PlotMosaicNoise')
 
     # Verbose-reporting goes here
@@ -812,11 +799,13 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
 def _add_provenance(in_file, settings):
     from mriqc import __version__ as version
-    from niworkflows.nipype.utils.filemanip import hash_infile
+    from nipype.utils.filemanip import hash_infile
     out_prov = {
         'md5sum': hash_infile(in_file),
         'version': version,
-        'software': 'mriqc'
+        'software': 'mriqc',
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port'),
     }
 
     if settings:
@@ -845,41 +834,3 @@ def _parse_tout(in_file):
     import numpy as np
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
-
-
-def _big_plot(in_func, in_mask, in_segm, in_spikes_bg,
-              fd, fd_thres, dvars, outliers, out_file=None):
-    import os.path as op
-    import numpy as np
-    from mriqc.viz.fmriplots import fMRIPlot
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_func))
-        if ext == '.gz':
-            fname, _ = op.splitext(fname)
-        out_file = op.abspath('{}_fmriplot.svg'.format(fname))
-
-    title = 'fMRI Summary plot'
-
-    myplot = fMRIPlot(
-        in_func, in_mask, in_segm, title=title)
-    myplot.add_spikes(np.loadtxt(in_spikes_bg), zscored=False)
-
-    # Add AFNI outliers plot
-    myplot.add_confounds([np.nan] + np.loadtxt(outliers, usecols=[0]).tolist(),
-                         {'name': 'outliers', 'units': '%', 'normalize': False,
-                          'ylims': (0.0, None)})
-
-    # Pick non-standardize dvars
-    myplot.add_confounds([np.nan] + np.loadtxt(dvars, skiprows=1,
-                                               usecols=[1]).tolist(),
-                         {'name': 'DVARS', 'units': None, 'normalize': False})
-
-    # Add FD
-    myplot.add_confounds([np.nan] + np.loadtxt(fd, skiprows=1,
-                                               usecols=[0]).tolist(),
-                         {'name': 'FD', 'units': 'mm', 'normalize': False,
-                          'cutoff': [fd_thres], 'ylims': (0.0, fd_thres)})
-    myplot.plot()
-    myplot.fig.savefig(out_file, bbox_inches='tight')
-    myplot.fig.clf()
-    return out_file

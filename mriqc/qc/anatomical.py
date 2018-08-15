@@ -21,7 +21,7 @@ Measures based on noise measurements
 .. _iqms_cnr:
 
 - :py:func:`~mriqc.qc.anatomical.cnr` -- **contrast-to-noise ratio**
-  (:abbr:`CNR (contrast-to-noise Ratio)`): The ``cnr`` [Magnota2006]_,
+  (:abbr:`CNR (contrast-to-noise ratio)`): The ``cnr`` [Magnota2006]_,
   is an extension of the :abbr:`SNR (signal-to-noise Ratio)` calculation
   to evaluate how separated the tissue distributions of GM and WM are.
   Higher values indicate better quality.
@@ -29,13 +29,13 @@ Measures based on noise measurements
 .. _iqms_snr:
 
 - :py:func:`~mriqc.qc.anatomical.snr` -- **signal-to-noise ratio**
-  (:abbr:`SNR (signal-to-noise Ratio)`): calculated within the
+  (:abbr:`SNR (signal-to-noise ratio)`): calculated within the
   tissue mask.
 
 .. _iqms_snrd:
 
 - :py:func:`~mriqc.qc.anatomical.snr_dietrich`: **Dietrich's SNR**
-  (:abbr:`SNRd (signal-to-noise Ratio, Dietrich 2007)`) as proposed
+  (:abbr:`SNRd (signal-to-noise ratio, Dietrich 2007)`) as proposed
   by [Dietrich2007]_, using the air background as reference.
 
 .. _iqms_qi2:
@@ -97,7 +97,7 @@ Measures targeting specific artifacts
   within the WM mask over the 95% percentile of the full intensity
   distribution, that captures the existence of long tails due to
   hyper-intensity of the carotid vessels and fat. Values
-  should be around the interval [0.6, 0.8]
+  should be around the interval [0.6, 0.8].
 
 
 Other measures
@@ -118,7 +118,7 @@ Other measures
 
 .. _iqms_icvs:
 
-- :py:func:`~mriqc.qc.anatomical.volume_fractions` (**icvs_\***):
+- :py:func:`~mriqc.qc.anatomical.volume_fraction` (**icvs_\***):
   the
   :abbr:`ICV (intracranial volume)` fractions of :abbr:`CSF (cerebrospinal fluid)`,
   :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`. They should move within
@@ -175,12 +175,12 @@ Other measures
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
      Front. Neurosci. Conference Abstract: Neuroinformatics 2015.
-     doi: `10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
+     doi:`10.3389/conf.fnins.2015.91.00047 <https://doi.org/10.3389/conf.fnins.2015.91.00047>`_.
 
-  .. [Forman1995] Forman SD et a., *Improved assessment of significant activation in functional
+  .. [Forman1995] Forman SD et al., *Improved assessment of significant activation in functional
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
      Magn. Reson. Med. 33 (5), 636–647, 1995.
-     doi:`10.1016/j.neuroimage.2006.03.062 <http://dx.doi.org/10.1016/j.neuroimage.2006.03.062>`_.
+     doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 
 
 mriqc.qc.anatomical module
@@ -194,8 +194,6 @@ from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
-from statsmodels.robust.scale import mad
-
 
 from io import open  # pylint: disable=W0622
 from builtins import zip, range  # pylint: disable=W0622
@@ -459,7 +457,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
     x_grid = np.linspace(0.0, np.percentile(data, 99), 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(bandwidth=0.05*np.percentile(data, 98),
+    kde_skl = KernelDensity(bandwidth=0.05 * np.percentile(data, 98),
                             kernel='gaussian').fit(modelx[:, np.newaxis])
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
@@ -551,6 +549,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     """
     from .. import MRIQC_LOG
+    from statsmodels.robust.scale import mad
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim

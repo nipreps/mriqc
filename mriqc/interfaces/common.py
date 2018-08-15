@@ -10,15 +10,15 @@ from pkg_resources import resource_filename as pkgrf
 import numpy as np
 import nibabel as nb
 
-from niworkflows.nipype import logging
-from niworkflows.nipype.interfaces.base import (
+from nipype import logging
+from nipype.interfaces.base import (
     traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined,
     SimpleInterface
 )
-from niworkflows.nipype.interfaces.ants import ApplyTransforms
+from nipype.interfaces.ants import ApplyTransforms
 
 
-IFLOGGER = logging.getLogger('interface')
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
@@ -96,10 +96,9 @@ class ConformImage(SimpleInterface):
     output_spec = ConformImageOutputSpec
 
     def _run_interface(self, runtime):
-        # load image
-        nii = nb.load(self.inputs.in_file)
+        # Squeeze 4th dimension if possible (#660)
+        nii = nb.squeeze_image(nb.load(self.inputs.in_file))
         hdr = nii.get_header().copy()
-
         if self.inputs.check_ras:
             nii = nb.as_closest_canonical(nii)
 

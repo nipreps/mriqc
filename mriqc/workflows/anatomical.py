@@ -1,12 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:24:05
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
 """
 =======================
 The anatomical workflow
@@ -38,14 +31,12 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 import os.path as op
-
-from niworkflows.nipype.pipeline import engine as pe
-from niworkflows.nipype.interfaces import io as nio
-from niworkflows.nipype.interfaces import utility as niu
-from niworkflows.nipype.interfaces import fsl, ants
+from pathlib import Path
+from nipype.pipeline import engine as pe
+from nipype.interfaces import io as nio
+from nipype.interfaces import utility as niu
+from nipype.interfaces import fsl, ants
 from niworkflows.data import get_mni_icbm152_nlin_asym_09c
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
@@ -53,9 +44,7 @@ from niworkflows.interfaces.registration import RobustMNINormalizationRPT as Rob
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
-from ..utils.misc import check_folder
 from .utils import get_fwhmx
-WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
@@ -75,10 +64,12 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                                         'no_sub': True})
 
     """
-
+    logging.getLogger('nipype.workflow').info(
+        'Building anatomical MRIQC workflow, datasets list: %s',
+        [str(Path(d).relative_to(settings['bids_dir']))
+         for d in sorted(dataset)])
+    # Initialize workflow
     workflow = pe.Workflow(name="%s%s" % (name, mod))
-    WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
-                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
     # Define workflow, inputs and outputs
     # 0. Get data
@@ -143,7 +134,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                       ('outputnode.art_mask', 'inputnode.artmask'),
                       ('outputnode.rot_mask', 'inputnode.rotmask')]),
         (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
-        (iqmswf, repwf, [('outputnode.qi2_plot', 'inputnode.qi2_plot')]),
+        (iqmswf, repwf, [('outputnode.noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
@@ -161,6 +152,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
+            (upldwf, repwf, [('api_id', 'inputnode.api_id')]),
         ])
 
     return workflow
@@ -230,10 +222,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         'brainmask', 'airmask', 'artmask', 'headmask', 'rotmask', 'hatmask',
         'segmentation', 'inu_corrected', 'in_inu', 'pvms', 'metadata',
         'inverse_composite_transform']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'qi2_plot']),
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'noisefit']),
                          name='outputnode')
-
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Extract metadata
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
@@ -241,7 +231,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     # Add provenance
     addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
     addprov.inputs.settings = {
-        'testing': settings.get('testing', False)
+        'testing': settings.get('testing', False),
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port')
     }
 
     # AFNI check smoothing
@@ -266,8 +258,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    datasink = pe.Node(IQMFileSink(modality=modality, out_dir=deriv_dir),
-                       name='datasink')
+    datasink = pe.Node(IQMFileSink(
+        modality=modality, out_dir=str(settings['output_dir'])),
+        name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
     def _getwm(inlist):
@@ -275,7 +268,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
-        (meta, datasink, [('subject_id', 'subject_id'),
+        (meta, datasink, [('relative_path', 'in_file'),
+                          ('subject_id', 'subject_id'),
                           ('session_id', 'session_id'),
                           ('acq_id', 'acq_id'),
                           ('rec_id', 'rec_id'),
@@ -307,7 +301,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         (measures, datasink, [('out_qc', 'root')]),
         (addprov, datasink, [('out', 'provenance')]),
         (getqi2, datasink, [('qi2', 'qi_2')]),
-        (getqi2, outputnode, [('out_file', 'qi2_plot')]),
+        (getqi2, outputnode, [('out_file', 'noisefit')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
     ])
     return workflow
@@ -328,25 +322,21 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
-    extra_pages = 0
-    if verbose:
-        extra_pages = 7
+    extra_pages = int(verbose) * 7
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
         'in_ras', 'brainmask', 'headmask', 'airmask', 'artmask', 'rotmask',
-        'segmentation', 'inu_corrected', 'qi2_plot', 'in_iqms',
-        'mni_report']),
+        'segmentation', 'inu_corrected', 'noisefit', 'in_iqms',
+        'mni_report', 'api_id']),
         name='inputnode')
 
     mosaic_zoom = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic1_zoomed.svg',
-        title='zoomed',
         cmap='Greys_r'), name='PlotMosaicZoomed')
 
     mosaic_noise = pe.Node(PlotMosaic(
         out_file='plot_anat_mosaic2_noise.svg',
-        title='noise enhanced',
         only_noise=True,
         cmap='viridis_r'), name='PlotMosaicNoise')
 
@@ -357,8 +347,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
-    dsplots.inputs.container = 'reports'
+        base_directory=str(settings['output_dir']), parameterization=False),
+        name='dsplots', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
@@ -410,7 +400,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (plot_artmask, mplots, [('out_file', 'in%d' % (pages + 4))]),
         (plot_headmask, mplots, [('out_file', 'in%d' % (pages + 5))]),
         (plot_airmask, mplots, [('out_file', 'in%d' % (pages + 6))]),
-        (inputnode, mplots, [('qi2_plot', 'in%d' % (pages + 7))]),
+        (inputnode, mplots, [('noisefit', 'in%d' % (pages + 7))]),
     ])
     return workflow
 
@@ -447,7 +437,7 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
         ])
 
     else:
-        from niworkflows.nipype.interfaces.dipy import Denoise
+        from nipype.interfaces.dipy import Denoise
         enhance = pe.Node(niu.Function(
             input_names=['in_file'], output_names=['out_file'], function=_enhance), name='Enhance')
         estsnr = pe.Node(niu.Function(
@@ -524,7 +514,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
 def _add_provenance(in_file, settings, air_msk, rot_msk):
     from mriqc import __version__ as version
-    from niworkflows.nipype.utils.filemanip import hash_infile
+    from nipype.utils.filemanip import hash_infile
     import nibabel as nb
     import numpy as np
 
@@ -540,7 +530,9 @@ def _add_provenance(in_file, settings, air_msk, rot_msk):
         'warnings': {
             'small_air_mask': bool(air_msk_size < 5e5),
             'large_rot_frame': bool(rot_msk_size > 500),
-        }
+        },
+        'webapi_url': settings.pop('webapi_url'),
+        'webapi_port': settings.pop('webapi_port'),
     }
 
     if settings:

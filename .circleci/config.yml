@@ -4,7 +4,7 @@ jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      - MRIQC_API_TAG: 1.0.3
+      - MRIQC_API_TAG: 1.0.5
 
     docker:
       - image: docker:18.01.0-ce-git
@@ -45,6 +45,7 @@ jobs:
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             # Get version, update files.
@@ -110,13 +111,13 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/590ce4a96c613b025147c568"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b6c9950fed49e001a7885b6"
     working_directory: /home/circleci/data
     steps:
       - restore_cache:
           keys:
-            - data-v1-{{ epoch }}
-            - data-v1-
+            - data-v2-{{ epoch }}
+            - data-v2-
       - run:
           name: Get test data
           command: |
@@ -143,7 +144,7 @@ jobs:
             - t1w/nipype.cfg
             - bold/nipype.cfg
       - save_cache:
-         key: data-v1-{{ epoch }}
+         key: data-v2-{{ epoch }}
          paths:
             - /tmp/data
             - /tmp/t1w
@@ -311,8 +312,8 @@ jobs:
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
-              -i /scratch/derivatives/T1w.csv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
+              -i /scratch/derivatives/group_T1w.tsv \
+              -r /usr/local/src/mriqc/mriqc/data/testdata/group_T1w.tsv
 
       - run:
           name: WebAPI - Check records
@@ -332,7 +333,7 @@ jobs:
             # Run the classifier on the test data
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
-                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/T1w.csv -v
+                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
       - store_artifacts:
           path: /tmp/t1w/derivatives
 
@@ -423,8 +424,8 @@ jobs:
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
-              -i /scratch/derivatives/bold.csv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/bold.csv
+              -i /scratch/derivatives/group_bold.tsv \
+              -r /usr/local/src/mriqc/mriqc/data/testdata/group_bold.tsv
 
       - run:
           name: WebAPI - Check records
@@ -437,7 +438,7 @@ jobs:
 
       - store_artifacts:
           path: /tmp/bold/derivatives
-          
+
       - store_artifacts:
           path: /tmp/bold/test
 

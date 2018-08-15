@@ -10,7 +10,6 @@
 """Helper functions for the workflows"""
 from __future__ import print_function, division, absolute_import, unicode_literals
 from distutils.version import StrictVersion
-from niworkflows.nipype.interfaces import afni
 from builtins import range
 
 
@@ -24,7 +23,7 @@ def _tofloat(inlist):
 def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
-    from niworkflows.nipype.interfaces.base import isdefined
+    from nipype.interfaces.base import isdefined
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
@@ -167,10 +166,11 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 
 
 def get_fwhmx():
+    from nipype.interfaces.afni import Info, FWHMx
     fwhm_args = {"combine": True,
                  "detrend": True}
-    afni_version = StrictVersion('%s.%s.%s' % afni.Info.version())
+    afni_version = StrictVersion('%s.%s.%s' % Info.version())
     if afni_version >= StrictVersion("2017.2.3"):
         fwhm_args['args'] = '-ShowMeClassicFWHM'
-    fwhm_interface = afni.FWHMx(**fwhm_args)
+    fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface

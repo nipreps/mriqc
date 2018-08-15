@@ -48,3 +48,19 @@ Submodules
 from __future__ import print_function, division, absolute_import, unicode_literals
 from .individual import individual_html
 from .group import gen_html as group_html
+
+REPORT_TITLES = {
+    'bold': ['BOLD average', 'Standard deviation map', 'FMRI summary plot',
+             'Zoomed-in BOLD average', 'Background noise', 'Calculated brain mask',
+             'Approximate spatial normalization'],
+    'T1w': ['Zoomed-in (brain mask)', 'Background noise',
+            'Approximate spatial normalization', 'Brain mask',
+            'Brain tissue segmentation', 'Artifacts in background',
+            'Head outline', '"Hat" mask',
+            'Distribution of the noise in the background'],
+    'T2w': ['Zoomed-in (brain mask)', 'Background noise',
+            'Approximate spatial normalization', 'Brain mask',
+            'Brain tissue segmentation', 'Artifacts in background',
+            'Head outline', '"Hat" mask',
+            'Distribution of the noise in the background'],
+}
