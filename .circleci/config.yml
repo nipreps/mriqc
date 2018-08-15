@@ -312,7 +312,7 @@ jobs:
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
-              -i /scratch/derivatives/T1w.csv \
+              -i /scratch/derivatives/group_T1w.csv \
               -r /usr/local/src/mriqc/mriqc/data/testdata/T1w.csv
 
       - run:
@@ -333,7 +333,7 @@ jobs:
             # Run the classifier on the test data
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
-                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/T1w.csv -v
+                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.csv -v
       - store_artifacts:
           path: /tmp/t1w/derivatives
 
@@ -424,7 +424,7 @@ jobs:
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
-              -i /scratch/derivatives/bold.csv \
+              -i /scratch/derivatives/group_bold.csv \
               -r /usr/local/src/mriqc/mriqc/data/testdata/bold.csv
 
       - run:

@@ -1,17 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-06-03 09:35:13
 from __future__ import print_function, division, absolute_import, unicode_literals
-from os import getcwd
 import os.path as op
+from pathlib import Path
 import re
 import simplejson as json
-from io import open
-from builtins import bytes, str
 from nipype import logging
 from nipype.interfaces.base import (
     traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
@@ -35,6 +28,7 @@ class ReadSidecarJSONOutputSpec(TraitedSpec):
     rec_id = Str()
     run_id = Str()
     out_dict = traits.Dict()
+    relative_path = Str()
 
 
 class ReadSidecarJSON(SimpleInterface):
@@ -61,10 +55,19 @@ class ReadSidecarJSON(SimpleInterface):
         else:
             self._results['out_dict'] = metadata
 
+        # Crawl back to the BIDS root
+        path = Path(self.inputs.in_file)
+        for i in range(1, 3):
+            bids_root = path.parents[i]
+            if str(bids_root).startswith('sub-'):
+                break
+
+        self._results['relative_path'] = str(path.relative_to(bids_root))
         return runtime
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
+    in_file = Str(mandatory=True, desc='path of input file relative to BIDS root')
     subject_id = Str(mandatory=True, desc='the subject id')
     modality = Str(mandatory=True, desc='the qc type')
     session_id = traits.Either(None, Str, usedefault=True)
@@ -122,26 +125,16 @@ class IQMFileSink(SimpleInterface):
         return value
 
     def _gen_outfile(self):
-        out_dir = getcwd()
+        out_dir = Path()
         if isdefined(self.inputs.out_dir):
-            out_dir = self.inputs.out_dir
+            out_dir = Path(self.inputs.out_dir)
 
-        fname_comps = []
-        for comp, cpre in list(BIDS_COMP.items()):
-            comp_val = None
-            if isdefined(getattr(self.inputs, comp)):
-                comp_val = getattr(self.inputs, comp)
-                if comp_val == "None":
-                    comp_val = None
-
-            comp_fmt = '{}-{}'.format
-            if comp_val is not None:
-                if isinstance(comp_val, (bytes, str)) and comp_val.startswith(cpre + '-'):
-                    comp_val = comp_val.split('-', 1)[-1]
-                fname_comps.append(comp_fmt(cpre, comp_val))
-
-        fname_comps.append('%s.json' % self.inputs.modality)
-        self._results['out_file'] = op.join(out_dir, '_'.join(fname_comps))
+        # Build path and ensure directory exists
+        in_file = self.inputs.in_file
+        bids_path = out_dir / in_file.replace(
+            ''.join(Path(in_file).suffixes), '.json')
+        bids_path.parent.mkdir(parents=True, exist_ok=True)
+        self._results['out_file'] = str(bids_path)
         return self._results['out_file']
 
     def _run_interface(self, runtime):

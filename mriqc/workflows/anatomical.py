@@ -1,12 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:24:05
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
 """
 =======================
 The anatomical workflow
@@ -38,10 +31,8 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 import os.path as op
-
+from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
@@ -53,9 +44,7 @@ from niworkflows.interfaces.registration import RobustMNINormalizationRPT as Rob
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
-from ..utils.misc import check_folder
 from .utils import get_fwhmx
-WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
@@ -75,10 +64,12 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                                         'no_sub': True})
 
     """
-
+    logging.getLogger('nipype.workflow').info(
+                      'Building anatomical MRIQC workflow, datasets list: %s',
+                      [str(Path(d).relative_to(settings['bids_dir']))
+                       for d in sorted(dataset)])
+    # Initialize workflow
     workflow = pe.Workflow(name="%s%s" % (name, mod))
-    WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
-                  sorted([d.replace(settings['bids_dir'] + '/', '') for d in dataset]))
 
     # Define workflow, inputs and outputs
     # 0. Get data
@@ -233,8 +224,6 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
 
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
-
     # Extract metadata
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
@@ -269,8 +258,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    datasink = pe.Node(IQMFileSink(modality=modality, out_dir=deriv_dir),
-                       name='datasink')
+    datasink = pe.Node(IQMFileSink(
+        modality=modality, out_dir=str(settings['output_dir'])),
+        name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
     def _getwm(inlist):
@@ -278,7 +268,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
-        (meta, datasink, [('subject_id', 'subject_id'),
+        (meta, datasink, [('relative_path', 'in_file'),
+                          ('subject_id', 'subject_id'),
                           ('session_id', 'session_id'),
                           ('acq_id', 'acq_id'),
                           ('rec_id', 'rec_id'),
@@ -331,9 +322,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     verbose = settings.get('verbose_reports', False)
     pages = 2
-    extra_pages = 0
-    if verbose:
-        extra_pages = 7
+    extra_pages = int(verbose) * 7
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -358,8 +347,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=settings['output_dir'], parameterization=False), name='dsplots')
-    dsplots.inputs.container = 'reports'
+        base_directory=str(settings['output_dir']), parameterization=False),
+        name='dsplots', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, rnode, [('in_iqms', 'in_iqms')]),
