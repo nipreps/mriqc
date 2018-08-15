@@ -45,7 +45,6 @@ from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
 from .utils import get_fwhmx
-WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
@@ -65,11 +64,12 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                                         'no_sub': True})
 
     """
-
+    logging.getLogger('nipype.workflow').info(
+                      'Building anatomical MRIQC workflow, datasets list: %s',
+                      [str(Path(d).relative_to(settings['bids_dir']))
+                       for d in sorted(dataset)])
+    # Initialize workflow
     workflow = pe.Workflow(name="%s%s" % (name, mod))
-    WFLOGGER.info('Building anatomical MRI QC workflow, datasets list: %s',
-                  [str(Path(d).relative_to(settings['bids_dir']))
-                   for d in sorted(dataset)])
 
     # Define workflow, inputs and outputs
     # 0. Get data

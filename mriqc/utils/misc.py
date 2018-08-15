@@ -5,10 +5,8 @@
 """ Helper functions """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import os
 from os import path as op
 from glob import glob
-from errno import EEXIST
 
 import collections
 import json
@@ -166,7 +164,7 @@ def generate_csv(output_dir, mod):
 
     # If some were found, generate the CSV file and group report
     out_csv = output_dir / ('%s.csv' % mod)
-    jsonfiles = list(output_dir.glob('sub-*/%s/sub-*_%s.json' % (mod, IMTYPES[mod])))
+    jsonfiles = list(output_dir.glob('sub-*/**/%s/sub-*_%s.json' % (IMTYPES[mod], mod)))
     if not jsonfiles:
         return None, out_csv
 

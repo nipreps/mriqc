@@ -129,9 +129,12 @@ class IQMFileSink(SimpleInterface):
         if isdefined(self.inputs.out_dir):
             out_dir = Path(self.inputs.out_dir)
 
+        # Build path and ensure directory exists
         in_file = self.inputs.in_file
-        bids_path = in_file.replace(''.join(Path(in_file).suffixes), '.json')
-        self._results['out_file'] = str(out_dir / bids_path)
+        bids_path = out_dir / in_file.replace(
+            ''.join(Path(in_file).suffixes), '.json')
+        bids_path.parent.mkdir(parents=True, exist_ok=True)
+        self._results['out_file'] = str(bids_path)
         return self._results['out_file']
 
     def _run_interface(self, runtime):

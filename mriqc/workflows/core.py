@@ -19,16 +19,15 @@ def build_workflow(dataset, mod, settings=None):
 
     settings["biggest_file_size_gb"] = _get_biggest_file_size_gb(dataset)
 
-    if mod == 'bold':
-        workflow = fmri_qc_workflow(dataset, settings=settings)
-    elif mod == 'T1w':
-        workflow = anat_qc_workflow(dataset, mod='T1w', settings=settings)
-    elif mod == 'T2w':
-        workflow = anat_qc_workflow(dataset, mod='T2w', settings=settings)
-    else:
+    if mod not in ('T1w', 'T2w', 'bold'):
         raise NotImplementedError('Unknown workflow type "%s"' % mod)
 
-    workflow.base_dir = settings['work_dir']
+    if mod == 'bold':
+        workflow = fmri_qc_workflow(dataset, settings=settings)
+    else:
+        workflow = anat_qc_workflow(dataset, mod=mod, settings=settings)
+
+    workflow.base_dir = str(settings['work_dir'])
     if settings.get('write_graph', False):
         workflow.write_graph()
     return workflow

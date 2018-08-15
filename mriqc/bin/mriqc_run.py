@@ -264,11 +264,6 @@ def main():
 
         logger.info('Group level started...')
 
-        reports_dir = opts.output_dir / 'reports'
-        if opts.reports_dir:
-            reports_dir = opts.reports_dir.resolve()
-        reports_dir.mkdir(parents=True, exist_ok=True)
-
         # Generate reports
         mod_group_reports = []
         for mod in opts.modalities:
@@ -285,9 +280,9 @@ def main():
             #     log.info('Predicted QA CSV table for the %s data generated (%s)',
             #                    mod, out_pred)
 
-            out_html = reports_dir / ('%s_group.html' % mod)
+            out_html = opts.output_dir / ('group_%s.html' % mod)
             group_html(out_csv, mod,
-                       csv_failed=opts.output_dir / ('%s_failed.csv' % mod),
+                       csv_failed=opts.output_dir / ('group_variant-failed_%s.csv' % mod),
                        out_file=out_html)
             logger.info('Group-%s report generated (%s)', mod, out_html)
             mod_group_reports.append(mod)
@@ -366,9 +361,8 @@ def init_mriqc(opts, retval):
             'resource_monitor': opts.profile},
     })
 
-
-    plugin_settings = {}
     # Plugin configuration
+    plugin_settings = {}
     if n_procs == 1:
         plugin_settings['plugin'] = 'Linear'
 
@@ -411,8 +405,9 @@ def init_mriqc(opts, retval):
     wf_list = []
     subject_list = []
     for mod in modalities:
-        wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
-        subject_list += dataset[mod]
+        if dataset[mod]:
+            wf_list.append(build_workflow(dataset[mod], mod, settings=settings))
+            subject_list += dataset[mod]
 
     retval['subject_list'] = subject_list
     if not wf_list:
