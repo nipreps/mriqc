@@ -44,16 +44,6 @@ def split_ext(in_file, out_file=None):
         return split_ext(out_file)
 
 
-def check_folder(folder):
-    if not op.exists(folder):
-        try:
-            os.makedirs(folder)
-        except OSError as exc:
-            if not exc.errno == EEXIST:
-                raise
-    return folder
-
-
 def reorder_csv(csv_file, out_file=None):
     """
     Put subject, session and scan in front of csv file

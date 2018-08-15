@@ -38,8 +38,6 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
-from builtins import zip, range
 import os.path as op
 
 from nipype.pipeline import engine as pe
@@ -53,7 +51,6 @@ from niworkflows.interfaces.registration import RobustMNINormalizationRPT as Rob
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
                           ConformImage, ComputeQI2, IQMFileSink, RotationMask)
-from ..utils.misc import check_folder
 from .utils import get_fwhmx
 WFLOGGER = logging.getLogger('mriqc.workflow')
 
@@ -233,8 +230,6 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_noisefit']),
                          name='outputnode')
 
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
-
     # Extract metadata
     meta = pe.Node(ReadSidecarJSON(), name='metadata')
 
@@ -269,8 +264,9 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
     invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
-    datasink = pe.Node(IQMFileSink(modality=modality, out_dir=deriv_dir),
-                       name='datasink')
+    datasink = pe.Node(IQMFileSink(
+        modality=modality, out_dir=str(settings['output_dir'])),
+        name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
     def _getwm(inlist):
@@ -278,7 +274,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
-        (meta, datasink, [('subject_id', 'subject_id'),
+        (meta, datasink, [('relative_path', 'in_file'),
+                          ('subject_id', 'subject_id'),
                           ('session_id', 'session_id'),
                           ('acq_id', 'acq_id'),
                           ('rec_id', 'rec_id'),

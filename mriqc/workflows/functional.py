@@ -46,7 +46,6 @@ from niworkflows.interfaces.plotting import FMRISummary
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
-from ..utils.misc import check_folder
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -218,7 +217,6 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Set FD threshold
     inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
-    deriv_dir = check_folder(op.abspath(op.join(settings['output_dir'], 'derivatives')))
 
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS',
@@ -270,13 +268,15 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=deriv_dir), name='datasink')
+        modality='bold', out_dir=str(settings['output_dir']),
+        name='datasink', run_without_submitting=True)
 
     workflow.connect([
         (inputnode, datasink, [('exclude_index', 'dummy_trs')]),
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
-        (meta, datasink, [('subject_id', 'subject_id'),
+        (meta, datasink, [('relative_path', 'in_file'),
+                          ('subject_id', 'subject_id'),
                           ('session_id', 'session_id'),
                           ('task_id', 'task_id'),
                           ('acq_id', 'acq_id'),
