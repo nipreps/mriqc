@@ -6,34 +6,15 @@
 <meta name="generator" content="MRIQC" />
 <title>MRIQC: individual {{ modality }}
 report</title>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 <style type="text/css">
-body { font-family: helvetica; }
-
-/* used to remove borders from tables and images */
-.borderless, table.borderless td, table.borderless th {
-  border: 0 }
-
-table.borderless td, table.borderless th {
-  /* Override padding for "table.docutils td" with "! important".
-     The right padding separates the table cells. */
-  padding: 0 0.5em 0 0 ! important }
-
-
-div.admonition, div.attention, div.caution, div.danger, div.error,
-div.hint, div.important, div.note, div.tip, div.warning {
-  margin: 2em ;
-  border: medium outset ;
-  padding: 1em }
-
-div.admonition p.admonition-title, div.hint p.admonition-title,
-div.important p.admonition-title, div.note p.admonition-title,
-div.tip p.admonition-title {
-  font-weight: bold ;
+body {
+  font-family: helvetica;
+  padding: 50px 10px 10px;
 }
 
-div.attention p.admonition-title, div.caution p.admonition-title,
-div.danger p.admonition-title, div.error p.admonition-title,
 div.warning p.admonition-title, .code .error {
   color: red ;
   font-weight: bold ;
@@ -44,30 +25,8 @@ span.problematic {
   font-weight: bold ;
 }
 
-h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
-h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
-  margin-top: 0.4em }
-
-h1.title {
-  text-align: center }
-
-h2.subtitle {
-  text-align: center }
-
-ol.simple, ul.simple {
-  margin-bottom: 1em }
-
 p.label {
   white-space: nowrap }
-
-pre.code .ln { color: grey; } /* line numbers */
-pre.code, code { background-color: #eeeeee }
-pre.code .comment, code .comment { color: #5C6576 }
-pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
-pre.code .literal.string, code .literal.string { color: #0C5404 }
-pre.code .name.builtin, code .name.builtin { color: #352B84 }
-pre.code .deleted, code .deleted { background-color: #DEB0A1}
-pre.code .inserted, code .inserted { background-color: #A3D289}
 
 span.section-subtitle {
   /* font-size relative to parent (h1..h6 element) */
@@ -82,15 +41,26 @@ div.embeded-report {
 div.embeded-report svg { width: 100%; }
 
 span.qa-fail {
-  color: white;
-  font-weight: bold;
-  background-color: #FF6347;
+    color: white;
+    font-weight: bold;
+    background-color: #FF6347;
 }
 
 span.qa-pass {
-  color: white;
-  font-weight: bold;
-  background-color: #32CD32;
+    color: white;
+    font-weight: bold;
+    background-color: #32CD32;
+}
+
+h1 { margin-top: 30px; }
+h2 { margin-top: 20px; }
+
+div#accordionOther {
+    margin: 0 20px;
+}
+
+.add-padding {
+    padding-top: 15px;
 }
 
 </style>
@@ -98,10 +68,27 @@ span.qa-pass {
 <body>
 <div class="document">
 
+<nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
+<div class="collapse navbar-collapse">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" href="#summary">Summary</a></li>
+      <li class="nav-item"><a class="nav-link" href="#visuals">Visual reports</a></li>
+      <li class="nav-item"><a class="nav-link" href="#other">Other</a></li>
+      {% if provenance %}
+      <li class="nav-item"><a class="nav-link" href="#feedback">Rate image</a></li>
+      {% endif %}
+    </ul>
+</div>
+</nav>
+
+<noscript>
+    <h1 class="text-danger"> The navigation menu uses Javascript. Without it this report might not work as expected </h1>
+</noscript>
+
 <h1>MRIQC: individual {{ modality }}
 report</h1>
 
-<h2>Summary</h2>
+<h2 id="summary">Summary</h2>
 <ul class="simple">
 <li>Subject ID: {{ sub_id }}.</li>
 {% if pred_qa is not none %}
@@ -124,7 +111,7 @@ report</h1>
 {% endif %}
 </ul>
 
-<h2>Visual reports</h2>
+<h2 id="visuals">Visual reports</h2>
 {% for title, svg in svg_files %}
 <div class="embeded-report">
   <h3>{{ title }}</h3>
@@ -132,28 +119,60 @@ report</h1>
 </div>
 {% endfor %}
 
+<h2 id="other">Other</h2>
+<div class="accordion" id="accordionOther">
+  <div class="card">
+    <div class="card-header" id="headingOne">
+      <h5 class="mb-0">
+        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+          Extracted Image Quality Metrics (IQMs)
+        </button>
+      </h5>
+    </div>
 
-<h2>Extracted Image Quality Metrics (IQMs)</h2>
-<div class="metadata-table">
-{{ imparams }}
-</div>
-
+    <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionOther">
+      <div class="card-body metadata-table">
+      {{ imparams }}
+      </div>
+    </div>
+  </div>
 {% if metadata %}
-<h2>Metadata</h2>
-<div class="metadata-table">
-{{ metadata }}
+  <div class="card">
+    <div class="card-header" id="headingTwo">
+      <h5 class="mb-0">
+        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Metadata
+        </button>
+      </h5>
+    </div>
+    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionOther">
+      <div class="card-body metadata-table">
+      {{ metadata }}
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% if provenance %}
+  <div class="card">
+    <div class="card-header" id="headingThree">
+      <h5 class="mb-0">
+        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+          Provenance information
+        </button>
+      </h5>
+    </div>
+    <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionOther">
+      <div class="card-body provenance-table">
+      {{ provenance }}
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
 {% if provenance %}
-<h2>Provenance information</h2>
-<div class="provenance-table">
-{{ provenance }}
-</div>
-{% endif %}
-
-{% if provenance %}
-<h2>Rate Image</h2>
+<h2 id="feedback">Rate Image</h2>
+<div id="submitResAlert" role="alert" class="invisible alert alert-success">Submitted</div>
 <div class="container">
 <form action="javascript:sendRating()">
     <div class="form-group">
@@ -167,42 +186,36 @@ report</h1>
         <input type="submit" value="Submit">
     </div>
 </form>
-<div id="submitResAlert" role="alert"></div>
-<div class="hidden" id="allRatingsDiv">
-<table class="table table-striped">
-<thead>
-    <tr>
-        <td>Rating</td>
-        <td>Count</td>
-    </tr>
-<tbody>
-    <tr>
-        <td>Invalid</td>
-        <td id="allRatings0"></td>
-    </tr>
-    <tr>
-        <td>Exclude</td>
-        <td id="allRatings1"></td>
-    </tr>
-    <tr>
-        <td>Usable</td>
-        <td id="allRatings2"></td>
-    </tr>
-    <tr>
-        <td>Good</td>
-        <td id="allRatings3"></td>
-    </tr>
-</tbody>
-</thead>
-</table>
-
-{% endif %}
-
-<p>For details on the IQMs (image quality metrics) and further information on
-the enclosed plots, please read the
-<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
+<div class="d-none add-padding" id="allRatingsDiv">
+    <h5 class="mb-0 add-padding">Previous ratings found in MRIQC's WebAPI</h5>
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Rating</th>
+            <th>Count</th>
+        </tr>
+    <tbody>
+        <tr>
+            <td>Invalid</td>
+            <td id="allRatings0"></td>
+        </tr>
+        <tr>
+            <td>Exclude</td>
+            <td id="allRatings1"></td>
+        </tr>
+        <tr>
+            <td>Usable</td>
+            <td id="allRatings2"></td>
+        </tr>
+        <tr>
+            <td>Good</td>
+            <td id="allRatings3"></td>
+        </tr>
+    </tbody>
+    </thead>
+    </table>
 </div>
-{% if provenance %}
+</div>
 <script type="text/javascript">
 var sentOnce = false;
 
@@ -213,11 +226,12 @@ function setAllRatings(allRatings) {
         return 0;
     });
     console.log(allRatings);
-    document.getElementById("allRatings0").textContent = allRatings['_items'][0]['count'];
-    document.getElementById("allRatings1").textContent = allRatings['_items'][1]['count'];
-    document.getElementById("allRatings2").textContent = allRatings['_items'][2]['count'];
-    document.getElementById("allRatings3").textContent = allRatings['_items'][3]['count'];
-    document.getElementById("allRatingsDiv").classList.remove("hidden");
+    var arrayLength = allRatings['_items'].length;
+    for (var i = 0; i < arrayLength; i++) {
+        var elid = "allRatings" + allRatings['_items'][i]['_id'];
+        document.getElementById(elid).textContent = allRatings['_items'][i]['count'];
+    }
+    document.getElementById("allRatingsDiv").classList.remove("d-none");
 };
 
 function sendRating() {
@@ -262,12 +276,15 @@ function sendRating() {
 
 function setAlert() {
     alertElem = document.getElementById("submitResAlert");
-    alertElem.textContent = "Submitted"
-    alertElem.className = "alert alert-success"
-
+    alertElem.classList.remove("invisible");
+    alertElem.classList.add("visible");
 };
 
 </script>
 {% endif %}
+
+<p>For details on the IQMs (image quality metrics) and further information on
+the enclosed plots, please read the
+<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
 </body>
 </html>
