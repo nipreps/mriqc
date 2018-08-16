@@ -9,6 +9,35 @@ report</title>
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<script>
+function download() {
+    var ds = "{{ dataset }}"
+    var sub = "{{ bids_name }}"
+    var reportlets = []
+
+    var els = document.getElementsByClassName("rating-form")
+    for (var elid = 0; elid < els.length; elid++) {
+        // Do stuff here
+        var thisrep = {}
+        for (var i = 0; i < els[elid].children.length; i++) {
+            thisrep[els[elid].children[i].name] = els[elid].children[i].value
+        }
+
+        reportlets.push(thisrep)
+    };
+
+    var file = new Blob([JSON.stringify({
+        'dataset': ds,
+        'subject': sub,
+        'reports': reportlets}
+    )], {type: 'text/json'});
+
+    var a = document.getElementById("a");
+    a.href = URL.createObjectURL(file);
+    a.download = ds + "_" + sub + ".json";
+    a.style.visibility = "visible"
+}
+</script>
 <style type="text/css">
 body {
   font-family: helvetica;
@@ -166,119 +195,34 @@ report</h1>
 
 {% if provenance %}
 <h2 id="feedback">Rate Image</h2>
-<div class="container">
-<form action="javascript:sendRating()">
-    <div class="form-group">
-        <input id="ratingField" type="hidden" required>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating0" value="0" required> Invalid</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating1" value="1"> Exclude</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating2" value="2"> Usable</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating3" value="3"> Good</label></div>
-        Name: <br><input id="ratingName" type="text" class="form-control"><br>
-        Comments: <br><textarea rows="4" id="ratingComment" type="text" class="form-control"></textarea><br>
-        <input type="submit" value="Submit">
-    </div>
-</form>
-<div id="submitResAlert" role="alert" class="d-none alert alert-success">Submitted</div>
-<div class="d-none" id="allRatingsDiv">
-<table class="table table-striped">
-<thead>
-    <tr>
-        <td>Rating</td>
-        <td>Count</td>
-    </tr>
-<tbody>
-    <tr>
-        <td>Invalid</td>
-        <td id="allRatings0"></td>
-    </tr>
-    <tr>
-        <td>Exclude</td>
-        <td id="allRatings1"></td>
-    </tr>
-    <tr>
-        <td>Usable</td>
-        <td id="allRatings2"></td>
-    </tr>
-    <tr>
-        <td>Good</td>
-        <td id="allRatings3"></td>
-    </tr>
-</tbody>
-</thead>
-</table>
 
-{% endif %}
-
-<p>For details on the IQMs (image quality metrics) and further information on
-the enclosed plots, please read the
-<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
+<div class="rating-form">
+<input type="hidden" value="overall" name="name" />
+<select name="rating">
+  <option value="-1">(unrated)</option>
+  <option value="0">Useless</option>
+  <option value="1">Poor result</option>
+  <option value="2">Acceptable</option>
+  <option value="3">Exceptional</option>
+</select>
+<textarea rows="2" cols="100" name="comment">
+</textarea>
 </div>
-{% if provenance %}
+
+<button onclick="download()">Create file</button>
+<a href="" id="a" style="visibility:hidden">Save your ratings</a>
+<br />
+<br />
+
+
 <script type="text/javascript">
-var sentOnce = false;
-
-function setAllRatings(allRatings) {
-    allRatings['_items'].sort(function(a, b) {
-        if(a['_id'] < b['_id']) return -1;
-        if(a['_id'] > b['_id']) return 1;
-        return 0;
-    });
-    console.log(allRatings);
-    document.getElementById("allRatings0").textContent = allRatings['_items'][0]['count'];
-    document.getElementById("allRatings1").textContent = allRatings['_items'][1]['count'];
-    document.getElementById("allRatings2").textContent = allRatings['_items'][2]['count'];
-    document.getElementById("allRatings3").textContent = allRatings['_items'][3]['count'];
-    document.getElementById("allRatingsDiv").classList.remove("d-none");
-};
-
-function sendRating() {
-    var allRatings;
-    var rating;
-    var radios = document.getElementsByName("inlineRadio");
-    for (var i = 0; i < radios.length; i++) {
-        if (radios[i].checked) {
-            rating = radios[i].value;
-            break;
-        }
+    function toggle(id) {
+        var element = document.getElementById(id);
+        if(element.style.display == 'block')
+            element.style.display = 'none';
+        else
+            element.style.display = 'block';
     }
-    var md5sum = "{{ md5sum }}";
-    var name = document.getElementById("ratingName").value;
-    var comment = document.getElementById("ratingComment").value;
-    var params = {'rating': rating, 'md5sum': md5sum, 'name': name, 'comment': comment};
-
-    var ratingReq = new XMLHttpRequest();
-    var allRatingsReq = new XMLHttpRequest();
-    var aggParam = '{\"$value\":\"' + md5sum + '\"}';
-    allRatingsReq.open("GET", "{{ webapi_url }}/rating_counts?aggregate=" + aggParam);
-    allRatingsReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    allRatingsReq.setRequestHeader("Authorization", "<secret_token>");
-    ratingReq.open("POST", "{{ webapi_url }}/rating");
-    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    ratingReq.setRequestHeader("Authorization", "<secret_token>");
-    ratingReq.onload = function () {
-        status = ratingReq.status;
-        if (status === "201") {
-            sentOnce = true;
-            allRatingsReq.send();
-            setAlert();
-        }
-    };
-    allRatingsReq.onload = function () {
-        console.log(allRatingsReq.response);
-        allRatings = JSON.parse(allRatingsReq.response);
-        setAllRatings(allRatings);
-    };
-    ratingReq.send(JSON.stringify(params));
-};
-
-function setAlert() {
-    alertElem = document.getElementById("submitResAlert");
-    alertElem.className.classList.remove("d-none");
-
-};
-
 </script>
-{% endif %}
 </body>
 </html>
