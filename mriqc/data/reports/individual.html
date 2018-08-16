@@ -41,22 +41,26 @@ div.embeded-report {
 div.embeded-report svg { width: 100%; }
 
 span.qa-fail {
-  color: white;
-  font-weight: bold;
-  background-color: #FF6347;
+    color: white;
+    font-weight: bold;
+    background-color: #FF6347;
 }
 
 span.qa-pass {
-  color: white;
-  font-weight: bold;
-  background-color: #32CD32;
+    color: white;
+    font-weight: bold;
+    background-color: #32CD32;
 }
 
 h1 { margin-top: 30px; }
 h2 { margin-top: 20px; }
 
 div#accordionOther {
-  margin: 0 20px;
+    margin: 0 20px;
+}
+
+.add-padding {
+    padding-top: 15px;
 }
 
 </style>
@@ -70,7 +74,9 @@ div#accordionOther {
       <li class="nav-item"><a class="nav-link" href="#summary">Summary</a></li>
       <li class="nav-item"><a class="nav-link" href="#visuals">Visual reports</a></li>
       <li class="nav-item"><a class="nav-link" href="#other">Other</a></li>
+      {% if provenance %}
       <li class="nav-item"><a class="nav-link" href="#feedback">Rate image</a></li>
+      {% endif %}
     </ul>
 </div>
 </nav>
@@ -166,6 +172,7 @@ report</h1>
 
 {% if provenance %}
 <h2 id="feedback">Rate Image</h2>
+<div id="submitResAlert" role="alert" class="invisible alert alert-success">Submitted</div>
 <div class="container">
 <form action="javascript:sendRating()">
     <div class="form-group">
@@ -179,42 +186,36 @@ report</h1>
         <input type="submit" value="Submit">
     </div>
 </form>
-<div id="submitResAlert" role="alert" class="d-none alert alert-success">Submitted</div>
-<div class="d-none" id="allRatingsDiv">
-<table class="table table-striped">
-<thead>
-    <tr>
-        <td>Rating</td>
-        <td>Count</td>
-    </tr>
-<tbody>
-    <tr>
-        <td>Invalid</td>
-        <td id="allRatings0"></td>
-    </tr>
-    <tr>
-        <td>Exclude</td>
-        <td id="allRatings1"></td>
-    </tr>
-    <tr>
-        <td>Usable</td>
-        <td id="allRatings2"></td>
-    </tr>
-    <tr>
-        <td>Good</td>
-        <td id="allRatings3"></td>
-    </tr>
-</tbody>
-</thead>
-</table>
-
-{% endif %}
-
-<p>For details on the IQMs (image quality metrics) and further information on
-the enclosed plots, please read the
-<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
+<div class="d-none add-padding" id="allRatingsDiv">
+    <h5 class="mb-0 add-padding">Previous ratings found in MRIQC's WebAPI</h5>
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Rating</th>
+            <th>Count</th>
+        </tr>
+    <tbody>
+        <tr>
+            <td>Invalid</td>
+            <td id="allRatings0"></td>
+        </tr>
+        <tr>
+            <td>Exclude</td>
+            <td id="allRatings1"></td>
+        </tr>
+        <tr>
+            <td>Usable</td>
+            <td id="allRatings2"></td>
+        </tr>
+        <tr>
+            <td>Good</td>
+            <td id="allRatings3"></td>
+        </tr>
+    </tbody>
+    </thead>
+    </table>
 </div>
-{% if provenance %}
+</div>
 <script type="text/javascript">
 var sentOnce = false;
 
@@ -225,10 +226,11 @@ function setAllRatings(allRatings) {
         return 0;
     });
     console.log(allRatings);
-    document.getElementById("allRatings0").textContent = allRatings['_items'][0]['count'];
-    document.getElementById("allRatings1").textContent = allRatings['_items'][1]['count'];
-    document.getElementById("allRatings2").textContent = allRatings['_items'][2]['count'];
-    document.getElementById("allRatings3").textContent = allRatings['_items'][3]['count'];
+    var arrayLength = allRatings['_items'].length;
+    for (var i = 0; i < arrayLength; i++) {
+        var elid = "allRatings" + allRatings['_items'][i]['_id'];
+        document.getElementById(elid).textContent = allRatings['_items'][i]['count'];
+    }
     document.getElementById("allRatingsDiv").classList.remove("d-none");
 };
 
@@ -274,11 +276,15 @@ function sendRating() {
 
 function setAlert() {
     alertElem = document.getElementById("submitResAlert");
-    alertElem.className.classList.remove("d-none");
-
+    alertElem.classList.remove("invisible");
+    alertElem.classList.add("visible");
 };
 
 </script>
 {% endif %}
+
+<p>For details on the IQMs (image quality metrics) and further information on
+the enclosed plots, please read the
+<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
 </body>
 </html>
