@@ -10,33 +10,72 @@ report</title>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 <script>
-function download() {
-    var ds = "{{ dataset }}"
-    var sub = "{{ bids_name }}"
-    var reportlets = []
+function read_form() {
+    var ds = "{{ dataset or 'unknown' }}";
+    var sub = "{{ bids_name }}";
+    var artifacts = [];
+    $('#artifacts-group input:checked').each(function() {
+        artifacts.push($(this).attr('name'));
+    });
 
-    var els = document.getElementsByClassName("rating-form")
-    for (var elid = 0; elid < els.length; elid++) {
-        // Do stuff here
-        var thisrep = {}
-        for (var i = 0; i < els[elid].children.length; i++) {
-            thisrep[els[elid].children[i].name] = els[elid].children[i].value
-        }
-
-        reportlets.push(thisrep)
-    };
-
-    var file = new Blob([JSON.stringify({
+    var payload = {
         'dataset': ds,
         'subject': sub,
-        'reports': reportlets}
-    )], {type: 'text/json'});
+        'rating': $('input[name=qc-rating]:checked').val(),
+        'artifacts': artifacts
+    };
+    var file = new Blob([JSON.stringify(payload)], {type: 'text/json'});
+    $('#btn-download').attr('href', URL.createObjectURL(file));
+    $('#btn-download').attr('download', payload['dataset'] + "_" + payload['subject'] + ".json");
+    return payload
+};
 
-    var a = document.getElementById("a");
-    a.href = URL.createObjectURL(file);
-    a.download = ds + "_" + sub + ".json";
-    a.style.visibility = "visible"
-}
+function post2api() {
+    var payload = read_form();
+    var md5sum = "{{ md5sum }}";
+    var params = {
+        'rating': payload['rating'],
+        'md5sum': md5sum,
+        'name': "",
+        'comment': payload['artifacts']
+    };
+
+    // disable developement releases
+    var authorization = "<secret_token>";
+    if (authorization.includes("secret_token")) {
+        $('#post2api').removeClass('btn-primary');
+        $('#post2api').addClass('btn-warning');
+        $('#post2api').attr('disabled', true);
+        $('#post2api').attr('aria-disabled', true);
+        $('#post2api').prop('disabled');
+        $('#post2api').addClass('disabled');
+        $('#post2api').html('Disabled');
+        $('#post2api').removeClass('active');
+        return
+    };
+
+    var ratingReq = new XMLHttpRequest();
+    ratingReq.open("POST", "{{ webapi_url }}/rating");
+    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    ratingReq.setRequestHeader("Authorization", authorization);
+    ratingReq.onload = function () {
+        status = ratingReq.status;
+        $('#post2api').removeClass('btn-primary');
+        $('#post2api').attr('disabled', true);
+        $('#post2api').attr('aria-disabled', true);
+        $('#post2api').prop('disabled');
+        $('#post2api').addClass('disabled');
+        $('#post2api').removeClass('active');
+        if (status === "201") {
+            $('#post2api').addClass('btn-success');
+            $('#post2api').html('Posted!');
+        } else {
+            $('#post2api').addClass('btn-danger');
+            $('#post2api').html('Failed');
+        };
+    };
+    ratingReq.send(JSON.stringify(params));
+};
 </script>
 <style type="text/css">
 body {
@@ -70,22 +109,23 @@ div.embeded-report {
 div.embeded-report svg { width: 100%; }
 
 span.qa-fail {
-  color: white;
-  font-weight: bold;
-  background-color: #FF6347;
+    color: white;
+    font-weight: bold;
+    background-color: #FF6347;
 }
 
 span.qa-pass {
-  color: white;
-  font-weight: bold;
-  background-color: #32CD32;
+    color: white;
+    font-weight: bold;
+    background-color: #32CD32;
 }
 
-h1 { margin-top: 30px; }
-h2 { margin-top: 20px; }
-
 div#accordionOther {
-  margin: 0 20px;
+    margin: 0 20px;
+}
+
+.add-padding {
+    padding-top: 15px;
 }
 
 </style>
@@ -99,58 +139,60 @@ div#accordionOther {
       <li class="nav-item"><a class="nav-link" href="#summary">Summary</a></li>
       <li class="nav-item"><a class="nav-link" href="#visuals">Visual reports</a></li>
       <li class="nav-item"><a class="nav-link" href="#other">Other</a></li>
-      <li class="nav-item"><a class="nav-link" href="#feedback">Rate image</a></li>
     </ul>
 </div>
 </nav>
-
 <noscript>
     <h1 class="text-danger"> The navigation menu uses Javascript. Without it this report might not work as expected </h1>
 </noscript>
 
-<h1>MRIQC: individual {{ modality }}
+<h1 class="mt-5 mb-5">MRIQC: individual {{ modality }}
 report</h1>
 
-<h2 id="summary">Summary</h2>
-<ul class="simple">
-<li>Subject ID: {{ sub_id }}.</li>
-{% if pred_qa is not none %}
-<li>MRIQC predicted QA:
-{% if pred_qa > 0 %}<span class="qa-fail">Exclude</span>
-{% else %}<span class="qa-pass">Pass</span>
-{% endif %}
-</li>
-{% endif %}
-<li>Date and time: {{ timestamp }}.</li>
-<li>MRIQC version: {{ version }}.</li>
-{% if workflow_details %}
-<li>Workflow details:
-  <ul class="sub-simple">
-  {% for detail in workflow_details %}
-  <li>{{ detail }}</li>
-  {% endfor %}
-  </ul>
-</li>
-{% endif %}
-</ul>
-
-<h2 id="visuals">Visual reports</h2>
-{% for title, svg in svg_files %}
-<div class="embeded-report">
-  <h3>{{ title }}</h3>
-{{ svg }}
+<div class="card mt-3" style="width: 480pt;">
+    <h2 id="summary" class="card-header">Summary</h2>
+    <div class="card-body">
+        <ul class="simple">
+        <li>BIDS filename: {{ bids_name }}.</li>
+        {% if pred_qa is not none %}
+        <li>MRIQC predicted QA:
+        {% if pred_qa > 0 %}<span class="qa-fail">Exclude</span>
+        {% else %}<span class="qa-pass">Pass</span>
+        {% endif %}
+        </li>
+        {% endif %}
+        <li>Date and time: {{ timestamp }}.</li>
+        <li>MRIQC version: {{ version }}.</li>
+        {% if workflow_details %}
+        <li>Workflow details:
+          <ul class="sub-simple">
+          {% for detail in workflow_details %}
+          <li>{{ detail }}</li>
+          {% endfor %}
+          </ul>
+        </li>
+        {% endif %}
+        </ul>
+    </div>
 </div>
+
+<h2 id="visuals" class="mt-5 mb-2">Visual reports</h2>
+{% for title, svg in svg_files %}
+    <div class="card mt-2">
+        <div class="card-header">{{ title }}</div>
+        <div class="card-body">
+        {{ svg }}
+        </div>
+    </div>
 {% endfor %}
 
-<h2 id="other">Other</h2>
+<h2 id="other" class="mt-5 mb-2">Other</h2>
 <div class="accordion" id="accordionOther">
   <div class="card">
     <div class="card-header" id="headingOne">
-      <h5 class="mb-0">
-        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
           Extracted Image Quality Metrics (IQMs)
         </button>
-      </h5>
     </div>
 
     <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionOther">
@@ -162,11 +204,9 @@ report</h1>
 {% if metadata %}
   <div class="card">
     <div class="card-header" id="headingTwo">
-      <h5 class="mb-0">
-        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
           Metadata
         </button>
-      </h5>
     </div>
     <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionOther">
       <div class="card-body metadata-table">
@@ -178,11 +218,9 @@ report</h1>
 {% if provenance %}
   <div class="card">
     <div class="card-header" id="headingThree">
-      <h5 class="mb-0">
-        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
           Provenance information
         </button>
-      </h5>
     </div>
     <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionOther">
       <div class="card-body provenance-table">
@@ -190,39 +228,96 @@ report</h1>
       </div>
     </div>
   </div>
-</div>
 {% endif %}
-
-{% if provenance %}
-<h2 id="feedback">Rate Image</h2>
-
-<div class="rating-form">
-<input type="hidden" value="overall" name="name" />
-<select name="rating">
-  <option value="-1">(unrated)</option>
-  <option value="0">Useless</option>
-  <option value="1">Poor result</option>
-  <option value="2">Acceptable</option>
-  <option value="3">Exceptional</option>
-</select>
-<textarea rows="2" cols="100" name="comment">
-</textarea>
 </div>
 
-<button onclick="download()">Create file</button>
-<a href="" id="a" style="visibility:hidden">Save your ratings</a>
-<br />
-<br />
+<div id="rating-menu" class="card position-fixed" style="width: 30%; top: 100px; left: 65%;">
+<div class="card-header m-0">Rate Image
+    <button type="button" class="close" aria-label="Close" id="close-rating-menu" onclick="$('#rating-menu').addClass('d-none')">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="card-body">
+    <div id="ratings-group" class="btn-group btn-group-toggle mb-2 mx-auto" style="width: 100%" data-toggle="buttons">
+        <label class="btn btn-outline-danger btn-secondary"><input type="radio" name="qc-rating" id="exclude" value="1" onclick="read_form()">Exclude</label>
+        <label class="btn btn-outline-warning btn-secondary"><input type="radio" name="qc-rating" id="poor" value="2" onclick="read_form()">Poor</label>
+        <label class="btn btn-outline-info btn-secondary"><input type="radio" name="qc-rating" id="acceptable" value="3" onclick="read_form()">Acceptable</label>
+        <label class="btn btn-outline-success btn-secondary"><input type="radio" name="qc-rating" id="excellent" value="4" onclick="read_form()">Excellent</label>
+    </div>
 
 
+<fieldset id="artifacts-group" class="form-group">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="head-motion" id="art1">
+        <label class="form-check-label" for="art1">Head motion artifacts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="eye-spillover" id="art2">
+        <label class="form-check-label" for="art2">Eye spillover through PE axis</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noneye-spillover" id="art3">
+        <label class="form-check-label" for="art3">Non-eye spillover through PE axis</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="coil-failure" id="art4">
+        <label class="form-check-label" for="art4">Coil failure</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noise-global" id="art5">
+        <label class="form-check-label" for="art5">Global noise</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noise-local" id="art6">
+        <label class="form-check-label" for="art6">Local noise</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="em-perturbation" id="art7">
+        <label class="form-check-label" for="art7">EM interference / perturbation</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="wrap-around" id="art8">
+        <label class="form-check-label" for="art8">Wrap-around</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="ghost-aliasing" id="art9">
+        <label class="form-check-label" for="art9">Aliasing ghosts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="ghosts-other" id="art10">
+        <label class="form-check-label" for="art10">Other ghosts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="inu" id="art11">
+        <label class="form-check-label" for="art11">Intensity non-uniformity</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="field-variation" id="art12">
+        <label class="form-check-label" for="art12">Temporal field variation</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="uncategorized" id="art13">
+        <label class="form-check-label" for="art13">Uncategorized artifact</label>
+    </div>
+</fieldset>
+<a class="btn btn-primary disabled" id="btn-download" href="">Download</a>
+<button type="button" class="btn btn-primary" id="post2api" onclick="post2api()">Post to WebAPI</button>
 <script type="text/javascript">
-    function toggle(id) {
-        var element = document.getElementById(id);
-        if(element.style.display == 'block')
-            element.style.display = 'none';
-        else
-            element.style.display = 'block';
-    }
+$( 'body' ).on( 'click', '#ratings-group', function(e) {
+    $('#btn-download').removeClass('disabled');
+    $('#btn-download').removeAttr('aria-disabled');
+    var payload = read_form();
+});
+$( 'body' ).on( 'click', '#artifacts-group input', function(e) {
+    var payload = read_form();
+});
 </script>
+</div>
+</div>
+</div>
+
+<p>For details on the IQMs (image quality metrics) and further information on
+the enclosed plots, please read the
+<a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
 </body>
 </html>
