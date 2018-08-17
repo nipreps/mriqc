@@ -264,7 +264,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=str(settings['output_dir'])),
+        modality='bold', out_dir=str(settings['output_dir']),
+        dataset=settings['dataset_name']),
         name='datasink', run_without_submitting=True)
 
     workflow.connect([

@@ -75,6 +75,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     acq_id = traits.Either(None, Str, usedefault=True)
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, Str, usedefault=True)
+    dataset = Str(desc='dataset identifier')
     metadata = traits.Dict()
     provenance = traits.Dict()
 
@@ -178,6 +179,9 @@ class IQMFileSink(SimpleInterface):
         if self._out_dict.get('bids_meta') is None:
             self._out_dict['bids_meta'] = {}
         self._out_dict['bids_meta'].update(id_dict)
+
+        if isdefined(self.inputs.dataset):
+            self._out_dict['bids_meta']['dataset'] = self.inputs.dataset
 
         # Fill in the "provenance" key
         # Predict QA from IQMs and add to metadata
