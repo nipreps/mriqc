@@ -37,7 +37,7 @@ function post2api() {
         'rating': payload['rating'],
         'md5sum': md5sum,
         'name': "",
-        'comment': payload['artifacts']
+        'comment': JSON.stringify(payload['artifacts'])
     };
 
     // disable developement releases
