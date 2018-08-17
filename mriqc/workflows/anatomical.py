@@ -260,7 +260,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     datasink = pe.Node(IQMFileSink(
         modality=modality, out_dir=str(settings['output_dir']),
-        dataset=settings['dataset_name']),
+        dataset=settings.get('dataset_name', 'unknown')),
         name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
