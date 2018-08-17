@@ -275,7 +275,7 @@ jobs:
                        -v $PWD:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ participant \
-                       -vv --verbose-reports --profile -m T1w \
+                       -vv --verbose-reports --profile -m T1w --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - run:
@@ -385,7 +385,7 @@ jobs:
                        -v $PWD:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ participant \
-                       -vv --verbose-reports --profile -m bold \
+                       -vv --verbose-reports --profile -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict

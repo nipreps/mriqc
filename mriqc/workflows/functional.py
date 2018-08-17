@@ -255,8 +255,10 @@ def compute_iqms(settings, name='ComputeIQMs'):
     ])
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(), name='metadata')
-    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
+    meta = pe.Node(ReadSidecarJSON(), name='metadata',
+                   run_without_submitting=True)
+    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance',
+                      run_without_submitting=True)
     addprov.inputs.settings = {
         'fd_thres': settings.get('fd_thres', 0.2),
         'hmc_fsl': settings.get('hmc_fsl', True),
@@ -264,7 +266,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=str(settings['output_dir'])),
+        modality='bold', out_dir=str(settings['output_dir']),
+        dataset=settings.get('dataset_name', 'unknown')),
         name='datasink', run_without_submitting=True)
 
     workflow.connect([

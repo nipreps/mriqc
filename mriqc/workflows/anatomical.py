@@ -259,7 +259,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
                                for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
     datasink = pe.Node(IQMFileSink(
-        modality=modality, out_dir=str(settings['output_dir'])),
+        modality=modality, out_dir=str(settings['output_dir']),
+        dataset=settings.get('dataset_name', 'unknown')),
         name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
