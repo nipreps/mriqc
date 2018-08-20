@@ -50,8 +50,7 @@ def main():
     order = range(1, len(file))
     random.shuffle(order)
     # pick a random row
-    for i in range(0, len(order)):
-        row = order[i]
+    for row in order:
         # check how many entires it has
         curEnt = num_rows(file[row])
         if curEnt <= 1:

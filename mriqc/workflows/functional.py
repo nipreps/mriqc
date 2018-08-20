@@ -24,7 +24,6 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os.path as op
 from pathlib import Path
 
 from nipype.pipeline import engine as pe
@@ -720,7 +719,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     # Warp segmentation into EPI space
     invt = pe.Node(ants.ApplyTransforms(
         float=True,
-        input_image=op.join(mni_template, '1mm_parc.nii.gz'),
+        input_image=str(Path(mni_template) / '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
         name='ResampleSegmentation')
 
