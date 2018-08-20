@@ -189,7 +189,7 @@ def generate_tsv(output_dir, mod):
 
     # Set filename at front
     cols.insert(0, cols.pop(cols.index('bids_name')))
-    dataframe[cols].to_csv(out_tsv, index=False, sep='\t')
+    dataframe[cols].to_csv(str(out_tsv), index=False, sep='\t')
     return dataframe, out_tsv
 
 
