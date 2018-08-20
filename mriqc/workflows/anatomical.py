@@ -365,11 +365,9 @@ def individual_reports(settings, name='ReportsWorkflow'):
     if not verbose:
         return workflow
 
-    from ..interfaces.viz import PlotContours
-    from ..viz.utils import plot_bg_dist
-    plot_bgdist = pe.Node(niu.Function(input_names=['in_file'], output_names=['out_file'],
-                          function=plot_bg_dist), name='PlotBackground')
+    from ..interfaces.viz import PlotContours, PlotDistribution
 
+    plot_bgdist = pe.Node(PlotDistribution(), name='PlotBackground')
     plot_segm = pe.Node(PlotContours(
         display_mode='z', levels=[.5, 1.5, 2.5], cut_coords=10,
         colors=['r', 'g', 'b']), name='PlotSegmentation')
