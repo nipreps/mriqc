@@ -9,6 +9,6 @@ from .anatomical import \
     StructuralQC, ArtifactMask, ComputeQI2, Harmonize, RotationMask
 from .functional import FunctionalQC, Spikes
 from .bids import ReadSidecarJSON, IQMFileSink
-from .viz import PlotMosaic, PlotContours, PlotSpikes
+from .viz import PlotMosaic, PlotContours, PlotSpikes, PlotDistribution
 from .common import ConformImage, EnsureSize
 from .webapi import UploadIQMs

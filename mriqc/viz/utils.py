@@ -11,6 +11,7 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import math
+from pathlib import Path
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -19,8 +20,6 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
-
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -423,8 +422,6 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
 def plot_segmentation(anat_file, segmentation, out_file,
                       **kwargs):
-    import nibabel as nb
-    import numpy as np
     from nilearn.plotting import plot_anat
 
     vmax = kwargs.get('vmax')
@@ -454,24 +451,22 @@ def plot_segmentation(anat_file, segmentation, out_file,
     return out_file
 
 
-def plot_bg_dist(in_file):
-    import os.path as op  # pylint: disable=W0621
-    import numpy as np
+def plot_bg_dist(in_file, cwd=None):
     import json
-    from io import open  # pylint: disable=W0622
-    import matplotlib.pyplot as plt
     # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
     # rc('text', usetex=True)
 
     # Write out figure of the fitting
-    out_file = op.abspath('background_fit.svg')
+    if cwd is None:
+        cwd = Path()
+
+    out_file = (cwd / 'background_fit.svg').resolve()
     try:
         with open(in_file, 'r') as jsonf:
             data = json.load(jsonf)
     except ValueError:
-        with open(out_file, 'w') as ofh:
-            ofh.write('<p>Background noise fitting could not be plotted.</p>')
-        return out_file
+        out_file.write_text('<p>Background noise fitting could not be plotted.</p>')
+        return str(out_file)
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
@@ -489,15 +484,13 @@ def plot_bg_dist(in_file):
     ax1.plot(left, data['y_hat'], 'k--', linewidth=1.2)
     ax1.plot((data['x_cutoff'], data['x_cutoff']), ax1.get_ylim(), 'k--')
 
-    fig.savefig(out_file, format='svg', dpi=300)
+    fig.savefig(str(out_file), format='svg', dpi=300)
     plt.close()
-    return out_file
+    return str(out_file)
 
 
 def _get_limits(nifti_file, only_plot_noise=False):
-    from builtins import bytes, str   # pylint: disable=W0622
-
-    if isinstance(nifti_file, (str, bytes)):
+    if isinstance(nifti_file, str):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         data = nii.get_data()
     else:

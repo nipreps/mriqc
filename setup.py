@@ -4,19 +4,16 @@
 # @Date:   2015-11-19 16:44:27
 # @Last Modified by:   oesteban
 """ MRIQC setup script """
+
+
 def main():
     """ Install entry-point """
     import os
     from setuptools import setup, find_packages
     from mriqc.__about__ import (
-        __version__,
         __author__,
         __email__,
-        __maintainer__,
-        __copyright__,
-        __credits__,
         __license__,
-        __status__,
         __description__,
         __longdesc__,
         __url__,
@@ -31,26 +28,27 @@ def main():
     )
 
     pkg_data = {
-        'mriqc': ['data/*.yml',
-                  'data/*.tfm',
-                  'data/csv/*.csv',
-                  'data/mclf_*.pklz',
-                  'data/reports/*.rst',
-                  'data/reports/*.html',
-                  'data/reports/resources/*',
-                  'data/reports/embed_resources/*',
-                  'data/tests/*',
-                  'data/mni/*.nii.gz'
-        ]
+        'mriqc': [
+            'data/*.yml',
+            'data/*.tfm',
+            'data/csv/*.csv',
+            'data/mclf_*.pklz',
+            'data/reports/*.rst',
+            'data/reports/*.html',
+            'data/reports/resources/*',
+            'data/reports/embed_resources/*',
+            'data/tests/*',
+            'data/mni/*.nii.gz',
+        ],
     }
 
     version = None
     cmdclass = {}
     root_dir = os.path.dirname(os.path.realpath(__file__))
-    if os.path.isfile(os.path.join(root_dir, 'mriqc', 'VERSION')):
-        with open(os.path.join(root_dir, 'mriqc', 'VERSION')) as vfile:
+    if os.path.isfile(os.path.join(root_dir, PACKAGE_NAME, 'VERSION')):
+        with open(os.path.join(root_dir, PACKAGE_NAME, 'VERSION')) as vfile:
             version = vfile.readline().strip()
-        pkg_data['mriqc'].insert(0, 'VERSION')
+        pkg_data[PACKAGE_NAME].insert(0, 'VERSION')
 
     if version is None:
         import versioneer
