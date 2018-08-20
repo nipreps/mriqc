@@ -57,7 +57,7 @@ class ReadSidecarJSON(SimpleInterface):
 
         # Crawl back to the BIDS root
         path = Path(self.inputs.in_file)
-        for i in range(1, 3):
+        for i in range(1, 4):
             bids_root = path.parents[i]
             if str(bids_root).startswith('sub-'):
                 break
