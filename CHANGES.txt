@@ -1,3 +1,9 @@
+0.14.1 (August 20, 2018)
+========================
+
+  * [FIX] Calculate relative path with sessions (#742) @oesteban
+  * [ENH] Add a toggle button to rating widget (#743) @oesteban
+
 0.14.0 (August 17, 2018)
 ========================
 
