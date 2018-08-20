@@ -58,8 +58,8 @@ class ReadSidecarJSON(SimpleInterface):
         # Crawl back to the BIDS root
         path = Path(self.inputs.in_file)
         for i in range(1, 4):
-            bids_root = path.parents[i]
-            if str(bids_root).startswith('sub-'):
+            if str(path.parents[i].name).startswith('sub-'):
+                bids_root = path.parents[i + 1]
                 break
 
         self._results['relative_path'] = str(path.relative_to(bids_root))
