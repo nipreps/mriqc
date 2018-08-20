@@ -76,6 +76,20 @@ function post2api() {
     };
     ratingReq.send(JSON.stringify(params));
 };
+
+function toggle_rating() {
+    if ($('#rating-menu').hasClass('d-none')) {
+        $('#rating-menu').removeClass('d-none');
+        $('#rating-toggler').addClass('active');
+        $('#rating-toggler').removeClass('btn-outline-primary');
+        $('#rating-toggler').addClass('btn-primary');
+    } else {
+        $('#rating-menu').addClass('d-none');
+        $('#rating-toggler').removeClass('active');
+        $('#rating-toggler').removeClass('btn-primary');
+        $('#rating-toggler').addClass('btn-outline-primary');
+    }
+};
 </script>
 <style type="text/css">
 body {
@@ -141,6 +155,7 @@ div#accordionOther {
       <li class="nav-item"><a class="nav-link" href="#other">Other</a></li>
     </ul>
 </div>
+<a id="rating-toggler" href="#" class="btn btn-primary float-right mb-3 mb-md-0 ml-md-3 active">Toggle rating widget</a>
 </nav>
 <noscript>
     <h1 class="text-danger"> The navigation menu uses Javascript. Without it this report might not work as expected </h1>
@@ -233,7 +248,7 @@ report</h1>
 
 <div id="rating-menu" class="card position-fixed" style="width: 30%; top: 100px; left: 65%;">
 <div class="card-header m-0">Rate Image
-    <button type="button" class="close" aria-label="Close" id="close-rating-menu" onclick="$('#rating-menu').addClass('d-none')">
+    <button type="button" class="close" aria-label="Close" id="close-rating-menu" onclick="toggle_rating()">
         <span aria-hidden="true">&times;</span>
     </button>
 </div>
@@ -312,8 +327,13 @@ $( 'body' ).on( 'click', '#ratings-group', function(e) {
     $('#btn-download').removeAttr('aria-disabled');
     var payload = read_form();
 });
+
 $( 'body' ).on( 'click', '#artifacts-group input', function(e) {
     var payload = read_form();
+});
+
+$( 'body' ).on( 'click', '#rating-toggler', function(e) {
+    toggle_rating();
 });
 </script>
 </div>
