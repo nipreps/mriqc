@@ -1,3 +1,9 @@
+0.14.2 (August 20, 2018)
+========================
+
+  * [FIX] Preempt pandas resolving Path objects (#746) @oesteban
+  * [FIX] Codacy issues (#745) @oesteban
+
 0.14.1 (August 20, 2018)
 ========================
 
