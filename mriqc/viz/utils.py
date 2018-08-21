@@ -11,6 +11,7 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import math
+from pathlib import Path
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -19,8 +20,6 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
 import seaborn as sns
-
-from builtins import zip, range, str, bytes  # pylint: disable=W0622
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -423,8 +422,6 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
 def plot_segmentation(anat_file, segmentation, out_file,
                       **kwargs):
-    import nibabel as nb
-    import numpy as np
     from nilearn.plotting import plot_anat
 
     vmax = kwargs.get('vmax')
@@ -455,9 +452,7 @@ def plot_segmentation(anat_file, segmentation, out_file,
 
 
 def _get_limits(nifti_file, only_plot_noise=False):
-    from builtins import bytes, str   # pylint: disable=W0622
-
-    if isinstance(nifti_file, (str, bytes)):
+    if isinstance(nifti_file, str):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
         data = nii.get_data()
     else:

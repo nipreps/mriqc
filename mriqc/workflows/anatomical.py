@@ -31,7 +31,6 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 
 """
-import os.path as op
 from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
@@ -168,7 +167,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
 
     # Have some settings handy
     tpl_id = settings.get('template_id', 'mni_icbm152_nlin_asym_09c')
-    mni_template = getattr(niwgetters, 'get_{}'.format(tpl_id))()
+    mni_template = Path(getattr(niwgetters, 'get_{}'.format(tpl_id))())
 
     # Define workflow interface
     workflow = pe.Workflow(name=name)
@@ -191,8 +190,8 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
         num_threads=min(settings.get('ants_nthreads', DEFAULTS['ants_nthreads']),
                         settings.get('n_procs', 1)),
         mem_gb=3)
-    norm.inputs.reference_mask = op.join(
-        mni_template, '%dmm_brainmask.nii.gz' % int(resolution))
+    norm.inputs.reference_mask = str(
+        mni_template / ('%dmm_brainmask.nii.gz' % int(resolution)))
 
     workflow.connect([
         (inputnode, norm, [('moving_image', 'moving_image'),
@@ -255,11 +254,13 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         dimension=3, default_value=0, interpolation='Linear',
         float=True),
         iterfield=['input_image'], name='MNItpms2t1')
-    invt.inputs.input_image = [op.join(get_mni_icbm152_nlin_asym_09c(), fname + '.nii.gz')
-                               for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
+    invt.inputs.input_image = [
+        str(Path(get_mni_icbm152_nlin_asym_09c()) / (fname + '.nii.gz'))
+        for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
 
     datasink = pe.Node(IQMFileSink(
-        modality=modality, out_dir=str(settings['output_dir'])),
+        modality=modality, out_dir=str(settings['output_dir']),
+        dataset=settings.get('dataset_name', 'unknown')),
         name='datasink', run_without_submitting=True)
     datasink.inputs.modality = modality
 
@@ -489,7 +490,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
                                         interpolation='Linear', float=True), name='invert_xfm')
-    invt.inputs.input_image = op.join(get_mni_icbm152_nlin_asym_09c(), '1mm_headmask.nii.gz')
+    invt.inputs.input_image = str(Path(get_mni_icbm152_nlin_asym_09c()) / '1mm_headmask.nii.gz')
 
     binarize = pe.Node(niu.Function(function=_binarize), name='Binarize')
 
@@ -567,10 +568,12 @@ def _binarize(in_file, threshold=0.5, out_file=None):
 
 
 def _estimate_snr(in_file, seg_file):
+    import numpy as np
     import nibabel as nb
     from mriqc.qc.anatomical import snr
-    out_snr = snr(nb.load(in_file).get_data(), nb.load(seg_file).get_data(),
-                  fglabel='wm')
+    data = nb.load(in_file).get_data()
+    mask = nb.load(seg_file).get_data() == 2  # WM label
+    out_snr = snr(np.mean(data[mask]), data[mask].std(), mask.sum())
     return out_snr
 
 

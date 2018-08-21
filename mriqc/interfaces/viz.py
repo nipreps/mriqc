@@ -10,15 +10,14 @@
 """ Visualization interfaces """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import os.path as op
+from pathlib import Path
 import numpy as np
 from nipype.interfaces.base import (
     traits, TraitedSpec, File, BaseInterfaceInputSpec, isdefined,
     SimpleInterface)
 
 from io import open  # pylint: disable=W0622
-from ..utils.misc import split_ext
-from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
+from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes, plot_bg_dist)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -49,13 +48,15 @@ class PlotContours(SimpleInterface):
     output_spec = PlotContoursOutputSpec
 
     def _run_interface(self, runtime):
-        out_file = None
-        if isdefined(self.inputs.out_file):
-            out_file = self.inputs.out_file
+        in_file_ref = Path(self.inputs.in_file)
 
-        fname, _ = split_ext(self.inputs.in_file, out_file)
-        out_file = op.abspath('plot_' + fname + '_contours.svg')
-        self._results['out_file'] = out_file
+        if isdefined(self.inputs.out_file):
+            in_file_ref = Path(self.inputs.out_file)
+
+        fname = in_file_ref.name.rstrip(
+            ''.join(in_file_ref.suffixes))
+        out_file = (Path(runtime.cwd) / ('plot_%s_contours.svg' % fname)).resolve()
+        self._results['out_file'] = str(out_file)
 
         vmax = None if not isdefined(self.inputs.vmax) else self.inputs.vmax
         vmin = None if not isdefined(self.inputs.vmin) else self.inputs.vmin
@@ -63,7 +64,7 @@ class PlotContours(SimpleInterface):
         plot_segmentation(
             self.inputs.in_file,
             self.inputs.in_contours,
-            out_file=out_file,
+            out_file=str(out_file),
             cut_coords=self.inputs.cut_coords,
             display_mode=self.inputs.display_mode,
             levels=self.inputs.levels,
@@ -121,7 +122,7 @@ class PlotMosaic(SimpleInterface):
             bbox_mask_file=mask,
             cmap=self.inputs.cmap,
             annotate=self.inputs.annotate)
-        self._results['out_file'] = op.abspath(self.inputs.out_file)
+        self._results['out_file'] = str((Path(runtime.cwd) / self.inputs.out_file).resolve())
         return runtime
 
 
@@ -142,7 +143,7 @@ class PlotSpikes(SimpleInterface):
     output_spec = PlotSpikesOutputSpec
 
     def _run_interface(self, runtime):
-        out_file = op.abspath(self.inputs.out_file)
+        out_file = str((Path(runtime.cwd) / self.inputs.out_file).resolve())
         self._results['out_file'] = out_file
 
         spikes_list = np.loadtxt(self.inputs.in_spikes, dtype=int).tolist()

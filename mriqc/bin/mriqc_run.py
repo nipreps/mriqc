@@ -67,6 +67,7 @@ def get_parser():
     g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
                         choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
                         help='filter input dataset by MRI type ("T1w", "T2w", or "bold")')
+    g_bids.add_argument('--dsname', type=str, help='a dataset name')
 
     # Control instruments
     g_outputs = parser.add_argument_group('Instrumental options')
@@ -86,8 +87,7 @@ def get_parser():
                                 'to MRIQC\'s metrics repository.')
     g_outputs.add_argument('--email', action='store', default='', type=str,
                            help='Email address to include with quality metric submission.')
-    g_outputs.add_argument("-v", "--verbose", dest="verbose_count",
-                           action="count", default=0,
+    g_outputs.add_argument("-v", "--verbose", dest="verbose_count", action="count", default=0,
                            help="increases log verbosity for each occurence, debug level is -vvv")
 
     g_outputs.add_argument(
@@ -347,6 +347,9 @@ def init_mriqc(opts, retval):
 
     if opts.ants_settings:
         settings['ants_settings'] = opts.ants_settings
+
+    if opts.dsname:
+        settings['dataset_name'] = opts.dsname
 
     log_dir = settings['output_dir'] / 'logs'
 

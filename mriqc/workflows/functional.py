@@ -24,7 +24,6 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
-import os.path as op
 from pathlib import Path
 
 from nipype.pipeline import engine as pe
@@ -255,8 +254,10 @@ def compute_iqms(settings, name='ComputeIQMs'):
     ])
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(), name='metadata')
-    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance')
+    meta = pe.Node(ReadSidecarJSON(), name='metadata',
+                   run_without_submitting=True)
+    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance',
+                      run_without_submitting=True)
     addprov.inputs.settings = {
         'fd_thres': settings.get('fd_thres', 0.2),
         'hmc_fsl': settings.get('hmc_fsl', True),
@@ -264,7 +265,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=str(settings['output_dir'])),
+        modality='bold', out_dir=str(settings['output_dir']),
+        dataset=settings.get('dataset_name', 'unknown')),
         name='datasink', run_without_submitting=True)
 
     workflow.connect([
@@ -717,7 +719,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     # Warp segmentation into EPI space
     invt = pe.Node(ants.ApplyTransforms(
         float=True,
-        input_image=op.join(mni_template, '1mm_parc.nii.gz'),
+        input_image=str(Path(mni_template) / '1mm_parc.nii.gz'),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
         name='ResampleSegmentation')
 

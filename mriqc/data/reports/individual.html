@@ -6,34 +6,97 @@
 <meta name="generator" content="MRIQC" />
 <title>MRIQC: individual {{ modality }}
 report</title>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<script>
+function read_form() {
+    var ds = "{{ dataset or 'unknown' }}";
+    var sub = "{{ bids_name }}";
+    var artifacts = [];
+    $('#artifacts-group input:checked').each(function() {
+        artifacts.push($(this).attr('name'));
+    });
+
+    var payload = {
+        'dataset': ds,
+        'subject': sub,
+        'rating': $('input[name=qc-rating]:checked').val(),
+        'artifacts': artifacts
+    };
+    var file = new Blob([JSON.stringify(payload)], {type: 'text/json'});
+    $('#btn-download').attr('href', URL.createObjectURL(file));
+    $('#btn-download').attr('download', payload['dataset'] + "_" + payload['subject'] + ".json");
+    return payload
+};
+
+function post2api() {
+    var payload = read_form();
+    var md5sum = "{{ md5sum }}";
+    var params = {
+        'rating': payload['rating'],
+        'md5sum': md5sum,
+        'name': "",
+        'comment': JSON.stringify(payload['artifacts'])
+    };
+
+    // disable developement releases
+    var authorization = "<secret_token>";
+    if (authorization.includes("secret_token")) {
+        $('#post2api').removeClass('btn-primary');
+        $('#post2api').addClass('btn-warning');
+        $('#post2api').attr('disabled', true);
+        $('#post2api').attr('aria-disabled', true);
+        $('#post2api').prop('disabled');
+        $('#post2api').addClass('disabled');
+        $('#post2api').html('Disabled');
+        $('#post2api').removeClass('active');
+        return
+    };
+
+    var ratingReq = new XMLHttpRequest();
+    ratingReq.open("POST", "{{ webapi_url }}/rating");
+    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    ratingReq.setRequestHeader("Authorization", authorization);
+    ratingReq.onload = function () {
+        status = ratingReq.status;
+        $('#post2api').removeClass('btn-primary');
+        $('#post2api').attr('disabled', true);
+        $('#post2api').attr('aria-disabled', true);
+        $('#post2api').prop('disabled');
+        $('#post2api').addClass('disabled');
+        $('#post2api').removeClass('active');
+        if (status === "201") {
+            $('#post2api').addClass('btn-success');
+            $('#post2api').html('Posted!');
+        } else {
+            $('#post2api').addClass('btn-danger');
+            $('#post2api').html('Failed');
+        };
+    };
+    ratingReq.send(JSON.stringify(params));
+};
+
+function toggle_rating() {
+    if ($('#rating-menu').hasClass('d-none')) {
+        $('#rating-menu').removeClass('d-none');
+        $('#rating-toggler').addClass('active');
+        $('#rating-toggler').removeClass('btn-outline-primary');
+        $('#rating-toggler').addClass('btn-primary');
+    } else {
+        $('#rating-menu').addClass('d-none');
+        $('#rating-toggler').removeClass('active');
+        $('#rating-toggler').removeClass('btn-primary');
+        $('#rating-toggler').addClass('btn-outline-primary');
+    }
+};
+</script>
 <style type="text/css">
-body { font-family: helvetica; }
-
-/* used to remove borders from tables and images */
-.borderless, table.borderless td, table.borderless th {
-  border: 0 }
-
-table.borderless td, table.borderless th {
-  /* Override padding for "table.docutils td" with "! important".
-     The right padding separates the table cells. */
-  padding: 0 0.5em 0 0 ! important }
-
-
-div.admonition, div.attention, div.caution, div.danger, div.error,
-div.hint, div.important, div.note, div.tip, div.warning {
-  margin: 2em ;
-  border: medium outset ;
-  padding: 1em }
-
-div.admonition p.admonition-title, div.hint p.admonition-title,
-div.important p.admonition-title, div.note p.admonition-title,
-div.tip p.admonition-title {
-  font-weight: bold ;
+body {
+  font-family: helvetica;
+  padding: 50px 10px 10px;
 }
 
-div.attention p.admonition-title, div.caution p.admonition-title,
-div.danger p.admonition-title, div.error p.admonition-title,
 div.warning p.admonition-title, .code .error {
   color: red ;
   font-weight: bold ;
@@ -44,30 +107,8 @@ span.problematic {
   font-weight: bold ;
 }
 
-h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
-h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
-  margin-top: 0.4em }
-
-h1.title {
-  text-align: center }
-
-h2.subtitle {
-  text-align: center }
-
-ol.simple, ul.simple {
-  margin-bottom: 1em }
-
 p.label {
   white-space: nowrap }
-
-pre.code .ln { color: grey; } /* line numbers */
-pre.code, code { background-color: #eeeeee }
-pre.code .comment, code .comment { color: #5C6576 }
-pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
-pre.code .literal.string, code .literal.string { color: #0C5404 }
-pre.code .name.builtin, code .name.builtin { color: #352B84 }
-pre.code .deleted, code .deleted { background-color: #DEB0A1}
-pre.code .inserted, code .inserted { background-color: #A3D289}
 
 span.section-subtitle {
   /* font-size relative to parent (h1..h6 element) */
@@ -82,15 +123,23 @@ div.embeded-report {
 div.embeded-report svg { width: 100%; }
 
 span.qa-fail {
-  color: white;
-  font-weight: bold;
-  background-color: #FF6347;
+    color: white;
+    font-weight: bold;
+    background-color: #FF6347;
 }
 
 span.qa-pass {
-  color: white;
-  font-weight: bold;
-  background-color: #32CD32;
+    color: white;
+    font-weight: bold;
+    background-color: #32CD32;
+}
+
+div#accordionOther {
+    margin: 0 20px;
+}
+
+.add-padding {
+    padding-top: 15px;
 }
 
 </style>
@@ -98,176 +147,201 @@ span.qa-pass {
 <body>
 <div class="document">
 
-<h1>MRIQC: individual {{ modality }}
+<nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
+<div class="collapse navbar-collapse">
+    <ul class="navbar-nav">
+      <li class="nav-item"><a class="nav-link" href="#summary">Summary</a></li>
+      <li class="nav-item"><a class="nav-link" href="#visuals">Visual reports</a></li>
+      <li class="nav-item"><a class="nav-link" href="#other">Other</a></li>
+    </ul>
+</div>
+<a id="rating-toggler" href="#" class="btn btn-primary float-right mb-3 mb-md-0 ml-md-3 active">Toggle rating widget</a>
+</nav>
+<noscript>
+    <h1 class="text-danger"> The navigation menu uses Javascript. Without it this report might not work as expected </h1>
+</noscript>
+
+<h1 class="mt-5 mb-5">MRIQC: individual {{ modality }}
 report</h1>
 
-<h2>Summary</h2>
-<ul class="simple">
-<li>Subject ID: {{ sub_id }}.</li>
-{% if pred_qa is not none %}
-<li>MRIQC predicted QA:
-{% if pred_qa > 0 %}<span class="qa-fail">Exclude</span>
-{% else %}<span class="qa-pass">Pass</span>
-{% endif %}
-</li>
-{% endif %}
-<li>Date and time: {{ timestamp }}.</li>
-<li>MRIQC version: {{ version }}.</li>
-{% if workflow_details %}
-<li>Workflow details:
-  <ul class="sub-simple">
-  {% for detail in workflow_details %}
-  <li>{{ detail }}</li>
-  {% endfor %}
-  </ul>
-</li>
-{% endif %}
-</ul>
-
-<h2>Visual reports</h2>
-{% for title, svg in svg_files %}
-<div class="embeded-report">
-  <h3>{{ title }}</h3>
-{{ svg }}
+<div class="card mt-3" style="width: 480pt;">
+    <h2 id="summary" class="card-header">Summary</h2>
+    <div class="card-body">
+        <ul class="simple">
+        <li>BIDS filename: {{ bids_name }}.</li>
+        {% if pred_qa is not none %}
+        <li>MRIQC predicted QA:
+        {% if pred_qa > 0 %}<span class="qa-fail">Exclude</span>
+        {% else %}<span class="qa-pass">Pass</span>
+        {% endif %}
+        </li>
+        {% endif %}
+        <li>Date and time: {{ timestamp }}.</li>
+        <li>MRIQC version: {{ version }}.</li>
+        {% if workflow_details %}
+        <li>Workflow details:
+          <ul class="sub-simple">
+          {% for detail in workflow_details %}
+          <li>{{ detail }}</li>
+          {% endfor %}
+          </ul>
+        </li>
+        {% endif %}
+        </ul>
+    </div>
 </div>
+
+<h2 id="visuals" class="mt-5 mb-2">Visual reports</h2>
+{% for title, svg in svg_files %}
+    <div class="card mt-2">
+        <div class="card-header">{{ title }}</div>
+        <div class="card-body">
+        {{ svg }}
+        </div>
+    </div>
 {% endfor %}
 
-
-<h2>Extracted Image Quality Metrics (IQMs)</h2>
-<div class="metadata-table">
-{{ imparams }}
-</div>
-
-{% if metadata %}
-<h2>Metadata</h2>
-<div class="metadata-table">
-{{ metadata }}
-</div>
-{% endif %}
-
-{% if provenance %}
-<h2>Provenance information</h2>
-<div class="provenance-table">
-{{ provenance }}
-</div>
-{% endif %}
-
-{% if provenance %}
-<h2>Rate Image</h2>
-<div class="container">
-<form action="javascript:sendRating()">
-    <div class="form-group">
-        <input id="ratingField" type="hidden" required>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating0" value="0" required> Invalid</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating1" value="1"> Exclude</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating2" value="2"> Usable</label></div>
-        <div class="radio"><label><input type="radio" name="inlineRadio" id="inlineRating3" value="3"> Good</label></div>
-        Name: <br><input id="ratingName" type="text" class="form-control"><br>
-        Comments: <br><textarea rows="4" id="ratingComment" type="text" class="form-control"></textarea><br>
-        <input type="submit" value="Submit">
+<h2 id="other" class="mt-5 mb-2">Other</h2>
+<div class="accordion" id="accordionOther">
+  <div class="card">
+    <div class="card-header" id="headingOne">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+          Extracted Image Quality Metrics (IQMs)
+        </button>
     </div>
-</form>
-<div id="submitResAlert" role="alert"></div>
-<div class="hidden" id="allRatingsDiv">
-<table class="table table-striped">
-<thead>
-    <tr>
-        <td>Rating</td>
-        <td>Count</td>
-    </tr>
-<tbody>
-    <tr>
-        <td>Invalid</td>
-        <td id="allRatings0"></td>
-    </tr>
-    <tr>
-        <td>Exclude</td>
-        <td id="allRatings1"></td>
-    </tr>
-    <tr>
-        <td>Usable</td>
-        <td id="allRatings2"></td>
-    </tr>
-    <tr>
-        <td>Good</td>
-        <td id="allRatings3"></td>
-    </tr>
-</tbody>
-</thead>
-</table>
 
+    <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionOther">
+      <div class="card-body metadata-table">
+      {{ imparams }}
+      </div>
+    </div>
+  </div>
+{% if metadata %}
+  <div class="card">
+    <div class="card-header" id="headingTwo">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Metadata
+        </button>
+    </div>
+    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionOther">
+      <div class="card-body metadata-table">
+      {{ metadata }}
+      </div>
+    </div>
+  </div>
 {% endif %}
+{% if provenance %}
+  <div class="card">
+    <div class="card-header" id="headingThree">
+        <button class="btn btn-link collapsed mb-0 mt-0 pm-0 pt-0" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+          Provenance information
+        </button>
+    </div>
+    <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionOther">
+      <div class="card-body provenance-table">
+      {{ provenance }}
+      </div>
+    </div>
+  </div>
+{% endif %}
+</div>
+
+<div id="rating-menu" class="card position-fixed" style="width: 30%; top: 100px; left: 65%;">
+<div class="card-header m-0">Rate Image
+    <button type="button" class="close" aria-label="Close" id="close-rating-menu" onclick="toggle_rating()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="card-body">
+    <div id="ratings-group" class="btn-group btn-group-toggle mb-2 mx-auto" style="width: 100%" data-toggle="buttons">
+        <label class="btn btn-outline-danger btn-secondary"><input type="radio" name="qc-rating" id="exclude" value="1" onclick="read_form()">Exclude</label>
+        <label class="btn btn-outline-warning btn-secondary"><input type="radio" name="qc-rating" id="poor" value="2" onclick="read_form()">Poor</label>
+        <label class="btn btn-outline-info btn-secondary"><input type="radio" name="qc-rating" id="acceptable" value="3" onclick="read_form()">Acceptable</label>
+        <label class="btn btn-outline-success btn-secondary"><input type="radio" name="qc-rating" id="excellent" value="4" onclick="read_form()">Excellent</label>
+    </div>
+
+
+<fieldset id="artifacts-group" class="form-group">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="head-motion" id="art1">
+        <label class="form-check-label" for="art1">Head motion artifacts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="eye-spillover" id="art2">
+        <label class="form-check-label" for="art2">Eye spillover through PE axis</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noneye-spillover" id="art3">
+        <label class="form-check-label" for="art3">Non-eye spillover through PE axis</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="coil-failure" id="art4">
+        <label class="form-check-label" for="art4">Coil failure</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noise-global" id="art5">
+        <label class="form-check-label" for="art5">Global noise</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="noise-local" id="art6">
+        <label class="form-check-label" for="art6">Local noise</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="em-perturbation" id="art7">
+        <label class="form-check-label" for="art7">EM interference / perturbation</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="wrap-around" id="art8">
+        <label class="form-check-label" for="art8">Problematic FoV prescription / Wrap-around</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="ghost-aliasing" id="art9">
+        <label class="form-check-label" for="art9">Aliasing ghosts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="ghosts-other" id="art10">
+        <label class="form-check-label" for="art10">Other ghosts</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="inu" id="art11">
+        <label class="form-check-label" for="art11">Intensity non-uniformity</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="field-variation" id="art12">
+        <label class="form-check-label" for="art12">Temporal field variation</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="postprocessing" id="art13">
+        <label class="form-check-label" for="art13">Reconstruction and postprocessing (e.g. denoising, defacing, resamplings)</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="uncategorized" id="art0">
+        <label class="form-check-label" for="art0">Uncategorized artifact</label>
+    </div>
+</fieldset>
+<a class="btn btn-primary disabled" id="btn-download" href="">Download</a>
+<button type="button" class="btn btn-primary" id="post2api" onclick="post2api()">Post to WebAPI</button>
+<script type="text/javascript">
+$( 'body' ).on( 'click', '#ratings-group', function(e) {
+    $('#btn-download').removeClass('disabled');
+    $('#btn-download').removeAttr('aria-disabled');
+    var payload = read_form();
+});
+
+$( 'body' ).on( 'click', '#artifacts-group input', function(e) {
+    var payload = read_form();
+});
+
+$( 'body' ).on( 'click', '#rating-toggler', function(e) {
+    toggle_rating();
+});
+</script>
+</div>
+</div>
+</div>
 
 <p>For details on the IQMs (image quality metrics) and further information on
 the enclosed plots, please read the
 <a class="reference external" href="http://mriqc.readthedocs.io/en/stable/measures.html">documentation</a>.</p>
-</div>
-{% if provenance %}
-<script type="text/javascript">
-var sentOnce = false;
-
-function setAllRatings(allRatings) {
-    allRatings['_items'].sort(function(a, b) {
-        if(a['_id'] < b['_id']) return -1;
-        if(a['_id'] > b['_id']) return 1;
-        return 0;
-    });
-    console.log(allRatings);
-    document.getElementById("allRatings0").textContent = allRatings['_items'][0]['count'];
-    document.getElementById("allRatings1").textContent = allRatings['_items'][1]['count'];
-    document.getElementById("allRatings2").textContent = allRatings['_items'][2]['count'];
-    document.getElementById("allRatings3").textContent = allRatings['_items'][3]['count'];
-    document.getElementById("allRatingsDiv").classList.remove("hidden");
-};
-
-function sendRating() {
-    var allRatings;
-    var rating;
-    var radios = document.getElementsByName("inlineRadio");
-    for (var i = 0; i < radios.length; i++) {
-        if (radios[i].checked) {
-            rating = radios[i].value;
-            break;
-        }
-    }
-    var md5sum = "{{ md5sum }}";
-    var name = document.getElementById("ratingName").value;
-    var comment = document.getElementById("ratingComment").value;
-    var params = {'rating': rating, 'md5sum': md5sum, 'name': name, 'comment': comment};
-
-    var ratingReq = new XMLHttpRequest();
-    var allRatingsReq = new XMLHttpRequest();
-    var aggParam = '{\"$value\":\"' + md5sum + '\"}';
-    allRatingsReq.open("GET", "{{ webapi_url }}/rating_counts?aggregate=" + aggParam);
-    allRatingsReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    allRatingsReq.setRequestHeader("Authorization", "<secret_token>");
-    ratingReq.open("POST", "{{ webapi_url }}/rating");
-    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    ratingReq.setRequestHeader("Authorization", "<secret_token>");
-    ratingReq.onload = function () {
-        status = ratingReq.status;
-        if (status === "201") {
-            sentOnce = true;
-            allRatingsReq.send();
-            setAlert();
-        }
-    };
-    allRatingsReq.onload = function () {
-        console.log(allRatingsReq.response);
-        allRatings = JSON.parse(allRatingsReq.response);
-        setAllRatings(allRatings);
-    };
-    ratingReq.send(JSON.stringify(params));
-};
-
-function setAlert() {
-    alertElem = document.getElementById("submitResAlert");
-    alertElem.textContent = "Submitted"
-    alertElem.className = "alert alert-success"
-
-};
-
-</script>
-{% endif %}
 </body>
 </html>

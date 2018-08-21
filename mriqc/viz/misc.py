@@ -232,8 +232,8 @@ def plot_raters(dataframe, ax=None, width=101, size=0.40):
 
 
 def raters_variability_plot(mdata, figsize=(22, 22), width=101, out_file=None,
-                            raters=['rater_1', 'rater_2', 'rater_3'], only_overlap=True,
-                            rater_names=['Rater 1', 'Rater 2a', 'Rater 2b']):
+                            raters=('rater_1', 'rater_2', 'rater_3'), only_overlap=True,
+                            rater_names=('Rater 1', 'Rater 2a', 'Rater 2b')):
     if only_overlap:
         mdata = mdata[np.all(~np.isnan(mdata[raters]), axis=1)]
     # Swap raters 2 and 3

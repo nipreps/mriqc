@@ -6,9 +6,6 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 from pathlib import Path
-from os import path as op
-from glob import glob
-
 import collections
 import json
 import pandas as pd
@@ -29,18 +26,6 @@ BIDS_EXPR = """\
 (_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
-
-
-def split_ext(in_file, out_file=None):
-    import os.path as op
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        return fname, ext
-    else:
-        return split_ext(out_file)
 
 
 def reorder_csv(csv_file, out_file=None):
@@ -124,8 +109,8 @@ def generate_pred(derivatives_dir, output_dir, mod):
         return None
 
     # If some were found, generate the CSV file and group report
-    out_csv = op.join(output_dir, mod + '_predicted_qa.csv')
-    jsonfiles = glob(op.join(derivatives_dir, 'sub-*_%s.json' % mod))
+    jsonfiles = list(output_dir.glob(
+        'sub-*/**/%s/sub-*_%s.json' % (IMTYPES[mod], mod)))
     if not jsonfiles:
         return None
 
@@ -154,7 +139,9 @@ def generate_pred(derivatives_dir, output_dir, mod):
     dataframe.drop_duplicates(bdits_cols,
                               keep='last', inplace=True)
 
-    dataframe[bdits_cols + ['mriqc_pred']].to_csv(out_csv, index=False)
+    out_csv = Path(output_dir) / ('%s_predicted_qa_csv' % mod)
+    dataframe[bdits_cols + ['mriqc_pred']].to_csv(
+        str(out_csv), index=False)
     return out_csv
 
 
@@ -189,7 +176,7 @@ def generate_tsv(output_dir, mod):
 
     # Set filename at front
     cols.insert(0, cols.pop(cols.index('bids_name')))
-    dataframe[cols].to_csv(out_tsv, index=False, sep='\t')
+    dataframe[cols].to_csv(str(out_tsv), index=False, sep='\t')
     return dataframe, out_tsv
 
 

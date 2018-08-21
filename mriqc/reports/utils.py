@@ -20,7 +20,7 @@ def iqms2html(indict, table_id):
 
     depth = max([len(col) for col in columns])
 
-    result_str = '<table id="%s">\n' % table_id
+    result_str = '<table id="%s" class="table table-sm table-striped">\n' % table_id
     td = '<td{1}>{0}</td>'.format
     for line in columns:
         result_str += '<tr>'
