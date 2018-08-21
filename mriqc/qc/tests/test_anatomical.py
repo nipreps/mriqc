@@ -7,7 +7,7 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:42:23
+# @Last Modified time: 2018-08-21 14:28:26
 """
 Anatomical tests
 """
@@ -96,6 +96,6 @@ def gtruth():
 def test_qi2(gtruth, sigma):
     tmpdir = mkdtemp()
     data, _, bgdata = gtruth.get_data(sigma, rice)
-    value, _ = art_qi2(data, bgdata, out_file=op.join(tmpdir, 'qi2.txt'))
+    value, _ = art_qi2(data, bgdata, save_plot=False)
     rmtree(tmpdir)
     assert value > .0 and value < 0.004
