@@ -17,7 +17,7 @@ from nipype.interfaces.base import (
     SimpleInterface)
 
 from io import open  # pylint: disable=W0622
-from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes, plot_bg_dist)
+from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):

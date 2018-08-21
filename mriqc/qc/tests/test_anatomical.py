@@ -7,12 +7,11 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
-# @Last Modified time: 2018-08-21 14:28:26
+# @Last Modified time: 2018-08-21 14:52:07
 """
 Anatomical tests
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
-import os.path as op
 from tempfile import mkdtemp
 from shutil import rmtree
 import numpy as np

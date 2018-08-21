@@ -11,7 +11,6 @@
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import math
-from pathlib import Path
 import os.path as op
 import numpy as np
 import nibabel as nb
