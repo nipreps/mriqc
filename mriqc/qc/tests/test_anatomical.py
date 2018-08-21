@@ -97,4 +97,4 @@ def test_qi2(gtruth, sigma):
     data, _, bgdata = gtruth.get_data(sigma, rice)
     value, _ = art_qi2(data, bgdata, save_plot=False)
     rmtree(tmpdir)
-    assert value > .0 and value < 0.004
+    assert value > .0 and value < 0.04
