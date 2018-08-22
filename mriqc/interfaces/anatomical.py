@@ -205,8 +205,9 @@ class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
 
 
 class ArtifactMaskOutputSpec(TraitedSpec):
+    out_hat_msk = File(exists=True, desc='output "hat" mask')
     out_art_msk = File(exists=True, desc='output artifacts mask')
-    out_air_msk = File(exists=True, desc='output artifacts mask, without artifacts')
+    out_air_msk = File(exists=True, desc='output "hat" mask, without artifacts')
 
 
 class ArtifactMask(SimpleInterface):
@@ -251,13 +252,17 @@ class ArtifactMask(SimpleInterface):
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
 
-        self._results['out_art_msk'] = op.abspath('{}_artifacts{}'.format(fname, ext))
-        self._results['out_air_msk'] = op.abspath('{}_noart-air{}'.format(fname, ext))
+        self._results['out_hat_msk'] = op.abspath('{}_hat{}'.format(fname, ext))
+        self._results['out_art_msk'] = op.abspath('{}_art{}'.format(fname, ext))
+        self._results['out_air_msk'] = op.abspath('{}_air{}'.format(fname, ext))
 
         hdr = imnii.get_header().copy()
         hdr.set_data_dtype(np.uint8)
         nb.Nifti1Image(qi1_img, imnii.get_affine(), hdr).to_filename(
             self._results['out_art_msk'])
+
+        nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(
+            self._results['out_hat_msk'])
 
         airdata[qi1_img > 0] = 0
         nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(
@@ -268,8 +273,6 @@ class ArtifactMask(SimpleInterface):
 class ComputeQI2InputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     air_msk = File(exists=True, mandatory=True, desc='air (without artifacts) mask')
-    erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
-    ncoils = traits.Int(12, usedefault=True, desc='number of coils')
 
 
 class ComputeQI2OutputSpec(TraitedSpec):
@@ -287,8 +290,7 @@ class ComputeQI2(SimpleInterface):
     def _run_interface(self, runtime):
         imdata = nb.load(self.inputs.in_file).get_data()
         airdata = nb.load(self.inputs.air_msk).get_data()
-        qi2, out_file = art_qi2(imdata, airdata, ncoils=self.inputs.ncoils,
-                                erodemask=self.inputs.erodemsk)
+        qi2, out_file = art_qi2(imdata, airdata)
         self._results['qi2'] = qi2
         self._results['out_file'] = out_file
         return runtime

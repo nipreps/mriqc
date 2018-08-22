@@ -17,7 +17,7 @@ from nipype.interfaces.base import (
     SimpleInterface)
 
 from io import open  # pylint: disable=W0622
-from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes, plot_bg_dist)
+from ..viz.utils import (plot_mosaic, plot_segmentation, plot_spikes)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -157,26 +157,4 @@ class PlotSpikes(SimpleInterface):
         plot_spikes(
             self.inputs.in_file, self.inputs.in_fft, spikes_list,
             out_file=out_file)
-        return runtime
-
-
-class PlotDistributionInputSpec(PlotBaseInputSpec):
-    in_file = File(exists=True, mandatory=True, desc='input distribution file')
-
-
-class PlotDistributionOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc='output svg file')
-
-
-class PlotDistribution(SimpleInterface):
-    """
-    Plot slices of a dataset with spikes
-    """
-    input_spec = PlotDistributionInputSpec
-    output_spec = PlotDistributionOutputSpec
-
-    def _run_interface(self, runtime):
-        self._results['out_file'] = plot_bg_dist(
-            Path(self.inputs.in_file),
-            cwd=Path(runtime.cwd).resolve())
         return runtime

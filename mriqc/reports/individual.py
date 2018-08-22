@@ -85,9 +85,9 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         in_plots = []
     else:
         if any(('melodic_reportlet' in k for k in in_plots)):
-            REPORT_TITLES['bold'].insert(3, 'ICA components')
+            REPORT_TITLES['bold'].insert(3, ('ICA components', 'ica-comps'))
 
-        in_plots = [(REPORT_TITLES[mod][i], read_report_snippet(v))
+        in_plots = [(REPORT_TITLES[mod][i] + (read_report_snippet(v), ))
                     for i, v in enumerate(in_plots)]
 
     pred_qa = None  # metadata.pop('mriqc_pred', None)

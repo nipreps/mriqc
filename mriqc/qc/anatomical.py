@@ -190,11 +190,10 @@ mriqc.qc.anatomical module
 from __future__ import absolute_import, division, print_function, unicode_literals
 import os.path as op
 from sys import version_info
-import json
 from math import pi, sqrt
 import numpy as np
 import scipy.ndimage as nd
-from scipy.stats import chi, kurtosis  # pylint: disable=E0611
+from scipy.stats import kurtosis  # pylint: disable=E0611
 
 from io import open  # pylint: disable=W0622
 from builtins import zip, range  # pylint: disable=W0622
@@ -416,8 +415,7 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, ncoils=12, erodemask=True,
-            out_file='qi2_fitting.txt', min_voxels=1e3):
+def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=True):
     r"""
     Calculates :math:`\text{QI}_2`, based on the goodness-of-fit of a centered
     :math:`\chi^2` distribution onto the intensity distribution of
@@ -434,57 +432,46 @@ def art_qi2(img, airmask, ncoils=12, erodemask=True,
     :param numpy.ndarray airmask: input air mask without artifacts
 
     """
-    out_file = op.abspath(out_file)
-    open(out_file, 'a').close()
 
-    if erodemask:
-        struc = nd.generate_binary_structure(3, 2)
-        # Perform an opening operation on the background data.
-        airmask = nd.binary_erosion(airmask, structure=struc).astype(np.uint8)
+    from sklearn.neighbors import KernelDensity
+    from scipy.stats import chi2
+    from mriqc.viz.misc import plot_qi2
 
-    # Artifact-free air region
+    # S. Ogawa was born
+    np.random.seed(1191935)
+
     data = img[airmask > 0]
+    data = data[data > 0]
 
-    # Background can only be fit if we have a min number of voxels
-    if len(data[data > 0]) < min_voxels:
+    # Write out figure of the fitting
+    out_file = op.abspath('error.svg')
+    with open(out_file, 'w') as ofh:
+        ofh.write('<p>Background noise fitting could not be plotted.</p>')
+
+    if len(data) < min_voxels:
         return 0.0, out_file
 
-    # Estimate data pdf
-    dmax = np.percentile(data[data > 0], 99.9)
-    hist, bin_edges = np.histogram(data[data > 0], density=True,
-                                   range=(0.0, dmax), bins='doane')
-    bin_centers = [float(np.mean(bin_edges[i:i + 1])) for i in range(len(bin_edges) - 1)]
-    max_pos = np.argmax(hist)
-    json_out = {
-        'x': bin_centers,
-        'y': [float(v) for v in hist]
-    }
+    modelx = data if len(data) < max_voxels else np.random.choice(
+        data, size=max_voxels)
 
-    # Fit central chi distribution
-    param = chi.fit(data[data > 0], 2 * ncoils, loc=bin_centers[max_pos])
-    pdf_fitted = chi.pdf(bin_centers, *param[:-2], loc=param[-2], scale=param[-1])
-    json_out['y_hat'] = [float(v) for v in pdf_fitted]
+    x_grid = np.linspace(0.0, np.percentile(data, 99), 1000)
 
-    # Find t2 (intensity at half width, right side)
-    ihw = 0.5 * hist[max_pos]
-    t2idx = 0
-    for i in range(max_pos + 1, len(bin_centers)):
-        if hist[i] < ihw:
-            t2idx = i
-            break
+    # Estimate data pdf with KDE on a random subsample
+    kde_skl = KernelDensity(bandwidth=0.05 * np.percentile(data, 98),
+                            kernel='gaussian').fit(modelx[:, np.newaxis])
+    kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
-    json_out['x_cutoff'] = float(bin_centers[t2idx])
+    # Find cutoff
+    kdethi = np.argmax(kde[::-1] > kde.max() * 0.5)
+
+    # Fit X^2
+    param = chi2.fit(modelx[modelx < np.percentile(data, 95)], 32)
+    chi_pdf = chi2.pdf(x_grid, *param[:-2], loc=param[-2], scale=param[-1])
 
     # Compute goodness-of-fit (gof)
-    gof = float(np.abs(hist[t2idx:] - pdf_fitted[t2idx:]).sum() / len(pdf_fitted[t2idx:]))
-
-    # Clip values for sanity
-    gof = 1.0 if gof > 1.0 else gof
-    gof = 0.0 if gof < 0.0 else gof
-    json_out['gof'] = gof
-
-    with open(out_file, 'w' if PY3 else 'wb') as ofd:
-        json.dump(json_out, ofd)
+    gof = float(np.abs(kde[-kdethi:] - chi_pdf[-kdethi:]).mean())
+    if save_plot:
+        out_file = plot_qi2(x_grid, kde, chi_pdf, modelx, kdethi)
 
     return gof, out_file
 
