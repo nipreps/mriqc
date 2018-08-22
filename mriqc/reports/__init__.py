@@ -46,21 +46,31 @@ Submodules
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
+from copy import deepcopy
 from .individual import individual_html
 from .group import gen_html as group_html
 
 REPORT_TITLES = {
-    'bold': ['BOLD average', 'Standard deviation map', 'FMRI summary plot',
-             'Zoomed-in BOLD average', 'Background noise', 'Calculated brain mask',
-             'Approximate spatial normalization'],
-    'T1w': ['Zoomed-in (brain mask)', 'Background noise',
-            'Approximate spatial normalization', 'Brain mask',
-            'Brain tissue segmentation', 'Artifacts in background',
-            'Head outline', '"Hat" mask',
-            'Distribution of the noise in the background'],
-    'T2w': ['Zoomed-in (brain mask)', 'Background noise',
-            'Approximate spatial normalization', 'Brain mask',
-            'Brain tissue segmentation', 'Artifacts in background',
-            'Head outline', '"Hat" mask',
-            'Distribution of the noise in the background'],
+    'bold': [
+        ('BOLD average', 'bold-avg'),
+        ('Standard deviation map', 'std-map'),
+        ('FMRI summary plot', 'fmri-summary'),
+        ('Zoomed-in BOLD average', 'zoomed-avg'),
+        ('Background noise', 'bg-noise'),
+        ('Calculated brain mask', 'brain-msk'),
+        ('Approximate spatial normalization', 'normalization'),
+    ],
+    'T1w': [
+        ('Zoomed-in (brain mask)', 'zoomed-view'),
+        ('Background noise', 'bg-noise'),
+        ('Approximate spatial normalization', 'normalization'),
+        ('Brain mask', 'brain-msk'),
+        ('Brain tissue segmentation', 'brain-seg'),
+        ('Artifacts in background', 'bg-arts'),
+        ('Head outline', 'head-msk'),
+        ('"Hat" mask', 'hat-msk'),
+        ('Distribution of the noise in the background', 'qi2-fitting'),
+    ],
 }
+
+REPORT_TITLES['T2w'] = deepcopy(REPORT_TITLES['T1w'])
