@@ -94,7 +94,7 @@ jobs:
           no_output_timeout: 40m
           command: |
             mkdir -p /tmp/cache
-            docker save python:3.4-onbuild swaggerapi/swagger-ui:v3.0.12 nginx:latest mongo:latest \
+            docker save python:3.6-onbuild swaggerapi/swagger-ui:v3.0.12 nginx:latest mongo:latest \
               | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
           root: /tmp
