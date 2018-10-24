@@ -86,6 +86,8 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     else:
         if any(('melodic_reportlet' in k for k in in_plots)):
             REPORT_TITLES['bold'].insert(3, ('ICA components', 'ica-comps'))
+        if any(('plot_spikes' in k for k in in_plots)):
+            REPORT_TITLES['bold'].insert(3, ('Spikes', 'spikes'))
 
         in_plots = [(REPORT_TITLES[mod][i] + (read_report_snippet(v), ))
                     for i, v in enumerate(in_plots)]
