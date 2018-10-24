@@ -14,9 +14,11 @@ from os import cpu_count
 import logging
 import gc
 from pathlib import Path
+import matplotlib
 
 from .. import __version__
 
+matplotlib.use('Agg')  # Replace matplotlib's backend ASAP (see #758)
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 DEFAULT_MEM_GB = 8
