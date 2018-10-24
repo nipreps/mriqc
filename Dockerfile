@@ -135,6 +135,7 @@ COPY . /usr/local/src/mriqc
 ARG VERSION
 RUN echo "${VERSION}" > mriqc/VERSION && \
     pip install .[all] && \
+    find /usr/local/miniconda/lib/python*/site-packages/mriqc -type f -exec chmod a+r {} \; && \
     rm -rf ~/.cache/pip
 
 # Run mriqc by default
