@@ -89,4 +89,4 @@ to ensure that your data remain confidential.
 Financial costs of data-sharing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The MRIQC Web-API infrastructure is funded by NIMH grant ZICMH002960.
+The MRIQC Web-API infrastructure is funded by NIMH grants R24MH117179, and ZICMH002960.
