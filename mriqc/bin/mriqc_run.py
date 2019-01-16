@@ -217,8 +217,8 @@ def main():
         if not subject_list:
             logger.critical(
                 'MRIQC did not find any target image file under the given BIDS '
-                'folder (%s). Please ensure that the dataset is BIDS valid at '
-                'http://incf.github.io/bids-validator/ .', opts.bids_dir.resolve())
+                'folder (%s). Please check that the dataset is BIDS valid at '
+                'http://bids-standard.github.io/bids-validator/ .', opts.bids_dir.resolve())
 
             bids_selectors = []
             for entity in ['participant-label', 'modalities', 'session-id', 'task-id', 'run-id']:
