@@ -66,7 +66,7 @@ in :ref:`The MRIQC Reports <reports>`.
     follows the :abbr:`BIDS (brain imaging data structure)` standard [BIDS]_.
     A fast and easy way to check that your dataset fulfills the
     :abbr:`BIDS (brain imaging data structure)` standard is
-    the `BIDS validator <http://incf.github.io/bids-validator/>`_.
+    the `BIDS validator <https://github.com/bids-standard/bids-validator>`_.
 
 
 .. topic:: BIDS-App levels
