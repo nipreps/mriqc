@@ -18,6 +18,12 @@ import matplotlib
 
 from .. import __version__
 
+DSA_MESSAGE = """\
+Anonymized quality metrics (IQMs) will be submitted to MRIQC's metrics repository. \
+Submission of IQMs can be disabled using the ``--no-sub`` argument. \
+Please visit https://mriqc.readthedocs.io/en/latest/dsa.html to revise MRIQC's \
+Data Sharing Agreement."""
+
 matplotlib.use('Agg')  # Replace matplotlib's backend ASAP (see #758)
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
@@ -28,10 +34,15 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import DEFAULTS
+    from .. import DEFAULTS, __description__
 
-    parser = ArgumentParser(description='MRIQC: MRI Quality Control',
-                            formatter_class=RawTextHelpFormatter)
+    parser = ArgumentParser(
+        description="""\
+MRIQC: MRI Quality Control
+--------------------------
+%s
+%s""" % (__description__, DSA_MESSAGE),
+        formatter_class=RawTextHelpFormatter)
 
     # Arguments as specified by BIDS-Apps
     # required, positional arguments
@@ -243,20 +254,14 @@ def main():
         if not opts.dry_run:
             # Warn about submitting measures BEFORE
             if not opts.no_sub:
-                logger.warning(
-                    'Anonymized quality metrics will be submitted'
-                    ' to MRIQC\'s metrics repository.'
-                    ' Use --no-sub to disable submission.')
+                logger.warning(DSA_MESSAGE)
 
             # run MRIQC
             mriqc_wf.run(**plugin_settings)
 
             # Warn about submitting measures AFTER
             if not opts.no_sub:
-                logger.warning(
-                    'Anonymized quality metrics have beeen submitted'
-                    ' to MRIQC\'s metrics repository.'
-                    ' Use --no-sub to disable submission.')
+                logger.warning(DSA_MESSAGE)
         logger.info('Participant level finished successfully.')
 
     # Set up group level
