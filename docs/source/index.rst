@@ -33,6 +33,7 @@ Contents
    reports
    workflows
    classifier
+   dsa
 
 
 Indices and tables
