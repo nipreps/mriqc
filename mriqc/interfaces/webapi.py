@@ -150,7 +150,7 @@ class UploadIQMs(SimpleInterface):
 
         try:
             self._results['api_id'] = response.json()['_id']
-        except (ValueError, KeyError, AttributeError):
+        except (AttributeError, KeyError, ValueError):
             # response did not give us an ID
             errmsg = ('QC metrics upload failed to create an ID for the record '
                       'uplOADED. rEsponse from server follows: {}'.format(response.text))
