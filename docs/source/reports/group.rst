@@ -2,7 +2,7 @@
 .. _reports-group:
 
 Group reports
-=============
+-------------
 
 Once a sample has been processed with the appropriate
 :ref:`workflow <workflows>`, all the :abbr:`IQMs (image quality metrics)`
