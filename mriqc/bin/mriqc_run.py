@@ -37,7 +37,7 @@ def get_parser():
     from .. import DEFAULTS, __description__
 
     parser = ArgumentParser(
-        description="""MRIQC: MRI Quality Control\n--------------------------\
+        description="""MRIQC: MRI Quality Control\n\n\
 %s
 %s""" % (__description__, DSA_MESSAGE),
         formatter_class=RawTextHelpFormatter)
