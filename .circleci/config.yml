@@ -259,6 +259,10 @@ jobs:
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
+      - restore_cache:
+          keys:
+            - t1w-v1-{{ epoch }}
+            - t1w-v1-
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -276,6 +280,11 @@ jobs:
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - save_cache:
+         key: t1w-v1-{{ epoch }}
+         paths:
+            - /tmp/t1w/work
+
       - run:
           name: Run group-level on T1w images
           no_output_timeout: 2h
@@ -369,6 +378,11 @@ jobs:
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
+      - restore_cache:
+          keys:
+            - bold-v1-{{ epoch }}
+            - bold-v1-
+
       - run:
           name: Run participant-level on BOLD images
           no_output_timeout: 2h
@@ -387,6 +401,10 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - save_cache:
+         key: bold-v1-{{ epoch }}
+         paths:
+            - /tmp/bold/work
 
       - run:
           name: Run group-level on BOLD images
