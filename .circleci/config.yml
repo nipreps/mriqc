@@ -12,7 +12,7 @@ jobs:
     steps:
       - run:
           name: Install parallel gzip and python3
-          command: apk add --no-cache pigz python3 python3-dev libffi-dev musl-dev
+          command: apk add --no-cache pigz python3 python3-dev libffi-dev musl-dev gcc
       - restore_cache:
           keys:
             - docker-v1-{{ .Branch }}-{{ epoch }}
