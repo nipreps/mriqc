@@ -4,6 +4,14 @@ FROM ubuntu:xenial-20161213
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 
+# Installing Neurodebian packages (FSL, AFNI, git)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    curl -sSL "http://neuro.debian.net/lists/xenial.us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key add /usr/local/etc/neurodebian.gpg && \
+    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
+
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -13,28 +21,40 @@ RUN apt-get update && \
                     ca-certificates \
                     curl \
                     cython3 \
+                    ed \
                     git \
+                    git-annex-standalone \
                     graphviz=2.38.0-12ubuntu2 \
+                    gsl-bin \
+                    libglib2.0-0 \
+                    libglu1-mesa-dev \
+                    libglw1-mesa \
+                    libgomp1 \
+                    libjpeg62 \
                     libtool \
+                    libxm4 \
+                    netpbm \
                     pkg-config \
-                    xvfb && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+                    tcsh \
+                    xfonts-base \
+                    xvfb \
+                    fsl-core=5.0.9-5~nd16.04+1 \
+                    fsl-mni152-templates && \
+    curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
                     nodejs && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Installing Neurodebian packages (FSL, AFNI, git)
-RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key add /usr/local/etc/neurodebian.gpg && \
-    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-                    fsl-core=5.0.9-5~nd16.04+1 \
-                    fsl-mni152-templates \
-                    afni=16.2.07~dfsg.1-5~nd16.04+1 \
-                    convert3d \
-                    git-annex-standalone && \
+    echo "Install libxp (not in all ubuntu/debian repositories)" && \
+    apt-get install -yq --no-install-recommends libxp6 \
+    || /bin/bash -c " \
+       curl --retry 5 -o /tmp/libxp6.deb -sSL http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
+       && dpkg -i /tmp/libxp6.deb && rm -f /tmp/libxp6.deb" && \
+    echo "Install libpng12 (not in all ubuntu/debian repositories" && \
+    apt-get install -yq --no-install-recommends libpng12-0 \
+    || /bin/bash -c " \
+       curl -o /tmp/libpng12.deb -sSL http://mirrors.kernel.org/debian/pool/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
+       && dpkg -i /tmp/libpng12.deb && rm -f /tmp/libpng12.deb" && \
+    ln -s /usr/lib/x86_64-linux-gnu/libgsl.so.19 /usr/lib/x86_64-linux-gnu/libgsl.so.0 && \
+    ldconfig && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV FSLDIR="/usr/share/fsl/5.0" \
@@ -43,11 +63,7 @@ ENV FSLDIR="/usr/share/fsl/5.0" \
     POSSUMDIR="/usr/share/fsl/5.0" \
     LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH" \
     FSLTCLSH="/usr/bin/tclsh" \
-    FSLWISH="/usr/bin/wish" \
-    AFNI_MODELPATH="/usr/lib/afni/models" \
-    AFNI_IMSAVE_WARNINGS="NO" \
-    AFNI_TTATLAS_DATASET="/usr/share/afni/atlases" \
-    AFNI_PLUGINPATH="/usr/lib/afni/plugins"
+    FSLWISH="/usr/bin/wish"
 ENV PATH="/usr/lib/fsl/5.0:/usr/lib/afni/bin:$PATH"
 
 # Installing ANTs 2.2.0 (NeuroDocker build)
@@ -57,14 +73,23 @@ RUN mkdir -p $ANTSPATH && \
     | tar -xzC $ANTSPATH --strip-components 1
 ENV PATH=$ANTSPATH:$PATH
 
+# Installing AFNI (version 17_3_03 archived on OSF)
+RUN mkdir -p /opt/afni && \
+    curl -o afni.tar.gz -sSLO "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5a0dd9a7b83f69027512a12b" && \
+    tar zxv -C /opt/afni --strip-components=1 -f afni.tar.gz && \
+    rm -rf afni.tar.gz
+ENV PATH=/opt/afni:$PATH \
+    AFNI_MODELPATH="/opt/afni/models" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_TTATLAS_DATASET="/opt/afni/atlases" \
+    AFNI_PLUGINPATH="/opt/afni/plugins"
+
 # Create a shared $HOME directory
 RUN useradd -m -s /bin/bash -G users bidsapp
 WORKDIR /home/bidsapp
 ENV HOME="/home/bidsapp"
 
 # Installing SVGO
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
-RUN apt-get install -y nodejs
 RUN npm install -g svgo
 
 # Installing and setting up miniconda
