@@ -13,7 +13,6 @@ Extends sklearn's GridSearchCV to a model search object
 
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
 import time

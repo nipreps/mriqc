@@ -51,6 +51,7 @@ CLASSIFIERS = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
 ]
 
 SETUP_REQUIRES = []
@@ -58,13 +59,12 @@ SETUP_REQUIRES = []
 REQUIRES = [
     'PyYAML',
     'dipy',
-    'future',
     'jinja2',
     'matplotlib',
     'nibabel>=2.2.1',
     'nilearn',
     'nipy',
-    'nipype>=1.1.1',
+    'nipype[all]>=1.1.1',
     'nitime',
     'niworkflows<0.9.0a0,>=0.8.1',
     'numpy',
@@ -78,7 +78,6 @@ REQUIRES = [
     'statsmodels',
     'svgutils',
     'templateflow<0.2.0a0,>=0.1.3',
-    'versioneer',
 ]
 
 LINKS_REQUIRES = [

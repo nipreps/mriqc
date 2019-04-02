@@ -9,7 +9,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ Encapsulates report generation functions """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 from sys import version_info
 import pandas as pd

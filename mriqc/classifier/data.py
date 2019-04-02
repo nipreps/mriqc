@@ -12,7 +12,6 @@ Reads in and writes CSV files with the IQMs
 
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from pathlib import Path
 import numpy as np

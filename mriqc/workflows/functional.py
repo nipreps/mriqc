@@ -23,7 +23,6 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 from pathlib import Path
 
 from nipype.pipeline import engine as pe

@@ -9,7 +9,6 @@
 Extracts the sha hash of the contents of a nifti file.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import nibabel as nb
 from hashlib import sha1

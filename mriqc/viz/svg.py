@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ SVG handling utilities """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 
 def svg2str(display_object, dpi=300):

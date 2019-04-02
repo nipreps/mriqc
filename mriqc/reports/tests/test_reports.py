@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:33:39
 # @Email:  code@oscaresteban.es
 """Test utils"""
-from __future__ import print_function, division, absolute_import, unicode_literals
 # import os.path as op
 # import pytest
 # from io import open # pylint: disable=W0622

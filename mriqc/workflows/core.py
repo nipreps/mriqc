@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:24:05
 # @Email:  code@oscaresteban.es
 """ The core module combines the existing workflows """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 import os
 from .anatomical import anat_qc_workflow

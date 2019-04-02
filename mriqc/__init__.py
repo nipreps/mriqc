@@ -8,23 +8,22 @@ The mriqc package provides a series of :abbr:`NR (no-reference)`,
 assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 import sys
 import logging
 
 from .__about__ import (
-    __version__,
     __author__,
-    __email__,
-    __maintainer__,
     __copyright__,
     __credits__,
-    __license__,
-    __status__,
     __description__,
-    __longdesc__,
-    __url__,
     __download__,
+    __email__,
+    __license__,
+    __longdesc__,
+    __maintainer__,
+    __status__,
+    __url__,
+    __version__,
 )
 
 LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
@@ -43,3 +42,19 @@ DEFAULTS = {
     'ants_nthreads': 6,
     'float32': False
 }
+
+__all__ = [
+    '__author__',
+    '__copyright__',
+    '__credits__',
+    '__description__',
+    '__download__',
+    '__email__',
+    '__license__',
+    '__longdesc__',
+    '__maintainer__',
+    '__status__',
+    '__url__',
+    '__version__',
+    'MRIQC_LOG',
+]

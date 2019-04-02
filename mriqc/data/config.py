@@ -5,7 +5,6 @@
 """
 Utilities: Jinja2 templates
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from io import open  # pylint: disable=W0622
 import jinja2

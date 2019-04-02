@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ Visualization utilities """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 import math
 import os.path as op

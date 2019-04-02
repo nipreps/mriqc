@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 """ Nipype interfaces to support anatomical workflow """
-from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
 import nibabel as nb

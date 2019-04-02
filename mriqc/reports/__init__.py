@@ -45,7 +45,6 @@ Submodules
     :show-inheritance:
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 from copy import deepcopy
 from .individual import individual_html
 from .group import gen_html as group_html

@@ -11,7 +11,6 @@
 """
 Anatomical tests
 """
-# from __future__ import division, print_function, absolute_import, unicode_literals
 # import os.path as op
 # import numpy as np
 # import pytest
