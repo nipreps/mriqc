@@ -36,7 +36,7 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl, ants
-from niworkflows.data import get_mni_icbm152_nlin_asym_09c
+from templateflow.api import get as get_template
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 
@@ -158,7 +158,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
 
 
 def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
-                          resolution=2.0):
+                          resolution=2):
     """
     A simple workflow to perform spatial normalization
 
@@ -166,8 +166,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     from niworkflows.data import getters as niwgetters
 
     # Have some settings handy
-    tpl_id = settings.get('template_id', 'mni_icbm152_nlin_asym_09c')
-    mni_template = Path(getattr(niwgetters, 'get_{}'.format(tpl_id))())
+    tpl_id = settings.get('template_id', 'MNI152NLin2009cAsym')
 
     # Define workflow interface
     workflow = pe.Workflow(name=name)
@@ -183,7 +182,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
         float=settings.get('ants_float', False),
         template=tpl_id,
         template_resolution=2,
-        reference=mod[:2],
+        reference=mod,
         generate_report=True,),
         name='SpatialNormalization',
         # Request all MultiProc processes when ants_nthreads > n_procs
@@ -191,7 +190,7 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
                         settings.get('n_procs', 1)),
         mem_gb=3)
     norm.inputs.reference_mask = str(
-        mni_template / ('%dmm_brainmask.nii.gz' % int(resolution)))
+        get_template(tpl_id, resolution=resolution, desc='brain', suffix='mask'))
 
     workflow.connect([
         (inputnode, norm, [('moving_image', 'moving_image'),
@@ -254,9 +253,8 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         dimension=3, default_value=0, interpolation='Linear',
         float=True),
         iterfield=['input_image'], name='MNItpms2t1')
-    invt.inputs.input_image = [
-        str(Path(get_mni_icbm152_nlin_asym_09c()) / (fname + '.nii.gz'))
-        for fname in ['1mm_tpm_csf', '1mm_tpm_gm', '1mm_tpm_wm']]
+    invt.inputs.input_image = [str(p) for p in get_template(
+        'MNI152NLin2009cAsym', suffix='probseg', resolution=1, desc='CSF|GM|WM')]
 
     datasink = pe.Node(IQMFileSink(
         modality=modality, out_dir=str(settings['output_dir']),
@@ -490,8 +488,8 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
                                         interpolation='Linear', float=True), name='invert_xfm')
-    invt.inputs.input_image = str(Path(get_mni_icbm152_nlin_asym_09c()) / '1mm_headmask.nii.gz')
-
+    invt.inputs.input_image = str(get_template('MNI152NLin2009cAsym', resolution=1,
+                                               desc='head', suffix='mask'))
     binarize = pe.Node(niu.Function(function=_binarize), name='Binarize')
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')

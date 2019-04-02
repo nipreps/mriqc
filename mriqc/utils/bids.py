@@ -30,7 +30,7 @@ def collect_bids_data(layout, participant_label=None, session=None, run=None,
     imaging_data = defaultdict(list, {})
     for btype in bids_type:
         imaging_data[btype] = layout.get(
-            type=btype,
+            suffix=btype,
             return_type='file',
             extensions=['nii', 'nii.gz'],
             **basequery)

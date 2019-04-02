@@ -39,7 +39,6 @@ def get_parser():
     parser = ArgumentParser(
         description="""\
 MRIQC: MRI Quality Control
---------------------------
 %s
 %s""" % (__description__, DSA_MESSAGE),
         formatter_class=RawTextHelpFormatter)
@@ -78,8 +77,7 @@ MRIQC: MRI Quality Control
     g_bids.add_argument('--task-id', action='store', nargs='*', type=str,
                         help='filter input dataset by task id')
     g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
-                        choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
-                        help='filter input dataset by MRI type ("T1w", "T2w", or "bold")')
+                        help='filter input dataset by MRI type')
     g_bids.add_argument('--dsname', type=str, help='a dataset name')
 
     # Control instruments
@@ -266,6 +264,7 @@ def main():
 
     # Set up group level
     if 'group' in analysis_levels:
+        from ..utils.bids import DEFAULT_TYPES
         from ..reports import group_html
         from ..utils.misc import generate_tsv  # , generate_pred
 
@@ -273,7 +272,7 @@ def main():
 
         # Generate reports
         mod_group_reports = []
-        for mod in opts.modalities:
+        for mod in opts.modalities or DEFAULT_TYPES:
             dataframe, out_tsv = generate_tsv(
                 opts.output_dir.expanduser().resolve(), mod)
             # If there are no iqm.json files, nothing to do.
@@ -303,7 +302,7 @@ def main():
 def init_mriqc(opts, retval):
     """Build the workflow enumerator"""
 
-    from bids.grabbids import BIDSLayout
+    from bids.layout import BIDSLayout
     from nipype import config as ncfg
     from nipype.pipeline.engine import Workflow
 
@@ -396,22 +395,20 @@ def init_mriqc(opts, retval):
         with opts.use_plugin.open() as pfile:
             plugin_settings.update(loadyml(pfile))
 
-    # Process data types
-    modalities = opts.modalities
-
     layout = BIDSLayout(str(settings['bids_dir']),
-                        exclude=['derivatives', 'sourcedata'])
+                        exclude=['derivatives', 'sourcedata', r'^\..*'])
     dataset = collect_bids_data(
         layout,
         participant_label=opts.participant_label,
         session=opts.session_id,
         run=opts.run_id,
         task=opts.task_id,
-        bids_type=modalities,
+        bids_type=opts.modalities,
     )
 
     workflow = Workflow(name='workflow_enumerator')
     workflow.base_dir = settings['work_dir']
+    modalities = [mod for mod, val in dataset.items() if val]
 
     wf_list = []
     subject_list = []

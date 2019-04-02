@@ -680,7 +680,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
       wf = epi_mni_align({})
 
     """
-    from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
+    from templateflow.api import get as get_template
     from niworkflows.interfaces.registration import (
         RobustMNINormalizationRPT as RobustMNINormalization
     )
@@ -690,9 +690,6 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     testing = settings.get('testing', False)
     n_procs = settings.get('n_procs', 1)
     ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
-
-    # Init template
-    mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['epi_mean', 'epi_mask']),
@@ -707,10 +704,10 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     norm = pe.Node(RobustMNINormalization(
         num_threads=ants_nthreads,
         float=settings.get('ants_float', False),
-        template='mni_icbm152_nlin_asym_09c',
-        reference_image=pkgrf('mriqc', 'data/mni/2mm_T2_brain.nii.gz'),
+        template='MNI152NLin2009cAsym',
+        reference_image=str(get_template('MNI152NLin2009cAsym', suffix='boldref')),
         flavor='testing' if testing else 'precise',
-        moving='EPI',
+        moving='bold',
         generate_report=True,),
         name='EPI2MNI',
         num_threads=n_procs,
@@ -719,7 +716,8 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     # Warp segmentation into EPI space
     invt = pe.Node(ants.ApplyTransforms(
         float=True,
-        input_image=str(Path(mni_template) / '1mm_parc.nii.gz'),
+        input_image=str(get_template('MNI152NLin2009cAsym', resolution=1,
+                                     desc='carpet', suffix='dseg')),
         dimension=3, default_value=0, interpolation='NearestNeighbor'),
         name='ResampleSegmentation')
 
