@@ -187,9 +187,8 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
-              -v $PWD:/scratch -w /usr/local/src/mriqc \
-              --entrypoint="py.test" \
-              poldracklab/mriqc:latest mriqc/ \
+              -v $PWD:/scratch --entrypoint="py.test" -w /src/mriqc \
+              poldracklab/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin \
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
@@ -220,9 +219,8 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
-              -w /usr/local/src/mriqc/docs \
               --entrypoint=sphinx-build poldracklab/mriqc:latest \
-              -T -E -W -D language=en -b html source/ /scratch/docs 2>&1 \
+              -T -E -W -D language=en -b html /src/mriqc/docs/source/ /scratch/docs 2>&1 \
               | tee $PWD/builddocs.log
             cat $PWD/builddocs.log
             grep -qv "ERROR" $PWD/builddocs.log
