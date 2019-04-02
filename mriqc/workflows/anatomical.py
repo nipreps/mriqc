@@ -37,12 +37,13 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl, ants
 from templateflow.api import get as get_template
-from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+from niworkflows.interfaces.bids import ReadSidecarJSON
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
+from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 
 from .. import DEFAULTS, logging
-from ..interfaces import (StructuralQC, ArtifactMask, ReadSidecarJSON,
-                          ConformImage, ComputeQI2, IQMFileSink, RotationMask)
+from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
+                          ComputeQI2, IQMFileSink, RotationMask)
 from .utils import get_fwhmx
 
 
@@ -265,14 +266,14 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
 
     workflow.connect([
         (inputnode, meta, [('in_file', 'in_file')]),
-        (meta, datasink, [('relative_path', 'in_file'),
-                          ('subject_id', 'subject_id'),
-                          ('session_id', 'session_id'),
-                          ('acq_id', 'acq_id'),
-                          ('rec_id', 'rec_id'),
-                          ('run_id', 'run_id'),
+        (inputnode, datasink, [('in_file', 'in_file')]),
+        (meta, datasink, [('subject', 'subject_id'),
+                          ('session', 'session_id'),
+                          ('task', 'task_id'),
+                          ('acquisition', 'acq_id'),
+                          ('reconstruction', 'rec_id'),
+                          ('run', 'run_id'),
                           ('out_dict', 'metadata')]),
-
         (inputnode, addprov, [('in_file', 'in_file'),
                               ('airmask', 'air_msk'),
                               ('rotmask', 'rot_msk')]),

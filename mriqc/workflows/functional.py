@@ -31,6 +31,7 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import afni, ants, fsl
 
+from niworkflows.interfaces.bids import ReadSidecarJSON
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
 from niworkflows.interfaces import utils as niutils
@@ -38,7 +39,7 @@ from niworkflows.interfaces.plotting import FMRISummary
 
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
-from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from ..interfaces import FunctionalQC, Spikes, IQMFileSink
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -269,16 +270,16 @@ def compute_iqms(settings, name='ComputeIQMs'):
         name='datasink', run_without_submitting=True)
 
     workflow.connect([
-        (inputnode, datasink, [('exclude_index', 'dummy_trs')]),
+        (inputnode, datasink, [('in_file', 'in_file'),
+                               ('exclude_index', 'dummy_trs')]),
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
-        (meta, datasink, [('relative_path', 'in_file'),
-                          ('subject_id', 'subject_id'),
-                          ('session_id', 'session_id'),
-                          ('task_id', 'task_id'),
-                          ('acq_id', 'acq_id'),
-                          ('rec_id', 'rec_id'),
-                          ('run_id', 'run_id'),
+        (meta, datasink, [('subject', 'subject_id'),
+                          ('session', 'session_id'),
+                          ('task', 'task_id'),
+                          ('acquisition', 'acq_id'),
+                          ('reconstruction', 'rec_id'),
+                          ('run', 'run_id'),
                           ('out_dict', 'metadata')]),
         (addprov, datasink, [('out', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),

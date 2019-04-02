@@ -7,7 +7,25 @@
 from .anatomical import \
     StructuralQC, ArtifactMask, ComputeQI2, Harmonize, RotationMask
 from .functional import FunctionalQC, Spikes
-from .bids import ReadSidecarJSON, IQMFileSink
+from .bids import IQMFileSink
 from .viz import PlotMosaic, PlotContours, PlotSpikes
 from .common import ConformImage, EnsureSize
 from .webapi import UploadIQMs
+
+
+__all__ = [
+    'ArtifactMask',
+    'ComputeQI2',
+    'ConformImage',
+    'EnsureSize',
+    'FunctionalQC',
+    'Harmonize',
+    'IQMFileSink',
+    'PlotContours',
+    'PlotMosaic',
+    'PlotSpikes',
+    'RotationMask',
+    'Spikes',
+    'StructuralQC',
+    'UploadIQMs',
+]
