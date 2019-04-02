@@ -27,8 +27,7 @@ installed (see below).
 Second, the latest development version of MRIQC can be installed from
 github using ``pip`` on a Python 3 environment: ::
 
-  pip install -r https://raw.githubusercontent.com/poldracklab/mriqc/master/requirements.txt
-  pip install git+https://github.com/poldracklab/mriqc.git
+  python -m pip install -U mriqc
 
 
 .. warning::
@@ -39,8 +38,8 @@ github using ``pip`` on a Python 3 environment: ::
 Execution system dependencies
 '''''''''''''''''''''''''''''
 
-If you are using a linux distribution with `neurodebian <http://neuro.debian.net/>`_, installation
-should be as easy as::
+If you are using a a `Neurodebian <http://neuro.debian.net/>`_ Linux distribution,
+installation should be as easy as::
 
   sudo apt-get install fsl afni ants
   sudo ln -sf /usr/lib/ants/N4BiasFieldCorrection /usr/local/bin/

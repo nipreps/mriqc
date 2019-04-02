@@ -218,9 +218,9 @@ jobs:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            docker run -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
+            docker run -e PYTHONPATH=/src/mriqc -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
               --entrypoint=sphinx-build poldracklab/mriqc:latest \
-              -T -E -W -D language=en -b html /src/mriqc/docs/source/ /scratch/docs 2>&1 \
+              -T -D language=en -b html /src/mriqc/docs/source/ /scratch/docs 2>&1 \
               | tee $PWD/builddocs.log
             cat $PWD/builddocs.log
             grep -qv "ERROR" $PWD/builddocs.log

@@ -25,7 +25,6 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 .. workflow::
 
-    import os.path as op
     from niworkflows.anat.skullstrip import afni_wf
     wf = afni_wf()
 
