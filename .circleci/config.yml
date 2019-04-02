@@ -39,6 +39,20 @@ jobs:
             fi
             docker images
       - run:
+          name: Prepare MRIQCWebAPI
+          command: |
+            pip3 install docker-compose
+            rm -rf /tmp/src/mriqcwebapi
+            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
+            cd /tmp/src/mriqcwebapi
+            git checkout ${MRIQC_API_TAG}
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
+              grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
+            fi
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+      - run:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
@@ -75,20 +89,6 @@ jobs:
             mkdir -p /tmp/cache
             docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
-      - run:
-          name: Prepare MRIQCWebAPI
-          command: |
-            pip3 install docker-compose
-            rm -rf /tmp/src/mriqcwebapi
-            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
-            cd /tmp/src/mriqcwebapi
-            git checkout ${MRIQC_API_TAG}
-            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
-              grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
-            fi
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
       - run:
           name: Docker save
           no_output_timeout: 40m
