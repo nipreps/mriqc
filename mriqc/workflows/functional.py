@@ -684,7 +684,6 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     from niworkflows.interfaces.registration import (
         RobustMNINormalizationRPT as RobustMNINormalization
     )
-    from pkg_resources import resource_filename as pkgrf
 
     # Get settings
     testing = settings.get('testing', False)

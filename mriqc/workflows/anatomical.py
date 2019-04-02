@@ -163,8 +163,6 @@ def spatial_normalization(settings, mod='T1w', name='SpatialNormalization',
     A simple workflow to perform spatial normalization
 
     """
-    from niworkflows.data import getters as niwgetters
-
     # Have some settings handy
     tpl_id = settings.get('template_id', 'MNI152NLin2009cAsym')
 
