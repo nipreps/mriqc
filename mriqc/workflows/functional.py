@@ -788,8 +788,8 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         new_mask_3d[:, 0:2, :] = True
         new_mask_3d[:, -3:-1, :] = True
 
-    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.get_affine(),
-                              in_4d_nii.get_header())
+    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine,
+                              in_4d_nii.header)
     mask_nii.to_filename(out_file)
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)

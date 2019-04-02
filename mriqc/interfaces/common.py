@@ -97,7 +97,7 @@ class ConformImage(SimpleInterface):
     def _run_interface(self, runtime):
         # Squeeze 4th dimension if possible (#660)
         nii = nb.squeeze_image(nb.load(self.inputs.in_file))
-        hdr = nii.get_header().copy()
+        hdr = nii.header.copy()
         if self.inputs.check_ras:
             nii = nb.as_closest_canonical(nii)
 
@@ -130,7 +130,7 @@ class ConformImage(SimpleInterface):
             if changed:
                 hdr.set_data_dtype(dtype)
                 nii = nb.Nifti1Image(nii.get_data().astype(dtype),
-                                     nii.get_affine(), hdr)
+                                     nii.affine, hdr)
 
         # Generate name
         out_file, ext = op.splitext(op.basename(self.inputs.in_file))

@@ -122,7 +122,7 @@ class FunctionalQC(SimpleInterface):
         }
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.get_header().get_zooms()[:3])
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.header.get_zooms()[:3])
         self._results['fwhm'] = {
             'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
             'avg': float(np.average(fwhm))}
@@ -133,7 +133,7 @@ class FunctionalQC(SimpleInterface):
                                  'z': int(hmcdata.shape[2])}
         self._results['spacing'] = {
             i: float(v) for i, v in zip(['x', 'y', 'z'],
-                                        hmcnii.get_header().get_zooms()[:3])}
+                                        hmcnii.header.get_zooms()[:3])}
 
         try:
             self._results['size']['t'] = int(hmcdata.shape[3])
@@ -141,7 +141,7 @@ class FunctionalQC(SimpleInterface):
             pass
 
         try:
-            self._results['spacing']['tr'] = float(hmcnii.get_header().get_zooms()[3])
+            self._results['spacing']['tr'] = float(hmcnii.header.get_zooms()[3])
         except IndexError:
             pass
 
@@ -186,7 +186,7 @@ class Spikes(SimpleInterface):
         func_data = func_nii.get_data()
         func_shape = func_data.shape
         ntsteps = func_shape[-1]
-        tr = func_nii.get_header().get_zooms()[-1]
+        tr = func_nii.header.get_zooms()[-1]
         nskip = self.inputs.skip_frames
 
         if self.inputs.detrend:

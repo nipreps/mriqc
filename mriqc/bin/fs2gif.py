@@ -103,7 +103,7 @@ set i 0
             ref_file = op.join(tmp_sub, '%s.mgz' % subid)
             img = nb.load(niifile)
             data = exposure.equalize_adapthist(img.get_data(), clip_limit=0.03)
-            nb.Nifti1Image(data, img.get_affine(), img.get_header()).to_filename(modnii)
+            nb.Nifti1Image(data, img.affine, img.header).to_filename(modnii)
             sp.call(['mri_convert', modnii, ref_file], cwd=tmp_sub)
 
         if not opts.zoom:

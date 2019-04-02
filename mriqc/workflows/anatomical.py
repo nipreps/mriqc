@@ -595,7 +595,7 @@ def _enhance(in_file, out_file=None):
     data[excess] = 0
     data[excess] = np.random.choice(data[data > range_min], size=len(excess[0]))
 
-    nb.Nifti1Image(data, imnii.get_affine(), imnii.get_header()).to_filename(
+    nb.Nifti1Image(data, imnii.affine, imnii.header).to_filename(
         out_file)
 
     return out_file
@@ -624,7 +624,7 @@ def image_gradient(in_file, snr, out_file=None):
     grad *= 100.
     grad /= gradmax
 
-    nb.Nifti1Image(grad, imnii.get_affine(), imnii.get_header()).to_filename(out_file)
+    nb.Nifti1Image(grad, imnii.affine, imnii.header).to_filename(out_file)
     return out_file
 
 
@@ -646,7 +646,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     imnii = nb.load(in_file)
 
-    hdr = imnii.get_header().copy()
+    hdr = imnii.header.copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
 
     data = imnii.get_data().astype(np.float32)
@@ -672,5 +672,5 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
-    nb.Nifti1Image(mask, imnii.get_affine(), hdr).to_filename(out_file)
+    nb.Nifti1Image(mask, imnii.affine, hdr).to_filename(out_file)
     return out_file
