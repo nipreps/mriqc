@@ -102,20 +102,22 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
     CPATH="/usr/local/miniconda/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
+    # PYTHONWARNINGS="ignore,default:::mriqc,default:::nipype" \
     PYTHONNOUSERSITE=1
 
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
-                     mkl=2018.0.3 \
-                     mkl-service \
-                     numpy=1.15.4 \
-                     scipy=1.1.0 \
-                     scikit-learn=0.19.1 \
-                     matplotlib=2.2.2 \
-                     pandas=0.23.4 \
+                     graphviz=2.40.1 \
                      libxml2=2.9.8 \
                      libxslt=1.1.32 \
-                     graphviz=2.40.1 \
+                     matplotlib=2.2.2 \
+                     mkl-service \
+                     mkl=2018.0.3 \
+                     numpy=1.15.4 \
+                     pandas=0.23.4 \
+                     scikit-learn=0.19.1 \
+                     scipy=1.1.0 \
+                     setuptools>=40.0.0 \
                      traits=4.6.0 \
                      zlib; sync && \
     chmod -R a+rX /usr/local/miniconda; sync && \
@@ -132,18 +134,17 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
-# Precaching atlases
-ENV TEMPLATEFLOW_HOME="/opt/templateflow"
-RUN mkdir -p $TEMPLATEFLOW_HOME
-RUN pip install --no-cache-dir "templateflow>=0.1.3,<0.2.0a0" && \
-    python -c "from templateflow import api as tfapi; \
-               tfapi.get('MNI152NLin2009cAsym'); \
-               tfapi.get('OASIS30ANTs');"
 
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Precaching atlases
+ENV TEMPLATEFLOW_HOME="/opt/templateflow"
+RUN mkdir -p $TEMPLATEFLOW_HOME
+RUN python -c "from templateflow import api as tfapi; \
+               tfapi.get('MNI152NLin2009cAsym')"
 
 # Installing MRIQC
 COPY . /src/mriqc
@@ -156,7 +157,6 @@ RUN echo "${VERSION}" > /src/mriqc/mriqc/VERSION && \
 
 RUN find $HOME -type d -exec chmod go=u {} + && \
     find $HOME -type f -exec chmod go=u {} +
-
 
 # Best practices
 RUN ldconfig
