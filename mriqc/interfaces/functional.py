@@ -6,7 +6,6 @@
 from os import path as op
 import numpy as np
 import nibabel as nb
-from nilearn.signal import clean
 from builtins import zip
 
 from nipype.interfaces.base import (
@@ -190,6 +189,7 @@ class Spikes(SimpleInterface):
         nskip = self.inputs.skip_frames
 
         if self.inputs.detrend:
+            from nilearn.signal import clean
             data = func_data.reshape(-1, ntsteps)
             clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
             new_shape = (

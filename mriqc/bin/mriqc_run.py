@@ -8,14 +8,11 @@
 MRIQC
 =====
 """
-
 from os import cpu_count
 import logging
 import gc
 from pathlib import Path
 import matplotlib
-
-from .. import __version__
 
 DSA_MESSAGE = """\
 Anonymized quality metrics (IQMs) will be submitted to MRIQC's metrics repository. \
@@ -26,14 +23,14 @@ Data Sharing Agreement."""
 matplotlib.use('Agg')  # Replace matplotlib's backend ASAP (see #758)
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
+logging.captureWarnings(True)
 DEFAULT_MEM_GB = 8
-
 
 def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import DEFAULTS, __description__
+    from .. import DEFAULTS, __description__, __version__
 
     parser = ArgumentParser(
         description="""MRIQC: MRI Quality Control\n\n\
@@ -170,6 +167,8 @@ def main():
     import sys
     from nipype import logging as nlogging
     from multiprocessing import set_start_method, Process, Manager
+    from .. import __version__
+
     set_start_method('forkserver')
 
     # Run parser
@@ -299,7 +298,6 @@ def main():
 
 def init_mriqc(opts, retval):
     """Build the workflow enumerator"""
-
     from bids.layout import BIDSLayout
     from nipype import config as ncfg
     from nipype.pipeline.engine import Workflow
