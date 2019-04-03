@@ -218,7 +218,8 @@ jobs:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            docker run -e PYTHONPATH=/src/mriqc -ti --rm=false -v /home/circleci/out/docs:/scratch/docs \
+            docker run -u $( id -u ) -e PYTHONPATH=/src/mriqc -ti --rm=false \
+              -v /home/circleci/out/docs:/scratch/docs \
               --entrypoint=sphinx-build poldracklab/mriqc:latest \
               -T -D language=en -b html /src/mriqc/docs/source/ /scratch/docs 2>&1 \
               | tee $PWD/builddocs.log
@@ -261,27 +262,24 @@ jobs:
 
       - restore_cache:
           keys:
-            - t1w-v1-{{ epoch }}
-            - t1w-v1-
+            - t1w-v2-{{ epoch }}
+            - t1w-v2-
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
           command: |
             mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
-            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/derivatives
-            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/derivatives
-            sudo setfacl -d -m group:$(id -gn):rwx /tmp/t1w/work
-            sudo setfacl -m group:$(id -gn):rwx /tmp/t1w/work
             # Run MRIQC
-            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
-                       -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm=false -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v1-{{ epoch }}
+         key: t1w-v2-{{ epoch }}
          paths:
             - /tmp/t1w/work
 
@@ -289,8 +287,9 @@ jobs:
           name: Run group-level on T1w images
           no_output_timeout: 2h
           command: |
-            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
-                       -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm=false -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ group \
                        -m T1w -vv
@@ -307,7 +306,7 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/t1w/test
-            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
+            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
@@ -336,7 +335,7 @@ jobs:
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
-                       --train --test -P /usr/local/miniconda/lib/python3.6/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
+                       --train --test -P /usr/local/miniconda/lib/python3.7/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
             # Run the classifier on the test data
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
@@ -388,12 +387,8 @@ jobs:
           no_output_timeout: 2h
           command: |
             mkdir -p /tmp/bold/work /tmp/bold/derivatives
-            sudo setfacl -d -m group:$(id -gn):rwx /tmp/bold/derivatives
-            sudo setfacl -m group:$(id -gn):rwx /tmp/bold/derivatives
-            sudo setfacl -d -m group:$(id -gn):rwx /tmp/bold/work
-            sudo setfacl -m group:$(id -gn):rwx /tmp/bold/work
             # Run MRIQC
-            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ participant \
@@ -410,7 +405,7 @@ jobs:
           name: Run group-level on BOLD images
           no_output_timeout: 2h
           command: |
-            docker run --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
                        poldracklab/mriqc:latest \
                        /data derivatives/ group \
@@ -428,7 +423,7 @@ jobs:
           name: Checking changes on MD5 sums of intermediate files of MRIQC
           command: |
             mkdir -p /tmp/bold/test
-            export HASHCMD="docker run --rm=false -i -v $PWD:/scratch -w /scratch \
+            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
@@ -438,7 +433,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
