@@ -484,11 +484,11 @@ def airmsk_wf(name='AirMaskWorkflow'):
 
     rotmsk = pe.Node(RotationMask(), name='RotationMask')
 
-    invt = pe.Node(ants.ApplyTransforms(dimension=3, default_value=0,
-                                        interpolation='Linear', float=True), name='invert_xfm')
-    invt.inputs.input_image = str(get_template('MNI152NLin2009cAsym', resolution=1,
-                                               desc='head', suffix='mask'))
-    binarize = pe.Node(niu.Function(function=_binarize), name='Binarize')
+    invt = pe.Node(ants.ApplyTransforms(
+        dimension=3, default_value=0, interpolation='MultiLabel', float=True),
+        name='invert_xfm')
+    invt.inputs.input_image = str(get_template(
+        'MNI152NLin2009cAsym', resolution=1, desc='head', suffix='mask'))
 
     qi1 = pe.Node(ArtifactMask(), name='ArtifactMask')
 
@@ -499,8 +499,7 @@ def airmsk_wf(name='AirMaskWorkflow'):
         (rotmsk, qi1, [('out_file', 'rot_mask')]),
         (inputnode, invt, [('in_mask', 'reference_image'),
                            ('inverse_composite_transform', 'transforms')]),
-        (invt, binarize, [('output_image', 'in_file')]),
-        (binarize, qi1, [('out', 'nasion_post_mask')]),
+        (invt, qi1, [('output_image', 'nasion_post_mask')]),
         (qi1, outputnode, [('out_hat_msk', 'hat_mask'),
                            ('out_air_msk', 'air_mask'),
                            ('out_art_msk', 'art_mask')]),
