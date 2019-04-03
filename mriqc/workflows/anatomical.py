@@ -252,7 +252,7 @@ def compute_iqms(settings, modality='T1w', name='ComputeIQMs'):
         float=True),
         iterfield=['input_image'], name='MNItpms2t1')
     invt.inputs.input_image = [str(p) for p in get_template(
-        'MNI152NLin2009cAsym', suffix='probseg', resolution=1, desc='CSF|GM|WM')]
+        'MNI152NLin2009cAsym', suffix='probseg', resolution=1, label='CSF|GM|WM')]
 
     datasink = pe.Node(IQMFileSink(
         modality=modality, out_dir=str(settings['output_dir']),
