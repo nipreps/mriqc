@@ -320,7 +320,7 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/group_T1w.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
 
       - run:
           name: WebAPI - Check records
@@ -441,7 +441,7 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" poldracklab/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
-              -r /usr/local/src/mriqc/mriqc/data/testdata/group_bold.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
 
       - run:
           name: WebAPI - Check records
