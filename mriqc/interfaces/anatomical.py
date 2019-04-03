@@ -357,8 +357,7 @@ class RotationMask(SimpleInterface):
     def _run_interface(self, runtime):
         in_file = nb.load(self.inputs.in_file)
         data = in_file.get_data()
-        mask = np.zeros_like(data, dtype=np.uint8)
-        mask[data <= 0] = 1
+        mask = data <= 0
 
         # Pad one pixel to control behavior on borders of binary_opening
         mask = np.pad(mask, pad_width=(1,), mode='constant', constant_values=1)
