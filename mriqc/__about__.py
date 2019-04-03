@@ -77,7 +77,7 @@ REQUIRES = [
     'six',
     'statsmodels',
     'svgutils',
-    'templateflow<0.2.0a0,>=0.1.3',
+    'templateflow<0.2.0a0,>=0.1.7',
 ]
 
 LINKS_REQUIRES = [
