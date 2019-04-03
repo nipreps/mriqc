@@ -26,6 +26,7 @@ logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 logging.captureWarnings(True)
 DEFAULT_MEM_GB = 8
 
+
 def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser

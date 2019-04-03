@@ -122,7 +122,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
     failed = None
     if csv_failed is not None and op.isfile(csv_failed):
-        MRIQC_REPORT_LOG.warn('Found failed-workflows table "%s"', csv_failed)
+        MRIQC_REPORT_LOG.warning('Found failed-workflows table "%s"', csv_failed)
         failed_df = pd.read_csv(csv_failed, index_col=False)
         cols = list(set(id_labels) & set(failed_df.columns.ravel().tolist()))
 

@@ -248,7 +248,7 @@ def snr_dietrich(mu_fg, sigma_air):
     """
     if sigma_air < 1.0:
         from .. import MRIQC_LOG
-        MRIQC_LOG.warn('SNRd - background sigma is too small (%f)', sigma_air)
+        MRIQC_LOG.warning('SNRd - background sigma is too small (%f)', sigma_air)
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
@@ -580,8 +580,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
         nvox = float(mask.sum())
         if nvox < 1e3:
-            MRIQC_LOG.warn('calculating summary stats of label "%s" in a very small '
-                           'mask (%d voxels)', k, int(nvox))
+            MRIQC_LOG.warning('calculating summary stats of label "%s" in a very small '
+                              'mask (%d voxels)', k, int(nvox))
             if k == 'bg':
                 continue
 
@@ -611,8 +611,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         }
 
     if 'bg' in output and output['bg']['mad'] == 0.0 and output['bg']['stdv'] > 1.0:
-        MRIQC_LOG.warn('estimated MAD in the background was too small ('
-                       'MAD=%f)', output['bg']['mad'])
+        MRIQC_LOG.warning('estimated MAD in the background was too small ('
+                          'MAD=%f)', output['bg']['mad'])
         output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
     return output
 

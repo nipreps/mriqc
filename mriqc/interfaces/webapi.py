@@ -153,7 +153,7 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = ('QC metrics upload failed to create an ID for the record '
                       'uplOADED. rEsponse from server follows: {}'.format(response.text))
-            IFLOGGER.warn(errmsg)
+            IFLOGGER.warning(errmsg)
 
         if response.status_code == 201:
             IFLOGGER.info('QC metrics successfully uploaded.')
@@ -161,7 +161,7 @@ class UploadIQMs(SimpleInterface):
 
         errmsg = 'QC metrics failed to upload. Status %d: %s' % (
             response.status_code, response.text)
-        IFLOGGER.warn(errmsg)
+        IFLOGGER.warning(errmsg)
         if self.inputs.strict:
             raise RuntimeError(response.text)
 

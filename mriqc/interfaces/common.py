@@ -106,8 +106,8 @@ class ConformImage(SimpleInterface):
             datatype = int(hdr['datatype'])
 
             if datatype == 1:
-                IFLOGGER.warn('Input image %s has a suspicious data type "%s"',
-                              self.inputs.in_file, hdr.get_data_dtype())
+                IFLOGGER.warning('Input image %s has a suspicious data type "%s"',
+                                 self.inputs.in_file, hdr.get_data_dtype())
 
             # signed char and bool to uint8
             if datatype == 1 or datatype == 2 or datatype == 256:
