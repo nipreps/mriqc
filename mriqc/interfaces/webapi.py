@@ -184,7 +184,8 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
 
 
     """
-    from json import load, dumps
+    from pathlib import Path
+    from json import loads, dumps
     import requests
     from io import open
     from copy import deepcopy
@@ -192,11 +193,15 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
     if port is None:
         port = 443 if scheme == 'https' else 80
 
-    with open(in_iqms, 'r') as input_json:
-        in_data = load(input_json)
+    in_data = loads(Path(in_iqms).read_text())
 
     # Extract metadata and provenance
     meta = in_data.pop('bids_meta')
+
+    # For compatibility with WebAPI. Shold be rolled back to int
+    if meta.get('run_id', None) is not None:
+        meta['run_id'] = '%d' % meta.get('run_id')
+
     prov = in_data.pop('provenance')
 
     # At this point, data should contain only IQMs
