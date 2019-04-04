@@ -161,7 +161,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                                          no_mask=True,
                                          no_mm=True,
                                          generate_report=True),
-                          name="ICA", mem_gb=biggest_file_gb * 5)
+                          name="ICA", mem_gb=max(biggest_file_gb * 5, 8))
         workflow.connect([
             (sanitize, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
