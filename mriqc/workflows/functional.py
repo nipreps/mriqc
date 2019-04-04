@@ -696,36 +696,38 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['epi_mni', 'epi_parc', 'report']), name='outputnode')
 
-    epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
-
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, copy_header=True),
+                    name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
-        num_threads=ants_nthreads,
-        float=settings.get('ants_float', False),
-        template='MNI152NLin2009cAsym',
-        reference_image=str(get_template('MNI152NLin2009cAsym', suffix='boldref')),
+        explicit_masking=False,
         flavor='testing' if testing else 'precise',
+        float=settings.get('ants_float', False),
+        generate_report=True,
         moving='bold',
-        generate_report=True,),
-        name='EPI2MNI',
-        num_threads=n_procs,
-        mem_gb=3)
+        num_threads=ants_nthreads,
+        reference='boldref',
+        reference_image=str(get_template(
+            'MNI152NLin2009cAsym', resolution=2, suffix='boldref')),
+        reference_mask=str(get_template(
+            'MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')),
+        template='MNI152NLin2009cAsym',
+        template_resolution=2, ),
+        name='EPI2MNI', num_threads=n_procs, mem_gb=3)
 
     # Warp segmentation into EPI space
     invt = pe.Node(ants.ApplyTransforms(
         float=True,
         input_image=str(get_template('MNI152NLin2009cAsym', resolution=1,
                                      desc='carpet', suffix='dseg')),
-        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        dimension=3, default_value=0, interpolation='MultiLabel'),
         name='ResampleSegmentation')
 
     workflow.connect([
         (inputnode, invt, [('epi_mean', 'reference_image')]),
         (inputnode, n4itk, [('epi_mean', 'input_image')]),
-        (inputnode, epimask, [('epi_mask', 'mask_file')]),
-        (n4itk, epimask, [('output_image', 'in_file')]),
-        (epimask, norm, [('out_file', 'moving_image')]),
+        (inputnode, norm, [('epi_mask', 'moving_mask')]),
+        (n4itk, norm, [('output_image', 'moving_image')]),
         (norm, invt, [
             ('inverse_composite_transform', 'transforms')]),
         (invt, outputnode, [('output_image', 'epi_parc')]),
