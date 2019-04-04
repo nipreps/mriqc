@@ -377,7 +377,11 @@ def init_mriqc(opts, retval):
             settings['ants_nthreads'] = 1
     else:
         plugin_settings['plugin'] = 'MultiProc'
-        plugin_settings['plugin_args'] = {'n_procs': n_procs}
+        plugin_settings['plugin_args'] = {
+            'n_procs': n_procs,
+            'raise_insufficient': False,
+            'maxtasksperchild': 1,
+        }
         if opts.mem_gb:
             plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
