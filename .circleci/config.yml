@@ -39,6 +39,27 @@ jobs:
             fi
             docker images
       - run:
+          name: Prepare MRIQCWebAPI
+          command: |
+            python3 -m pip install "docker-compose==1.23.2"
+            rm -rf /tmp/src/mriqcwebapi
+            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
+            cd /tmp/src/mriqcwebapi
+            git checkout ${MRIQC_API_TAG}
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
+              grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
+            fi
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+      - run:
+          name: Save WebAPI Docker images
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
+            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
+      - run:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
@@ -75,27 +96,6 @@ jobs:
             mkdir -p /tmp/cache
             docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
-      - run:
-          name: Prepare MRIQCWebAPI
-          command: |
-            pip3 install docker-compose
-            rm -rf /tmp/src/mriqcwebapi
-            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
-            cd /tmp/src/mriqcwebapi
-            git checkout ${MRIQC_API_TAG}
-            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
-              grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
-            fi
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
-      - run:
-          name: Docker save
-          no_output_timeout: 40m
-          command: |
-            mkdir -p /tmp/cache
-            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
-            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
           root: /tmp
           paths:
