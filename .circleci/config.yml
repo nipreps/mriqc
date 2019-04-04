@@ -288,6 +288,17 @@ jobs:
                        /data derivatives/ group \
                        -m T1w -vv
 
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/t1w/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/t1w/work
+
       - run:
           name: Checking presence of outputs
           command: |
@@ -334,8 +345,6 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
                        --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
-      - store_artifacts:
-          path: /tmp/t1w/derivatives
 
       - store_artifacts:
           path: /tmp/t1w/test
@@ -400,6 +409,17 @@ jobs:
                        /data derivatives/ group \
                        -m bold -vv
 
+      - store_artifacts:
+          path: /tmp/bold/derivatives
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/bold/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/bold/work
+
       - run:
           name: Checking presence of outputs
           command: |
@@ -435,9 +455,6 @@ jobs:
               poldracklab/mriqc:latest \
               bold 9 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
-
-      - store_artifacts:
-          path: /tmp/bold/derivatives
 
       - store_artifacts:
           path: /tmp/bold/test
