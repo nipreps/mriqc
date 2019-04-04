@@ -313,7 +313,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/t1w/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
 
       - store_artifacts:
           path: /tmp/t1w/work
@@ -434,7 +434,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/bold/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
 
       - store_artifacts:
           path: /tmp/bold/work
