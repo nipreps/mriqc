@@ -292,14 +292,6 @@ jobs:
           path: /tmp/t1w/derivatives
 
       - run:
-          name: Clean-up work directory (just leave reports & commandlines)
-          command: |
-            find /tmp/t1w/work -type f ! -name "report.rst" ! -name "command.txt" -delete
-
-      - store_artifacts:
-          path: /tmp/t1w/work
-
-      - run:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/t1w/test
@@ -317,6 +309,14 @@ jobs:
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/t1w/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/t1w/work
 
       - run:
           name: Checking changes on IQMs
@@ -413,14 +413,6 @@ jobs:
           path: /tmp/bold/derivatives
 
       - run:
-          name: Clean-up work directory (just leave reports & commandlines)
-          command: |
-            find /tmp/bold/work -type f ! -name "report.rst" ! -name "command.txt" -delete
-
-      - store_artifacts:
-          path: /tmp/bold/work
-
-      - run:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/bold/test
@@ -438,6 +430,14 @@ jobs:
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
             exit $?
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/bold/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/bold/work
 
       - run:
           name: Checking changes on IQMs
