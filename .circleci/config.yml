@@ -12,7 +12,7 @@ jobs:
     steps:
       - run:
           name: Install parallel gzip and python3
-          command: apk add --no-cache pigz python3 python3-dev libffi-dev musl-dev gcc openssl-dev make
+          command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
             - docker-v1-{{ .Branch }}-{{ epoch }}
@@ -41,7 +41,7 @@ jobs:
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-            pip3 install docker-compose
+            python3 -m pip install "docker-compose==1.23.2"
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
@@ -52,6 +52,13 @@ jobs:
             fi
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+      - run:
+          name: Save WebAPI Docker images
+          no_output_timeout: 40m
+          command: |
+            mkdir -p /tmp/cache
+            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
+            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -89,13 +96,6 @@ jobs:
             mkdir -p /tmp/cache
             docker save ubuntu:xenial-20161213 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
-      - run:
-          name: Docker save
-          no_output_timeout: 40m
-          command: |
-            mkdir -p /tmp/cache
-            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
-            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -294,6 +294,9 @@ jobs:
                        /data derivatives/ group \
                        -m T1w -vv
 
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
+
       - run:
           name: Checking presence of outputs
           command: |
@@ -312,6 +315,14 @@ jobs:
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/t1w/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/t1w/work
 
       - run:
           name: Checking changes on IQMs
@@ -340,8 +351,6 @@ jobs:
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
                        --entrypoint=mriqc_clf poldracklab/mriqc:latest \
                        --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
-      - store_artifacts:
-          path: /tmp/t1w/derivatives
 
       - store_artifacts:
           path: /tmp/t1w/test
@@ -411,6 +420,9 @@ jobs:
                        /data derivatives/ group \
                        -m bold -vv
 
+      - store_artifacts:
+          path: /tmp/bold/derivatives
+
       - run:
           name: Checking presence of outputs
           command: |
@@ -431,6 +443,14 @@ jobs:
             exit $?
 
       - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/bold/work -type f ! -name "report.rst" ! -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/bold/work
+
+      - run:
           name: Checking changes on IQMs
           command: |
             docker run -u $( id -u ) --rm=false -ti -v $PWD:/scratch -w /scratch \
@@ -446,9 +466,6 @@ jobs:
               poldracklab/mriqc:latest \
               bold 9 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
-
-      - store_artifacts:
-          path: /tmp/bold/derivatives
 
       - store_artifacts:
           path: /tmp/bold/test
