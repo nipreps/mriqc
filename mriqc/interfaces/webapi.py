@@ -187,7 +187,6 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
     from pathlib import Path
     from json import loads, dumps
     import requests
-    from io import open
     from copy import deepcopy
 
     if port is None:
