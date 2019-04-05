@@ -66,7 +66,7 @@ REQUIRES = [
     'nipy',
     'nipype>=1.1.1',
     'nitime',
-    'niworkflows',
+    'niworkflows<0.9.0a0,>=0.8.2',
     'numpy',
     'pandas>=0.21.0',
     'pybids<0.8.0a0,>=0.7.1',
@@ -81,8 +81,6 @@ REQUIRES = [
 ]
 
 LINKS_REQUIRES = [
-    'git+https://github.com/oesteban/niworkflows.git@'
-    '292b74b418203bdbd6809d4a001b071b9a990882#egg=niworkflows',
 ]
 
 
