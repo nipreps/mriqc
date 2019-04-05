@@ -1,4 +1,4 @@
-0.15.0 (April 4, 2019)
+0.15.0 (April 5, 2019)
 ======================
 
 A long overdue update, pinning updated versions of 
@@ -6,7 +6,6 @@ A long overdue update, pinning updated versions of
 `Niworkflows <https://github.com/poldracklab/niworkflows>`__.
 With thanks to @garciadias for contributions.
 
-  * ENH: Use TemplateFlow and niworkflows-0.8.x (#782) @oesteban
   * ENH: Revision of QI2 (#606) @oesteban
   * FIX: Set matplotlib backend early (#759) @oesteban
   * FIX: Niworkflows pin <0.5 (#766) @oesteban
@@ -14,6 +13,9 @@ With thanks to @garciadias for contributions.
   * DOC: Add data sharing agreement (#765) @oesteban
   * FIX: Catch uncaught exception in WebAPI upload. (#774) @rwblair
   * FIX/DOC: Append new line after dashes in ``mriqc_run`` help text (#777) @rwblair
+  * ENH: Use TemplateFlow and niworkflows-0.8.x (#782) @oesteban
+  * FIX: Correctly set WebAPI rating endpoint in BOLD reports. (#785) @oesteban
+  * FIX: Correctly process values of rating widget (#787) @oesteban
 
 0.14.2 (August 20, 2018)
 ========================
