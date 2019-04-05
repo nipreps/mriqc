@@ -9,7 +9,6 @@
 BIDS-Apps subject wrangler
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 from builtins import range  # pylint: disable=W0622
 
 import os.path as op

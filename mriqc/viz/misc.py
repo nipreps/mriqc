@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ Helper functions for the figures in the paper """
-from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
 import pandas as pd

@@ -12,7 +12,6 @@ Reads in and writes CSV files with the IQMs
 
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from pathlib import Path
 import numpy as np
@@ -292,7 +291,7 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
     nan_columns = zs_df.columns[zs_df.isnull().any()].tolist()
 
     if nan_columns:
-        LOG.warn('Columns %s contain NaNs after z-scoring.', ", ".join(nan_columns))
+        LOG.warning('Columns %s contain NaNs after z-scoring.', ", ".join(nan_columns))
         zs_df[nan_columns] = dataframe[nan_columns].values
 
     return zs_df

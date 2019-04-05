@@ -7,7 +7,6 @@
 # @Date:   2016-01-05 11:29:40
 # @Email:  code@oscaresteban.es
 """ Nipype interfaces to support anatomical workflow """
-from __future__ import print_function, division, absolute_import, unicode_literals
 import os.path as op
 import numpy as np
 import nibabel as nb
@@ -78,7 +77,7 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = np.all(np.array(imnii.get_header().get_zooms()[:3],
+        erode = np.all(np.array(imnii.header.get_zooms()[:3],
                                 dtype=np.float32) < 1.9)
 
         # Load image corrected for INU
@@ -147,7 +146,7 @@ class StructuralQC(SimpleInterface):
         )
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.get_header().get_zooms()[:3])
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.header.get_zooms()[:3])
         self._results['fwhm'] = {
             'x': float(fwhm[0]), 'y': float(fwhm[1]), 'z': float(fwhm[2]),
             'avg': float(np.average(fwhm))}
@@ -164,7 +163,7 @@ class StructuralQC(SimpleInterface):
                                  'z': int(inudata.shape[2])}
         self._results['spacing'] = {
             i: float(v) for i, v in zip(
-                ['x', 'y', 'z'], imnii.get_header().get_zooms()[:3])}
+                ['x', 'y', 'z'], imnii.header.get_zooms()[:3])}
 
         try:
             self._results['size']['t'] = int(inudata.shape[3])
@@ -172,7 +171,7 @@ class StructuralQC(SimpleInterface):
             pass
 
         try:
-            self._results['spacing']['tr'] = float(imnii.get_header().get_zooms()[3])
+            self._results['spacing']['tr'] = float(imnii.header.get_zooms()[3])
         except IndexError:
             pass
 
@@ -256,16 +255,16 @@ class ArtifactMask(SimpleInterface):
         self._results['out_art_msk'] = op.abspath('{}_art{}'.format(fname, ext))
         self._results['out_air_msk'] = op.abspath('{}_air{}'.format(fname, ext))
 
-        hdr = imnii.get_header().copy()
+        hdr = imnii.header.copy()
         hdr.set_data_dtype(np.uint8)
-        nb.Nifti1Image(qi1_img, imnii.get_affine(), hdr).to_filename(
+        nb.Nifti1Image(qi1_img, imnii.affine, hdr).to_filename(
             self._results['out_art_msk'])
 
-        nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(
+        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
             self._results['out_hat_msk'])
 
         airdata[qi1_img > 0] = 0
-        nb.Nifti1Image(airdata, imnii.get_affine(), hdr).to_filename(
+        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
             self._results['out_air_msk'])
         return runtime
 
@@ -358,8 +357,7 @@ class RotationMask(SimpleInterface):
     def _run_interface(self, runtime):
         in_file = nb.load(self.inputs.in_file)
         data = in_file.get_data()
-        mask = np.zeros_like(data, dtype=np.uint8)
-        mask[data <= 0] = 1
+        mask = data <= 0
 
         # Pad one pixel to control behavior on borders of binary_opening
         mask = np.pad(mask, pad_width=(1,), mode='constant', constant_values=1)

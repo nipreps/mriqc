@@ -3,7 +3,6 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
-from __future__ import print_function, division, absolute_import, unicode_literals
 from os import path as op
 
 from pkg_resources import resource_filename as pkgrf
@@ -98,7 +97,7 @@ class ConformImage(SimpleInterface):
     def _run_interface(self, runtime):
         # Squeeze 4th dimension if possible (#660)
         nii = nb.squeeze_image(nb.load(self.inputs.in_file))
-        hdr = nii.get_header().copy()
+        hdr = nii.header.copy()
         if self.inputs.check_ras:
             nii = nb.as_closest_canonical(nii)
 
@@ -107,8 +106,8 @@ class ConformImage(SimpleInterface):
             datatype = int(hdr['datatype'])
 
             if datatype == 1:
-                IFLOGGER.warn('Input image %s has a suspicious data type "%s"',
-                              self.inputs.in_file, hdr.get_data_dtype())
+                IFLOGGER.warning('Input image %s has a suspicious data type "%s"',
+                                 self.inputs.in_file, hdr.get_data_dtype())
 
             # signed char and bool to uint8
             if datatype == 1 or datatype == 2 or datatype == 256:
@@ -131,7 +130,7 @@ class ConformImage(SimpleInterface):
             if changed:
                 hdr.set_data_dtype(dtype)
                 nii = nb.Nifti1Image(nii.get_data().astype(dtype),
-                                     nii.get_affine(), hdr)
+                                     nii.affine, hdr)
 
         # Generate name
         out_file, ext = op.splitext(op.basename(self.inputs.in_file))

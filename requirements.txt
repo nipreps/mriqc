@@ -1,2 +1,3 @@
-niworkflows>=0.4.2,<0.5
-pybids<=0.6.5
+niworkflows<0.9.0a0,>=0.8.2
+templateflow<0.2.0a0,>=0.1.7
+xvfbwrapper

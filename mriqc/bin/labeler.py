@@ -4,7 +4,6 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # @Author: dbirman
 # @Date:   2017-06-14 16:51:24
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 import sys
 import csv

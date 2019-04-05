@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ Visualization interfaces """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 from pathlib import Path
 import numpy as np

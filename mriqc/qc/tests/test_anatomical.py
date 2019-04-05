@@ -11,7 +11,6 @@
 """
 Anatomical tests
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
 from tempfile import mkdtemp
 from shutil import rmtree
 import numpy as np

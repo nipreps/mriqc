@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """Helper functions for the workflows"""
-from __future__ import print_function, division, absolute_import, unicode_literals
 from distutils.version import StrictVersion
 from builtins import range
 
@@ -60,7 +59,7 @@ def thresh_image(in_file, thres=0.5, out_file=None):
     data[data < thres] = 0
     data[data > 0] = 1
     nb.Nifti1Image(
-        data, im.get_affine(), im.get_header()).to_filename(out_file)
+        data, im.affine, im.header).to_filename(out_file)
     return out_file
 
 

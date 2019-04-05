@@ -3,12 +3,15 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Helper functions """
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 from pathlib import Path
-import collections
+from collections import OrderedDict
 import json
 import pandas as pd
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
 
 IMTYPES = {
     'T1w': 'anat',
@@ -16,7 +19,7 @@ IMTYPES = {
     'bold': 'func',
 }
 
-BIDS_COMP = collections.OrderedDict([
+BIDS_COMP = OrderedDict([
     ('subject_id', 'sub'), ('session_id', 'ses'), ('task_id', 'task'),
     ('acq_id', 'acq'), ('rec_id', 'rec'), ('run_id', 'run')
 ])
@@ -181,8 +184,7 @@ def generate_tsv(output_dir, mod):
 
 
 def _read_and_save(in_file):
-    with open(in_file, 'r') as jsondata:
-        data = json.load(jsondata)
+    data = json.loads(Path(in_file).read_text())
     return data if data else None
 
 
@@ -190,7 +192,7 @@ def _flatten(in_dict, parent_key='', sep='_'):
     items = []
     for k, val in list(in_dict.items()):
         new_key = parent_key + sep + k if parent_key else k
-        if isinstance(val, collections.MutableMapping):
+        if isinstance(val, MutableMapping):
             items.extend(list(_flatten(val, new_key, sep=sep).items()))
         else:
             items.append((new_key, val))

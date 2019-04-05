@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 from nipype import logging
 from nipype.interfaces.base import (
@@ -154,7 +153,7 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = ('QC metrics upload failed to create an ID for the record '
                       'uplOADED. rEsponse from server follows: {}'.format(response.text))
-            IFLOGGER.warn(errmsg)
+            IFLOGGER.warning(errmsg)
 
         if response.status_code == 201:
             IFLOGGER.info('QC metrics successfully uploaded.')
@@ -162,7 +161,7 @@ class UploadIQMs(SimpleInterface):
 
         errmsg = 'QC metrics failed to upload. Status %d: %s' % (
             response.status_code, response.text)
-        IFLOGGER.warn(errmsg)
+        IFLOGGER.warning(errmsg)
         if self.inputs.strict:
             raise RuntimeError(response.text)
 
@@ -185,19 +184,23 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
 
 
     """
-    from json import load, dumps
+    from pathlib import Path
+    from json import loads, dumps
     import requests
-    from io import open
     from copy import deepcopy
 
     if port is None:
         port = 443 if scheme == 'https' else 80
 
-    with open(in_iqms, 'r') as input_json:
-        in_data = load(input_json)
+    in_data = loads(Path(in_iqms).read_text())
 
     # Extract metadata and provenance
     meta = in_data.pop('bids_meta')
+
+    # For compatibility with WebAPI. Shold be rolled back to int
+    if meta.get('run_id', None) is not None:
+        meta['run_id'] = '%d' % meta.get('run_id')
+
     prov = in_data.pop('provenance')
 
     # At this point, data should contain only IQMs

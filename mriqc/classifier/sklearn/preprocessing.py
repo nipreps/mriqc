@@ -325,7 +325,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                 # comment out to force counter renditions of winnowing
                 # noise_flag = False
             elif np.all(k * importances[-1] > importances[0:-1]):
-                LOG.warn('No features are better than noise')
+                LOG.warning('No features are better than noise')
                 # noise better than all features aka no feature better than noise
                 # Leave as separate if clause in case want to do something different than
                 # when all feat > noise. Comment out to force counter renditions of winnowing

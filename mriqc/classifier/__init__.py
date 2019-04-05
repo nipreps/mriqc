@@ -23,4 +23,3 @@ Cross-validation in MRIQC
     cv/experiments
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals

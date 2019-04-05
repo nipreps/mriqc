@@ -13,7 +13,6 @@ Extends sklearn's GridSearchCV to a model search object
 
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
 import time
@@ -303,9 +302,9 @@ def nested_fit_and_score(
             test_score = error_score
             if return_train_score:
                 train_score = error_score
-            LOG.warn("Classifier fit failed. The score on this train-test"
-                     " partition for these parameters will be set to %f. "
-                     "Details: \n%r", error_score, e)
+            LOG.warning("Classifier fit failed. The score on this train-test"
+                        " partition for these parameters will be set to %f. "
+                        "Details: \n%r", error_score, e)
         else:
             raise ValueError("error_score must be the string 'raise' or a"
                              " numeric value. (Hint: if using 'raise', please"
@@ -320,8 +319,8 @@ def nested_fit_and_score(
             test_score = _score(estimator, X_test, y_test, scorer)
             score_time = time.time() - start_time - fit_time
         else:
-            LOG.warn('Test set has no positive labels, scoring has been skipped '
-                     'in this loop.')
+            LOG.warning('Test set has no positive labels, scoring has been skipped '
+                        'in this loop.')
 
         if return_train_score:
             train_score = _score(estimator, X_train, y_train, scorer)

@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 # @Last Modified time: 2017-05-25 13:41:58
 """ Helpers in report generation"""
-from __future__ import print_function, division, absolute_import, unicode_literals
 
 
 def iqms2html(indict, table_id):

@@ -23,7 +23,6 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 from pathlib import Path
 
 from nipype.pipeline import engine as pe
@@ -32,6 +31,7 @@ from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import afni, ants, fsl
 
+from niworkflows.interfaces.bids import ReadSidecarJSON
 from niworkflows.interfaces import segmentation as nws
 from niworkflows.interfaces import registration as nwr
 from niworkflows.interfaces import utils as niutils
@@ -39,7 +39,7 @@ from niworkflows.interfaces.plotting import FMRISummary
 
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
-from ..interfaces import ReadSidecarJSON, FunctionalQC, Spikes, IQMFileSink
+from ..interfaces import FunctionalQC, Spikes, IQMFileSink
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -160,8 +160,9 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         melodic = pe.Node(nws.MELODICRPT(no_bet=True,
                                          no_mask=True,
                                          no_mm=True,
+                                         compress_report=False,
                                          generate_report=True),
-                          name="ICA", mem_gb=biggest_file_gb * 5)
+                          name="ICA", mem_gb=max(biggest_file_gb * 5, 8))
         workflow.connect([
             (sanitize, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
@@ -270,16 +271,16 @@ def compute_iqms(settings, name='ComputeIQMs'):
         name='datasink', run_without_submitting=True)
 
     workflow.connect([
-        (inputnode, datasink, [('exclude_index', 'dummy_trs')]),
+        (inputnode, datasink, [('in_file', 'in_file'),
+                               ('exclude_index', 'dummy_trs')]),
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
-        (meta, datasink, [('relative_path', 'in_file'),
-                          ('subject_id', 'subject_id'),
-                          ('session_id', 'session_id'),
-                          ('task_id', 'task_id'),
-                          ('acq_id', 'acq_id'),
-                          ('rec_id', 'rec_id'),
-                          ('run_id', 'run_id'),
+        (meta, datasink, [('subject', 'subject_id'),
+                          ('session', 'session_id'),
+                          ('task', 'task_id'),
+                          ('acquisition', 'acq_id'),
+                          ('reconstruction', 'rec_id'),
+                          ('run', 'run_id'),
                           ('out_dict', 'metadata')]),
         (addprov, datasink, [('out', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -680,19 +681,15 @@ def epi_mni_align(settings, name='SpatialNormalization'):
       wf = epi_mni_align({})
 
     """
-    from niworkflows.data import get_mni_icbm152_nlin_asym_09c as get_template
+    from templateflow.api import get as get_template
     from niworkflows.interfaces.registration import (
         RobustMNINormalizationRPT as RobustMNINormalization
     )
-    from pkg_resources import resource_filename as pkgrf
 
     # Get settings
     testing = settings.get('testing', False)
     n_procs = settings.get('n_procs', 1)
     ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
-
-    # Init template
-    mni_template = get_template()
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['epi_mean', 'epi_mask']),
@@ -700,35 +697,38 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['epi_mni', 'epi_parc', 'report']), name='outputnode')
 
-    epimask = pe.Node(fsl.ApplyMask(), name='EPIApplyMask')
-
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3), name='SharpenEPI')
+    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, copy_header=True),
+                    name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
-        num_threads=ants_nthreads,
-        float=settings.get('ants_float', False),
-        template='mni_icbm152_nlin_asym_09c',
-        reference_image=pkgrf('mriqc', 'data/mni/2mm_T2_brain.nii.gz'),
+        explicit_masking=False,
         flavor='testing' if testing else 'precise',
-        moving='EPI',
-        generate_report=True,),
-        name='EPI2MNI',
-        num_threads=n_procs,
-        mem_gb=3)
+        float=settings.get('ants_float', False),
+        generate_report=True,
+        moving='bold',
+        num_threads=ants_nthreads,
+        reference='boldref',
+        reference_image=str(get_template(
+            'MNI152NLin2009cAsym', resolution=2, suffix='boldref')),
+        reference_mask=str(get_template(
+            'MNI152NLin2009cAsym', resolution=2, desc='brain', suffix='mask')),
+        template='MNI152NLin2009cAsym',
+        template_resolution=2, ),
+        name='EPI2MNI', num_threads=n_procs, mem_gb=3)
 
     # Warp segmentation into EPI space
     invt = pe.Node(ants.ApplyTransforms(
         float=True,
-        input_image=str(Path(mni_template) / '1mm_parc.nii.gz'),
-        dimension=3, default_value=0, interpolation='NearestNeighbor'),
+        input_image=str(get_template('MNI152NLin2009cAsym', resolution=1,
+                                     desc='carpet', suffix='dseg')),
+        dimension=3, default_value=0, interpolation='MultiLabel'),
         name='ResampleSegmentation')
 
     workflow.connect([
         (inputnode, invt, [('epi_mean', 'reference_image')]),
         (inputnode, n4itk, [('epi_mean', 'input_image')]),
-        (inputnode, epimask, [('epi_mask', 'mask_file')]),
-        (n4itk, epimask, [('output_image', 'in_file')]),
-        (epimask, norm, [('out_file', 'moving_image')]),
+        (inputnode, norm, [('epi_mask', 'moving_mask')]),
+        (n4itk, norm, [('output_image', 'moving_image')]),
         (norm, invt, [
             ('inverse_composite_transform', 'transforms')]),
         (invt, outputnode, [('output_image', 'epi_parc')]),
@@ -791,8 +791,8 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         new_mask_3d[:, 0:2, :] = True
         new_mask_3d[:, -3:-1, :] = True
 
-    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.get_affine(),
-                              in_4d_nii.get_header())
+    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine,
+                              in_4d_nii.header)
     mask_nii.to_filename(out_file)
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)

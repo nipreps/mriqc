@@ -8,15 +8,11 @@
 MRIQC
 =====
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
-
 from os import cpu_count
 import logging
 import gc
 from pathlib import Path
 import matplotlib
-
-from .. import __version__
 
 DSA_MESSAGE = """\
 Anonymized quality metrics (IQMs) will be submitted to MRIQC's metrics repository. \
@@ -27,6 +23,7 @@ Data Sharing Agreement."""
 matplotlib.use('Agg')  # Replace matplotlib's backend ASAP (see #758)
 logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
+logging.captureWarnings(True)
 DEFAULT_MEM_GB = 8
 
 
@@ -34,7 +31,7 @@ def get_parser():
     """Build parser object"""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import DEFAULTS, __description__
+    from .. import DEFAULTS, __description__, __version__
 
     parser = ArgumentParser(
         description="""MRIQC: MRI Quality Control\n\n\
@@ -76,8 +73,7 @@ def get_parser():
     g_bids.add_argument('--task-id', action='store', nargs='*', type=str,
                         help='filter input dataset by task id')
     g_bids.add_argument('-m', '--modalities', action='store', nargs='*',
-                        choices=['T1w', 'bold', 'T2w'], default=['T1w', 'bold', 'T2w'],
-                        help='filter input dataset by MRI type ("T1w", "T2w", or "bold")')
+                        help='filter input dataset by MRI type')
     g_bids.add_argument('--dsname', type=str, help='a dataset name')
 
     # Control instruments
@@ -172,6 +168,8 @@ def main():
     import sys
     from nipype import logging as nlogging
     from multiprocessing import set_start_method, Process, Manager
+    from .. import __version__
+
     set_start_method('forkserver')
 
     # Run parser
@@ -264,6 +262,7 @@ def main():
 
     # Set up group level
     if 'group' in analysis_levels:
+        from ..utils.bids import DEFAULT_TYPES
         from ..reports import group_html
         from ..utils.misc import generate_tsv  # , generate_pred
 
@@ -271,7 +270,7 @@ def main():
 
         # Generate reports
         mod_group_reports = []
-        for mod in opts.modalities:
+        for mod in opts.modalities or DEFAULT_TYPES:
             dataframe, out_tsv = generate_tsv(
                 opts.output_dir.expanduser().resolve(), mod)
             # If there are no iqm.json files, nothing to do.
@@ -300,8 +299,7 @@ def main():
 
 def init_mriqc(opts, retval):
     """Build the workflow enumerator"""
-
-    from bids.grabbids import BIDSLayout
+    from bids.layout import BIDSLayout
     from nipype import config as ncfg
     from nipype.pipeline.engine import Workflow
 
@@ -379,7 +377,11 @@ def init_mriqc(opts, retval):
             settings['ants_nthreads'] = 1
     else:
         plugin_settings['plugin'] = 'MultiProc'
-        plugin_settings['plugin_args'] = {'n_procs': n_procs}
+        plugin_settings['plugin_args'] = {
+            'n_procs': n_procs,
+            'raise_insufficient': False,
+            'maxtasksperchild': 1,
+        }
         if opts.mem_gb:
             plugin_settings['plugin_args']['memory_gb'] = opts.mem_gb
 
@@ -394,22 +396,20 @@ def init_mriqc(opts, retval):
         with opts.use_plugin.open() as pfile:
             plugin_settings.update(loadyml(pfile))
 
-    # Process data types
-    modalities = opts.modalities
-
     layout = BIDSLayout(str(settings['bids_dir']),
-                        exclude=['derivatives', 'sourcedata'])
+                        exclude=['derivatives', 'sourcedata', r'^\..*'])
     dataset = collect_bids_data(
         layout,
         participant_label=opts.participant_label,
         session=opts.session_id,
         run=opts.run_id,
         task=opts.task_id,
-        bids_type=modalities,
+        bids_type=opts.modalities,
     )
 
     workflow = Workflow(name='workflow_enumerator')
     workflow.base_dir = settings['work_dir']
+    modalities = [mod for mod, val in dataset.items() if val]
 
     wf_list = []
     subject_list = []
