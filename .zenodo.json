@@ -1,0 +1,88 @@
+{
+  "title": "MRIQC: Advancing the automatic prediction of image quality in MRI from unseen sites",
+  "description": "<p>Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain <a href=http://mriqc.readthedocs.io>http://mriqc.readthedocs.io</a>.</p>",
+  "creators": [
+    {
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Esteban, Oscar",
+      "orcid": "0000-0001-8435-6191"
+    },
+    {
+      "name": "Blair, Ross",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "orcid": "0000-0003-3007-1056"
+    },
+    {
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Markiewicz, Christopher J.",
+      "orcid": "0000-0002-6533-164X"
+    },
+    {
+      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Varada, Jan"
+    },
+    {
+      "affiliation": "Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Nielson, Dylan",
+      "orcid": "0000-0003-4613-6643"
+    },
+    {
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Poldrack, Russell A.",
+      "orcid": "0000-0001-6755-0259"
+    },
+    {
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Gorgolewski, Krzysztof J.",
+      "orcid": "0000-0003-3321-7583"
+    }
+  ],
+  "contributors": [
+    {
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Birman, Daniel",
+      "orcid": "0000-0003-3748-6289",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Thomas, Adam G.",
+      "orcid": "0000-0002-2850-1419",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Marrett, Sean",
+      "orcid": "0000-0001-8179-6511",
+      "type": "Researcher"
+    },
+    {
+      "name": "Salo, Taylor",
+      "affiliation": "Department of Psychology, Florida International University",
+      "orcid": "0000-0001-9813-3167",
+      "type": "Researcher"
+    }
+  ],
+  "keywords": [
+    "neuroimaging",
+    "workflow",
+    "pipeline",
+    "quality-control",
+    "fMRI",
+    "BIDS"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "http://mriqc.readthedocs.io",
+      "relation": "documents",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.1371/journal.pone.0184661",
+      "relation": "isPartOf",
+      "scheme": "doi"
+    }
+  ],
+  "license": "BSD-3-Clause",
+  "upload_type": "software"
+}
