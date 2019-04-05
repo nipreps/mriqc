@@ -160,6 +160,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
         melodic = pe.Node(nws.MELODICRPT(no_bet=True,
                                          no_mask=True,
                                          no_mm=True,
+                                         compress_report=False,
                                          generate_report=True),
                           name="ICA", mem_gb=max(biggest_file_gb * 5, 8))
         workflow.connect([
