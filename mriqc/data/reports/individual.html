@@ -6,9 +6,10 @@
 <meta name="generator" content="MRIQC" />
 <title>MRIQC: individual {{ modality }}
 report</title>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script>
 function read_form() {
     var ds = "{{ dataset or 'unknown' }}";
@@ -18,63 +19,17 @@ function read_form() {
         artifacts.push($(this).attr('name'));
     });
 
+    var rating = $('#ratings-group input:checked').attr('value');
     var payload = {
         'dataset': ds,
         'subject': sub,
-        'rating': $('input[name=qc-rating]:checked').val(),
+        'rating': rating,
         'artifacts': artifacts
     };
     var file = new Blob([JSON.stringify(payload)], {type: 'text/json'});
     $('#btn-download').attr('href', URL.createObjectURL(file));
     $('#btn-download').attr('download', payload['dataset'] + "_" + payload['subject'] + ".json");
     return payload
-};
-
-function post2api() {
-    var payload = read_form();
-    var md5sum = "{{ md5sum }}";
-    var params = {
-        'rating': payload['rating'],
-        'md5sum': md5sum,
-        'name': "",
-        'comment': JSON.stringify(payload['artifacts'])
-    };
-
-    // disable developement releases
-    var authorization = "<secret_token>";
-    if (authorization.includes("secret_token")) {
-        $('#post2api').removeClass('btn-primary');
-        $('#post2api').addClass('btn-warning');
-        $('#post2api').attr('disabled', true);
-        $('#post2api').attr('aria-disabled', true);
-        $('#post2api').prop('disabled');
-        $('#post2api').addClass('disabled');
-        $('#post2api').html('Disabled');
-        $('#post2api').removeClass('active');
-        return
-    };
-
-    var ratingReq = new XMLHttpRequest();
-    ratingReq.open("POST", "{{ webapi_url }}/rating");
-    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    ratingReq.setRequestHeader("Authorization", authorization);
-    ratingReq.onload = function () {
-        status = ratingReq.status;
-        $('#post2api').removeClass('btn-primary');
-        $('#post2api').attr('disabled', true);
-        $('#post2api').attr('aria-disabled', true);
-        $('#post2api').prop('disabled');
-        $('#post2api').addClass('disabled');
-        $('#post2api').removeClass('active');
-        if (status === "201") {
-            $('#post2api').addClass('btn-success');
-            $('#post2api').html('Posted!');
-        } else {
-            $('#post2api').addClass('btn-danger');
-            $('#post2api').html('Failed');
-        };
-    };
-    ratingReq.send(JSON.stringify(params));
 };
 
 function toggle_rating() {
@@ -90,6 +45,13 @@ function toggle_rating() {
         $('#rating-toggler').addClass('btn-outline-primary');
     }
 };
+
+$(window).on('load',function(){
+    var authorization = $('#btn-post').val()
+    if (authorization.includes("secret_token")) {
+        $('#btn-post').addClass('d-none');
+    };
+});
 </script>
 <style type="text/css">
 body {
@@ -258,10 +220,10 @@ report</h1>
 </div>
 <div class="card-body">
     <div id="ratings-group" class="btn-group btn-group-toggle mb-2 mx-auto" style="width: 100%" data-toggle="buttons">
-        <label class="btn btn-outline-danger btn-secondary"><input type="radio" name="qc-rating" id="exclude" value="1" onclick="read_form()">Exclude</label>
-        <label class="btn btn-outline-warning btn-secondary"><input type="radio" name="qc-rating" id="poor" value="2" onclick="read_form()">Poor</label>
-        <label class="btn btn-outline-info btn-secondary"><input type="radio" name="qc-rating" id="acceptable" value="3" onclick="read_form()">Acceptable</label>
-        <label class="btn btn-outline-success btn-secondary"><input type="radio" name="qc-rating" id="excellent" value="4" onclick="read_form()">Excellent</label>
+        <label class="btn btn-outline-danger"><input type="radio" name="qc-rating" id="exclude" value="1">Exclude</label>
+        <label class="btn btn-outline-warning"><input type="radio" name="qc-rating" id="poor" value="2">Poor</label>
+        <label class="btn btn-outline-info"><input type="radio" name="qc-rating" id="acceptable" value="3">Acceptable</label>
+        <label class="btn btn-outline-success"><input type="radio" name="qc-rating" id="excellent" value="4">Excellent</label>
     </div>
 
 
@@ -324,12 +286,48 @@ report</h1>
     </div>
 </fieldset>
 <a class="btn btn-primary disabled" id="btn-download" href="">Download</a>
-<button type="button" class="btn btn-primary" id="post2api" onclick="post2api()">Post to WebAPI</button>
+<button class="btn btn-primary" id="btn-post" value="<secret_token>" disabled>Post to WebAPI</button>
 <script type="text/javascript">
-$( 'body' ).on( 'click', '#ratings-group', function(e) {
+$('input[name="qc-rating"]').change( function() {
+    var payload = read_form();
     $('#btn-download').removeClass('disabled');
     $('#btn-download').removeAttr('aria-disabled');
+    $('#btn-post').removeAttr('disabled');
+});
+
+$( '#btn-post' ).click( function() {
     var payload = read_form();
+    var md5sum = "{{ md5sum }}";
+    var params = {
+        'rating': payload['rating'],
+        'md5sum': md5sum,
+        'name': "",
+        'comment': JSON.stringify(payload['artifacts'])
+    };
+
+    // disable developement releases
+    var authorization = $(this).val();
+    var ratingReq = new XMLHttpRequest();
+    ratingReq.open("POST", "{{ webapi_url }}/rating");
+    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    ratingReq.setRequestHeader("Authorization", authorization);
+    ratingReq.onload = function () {
+        status = ratingReq.status;
+        $('#btn-post').removeClass('btn-primary');
+        $('#btn-post').attr('disabled', true);
+        $('#btn-post').attr('aria-disabled', true);
+        $('#btn-post').prop('disabled');
+        $('#btn-post').addClass('disabled');
+        $('#btn-post').removeClass('active');
+        if (status === "201") {
+            $('#btn-post').addClass('btn-success');
+            $('#btn-post').html('Posted!');
+        } else {
+            $('#btn-post').addClass('btn-danger');
+            $('#btn-post').html('Failed');
+        };
+    };
+    ratingReq.send(JSON.stringify(params));
 });
 
 $( 'body' ).on( 'click', '#artifacts-group input', function(e) {
