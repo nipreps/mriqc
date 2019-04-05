@@ -262,6 +262,8 @@ def compute_iqms(settings, name='ComputeIQMs'):
     addprov.inputs.settings = {
         'fd_thres': settings.get('fd_thres', 0.2),
         'hmc_fsl': settings.get('hmc_fsl', True),
+        'webapi_url': settings.get('webapi_url'),
+        'webapi_port': settings.get('webapi_port'),
     }
 
     # Save to JSON file
@@ -806,8 +808,8 @@ def _add_provenance(in_file, settings):
         'md5sum': hash_infile(in_file),
         'version': version,
         'software': 'mriqc',
-        'webapi_url': settings.get('webapi_url'),
-        'webapi_port': settings.get('webapi_port'),
+        'webapi_url': settings.pop('webapi_url'),
+        'webapi_port': settings.pop('webapi_port'),
     }
 
     if settings:
