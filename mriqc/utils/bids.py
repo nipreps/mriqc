@@ -31,7 +31,7 @@ def collect_bids_data(layout, participant_label=None, session=None, run=None,
         imaging_data[btype] = layout.get(
             suffix=btype,
             return_type='file',
-            extensions=['nii', 'nii.gz'],
+            extension=['nii', 'nii.gz'],
             **basequery)
 
     return imaging_data

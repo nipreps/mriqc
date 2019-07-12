@@ -397,7 +397,7 @@ def init_mriqc(opts, retval):
             plugin_settings.update(loadyml(pfile))
 
     layout = BIDSLayout(str(settings['bids_dir']),
-                        exclude=['derivatives', 'sourcedata', r'^\..*'])
+                        ignore=['derivatives', 'sourcedata', r'^\..*'])
     dataset = collect_bids_data(
         layout,
         participant_label=opts.participant_label,
