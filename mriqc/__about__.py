@@ -66,7 +66,7 @@ REQUIRES = [
     'nipy',
     'nipype>=1.1.1',
     'nitime',
-    'niworkflows ~= 0.10.0',
+    'niworkflows ~= 0.10.1',
     'numpy',
     'pandas>=0.21.0',
     'pybids ~= 0.9.2',
@@ -77,7 +77,7 @@ REQUIRES = [
     'six',
     'statsmodels',
     'svgutils',
-    'templateflow ~= 0.4.1rc1',
+    'templateflow ~= 0.4.1',
 ]
 
 LINKS_REQUIRES = [
