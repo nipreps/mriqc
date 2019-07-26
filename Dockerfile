@@ -142,16 +142,14 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Precaching atlases
-ENV TEMPLATEFLOW_HOME="/opt/templateflow"
-RUN mkdir -p $TEMPLATEFLOW_HOME
 RUN python -c "from templateflow import api as tfapi; \
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['boldref', 'T1w'],\
-                         desc=None); \
+               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='T1w', desc=None); \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
                          desc=['brain', 'head']); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
-                         label=['CSF', 'GM', 'WM'])"
+                         label=['CSF', 'GM', 'WM']);\
+               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
 
 # Installing MRIQC
 COPY . /src/mriqc
