@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
+Generate individual and group reports.
 
 In order to ease the screening process of individual images, MRIQC
 generates individual reports with mosaic views of a number of cutting planes and
@@ -73,3 +72,8 @@ REPORT_TITLES = {
 }
 
 REPORT_TITLES['T2w'] = deepcopy(REPORT_TITLES['T1w'])
+
+__all__ = [
+    'individual_html',
+    'group_html',
+]

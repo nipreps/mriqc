@@ -1,15 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 # pylint: disable=no-member
-#
-# @Author: oesteban
-# @Date:   2016-02-23 19:25:39
-# @Email:  code@oscaresteban.es
-# @Last Modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:44:09
-"""
+r"""
+MRIQC: image quality metrics for functional MRI.
 
 Measures for the spatial information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -51,13 +44,13 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
   .. math ::
 
-      \\text{DVARS}_t = \\sqrt{\\frac{1}{N}\\sum_i \\left[x_{i,t} - x_{i,t-1}\\right]^2}
+      \text{DVARS}_t = \sqrt{\frac{1}{N}\sum_i \left[x_{i,t} - x_{i,t-1}\right]^2}
 
 
   .. note ::
 
     Intensities are scaled to 1000 leading to the units being expressed in x10
-    :math:`\\%\\Delta\\text{BOLD}` change.
+    :math:`\%\Delta\text{BOLD}` change.
 
   .. note ::
 
@@ -75,10 +68,10 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
   .. math ::
 
-      \\text{GCOR} = \\frac{1}{N}\\mathbf{g}_u^T\\mathbf{g}_u
+      \text{GCOR} = \frac{1}{N}\mathbf{g}_u^T\mathbf{g}_u
 
-  where :math:`\\mathbf{g}_u` is the average of all unit-variance time series in a
-  :math:`T` (\# timepoints) :math:`\\times` :math:`N` (\# voxels) matrix.
+  where :math:`\mathbf{g}_u` is the average of all unit-variance time series in a
+  :math:`T` (# timepoints) :math:`\times` :math:`N` (# voxels) matrix.
 
 .. _iqms_tsnr:
 
@@ -89,10 +82,10 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
 
   .. math ::
 
-      \\text{tSNR} = \\frac{\\langle S \\rangle_t}{\\sigma_t},
+      \text{tSNR} = \frac{\langle S \rangle_t}{\sigma_t},
 
-  where :math:`\\langle S \\rangle_t` is the average BOLD signal (across time),
-  and :math:`\\sigma_t` is the corresponding temporal standard-deviation map.
+  where :math:`\langle S \rangle_t` is the average BOLD signal (across time),
+  and :math:`\sigma_t` is the corresponding temporal standard-deviation map.
 
 
 Measures for artifacts and other
@@ -107,8 +100,8 @@ Measures for artifacts and other
 
   .. math ::
 
-      \\text{FD}_t = |\\Delta d_{x,t}| + |\\Delta d_{y,t}| + \
-|\\Delta d_{z,t}| + |\\Delta \\alpha_t| + |\\Delta \\beta_t| + |\\Delta \\gamma_t|
+      \text{FD}_t = |\Delta d_{x,t}| + |\Delta d_{y,t}| + \
+|\Delta d_{z,t}| + |\Delta \alpha_t| + |\Delta \beta_t| + |\Delta \gamma_t|
 
   Along with the base framewise displacement, MRIQC reports the
   **number of timepoints above FD threshold** (``fd_num``), and the
@@ -123,7 +116,7 @@ Measures for artifacts and other
 
   .. math ::
 
-      \\text{GSR} = \\frac{\\mu_G - \\mu_{NG}}{\\mu_S}
+      \text{GSR} = \frac{\mu_G - \mu_{NG}}{\mu_S}
 
   .. image :: ../_static/epi-gsrmask.png
     :width: 200px
@@ -197,8 +190,9 @@ RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     """
-    Computes the :abbr:`GSR (ghost to signal ratio)` [Giannelli2010]_. The
-    procedure is as follows:
+    Compute the :abbr:`GSR (ghost to signal ratio)` [Giannelli2010]_.
+
+    The procedure is as follows:
 
       #. Create a Nyquist ghost mask by circle-shifting the original mask by :math:`N/2`.
 
@@ -222,7 +216,6 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     :return: the computed gsr
 
     """
-
     direction = direction.lower()
     if direction[-1] not in ['x', 'y', 'all']:
         raise Exception("Unknown direction {}, should be one of x, -x, y, -y, all".format(

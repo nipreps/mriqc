@@ -28,16 +28,16 @@ DEFAULT_MEM_GB = 8
 
 
 def get_parser():
-    """Build parser object"""
+    """Build parser object."""
     from argparse import ArgumentParser
     from argparse import RawTextHelpFormatter
-    from .. import DEFAULTS, __description__, __version__
+    from .. import DEFAULTS, __version__
 
     parser = ArgumentParser(
-        description="""MRIQC: MRI Quality Control\n\n\
-%s
-%s""" % (__description__, DSA_MESSAGE),
-        formatter_class=RawTextHelpFormatter)
+        description="""\
+MRIQC: Automated Quality Control and visual reports for Quality Assesment of structural \
+(T1w, T2w) and functional MRI of the brain.
+%s""" % DSA_MESSAGE, formatter_class=RawTextHelpFormatter)
 
     # Arguments as specified by BIDS-Apps
     # required, positional arguments
