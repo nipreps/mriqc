@@ -500,6 +500,38 @@ jobs:
             INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
             test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
 
+  update_changes:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - checkout:
+          path: /tmp/src/mriqc
+
+      - add_ssh_keys:
+          fingerprints:
+            - "88:c4:12:f3:ee:d9:89:44:79:76:19:05:88:3d:34:60"
+
+      - run:
+          name: Checkout origin/master
+          command: |
+            git config user.email "${GITHUB_EMAIL}"
+            git config user.name "CircleCI Deploy"
+            git fetch origin
+            git checkout -f origin/master
+      - run:
+          name: Update CHANGES if this is a merge commit
+          command: |
+            if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
+              bash update_changes.sh
+              git add CHANGES.txt
+              git commit -m "auto: Update CHANGES [skip ci]"
+              git push origin HEAD:master
+            fi
+
   deploy:
     machine:
       image: circleci/classic:201711-01
@@ -574,7 +606,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-              
+
       - test_pytest:
           requires:
             - build
@@ -603,6 +635,13 @@ workflows:
               ignore: /docs?\/.*/
             tags:
               only: /.*/
+
+      - update_changes:
+          filters:
+            branches:
+              only: /master/
+            tags:
+              ignore: /.*/
 
       - deploy:
           requires:
