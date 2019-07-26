@@ -145,7 +145,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV TEMPLATEFLOW_HOME="/opt/templateflow"
 RUN mkdir -p $TEMPLATEFLOW_HOME
 RUN python -c "from templateflow import api as tfapi; \
-               tfapi.get('MNI152NLin2009cAsym')"
+               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['boldref', 'T1w'],\
+                         desc=None); \
+               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
+                         desc=['brain', 'head']); \
+               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
+               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
+                         label=['CSF', 'GM', 'WM'])"
 
 # Installing MRIQC
 COPY . /src/mriqc

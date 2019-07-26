@@ -70,7 +70,7 @@ jobs:
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             # Get version, update files.
-            THISVERSION=$( python3 get_version.py )
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version()" )
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
               echo "WARNING: latest git tag could not be found"
               echo "Please, make sure you fetch all tags from upstream with"
