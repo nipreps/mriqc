@@ -5,7 +5,6 @@ recursive-include docs/build/html *
 recursive-include mriqc/data *
 
 #Misc
-include requirements.txt
 include CHANGES.txt
 include LICENSE.txt
 include versioneer.py

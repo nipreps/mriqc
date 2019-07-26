@@ -70,7 +70,7 @@ jobs:
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             # Get version, update files.
-            THISVERSION=$( python3 get_version.py )
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
               echo "WARNING: latest git tag could not be found"
               echo "Please, make sure you fetch all tags from upstream with"
@@ -474,6 +474,64 @@ jobs:
       - store_artifacts:
           path: /tmp/bold/test
 
+
+  test_package:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - checkout
+      - run: pyenv local 3.5.2
+      - run:
+          name: Install build depends
+          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+      - run:
+          name: Build and check
+          command: |
+            python3 setup.py sdist
+            python3 -m twine check dist/*
+      - run:
+          name: Validate version
+          command: |
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
+            python3 -m pip install dist/*.tar.gz
+            mkdir empty
+            cd empty
+            INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
+            test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
+
+  update_changes:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - checkout:
+          path: /tmp/src/mriqc
+
+      - add_ssh_keys:
+          fingerprints:
+            - "88:c4:12:f3:ee:d9:89:44:79:76:19:05:88:3d:34:60"
+
+      - run:
+          name: Checkout origin/master
+          command: |
+            git config user.email "${GITHUB_EMAIL}"
+            git config user.name "CircleCI Deploy"
+            git fetch origin
+            git checkout -f origin/master
+      - run:
+          name: Update CHANGES if this is a merge commit
+          command: |
+            if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
+              bash update_changes.sh
+              git add CHANGES.txt
+              git commit -m "auto: Update CHANGES [skip ci]"
+              git push origin HEAD:master
+            fi
+
   deploy:
     machine:
       image: circleci/classic:201711-01
@@ -544,6 +602,11 @@ workflows:
             tags:
               only: /.*/
 
+      - test_package:
+          filters:
+            tags:
+              only: /.*/
+
       - test_pytest:
           requires:
             - build
@@ -573,10 +636,18 @@ workflows:
             tags:
               only: /.*/
 
+      - update_changes:
+          filters:
+            branches:
+              only: /master/
+            tags:
+              ignore: /.*/
+
       - deploy:
           requires:
             - build
             - test_pytest
+            - test_package
             - build_docs
             - T1w
             - bold

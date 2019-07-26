@@ -1,3 +1,2 @@
-niworkflows ~= 0.10.1
 templateflow ~= 0.4.1
 xvfbwrapper
