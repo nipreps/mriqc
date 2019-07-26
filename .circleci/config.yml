@@ -70,7 +70,7 @@ jobs:
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             # Get version, update files.
-            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version()" )
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
               echo "WARNING: latest git tag could not be found"
               echo "Please, make sure you fetch all tags from upstream with"
@@ -474,6 +474,32 @@ jobs:
       - store_artifacts:
           path: /tmp/bold/test
 
+
+  test_package:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - checkout
+      - run: pyenv local 3.5.2
+      - run:
+          name: Install build depends
+          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+      - run:
+          name: Build and check
+          command: |
+            python3 setup.py sdist
+            python3 -m twine check dist/*
+      - run:
+          name: Validate version
+          command: |
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
+            python3 -m pip install dist/*.tar.gz
+            mkdir empty
+            cd empty
+            INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
+            test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
+
   deploy:
     machine:
       image: circleci/classic:201711-01
@@ -577,6 +603,7 @@ workflows:
           requires:
             - build
             - test_pytest
+            - test_package
             - build_docs
             - T1w
             - bold
