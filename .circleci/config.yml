@@ -570,6 +570,11 @@ workflows:
             tags:
               only: /.*/
 
+      - test_package:
+          filters:
+            tags:
+              only: /.*/
+              
       - test_pytest:
           requires:
             - build
