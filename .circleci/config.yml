@@ -513,7 +513,7 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-            - "88:c4:12:f3:ee:d9:89:44:79:76:19:05:88:3d:34:60"
+            - "39:23:4c:9c:3e:29:c1:44:45:f2:bb:e5:cb:b7:65:c2"
 
       - run:
           name: Checkout origin/master
