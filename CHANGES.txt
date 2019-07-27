@@ -1,6 +1,9 @@
 Upcoming release (TBD)
 ======================
 
+0.15.1 (July 26, 2019)
+======================
+
   * FIX: FileNotFoundError when MELODIC (``--ica``) does not converge (#800) @oesteban
   * MAINT: Migrate MRIQC to a ``setup.cfg`` style of installation (#799) @oesteban
   * MAINT: Use PyBIDS 0.9.2+ via niworkflows PR (#796) @effigies
