@@ -563,11 +563,9 @@ jobs:
       - run:
           name: Deploy to PyPi
           command: |
-            pip install "setuptools>=27.0" cython numpy twine future
+            python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
             echo "${CIRCLE_TAG}" > mriqc/VERSION
             python setup.py sdist
-            twine upload dist/*
-            cd wrapper && python setup.py sdist
             twine upload dist/*
 
 workflows:

@@ -102,8 +102,8 @@ ENV PATH="/usr/local/miniconda/bin:$PATH" \
     CPATH="/usr/local/miniconda/include/:$CPATH" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8" \
-    # PYTHONWARNINGS="ignore,default:::mriqc,default:::nipype" \
     PYTHONNOUSERSITE=1
+# Consider PYTHONWARNINGS="ignore,default:::mriqc,default:::nipype"
 
 # Installing precomputed python packages
 RUN conda install -y python=3.7.1 \
