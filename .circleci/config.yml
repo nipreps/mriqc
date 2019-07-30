@@ -474,32 +474,6 @@ jobs:
       - store_artifacts:
           path: /tmp/bold/test
 
-
-  test_package:
-    machine:
-      image: circleci/classic:201711-01
-    working_directory: /tmp/src/mriqc
-    steps:
-      - checkout
-      - run: pyenv local 3.5.2
-      - run:
-          name: Install build depends
-          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
-      - run:
-          name: Build and check
-          command: |
-            python3 setup.py sdist
-            python3 -m twine check dist/*
-      - run:
-          name: Validate version
-          command: |
-            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
-            python3 -m pip install dist/*.tar.gz
-            mkdir empty
-            cd empty
-            INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
-            test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
-
   update_changes:
     machine:
       image: circleci/classic:201711-01
@@ -532,7 +506,53 @@ jobs:
               git push origin HEAD:master
             fi
 
-  deploy:
+  test_package:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - checkout
+      - run: pyenv local 3.5.2
+      - run:
+          name: Install build depends
+          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+      - run:
+          name: Build and check
+          command: |
+            python3 setup.py sdist
+            python3 -m twine check dist/*
+      - run:
+          name: Validate version
+          command: |
+            if [[ "${CIRCLE_TAG}" != "" ]]; then
+              echo "${CIRCLE_TAG}" > mriqc/VERSION
+            fi
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
+            python3 -m pip install dist/*.tar.gz
+            mkdir empty
+            cd empty
+            INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
+            test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
+
+  deploy_pypi:
+    machine:
+      image: circleci/classic:201711-01
+    working_directory: /tmp/src/mriqc
+    steps:
+      - checkout
+      - run: pyenv local 3.5.2
+      - run:
+          name: Install build depends
+          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+      - run:
+          name: Deploy to PyPi
+          command: |
+            echo "${CIRCLE_TAG}" > mriqc/VERSION
+            python3 setup.py sdist
+            python3 -m twine check dist/*
+            python3 -m twine upload dist/*
+
+  deploy_docker:
     machine:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/mriqc
@@ -560,13 +580,6 @@ jobs:
               docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG
               docker push poldracklab/mriqc:$CIRCLE_TAG
             fi
-      - run:
-          name: Deploy to PyPi
-          command: |
-            python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
-            echo "${CIRCLE_TAG}" > mriqc/VERSION
-            python setup.py sdist
-            twine upload dist/*
 
 workflows:
   version: 2
@@ -641,7 +654,7 @@ workflows:
             tags:
               ignore: /.*/
 
-      - deploy:
+      - deploy_docker:
           requires:
             - build
             - test_pytest
@@ -649,6 +662,15 @@ workflows:
             - build_docs
             - T1w
             - bold
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - deploy_pypi:
+          requires:
+            - deploy_docker
           filters:
             branches:
               ignore: /.*/
