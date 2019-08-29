@@ -8,6 +8,8 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """Helper functions for the workflows"""
+import os
+import subprocess
 from distutils.version import StrictVersion
 from builtins import range
 
@@ -173,3 +175,18 @@ def get_fwhmx():
         fwhm_args['args'] = '-ShowMeClassicFWHM'
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface
+
+
+def is_fsl_installed():
+    try:
+        subprocess.Popen(['fast', '-h'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def use_fsl():
+    if os.environ.get('USE_FSL') and is_fsl_installed():
+        return bool(os.environ.get('USE_FSL'))
+    else:
+        return False

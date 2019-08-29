@@ -37,13 +37,15 @@ from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl, ants
 from templateflow.api import get as get_template
 from niworkflows.interfaces.bids import ReadSidecarJSON
+from niworkflows.interfaces.ants import ThresholdImage
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+from niworkflows.anat.ants import init_atropos_wf
 
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
                           ComputeQI2, IQMFileSink, RotationMask)
-from .utils import get_fwhmx
+from .utils import get_fwhmx, use_fsl
 
 
 def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
@@ -81,15 +83,30 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     to_ras = pe.Node(ConformImage(check_dtype=False), name='conform')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=False)
+    if not use_fsl():
+        # Remove fsl dependent nodes
+        binarize = pe.Node(ThresholdImage(dimension=3, th_low=1.e-3, th_high=1e6, inside_value=1.0, outside_value=0.0),
+                           name='binarize')
+        asw.disconnect([
+            (asw.get_node('sstrip_orig_vol'), asw.get_node('binarize'), [('out_file', 'in_file')]),
+            (asw.get_node('binarize'), asw.get_node('outputnode'), [('out_file', 'out_mask')]),
+        ])
+        asw.connect([
+            (asw.get_node('sstrip_orig_vol'), binarize, [('out_file', 'input_image')]),
+            (binarize, asw.get_node('outputnode'), [('output_image', 'out_mask')]),
+        ])
     # 3. Head mask
-    hmsk = headmsk_wf()
+    hmsk = headmsk_wf(use_bet=use_fsl())
     # 4. Spatial Normalization, using ANTs
     norm = spatial_normalization(settings)
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
-                      name='segmentation', mem_gb=5)
+    if use_fsl():
+        segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
+                          name='segmentation', mem_gb=5)
+    else:
+        segment = init_atropos_wf(omp_nthreads=settings.get('ants_nthreads', 1))
     # 7. Compute IQMs
     iqmswf = compute_iqms(settings, modality=mod)
     # Reports
@@ -100,9 +117,7 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (inputnode, to_ras, [('in_file', 'in_file')]),
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
         (to_ras, asw, [('out_file', 'inputnode.in_file')]),
-        (asw, segment, [('outputnode.out_file', 'in_files')]),
         (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
-        (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
         (asw, norm, [('outputnode.bias_corrected', 'inputnode.moving_image'),
                      ('outputnode.out_mask', 'inputnode.moving_mask')]),
         (norm, amw, [
@@ -122,8 +137,6 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                        ('outputnode.hat_mask', 'inputnode.hatmask'),
                        ('outputnode.art_mask', 'inputnode.artmask'),
                        ('outputnode.rot_mask', 'inputnode.rotmask')]),
-        (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
-                           ('partial_volume_files', 'inputnode.pvms')]),
         (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
         (to_ras, repwf, [('out_file', 'inputnode.in_ras')]),
         (asw, repwf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
@@ -132,11 +145,28 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
         (amw, repwf, [('outputnode.air_mask', 'inputnode.airmask'),
                       ('outputnode.art_mask', 'inputnode.artmask'),
                       ('outputnode.rot_mask', 'inputnode.rotmask')]),
-        (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
         (iqmswf, repwf, [('outputnode.noisefit', 'inputnode.noisefit')]),
         (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
         (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
     ])
+    if use_fsl():
+        workflow.connect([
+            (asw, segment, [('outputnode.out_file', 'in_files')]),
+            (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
+            (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
+                               ('partial_volume_files', 'inputnode.pvms')]),
+            (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
+        ])
+    else:
+        workflow.connect([
+            (asw, segment, [('outputnode.bias_corrected', 'inputnode.in_files'),
+                            ('outputnode.out_mask', 'inputnode.in_mask'),
+                            ('outputnode.out_mask', 'inputnode.in_mask_dilated')]),
+            (segment, hmsk, [('outputnode.out_segm', 'inputnode.in_segm')]),
+            (segment, iqmswf, [('outputnode.out_segm', 'inputnode.segmentation'),
+                               ('outputnode.out_tpms', 'inputnode.pvms')]),
+            (segment, repwf, [('outputnode.out_segm', 'inputnode.segmentation')]),
+        ])
 
     # Upload metrics
     if not settings.get('no_sub', False):
