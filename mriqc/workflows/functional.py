@@ -40,6 +40,7 @@ from niworkflows.interfaces.plotting import FMRISummary
 from .utils import get_fwhmx
 from .. import DEFAULTS, logging
 from ..interfaces import FunctionalQC, Spikes, IQMFileSink
+from .utils import use_fsl
 
 
 DEFAULT_FD_RADIUS = 50.
@@ -89,7 +90,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    if settings.get('hmc_fsl', False):
+    if settings.get('hmc_fsl', False) and use_fsl():
         hmcwf = hmc_mcflirt(settings)
     else:
         hmcwf = hmc_afni(settings,
@@ -105,7 +106,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean',
         mem_gb=biggest_file_gb * 1.5)
-    skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
+    skullstrip_epi = fmri_bmsk_workflow(use_bet=use_fsl())
 
     # EPI to MNI registration
     ema = epi_mni_align(settings)
