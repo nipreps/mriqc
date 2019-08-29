@@ -168,7 +168,7 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 RUN ldconfig
 WORKDIR /tmp/
 
-# Set mriqc env variable
+# For enforcing or not the use of FSL
 ENV USE_FSL=1
 
 # Run mriqc by default
