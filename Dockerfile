@@ -168,6 +168,9 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 RUN ldconfig
 WORKDIR /tmp/
 
+# Set mriqc env variable
+ENV USE_FSL=1
+
 # Run mriqc by default
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
