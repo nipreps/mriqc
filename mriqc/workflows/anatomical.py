@@ -84,14 +84,11 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=False)
     if not use_fsl():
-        # Remove fsl dependent nodes
+        # remove fsl dependent nodes and reconnect a ants one
         binarize = pe.Node(ThresholdImage(dimension=3, th_low=1.e-3, th_high=1e6, inside_value=1.0,
                                           outside_value=0.0),
-                           name='binarize')
-        asw.disconnect([
-            (asw.get_node('sstrip_orig_vol'), asw.get_node('binarize'), [('out_file', 'in_file')]),
-            (asw.get_node('binarize'), asw.get_node('outputnode'), [('out_file', 'out_mask')]),
-        ])
+                           name='binarize_ants')
+        asw.remove_nodes([asw.get_node('binarize')])
         asw.connect([
             (asw.get_node('sstrip_orig_vol'), binarize, [('out_file', 'input_image')]),
             (binarize, asw.get_node('outputnode'), [('output_image', 'out_mask')]),
