@@ -9,7 +9,6 @@
 # @Last modified by:   oesteban
 """Helper functions for the workflows"""
 import os
-import subprocess
 from distutils.version import StrictVersion
 from builtins import range
 
@@ -178,11 +177,7 @@ def get_fwhmx():
 
 
 def is_fsl_installed():
-    try:
-        subprocess.Popen(['fast', '-h'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        return True
-    except FileNotFoundError:
-        return False
+    return os.getenv('FSL_DIR', None) is not None
 
 
 def use_fsl():
