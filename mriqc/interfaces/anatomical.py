@@ -31,16 +31,16 @@ IFLOGGER = logging.getLogger('nipype.interface')
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='file to be plotted')
     in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
-    in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
+    in_segm = File(exists=True, mandatory=True, desc='segmentation file')
     in_bias = File(exists=True, mandatory=True, desc='bias file')
     head_msk = File(exists=True, mandatory=True, desc='head mask')
     air_msk = File(exists=True, mandatory=True, desc='air mask')
     rot_msk = File(exists=True, mandatory=True, desc='rotation mask')
     artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(File(exists=True), mandatory=True,
-                             desc='partial volume maps from FSL FAST')
-    in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
-    mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+                             desc='partial volume maps')
+    in_tpms = InputMultiPath(File(), desc='tissue probability maps')
+    mni_tpms = InputMultiPath(File(), desc='tissue probability maps')
     in_fwhm = traits.List(traits.Float, mandatory=True,
                           desc='smoothness estimated with AFNI')
 
@@ -84,7 +84,7 @@ class StructuralQC(SimpleInterface):
         inudata = np.nan_to_num(imnii.get_data())
         inudata[inudata < 0] = 0
 
-        # Load binary segmentation from FSL FAST
+        # Load binary segmentation
         segnii = nb.load(self.inputs.in_segm)
         segdata = segnii.get_data().astype(np.uint8)
 
@@ -94,7 +94,7 @@ class StructuralQC(SimpleInterface):
         headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
         rotdata = nb.load(self.inputs.rot_msk).get_data().astype(np.uint8)
 
-        # Load Partial Volume Maps (pvms) from FSL FAST
+        # Load Partial Volume Maps (pvms)
         pvmdata = []
         for fname in self.inputs.in_pvms:
             pvmdata.append(nb.load(fname).get_data().astype(np.float32))
