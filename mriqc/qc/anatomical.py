@@ -199,7 +199,7 @@ from builtins import zip, range  # pylint: disable=W0622
 from six import string_types
 
 DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
-FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
+SEG_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 PY3 = version_info[0] > 2
 
 
@@ -489,7 +489,7 @@ def volume_fraction(pvms):
     """
     tissue_vfs = {}
     total = 0
-    for k, lid in list(FSL_FAST_LABELS.items()):
+    for k, lid in list(SEG_LABELS.items()):
         if lid == 0:
             continue
         tissue_vfs[k] = pvms[lid - 1].sum()
@@ -513,7 +513,7 @@ def rpve(pvms, seg):
     """
 
     pvfs = {}
-    for k, lid in list(FSL_FAST_LABELS.items()):
+    for k, lid in list(SEG_LABELS.items()):
         if lid == 0:
             continue
         pvmap = pvms[lid - 1]
@@ -564,7 +564,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     if airmask is not None:
         stats_pvms[0] = airmask
 
-    labels = list(FSL_FAST_LABELS.items())
+    labels = list(SEG_LABELS.items())
     if len(stats_pvms) == 2:
         labels = list(zip(['bg', 'fg'], list(range(2))))
 
@@ -622,7 +622,7 @@ def _prepare_mask(mask, label, erode=True):
 
     if np.issubdtype(fgmask.dtype, np.integer):
         if isinstance(label, string_types):
-            label = FSL_FAST_LABELS[label]
+            label = SEG_LABELS[label]
 
         fgmask[fgmask != label] = 0
         fgmask[fgmask == label] = 1
