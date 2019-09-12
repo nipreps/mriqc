@@ -44,7 +44,7 @@ from niworkflows.anat.ants import init_atropos_wf
 
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
-                          ComputeQI2, IQMFileSink, RotationMask)
+                          ComputeQI2, IQMFileSink, RotationMask, CopyImageHeaderInformation)
 from .utils import get_fwhmx, use_fsl
 
 
@@ -89,9 +89,15 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
                                           outside_value=0.0),
                            name='binarize_ants')
         asw.remove_nodes([asw.get_node('binarize')])
+        # copyheader is necessary because of precision error
+        # see https://github.com/ANTsX/ANTs/wiki/Inputs-do-not-occupy-the-same-physical-space, for more details
+        copyheader = pe.Node(CopyImageHeaderInformation(copy_origin=True, copy_direction=True, copy_spacing=True),
+                             name='copy_header')
         asw.connect([
             (asw.get_node('sstrip_orig_vol'), binarize, [('out_file', 'input_image')]),
-            (binarize, asw.get_node('outputnode'), [('output_image', 'out_mask')]),
+            (binarize, copyheader, [('output_image', 'input_image')]),
+            (asw.get_node('inu_n4'), copyheader, [('output_image', 'reference_image')]),
+            (copyheader, asw.get_node('outputnode'), [('output_image', 'out_mask')]),
         ])
     # 3. Head mask
     hmsk = headmsk_wf(use_bet=use_fsl())
