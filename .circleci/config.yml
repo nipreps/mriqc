@@ -507,50 +507,54 @@ jobs:
             fi
 
   test_package:
-    machine:
-      image: circleci/classic:201711-01
+    docker:
+      - image: circleci/python:3.7.4
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
-      - run: pyenv local 3.5.2
       - run:
-          name: Install build depends
-          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+          name: Start virtual environment
+          command: |
+            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+            python -m venv /tmp/venv
+            source /tmp/venv/bin/activate
       - run:
           name: Build and check
           command: |
-            python3 setup.py sdist
-            python3 -m twine check dist/*
+            python setup.py sdist
+            python -m twine check dist/*
       - run:
           name: Validate version
           command: |
             if [[ "${CIRCLE_TAG}" != "" ]]; then
               echo "${CIRCLE_TAG}" > mriqc/VERSION
             fi
-            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
-            python3 -m pip install dist/*.tar.gz
+            THISVERSION=$( python -c "from versioneer import get_version; print(get_version())" )
+            python -m pip install --user dist/*.tar.gz
             mkdir empty
             cd empty
-            INSTALLED=$( python3 -c 'import mriqc; print(mriqc.__version__)' )
+            INSTALLED=$( python -c 'import mriqc; print(mriqc.__version__)' )
             test "${CIRCLE_TAG:-$THISVERSION}" == "$INSTALLED"
 
   deploy_pypi:
-    machine:
-      image: circleci/classic:201711-01
+    docker:
+      - image: circleci/python:3.7.4
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
-      - run: pyenv local 3.5.2
       - run:
-          name: Install build depends
-          command: python3 -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+          name: Start virtual environment
+          command: |
+            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+            python -m venv /tmp/venv
+            source /tmp/venv/bin/activate
       - run:
           name: Deploy to PyPi
           command: |
             echo "${CIRCLE_TAG}" > mriqc/VERSION
-            python3 setup.py sdist
-            python3 -m twine check dist/*
-            python3 -m twine upload dist/*
+            python setup.py sdist
+            python -m twine check dist/*
+            python -m twine upload dist/*
 
   deploy_docker:
     machine:

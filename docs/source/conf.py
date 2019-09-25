@@ -59,7 +59,7 @@ if pver.parse(sphinxversion) >= pver.parse('1.7.0'):
         'numpy',
         'scipy',
         'sklearn',
-        'statsmodel',
+        'statsmodels',
         'nipype',
         'niworkflows.interfaces.registration',
         'niworkflows.interfaces',
