@@ -9,7 +9,7 @@ from .anatomical import \
 from .functional import FunctionalQC, Spikes
 from .bids import IQMFileSink
 from .viz import PlotMosaic, PlotContours, PlotSpikes
-from .common import ConformImage, EnsureSize, CopyImageHeaderInformation
+from .common import ConformImage, EnsureSize
 from .webapi import UploadIQMs
 
 
@@ -28,5 +28,4 @@ __all__ = [
     'Spikes',
     'StructuralQC',
     'UploadIQMs',
-    'CopyImageHeaderInformation'
 ]
