@@ -34,17 +34,16 @@ from pathlib import Path
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
-from nipype.interfaces import fsl, ants
+from nipype.interfaces import ants
 from templateflow.api import get as get_template
 from niworkflows.interfaces.bids import ReadSidecarJSON
-from niworkflows.interfaces.ants import ThresholdImage
 from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
 from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from niworkflows.anat.ants import init_atropos_wf
 
 from .. import DEFAULTS, logging
 from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
-                          ComputeQI2, IQMFileSink, RotationMask, CopyImageHeaderInformation)
+                          ComputeQI2, IQMFileSink, RotationMask)
 from .utils import get_fwhmx, use_fsl
 
 
@@ -83,22 +82,6 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     to_ras = pe.Node(ConformImage(check_dtype=False), name='conform')
     # 2. Skull-stripping (afni)
     asw = skullstrip_wf(n4_nthreads=settings.get('ants_nthreads', 1), unifize=False)
-    if not use_fsl():
-        # remove fsl dependent nodes and reconnect a ants one
-        binarize = pe.Node(ThresholdImage(dimension=3, th_low=1.e-3, th_high=1e6, inside_value=1.0,
-                                          outside_value=0.0),
-                           name='binarize_ants')
-        asw.remove_nodes([asw.get_node('binarize')])
-        # copyheader is necessary because of precision error
-        # see https://github.com/ANTsX/ANTs/wiki/Inputs-do-not-occupy-the-same-physical-space, for more details
-        copyheader = pe.Node(CopyImageHeaderInformation(copy_origin=True, copy_direction=True, copy_spacing=True),
-                             name='copy_header')
-        asw.connect([
-            (asw.get_node('sstrip_orig_vol'), binarize, [('out_file', 'input_image')]),
-            (binarize, copyheader, [('output_image', 'input_image')]),
-            (asw.get_node('inu_n4'), copyheader, [('output_image', 'reference_image')]),
-            (copyheader, asw.get_node('outputnode'), [('output_image', 'out_mask')]),
-        ])
     # 3. Head mask
     hmsk = headmsk_wf(use_bet=use_fsl())
     # 4. Spatial Normalization, using ANTs
@@ -107,7 +90,8 @@ def anat_qc_workflow(dataset, settings, mod='T1w', name='anatMRIQC'):
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
     if use_fsl():
-        segment = pe.Node(fsl.FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
+        from nipype.interfaces.fsl import FAST
+        segment = pe.Node(FAST(segments=True, out_basename='segment', img_type=int(mod[1])),
                           name='segmentation', mem_gb=5)
     else:
         segment = init_atropos_wf(omp_nthreads=settings.get('ants_nthreads', 1))
