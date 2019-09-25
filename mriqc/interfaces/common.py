@@ -15,7 +15,7 @@ from nipype.interfaces.base import (
     SimpleInterface
 )
 from nipype.interfaces.ants import ApplyTransforms
-from nipype.interfaces.ants.base import ANTSCommandInputSpec, ANTSCommand
+
 
 IFLOGGER = logging.getLogger('nipype.interface')
 
@@ -257,45 +257,3 @@ class EnsureSize(SimpleInterface):
             self._results['out_mask'] = out_mask
 
         return runtime
-
-
-class CopyImageHeaderInformationInputSpec(ANTSCommandInputSpec):
-
-    reference_image = File(exists=True, mandatory=True, position=1, argstr='%s',
-                           desc='reference image file')
-    input_image = File(exists=True, mandatory=True, position=2, argstr='%s',
-                       desc='input image file to copy ref image info to')
-    output_image = File(exists=False, mandatory=False, position=3, argstr='%s',
-                        name_source=['input_image'], name_template='%s_updated', desc='output image file',
-                        keep_extension=True)
-    copy_direction = traits.Bool(False, usedefault=True, position=4, argstr='%d',
-                                      desc='boolean, copy direction if True')
-    copy_origin = traits.Bool(False, usedefault=True, position=5, argstr='%d',
-                                   desc='boolean, copy origin if True')
-    copy_spacing = traits.Bool(False, usedefault=True, position=6, argstr='%d',
-                                    desc='boolean, copy spacing if True')
-
-
-class CopyImageHeaderInformationOutputSpec(TraitedSpec):
-    output_image = traits.File(exists=True, desc='updated file')
-
-
-class CopyImageHeaderInformation(ANTSCommand):
-    """
-    Copy info from reference image to another image
-
-    Example:
-    --------
-
-    >>> res = CopyImageHeaderInformationdImage()
-    >>> res.inputs.input_image = 'input.nii.gz'
-    >>> res.inputs.reference_image = 'reference.nii.gz'
-    >>> res.inputs.output_image = 'output.nii.gz'
-    >>> res.inputs.copy_direction = True
-    >>> res.inputs.copy_origin = True
-    >>> res.inputs.copy_spacing = True
-    'CopyImageHeaderInformationdImage reference.nii.gz input.nii.gz output.nii.gz 1 1 1'
-    """
-    _cmd = 'CopyImageHeaderInformation'
-    input_spec = CopyImageHeaderInformationInputSpec
-    output_spec = CopyImageHeaderInformationOutputSpec
