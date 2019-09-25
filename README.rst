@@ -12,6 +12,9 @@ for open-source software distribution.
 
 .. image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=svg
   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
+  
+.. image:: https://travis-ci.org/poldracklab/mriqc.svg?branch=master
+  :target: https://travis-ci.org/poldracklab/mriqc
 
 .. image:: https://readthedocs.org/projects/mriqc/badge/?version=latest
   :target: http://mriqc.readthedocs.io/en/latest/?badge=latest
