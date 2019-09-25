@@ -194,9 +194,6 @@ import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
 
-from io import open  # pylint: disable=W0622
-from builtins import zip, range  # pylint: disable=W0622
-from six import string_types
 
 DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
@@ -621,7 +618,7 @@ def _prepare_mask(mask, label, erode=True):
     fgmask = mask.copy()
 
     if np.issubdtype(fgmask.dtype, np.integer):
-        if isinstance(label, string_types):
+        if isinstance(label, (str, bytes)):
             label = FSL_FAST_LABELS[label]
 
         fgmask[fgmask != label] = 0

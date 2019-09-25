@@ -515,7 +515,7 @@ jobs:
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils numpy nipy
+            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
       - run:
