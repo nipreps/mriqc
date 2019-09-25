@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * CI: Use recent Python image to build packages (#808)
 0.15.1 (July 26, 2019)
 ======================
 
