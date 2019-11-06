@@ -45,6 +45,7 @@ Measures based on noise measurements
   of a :math:`\chi^2` distribution on the air mask,
   once the artifactual intensities detected for computing
   the :abbr:`QI1 (quality index 1)` index have been removed [Mortamet2009]_.
+  Lower values are better.
 
 Measures based on information theory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,8 +76,9 @@ Measures targeting specific artifacts
 .. _iqms_inu:
 
 - **inu_\*** (*nipype interface to N4ITK*): summary statistics (max, min and median)
-  of the :abbr:`INU (intensity non-uniformity)` field as extracted by the N4ITK algorithm
-  [Tustison2010]_. Values closer to 1.0 are better.
+  of the :abbr:`INU (intensity non-uniformity)` field (bias field) as extracted
+  by the N4ITK algorithm [Tustison2010]_. Values closer to 1.0 are better, values
+  further from zero indicate greater RF field inhomogeneity.
 
 .. _iqms_qi:
 
@@ -107,8 +109,8 @@ Other measures
 
 - **fwhm** (*nipype interface to AFNI*): The :abbr:`FWHM (full-width half maximum)` of
   the spatial distribution of the image intensity values in units of voxels [Forman1995]_.
-  Lower values are better. Uses the gaussian width estimator filter implemented in
-  AFNI's ``3dFWHMx``:
+  Lower values are better, higher values indicate a blurrier image. Uses the gaussian
+  width estimator filter implemented in AFNI's ``3dFWHMx``:
 
   .. math ::
 
@@ -141,7 +143,8 @@ Other measures
 
 - **overlap_\*_\***:
   The overlap of the :abbr:`TPMs (tissue probability maps)` estimated from the image and
-  the corresponding maps from the ICBM nonlinear-asymmetric 2009c template.
+  the corresponding maps from the ICBM nonlinear-asymmetric 2009c template. Higher
+  values are better.
 
   .. math ::
 

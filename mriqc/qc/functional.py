@@ -85,7 +85,8 @@ nipype.algorithms.confounds.html#tsnr>`_ calculated like:
       \text{tSNR} = \frac{\langle S \rangle_t}{\sigma_t},
 
   where :math:`\langle S \rangle_t` is the average BOLD signal (across time),
-  and :math:`\sigma_t` is the corresponding temporal standard-deviation map.
+  and :math:`\sigma_t` is the corresponding temporal standard-deviation map. Higher
+  values are better.
 
 
 Measures for artifacts and other
@@ -112,7 +113,8 @@ Measures for artifacts and other
 
 - **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
   in the reports as ``gsr_x`` and ``gsr_y``):
-  along the two possible phase-encoding axes **x**, **y**:
+  along the two possible phase-encoding axes **x**, **y**. Lower values are
+  better.
 
   .. math ::
 
@@ -129,9 +131,9 @@ Measures for artifacts and other
 
 .. _iqms_aqi:
 
-- **AFNI's quality index** (``aqi``) -  Mean quality index as computed by AFNI’s ``3dTqual``;
- for each volume, it is one minus the Spearman's (rank) correlation of that volume with the 
- median volume. Values closer to 0 are better.
+- **AFNI's quality index** (``aqi``) -  Mean quality index as computed by AFNI’s
+    ``3dTqual``; for each volume, it is one minus the Spearman's (rank) correlation
+    of that volume with the median volume. Lower values are better.
 
 .. _iqms_dummy:
 
