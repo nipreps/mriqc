@@ -34,5 +34,4 @@ sample will open up (`click here to see this example
 report <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-51296_T1w.html>`_).
 
 The boxplots shown are Tukey boxplots, with median and interquartile range shown.
-Whiskers extend to the farthest point that is within 1.5 * IQR of the upper (or lower)
- quartile.
+Whiskers extend to the farthest point that is within 1.5 * IQR of the upper (or lower) quartile.
