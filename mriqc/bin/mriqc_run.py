@@ -122,10 +122,10 @@ MRIQC: Automated Quality Control and visual reports for Quality Assesment of str
     # Workflow settings
     g_conf = parser.add_argument_group('Workflow configuration')
     g_conf.add_argument('--ica', action='store_true', default=False,
-                        help='Run ICA on the raw data and include the components'
+                        help='Run ICA on the raw data and include the components '
                              'in the individual reports (slow but potentially very insightful)')
     g_conf.add_argument('--hmc-afni', action='store_true', default=True,
-                        help='Use ANFI 3dvolreg for head motion correction (HMC) - default')
+                        help='Use AFNI 3dvolreg for head motion correction (HMC) - default')
     g_conf.add_argument('--hmc-fsl', action='store_true', default=False,
                         help='Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)')
     g_conf.add_argument('--fft-spikes-detector', action='store_true', default=False,
