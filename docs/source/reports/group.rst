@@ -30,5 +30,9 @@ show themselves as outliers in the general distribution of the IQM:
   :alt: clicking on an outlier
 
 In this example, the corresponding individual report for the selected
-sample will open up (`click here to see this example 
+sample will open up (`click here to see this example
 report <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-51296_T1w.html>`_).
+
+The boxplots shown are Tukey boxplots, with median and interquartile range shown.
+Whiskers extend to the farthest point that is within 1.5 * IQR of the upper (or lower)
+ quartile.
