@@ -129,7 +129,9 @@ Measures for artifacts and other
 
 .. _iqms_aqi:
 
-- **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
+- **AFNI's quality index** (``aqi``) -  Mean quality index as computed by AFNI’s ``3dTqual``;
+ for each volume, it is one minus the Spearman's (rank) correlation of that volume with the 
+ median volume. Values closer to 0 are better.
 
 .. _iqms_dummy:
 
