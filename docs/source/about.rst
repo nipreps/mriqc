@@ -3,4 +3,4 @@ Introduction
 ============
 
 .. include:: ../../README.rst
-   :start-line: 42
+   :start-line: 38

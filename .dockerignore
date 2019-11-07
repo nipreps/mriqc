@@ -21,23 +21,24 @@ notebooks/
 Makefile
 
 # git
+.github/
 .gitignore
 .gitattributes
 .git/**/*
 .git
 
 # other
-agave/**/*
-agave
 notebooks/**/*
 notebooks
 
 # CircleCI and Travis
-venv/**/*
-venv/
 .circleci/
+.codecov.yml
+.coveragerc
+.pylintrc
+.readthedocs.yml
 .travis.yml
 codecov.yml
 CONTRIBUTING.md
-.pylintrc
-.readthedocs.yml
+venv/
+venv/**/*

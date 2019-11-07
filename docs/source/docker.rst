@@ -22,7 +22,12 @@ Preliminaries
     <https://docs.docker.com/docker-for-mac/>`_
     on a fresh installation of Docker for Mac.
     We recommend increasing the available memory for Docker containers
-    (`see this issue <https://github.com/poldracklab/mriqc/issues/388#issuecomment-281208441>`_).
+
+   When using docker with big datasets (+10GB) docker might fail. 
+   Changing the maximum size of the container will solve it: ::
+
+    $ service docker stop
+    $ dockerd --storage-opt dm.basesize=30G
 
 
 .. warning ::
