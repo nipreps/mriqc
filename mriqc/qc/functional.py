@@ -90,7 +90,8 @@ Temporal SNR (:abbr:`tSNR (temporal SNR)`, ``tsnr``)
       \text{tSNR} = \frac{\langle S \rangle_t}{\sigma_t},
 
   where :math:`\langle S \rangle_t` is the average BOLD signal (across time),
-  and :math:`\sigma_t` is the corresponding temporal standard-deviation map.
+  and :math:`\sigma_t` is the corresponding temporal standard-deviation map. Higher
+  values are better.
 
 
 Measures for artifacts and other
@@ -137,7 +138,9 @@ AFNI's outlier ratio (``aor``)
 .. _iqms_aqi:
 
 AFNI's quality index (``aqi``)
-  Mean quality index as computed by AFNI's ``3dTqual``.
+  Mean quality index as computed by AFNI's ``3dTqual``; for each volume,
+  it is one minus the Spearman's (rank) correlation of that volume with the
+  median volume. Lower values are better.
 
 .. _iqms_dummy:
 
