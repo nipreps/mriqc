@@ -30,11 +30,13 @@ Makefile
 # other
 notebooks/**/*
 notebooks
+.zenodo.json
 
 # CircleCI and Travis
 .circleci/
 .codecov.yml
 .coveragerc
+.pep8speaks.yml
 .pylintrc
 .readthedocs.yml
 .travis.yml
