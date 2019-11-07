@@ -1,6 +1,30 @@
 version: 2
 jobs:
 
+  build_docs:
+    docker:
+      - image: python:3.7.4
+    environment:
+      - FSLOUTPUTTYPE: NIFTI
+    steps:
+      - checkout
+      - run:
+          name: Install Graphviz
+          command: apt update && apt -y install graphviz
+      - run:
+          name: Install deps
+          command: pip install --no-cache-dir -r docs/requirements.txt
+      - run:
+          name: Build MRIQC documentation
+          no_output_timeout: 2h
+          command: |
+            make -C docs html
+            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
+            # cat $PWD/builddocs.log
+            # grep -qv "ERROR" $PWD/builddocs.log
+      - store_artifacts:
+          path: ./docs/_build/html
+
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -194,39 +218,6 @@ jobs:
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
       - store_test_results:
           path: /home/circleci/out/tests
-
-
-  build_docs:
-    machine:
-      image: circleci/classic:201711-01
-    working_directory: /home/circleci/out/docs
-    steps:
-      - attach_workspace:
-          at: /tmp
-      - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
-          command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
-            fi
-      - run:
-          name: Build MRIQC documentation
-          no_output_timeout: 2h
-          command: |
-            docker run -u $( id -u ) -e PYTHONPATH=/src/mriqc -ti --rm=false \
-              -v /home/circleci/out/docs:/scratch/docs \
-              --entrypoint=sphinx-build poldracklab/mriqc:latest \
-              -T -D language=en -b html /src/mriqc/docs/source/ /scratch/docs 2>&1 \
-              | tee $PWD/builddocs.log
-            cat $PWD/builddocs.log
-            grep -qv "ERROR" $PWD/builddocs.log
-      - store_artifacts:
-          path: /home/circleci/out/docs
 
   T1w:
     machine:
@@ -589,8 +580,15 @@ workflows:
   version: 2
   build_test_deploy:
     jobs:
+      - build_docs:
+          filters:
+            tags:
+              only: /.*/
+
       - build:
           filters:
+            branches:
+              ignore: /docs?\/.*/
             tags:
               only: /.*/
 
@@ -598,13 +596,6 @@ workflows:
           filters:
             branches:
               ignore: /docs?\/.*/
-            tags:
-              only: /.*/
-
-      - build_docs:
-          requires:
-            - build
-          filters:
             tags:
               only: /.*/
 
@@ -619,6 +610,8 @@ workflows:
 
       - test_package:
           filters:
+            branches:
+              ignore: /docs?\/.*/
             tags:
               only: /.*/
 
