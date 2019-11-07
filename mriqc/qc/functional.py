@@ -138,8 +138,8 @@ AFNI's outlier ratio (``aor``)
 .. _iqms_aqi:
 
 AFNI's quality index (``aqi``)
-  Mean quality index as computed by AFNI's ``3dTqual``; for each volume, 
-  it is one minus the Spearman's (rank) correlation of that volume with the 
+  Mean quality index as computed by AFNI's ``3dTqual``; for each volume,
+  it is one minus the Spearman's (rank) correlation of that volume with the
   median volume. Lower values are better.
 
 .. _iqms_dummy:
