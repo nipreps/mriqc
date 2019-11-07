@@ -34,13 +34,15 @@ Definitions are given in the
 Measures for the temporal information
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _iqms_dvars:
+.. _iqms_dvars :
 
-- **DVARS** - D referring to temporal derivative of timecourses, VARS referring to
+DVARS
+  D referring to temporal derivative of timecourses, VARS referring to
   RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
   BOLD signal across the entire brain at each frame of data. DVARS is calculated
-  `with nipype <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
-nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
+  `with nipype
+  <http://nipype.readthedocs.io/en/latest/interfaces/generated/nipype.algorithms.confounds.html#computedvars>`_
+  after motion correction:
 
   .. math ::
 
@@ -63,8 +65,9 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
 .. _iqms_gcor:
 
-- **Global Correlation** (``gcor``) calculates an optimized summary of time-series
-    correlation as in [Saad2013]_ using AFNI's ``@compute_gcor``:
+Global Correlation (``gcor``)
+  calculates an optimized summary of time-series
+  correlation as in [Saad2013]_ using AFNI's ``@compute_gcor``:
 
   .. math ::
 
@@ -75,10 +78,12 @@ nipype.algorithms.confounds.html#computedvars>`_ after motion correction:
 
 .. _iqms_tsnr:
 
-- **Temporal SNR** (:abbr:`tSNR (temporal SNR)`, ``tsnr``) is a simplified
-  interpretation of the tSNR definition [Kruger2001]_. We report the median value
-  of the `tSNR map <http://nipype.readthedocs.io/en/latest/interfaces/generated/\
-nipype.algorithms.confounds.html#tsnr>`_ calculated like:
+Temporal SNR (:abbr:`tSNR (temporal SNR)`, ``tsnr``)
+  is a simplified interpretation of the tSNR definition [Kruger2001]_.
+  We report the median value
+  of the `tSNR map
+  <http://nipype.readthedocs.io/en/latest/interfaces/generated/nipype.algorithms.confounds.html#tsnr>`_
+  calculated like:
 
   .. math ::
 
@@ -93,15 +98,16 @@ Measures for artifacts and other
 
 .. _iqms_fd:
 
-- **Framewise Displacement**: expresses instantaneous head-motion.
+Framewise Displacement
+  expresses instantaneous head-motion [Jenkinson2002]_.
   MRIQC reports the average FD, labeled as ``fd_mean``.
   Rotational displacements are calculated as the displacement on the surface of a
   sphere of radius 50 mm [Power2012]_:
 
   .. math ::
 
-      \text{FD}_t = |\Delta d_{x,t}| + |\Delta d_{y,t}| + \
-|\Delta d_{z,t}| + |\Delta \alpha_t| + |\Delta \beta_t| + |\Delta \gamma_t|
+      \text{FD}_t = |\Delta d_{x,t}| + |\Delta d_{y,t}| +
+      |\Delta d_{z,t}| + |\Delta \alpha_t| + |\Delta \beta_t| + |\Delta \gamma_t|
 
   Along with the base framewise displacement, MRIQC reports the
   **number of timepoints above FD threshold** (``fd_num``), and the
@@ -110,9 +116,9 @@ Measures for artifacts and other
 
 .. _iqms_gsr:
 
-- **Ghost to Signal Ratio** (:py:func:`~mriqc.qc.functional.gsr`, labeled
-  in the reports as ``gsr_x`` and ``gsr_y``):
-  along the two possible phase-encoding axes **x**, **y**:
+Ghost to Signal Ratio (:py:func:`~mriqc.qc.functional.gsr`)
+  labeled in the reports as ``gsr_x`` and ``gsr_y``
+  (calculated along the two possible phase-encoding axes **x**, **y**):
 
   .. math ::
 
@@ -124,16 +130,19 @@ Measures for artifacts and other
 
 .. _iqms_aor:
 
-- **AFNI's outlier ratio** (``aor``) - Mean fraction of outliers per fMRI volume
+AFNI's outlier ratio (``aor``)
+  Mean fraction of outliers per fMRI volume
   as given by AFNI's ``3dToutcount``.
 
 .. _iqms_aqi:
 
-- **AFNI's quality index** (``aqi``) - Mean quality index as computed by AFNI's ``3dTqual``.
+AFNI's quality index (``aqi``)
+  Mean quality index as computed by AFNI's ``3dTqual``.
 
 .. _iqms_dummy:
 
-- **Number of *dummy* scans** (``dummy``) - A number of volumes in the begining of the
+Number of *dummy* scans** (``dummy``)
+  A number of volumes in the begining of the
   fMRI timeseries identified as non-steady state.
 
 .. topic:: References
@@ -163,8 +172,8 @@ Measures for artifacts and other
     doi:`10.1002/mrm.1240 <http://dx.doi.org/10.1002/mrm.1240>`_.
 
   .. [Nichols2013] Nichols, `Notes on Creating a Standardized Version of DVARS
-      <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research\
-/nichols/scripts/fsl/standardizeddvars.pdf>`_, 2013.
+    <http://www2.warwick.ac.uk/fac/sci/statistics/staff/academic-research/nichols/scripts/fsl/standardizeddvars.pdf>`_,
+    2013.
 
   .. [Power2012] Power et al., *Spurious but systematic correlations in
     functional connectivity MRI networks arise from subject motion*,
@@ -173,9 +182,9 @@ Measures for artifacts and other
     <http://dx.doi.org/10.1016/j.neuroimage.2011.10.018>`_.
 
   .. [Saad2013] Saad et al. *Correcting Brain-Wide Correlation Differences
-     in Resting-State FMRI*, Brain Conn 3(4):339-352,
-     2013, doi:`10.1089/brain.2013.0156
-     <http://dx.doi.org/10.1089/brain.2013.0156>`_.
+    in Resting-State FMRI*, Brain Conn 3(4):339-352,
+    2013, doi:`10.1089/brain.2013.0156
+    <http://dx.doi.org/10.1089/brain.2013.0156>`_.
 
 
 mriqc.qc.functional module
