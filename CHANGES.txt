@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * DOC: Refactor how documentation is built on CircleCI (#818)
   * MAINT: Centralize all requirements and versions on ``setup.cfg`` (#819)
   * Corrected a couple of typos in --help text (#809)
   * CI: Use recent Python image to build packages (#808)
