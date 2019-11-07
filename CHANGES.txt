@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * DOC: Improve AQI (and other IQMs) and boxplot whiskers descriptions (#816)
   * DOC: Refactor how documentation is built on CircleCI (#818)
   * MAINT: Centralize all requirements and versions on ``setup.cfg`` (#819)
   * Corrected a couple of typos in --help text (#809)
