@@ -38,7 +38,6 @@ for open-source software distribution.
 
 About
 -----
-
 MRIQC extracts no-reference IQMs (image quality metrics) from
 structural (T1w and T2w) and functional MRI (magnetic resonance imaging)
 data.
@@ -72,7 +71,6 @@ the CRN. This pipeline derives from, and is heavily influenced by, the
 
 Citation
 --------
-
 .. topic:: **When using MRIQC, please include the following citation:**
 
     Esteban O, Birman D, Schaer M, Koyejo OO, Poldrack RA, Gorgolewski KJ;
@@ -82,7 +80,6 @@ Citation
 
 Support and communication
 -------------------------
-
 The documentation of this project is found here: http://mriqc.readthedocs.io/.
 
 Users can get help using the `mriqc-users google group <https://groups.google.com/forum/#!forum/mriqc-users>`_.
@@ -93,7 +90,6 @@ https://github.com/poldracklab/mriqc/issues.
 
 Authors
 -------
-
 Oscar Esteban, Krzysztof F. Gorgolewski.
 Poldrack Lab, Psychology Department, Stanford University,
 and Center for Reproducible Neuroscience, Stanford University.
@@ -108,7 +104,6 @@ and Center for Reproducible Neuroscience, Stanford University.
 
 License information
 -------------------
-
 We use the 3-clause BSD license; the full license is in the file ``LICENSE`` in
 the ``mriqc`` distribution.
 

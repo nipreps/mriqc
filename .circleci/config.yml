@@ -8,14 +8,6 @@ jobs:
       - FSLOUTPUTTYPE: NIFTI
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - docs-v1-{{ .Branch }}-{{ .Revision }}
-            - docs-v1-{{ .Branch }}-
-            - docs-v1-master
-            - docs-v1-
-          paths:
-            - ./docs/_build/_html
       - run:
           name: Install Graphviz
           command: apt update && apt -y install graphviz
@@ -32,10 +24,6 @@ jobs:
             # grep -qv "ERROR" $PWD/builddocs.log
       - store_artifacts:
           path: ./docs/_build/html
-      - save_cache:
-          key: docs-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ./docs/_build/html
 
   build:
     environment:
