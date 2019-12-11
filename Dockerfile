@@ -72,6 +72,7 @@ RUN mkdir -p $ANTSPATH && \
     curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
     | tar -xzC $ANTSPATH --strip-components 1
 ENV PATH=$ANTSPATH:$PATH
+ENV ANTS_RANDOM_SEED=17
 
 # Installing AFNI (version 17_3_03 archived on OSF)
 RUN mkdir -p /opt/afni && \
