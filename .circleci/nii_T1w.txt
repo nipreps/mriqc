@@ -28,7 +28,7 @@ b512dc02495729f9ba0b13737f82e358a75072e4 work/workflow_enumerator/anatMRIQCT1w/A
 862d1e7387f7a639e4ab7f3b328cc50737dd27d6 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50152..anat..sub-50152_T1w.nii.gz/ArtifactMask/sub-50152_T1w_conformed_hat.nii.gz
 7f9efcf8bfb15abc2bb5d50895087da883f05af8 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50152..anat..sub-50152_T1w.nii.gz/RotationMask/sub-50152_T1w_conformed_rotmask.nii.gz
 0729dd0b31b6fd9d5035529a547bef8a50634d48 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50152..anat..sub-50152_T1w.nii.gz/invert_xfm/tpl-MNI152NLin2009cAsym_res-01_desc-head_mask_trans.nii.gz
-6c3df5b39cfd9499aa8a089eae7abb01dba69c96 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50785..anat..sub-50785_T1w.nii.gz/ArtifactMask/sub-50785_T1w_conformed_air.nii.gz
+7c3df5b39cfd9499aa8a089eae7abb01dba69c96 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50785..anat..sub-50785_T1w.nii.gz/ArtifactMask/sub-50785_T1w_conformed_air.nii.gz
 aaafd84713bf0e7b43e45845c3c93228de07e735 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50785..anat..sub-50785_T1w.nii.gz/ArtifactMask/sub-50785_T1w_conformed_art.nii.gz
 6c3df5b39cfd9499aa8a089eae7abb01dba69c96 work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50785..anat..sub-50785_T1w.nii.gz/ArtifactMask/sub-50785_T1w_conformed_hat.nii.gz
 cfbaeb98f52ddbee089d18ee1140ea56ce833c3c work/workflow_enumerator/anatMRIQCT1w/AirMaskWorkflow/_in_file_..data..sub-50785..anat..sub-50785_T1w.nii.gz/RotationMask/sub-50785_T1w_conformed_rotmask.nii.gz
