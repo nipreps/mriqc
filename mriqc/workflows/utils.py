@@ -177,7 +177,7 @@ def get_fwhmx():
 
 
 def is_fsl_installed():
-    return os.getenv('FSL_DIR', None) is not None
+    return os.getenv('FSLDIR', None) is not None
 
 
 def use_fsl():
