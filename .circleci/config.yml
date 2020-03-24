@@ -114,11 +114,43 @@ jobs:
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
       - run:
+          name: Build Docker FSL-free image
+          no_output_timeout: 60m
+          command: |
+            # Inject MRIQC-WebAPI secret
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+            fi
+            # Get version, update files.
+            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
+            if [[ ${THISVERSION:0:1} == "0" ]] ; then
+              echo "WARNING: latest git tag could not be found"
+              echo "Please, make sure you fetch all tags from upstream with"
+              echo "the command ``git fetch --tags --verbose`` and push"
+              echo "them to your fork with ``git push origin --tags``"
+            fi
+            echo "${CIRCLE_TAG:-$THISVERSION}" > mriqc/VERSION
+            # Build docker image
+            e=1 && for i in {1..5}; do
+              docker build \
+                --cache-from=poldracklab/mriqc-fsl-free \
+                --rm=false \
+                -f Dockerfile_fsl-free \
+                -t poldracklab/mriqc-fsl-free:latest \
+                --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+                --build-arg VCS_REF=`git rev-parse --short HEAD` \
+                --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
+              && e=0 && break || sleep 15
+            done && [ "$e" -eq "0" ]
+
+      - run:
           name: Docker save
           no_output_timeout: 40m
           command: |
             mkdir -p /tmp/cache
-            docker save ubuntu:xenial-20191010 poldracklab/mriqc:latest \
+            docker save ubuntu:xenial-20191010 poldracklab/mriqc:latest poldracklab/mriqc-fsl-free \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
       - persist_to_workspace:
           root: /tmp
@@ -464,6 +496,120 @@ jobs:
           path: /tmp/t1w/test
 
 
+  T1w_fsl_free_image:
+    machine:
+      image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+    working_directory: /tmp/t1w
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            pyenv local 3.5.2
+            python -m pip install --upgrade pip
+            pip install docker-compose
+            docker info
+            set +o pipefail
+            sudo apt update && sudo apt -y install pigz
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
+      - run:
+          name: Start MRIQC WebAPI endpoint
+          command: |
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+          background: true
+
+      - restore_cache:
+          keys:
+            - t1w-v2-{{ epoch }}
+            - t1w-v2-
+      - run:
+          name: Run participant-level on T1w images using FSL-free image
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
+            # Run MRIQC
+            docker run -u $( id -u ) --rm=false -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
+                       poldracklab/mriqc-fsl-free:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports --profile -m T1w --dsname circletests \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - save_cache:
+         key: t1w-v2-{{ epoch }}
+         paths:
+            - /tmp/t1w/work
+
+      - run:
+          name: Run group-level on T1w images without FSL
+          no_output_timeout: 2h
+          command: |
+            docker run -u $( id -u ) --rm=false -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
+                       -e USE_FSL=0 \
+                       poldracklab/mriqc-fsl-free:latest \
+                       /data derivatives/ group \
+                       -m T1w -vv
+
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
+
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/t1w/test
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
+            exit $?
+
+      - run:
+          name: Checking changes on MD5 sums of intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/t1w/test
+            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
+                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
+                                       poldracklab/mriqc-fsl-free:latest"
+            find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
+            exit $?
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/t1w/work
+
+      - run:
+          name: Test classifier
+          command: |
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc-fsl-free:latest \
+                       --train --test -P /usr/local/miniconda/lib/python3.7/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
+            # Run the classifier on the test data
+            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+                       --entrypoint=mriqc_clf poldracklab/mriqc-fsl-free:latest \
+                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
+
+      - store_artifacts:
+          path: /tmp/t1w/test
+
+
   bold:
     machine:
       image: circleci/classic:201711-01
@@ -685,6 +831,109 @@ jobs:
           path: /tmp/bold/test
 
 
+  bold_fsl_free_image:
+    machine:
+      image: circleci/classic:201711-01
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+    working_directory: /tmp/bold
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Load Docker image layer cache
+          no_output_timeout: 30m
+          command: |
+            docker info
+            pyenv local 3.5.2
+            python -m pip install --upgrade pip
+            pip install docker-compose
+            set +o pipefail
+            sudo apt update && sudo apt -y install pigz
+            if [ -f /tmp/cache/docker.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            fi
+            if [ -f /tmp/cache/webapi.tar.gz ]; then
+              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+            fi
+            docker images
+      - run:
+          name: Start MRIQC WebAPI endpoint
+          command: |
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+          background: true
+
+      - restore_cache:
+          keys:
+            - bold-v1-{{ epoch }}
+            - bold-v1-
+
+      - run:
+          name: Run participant-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/bold/work /tmp/bold/derivatives
+            # Run MRIQC
+            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       -e USE_FSL=0 \
+                       poldracklab/mriqc-fsl-free:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports --profile -m bold --dsname circletests \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --testing --ica \
+                       --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - save_cache:
+         key: bold-v1-{{ epoch }}
+         paths:
+            - /tmp/bold/work
+
+      - run:
+          name: Run group-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       -e USE_FSL=0 \
+                       poldracklab/mriqc-fsl-free:latest \
+                       /data derivatives/ group \
+                       -m bold -vv
+
+      - store_artifacts:
+          path: /tmp/bold/derivatives
+
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/bold/test
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
+            exit $?
+
+      - run:
+          name: Checking changes on MD5 sums of intermediate files of MRIQC
+          command: |
+            mkdir -p /tmp/bold/test
+            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
+                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
+                                       poldracklab/mriqc-fsl-free:latest"
+            find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
+            exit $?
+
+      - run:
+          name: Clean-up work directory (just leave reports & commandlines)
+          command: |
+            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
+
+      - store_artifacts:
+          path: /tmp/bold/work
+
+      - store_artifacts:
+          path: /tmp/bold/test
+
+
   update_changes:
     machine:
       image: circleci/classic:201711-01
@@ -794,6 +1043,9 @@ jobs:
               docker push poldracklab/mriqc:latest
               docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG
               docker push poldracklab/mriqc:$CIRCLE_TAG
+              docker push poldracklab/mriqc-fsl-free:latest
+              docker tag poldracklab/mriqc-fsl-free poldracklab/mriqc-fsl-free:$CIRCLE_TAG
+              docker push poldracklab/mriqc-fsl-free:$CIRCLE_TAG            
             fi
 
 workflows:
