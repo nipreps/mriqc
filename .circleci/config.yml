@@ -1045,7 +1045,7 @@ jobs:
               docker push poldracklab/mriqc:$CIRCLE_TAG
               docker push poldracklab/mriqc-fsl-free:latest
               docker tag poldracklab/mriqc-fsl-free poldracklab/mriqc-fsl-free:$CIRCLE_TAG
-              docker push poldracklab/mriqc-fsl-free:$CIRCLE_TAG            
+              docker push poldracklab/mriqc-fsl-free:$CIRCLE_TAG
             fi
 
 workflows:
@@ -1106,7 +1106,7 @@ workflows:
             tags:
               only: /.*/
 
-      - bold:
+      - T1w_no_fsl:
           requires:
             - get_data
             - build
@@ -1116,7 +1116,7 @@ workflows:
             tags:
               only: /.*/
 
-      - T1w_no_fsl:
+      - T1w_fsl_free_image:
           requires:
             - get_data
             - build
@@ -1137,6 +1137,16 @@ workflows:
               only: /.*/
 
       - bold_no_fsl:
+          requires:
+            - get_data
+            - build
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - bold_fsl_free_image:
           requires:
             - get_data
             - build
