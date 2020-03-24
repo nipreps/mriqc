@@ -4,7 +4,7 @@ FROM ubuntu:xenial-20191010
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 
-# Installing Neurodebian packages (FSL, AFNI, git)
+# Installing Neurodebian packages (AFNI, git)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
@@ -37,7 +37,7 @@ RUN apt-get update && \
                     pkg-config \
                     tcsh \
                     xfonts-base \
-                    xvfb \
+                    xvfb && \
     curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
                     nodejs && \
@@ -160,17 +160,14 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 RUN ldconfig
 WORKDIR /tmp/
 
-# For enforcing or not the use of FSL
-ENV USE_FSL=0
-
 # Run mriqc by default
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
 
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.name="MRIQC" \
-      org.label-schema.description="MRIQC - Automated Quality Control and visual reports for Quality Assesment of structural (T1w, T2w) and functional MRI of the brain" \
+      org.label-schema.name="MRIQC (fsl-free)" \
+      org.label-schema.description="MRIQC - Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain" \
       org.label-schema.url="http://mriqc.readthedocs.io" \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url="https://github.com/poldracklab/mriqc" \
