@@ -444,7 +444,10 @@ def headmsk_wf(name='HeadMaskWorkflow', use_bet=True):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']), name='outputnode')
 
-    if use_bet or not has_dipy:
+    if not use_bet and not has_dipy:
+        raise RuntimeError("Either FSL or DIPY must be installed.")
+
+    if use_bet:
         from nipype.interfaces.fsl import BET
         # Alternative for when dipy is not installed
         bet = pe.Node(BET(surfaces=True), name='fsl_bet')
