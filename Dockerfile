@@ -1,5 +1,5 @@
 # Use Ubuntu 16.04 LTS
-FROM ubuntu:xenial-20191010
+FROM ubuntu:xenial-20200114
 
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
