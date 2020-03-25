@@ -417,8 +417,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - t1w-v2-{{ epoch }}
-            - t1w-v2-
+            - t1w-no-fsl-v2-{{ epoch }}
+            - t1w-no-fsl-v2-
       - run:
           name: Run participant-level on T1w images without FSL
           no_output_timeout: 2h
@@ -435,7 +435,7 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v2-{{ epoch }}
+         key: t1w-no-fsl-v2-{{ epoch }}
          paths:
             - /tmp/t1w/work
 
@@ -470,7 +470,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_T1w_no_fsl.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -532,8 +532,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - t1w-v2-{{ epoch }}
-            - t1w-v2-
+            - t1w-no-fsl-v2-{{ epoch }}
+            - t1w-no-fsl-v2-
       - run:
           name: Run participant-level on T1w images using FSL-free image
           no_output_timeout: 2h
@@ -549,7 +549,7 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v2-{{ epoch }}
+         key: t1w-no-fsl-v2-{{ epoch }}
          paths:
             - /tmp/t1w/work
 
@@ -584,7 +584,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc-fsl-free:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_T1w_no_fsl.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -763,8 +763,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - bold-v1-{{ epoch }}
-            - bold-v1-
+            - bold-no-fsl-v1-{{ epoch }}
+            - bold-no-fsl-v1-
 
       - run:
           name: Run participant-level on BOLD images
@@ -782,7 +782,7 @@ jobs:
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v1-{{ epoch }}
+         key: bold-no-fsl-v1-{{ epoch }}
          paths:
             - /tmp/bold/work
 
@@ -816,7 +816,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_bold_no_fsl.txt /tmp/bold/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -866,8 +866,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - bold-v1-{{ epoch }}
-            - bold-v1-
+            - bold-no-fsl-v1-{{ epoch }}
+            - bold-no-fsl-v1-
 
       - run:
           name: Run participant-level on BOLD images
@@ -885,7 +885,7 @@ jobs:
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v1-{{ epoch }}
+         key: bold-no-fsl-v1-{{ epoch }}
          paths:
             - /tmp/bold/work
 
@@ -919,7 +919,7 @@ jobs:
                                        --entrypoint=/usr/local/miniconda/bin/nib-hash \
                                        poldracklab/mriqc-fsl-free:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
+            diff /tmp/src/mriqc/.circleci/nii_bold_no_fsl.txt /tmp/bold/test/nii_outputs.txt
             exit $?
 
       - run:
@@ -1120,6 +1120,7 @@ workflows:
           requires:
             - get_data
             - build
+            - T1w_no_fsl
           filters:
             branches:
               ignore: /docs?\/.*/
@@ -1150,6 +1151,7 @@ workflows:
           requires:
             - get_data
             - build
+            - bold_no_fsl
           filters:
             branches:
               ignore: /docs?\/.*/
