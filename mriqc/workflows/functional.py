@@ -157,7 +157,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
                              ('outputnode.out_fft', 'inputnode.in_fft')]),
         ])
 
-    if settings.get('ica', False):
+    if settings.get('ica', False) and use_fsl():
         melodic = pe.Node(nws.MELODICRPT(no_bet=True,
                                          no_mask=True,
                                          no_mm=True,
