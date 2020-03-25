@@ -181,7 +181,14 @@ def is_fsl_installed():
 
 
 def use_fsl():
-    if os.environ.get('USE_FSL') and is_fsl_installed():
+    uf = os.environ.get('USE_FSL')
+    if isinstance(uf, str):
+        try:
+            uf = int(uf)
+        except ValueError:  # might be 'true' or 'false'
+            uf = uf.lower() == 'true'
+
+    if uf and is_fsl_installed():
         return bool(os.environ.get('USE_FSL'))
     else:
         return False
