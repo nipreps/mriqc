@@ -1,41 +1,27 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:24:05
-# @Email:  code@oscaresteban.es
-""" The core module combines the existing workflows """
-
-import os
+"""The core module combines the existing workflows."""
+from nipype.pipeline.engine import Workflow
 from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
 
 
-def build_workflow(dataset, mod, settings=None):
-    """ Multi-subject anatomical workflow wrapper """
+def init_mriqc_wf():
+    """Create a multi-subject MRIQC workflow."""
+    from .. import config
 
-    settings["biggest_file_size_gb"] = _get_biggest_file_size_gb(dataset)
+    workflow = Workflow(name="mriqc_wf")
+    workflow.base_dir = config.execution.work_dir
 
-    if mod not in ('T1w', 'T2w', 'bold'):
-        raise NotImplementedError('Unknown workflow type "%s"' % mod)
+    wf_list = []
+    for mod, filelist in config.workflow.inputs.items():
+        if mod == 'bold':
+            wf_list.append(fmri_qc_workflow())
+        else:
+            wf_list.append(anat_qc_workflow())
 
-    if mod == 'bold':
-        workflow = fmri_qc_workflow(dataset, settings=settings)
-    else:
-        workflow = anat_qc_workflow(dataset, mod=mod, settings=settings)
+    if not wf_list:
+        return None
 
-    workflow.base_dir = str(settings['work_dir'])
-    if settings.get('write_graph', False):
-        workflow.write_graph()
+    workflow.add_nodes(wf_list)
     return workflow
-
-
-def _get_biggest_file_size_gb(files):
-    max_size = 0
-    for file in files:
-        size = os.path.getsize(file) / (1024 ** 3)
-        if size > max_size:
-            max_size = size
-    return max_size

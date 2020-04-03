@@ -18,9 +18,8 @@ import numpy as np
 import pandas as pd
 from builtins import str
 
-from .. import logging
+from .. import config
 from ..utils.misc import BIDS_COMP
-LOG = logging.getLogger('mriqc.classifier')
 
 
 def get_groups(X, label='site'):
@@ -209,14 +208,16 @@ def read_dataset(feat_file, label_file, merged_name=None,
     # Drop samples with invalid rating
     nan_labels = x_df[x_df[rate_label].isnull()].index.ravel().tolist()
     if nan_labels:
-        LOG.info('Dropping %d samples for having non-numerical '
-                 'labels', len(nan_labels))
+        config.loggers.interface.info(
+            f'Dropping {len(nan_labels)} samples for having non-numerical labels,'
+        )
         x_df = x_df.drop(nan_labels)
 
     # Print out some info
     nsamples = len(x_df)
-    LOG.info('Created dataset X="%s", Y="%s" (N=%d valid samples)',
-             feat_file, label_file, nsamples)
+    config.loggers.interface.info(
+        f'Created dataset X="{feat_file}", Y="{label_file}" (N={nsamples} valid samples)'
+    )
 
     # Inform about ratings distribution
     labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
@@ -224,10 +225,11 @@ def read_dataset(feat_file, label_file, merged_name=None,
     for l in labels:
         ldist.append(int(np.sum(x_df[rate_label] == l)))
 
-    LOG.info('Ratings distribution: %s (%s, %s)',
-             '/'.join(['%d' % x for x in ldist]),
-             '/'.join(['%.2f%%' % (100 * x / nsamples) for x in ldist]),
-             'accept/exclude' if len(ldist) == 2 else 'exclude/doubtful/accept')
+    config.loggers.interface.info(
+        'Ratings distribution: %s (%s, %s)',
+        '/'.join(['%d' % x for x in ldist]),
+        '/'.join(['%.2f%%' % (100 * x / nsamples) for x in ldist]),
+        'accept/exclude' if len(ldist) == 2 else 'exclude/doubtful/accept')
 
     return x_df, feat_names
 
@@ -257,7 +259,7 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
     """ Returns a dataset zscored by the column given as argument """
     from multiprocessing import Pool, cpu_count
 
-    LOG.info('z-scoring dataset ...')
+    config.loggers.interface.info('z-scoring dataset ...')
 
     if njobs <= 0:
         njobs = cpu_count()
@@ -291,7 +293,8 @@ def zscore_dataset(dataframe, excl_columns=None, by='site',
     nan_columns = zs_df.columns[zs_df.isnull().any()].tolist()
 
     if nan_columns:
-        LOG.warning('Columns %s contain NaNs after z-scoring.', ", ".join(nan_columns))
+        config.loggers.interface.warning(
+            f'Columns {", ".join(nan_columns)} contain NaNs after z-scoring.')
         zs_df[nan_columns] = dataframe[nan_columns].values
 
     return zs_df

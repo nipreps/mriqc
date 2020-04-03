@@ -14,8 +14,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
-from ..classifier.data import read_dataset
-from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
 
 def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
@@ -333,6 +331,8 @@ def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None,
                           rating_label='rater_1', dpi=100):
     import seaborn as sn
     from ..classifier.helper import FEATURE_NORM
+    from ..classifier.data import read_dataset
+    from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
     sn.set(style="whitegrid")
 
@@ -497,6 +497,7 @@ def plot_corrmat(in_csv, out_file=None):
 def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     import re
     import seaborn as sn
+    from ..classifier.data import read_dataset
     sn.set(style="whitegrid")
 
     mdata, pp_cols = read_dataset(X, Y, rate_label=rating_label)

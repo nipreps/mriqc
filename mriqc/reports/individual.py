@@ -1,13 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-# pylint: disable=no-member
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:33:39
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
 """ Encapsulates report generation functions """
 
 
@@ -15,13 +7,11 @@ def individual_html(in_iqms, in_plots=None, api_id=None):
     from pathlib import Path
     import datetime
     from json import load
-    from mriqc import logging, __version__ as ver
-    from mriqc.utils.misc import BIDS_COMP
-    from mriqc.reports import REPORT_TITLES
-    from mriqc.reports.utils import iqms2html, read_report_snippet
-    from mriqc.data import IndividualTemplate
-
-    report_log = logging.getLogger('mriqc.report')
+    from .. import config
+    from ..utils.misc import BIDS_COMP
+    from ..reports import REPORT_TITLES
+    from ..reports.utils import iqms2html, read_report_snippet
+    from ..data import IndividualTemplate
 
     def _get_details(in_iqms, modality):
         in_prov = in_iqms.pop('provenance', {})
@@ -32,7 +22,7 @@ def individual_html(in_iqms, in_plots=None, api_id=None):
         if modality == 'bold':
             bold_exclude_index = in_iqms.get('dumb_trs')
             if bold_exclude_index is None:
-                report_log.warning('Building bold report: no exclude index was found')
+                config.loggers.cli.warning('Building bold report: no exclude index was found')
             elif bold_exclude_index > 0:
                 msg = """\
 <span class="problematic">Non-steady state (strong T1 contrast) has been detected in the \
@@ -92,12 +82,12 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                     for i, v in enumerate(in_plots)]
 
     pred_qa = None  # metadata.pop('mriqc_pred', None)
-    config = {
+    _config = {
         'modality': mod,
         'dataset': metadata.pop('dataset', None),
         'bids_name': in_iqms.with_suffix("").name,
         'timestamp': datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
-        'version': ver,
+        'version': config.environment.version,
         'imparams': iqms2html(iqms_dict, 'iqms-table'),
         'svg_files': in_plots,
         'workflow_details': wf_details,
@@ -109,13 +99,13 @@ first {} volumes</span>. They were excluded before generating any QC measures an
         'pred_qa': pred_qa
     }
 
-    if config['metadata'] is None:
-        config['workflow_details'].append(
+    if _config['metadata'] is None:
+        _config['workflow_details'].append(
             '<span class="warning">File has no metadata</span> '
             '<span>(sidecar JSON file missing or empty)</span>')
 
     tpl = IndividualTemplate()
-    tpl.generate_conf(config, out_file)
+    tpl.generate_conf(_config, out_file)
 
-    report_log.info('Generated individual log (%s)', out_file)
+    config.loggers.cli.info('Generated individual log (%s)', out_file)
     return out_file

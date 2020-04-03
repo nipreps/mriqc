@@ -3,14 +3,12 @@
 from pathlib import Path
 import re
 import simplejson as json
-from nipype import logging
 from nipype.interfaces.base import (
     traits, isdefined, TraitedSpec, DynamicTraitedSpec, BaseInterfaceInputSpec,
     File, Undefined, Str, SimpleInterface
 )
+from .. import config
 from ..utils.misc import BIDS_COMP
-
-IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
@@ -115,7 +113,7 @@ class IQMFileSink(SimpleInterface):
             if isinstance(val, dict):
                 self._out_dict.update(val)
             else:
-                IFLOGGER.warning(
+                config.loggers.interface.warning(
                     'Output "%s" is not a dictionary (value="%s"), '
                     'discarding output.', root_key, str(val))
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
@@ -9,15 +7,12 @@ from pkg_resources import resource_filename as pkgrf
 import numpy as np
 import nibabel as nb
 
-from nipype import logging
 from nipype.interfaces.base import (
     traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined,
     SimpleInterface
 )
 from nipype.interfaces.ants import ApplyTransforms
-
-
-IFLOGGER = logging.getLogger('nipype.interface')
+from .. import config
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
@@ -106,8 +101,9 @@ class ConformImage(SimpleInterface):
             datatype = int(hdr['datatype'])
 
             if datatype == 1:
-                IFLOGGER.warning('Input image %s has a suspicious data type "%s"',
-                                 self.inputs.in_file, hdr.get_data_dtype())
+                config.loggers.interface.warning(
+                    'Input image %s has a suspicious data type "%s"',
+                    self.inputs.in_file, hdr.get_data_dtype())
 
             # signed char and bool to uint8
             if datatype == 1 or datatype == 2 or datatype == 256:
@@ -169,16 +165,17 @@ class EnsureSize(SimpleInterface):
         zooms = nii.header.get_zooms()
         size_diff = np.array(zooms[:3]) - (self.inputs.pixel_size - 0.1)
         if np.all(size_diff >= -1e-3):
-            IFLOGGER.info('Voxel size is large enough')
+            config.loggers.interface.info('Voxel size is large enough')
             self._results['out_file'] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
                 self._results['out_mask'] = self.inputs.in_mask
             return runtime
 
-        IFLOGGER.info('One or more voxel dimensions (%f, %f, %f) are smaller than '
-                      'the requested voxel size (%f) - diff=(%f, %f, %f)', zooms[0],
-                      zooms[1], zooms[2], self.inputs.pixel_size, size_diff[0],
-                      size_diff[1], size_diff[2])
+        config.loggers.interface.info(
+            'One or more voxel dimensions (%f, %f, %f) are smaller than '
+            'the requested voxel size (%f) - diff=(%f, %f, %f)', zooms[0],
+            zooms[1], zooms[2], self.inputs.pixel_size, size_diff[0],
+            size_diff[1], size_diff[2])
 
         # Figure out new matrix
         # 1) Get base affine

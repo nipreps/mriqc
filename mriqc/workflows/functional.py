@@ -23,8 +23,6 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
-from pathlib import Path
-
 from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
@@ -37,13 +35,12 @@ from niworkflows.interfaces import registration as nwr
 from niworkflows.interfaces import utils as niutils
 from niworkflows.interfaces.plotting import FMRISummary
 
+from .. import config
 from .utils import get_fwhmx
-from .. import DEFAULTS, logging
 from ..interfaces import FunctionalQC, Spikes, IQMFileSink
 
 
 DEFAULT_FD_RADIUS = 50.
-WFLOGGER = logging.getLogger('mriqc.workflow')
 
 
 def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
@@ -67,12 +64,13 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     biggest_file_gb = settings.get("biggest_file_size_gb", 1)
 
+    dataset = config.workflow.inputs.get("bold", [])
+    config.loggers.workflow.info(f"""\
+Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
+
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    WFLOGGER.info('Building fMRI QC workflow, datasets list: %s',
-                  [str(Path(d).relative_to(settings['bids_dir']))
-                   for d in sorted(dataset)])
     inputnode.iterables = [('in_file', dataset)]
 
     outputnode = pe.Node(niu.IdentityInterface(
@@ -84,7 +82,7 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
 
     sanitize = pe.Node(niutils.SanitizeImage(), name="sanitize",
                        mem_gb=biggest_file_gb * 4.0)
-    sanitize.inputs.max_32bit = settings.get("float32", DEFAULTS['float32'])
+    sanitize.inputs.max_32bit = config.execution.float32
 
     # Workflow --------------------------------------------------------
 
@@ -689,9 +687,9 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     )
 
     # Get settings
-    testing = settings.get('testing', False)
-    n_procs = settings.get('n_procs', 1)
-    ants_nthreads = settings.get('ants_nthreads', DEFAULTS['ants_nthreads'])
+    testing = config.execution.debug
+    n_procs = config.nipype.omp_nprocs
+    ants_nthreads = config.nipype.omp_nthreads
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['epi_mean', 'epi_mask']),

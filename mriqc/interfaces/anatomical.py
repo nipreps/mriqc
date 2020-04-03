@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:29:40
-# @Email:  code@oscaresteban.es
 """ Nipype interfaces to support anatomical workflow """
 import os.path as op
 import numpy as np
@@ -14,18 +8,17 @@ from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
-from nipype import logging
 from nipype.utils.filemanip import fname_presuffix
 from nipype.interfaces.base import (
     traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec,
     SimpleInterface
 )
 
+from .. import config
 from ..utils.misc import _flatten_dict
 from ..qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
                              art_qi2, volume_fraction, rpve, summary_stats,
                              cjv, wm2max)
-IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
@@ -389,6 +382,44 @@ class RotationMask(SimpleInterface):
                                    suffix='_rotmask', newpath='.')
         out_img.to_filename(out_file)
         self._results['out_file'] = out_file
+        return runtime
+
+
+class _AddProvenanceInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, desc="input file")
+    air_msk = File(exists=True, desc="air mask file")
+    rot_msk = File(exists=True, desc="rotation mask file")
+
+
+class _AddProvenanceOutputSpec(TraitedSpec):
+    out_prov = traits.Dict()
+
+
+class AddProvenance(SimpleInterface):
+    """Builds a provenance dictionary."""
+
+    input_spec = _AddProvenanceInputSpec
+    output_spec = _AddProvenanceOutputSpec
+
+    def _run_interface(self, runtime):
+        from nipype.utils.filemanip import hash_infile
+
+        air_msk_size = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(
+            bool).sum()
+        rot_msk_size = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(
+            bool).sum()
+
+        self._results["out_prov"] = {
+            'md5sum': hash_infile(self.inputs.in_file),
+            'version': config.environment.version,
+            'software': 'mriqc',
+            'warnings': {
+                'small_air_mask': bool(air_msk_size < 5e5),
+                'large_rot_frame': bool(rot_msk_size > 500),
+            },
+            'webapi_url': config.execution.webapi_url,
+            'webapi_port': config.execution.webapi_port,
+        }
         return runtime
 
 
