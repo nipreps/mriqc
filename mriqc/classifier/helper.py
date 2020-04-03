@@ -458,8 +458,8 @@ class CVHelper(CVHelperBase):
                 n_permutations=self._permutation_test, n_jobs=1)
 
             score = scores[scoring.index('accuracy')]
-            pvalue = (np.sum(permutation_scores >=
-                      score) + 1.0) / (self._permutation_test + 1)
+            pvalue = (np.sum(permutation_scores
+                      >= score) + 1.0) / (self._permutation_test + 1)
             LOG.info('Permutation test (N=%d) for accuracy score %f (pvalue=%f)',
                      self._permutation_test, score, pvalue)
 

@@ -495,6 +495,7 @@ def plot_corrmat(in_csv, out_file=None):
 
 
 def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
+    import re
     import seaborn as sn
     sn.set(style="whitegrid")
 
@@ -511,9 +512,8 @@ def plot_histograms(X, Y, rating_label='rater_1', out_file=None):
     # zscored = zscore_dataset(
     #     mdata, excl_columns=['rater', 'size_x', 'size_y', 'size_z',
     #                          'spacing_x', 'spacing_y', 'spacing_z'])
-
-    colnames = [col for col in sorted(pp_cols) if not (col.startswith('spacing') or
-                col.startswith('summary') or col.startswith('size'))]
+    pat = re.compile(r'^(spacing|summary|size)')
+    colnames = [col for col in sorted(pp_cols) if pat.match(col)]
 
     nrows = len(colnames)
     # palette = ['dodgerblue', 'darkorange']

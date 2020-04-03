@@ -290,5 +290,7 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
 
 
 def _robust_zscore(data):
-    return ((data - np.atleast_2d(np.median(data, axis=1)).T) /
-            np.atleast_2d(data.std(axis=1)).T)
+    return ((
+        data - np.atleast_2d(np.median(data, axis=1)).T)
+        / np.atleast_2d(data.std(axis=1)).T
+    )
