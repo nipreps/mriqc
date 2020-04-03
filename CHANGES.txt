@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * MAINT: Drop Python 3.5, simplify linting (#833)
   * MAINT: Update to latest Ubuntu Xenial tag (#814)
   * DOC: Improve AQI (and other IQMs) and boxplot whiskers descriptions (#816)
   * DOC: Refactor how documentation is built on CircleCI (#818)
