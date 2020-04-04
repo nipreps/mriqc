@@ -15,10 +15,6 @@ import pandas as pd
 from pkg_resources import resource_filename as pkgrf
 
 # sklearn overrides
-from .sklearn import preprocessing as mcsp
-from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
-                             RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
-from .sklearn._validation import cross_val_score, permutation_test_score
 
 # sklearn module
 from sklearn import metrics as slm
@@ -33,7 +29,7 @@ from sklearn.multiclass import OneVsRestClassifier
 # xgboost
 from xgboost import XGBClassifier
 
-from .. import logging
+import logging
 from .data import read_dataset, get_bids_cols
 from ..viz.misc import plot_roc_curve
 
@@ -178,6 +174,10 @@ class CVHelper(CVHelperBase):
         """
         Fits the cross-validation helper
         """
+        from .sklearn import preprocessing as mcsp
+        from .sklearn._split import (RobustLeavePGroupsOut as LeavePGroupsOut,
+                                     RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold)
+
         if self._pickled:
             LOG.info('Classifier was loaded from file, cancelling fitting.')
             return
@@ -242,6 +242,8 @@ class CVHelper(CVHelperBase):
             verbose=self._verbosity)
 
         if self._nestedcv or self._nestedcv_kfold:
+            from .sklearn._validation import cross_val_score
+
             outer_cv = LeavePGroupsOut(n_groups=1)
             if self._nestedcv_kfold:
                 outer_cv = RepeatedStratifiedKFold(n_repeats=1, n_splits=10)
@@ -447,6 +449,8 @@ class CVHelper(CVHelperBase):
 
         # Run a permutation test
         if self._permutation_test:
+            from .sklearn._validation import permutation_test_score
+
             # Merge test and train
             concatenated_x = pd.concat((self._Xtrain, self._Xtest), axis=0)
             concatenated_y = concatenated_x[[self._rate_column]].values.ravel().tolist()

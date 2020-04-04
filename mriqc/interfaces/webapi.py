@@ -1,16 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-
-from nipype import logging
 from nipype.interfaces.base import (
     Bunch, traits, isdefined, TraitedSpec, BaseInterfaceInputSpec, File, Str,
     SimpleInterface
 )
 from urllib.parse import urlparse
-
-IFLOGGER = logging.getLogger('nipype.interface')
+from .. import config
 
 SECRET_KEY = '<secret_token>'
 
@@ -153,15 +148,15 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = ('QC metrics upload failed to create an ID for the record '
                       'uplOADED. rEsponse from server follows: {}'.format(response.text))
-            IFLOGGER.warning(errmsg)
+            config.loggers.interface.warning(errmsg)
 
         if response.status_code == 201:
-            IFLOGGER.info('QC metrics successfully uploaded.')
+            config.loggers.interface.info('QC metrics successfully uploaded.')
             return runtime
 
         errmsg = 'QC metrics failed to upload. Status %d: %s' % (
             response.status_code, response.text)
-        IFLOGGER.warning(errmsg)
+        config.loggers.interface.warning(errmsg)
         if self.inputs.strict:
             raise RuntimeError(response.text)
 
@@ -232,7 +227,7 @@ def upload_qc_metrics(in_iqms, loc, path='', scheme='http',
     headers = {'Authorization': SECRET_KEY, "Content-Type": "application/json"}
 
     webapi_url = '{}://{}:{}/{}{}'.format(scheme, loc, port, path, modality)
-    IFLOGGER.info('MRIQC Web API: submitting to <%s>', webapi_url)
+    config.loggers.interface.info('MRIQC Web API: submitting to <%s>', webapi_url)
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))

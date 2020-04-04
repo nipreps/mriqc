@@ -1,16 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-# @Author: oesteban
-# @Date:   2017-06-14 12:47:30
-
 import numpy as np
 from sklearn.utils import indexable
 from sklearn.model_selection import (LeavePGroupsOut, StratifiedKFold)
 from sklearn.model_selection._split import _RepeatedSplits
 
-from ... import logging
+import logging
 LOG = logging.getLogger('mriqc.classifier')
 
 

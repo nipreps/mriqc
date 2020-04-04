@@ -8,7 +8,6 @@
 # @Email:  code@oscaresteban.es
 # @Last modified by:   oesteban
 """ Visualization interfaces """
-
 from pathlib import Path
 import numpy as np
 from nipype.interfaces.base import (

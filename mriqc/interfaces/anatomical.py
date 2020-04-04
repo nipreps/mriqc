@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:29:40
-# @Email:  code@oscaresteban.es
 """ Nipype interfaces to support anatomical workflow """
 import os.path as op
 import numpy as np
@@ -14,7 +8,6 @@ from math import sqrt
 import scipy.ndimage as nd
 from builtins import zip
 
-from nipype import logging
 from nipype.utils.filemanip import fname_presuffix
 from nipype.interfaces.base import (
     traits, TraitedSpec, File, isdefined, InputMultiPath, BaseInterfaceInputSpec,
@@ -25,7 +18,6 @@ from ..utils.misc import _flatten_dict
 from ..qc.anatomical import (snr, snr_dietrich, cnr, fber, efc, art_qi1,
                              art_qi2, volume_fraction, rpve, summary_stats,
                              cjv, wm2max)
-IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):

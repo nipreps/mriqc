@@ -247,8 +247,9 @@ def snr_dietrich(mu_fg, sigma_air):
 
     """
     if sigma_air < 1.0:
-        from .. import MRIQC_LOG
-        MRIQC_LOG.warning('SNRd - background sigma is too small (%f)', sigma_air)
+        from .. import config
+        config.loggers.interface.warning(
+            f'SNRd - background sigma is too small ({sigma_air})')
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
@@ -547,7 +548,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
 
     """
-    from .. import MRIQC_LOG
+    from .. import config
     from statsmodels.robust.scale import mad
 
     # Check type of input masks
@@ -580,8 +581,9 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
         nvox = float(mask.sum())
         if nvox < 1e3:
-            MRIQC_LOG.warning('calculating summary stats of label "%s" in a very small '
-                              'mask (%d voxels)', k, int(nvox))
+            config.loggers.interface.warning(
+                'calculating summary stats of label "%s" in a very small '
+                'mask (%d voxels)', k, int(nvox))
             if k == 'bg':
                 continue
 
@@ -611,8 +613,10 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         }
 
     if 'bg' in output and output['bg']['mad'] == 0.0 and output['bg']['stdv'] > 1.0:
-        MRIQC_LOG.warning('estimated MAD in the background was too small ('
-                          'MAD=%f)', output['bg']['mad'])
+        config.loggers.interface.warning(
+            'estimated MAD in the background was too small (MAD=%f)',
+            output['bg']['mad']
+        )
         output['bg']['mad'] = output['bg']['stdv'] / DIETRICH_FACTOR
     return output
 

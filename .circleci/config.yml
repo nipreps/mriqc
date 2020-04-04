@@ -34,6 +34,20 @@ jobs:
       - image: docker:18.01.0-ce-git
     working_directory: /tmp/src/mriqc
     steps:
+      - checkout
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - src/mriqc
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+      - setup_remote_docker
       - run:
           name: Install parallel gzip and python3
           command: apk add --no-cache pigz python3
@@ -46,9 +60,6 @@ jobs:
           paths:
             - /tmp/cache/docker.tar.gz
             - /tmp/cache/webapi.tar.gz
-
-      - checkout
-      - setup_remote_docker
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -120,11 +131,14 @@ jobs:
             mkdir -p /tmp/cache
             docker save ubuntu:xenial-20200114 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+      - save_cache:
+         key: docker-v1-{{ .Branch }}-{{ epoch }}
+         paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
           root: /tmp
           paths:
-            - cache/docker.tar.gz
-            - cache/webapi.tar.gz
             - src/mriqc
             - src/mriqcwebapi
 
@@ -138,6 +152,16 @@ jobs:
       - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b6c9950fed49e001a7885b6"
     working_directory: /home/circleci/data
     steps:
+      - checkout:
+          path: /tmp/src/mriqc
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
       - restore_cache:
           keys:
             - data-v2-{{ epoch }}
@@ -161,32 +185,12 @@ jobs:
             echo "poll_sleep_duration = 0.01" >> /tmp/t1w/nipype.cfg
             echo "hash_method = content" >> /tmp/t1w/nipype.cfg
             cp /tmp/t1w/nipype.cfg /tmp/bold/nipype.cfg
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - data
-            - t1w/nipype.cfg
-            - bold/nipype.cfg
       - save_cache:
          key: data-v2-{{ epoch }}
          paths:
             - /tmp/data
             - /tmp/t1w
             - /tmp/bold
-
-  update_cache:
-    machine:
-      # Ubuntu 14.04 with Docker 17.10.0-ce
-      image: circleci/classic:201711-01
-    working_directory: /tmp/src/mriqc
-    steps:
-      - attach_workspace:
-          at: /tmp
-      - save_cache:
-         key: docker-v1-{{ .Branch }}-{{ epoch }}
-         paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
 
   test_pytest:
     machine:
@@ -195,6 +199,27 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?(anat|func|smoke)\]' )" != "" ]]; then
+              echo "Only smoke-tests build"
+              circleci step halt
+            fi
+      - restore_cache:
+          keys:
+            - docker-v1-{{ .Branch }}-{{ epoch }}
+            - docker-v1-{{ .Branch }}-
+            - docker-v1-master-
+            - docker-v1-
+          paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -211,10 +236,10 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
-              -v $PWD:/scratch --entrypoint="py.test" -w /src/mriqc \
+              -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
               poldracklab/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
-              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin \
+              --doctest-modules --ignore=mriqc/bin \
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
       - store_test_results:
           path: /home/circleci/out/tests
@@ -229,7 +254,27 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
-
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?func\]' )" != "" ]]; then
+              echo "Only functional smoke-tests build"
+              circleci step halt
+            fi
+      - restore_cache:
+          keys:
+            - docker-v1-{{ .Branch }}-{{ epoch }}
+            - docker-v1-{{ .Branch }}-
+            - docker-v1-master-
+            - docker-v1-
+          paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -252,11 +297,14 @@ jobs:
           command: |
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
-
       - restore_cache:
           keys:
-            - t1w-v2-{{ epoch }}
-            - t1w-v2-
+            - data-v2-{{ epoch }}
+            - data-v2-
+      - restore_cache:
+          keys:
+            - t1w-v3-{{ epoch }}
+            - t1w-v3-
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -272,7 +320,7 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v2-{{ epoch }}
+         key: t1w-v3-{{ epoch }}
          paths:
             - /tmp/t1w/work
 
@@ -359,6 +407,27 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?anat\]' )" != "" ]]; then
+              echo "Only anatomical smoke-tests build"
+              circleci step halt
+            fi
+      - restore_cache:
+          keys:
+            - docker-v1-{{ .Branch }}-{{ epoch }}
+            - docker-v1-{{ .Branch }}-
+            - docker-v1-master-
+            - docker-v1-
+          paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
+      - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
           command: |
@@ -383,8 +452,12 @@ jobs:
 
       - restore_cache:
           keys:
-            - bold-v1-{{ epoch }}
-            - bold-v1-
+            - data-v2-{{ epoch }}
+            - data-v2-
+      - restore_cache:
+          keys:
+            - bold-v2-{{ epoch }}
+            - bold-v2-
 
       - run:
           name: Run participant-level on BOLD images
@@ -401,7 +474,7 @@ jobs:
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v1-{{ epoch }}
+         key: bold-v2-{{ epoch }}
          paths:
             - /tmp/bold/work
 
@@ -552,8 +625,15 @@ jobs:
       image: circleci/classic:201711-01
     working_directory: /tmp/src/mriqc
     steps:
-      - attach_workspace:
-          at: /tmp
+      - restore_cache:
+          keys:
+            - docker-v1-{{ .Branch }}-{{ epoch }}
+            - docker-v1-{{ .Branch }}-
+            - docker-v1-master-
+            - docker-v1-
+          paths:
+            - /tmp/cache/docker.tar.gz
+            - /tmp/cache/webapi.tar.gz
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -593,15 +673,6 @@ workflows:
               only: /.*/
 
       - get_data:
-          filters:
-            branches:
-              ignore: /docs?\/.*/
-            tags:
-              only: /.*/
-
-      - update_cache:
-          requires:
-            - build
           filters:
             branches:
               ignore: /docs?\/.*/

@@ -1,0 +1,64 @@
+[environment]
+cpu_count = 8
+exec_env = "posix"
+free_mem = 10.8
+overcommit_policy = "heuristic"
+overcommit_limit = "50%"
+nipype_version = "1.4.2"
+templateflow_version = "0.5.2"
+version = "0.15.2"
+
+[execution]
+ants_float = false
+bids_dir = "data/"
+debug = false
+dry_run = false
+dsname = "ds000005"
+float32 = true
+layout = "BIDS Layout: data/ | Subjects: 16 | Sessions: 0 | Runs: 48"
+log_dir = "derivatives/mriqc/logs"
+log_level = 15
+no_sub = false
+output_dir = "derivatives/"
+participant_label = [ "01",]
+reports_only = false
+run_uuid = "20200403-185126_db5d5e64-4e98-4a75-b3d1-ab880afa0e85"
+templateflow_home = "/opt/templateflow"
+upload_strict = false
+verbose_reports = false
+webapi_url = "https://mriqc.nimh.nih.gov/api/v1"
+webapi_port = 443
+work_dir = "work/"
+write_graph = false
+
+[workflow]
+analysis_level = [ "participant",]
+biggest_file_gb = 0.03619009628891945
+correct_slice_timing = false
+deoblique = false
+despike = false
+fd_thres = 0.2
+fd_radius = 50
+fft_spikes_detector = false
+headmask = "BET"
+hmc_afni = true
+hmc_fsl = false
+ica = false
+template_id = "MNI152NLin2009cAsym"
+
+[nipype]
+crashfile_format = "txt"
+get_linked_libs = false
+nprocs = 8
+omp_nthreads = 8
+plugin = "MultiProc"
+resource_monitor = false
+stop_on_first_crash = true
+
+[workflow.inputs]
+bold = [ "data/sub-01/func/sub-01_task-mixedgamblestask_run-01_bold.nii.gz", "data/sub-01/func/sub-01_task-mixedgamblestask_run-02_bold.nii.gz", "data/sub-01/func/sub-01_task-mixedgamblestask_run-03_bold.nii.gz",]
+T1w = [ "data/sub-01/anat/sub-01_T1w.nii.gz",]
+
+[nipype.plugin_args]
+maxtasksperchild = 1
+raise_insufficient = false

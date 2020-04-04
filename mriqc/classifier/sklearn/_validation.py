@@ -22,7 +22,7 @@ from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import _index_param_value
 # from sklearn.preprocessing import LabelEncoder
 
-from ... import logging
+import logging
 LOG = logging.getLogger('mriqc.classifier')
 
 

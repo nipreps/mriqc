@@ -1,25 +1,15 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-# pylint: disable=no-member
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:33:39
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
 """ Encapsulates report generation functions """
 
 from sys import version_info
 import pandas as pd
 
-from .. import logging
+from .. import config
 from ..utils.misc import BIDS_COMP
 
 from builtins import object  # pylint: disable=W0622
 from io import open
-
-MRIQC_REPORT_LOG = logging.getLogger('mriqc.report')
 
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
@@ -122,7 +112,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
     failed = None
     if csv_failed is not None and op.isfile(csv_failed):
-        MRIQC_REPORT_LOG.warning('Found failed-workflows table "%s"', csv_failed)
+        config.loggers.cli.warning(f'Found failed-workflows table "{csv_failed}"')
         failed_df = pd.read_csv(csv_failed, index_col=False)
         cols = list(set(id_labels) & set(failed_df.columns.ravel().tolist()))
 

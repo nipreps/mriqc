@@ -20,7 +20,7 @@ Definitions are given in the
 
 .. _iqms_fwhm:
 
-- **Full-width half maximum smoothness** (``fwhm_*``).
+- **Full-width half maximum smoothness** (``fwhm_*``, see [Friedman2008]_).
 
 .. _iqms_snr:
 

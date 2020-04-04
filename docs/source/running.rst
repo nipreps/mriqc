@@ -83,7 +83,7 @@ Command line interface
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. argparse::
-   :ref: mriqc.bin.mriqc_run.get_parser
+   :ref: mriqc.cli.parser._build_parser
    :prog: mriqc
    :nodefault:
    :nodefaultconst:
