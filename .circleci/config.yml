@@ -255,8 +255,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - t1w-v2-{{ epoch }}
-            - t1w-v2-
+            - t1w-v3-{{ epoch }}
+            - t1w-v3-
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -272,7 +272,7 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v2-{{ epoch }}
+         key: t1w-v3-{{ epoch }}
          paths:
             - /tmp/t1w/work
 
@@ -383,8 +383,8 @@ jobs:
 
       - restore_cache:
           keys:
-            - bold-v1-{{ epoch }}
-            - bold-v1-
+            - bold-v2-{{ epoch }}
+            - bold-v2-
 
       - run:
           name: Run participant-level on BOLD images
@@ -401,7 +401,7 @@ jobs:
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v1-{{ epoch }}
+         key: bold-v2-{{ epoch }}
          paths:
             - /tmp/bold/work
 
