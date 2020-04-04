@@ -211,10 +211,10 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
-              -v $PWD:/scratch --entrypoint="py.test" -w /src/mriqc \
+              -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
               poldracklab/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
-              --doctest-modules --ignore=docs --ignore=src --ignore=mriqc/bin \
+              --doctest-modules --ignore=mriqc/bin \
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
       - store_test_results:
           path: /home/circleci/out/tests

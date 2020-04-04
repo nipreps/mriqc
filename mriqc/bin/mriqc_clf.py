@@ -6,7 +6,6 @@
 mriqc_fit command line interface definition
 
 """
-from sys import version_info
 from os.path import isfile, abspath
 import warnings
 from pkg_resources import resource_filename as pkgrf
@@ -14,21 +13,19 @@ from pkg_resources import resource_filename as pkgrf
 import matplotlib
 matplotlib.use('Agg')
 
-
-PY3 = version_info[0] > 2
-
 try:
     from sklearn.metrics.base import UndefinedMetricWarning
 except ImportError:
     from sklearn.exceptions import UndefinedMetricWarning
 
+LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
 warnings.simplefilter("once", UndefinedMetricWarning)
 
 cached_warnings = []
 
 
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    from .. import logging
+    import logging
     log = logging.getLogger('mriqc.warnings')
 
     if category not in cached_warnings:
@@ -94,7 +91,8 @@ def main():
     """Entry point"""
     import re
     from datetime import datetime
-    from .. import logging, LOG_FORMAT, __version__
+    import logging
+    from .. import __version__
     from ..classifier.helper import CVHelper
 
     warnings.showwarning = warn_redirect

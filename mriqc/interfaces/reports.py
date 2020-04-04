@@ -61,7 +61,9 @@ class AddProvenance(SimpleInterface):
             'software': 'mriqc',
             'webapi_url': config.execution.webapi_url,
             'webapi_port': config.execution.webapi_port,
-            'settings': config.workflow.get(),
+            'settings': {
+                'testing': config.execution.debug,
+            },
         }
 
         if self.inputs.modality in ("T1w", "T2w"):
@@ -73,5 +75,11 @@ class AddProvenance(SimpleInterface):
                 'small_air_mask': bool(air_msk_size < 5e5),
                 'large_rot_frame': bool(rot_msk_size > 500),
             }
+
+        if self.inputs.modality == "bold":
+            self._results["out_prov"]["settings"].update({
+                'fd_thres': config.workflow.fd_thres,
+                'hmc_fsl': config.workflow.hmc_fsl,
+            })
 
         return runtime

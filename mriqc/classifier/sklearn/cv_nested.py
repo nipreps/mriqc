@@ -30,7 +30,7 @@ from sklearn.model_selection._validation import (
     _score, _num_samples, _index_param_value, _safe_split,
     FitFailedWarning, logger)
 
-from ... import logging
+import logging
 from .parameters import ModelParameterGrid
 
 from builtins import object, zip
