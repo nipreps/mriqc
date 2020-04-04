@@ -430,6 +430,8 @@ class workflow(_Config):
 
     analysis_level = ["participant"]
     """Level of analysis."""
+    biggest_file_gb = 1
+    """Size of largest file in GB."""
     correct_slice_timing = False
     """Perform slice timing correction."""
     deoblique = False
@@ -438,6 +440,8 @@ class workflow(_Config):
     """Despike the functional scans during head motion correction preprocessing."""
     fd_thres = 0.2
     """Threshold on Framewise Displacement estimates to detect outliers."""
+    fd_radius = 50
+    """Radius in mm. of the sphere for the FD calculation."""
     fft_spikes_detector = False
     """Turn on FFT based spike detector (slow)."""
     headmask = "BET"

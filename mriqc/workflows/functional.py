@@ -38,12 +38,10 @@ from niworkflows.interfaces.plotting import FMRISummary
 from .. import config
 from .utils import get_fwhmx
 from ..interfaces import FunctionalQC, Spikes, IQMFileSink
+from ..interfaces.reports import AddProvenance
 
 
-DEFAULT_FD_RADIUS = 50.
-
-
-def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
+def fmri_qc_workflow(name='funcMRIQC'):
     """
     The fMRI qc workflow
 
@@ -52,17 +50,14 @@ def fmri_qc_workflow(dataset, settings, name='funcMRIQC'):
       import os.path as op
       from mriqc.workflows.functional import fmri_qc_workflow
       datadir = op.abspath('data')
-      wf = fmri_qc_workflow([op.join(datadir, 'sub-001/func/sub-001_task-rest_bold.nii.gz')],
-                            settings={'bids_dir': datadir,
-                                      'output_dir': op.abspath('out'),
-                                      'no_sub': True})
+      wf = fmri_qc_workflow()
 
 
     """
 
     workflow = pe.Workflow(name=name)
 
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
+    mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get("bold", [])
     config.loggers.workflow.info(f"""\
@@ -81,40 +76,35 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
                                         name="non_steady_state_detector")
 
     sanitize = pe.Node(niutils.SanitizeImage(), name="sanitize",
-                       mem_gb=biggest_file_gb * 4.0)
+                       mem_gb=mem_gb * 4.0)
     sanitize.inputs.max_32bit = config.execution.float32
 
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    if settings.get('hmc_fsl', False):
-        hmcwf = hmc_mcflirt(settings)
+    if config.workflow.hmc_fsl:
+        hmcwf = hmc_mcflirt()
     else:
-        hmcwf = hmc_afni(settings,
-                         st_correct=settings.get('correct_slice_timing', False),
-                         despike=settings.get('despike', False),
-                         deoblique=settings.get('deoblique', False),
-                         start_idx=settings.get('start_idx', None),
-                         stop_idx=settings.get('stop_idx', None))
+        hmcwf = hmc_afni()
 
     # Set HMC settings
-    hmcwf.inputs.inputnode.fd_radius = settings.get('fd_radius', DEFAULT_FD_RADIUS)
+    hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
 
     mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
         options='-mean', outputtype='NIFTI_GZ'), name='mean',
-        mem_gb=biggest_file_gb * 1.5)
+        mem_gb=mem_gb * 1.5)
     skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
 
     # EPI to MNI registration
-    ema = epi_mni_align(settings)
+    ema = epi_mni_align()
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=biggest_file_gb * 2.5)
+    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=mem_gb * 2.5)
 
     # 7. Compute IQMs
-    iqmswf = compute_iqms(settings)
+    iqmswf = compute_iqms()
     # Reports
-    repwf = individual_reports(settings)
+    repwf = individual_reports()
 
     workflow.connect([
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
@@ -148,19 +138,19 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
 
-    if settings.get('fft_spikes_detector', False):
+    if config.workflow.fft_spikes_detector:
         workflow.connect([
             (iqmswf, repwf, [('outputnode.out_spikes', 'inputnode.in_spikes'),
                              ('outputnode.out_fft', 'inputnode.in_fft')]),
         ])
 
-    if settings.get('ica', False):
+    if config.workflow.ica:
         melodic = pe.Node(nws.MELODICRPT(no_bet=True,
                                          no_mask=True,
                                          no_mm=True,
                                          compress_report=False,
                                          generate_report=True),
-                          name="ICA", mem_gb=max(biggest_file_gb * 5, 8))
+                          name="ICA", mem_gb=max(mem_gb * 5, 8))
         workflow.connect([
             (sanitize, melodic, [('out_file', 'in_files')]),
             (skullstrip_epi, melodic, [('outputnode.out_file', 'report_mask')]),
@@ -168,14 +158,12 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
         ])
 
     # Upload metrics
-    if not settings.get('no_sub', False):
+    if not config.execution.no_sub:
         from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
-        upldwf.inputs.url = settings.get('webapi_url')
-        if settings.get('webapi_port'):
-            upldwf.inputs.port = settings.get('webapi_port')
-        upldwf.inputs.email = settings.get('email')
-        upldwf.inputs.strict = settings.get('upload_strict', False)
+        upldwf.inputs.url = config.execution.webapi_url
+        upldwf.inputs.port = config.execution.webapi_port
+        upldwf.inputs.strict = config.execution.upload_strict
 
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
@@ -184,21 +172,21 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
     return workflow
 
 
-def compute_iqms(settings, name='ComputeIQMs'):
+def compute_iqms(name='ComputeIQMs'):
     """
     Workflow that actually computes the IQMs
 
     .. workflow::
 
       from mriqc.workflows.functional import compute_iqms
-      wf = compute_iqms(settings={'output_dir': 'out'})
+      wf = compute_iqms()
 
 
     """
     from .utils import _tofloat
     from ..interfaces.transitional import GCOR
 
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
+    mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=[
@@ -210,25 +198,25 @@ def compute_iqms(settings, name='ComputeIQMs'):
         name='outputnode')
 
     # Set FD threshold
-    inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
+    inputnode.inputs.fd_thres = config.workflow.fd_thres
 
     # Compute DVARS
     dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS',
-                     mem_gb=biggest_file_gb * 3)
+                     mem_gb=mem_gb * 3)
 
     # AFNI quality measures
     fwhm_interface = get_fwhmx()
     fwhm = pe.Node(fwhm_interface, name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
     outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='outliers.out'),
-                       name='outliers', mem_gb=biggest_file_gb * 2.5)
+                       name='outliers', mem_gb=mem_gb * 2.5)
 
     quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
-                      name='quality', mem_gb=biggest_file_gb * 3)
+                      name='quality', mem_gb=mem_gb * 3)
 
-    gcor = pe.Node(GCOR(), name='gcor', mem_gb=biggest_file_gb * 2)
+    gcor = pe.Node(GCOR(), name='gcor', mem_gb=mem_gb * 2)
 
-    measures = pe.Node(FunctionalQC(), name='measures', mem_gb=biggest_file_gb * 3)
+    measures = pe.Node(FunctionalQC(), name='measures', mem_gb=mem_gb * 3)
 
     workflow.connect([
         (inputnode, dvnode, [('hmc_epi', 'in_file'),
@@ -255,19 +243,14 @@ def compute_iqms(settings, name='ComputeIQMs'):
     # Add metadata
     meta = pe.Node(ReadSidecarJSON(), name='metadata',
                    run_without_submitting=True)
-    addprov = pe.Node(niu.Function(function=_add_provenance), name='provenance',
+    addprov = pe.Node(AddProvenance(modality="bold"),
+                      name='provenance',
                       run_without_submitting=True)
-    addprov.inputs.settings = {
-        'fd_thres': settings.get('fd_thres', 0.2),
-        'hmc_fsl': settings.get('hmc_fsl', True),
-        'webapi_url': settings.get('webapi_url'),
-        'webapi_port': settings.get('webapi_port'),
-    }
 
     # Save to JSON file
     datasink = pe.Node(IQMFileSink(
-        modality='bold', out_dir=str(settings['output_dir']),
-        dataset=settings.get('dataset_name', 'unknown')),
+        modality='bold', out_dir=str(config.execution.output_dir),
+        dataset=config.execution.dsname),
         name='datasink', run_without_submitting=True)
 
     workflow.connect([
@@ -282,7 +265,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
                           ('reconstruction', 'rec_id'),
                           ('run', 'run_id'),
                           ('out_dict', 'metadata')]),
-        (addprov, datasink, [('out', 'provenance')]),
+        (addprov, datasink, [('out_prov', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
         (gcor, datasink, [(('out', _tofloat), 'gcor')]),
         (quality, datasink, [(('out_file', _parse_tqual), 'aqi')]),
@@ -291,7 +274,7 @@ def compute_iqms(settings, name='ComputeIQMs'):
     ])
 
     # FFT spikes finder
-    if settings.get('fft_spikes_detector', False):
+    if config.workflow.fft_spikes_detector:
         from .utils import slice_wise_fft
         spikes_fft = pe.Node(niu.Function(
             input_names=['in_file'],
@@ -307,21 +290,21 @@ def compute_iqms(settings, name='ComputeIQMs'):
     return workflow
 
 
-def individual_reports(settings, name='ReportsWorkflow'):
+def individual_reports(name='ReportsWorkflow'):
     """
     Encapsulates nodes writing plots
 
     .. workflow::
 
       from mriqc.workflows.functional import individual_reports
-      wf = individual_reports(settings={'output_dir': 'out'})
+      wf = individual_reports()
 
     """
     from ..interfaces import PlotMosaic, PlotSpikes
-    from ..reports import individual_html
+    from ..interfaces.reports import IndividualReport
 
-    verbose = settings.get('verbose_reports', False)
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
+    verbose = config.execution.verbose_reports
+    mem_gb = config.workflow.biggest_file_gb
 
     pages = 5
     extra_pages = int(verbose) * 4
@@ -334,16 +317,16 @@ def individual_reports(settings, name='ReportsWorkflow'):
         name='inputnode')
 
     # Set FD threshold
-    inputnode.inputs.fd_thres = settings.get('fd_thres', 0.2)
+    inputnode.inputs.fd_thres = config.workflow.fd_thres
 
     spmask = pe.Node(niu.Function(
         input_names=['in_file', 'in_mask'], output_names=['out_file', 'out_plot'],
-        function=spikes_mask), name='SpikesMask', mem_gb=biggest_file_gb * 3.5)
+        function=spikes_mask), name='SpikesMask', mem_gb=mem_gb * 3.5)
 
     spikes_bg = pe.Node(Spikes(no_zscore=True, detrend=False), name='SpikesFinderBgMask',
-                        mem_gb=biggest_file_gb * 2.5)
+                        mem_gb=mem_gb * 2.5)
 
-    bigplot = pe.Node(FMRISummary(), name='BigPlot', mem_gb=biggest_file_gb * 3.5)
+    bigplot = pe.Node(FMRISummary(), name='BigPlot', mem_gb=mem_gb * 3.5)
     workflow.connect([
         (inputnode, spikes_bg, [('in_ras', 'in_file')]),
         (inputnode, spmask, [('in_ras', 'in_file')]),
@@ -368,15 +351,14 @@ def individual_reports(settings, name='ReportsWorkflow'):
         cmap='viridis'), name='PlotMosaicSD')
 
     mplots = pe.Node(niu.Merge(pages + extra_pages + int(
-        settings.get('fft_spikes_detector', False)) + int(
-        settings.get('ica', False))), name='MergePlots')
-    rnode = pe.Node(niu.Function(
-        input_names=['in_iqms', 'in_plots'], output_names=['out_file'],
-        function=individual_html), name='GenerateReport')
+        config.workflow.fft_spikes_detector) + int(
+        config.workflow.ica)), name='MergePlots')
+    rnode = pe.Node(IndividualReport(), name='GenerateReport')
 
     # Link images that should be reported
     dsplots = pe.Node(nio.DataSink(
-        base_directory=str(settings['output_dir']), parameterization=False),
+        base_directory=str(config.execution.output_dir),
+        parameterization=False),
         name='dsplots', run_without_submitting=True)
 
     workflow.connect([
@@ -390,7 +372,7 @@ def individual_reports(settings, name='ReportsWorkflow'):
         (rnode, dsplots, [('out_file', '@html_report')]),
     ])
 
-    if settings.get('fft_spikes_detector', False):
+    if config.workflow.fft_spikes_detector:
         mosaic_spikes = pe.Node(PlotSpikes(
             out_file='plot_spikes.svg', cmap='viridis',
             title='High-Frequency spikes'),
@@ -403,10 +385,8 @@ def individual_reports(settings, name='ReportsWorkflow'):
             (mosaic_spikes, mplots, [('out_file', 'in4')])
         ])
 
-    if settings.get('ica', False):
-        page_number = 4
-        if settings.get('fft_spikes_detector', False):
-            page_number += 1
+    if config.workflow.ica:
+        page_number = 4 + config.workflow.fft_spikes_detector
         workflow.connect([
             (inputnode, mplots, [('ica_report', 'in%d' % page_number)])
         ])
@@ -486,7 +466,7 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
     return workflow
 
 
-def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
+def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     """
     An :abbr:`HMC (head motion correction)` for functional scans
     using FSL MCFLIRT
@@ -494,7 +474,7 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     .. workflow::
 
       from mriqc.workflows.functional import hmc_mcflirt
-      wf = hmc_mcflirt({'biggest_file_size_gb': 1})
+      wf = hmc_mcflirt()
 
     """
 
@@ -510,7 +490,7 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
 
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, interpolation='sinc'),
                       name='MCFLIRT',
-                      mem_gb=settings['biggest_file_size_gb'] * 2.5)
+                      mem_gb=config.workflow.biggest_file_gb * 2.5)
 
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
                                                parameter_source="FSL"),
@@ -529,8 +509,7 @@ def hmc_mcflirt(settings, name='fMRI_HMC_mcflirt'):
     return workflow
 
 
-def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
-             deoblique=False, start_idx=None, stop_idx=None):
+def hmc_afni(name='fMRI_HMC_afni'):
     """
     A :abbr:`HMC (head motion correction)` workflow for
     functional scans
@@ -538,11 +517,10 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     .. workflow::
 
       from mriqc.workflows.functional import hmc_afni
-      wf = hmc_afni({'biggest_file_size_gb': 1})
+      wf = hmc_afni()
 
     """
-
-    biggest_file_gb = settings.get("biggest_file_size_gb", 1)
+    mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
 
@@ -552,7 +530,10 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_fd']), name='outputnode')
 
-    if (start_idx is not None) or (stop_idx is not None):
+    if any((
+        config.workflow.start_idx is not None,
+        config.workflow.stop_idx is not None
+    )):
         drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
                            name='drop_trs')
         workflow.connect([
@@ -572,7 +553,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     # calculate hmc parameters
     hmc = pe.Node(
         afni.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
-        name='motion_correct', mem_gb=biggest_file_gb * 2.5)
+        name='motion_correct', mem_gb=mem_gb * 2.5)
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
@@ -595,7 +576,11 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
 
     despike_node = pe.Node(afni.Despike(outputtype='NIFTI_GZ'), name='despike')
 
-    if st_correct and despike and deoblique:
+    if all((
+        config.workflow.correct_slice_timing,
+        config.workflow.despike,
+        config.workflow.deoblique
+    )):
 
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
@@ -604,8 +589,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (deoblique_node, gen_ref, [('out_file', 'in_file')]),
             (deoblique_node, hmc, [('out_file', 'in_file')]),
         ])
-
-    elif st_correct and despike:
+    elif config.workflow.correct_slice_timing and config.workflow.despike:
 
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
@@ -614,7 +598,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (despike_node, hmc, [('out_file', 'in_file')]),
         ])
 
-    elif st_correct and deoblique:
+    elif config.workflow.correct_slice_timing and config.workflow.deoblique:
 
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
@@ -623,7 +607,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (deoblique_node, hmc, [('out_file', 'in_file')]),
         ])
 
-    elif st_correct:
+    elif config.workflow.correct_slice_timing:
 
         workflow.connect([
             (drop_trs, st_corr, [('out_file', 'in_file')]),
@@ -631,7 +615,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (st_corr, hmc, [('out_file', 'in_file')]),
         ])
 
-    elif despike and deoblique:
+    elif config.workflow.despike and config.workflow.deoblique:
 
         workflow.connect([
             (drop_trs, despike_node, [('out_file', 'in_file')]),
@@ -640,7 +624,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (deoblique_node, hmc, [('out_file', 'in_file')]),
         ])
 
-    elif despike:
+    elif config.workflow.despike:
 
         workflow.connect([
             (drop_trs, despike_node, [('out_file', 'in_file')]),
@@ -648,7 +632,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
             (despike_node, hmc, [('out_file', 'in_file')]),
         ])
 
-    elif deoblique:
+    elif config.workflow.deoblique:
 
         workflow.connect([
             (drop_trs, deoblique_node, [('out_file', 'in_file')]),
@@ -665,7 +649,7 @@ def hmc_afni(settings, name='fMRI_HMC_afni', st_correct=False, despike=False,
     return workflow
 
 
-def epi_mni_align(settings, name='SpatialNormalization'):
+def epi_mni_align(name='SpatialNormalization'):
     """
     Uses FSL FLIRT with the BBR cost function to find the transform that
     maps the EPI space into the MNI152-nonlinear-symmetric atlas.
@@ -688,7 +672,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
 
     # Get settings
     testing = config.execution.debug
-    n_procs = config.nipype.omp_nprocs
+    n_procs = config.nipype.nprocs
     ants_nthreads = config.nipype.omp_nthreads
 
     workflow = pe.Workflow(name=name)
@@ -703,7 +687,7 @@ def epi_mni_align(settings, name='SpatialNormalization'):
     norm = pe.Node(RobustMNINormalization(
         explicit_masking=False,
         flavor='testing' if testing else 'precise',
-        float=settings.get('ants_float', False),
+        float=config.execution.ants_float,
         generate_report=True,
         moving='boldref',
         num_threads=ants_nthreads,
@@ -797,23 +781,6 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
     return out_file, out_plot
-
-
-def _add_provenance(in_file, settings):
-    from mriqc import __version__ as version
-    from nipype.utils.filemanip import hash_infile
-    out_prov = {
-        'md5sum': hash_infile(in_file),
-        'version': version,
-        'software': 'mriqc',
-        'webapi_url': settings.pop('webapi_url'),
-        'webapi_port': settings.pop('webapi_port'),
-    }
-
-    if settings:
-        out_prov['settings'] = settings
-
-    return out_prov
 
 
 def _mean(inlist):

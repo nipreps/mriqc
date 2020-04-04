@@ -13,15 +13,15 @@ def init_mriqc_wf():
     workflow = Workflow(name="mriqc_wf")
     workflow.base_dir = config.execution.work_dir
 
-    wf_list = []
-    for mod, filelist in config.workflow.inputs.items():
-        if mod == 'bold':
-            wf_list.append(fmri_qc_workflow())
-        else:
-            wf_list.append(anat_qc_workflow())
+    if "bold" in config.workflow.inputs:
+        workflow.add_nodes([fmri_qc_workflow()])
 
-    if not wf_list:
+    if set(("T1w", "T2w")).intersection(
+        config.workflow.inputs.keys()
+    ):
+        workflow.add_nodes([anat_qc_workflow()])
+
+    if not workflow._get_all_nodes():
         return None
 
-    workflow.add_nodes(wf_list)
     return workflow

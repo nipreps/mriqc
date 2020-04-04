@@ -430,7 +430,7 @@ def parse_args(args=None, namespace=None):
     #     )
 
     # Setup directories
-    config.execution.log_dir = output_dir / "mriqc" / "logs"
+    config.execution.log_dir = output_dir / "logs"
     # Check and create output and working directories
     config.execution.log_dir.mkdir(exist_ok=True, parents=True)
     output_dir.mkdir(exist_ok=True, parents=True)

@@ -42,7 +42,7 @@ from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 from .. import config
 from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
                           ComputeQI2, IQMFileSink, RotationMask)
-from ..interfaces.anatomical import AddProvenance
+from ..interfaces.reports import AddProvenance
 from .utils import get_fwhmx
 
 
@@ -254,6 +254,7 @@ def compute_iqms(name='ComputeIQMs'):
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, datasink, [('in_file', 'in_file'),
                                (('in_file', _get_mod), 'modality')]),
+        (inputnode, addprov, [(('in_file', _get_mod), 'modality')]),
         (meta, datasink, [('subject', 'subject_id'),
                           ('session', 'session_id'),
                           ('task', 'task_id'),
