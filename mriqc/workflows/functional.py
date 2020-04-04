@@ -162,8 +162,9 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
         from ..interfaces.webapi import UploadIQMs
         upldwf = pe.Node(UploadIQMs(), name='UploadMetrics')
         upldwf.inputs.url = config.execution.webapi_url
-        upldwf.inputs.port = config.execution.webapi_port
         upldwf.inputs.strict = config.execution.upload_strict
+        if config.execution.webapi_port:
+            upldwf.inputs.port = config.execution.webapi_port
 
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),

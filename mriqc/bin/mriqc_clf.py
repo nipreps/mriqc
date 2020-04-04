@@ -1,13 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2015-11-19 16:44:27
-"""
-mriqc_fit command line interface definition
-
-"""
+"""mriqc_fit command line interface definition."""
+import sys
 from os.path import isfile, abspath
 import warnings
+import logging
 from pkg_resources import resource_filename as pkgrf
 
 import matplotlib
@@ -21,15 +17,17 @@ except ImportError:
 LOG_FORMAT = '%(asctime)s %(name)s:%(levelname)s %(message)s'
 warnings.simplefilter("once", UndefinedMetricWarning)
 
+LOGGER = logging.getLogger('mriqc.classifier')
+_handler = logging.StreamHandler(stream=sys.stdout)
+_handler.setFormatter(logging.Formatter(fmt=LOG_FORMAT, datefmt="%y%m%d-%H:%M:%S"))
+LOGGER.addHandler(_handler)
+
 cached_warnings = []
 
 
 def warn_redirect(message, category, filename, lineno, file=None, line=None):
-    import logging
-    log = logging.getLogger('mriqc.warnings')
-
     if category not in cached_warnings:
-        log.debug('captured warning (%s): %s', category, message)
+        LOGGER.debug('captured warning (%s): %s', category, message)
         cached_warnings.append(category)
 
 
@@ -91,7 +89,6 @@ def main():
     """Entry point"""
     import re
     from datetime import datetime
-    import logging
     from .. import __version__
     from ..classifier.helper import CVHelper
 
@@ -103,8 +100,7 @@ def main():
     if opts.verbose_count > 1:
         log_level = int(max(25 - 5 * opts.verbose_count, 1))
 
-    log = logging.getLogger('mriqc.classifier')
-    log.setLevel(log_level)
+    LOGGER.setLevel(log_level)
 
     base_name = 'mclf_run-%s_mod-%s_ver-%s_class-%d_cv-%s' % (
         datetime.now().strftime('%Y%m%d-%H%M%S'), opts.model,
@@ -122,7 +118,7 @@ def main():
         fhl = logging.FileHandler(log_file)
         fhl.setFormatter(fmt=logging.Formatter(LOG_FORMAT))
         fhl.setLevel(log_level)
-        log.addHandler(fhl)
+        LOGGER.addHandler(fhl)
 
     clf_loaded = False
 
@@ -196,7 +192,7 @@ def main():
         cvhelper.predict_dataset(opts.evaluation_data, save_pred=True,
                                  thres=opts.threshold)
 
-    log.info('Results saved as %s', abspath(cvhelper._base_name + '*'))
+    LOGGER.info('Results saved as %s', abspath(cvhelper._base_name + '*'))
 
 
 def _parse_set(arg, default):

@@ -11,7 +11,7 @@ Settings are stored using :abbr:`ToML (Tom's Markup Language)`.
 The module has a :py:func:`~mriqc.config.to_filename` function to allow writting out
 the settings to hard disk in *ToML* format, which looks like:
 
-.. literalinclude:: ../mriqc/data/tests/config.toml
+.. literalinclude:: ../mriqc/data/config-example.toml
    :language: toml
    :name: mriqc.toml
    :caption: **Example file representation of MRIQC settings**.
@@ -67,9 +67,11 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
-from multiprocessing import set_start_method
 import warnings
 
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=ResourceWarning)
 # cmp is not used by mriqc, so ignore nipype-generated warnings
 warnings.filterwarnings("ignore", "cmp not installed")
 warnings.filterwarnings(
@@ -77,12 +79,9 @@ warnings.filterwarnings(
 )
 warnings.filterwarnings("ignore", "sklearn.externals.joblib is deprecated in 0.21")
 warnings.filterwarnings("ignore", "can't resolve package from __spec__ or __package__")
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=ResourceWarning)
-
 
 try:
+    from multiprocessing import set_start_method
     set_start_method("forkserver")
 except RuntimeError:
     pass  # context has been already set
@@ -97,7 +96,7 @@ finally:
     from pathlib import Path
     from time import strftime
     from niworkflows.utils.spaces import SpatialReferences as _SRs, Reference as _Ref
-    from nipype import logging as nlogging, __version__ as _nipype_ver
+    from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
     from . import __version__
 
@@ -369,7 +368,7 @@ class execution(_Config):
     """Generate extended reports."""
     webapi_url = "https://mriqc.nimh.nih.gov/api/v1"
     """IP address where the MRIQC WebAPI is listening."""
-    webapi_port = 80
+    webapi_port = None
     """port where the MRIQC WebAPI is listening."""
     work_dir = Path("work").absolute()
     """Path to a working directory where intermediate results will be available."""
@@ -467,16 +466,17 @@ class loggers:
 
     _fmt = "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
     _datefmt = "%y%m%d-%H:%M:%S"
+    _init = False
 
     default = logging.getLogger()
     """The root logger."""
     cli = logging.getLogger("cli")
     """Command-line interface logging."""
-    workflow = nlogging.getLogger("nipype.workflow")
+    workflow = None
     """NiPype's workflow logger."""
-    interface = nlogging.getLogger("nipype.interface")
+    interface = None
     """NiPype's interface logger."""
-    utils = nlogging.getLogger("nipype.utils")
+    utils = None
     """NiPype's utils logger."""
 
     @classmethod
@@ -489,20 +489,37 @@ class loggers:
             * Logger configuration.
 
         """
-        from nipype import config as ncfg
+        if not cls._init:
+            from nipype import config as ncfg, logging as nlogging
+            cls.workflow = nlogging.getLogger("nipype.workflow")
+            cls.interface = nlogging.getLogger("nipype.interface")
+            cls.utils = nlogging.getLogger("nipype.utils")
 
-        if not len(cls.cli.handlers):
+            if not len(cls.cli.handlers):
+                _handler = logging.StreamHandler(stream=sys.stdout)
+                _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
+                cls.cli.addHandler(_handler)
+            cls.default.setLevel(execution.log_level)
+            cls.cli.setLevel(execution.log_level)
+            cls.interface.setLevel(execution.log_level)
+            cls.workflow.setLevel(execution.log_level)
+            cls.utils.setLevel(execution.log_level)
+            ncfg.update_config(
+                {"logging": {"log_directory": str(execution.log_dir), "log_to_file": True}, }
+            )
+            cls._init = True
+
+    @classmethod
+    def getLogger(cls, name):
+        """Create a new logger."""
+        retval = getattr(cls, name)
+        if retval is None:
+            setattr(cls, name, logging.getLogger(name))
             _handler = logging.StreamHandler(stream=sys.stdout)
             _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
-            cls.cli.addHandler(_handler)
-        cls.default.setLevel(execution.log_level)
-        cls.cli.setLevel(execution.log_level)
-        cls.interface.setLevel(execution.log_level)
-        cls.workflow.setLevel(execution.log_level)
-        cls.utils.setLevel(execution.log_level)
-        ncfg.update_config(
-            {"logging": {"log_directory": str(execution.log_dir), "log_to_file": True}, }
-        )
+            retval.addHandler(_handler)
+            retval.setLevel(execution.log_level)
+        return retval
 
 
 def from_dict(settings):
@@ -554,3 +571,7 @@ def to_filename(filename):
     """Write settings to file."""
     filename = Path(filename)
     filename.write_text(dumps())
+
+
+# Make sure loggers are started
+loggers.init()
