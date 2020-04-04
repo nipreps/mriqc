@@ -47,10 +47,11 @@ def fmri_qc_workflow(name='funcMRIQC'):
 
     .. workflow::
 
-      import os.path as op
-      from mriqc.workflows.functional import fmri_qc_workflow
-      datadir = op.abspath('data')
-      wf = fmri_qc_workflow()
+        import os.path as op
+        from mriqc.workflows.functional import fmri_qc_workflow
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = fmri_qc_workflow()
 
 
     """
@@ -179,8 +180,10 @@ def compute_iqms(name='ComputeIQMs'):
 
     .. workflow::
 
-      from mriqc.workflows.functional import compute_iqms
-      wf = compute_iqms()
+        from mriqc.workflows.functional import compute_iqms
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = compute_iqms()
 
 
     """
@@ -297,8 +300,10 @@ def individual_reports(name='ReportsWorkflow'):
 
     .. workflow::
 
-      from mriqc.workflows.functional import individual_reports
-      wf = individual_reports()
+        from mriqc.workflows.functional import individual_reports
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = individual_reports()
 
     """
     from ..interfaces import PlotMosaic, PlotSpikes
@@ -431,8 +436,10 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
 
     .. workflow::
 
-      from mriqc.workflows.functional import fmri_bmsk_workflow
-      wf = fmri_bmsk_workflow()
+        from mriqc.workflows.functional import fmri_bmsk_workflow
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = fmri_bmsk_workflow()
 
 
     """
@@ -474,8 +481,10 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
 
     .. workflow::
 
-      from mriqc.workflows.functional import hmc_mcflirt
-      wf = hmc_mcflirt()
+        from mriqc.workflows.functional import hmc_mcflirt
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = hmc_mcflirt()
 
     """
 
@@ -517,8 +526,10 @@ def hmc_afni(name='fMRI_HMC_afni'):
 
     .. workflow::
 
-      from mriqc.workflows.functional import hmc_afni
-      wf = hmc_afni()
+        from mriqc.workflows.functional import hmc_afni
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = hmc_afni()
 
     """
     mem_gb = config.workflow.biggest_file_gb
@@ -662,8 +673,10 @@ def epi_mni_align(name='SpatialNormalization'):
 
     .. workflow::
 
-      from mriqc.workflows.functional import epi_mni_align
-      wf = epi_mni_align({})
+        from mriqc.workflows.functional import epi_mni_align
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = epi_mni_align()
 
     """
     from templateflow.api import get as get_template

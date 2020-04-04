@@ -26,7 +26,9 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 .. workflow::
 
     from niworkflows.anat.skullstrip import afni_wf
-    wf = afni_wf()
+    from mriqc.testing import mock_config
+    with mock_config():
+        wf = afni_wf()
 
 
 """
@@ -55,7 +57,9 @@ def anat_qc_workflow(name='anatMRIQC'):
 
         import os.path as op
         from mriqc.workflows.anatomical import anat_qc_workflow
-        wf = anat_qc_workflow()
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = anat_qc_workflow()
 
     """
     dataset = config.workflow.inputs.get("T1w", []) \
@@ -198,7 +202,9 @@ def compute_iqms(name='ComputeIQMs'):
     .. workflow::
 
         from mriqc.workflows.anatomical import compute_iqms
-        wf = compute_iqms()
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = compute_iqms()
 
     """
     from .utils import _tofloat
@@ -301,7 +307,9 @@ def individual_reports(name='ReportsWorkflow'):
     .. workflow::
 
         from mriqc.workflows.anatomical import individual_reports
-        wf = individual_reports()
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = individual_reports()
 
     """
     from ..interfaces import PlotMosaic
@@ -397,7 +405,9 @@ def headmsk_wf(name='HeadMaskWorkflow'):
     .. workflow::
 
         from mriqc.workflows.anatomical import headmsk_wf
-        wf = headmsk_wf()
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = headmsk_wf()
 
     """
 
@@ -465,7 +475,9 @@ def airmsk_wf(name='AirMaskWorkflow'):
     .. workflow::
 
         from mriqc.workflows.anatomical import airmsk_wf
-        wf = airmsk_wf()
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = airmsk_wf()
 
     """
     workflow = pe.Workflow(name=name)
