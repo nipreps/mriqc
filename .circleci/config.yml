@@ -196,6 +196,18 @@ jobs:
       - attach_workspace:
           at: /tmp
       - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?(anat|func|smoke)\]' )" != "" ]]; then
+              echo "Only smoke-tests build"
+              circleci step halt
+            fi
+      - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
           command: |
@@ -229,7 +241,18 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
-
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?func\]' )" != "" ]]; then
+              echo "Only functional smoke-tests build"
+              circleci step halt
+            fi
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m
@@ -358,6 +381,18 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?anat\]' )" != "" ]]; then
+              echo "Only functional smoke-tests build"
+              circleci step halt
+            fi
       - run:
           name: Load Docker image layer cache
           no_output_timeout: 30m

@@ -15,7 +15,7 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelBinarizer
 
-from ... import logging
+import logging
 LOG = logging.getLogger('mriqc.classifier')
 
 
