@@ -12,9 +12,13 @@ All configuration values have a default; values that are commented out
 serve to show the default.
 """
 
+import os
 from datetime import datetime
 from packaging.version import Version
 from mriqc.__about__ import __version__
+
+# Disable etelemetry during doc builds
+os.environ["NIPYPE_NO_ET"] = "1"
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
