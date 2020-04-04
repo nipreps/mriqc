@@ -24,9 +24,10 @@ def get_parser():
 def main():
     """Entry point"""
     from requests import get
-    from .. import MRIQC_LOG
+    import logging
 
     # Run parser
+    MRIQC_LOG = logging.getLogger(__name__)
     opts = get_parser().parse_args()
     MRIQC_LOG.info('Sending GET to %s', opts.webapi_url)
     resp = get(opts.webapi_url).json()
