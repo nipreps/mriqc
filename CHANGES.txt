@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * RF: Adopt config module pattern from *fMRIPrep* (#837)
   * MAINT: Drop Python 3.5, simplify linting (#833)
   * MAINT: Update to latest Ubuntu Xenial tag (#814)
   * DOC: Improve AQI (and other IQMs) and boxplot whiskers descriptions (#816)
