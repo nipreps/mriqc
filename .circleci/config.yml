@@ -390,7 +390,7 @@ jobs:
               circleci step halt
             fi
             if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[only[ _]?anat\]' )" != "" ]]; then
-              echo "Only functional smoke-tests build"
+              echo "Only anatomical smoke-tests build"
               circleci step halt
             fi
       - run:
