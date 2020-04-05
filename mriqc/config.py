@@ -87,7 +87,8 @@ finally:
     from templateflow import __version__ as _tf_ver
     from . import __version__
 
-sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
+if not hasattr(sys, "_is_pytest_session"):
+    sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
 # Disable all warnings in main and children processes only on production versions
 if not any((
     "+" in __version__,
