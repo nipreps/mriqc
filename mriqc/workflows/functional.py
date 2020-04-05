@@ -23,19 +23,13 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
+from .. import config
 from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import afni, ants, fsl
 
-from niworkflows.interfaces.bids import ReadSidecarJSON
-from niworkflows.interfaces import segmentation as nws
-from niworkflows.interfaces import registration as nwr
-from niworkflows.interfaces import utils as niutils
-from niworkflows.interfaces.plotting import FMRISummary
-
-from .. import config
 from .utils import get_fwhmx
 from ..interfaces import FunctionalQC, Spikes, IQMFileSink
 from ..interfaces.reports import AddProvenance
@@ -55,6 +49,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
 
 
     """
+    from niworkflows.interfaces.utils import SanitizeImage
 
     workflow = pe.Workflow(name=name)
 
@@ -76,7 +71,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
     non_steady_state_detector = pe.Node(nac.NonSteadyStateDetector(),
                                         name="non_steady_state_detector")
 
-    sanitize = pe.Node(niutils.SanitizeImage(), name="sanitize",
+    sanitize = pe.Node(SanitizeImage(), name="sanitize",
                        mem_gb=mem_gb * 4.0)
     sanitize.inputs.max_32bit = config.execution.float32
 
@@ -146,6 +141,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
         ])
 
     if config.workflow.ica:
+        from niworkflows.interfaces import segmentation as nws
         melodic = pe.Node(nws.MELODICRPT(no_bet=True,
                                          no_mask=True,
                                          no_mm=True,
@@ -187,6 +183,8 @@ def compute_iqms(name='ComputeIQMs'):
 
 
     """
+    from niworkflows.interfaces.bids import ReadSidecarJSON
+
     from .utils import _tofloat
     from ..interfaces.transitional import GCOR
 
@@ -306,6 +304,7 @@ def individual_reports(name='ReportsWorkflow'):
             wf = individual_reports()
 
     """
+    from niworkflows.interfaces.plotting import FMRISummary
     from ..interfaces import PlotMosaic, PlotSpikes
     from ..interfaces.reports import IndividualReport
 
@@ -487,6 +486,7 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
             wf = hmc_mcflirt()
 
     """
+    from niworkflows.interfaces.registration import EstimateReferenceImage
 
     workflow = pe.Workflow(name=name)
 
@@ -496,7 +496,7 @@ def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['out_file', 'out_fd']), name='outputnode')
 
-    gen_ref = pe.Node(nwr.EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
+    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
 
     mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, interpolation='sinc'),
                       name='MCFLIRT',
@@ -532,6 +532,8 @@ def hmc_afni(name='fMRI_HMC_afni'):
             wf = hmc_afni()
 
     """
+    from niworkflows.interfaces.registration import EstimateReferenceImage
+
     mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
@@ -560,7 +562,7 @@ def hmc_afni(name='fMRI_HMC_afni'):
             (inputnode, drop_trs, [('in_file', 'out_file')]),
         ])
 
-    gen_ref = pe.Node(nwr.EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
+    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
 
     # calculate hmc parameters
     hmc = pe.Node(

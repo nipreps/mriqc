@@ -67,18 +67,7 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
-import warnings
-
-warnings.filterwarnings("ignore", category=FutureWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=ResourceWarning)
-# cmp is not used by mriqc, so ignore nipype-generated warnings
-warnings.filterwarnings("ignore", "cmp not installed")
-warnings.filterwarnings(
-    "ignore", "This has not been fully tested. Please report any failures."
-)
-warnings.filterwarnings("ignore", "sklearn.externals.joblib is deprecated in 0.21")
-warnings.filterwarnings("ignore", "can't resolve package from __spec__ or __package__")
+from ._warnings import logging
 
 try:
     from multiprocessing import set_start_method
@@ -90,24 +79,23 @@ finally:
     # ignoring the most annoying warnings
     import os
     import sys
-    import logging
 
     from uuid import uuid4
     from pathlib import Path
     from time import strftime
-    from niworkflows.utils.spaces import SpatialReferences as _SRs, Reference as _Ref
     from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
     from . import __version__
 
-
-def redirect_warnings(message, category, filename, lineno, file=None, line=None):
-    """Redirect other warnings."""
-    logger = logging.getLogger()
-    logger.debug("Captured warning (%s): %s", category, message)
-
-
-warnings.showwarning = redirect_warnings
+if not hasattr(sys, "_is_pytest_session"):
+    sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
+# Disable all warnings in main and children processes only on production versions
+if not any((
+    "+" in __version__,
+    __version__.endswith(".dirty"),
+    os.getenv("MRIQC_DEV", "0").lower() in ("1", "on", "true", "y", "yes")
+)):
+    os.environ["PYTHONWARNINGS"] = "ignore"
 
 logging.addLevelName(25, "IMPORTANT")  # Add a new level between INFO and WARNING
 logging.addLevelName(15, "VERBOSE")  # Add a new level between INFO and DEBUG
@@ -206,10 +194,6 @@ class _Config:
                 continue
             if k in cls._paths:
                 v = str(v)
-            if isinstance(v, _SRs):
-                v = " ".join([str(s) for s in v.references]) or None
-            if isinstance(v, _Ref):
-                v = str(v) or None
             out[k] = v
         return out
 
