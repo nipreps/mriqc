@@ -1,6 +1,7 @@
 Upcoming release (TBD)
 ======================
 
+  * MAINT: revise style of all files (except for workflows) (#839)
   * MAINT: Clear the clutter of warnings (#838)
   * RF: Adopt config module pattern from *fMRIPrep* (#837)
   * MAINT: Drop Python 3.5, simplify linting (#833)
