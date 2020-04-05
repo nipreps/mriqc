@@ -32,16 +32,13 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 
 """
+from .. import config
 from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.interfaces import fsl, ants
 from templateflow.api import get as get_template
-from niworkflows.interfaces.bids import ReadSidecarJSON
-from niworkflows.interfaces.registration import RobustMNINormalizationRPT as RobustMNINormalization
-from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 
-from .. import config
 from ..interfaces import (StructuralQC, ArtifactMask, ConformImage,
                           ComputeQI2, IQMFileSink, RotationMask)
 from ..interfaces.reports import AddProvenance
@@ -62,6 +59,8 @@ def anat_qc_workflow(name='anatMRIQC'):
             wf = anat_qc_workflow()
 
     """
+    from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+
     dataset = config.workflow.inputs.get("T1w", []) \
         + config.workflow.inputs.get("T2w", [])
 
@@ -160,6 +159,10 @@ Building anatomical MRIQC workflow for files: {', '.join(dataset)}.""")
 
 def spatial_normalization(name='SpatialNormalization', resolution=2):
     """Create a simplied workflow to perform fast spatial normalization."""
+    from niworkflows.interfaces.registration import (
+        RobustMNINormalizationRPT as RobustMNINormalization
+    )
+
     # Have the template id handy
     tpl_id = config.workflow.template_id
 
@@ -207,6 +210,7 @@ def compute_iqms(name='ComputeIQMs'):
             wf = compute_iqms()
 
     """
+    from niworkflows.interfaces.bids import ReadSidecarJSON
     from .utils import _tofloat
     from ..interfaces.anatomical import Harmonize
 
