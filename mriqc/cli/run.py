@@ -22,12 +22,15 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
-        config.loggers.cli.log(25, f"""
+        config.loggers.cli.log(
+            25,
+            f"""
     Running MRIQC version {config.environment.version}:
       * BIDS dataset path: {config.execution.bids_dir}.
       * Output folder: {config.execution.output_dir}.
       * Analysis levels: {config.workflow.analysis_level}.
-""")
+""",
+        )
         # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
         # Because Python on Linux does not ever free virtual memory (VM), running the
         # workflow construction jailed within a process preempts excessive VM buildup.

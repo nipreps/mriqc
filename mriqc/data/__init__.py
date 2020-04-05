@@ -3,8 +3,4 @@
 """MRIQC resources."""
 from .config import Template, IndividualTemplate, GroupTemplate
 
-__all__ = [
-    'Template',
-    'IndividualTemplate',
-    'GroupTemplate'
-]
+__all__ = ["Template", "IndividualTemplate", "GroupTemplate"]

@@ -5,6 +5,6 @@ from .misc import reorder_csv
 from .bids import collect_bids_data
 
 __all__ = [
-    'reorder_csv',
-    'collect_bids_data',
+    "reorder_csv",
+    "collect_bids_data",
 ]

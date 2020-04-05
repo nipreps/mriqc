@@ -16,7 +16,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelBinarizer
 
 import logging
-LOG = logging.getLogger('mriqc.classifier')
+
+LOG = logging.getLogger("mriqc.classifier")
 
 
 class PandasAdaptor(BaseEstimator, TransformerMixin):
@@ -87,8 +88,7 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
         columns = self._numeric_cols(X)
 
         col_order = X.columns
-        scaled_x = pd.DataFrame(self._scaler.transform(
-            X[columns]), columns=columns)
+        scaled_x = pd.DataFrame(self._scaler.transform(X[columns]), columns=columns)
         unscaled_x = X.ix[:, ~X.columns.isin(columns)]
         return pd.concat([unscaled_x, scaled_x], axis=1)[col_order]
 
@@ -107,7 +107,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by='site'):
+    def __init__(self, scaler, by="site"):
         self.by = by
         self._base_scaler = scaler
         self._scalers = {}
@@ -125,16 +125,14 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
 
         # Convert groups to IDs
         glist = list(set(groups))
-        self._groups = np.array([glist.index(group)
-                                 for group in groups])
+        self._groups = np.array([glist.index(group) for group in groups])
 
         for gid, batch in enumerate(list(set(groups))):
             scaler = clone(self._base_scaler)
             mask = self._groups == gid
             if not np.any(mask):
                 continue
-            self._scalers[batch] = scaler.fit(
-                X.ix[mask, self._colmask], y)
+            self._scalers[batch] = scaler.fit(X.ix[mask, self._colmask], y)
 
         return self
 
@@ -142,7 +140,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
         if self.by in X.columns.ravel().tolist():
             groups = X[[self.by]].values.ravel().tolist()
         else:
-            groups = ['Unknown'] * X.shape[0]
+            groups = ["Unknown"] * X.shape[0]
 
         glist = list(set(groups))
         groups = np.array([glist.index(group) for group in groups])
@@ -154,15 +152,15 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     continue
                 scaler = self._scalers[batch]
                 new_x.ix[mask, self._colmask] = scaler.transform(
-                    X.ix[mask, self._colmask])
+                    X.ix[mask, self._colmask]
+                )
             else:
                 colmask = self._colmask
                 if self.by in self._colnames and len(colmask) == len(self._colnames):
                     del colmask[self._colnames.index(self.by)]
 
                 scaler = clone(self._base_scaler)
-                new_x.ix[:, colmask] = scaler.fit_transform(
-                    X.ix[:, colmask])
+                new_x.ix[:, colmask] = scaler.fit_transform(X.ix[:, colmask])
         return new_x
 
 
@@ -180,7 +178,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
 
     """
 
-    def __init__(self, scaler, by='site', columns=None):
+    def __init__(self, scaler, by="site", columns=None):
         super(BatchScaler, self).__init__(scaler, by=by)
         self.columns = columns
         self.ftmask_ = None
@@ -206,24 +204,37 @@ class BatchScaler(GroupsScaler, TransformerMixin):
             columns = self.columns
 
         if self.by not in columns:
-            new_x[self.by] = ['Unknown'] * new_x.shape[0]
+            new_x[self.by] = ["Unknown"] * new_x.shape[0]
 
         new_x.ix[:, self.ftmask_] = super(BatchScaler, self).transform(
-            new_x[new_x.columns[self.ftmask_]], y)
+            new_x[new_x.columns[self.ftmask_]], y
+        )
         return new_x
 
 
 class BatchRobustScaler(BatchScaler, TransformerMixin):
-    def __init__(self, by='site', columns=None, with_centering=True, with_scaling=True,
-                 quantile_range=(25.0, 75.0), copy=True):
+    def __init__(
+        self,
+        by="site",
+        columns=None,
+        with_centering=True,
+        with_scaling=True,
+        quantile_range=(25.0, 75.0),
+        copy=True,
+    ):
         self.with_centering = with_centering
         self.with_scaling = with_scaling
         self.quantile_range = quantile_range
         self.copy = True
         super(BatchRobustScaler, self).__init__(
-            RobustScaler(with_centering=with_centering, with_scaling=with_scaling,
-                         quantile_range=quantile_range),
-            by=by, columns=columns)
+            RobustScaler(
+                with_centering=with_centering,
+                with_scaling=with_scaling,
+                quantile_range=quantile_range,
+            ),
+            by=by,
+            columns=columns,
+        )
 
 
 class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
@@ -290,12 +301,12 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
             if clf_flag:
                 clf = ExtraTreesClassifier(
                     n_estimators=n_estimators,
-                    criterion='gini',
+                    criterion="gini",
                     max_depth=None,
                     min_samples_split=2,
                     min_samples_leaf=1,
                     min_weight_fraction_leaf=0.0,
-                    max_features='sqrt',
+                    max_features="sqrt",
                     max_leaf_nodes=None,
                     min_impurity_decrease=1e-07,
                     bootstrap=True,
@@ -304,28 +315,41 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
                     random_state=None,
                     verbose=0,
                     warm_start=False,
-                    class_weight='balanced'
+                    class_weight="balanced",
                 )
             else:
                 clf = ExtraTreesRegressor(
-                    n_estimators=n_estimators, criterion='mse', max_depth=None,
-                    min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0,
-                    max_features='auto', max_leaf_nodes=None, min_impurity_decrease=1e-07,
-                    bootstrap=False, oob_score=False, n_jobs=1, random_state=None, verbose=0,
-                    warm_start=False)
+                    n_estimators=n_estimators,
+                    criterion="mse",
+                    max_depth=None,
+                    min_samples_split=2,
+                    min_samples_leaf=1,
+                    min_weight_fraction_leaf=0.0,
+                    max_features="auto",
+                    max_leaf_nodes=None,
+                    min_impurity_decrease=1e-07,
+                    bootstrap=False,
+                    oob_score=False,
+                    n_jobs=1,
+                    random_state=None,
+                    verbose=0,
+                    warm_start=False,
+                )
 
             clf.fit(X[:, idx_keep], y)
-            LOG.debug('done fitting once')
+            LOG.debug("done fitting once")
             importances = clf.feature_importances_
 
             k = 1
             if np.all(importances[0:-1] > k * importances[-1]):
-                LOG.log(19, 'All features (%d) are better than noise', len(idx_keep) - 1)
+                LOG.log(
+                    19, "All features (%d) are better than noise", len(idx_keep) - 1
+                )
                 # all features better than noise
                 # comment out to force counter renditions of winnowing
                 # noise_flag = False
             elif np.all(k * importances[-1] > importances[0:-1]):
-                LOG.warning('No features are better than noise')
+                LOG.warning("No features are better than noise")
                 # noise better than all features aka no feature better than noise
                 # Leave as separate if clause in case want to do something different than
                 # when all feat > noise. Comment out to force counter renditions of winnowing
@@ -348,8 +372,11 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         self.importances_snr_ = importances[:-1] / importances[-1]
         self.idx_keep_ = idx_keep[:-1]
         self.mask_[self.idx_keep_] = True
-        LOG.info('Feature selection: %d of %d features better than noise feature',
-                 self.mask_.astype(int).sum(), len(self.mask_))
+        LOG.info(
+            "Feature selection: %d of %d features better than noise feature",
+            self.mask_.astype(int).sum(),
+            len(self.mask_),
+        )
         return self
 
     def fit_transform(self, X, y=None):
@@ -380,7 +407,8 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
         """
         from sklearn.utils import check_array
         from sklearn.utils.validation import check_is_fitted
-        check_is_fitted(self, ['mask_'], all_or_any=all)
+
+        check_is_fitted(self, ["mask_"], all_or_any=all)
         X = check_array(X)
         return X[:, self.mask_]
 
@@ -392,8 +420,9 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, target_auc=0.6, disable=False,
-                 max_iter=None, max_remove=0.7, site_col=-1):
+    def __init__(
+        self, target_auc=0.6, disable=False, max_iter=None, max_remove=0.7, site_col=-1
+    ):
         self.disable = disable
         self.target_auc = target_auc
         self.mask_ = None
@@ -435,7 +464,8 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         y_input = LabelBinarizer().fit_transform(sites)
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X_input, y_input, test_size=0.33, random_state=42)
+            X_input, y_input, test_size=0.33, random_state=42
+        )
 
         max_remove = n_feature - 5
         if self.max_remove < 1.0:
@@ -448,12 +478,12 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         while True:
             clf = ExtraTreesClassifier(
                 n_estimators=1000,
-                criterion='gini',
+                criterion="gini",
                 max_depth=None,
                 min_samples_split=2,
                 min_samples_leaf=1,
                 min_weight_fraction_leaf=0.0,
-                max_features='sqrt',
+                max_features="sqrt",
                 max_leaf_nodes=None,
                 min_impurity_decrease=1e-07,
                 bootstrap=True,
@@ -462,13 +492,15 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
                 random_state=None,
                 verbose=0,
                 warm_start=False,
-                class_weight='balanced'
+                class_weight="balanced",
             ).fit(X_train[:, self.mask_], y_train)
 
             score = roc_auc_score(
-                y_test, clf.predict(X_test[:, self.mask_]),
-                average='macro',
-                sample_weight=None)
+                y_test,
+                clf.predict(X_test[:, self.mask_]),
+                average="macro",
+                sample_weight=None,
+            )
 
             if score < self.target_auc:
                 break
@@ -488,8 +520,9 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
             i += 1
 
-        LOG.info('Feature selection: kept %d of %d features',
-                 np.sum(self.mask_), n_feature)
+        LOG.info(
+            "Feature selection: kept %d of %d features", np.sum(self.mask_), n_feature
+        )
         return self
 
     def fit_transform(self, X, y=None, n_jobs=1):
@@ -520,8 +553,9 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
         """
         from sklearn.utils import check_array
         from sklearn.utils.validation import check_is_fitted
-        check_is_fitted(self, ['mask_'], all_or_any=all)
-        if hasattr(X, 'columns'):
+
+        check_is_fitted(self, ["mask_"], all_or_any=all)
+        if hasattr(X, "columns"):
             X = X.values
         X = check_array(X[:, self.mask_])
         return X
@@ -534,23 +568,24 @@ def _generate_noise(n_sample, y, clf_flag=True):
     if classification
     """
     if clf_flag:
-        noise_feature = np.random.normal(
-            loc=0, scale=10.0, size=(n_sample, 1))
+        noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
         noise_score = roc_auc_score(
-            y, noise_feature, average='macro', sample_weight=None)
+            y, noise_feature, average="macro", sample_weight=None
+        )
         while (noise_score > 0.6) or (noise_score < 0.4):
-            noise_feature = np.random.normal(
-                loc=0, scale=10.0, size=(n_sample, 1))
+            noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
             noise_score = roc_auc_score(
-                y, noise_feature, average='macro', sample_weight=None)
+                y, noise_feature, average="macro", sample_weight=None
+            )
     else:
-        noise_feature = np.random.normal(
-            loc=0, scale=10.0, size=(n_sample, 1))
-        while np.abs(np.corrcoef(noise_feature, y[:, np.newaxis], rowvar=0)[0][1]) > 0.05:
-            noise_feature = np.random.normal(
-                loc=0, scale=10.0, size=(n_sample, 1))
+        noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
+        while (
+            np.abs(np.corrcoef(noise_feature, y[:, np.newaxis], rowvar=0)[0][1]) > 0.05
+        ):
+            noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
 
     return noise_feature
+
 
 # DEPRECATED CODE
 # def find_gmed(dataframe, by='site', excl_columns=None):

@@ -14,7 +14,7 @@ from .__about__ import (
 
 
 __all__ = [
-    '__copyright__',
-    '__credits__',
-    '__version__',
+    "__copyright__",
+    "__credits__",
+    "__version__",
 ]

@@ -15,8 +15,8 @@ def build_workflow(config_file, retval):
     from ..workflows.core import init_mriqc_wf
 
     config.load(config_file)
-    retval['return_code'] = 1
-    retval['workflow'] = None
+    retval["return_code"] = 1
+    retval["workflow"] = None
 
     retval["workflow"] = init_mriqc_wf()
     retval["return_code"] = int(retval["workflow"] is None)

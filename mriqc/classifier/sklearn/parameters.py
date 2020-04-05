@@ -24,8 +24,7 @@ from functools import partial, reduce
 
 def _len(indict):
     product = partial(reduce, operator.mul)
-    return sum(product(len(v) for v in p.values()) if p else 1
-               for p in indict)
+    return sum(product(len(v) for v in p.values()) if p else 1 for p in indict)
 
 
 class ModelParameterGrid(object):
@@ -105,7 +104,9 @@ class ModelParameterGrid(object):
     def __len__(self):
         """Number of points on the grid."""
         # Product function that can handle iterables (np.product can't).
-        return sum(_len(points) for p in self.param_grid for estim, points in list(p.items()))
+        return sum(
+            _len(points) for p in self.param_grid for estim, points in list(p.items())
+        )
 
     def __getitem__(self, ind):
         """Get the parameters that would be ``ind``th in iteration
@@ -145,4 +146,4 @@ class ModelParameterGrid(object):
                             out[key] = v_list[offset]
                         return (estimator, out)
 
-        raise IndexError('ModelParameterGrid index out of range')
+        raise IndexError("ModelParameterGrid index out of range")

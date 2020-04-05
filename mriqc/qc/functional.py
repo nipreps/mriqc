@@ -1,6 +1,5 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-# pylint: disable=no-member
 r"""
 MRIQC: image quality metrics for functional MRI.
 
@@ -197,7 +196,7 @@ mriqc.qc.functional module
 import os.path as op
 import numpy as np
 
-RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
+RAS_AXIS_ORDER = {"x": 0, "y": 1, "z": 2}
 
 
 def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
@@ -229,22 +228,22 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     """
     direction = direction.lower()
-    if direction[-1] not in ['x', 'y', 'all']:
-        raise Exception("Unknown direction {}, should be one of x, -x, y, -y, all".format(
-            direction))
+    if direction[-1] not in ["x", "y", "all"]:
+        raise Exception(
+            "Unknown direction {}, should be one of x, -x, y, -y, all".format(direction)
+        )
 
-    if direction == 'all':
+    if direction == "all":
         result = []
-        for newdir in ['x', 'y']:
+        for newdir in ["x", "y"]:
             ofile = None
             if out_file is not None:
                 fname, ext = op.splitext(ofile)
-                if ext == '.gz':
+                if ext == ".gz":
                     fname, ext2 = op.splitext(fname)
                     ext = ext2 + ext
-                ofile = '{0}_{1}{2}'.format(fname, newdir, ext)
-            result += [gsr(epi_data, mask, newdir,
-                           ref_file=ref_file, out_file=ofile)]
+                ofile = "{0}_{1}{2}".format(fname, newdir, ext)
+            result += [gsr(epi_data, mask, newdir, ref_file=ref_file, out_file=ofile)]
         return result
 
     # Roll data of mask through the appropriate axis

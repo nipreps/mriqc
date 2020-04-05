@@ -6,7 +6,7 @@ from .cv_nested import ModelAndGridSearchCV
 from ._split import RobustLeavePGroupsOut
 
 __all__ = [
-    'ModelParameterGrid',
-    'ModelAndGridSearchCV',
-    'RobustLeavePGroupsOut',
+    "ModelParameterGrid",
+    "ModelAndGridSearchCV",
+    "RobustLeavePGroupsOut",
 ]
