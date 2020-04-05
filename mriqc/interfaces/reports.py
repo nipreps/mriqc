@@ -4,8 +4,13 @@
 import numpy as np
 import nibabel as nb
 from nipype.interfaces.base import (
-    traits, TraitedSpec, File, isdefined, InputMultiObject,
-    BaseInterfaceInputSpec, SimpleInterface
+    traits,
+    TraitedSpec,
+    File,
+    isdefined,
+    InputMultiObject,
+    BaseInterfaceInputSpec,
+    SimpleInterface,
 )
 from .. import config
 from ..reports.individual import individual_html
@@ -55,31 +60,34 @@ class AddProvenance(SimpleInterface):
 
     def _run_interface(self, runtime):
         from nipype.utils.filemanip import hash_infile
+
         self._results["out_prov"] = {
-            'md5sum': hash_infile(self.inputs.in_file),
-            'version': config.environment.version,
-            'software': 'mriqc',
-            'webapi_url': config.execution.webapi_url,
-            'webapi_port': config.execution.webapi_port,
-            'settings': {
-                'testing': config.execution.debug,
-            },
+            "md5sum": hash_infile(self.inputs.in_file),
+            "version": config.environment.version,
+            "software": "mriqc",
+            "webapi_url": config.execution.webapi_url,
+            "webapi_port": config.execution.webapi_port,
+            "settings": {"testing": config.execution.debug, },
         }
 
         if self.inputs.modality in ("T1w", "T2w"):
-            air_msk_size = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(
-                bool).sum()
-            rot_msk_size = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(
-                bool).sum()
+            air_msk_size = (
+                np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(bool).sum()
+            )
+            rot_msk_size = (
+                np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(bool).sum()
+            )
             self._results["out_prov"]["warnings"] = {
-                'small_air_mask': bool(air_msk_size < 5e5),
-                'large_rot_frame': bool(rot_msk_size > 500),
+                "small_air_mask": bool(air_msk_size < 5e5),
+                "large_rot_frame": bool(rot_msk_size > 500),
             }
 
         if self.inputs.modality == "bold":
-            self._results["out_prov"]["settings"].update({
-                'fd_thres': config.workflow.fd_thres,
-                'hmc_fsl': config.workflow.hmc_fsl,
-            })
+            self._results["out_prov"]["settings"].update(
+                {
+                    "fd_thres": config.workflow.fd_thres,
+                    "hmc_fsl": config.workflow.hmc_fsl,
+                }
+            )
 
         return runtime

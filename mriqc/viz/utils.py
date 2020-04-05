@@ -1,12 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#
-# @Author: oesteban
-# @Date:   2016-01-05 11:32:01
-# @Email:  code@oscaresteban.es
-# @Last modified by:   oesteban
 """ Visualization utilities """
 
 import math
@@ -24,8 +17,16 @@ DINA4_LANDSCAPE = (11.69, 8.27)
 DINA4_PORTRAIT = (8.27, 11.69)
 
 
-def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
-               ax=None, vmax=None, vmin=None, annotate=False):
+def plot_slice(
+    dslice,
+    spacing=None,
+    cmap="Greys_r",
+    label=None,
+    ax=None,
+    vmax=None,
+    vmin=None,
+    annotate=False,
+):
     from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
@@ -44,36 +45,74 @@ def plot_slice(dslice, spacing=None, cmap='Greys_r', label=None,
         spacing = [1.0, 1.0]
 
     phys_sp = np.array(spacing) * dslice.shape
-    ax.imshow(np.swapaxes(dslice, 0, 1), vmin=vmin, vmax=vmax, cmap=cmap,
-              interpolation='nearest', origin='lower',
-              extent=[0, phys_sp[0], 0, phys_sp[1]])
+    ax.imshow(
+        np.swapaxes(dslice, 0, 1),
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+        interpolation="nearest",
+        origin="lower",
+        extent=[0, phys_sp[0], 0, phys_sp[1]],
+    )
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.grid(False)
-    ax.axis('off')
+    ax.axis("off")
 
     bgcolor = cmap(min(vmin, 0.0))
     fgcolor = cmap(vmax)
 
     if annotate:
-        ax.text(.95, .95, 'R', color=fgcolor, transform=ax.transAxes,
-                horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
-        ax.text(.05, .95, 'L', color=fgcolor, transform=ax.transAxes,
-                horizontalalignment='center', verticalalignment='top',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+        ax.text(
+            0.95,
+            0.95,
+            "R",
+            color=fgcolor,
+            transform=ax.transAxes,
+            horizontalalignment="center",
+            verticalalignment="top",
+            size=18,
+            bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor),
+        )
+        ax.text(
+            0.05,
+            0.95,
+            "L",
+            color=fgcolor,
+            transform=ax.transAxes,
+            horizontalalignment="center",
+            verticalalignment="top",
+            size=18,
+            bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor),
+        )
 
     if label is not None:
-        ax.text(.98, .01, label, color=fgcolor, transform=ax.transAxes,
-                horizontalalignment='right', verticalalignment='bottom',
-                size=18, bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor))
+        ax.text(
+            0.98,
+            0.01,
+            label,
+            color=fgcolor,
+            transform=ax.transAxes,
+            horizontalalignment="right",
+            verticalalignment="bottom",
+            size=18,
+            bbox=dict(boxstyle="square,pad=0", ec=bgcolor, fc=bgcolor),
+        )
 
     return ax
 
 
-def plot_slice_tern(dslice, prev=None, post=None,
-                    spacing=None, cmap='Greys_r', label=None, ax=None,
-                    vmax=None, vmin=None):
+def plot_slice_tern(
+    dslice,
+    prev=None,
+    post=None,
+    spacing=None,
+    cmap="Greys_r",
+    label=None,
+    ax=None,
+    vmax=None,
+    vmin=None,
+):
     from matplotlib.cm import get_cmap
 
     if isinstance(cmap, (str, bytes)):
@@ -101,26 +140,36 @@ def plot_slice_tern(dslice, prev=None, post=None,
         post = np.ones_like(dslice)
 
     combined = np.swapaxes(np.vstack((prev, dslice, post)), 0, 1)
-    ax.imshow(combined, vmin=vmin, vmax=vmax, cmap=cmap,
-              interpolation='nearest', origin='lower',
-              extent=[0, phys_sp[1] * 3, 0, phys_sp[0]])
+    ax.imshow(
+        combined,
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+        interpolation="nearest",
+        origin="lower",
+        extent=[0, phys_sp[1] * 3, 0, phys_sp[0]],
+    )
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.grid(False)
 
     if label is not None:
-        ax.text(.5, .05, label,
-                transform=ax.transAxes,
-                horizontalalignment='center',
-                verticalalignment='top',
-                size=14,
-                bbox=dict(boxstyle="square,pad=0", ec='k', fc='k'),
-                color='w')
+        ax.text(
+            0.5,
+            0.05,
+            label,
+            transform=ax.transAxes,
+            horizontalalignment="center",
+            verticalalignment="top",
+            size=14,
+            bbox=dict(boxstyle="square,pad=0", ec="k", fc="k"),
+            color="w",
+        )
 
 
-def plot_spikes(in_file, in_fft, spikes_list, cols=3,
-                labelfmt='t={0:.3f}s (z={1:d})',
-                out_file=None):
+def plot_spikes(
+    in_file, in_fft, spikes_list, cols=3, labelfmt="t={0:.3f}s (z={1:d})", out_file=None
+):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     nii = nb.as_closest_canonical(nb.load(in_file))
@@ -159,28 +208,52 @@ def plot_spikes(in_file, in_fft, spikes_list, cols=3,
         ax2 = divider.new_vertical(size="100%", pad=0.1)
         fig.add_axes(ax2)
 
-        plot_slice_tern(data[..., z, t], prev=prev, post=post, spacing=zooms,
-                        ax=ax2,
-                        label=labelfmt.format(t * tstep, z))
+        plot_slice_tern(
+            data[..., z, t],
+            prev=prev,
+            post=post,
+            spacing=zooms,
+            ax=ax2,
+            label=labelfmt.format(t * tstep, z),
+        )
 
-        plot_slice_tern(fft[..., z, t], prev=pvft, post=psft, vmin=-5, vmax=5,
-                        cmap=get_parula(), ax=ax1)
+        plot_slice_tern(
+            fft[..., z, t],
+            prev=pvft,
+            post=psft,
+            vmin=-5,
+            vmax=5,
+            cmap=get_parula(),
+            ax=ax1,
+        )
 
     plt.tight_layout()
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
+        if ext == ".gz":
             fname, _ = op.splitext(fname)
-        out_file = op.abspath('%s.svg' % fname)
+        out_file = op.abspath("%s.svg" % fname)
 
-    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
+    fig.savefig(out_file, format="svg", dpi=300, bbox_inches="tight")
     return out_file
 
 
-def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
-                bbox_mask_file=None, only_plot_noise=False, annotate=True,
-                vmin=None, vmax=None, cmap='Greys_r', plot_sagittal=True,
-                fig=None, zmax=128):
+def plot_mosaic(
+    img,
+    out_file=None,
+    ncols=8,
+    title=None,
+    overlay_mask=None,
+    bbox_mask_file=None,
+    only_plot_noise=False,
+    annotate=True,
+    vmin=None,
+    vmax=None,
+    cmap="Greys_r",
+    plot_sagittal=True,
+    fig=None,
+    zmax=128,
+):
 
     if isinstance(img, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(img))
@@ -189,7 +262,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
     else:
         img_data = img
         zooms = [1.0, 1.0, 1.0]
-        out_file = 'mosaic.svg'
+        out_file = "mosaic.svg"
 
     # Remove extra dimensions
     img_data = np.squeeze(img_data)
@@ -201,8 +274,7 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         img_data = _bbox(img_data, mask_file)
 
     if bbox_mask_file is not None:
-        bbox_data = nb.as_closest_canonical(
-            nb.load(bbox_mask_file)).get_data()
+        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_data()
         img_data = _bbox(img_data, bbox_data)
 
     z_vals = np.array(list(range(0, img_data.shape[2])))
@@ -229,15 +301,13 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         nrows += 1
 
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(
-            nb.load(overlay_mask)).get_data()
+        overlay_data = nb.as_closest_canonical(nb.load(overlay_mask)).get_data()
 
     # create figures
     if fig is None:
         fig = plt.figure(figsize=(22, nrows * 3))
 
-    est_vmin, est_vmax = _get_limits(img_data,
-                                     only_plot_noise=only_plot_noise)
+    est_vmin, est_vmax = _get_limits(img_data, only_plot_noise=only_plot_noise)
     if not vmin:
         vmin = est_vmin
     if not vmax:
@@ -249,18 +319,32 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
 
         if overlay_mask:
             ax.set_rasterized(True)
-        plot_slice(img_data[:, :, z_val], vmin=vmin, vmax=vmax,
-                   cmap=cmap, ax=ax, spacing=zooms[:2],
-                   label='%d' % z_val, annotate=annotate)
+        plot_slice(
+            img_data[:, :, z_val],
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            ax=ax,
+            spacing=zooms[:2],
+            label="%d" % z_val,
+            annotate=annotate,
+        )
 
         if overlay_mask:
             from matplotlib import cm
+
             msk_cmap = cm.Reds  # @UndefinedVariable
             msk_cmap._init()
             alphas = np.linspace(0, 0.75, msk_cmap.N + 3)
             msk_cmap._lut[:, -1] = alphas
-            plot_slice(overlay_data[:, :, z_val], vmin=0, vmax=1,
-                       cmap=msk_cmap, ax=ax, spacing=zooms[:2])
+            plot_slice(
+                overlay_data[:, :, z_val],
+                vmin=0,
+                vmax=1,
+                cmap=msk_cmap,
+                ax=ax,
+                spacing=zooms[:2],
+            )
         naxis += 1
 
     if plot_sagittal:
@@ -276,26 +360,32 @@ def plot_mosaic(img, out_file=None, ncols=8, title=None, overlay_mask=None,
         for x_val in list(range(start, stop, step))[:ncols]:
             ax = fig.add_subplot(nrows, ncols, naxis)
 
-            plot_slice(img_data[x_val, ...], vmin=vmin, vmax=vmax,
-                       cmap=cmap, ax=ax, label='%d' % x_val,
-                       spacing=[zooms[0], zooms[2]])
+            plot_slice(
+                img_data[x_val, ...],
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                ax=ax,
+                label="%d" % x_val,
+                spacing=[zooms[0], zooms[2]],
+            )
             naxis += 1
 
     fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05,
-        hspace=0.05)
+        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05
+    )
 
     if title:
-        fig.suptitle(title, fontsize='10')
+        fig.suptitle(title, fontsize="10")
     fig.subplots_adjust(wspace=0.002, hspace=0.002)
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(img))
         if ext == ".gz":
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + '_mosaic.svg')
+        out_file = op.abspath(fname + "_mosaic.svg")
 
-    fig.savefig(out_file, format='svg', dpi=300, bbox_inches='tight')
+    fig.savefig(out_file, format="svg", dpi=300, bbox_inches="tight")
     return out_file
 
 
@@ -328,15 +418,20 @@ def plot_fd(fd_file, fd_radius, mean_fd_dist=None, figsize=DINA4_LANDSCAPE):
         sns.distplot(mean_fd_dist, ax=ax)
         ax.set_xlabel("Mean Frame Displacement (over all subjects) [mm]")
         mean_fd = fd_power.mean()
-        label = r'$\overline{{\text{{FD}}}}$ = {0:g}'.format(mean_fd)
+        label = r"$\overline{{\text{{FD}}}}$ = {0:g}".format(mean_fd)
         plot_vline(mean_fd, label, ax=ax)
 
     return fig
 
 
 def plot_dist(
-        main_file, mask_file, xlabel, distribution=None, xlabel2=None,
-        figsize=DINA4_LANDSCAPE):
+    main_file,
+    mask_file,
+    xlabel,
+    distribution=None,
+    xlabel2=None,
+    figsize=DINA4_LANDSCAPE,
+):
     data = _get_values_inside_a_mask(main_file, mask_file)
 
     fig = plt.Figure(figsize=figsize)
@@ -363,8 +458,15 @@ def plot_vline(cur_val, label, ax):
     vloc = (ylim[0] + ylim[1]) / 2.0
     xlim = ax.get_xlim()
     pad = (xlim[0] + xlim[1]) / 100.0
-    ax.text(cur_val - pad, vloc, label, color="blue", rotation=90,
-            verticalalignment='center', horizontalalignment='right')
+    ax.text(
+        cur_val - pad,
+        vloc,
+        label,
+        color="blue",
+        rotation=90,
+        verticalalignment="center",
+        horizontalalignment="right",
+    )
 
 
 def _calc_rows_columns(ratio, n_images):
@@ -381,15 +483,17 @@ def _calc_rows_columns(ratio, n_images):
 
 def _calc_fd(fd_file, fd_radius):
     from math import pi
-    lines = open(fd_file, 'r').readlines()
+
+    lines = open(fd_file, "r").readlines()
     rows = [[float(x) for x in line.split()] for line in lines]
     cols = np.array([list(col) for col in zip(*rows)])
 
     translations = np.transpose(np.abs(np.diff(cols[0:3, :])))
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
-    fd_power = np.sum(translations, axis=1) + \
-        (fd_radius * pi / 180) * np.sum(rotations, axis=1)
+    fd_power = np.sum(translations, axis=1) + (fd_radius * pi / 180) * np.sum(
+        rotations, axis=1
+    )
 
     # FD is zero for the first time point
     fd_power = np.insert(fd_power, 0, 0)
@@ -418,14 +522,13 @@ def _get_values_inside_a_mask(main_file, mask_file):
     return data
 
 
-def plot_segmentation(anat_file, segmentation, out_file,
-                      **kwargs):
+def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
     from nilearn.plotting import plot_anat
 
-    vmax = kwargs.get('vmax')
-    vmin = kwargs.get('vmin')
+    vmax = kwargs.get("vmax")
+    vmin = kwargs.get("vmin")
 
-    if kwargs.get('saturate', False):
+    if kwargs.get("saturate", False):
         vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 70)
 
     if vmax is None and vmin is None:
@@ -435,14 +538,15 @@ def plot_segmentation(anat_file, segmentation, out_file,
 
     disp = plot_anat(
         anat_file,
-        display_mode=kwargs.get('display_mode', 'ortho'),
-        cut_coords=kwargs.get('cut_coords', 8),
-        title=kwargs.get('title'),
-        vmax=vmax, vmin=vmin)
+        display_mode=kwargs.get("display_mode", "ortho"),
+        cut_coords=kwargs.get("cut_coords", 8),
+        title=kwargs.get("title"),
+        vmax=vmax,
+        vmin=vmin,
+    )
     disp.add_contours(
-        segmentation,
-        levels=kwargs.get('levels', [1]),
-        colors=kwargs.get('colors', 'r'))
+        segmentation, levels=kwargs.get("levels", [1]), colors=kwargs.get("colors", "r")
+    )
     disp.savefig(out_file)
     disp.close()
     disp = None
@@ -542,6 +646,7 @@ def get_parula():
         [0.9588714286, 0.8949, 0.1132428571],
         [0.9598238095, 0.9218333333, 0.0948380952],
         [0.9661, 0.9514428571, 0.0755333333],
-        [0.9763, 0.9831, 0.0538]]
+        [0.9763, 0.9831, 0.0538],
+    ]
 
-    return LinearSegmentedColormap.from_list('parula', cm_data)
+    return LinearSegmentedColormap.from_list("parula", cm_data)

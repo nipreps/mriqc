@@ -71,6 +71,7 @@ from ._warnings import logging
 
 try:
     from multiprocessing import set_start_method
+
     set_start_method("forkserver")
 except RuntimeError:
     pass  # context has been already set
@@ -90,11 +91,13 @@ finally:
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
 # Disable all warnings in main and children processes only on production versions
-if not any((
-    "+" in __version__,
-    __version__.endswith(".dirty"),
-    os.getenv("MRIQC_DEV", "0").lower() in ("1", "on", "true", "y", "yes")
-)):
+if not any(
+    (
+        "+" in __version__,
+        __version__.endswith(".dirty"),
+        os.getenv("MRIQC_DEV", "0").lower() in ("1", "on", "true", "y", "yes"),
+    )
+):
     os.environ["PYTHONWARNINGS"] = "ignore"
 
 logging.addLevelName(25, "IMPORTANT")  # Add a new level between INFO and WARNING
@@ -474,15 +477,19 @@ class loggers:
 
         """
         from nipype import config as ncfg
+
         if not cls._init:
             from nipype import logging as nlogging
+
             cls.workflow = nlogging.getLogger("nipype.workflow")
             cls.interface = nlogging.getLogger("nipype.interface")
             cls.utils = nlogging.getLogger("nipype.utils")
 
             if not len(cls.cli.handlers):
                 _handler = logging.StreamHandler(stream=sys.stdout)
-                _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
+                _handler.setFormatter(
+                    logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
+                )
                 cls.cli.addHandler(_handler)
             cls._init = True
 

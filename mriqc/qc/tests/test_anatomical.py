@@ -17,13 +17,13 @@ import numpy as np
 import pytest
 from scipy.stats import rice
 from builtins import object
+
 # from numpy.testing import allclose
 from ..anatomical import art_qi2
 
 
 class GroundTruth(object):
-
-    def get_data(self, sigma, noise='normal'):
+    def get_data(self, sigma, noise="normal"):
         """Generates noisy 3d data"""
         size = (50, 50, 50)
         test_data = np.ones(size)
@@ -37,12 +37,14 @@ class GroundTruth(object):
         test_data[bgdata > 0] = bg_mean
         test_data[wmdata > 0] = wm_mean
 
-        if noise == 'rice':
+        if noise == "rice":
             test_data += rice.rvs(0.77, scale=sigma * wm_mean, size=test_data.shape)
-        elif noise == 'rayleigh':
+        elif noise == "rayleigh":
             test_data += np.random.rayleigh(scale=sigma * wm_mean, size=test_data.shape)
         else:
-            test_data += np.random.normal(0., scale=sigma * wm_mean, size=test_data.shape)
+            test_data += np.random.normal(
+                0.0, scale=sigma * wm_mean, size=test_data.shape
+            )
 
         return test_data, wmdata, bgdata
 
@@ -96,4 +98,4 @@ def test_qi2(gtruth, sigma):
     data, _, bgdata = gtruth.get_data(sigma, rice)
     value, _ = art_qi2(data, bgdata, save_plot=False)
     rmtree(tmpdir)
-    assert value > .0 and value < 0.04
+    assert value > 0.0 and value < 0.04

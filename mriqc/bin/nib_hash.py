@@ -17,9 +17,12 @@ from hashlib import sha1
 def get_parser():
     """ A trivial parser """
     from argparse import ArgumentParser, RawTextHelpFormatter
-    parser = ArgumentParser(description='compare two pandas dataframes',
-                            formatter_class=RawTextHelpFormatter)
-    parser.add_argument('input_file', action='store', help='input nifti file')
+
+    parser = ArgumentParser(
+        description="compare two pandas dataframes",
+        formatter_class=RawTextHelpFormatter,
+    )
+    parser.add_argument("input_file", action="store", help="input nifti file")
     return parser
 
 
@@ -34,8 +37,8 @@ def main():
     """Entry point"""
     fname = get_parser().parse_args().input_file
     sha = get_hash(fname)
-    print('%s %s' % (sha, fname))
+    print("%s %s" % (sha, fname))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

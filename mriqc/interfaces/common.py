@@ -8,23 +8,25 @@ import numpy as np
 import nibabel as nb
 
 from nipype.interfaces.base import (
-    traits, TraitedSpec, BaseInterfaceInputSpec, File, isdefined,
-    SimpleInterface
+    traits,
+    TraitedSpec,
+    BaseInterfaceInputSpec,
+    File,
+    isdefined,
+    SimpleInterface,
 )
 from nipype.interfaces.ants import ApplyTransforms
 from .. import config
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc='input image')
-    check_ras = traits.Bool(True, usedefault=True,
-                            desc='check that orientation is RAS')
-    check_dtype = traits.Bool(True, usedefault=True,
-                              desc='check data type')
+    in_file = File(exists=True, mandatory=True, desc="input image")
+    check_ras = traits.Bool(True, usedefault=True, desc="check that orientation is RAS")
+    check_dtype = traits.Bool(True, usedefault=True, desc="check data type")
 
 
 class ConformImageOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc='output conformed file')
+    out_file = File(exists=True, desc="output conformed file")
 
 
 class ConformImage(SimpleInterface):
@@ -86,6 +88,7 @@ class ConformImage(SimpleInterface):
       NIFTI_TYPE_COMPLEX256   2048 /! 256 bit complex = 2 128 bit floats /
 
     """
+
     input_spec = ConformImageInputSpec
     output_spec = ConformImageOutputSpec
 
@@ -98,12 +101,14 @@ class ConformImage(SimpleInterface):
 
         if self.inputs.check_dtype:
             changed = True
-            datatype = int(hdr['datatype'])
+            datatype = int(hdr["datatype"])
 
             if datatype == 1:
                 config.loggers.interface.warning(
                     'Input image %s has a suspicious data type "%s"',
-                    self.inputs.in_file, hdr.get_data_dtype())
+                    self.inputs.in_file,
+                    hdr.get_data_dtype(),
+                )
 
             # signed char and bool to uint8
             if datatype == 1 or datatype == 2 or datatype == 256:
@@ -125,30 +130,28 @@ class ConformImage(SimpleInterface):
 
             if changed:
                 hdr.set_data_dtype(dtype)
-                nii = nb.Nifti1Image(nii.get_data().astype(dtype),
-                                     nii.affine, hdr)
+                nii = nb.Nifti1Image(nii.get_data().astype(dtype), nii.affine, hdr)
 
         # Generate name
         out_file, ext = op.splitext(op.basename(self.inputs.in_file))
-        if ext == '.gz':
+        if ext == ".gz":
             out_file, ext2 = op.splitext(out_file)
             ext = ext2 + ext
 
-        self._results['out_file'] = op.abspath('{}_conformed{}'.format(out_file, ext))
-        nii.to_filename(self._results['out_file'])
+        self._results["out_file"] = op.abspath("{}_conformed{}".format(out_file, ext))
+        nii.to_filename(self._results["out_file"])
         return runtime
 
 
 class EnsureSizeInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, copyfile=False, mandatory=True, desc='input image')
-    in_mask = File(exists=True, copyfile=False, desc='input mask')
-    pixel_size = traits.Float(2.0, usedefault=True,
-                              desc='desired pixel size (mm)')
+    in_file = File(exists=True, copyfile=False, mandatory=True, desc="input image")
+    in_mask = File(exists=True, copyfile=False, desc="input mask")
+    pixel_size = traits.Float(2.0, usedefault=True, desc="desired pixel size (mm)")
 
 
 class EnsureSizeOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc='output image')
-    out_mask = File(exists=True, desc='output mask')
+    out_file = File(exists=True, desc="output image")
+    out_mask = File(exists=True, desc="output mask")
 
 
 class EnsureSize(SimpleInterface):
@@ -157,6 +160,7 @@ class EnsureSize(SimpleInterface):
     have `pixel_size`
 
     """
+
     input_spec = EnsureSizeInputSpec
     output_spec = EnsureSizeOutputSpec
 
@@ -165,17 +169,23 @@ class EnsureSize(SimpleInterface):
         zooms = nii.header.get_zooms()
         size_diff = np.array(zooms[:3]) - (self.inputs.pixel_size - 0.1)
         if np.all(size_diff >= -1e-3):
-            config.loggers.interface.info('Voxel size is large enough')
-            self._results['out_file'] = self.inputs.in_file
+            config.loggers.interface.info("Voxel size is large enough")
+            self._results["out_file"] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
-                self._results['out_mask'] = self.inputs.in_mask
+                self._results["out_mask"] = self.inputs.in_mask
             return runtime
 
         config.loggers.interface.info(
-            'One or more voxel dimensions (%f, %f, %f) are smaller than '
-            'the requested voxel size (%f) - diff=(%f, %f, %f)', zooms[0],
-            zooms[1], zooms[2], self.inputs.pixel_size, size_diff[0],
-            size_diff[1], size_diff[2])
+            "One or more voxel dimensions (%f, %f, %f) are smaller than "
+            "the requested voxel size (%f) - diff=(%f, %f, %f)",
+            zooms[0],
+            zooms[1],
+            zooms[2],
+            self.inputs.pixel_size,
+            size_diff[0],
+            size_diff[1],
+            size_diff[2],
+        )
 
         # Figure out new matrix
         # 1) Get base affine
@@ -195,7 +205,9 @@ class EnsureSize(SimpleInterface):
         new_size = np.array(extent_mm / self.inputs.pixel_size, dtype=int)
 
         # 5) Initialize new base affine
-        new_base = aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
+        new_base = (
+            aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
+        )
 
         # 6) Find new center
         new_center_idx = (new_size - 1) * 0.5
@@ -210,47 +222,49 @@ class EnsureSize(SimpleInterface):
         # 8) Generate new reference image
         hdr = nii.header.copy()
         hdr.set_data_shape(new_size)
-        ref_file = 'resample_ref.nii.gz'
-        nb.Nifti1Image(np.zeros(new_size, dtype=nii.get_data_dtype()),
-                       new_affine, hdr).to_filename(ref_file)
+        ref_file = "resample_ref.nii.gz"
+        nb.Nifti1Image(
+            np.zeros(new_size, dtype=nii.get_data_dtype()), new_affine, hdr
+        ).to_filename(ref_file)
 
         out_prefix, ext = op.splitext(op.basename(self.inputs.in_file))
-        if ext == '.gz':
+        if ext == ".gz":
             out_prefix, ext2 = op.splitext(out_prefix)
             ext = ext2 + ext
 
-        out_file = op.abspath('%s_resampled%s' % (out_prefix, ext))
+        out_file = op.abspath("%s_resampled%s" % (out_prefix, ext))
 
         # 9) Resample new image
         ApplyTransforms(
             dimension=3,
             input_image=self.inputs.in_file,
             reference_image=ref_file,
-            interpolation='LanczosWindowedSinc',
-            transforms=[pkgrf('mriqc', 'data/itk_identity.tfm')],
+            interpolation="LanczosWindowedSinc",
+            transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
             output_image=out_file,
         ).run()
 
-        self._results['out_file'] = out_file
+        self._results["out_file"] = out_file
 
         if isdefined(self.inputs.in_mask):
             hdr = nii.header.copy()
             hdr.set_data_shape(new_size)
             hdr.set_data_dtype(np.uint8)
-            ref_mask = 'mask_ref.nii.gz'
-            nb.Nifti1Image(np.zeros(new_size, dtype=np.uint8),
-                           new_affine, hdr).to_filename(ref_mask)
+            ref_mask = "mask_ref.nii.gz"
+            nb.Nifti1Image(
+                np.zeros(new_size, dtype=np.uint8), new_affine, hdr
+            ).to_filename(ref_mask)
 
-            out_mask = op.abspath('%s_resmask%s' % (out_prefix, ext))
+            out_mask = op.abspath("%s_resmask%s" % (out_prefix, ext))
             ApplyTransforms(
                 dimension=3,
                 input_image=self.inputs.in_mask,
                 reference_image=ref_mask,
-                interpolation='NearestNeighbor',
-                transforms=[pkgrf('mriqc', 'data/itk_identity.tfm')],
+                interpolation="NearestNeighbor",
+                transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
                 output_image=out_mask,
             ).run()
 
-            self._results['out_mask'] = out_mask
+            self._results["out_mask"] = out_mask
 
         return runtime

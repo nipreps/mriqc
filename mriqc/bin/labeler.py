@@ -24,13 +24,13 @@ def num_rows(data):
 
 def main():
     """read the input file"""
-    print('Reading file sinfo.csv')
-    csvfile = open('sinfo.csv', 'rb')
+    print("Reading file sinfo.csv")
+    csvfile = open("sinfo.csv", "rb")
     csvreader = csv.reader(csvfile)
     file = list(csvreader)
 
     # display statistics
-    finished = [0., 0., 0.]
+    finished = [0.0, 0.0, 0.0]
     hold = np.zeros((3, len(file) - 1))
     hold[:] = np.nan
     total = 601
@@ -53,32 +53,32 @@ def main():
         curEnt = num_rows(file[row])
         if curEnt <= 1:
             # if less than 1, run the row
-            print('Check participant #' + file[row][0])
-            fname = os.getcwd() + '/abide/' + file[row][0]
+            print("Check participant #" + file[row][0])
+            fname = os.getcwd() + "/abide/" + file[row][0]
             if os.path.isfile(fname):
-                webbrowser.open('file://' + fname)
+                webbrowser.open("file://" + fname)
                 quality = input("Quality? [-1/0/1/e/c] ")
-                if quality == 'e':
+                if quality == "e":
                     break
-                if quality == 'c':
-                    print('Current comment: ' + file[row][4])
+                if quality == "c":
+                    print("Current comment: " + file[row][4])
                     comment = input("Comment: ")
                     if len(comment) > 0:
                         file[row][4] = comment
                     quality = input("Quality? [-1/0/1/e] ")
-                if quality == 'e':
+                if quality == "e":
                     break
                 file[row][curEnt] = quality
             else:
-                print('File does not exist')
+                print("File does not exist")
 
-    print('Writing file sinfo.csv')
-    outfile = open('sinfo.csv', 'wb')
+    print("Writing file sinfo.csv")
+    outfile = open("sinfo.csv", "wb")
     csvwriter = csv.writer(outfile)
     csvwriter.writerows(file)
-    print('Ending')
+    print("Ending")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
     sys.exit(0)

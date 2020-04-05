@@ -122,7 +122,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="store",
         type=int,
         nargs="*",
-        help="filter input dataset by run id " "(only integer run ids are valid)",
+        help="filter input dataset by run id (only integer run ids are valid)",
     )
     g_bids.add_argument(
         "--task-id",
@@ -468,23 +468,27 @@ def parse_args(args=None, namespace=None):
     }
     config.workflow.inputs = {
         mod: files
-        for mod, files in collect_bids_data(config.execution.layout, **bids_filters).items()
+        for mod, files in collect_bids_data(
+            config.execution.layout, **bids_filters
+        ).items()
         if files
     }
 
     # Check the query is not empty
     if not list(config.workflow.inputs.values()):
-        _j = '\n *'
-        parser.error(f"""\
+        _j = "\n *"
+        parser.error(
+            f"""\
 Querying BIDS dataset at <{config.execution.bids_dir}> got an empty result.
 Please, check out your currently set filters:
-{_j.join([''] + [': '.join((k, str(v))) for k, v in bids_filters.items()])}""")
+{_j.join([''] + [': '.join((k, str(v))) for k, v in bids_filters.items()])}"""
+        )
 
     # Check no DWI or others are sneaked into MRIQC
-    unknown_mods = set(config.workflow.inputs.keys()) - set(('T1w', 'T2w', 'bold'))
+    unknown_mods = set(config.workflow.inputs.keys()) - set(("T1w", "T2w", "bold"))
     if unknown_mods:
         parser.error(
-            'MRIQC is unable to process the following modalities: '
+            "MRIQC is unable to process the following modalities: "
             f'{", ".join(unknown_mods)}.'
         )
 
@@ -496,6 +500,7 @@ Please, check out your currently set filters:
 
 def _get_biggest_file_size_gb(files):
     import os
+
     max_size = 0
     for file in files:
         size = os.path.getsize(file) / (1024 ** 3)
