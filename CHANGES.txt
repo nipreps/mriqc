@@ -1,18 +1,26 @@
-Upcoming release (TBD)
+0.15.2 (April 6, 2020)
 ======================
+A bugfix release containing mostly maintenance actions and documentation
+improvements. This version drops Python 3.5.
+The core of MRIQC has adopted the config-module pattern from fMRIPrep.
+With thanks to A. Erramuzpe, @justbennet, U. Tooley, and A. Huffman
+for contributions.
 
   * MAINT: revise style of all files (except for workflows) (#839)
   * MAINT: Clear the clutter of warnings (#838)
   * RF: Adopt config module pattern from *fMRIPrep* (#837)
+  * MAINT: Clear the clutter of warnings (#838)
   * MAINT: Drop Python 3.5, simplify linting (#833)
   * MAINT: Update to latest Ubuntu Xenial tag (#814)
+  * MAINT: Centralize all requirements and versions on ``setup.cfg`` (#819)
+  * MAINT: Use recent Python image to build packages in CircleCI (#808)
   * DOC: Improve AQI (and other IQMs) and boxplot whiskers descriptions (#816)
   * DOC: Refactor how documentation is built on CircleCI (#818)
-  * MAINT: Centralize all requirements and versions on ``setup.cfg`` (#819)
-  * Corrected a couple of typos in --help text (#809)
-  * CI: Use recent Python image to build packages (#808)
+  * DOC: Corrected a couple of typos in ``--help`` text (#809)
+
 0.15.1 (July 26, 2019)
 ======================
+A maintenance patch release updating PyBIDS.
 
   * FIX: FileNotFoundError when MELODIC (``--ica``) does not converge (#800) @oesteban
   * MAINT: Migrate MRIQC to a ``setup.cfg`` style of installation (#799) @oesteban
@@ -20,7 +28,6 @@ Upcoming release (TBD)
 
 0.15.0 (April 5, 2019)
 ======================
-
 A long overdue update, pinning updated versions of 
 `TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and 
 `Niworkflows <https://github.com/poldracklab/niworkflows>`__.
