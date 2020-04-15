@@ -82,7 +82,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
     mean = pe.Node(TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='mean',
         mem_gb=mem_gb * 1.5)
-    skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
+    skullstrip_epi = fmri_bmsk_workflow()
 
     # EPI to MNI registration
     ema = epi_mni_align()
