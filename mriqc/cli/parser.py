@@ -7,6 +7,7 @@ from .. import config
 def _build_parser():
     """Build parser object."""
     import sys
+    from shutil import which
     from functools import partial
     from pathlib import Path
     from argparse import (
@@ -267,13 +268,14 @@ Automated Quality Control and visual reports for Quality Assesment of structural
 
     # Functional workflow settings
     g_func = parser.add_argument_group("Functional MRI workflow configuration")
-    g_func.add_argument(
-        "--ica",
-        action="store_true",
-        default=False,
-        help="Run ICA on the raw data and include the components "
-        "in the individual reports (slow but potentially very insightful)",
-    )
+    if which("melodic") is not None:
+        g_func.add_argument(
+            "--ica",
+            action="store_true",
+            default=False,
+            help="Run ICA on the raw data and include the components "
+            "in the individual reports (slow but potentially very insightful)",
+        )
     g_func.add_argument(
         "--fft-spikes-detector",
         action="store_true",
