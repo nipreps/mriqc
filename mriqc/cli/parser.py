@@ -251,41 +251,6 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="upload will fail if if upload is strict",
     )
 
-    # Workflow settings
-    g_conf = parser.add_argument_group("Workflow configuration")
-    g_conf.add_argument(
-        "--ica",
-        action="store_true",
-        default=False,
-        help="Run ICA on the raw data and include the components "
-        "in the individual reports (slow but potentially very insightful)",
-    )
-    g_conf.add_argument(
-        "--hmc-afni",
-        action="store_true",
-        default=True,
-        help="Use AFNI 3dvolreg for head motion correction (HMC) - default",
-    )
-    g_conf.add_argument(
-        "--hmc-fsl",
-        action="store_true",
-        default=False,
-        help="Use FSL MCFLIRT instead of AFNI for head motion correction (HMC)",
-    )
-    g_conf.add_argument(
-        "--fft-spikes-detector",
-        action="store_true",
-        default=False,
-        help="Turn on FFT based spike detector (slow).",
-    )
-    g_conf.add_argument(
-        "--fd_thres",
-        action="store",
-        default=0.2,
-        type=float,
-        help="Threshold on Framewise Displacement estimates to detect outliers.",
-    )
-
     # ANTs options
     g_ants = parser.add_argument_group("Specific settings for ANTs")
     g_ants.add_argument(
@@ -300,37 +265,57 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="path to JSON file with settings for ANTS",
     )
 
-    # AFNI head motion correction settings
-    g_afni = parser.add_argument_group("Specific settings for AFNI")
-    g_afni.add_argument(
+    # Functional workflow settings
+    g_func = parser.add_argument_group("Functional MRI workflow configuration")
+    g_func.add_argument(
+        "--ica",
+        action="store_true",
+        default=False,
+        help="Run ICA on the raw data and include the components "
+        "in the individual reports (slow but potentially very insightful)",
+    )
+    g_func.add_argument(
+        "--fft-spikes-detector",
+        action="store_true",
+        default=False,
+        help="Turn on FFT based spike detector (slow).",
+    )
+    g_func.add_argument(
+        "--fd_thres",
+        action="store",
+        default=0.2,
+        type=float,
+        help="Threshold on Framewise Displacement estimates to detect outliers.",
+    )
+    g_func.add_argument(
         "--deoblique",
         action="store_true",
         default=False,
         help="Deoblique the functional scans during head motion "
         "correction preprocessing",
     )
-    g_afni.add_argument(
+    g_func.add_argument(
         "--despike",
         action="store_true",
         default=False,
         help="Despike the functional scans during head motion correction "
         "preprocessing",
     )
-    g_afni.add_argument(
+    g_func.add_argument(
         "--start-idx",
         action="store",
         type=int,
         help="Initial volume in functional timeseries that should be "
         "considered for preprocessing",
     )
-    g_afni.add_argument(
+    g_func.add_argument(
         "--stop-idx",
         action="store",
         type=int,
         help="Final volume in functional timeseries that should be "
         "considered for preprocessing",
     )
-    g_afni.add_argument(
+    g_func.add_argument(
         "--correct-slice-timing",
         action="store_true",
         default=False,

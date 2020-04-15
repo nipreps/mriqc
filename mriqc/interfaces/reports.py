@@ -86,7 +86,6 @@ class AddProvenance(SimpleInterface):
             self._results["out_prov"]["settings"].update(
                 {
                     "fd_thres": config.workflow.fd_thres,
-                    "hmc_fsl": config.workflow.hmc_fsl,
                 }
             )
 

@@ -31,14 +31,8 @@ def individual_html(in_iqms, in_plots=None, api_id=None):
 first {} volumes</span>. They were excluded before generating any QC measures and plots."""
                 wf_details.append(msg.format(bold_exclude_index))
 
-            hmc_fsl = sett_dict.pop("hmc_fsl")
-            if hmc_fsl is not None:
-                msg = "Framewise Displacement was computed using "
-                if hmc_fsl:
-                    msg += "FSL <code>mcflirt</code>"
-                else:
-                    msg += "AFNI <code>3dvolreg</code>"
-                wf_details.append(msg)
+            wf_details.append(
+                "Framewise Displacement was computed using <code>3dvolreg</code> (AFNI)")
 
             fd_thres = sett_dict.pop("fd_thres")
             if fd_thres is not None:

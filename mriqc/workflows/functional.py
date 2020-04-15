@@ -12,7 +12,7 @@ The functional workflow follows the following steps:
 #. Sanitize (revise data types and xforms) input data, read
    associated metadata and discard non-steady state frames.
 #. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
-   AFNI -- :py:func:`hmc_afni`.
+   AFNI -- :py:func:`hmc`.
 #. Skull-stripping of the time-series (AFNI) --
    :py:func:`fmri_bmsk_workflow`.
 #. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
@@ -28,7 +28,7 @@ from nipype.pipeline import engine as pe
 from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
-from nipype.interfaces import afni, ants, fsl
+from nipype.interfaces import afni, ants
 
 from .utils import get_fwhmx
 from ..interfaces import FunctionalQC, Spikes, IQMFileSink
@@ -78,10 +78,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    if config.workflow.hmc_fsl:
-        hmcwf = hmc_mcflirt()
-    else:
-        hmcwf = hmc_afni()
+    hmcwf = hmc()
 
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
@@ -428,7 +425,7 @@ def individual_reports(name='ReportsWorkflow'):
     return workflow
 
 
-def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
+def fmri_bmsk_workflow(name='fMRIBrainMask'):
     """
     Computes a brain mask for the input :abbr:`fMRI (functional MRI)`
     dataset
@@ -448,88 +445,28 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
                          name='outputnode')
+    afni_msk = pe.Node(afni.Automask(
+        outputtype='NIFTI_GZ'), name='afni_msk')
 
-    if not use_bet:
-        afni_msk = pe.Node(afni.Automask(
-            outputtype='NIFTI_GZ'), name='afni_msk')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, afni_msk, [('in_file', 'in_file')]),
-            (afni_msk, outputnode, [('out_file', 'out_file')])
-        ])
-
-    else:
-        bet_msk = pe.Node(fsl.BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(fsl.ErodeImage(), name='erode')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, bet_msk, [('in_file', 'in_file')]),
-            (bet_msk, erode, [('mask_file', 'in_file')]),
-            (erode, outputnode, [('out_file', 'out_file')])
-        ])
-
-    return workflow
-
-
-def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
-    """
-    An :abbr:`HMC (head motion correction)` for functional scans
-    using FSL MCFLIRT
-
-    .. workflow::
-
-        from mriqc.workflows.functional import hmc_mcflirt
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = hmc_mcflirt()
-
-    """
-    from niworkflows.interfaces.registration import EstimateReferenceImage
-
-    workflow = pe.Workflow(name=name)
-
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'fd_radius', 'start_idx', 'stop_idx']), name='inputnode')
-
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['out_file', 'out_fd']), name='outputnode')
-
-    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
-
-    mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, interpolation='sinc'),
-                      name='MCFLIRT',
-                      mem_gb=config.workflow.biggest_file_gb * 2.5)
-
-    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
-                                               parameter_source="FSL"),
-                     name='ComputeFD')
-
+    # Connect brain mask extraction
     workflow.connect([
-        (inputnode, gen_ref, [('in_file', 'in_file')]),
-        (gen_ref, mcflirt, [('ref_image', 'ref_file')]),
-        (inputnode, mcflirt, [('in_file', 'in_file')]),
-        (inputnode, fdnode, [('fd_radius', 'radius')]),
-        (mcflirt, fdnode, [('par_file', 'in_file')]),
-        (mcflirt, outputnode, [('out_file', 'out_file')]),
-        (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (inputnode, afni_msk, [('in_file', 'in_file')]),
+        (afni_msk, outputnode, [('out_file', 'out_file')])
     ])
-
     return workflow
 
 
-def hmc_afni(name='fMRI_HMC_afni'):
+def hmc(name='fMRI_HMC'):
     """
     A :abbr:`HMC (head motion correction)` workflow for
     functional scans
 
     .. workflow::
 
-        from mriqc.workflows.functional import hmc_afni
+        from mriqc.workflows.functional import hmc
         from mriqc.testing import mock_config
         with mock_config():
-            wf = hmc_afni()
+            wf = hmc()
 
     """
     from niworkflows.interfaces.registration import EstimateReferenceImage
@@ -665,8 +602,8 @@ def hmc_afni(name='fMRI_HMC_afni'):
 
 def epi_mni_align(name='SpatialNormalization'):
     """
-    Uses FSL FLIRT with the BBR cost function to find the transform that
-    maps the EPI space into the MNI152-nonlinear-symmetric atlas.
+    Uses ANTs to estimate the transform that maps the EPI space into
+    MNI152NLin2009cAsym.
 
     The input epi_mean is the averaged and brain-masked EPI timeseries
 
