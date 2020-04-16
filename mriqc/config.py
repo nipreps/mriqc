@@ -430,6 +430,8 @@ class workflow(_Config):
     """Radius in mm. of the sphere for the FD calculation."""
     fft_spikes_detector = False
     """Turn on FFT based spike detector (slow)."""
+    headmask = "BET"
+    """Use FSL BET in :py:func:`~mriqc.workflows.anatomical.headmsk_wf`."""
     ica = False
     """Run ICA on the raw data and include the components in the individual reports."""
     inputs = None

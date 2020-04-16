@@ -40,6 +40,7 @@ despike = false
 fd_thres = 0.2
 fd_radius = 50
 fft_spikes_detector = false
+headmask = "BET"
 ica = false
 template_id = "MNI152NLin2009cAsym"
 
