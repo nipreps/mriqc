@@ -12,7 +12,7 @@ The functional workflow follows the following steps:
 #. Sanitize (revise data types and xforms) input data, read
    associated metadata and discard non-steady state frames.
 #. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
-   AFNI -- :py:func:`hmc_afni`.
+   AFNI -- :py:func:`hmc`.
 #. Skull-stripping of the time-series (AFNI) --
    :py:func:`fmri_bmsk_workflow`.
 #. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
@@ -25,19 +25,13 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 from .. import config
 from nipype.pipeline import engine as pe
-from nipype.algorithms import confounds as nac
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
-from nipype.interfaces import afni, ants, fsl
-
-from .utils import get_fwhmx
-from ..interfaces import FunctionalQC, Spikes, IQMFileSink
-from ..interfaces.reports import AddProvenance
 
 
 def fmri_qc_workflow(name='funcMRIQC'):
     """
-    The fMRI qc workflow
+    Initialize the (f)MRIQC workflow.
 
     .. workflow::
 
@@ -47,8 +41,9 @@ def fmri_qc_workflow(name='funcMRIQC'):
         with mock_config():
             wf = fmri_qc_workflow()
 
-
     """
+    from nipype.interfaces.afni import TStat
+    from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from niworkflows.interfaces.utils import SanitizeImage
 
     workflow = pe.Workflow(name=name)
@@ -68,7 +63,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
         fields=['qc', 'mosaic', 'out_group', 'out_dvars',
                 'out_fd']), name='outputnode')
 
-    non_steady_state_detector = pe.Node(nac.NonSteadyStateDetector(),
+    non_steady_state_detector = pe.Node(NonSteadyStateDetector(),
                                         name="non_steady_state_detector")
 
     sanitize = pe.Node(SanitizeImage(), name="sanitize",
@@ -78,24 +73,22 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    if config.workflow.hmc_fsl:
-        hmcwf = hmc_mcflirt()
-    else:
-        hmcwf = hmc_afni()
+    hmcwf = hmc()
 
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
 
-    mean = pe.Node(afni.TStat(                   # 2. Compute mean fmri
+    # 2. Compute mean fmri
+    mean = pe.Node(TStat(
         options='-mean', outputtype='NIFTI_GZ'), name='mean',
         mem_gb=mem_gb * 1.5)
-    skullstrip_epi = fmri_bmsk_workflow(use_bet=True)
+    skullstrip_epi = fmri_bmsk_workflow()
 
     # EPI to MNI registration
     ema = epi_mni_align()
 
     # Compute TSNR using nipype implementation
-    tsnr = pe.Node(nac.TSNR(), name='compute_tsnr', mem_gb=mem_gb * 2.5)
+    tsnr = pe.Node(TSNR(), name='compute_tsnr', mem_gb=mem_gb * 2.5)
 
     # 7. Compute IQMs
     iqmswf = compute_iqms()
@@ -172,7 +165,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}.""")
 
 def compute_iqms(name='ComputeIQMs'):
     """
-    Workflow that actually computes the IQMs
+    Initialize the workflow that actually computes the IQMs.
 
     .. workflow::
 
@@ -181,12 +174,15 @@ def compute_iqms(name='ComputeIQMs'):
         with mock_config():
             wf = compute_iqms()
 
-
     """
+    from nipype.algorithms.confounds import ComputeDVARS
+    from nipype.interfaces.afni import QualityIndex, OutlierCount
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from .utils import _tofloat
+    from .utils import get_fwhmx, _tofloat
     from ..interfaces.transitional import GCOR
+    from ..interfaces import FunctionalQC, IQMFileSink
+    from ..interfaces.reports import AddProvenance
 
     mem_gb = config.workflow.biggest_file_gb
 
@@ -203,17 +199,17 @@ def compute_iqms(name='ComputeIQMs'):
     inputnode.inputs.fd_thres = config.workflow.fd_thres
 
     # Compute DVARS
-    dvnode = pe.Node(nac.ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS',
+    dvnode = pe.Node(ComputeDVARS(save_plot=False, save_all=True), name='ComputeDVARS',
                      mem_gb=mem_gb * 3)
 
     # AFNI quality measures
     fwhm_interface = get_fwhmx()
     fwhm = pe.Node(fwhm_interface, name='smoothness')
     # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(afni.OutlierCount(fraction=True, out_file='outliers.out'),
+    outliers = pe.Node(OutlierCount(fraction=True, out_file='outliers.out'),
                        name='outliers', mem_gb=mem_gb * 2.5)
 
-    quality = pe.Node(afni.QualityIndex(automask=True), out_file='quality.out',
+    quality = pe.Node(QualityIndex(automask=True), out_file='quality.out',
                       name='quality', mem_gb=mem_gb * 3)
 
     gcor = pe.Node(GCOR(), name='gcor', mem_gb=mem_gb * 2)
@@ -294,7 +290,7 @@ def compute_iqms(name='ComputeIQMs'):
 
 def individual_reports(name='ReportsWorkflow'):
     """
-    Encapsulates nodes writing plots
+    Write out individual reportlets.
 
     .. workflow::
 
@@ -305,7 +301,7 @@ def individual_reports(name='ReportsWorkflow'):
 
     """
     from niworkflows.interfaces.plotting import FMRISummary
-    from ..interfaces import PlotMosaic, PlotSpikes
+    from ..interfaces import PlotMosaic, Spikes, PlotSpikes
     from ..interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -428,10 +424,9 @@ def individual_reports(name='ReportsWorkflow'):
     return workflow
 
 
-def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
+def fmri_bmsk_workflow(name='fMRIBrainMask'):
     """
-    Computes a brain mask for the input :abbr:`fMRI (functional MRI)`
-    dataset
+    Compute a brain mask for the input :abbr:`fMRI (functional MRI)` dataset.
 
     .. workflow::
 
@@ -442,96 +437,37 @@ def fmri_bmsk_workflow(name='fMRIBrainMask', use_bet=False):
 
 
     """
-
+    from nipype.interfaces.afni import Automask
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']),
                         name='inputnode')
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_file']),
                          name='outputnode')
+    afni_msk = pe.Node(Automask(
+        outputtype='NIFTI_GZ'), name='afni_msk')
 
-    if not use_bet:
-        afni_msk = pe.Node(afni.Automask(
-            outputtype='NIFTI_GZ'), name='afni_msk')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, afni_msk, [('in_file', 'in_file')]),
-            (afni_msk, outputnode, [('out_file', 'out_file')])
-        ])
-
-    else:
-        bet_msk = pe.Node(fsl.BET(mask=True, functional=True), name='bet_msk')
-        erode = pe.Node(fsl.ErodeImage(), name='erode')
-
-        # Connect brain mask extraction
-        workflow.connect([
-            (inputnode, bet_msk, [('in_file', 'in_file')]),
-            (bet_msk, erode, [('mask_file', 'in_file')]),
-            (erode, outputnode, [('out_file', 'out_file')])
-        ])
-
-    return workflow
-
-
-def hmc_mcflirt(name='fMRI_HMC_mcflirt'):
-    """
-    An :abbr:`HMC (head motion correction)` for functional scans
-    using FSL MCFLIRT
-
-    .. workflow::
-
-        from mriqc.workflows.functional import hmc_mcflirt
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = hmc_mcflirt()
-
-    """
-    from niworkflows.interfaces.registration import EstimateReferenceImage
-
-    workflow = pe.Workflow(name=name)
-
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'fd_radius', 'start_idx', 'stop_idx']), name='inputnode')
-
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=['out_file', 'out_fd']), name='outputnode')
-
-    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
-
-    mcflirt = pe.Node(fsl.MCFLIRT(save_plots=True, interpolation='sinc'),
-                      name='MCFLIRT',
-                      mem_gb=config.workflow.biggest_file_gb * 2.5)
-
-    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
-                                               parameter_source="FSL"),
-                     name='ComputeFD')
-
+    # Connect brain mask extraction
     workflow.connect([
-        (inputnode, gen_ref, [('in_file', 'in_file')]),
-        (gen_ref, mcflirt, [('ref_image', 'ref_file')]),
-        (inputnode, mcflirt, [('in_file', 'in_file')]),
-        (inputnode, fdnode, [('fd_radius', 'radius')]),
-        (mcflirt, fdnode, [('par_file', 'in_file')]),
-        (mcflirt, outputnode, [('out_file', 'out_file')]),
-        (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (inputnode, afni_msk, [('in_file', 'in_file')]),
+        (afni_msk, outputnode, [('out_file', 'out_file')])
     ])
-
     return workflow
 
 
-def hmc_afni(name='fMRI_HMC_afni'):
+def hmc(name='fMRI_HMC'):
     """
-    A :abbr:`HMC (head motion correction)` workflow for
-    functional scans
+    Create a :abbr:`HMC (head motion correction)` workflow for fMRI.
 
     .. workflow::
 
-        from mriqc.workflows.functional import hmc_afni
+        from mriqc.workflows.functional import hmc
         from mriqc.testing import mock_config
         with mock_config():
-            wf = hmc_afni()
+            wf = hmc()
 
     """
+    from nipype.algorithms.confounds import FramewiseDisplacement
+    from nipype.interfaces.afni import Calc, TShift, Refit, Despike, Volreg
     from niworkflows.interfaces.registration import EstimateReferenceImage
 
     mem_gb = config.workflow.biggest_file_gb
@@ -548,7 +484,7 @@ def hmc_afni(name='fMRI_HMC_afni'):
         config.workflow.start_idx is not None,
         config.workflow.stop_idx is not None
     )):
-        drop_trs = pe.Node(afni.Calc(expr='a', outputtype='NIFTI_GZ'),
+        drop_trs = pe.Node(Calc(expr='a', outputtype='NIFTI_GZ'),
                            name='drop_trs')
         workflow.connect([
             (inputnode, drop_trs, [('in_file', 'in_file_a'),
@@ -566,13 +502,12 @@ def hmc_afni(name='fMRI_HMC_afni'):
 
     # calculate hmc parameters
     hmc = pe.Node(
-        afni.Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct', mem_gb=mem_gb * 2.5)
 
     # Compute the frame-wise displacement
-    fdnode = pe.Node(nac.FramewiseDisplacement(normalize=False,
-                                               parameter_source="AFNI"),
-                     name='ComputeFD')
+    fdnode = pe.Node(FramewiseDisplacement(
+        normalize=False, parameter_source="AFNI"), name='ComputeFD')
 
     workflow.connect([
         (inputnode, fdnode, [('fd_radius', 'radius')]),
@@ -584,11 +519,11 @@ def hmc_afni(name='fMRI_HMC_afni'):
 
     # Slice timing correction, despiking, and deoblique
 
-    st_corr = pe.Node(afni.TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
+    st_corr = pe.Node(TShift(outputtype='NIFTI_GZ'), name='TimeShifts')
 
-    deoblique_node = pe.Node(afni.Refit(deoblique=True), name='deoblique')
+    deoblique_node = pe.Node(Refit(deoblique=True), name='deoblique')
 
-    despike_node = pe.Node(afni.Despike(outputtype='NIFTI_GZ'), name='despike')
+    despike_node = pe.Node(Despike(outputtype='NIFTI_GZ'), name='despike')
 
     if all((
         config.workflow.correct_slice_timing,
@@ -665,8 +600,7 @@ def hmc_afni(name='fMRI_HMC_afni'):
 
 def epi_mni_align(name='SpatialNormalization'):
     """
-    Uses FSL FLIRT with the BBR cost function to find the transform that
-    maps the EPI space into the MNI152-nonlinear-symmetric atlas.
+    Estimate the transform that maps the EPI space into MNI152NLin2009cAsym.
 
     The input epi_mean is the averaged and brain-masked EPI timeseries
 
@@ -681,6 +615,7 @@ def epi_mni_align(name='SpatialNormalization'):
             wf = epi_mni_align()
 
     """
+    from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from templateflow.api import get as get_template
     from niworkflows.interfaces.registration import (
         RobustMNINormalizationRPT as RobustMNINormalization
@@ -697,7 +632,7 @@ def epi_mni_align(name='SpatialNormalization'):
     outputnode = pe.Node(niu.IdentityInterface(
         fields=['epi_mni', 'epi_parc', 'report']), name='outputnode')
 
-    n4itk = pe.Node(ants.N4BiasFieldCorrection(dimension=3, copy_header=True),
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True),
                     name='SharpenEPI')
 
     norm = pe.Node(RobustMNINormalization(
@@ -717,7 +652,7 @@ def epi_mni_align(name='SpatialNormalization'):
         name='EPI2MNI', num_threads=n_procs, mem_gb=3)
 
     # Warp segmentation into EPI space
-    invt = pe.Node(ants.ApplyTransforms(
+    invt = pe.Node(ApplyTransforms(
         float=True,
         input_image=str(get_template('MNI152NLin2009cAsym', resolution=1,
                                      desc='carpet', suffix='dseg')),
@@ -740,11 +675,7 @@ def epi_mni_align(name='SpatialNormalization'):
 
 
 def spikes_mask(in_file, in_mask=None, out_file=None):
-    """
-    Utility function to calculate a mask in which check
-    for :abbr:`EM (electromagnetic)` spikes.
-    """
-
+    """Calculate a mask in which check for :abbr:`EM (electromagnetic)` spikes."""
     import os.path as op
     import nibabel as nb
     import numpy as np
