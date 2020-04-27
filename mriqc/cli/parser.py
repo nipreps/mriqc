@@ -379,7 +379,7 @@ def parse_args(args=None, namespace=None):
         config.loggers.cli.warning(
             "Per-process threads (--omp-nthreads=%d) exceed total "
             "threads (--nthreads/--n_cpus=%d)",
-            config.nipype.omp_nthread,
+            config.nipype.omp_nthreads,
             config.nipype.nprocs,
         )
 
