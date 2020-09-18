@@ -1,3 +1,9 @@
+0.15.3 (September 18, 2020)
+===========================
+A bugfix release to re-enable setting of `--omp-nthreads/--ants-nthreads`.
+
+  * FIX: omp nthreads typo
+
 0.15.2 (April 6, 2020)
 ======================
 A bugfix release containing mostly maintenance actions and documentation
