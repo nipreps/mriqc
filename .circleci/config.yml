@@ -10,7 +10,7 @@ jobs:
       - checkout
       - run:
           name: Install Graphviz
-          command: apt update && apt -y install graphviz
+          command: sudo apt update && sudo apt -y install graphviz
       - run:
           name: Install deps
           command: pip install --no-cache-dir -r docs/requirements.txt
