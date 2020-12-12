@@ -144,8 +144,7 @@ jobs:
 
   get_data:
     machine:
-      # Ubuntu 14.04 with Docker 17.10.0-ce
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -194,7 +193,7 @@ jobs:
 
   test_pytest:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
@@ -246,7 +245,7 @@ jobs:
 
   T1w:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -398,7 +397,7 @@ jobs:
 
   bold:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -540,7 +539,7 @@ jobs:
 
   update_changes:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /tmp/src/mriqc
     steps:
       - attach_workspace:
@@ -622,7 +621,7 @@ jobs:
 
   deploy_docker:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:
