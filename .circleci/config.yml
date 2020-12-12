@@ -3,7 +3,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: python:3.7.4
+      - image: circleci/python:3.8.5
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -571,7 +571,7 @@ jobs:
 
   test_package:
     docker:
-      - image: circleci/python:3.7.4
+      - image: circleci/python:3.8.5
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -601,7 +601,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: circleci/python:3.7.4
+      - image: circleci/python:3.8.5
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
