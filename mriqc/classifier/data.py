@@ -243,10 +243,9 @@ def read_dataset(
     )
 
     # Inform about ratings distribution
-    labels = sorted(list(set(x_df[rate_label].values.ravel().tolist())))
-    ldist = []
-    for l in labels:
-        ldist.append(int(np.sum(x_df[rate_label] == l)))
+    labels = sorted(set(x_df[rate_label].values.ravel().tolist()))
+    ldist = [int(np.sum(x_df[rate_label] == label))
+             for label in labels]
 
     config.loggers.interface.info(
         "Ratings distribution: %s (%s, %s)",
