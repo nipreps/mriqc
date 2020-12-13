@@ -1,3 +1,4 @@
+  * RF: Simplify comprehensions, using easy-to-read var names (#875)
   * CI: Update machine images on Circle (#874)
   * FIX: omp_nthreads typo (#846)
   * RF: Free the fMRI workflow from FSL (#842)
