@@ -1,5 +1,13 @@
-  * FIX: omp_nthreads typo (#846)
+  * RF: Simplify comprehensions, using easy-to-read var names (#875)
+  * CI: Update machine images on Circle (#874)
   * RF: Free the fMRI workflow from FSL (#842)
+
+0.15.3 (September 18, 2020)
+===========================
+A bugfix release to re-enable setting of `--omp-nthreads/--ants-nthreads`.
+
+  * FIX: omp_nthreads typo (#846)
+
 0.15.2 (April 6, 2020)
 ======================
 A bugfix release containing mostly maintenance actions and documentation

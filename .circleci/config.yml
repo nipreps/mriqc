@@ -3,14 +3,14 @@ jobs:
 
   build_docs:
     docker:
-      - image: python:3.7.4
+      - image: circleci/python:3.8.5
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
       - checkout
       - run:
           name: Install Graphviz
-          command: apt update && apt -y install graphviz
+          command: sudo apt update && sudo apt -y install graphviz
       - run:
           name: Install deps
           command: pip install --no-cache-dir -r docs/requirements.txt
@@ -80,7 +80,6 @@ jobs:
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
-            git checkout ${MRIQC_API_TAG}
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
@@ -144,8 +143,7 @@ jobs:
 
   get_data:
     machine:
-      # Ubuntu 14.04 with Docker 17.10.0-ce
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -194,7 +192,7 @@ jobs:
 
   test_pytest:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
@@ -246,7 +244,7 @@ jobs:
 
   T1w:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -279,9 +277,8 @@ jobs:
           name: Load Docker image layer cache
           no_output_timeout: 30m
           command: |
-            pyenv local 3.5.2
-            python -m pip install --upgrade pip
-            pip install docker-compose
+            python3 -m pip install --upgrade pip
+            python3 -m pip install docker-compose
             docker info
             set +o pipefail
             sudo apt update && sudo apt -y install pigz
@@ -398,7 +395,7 @@ jobs:
 
   bold:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -432,9 +429,8 @@ jobs:
           no_output_timeout: 30m
           command: |
             docker info
-            pyenv local 3.5.2
-            python -m pip install --upgrade pip
-            pip install docker-compose
+            python3 -m pip install --upgrade pip
+            python3 -m pip install docker-compose
             set +o pipefail
             sudo apt update && sudo apt -y install pigz
             if [ -f /tmp/cache/docker.tar.gz ]; then
@@ -540,7 +536,7 @@ jobs:
 
   update_changes:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /tmp/src/mriqc
     steps:
       - attach_workspace:
@@ -572,7 +568,7 @@ jobs:
 
   test_package:
     docker:
-      - image: circleci/python:3.7.4
+      - image: circleci/python:3.8.5
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -602,7 +598,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: circleci/python:3.7.4
+      - image: circleci/python:3.8.5
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -622,7 +618,7 @@ jobs:
 
   deploy_docker:
     machine:
-      image: circleci/classic:201711-01
+      image: ubuntu-1604:202007-01
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:

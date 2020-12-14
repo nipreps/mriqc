@@ -739,11 +739,8 @@ def _parse_tqual(in_file):
     import numpy as np
     with open(in_file, 'r') as fin:
         lines = fin.readlines()
-        # remove general information
-        lines = [l for l in lines if l[:2] != '++']
-        # remove general information and warnings
-        return np.mean([float(l.strip()) for l in lines])
-    raise RuntimeError('AFNI 3dTqual was not parsed correctly')
+    return np.mean([float(line.strip()) for line in lines
+                    if not line.startswith("++")])
 
 
 def _parse_tout(in_file):
