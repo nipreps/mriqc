@@ -80,7 +80,6 @@ jobs:
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
-            git checkout ${MRIQC_API_TAG}
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
@@ -278,9 +277,8 @@ jobs:
           name: Load Docker image layer cache
           no_output_timeout: 30m
           command: |
-            pyenv local 3.5.2
-            python -m pip install --upgrade pip
-            pip install docker-compose
+            python3 -m pip install --upgrade pip
+            python3 -m pip install docker-compose
             docker info
             set +o pipefail
             sudo apt update && sudo apt -y install pigz
@@ -431,9 +429,8 @@ jobs:
           no_output_timeout: 30m
           command: |
             docker info
-            pyenv local 3.5.2
-            python -m pip install --upgrade pip
-            pip install docker-compose
+            python3 -m pip install --upgrade pip
+            python3 -m pip install docker-compose
             set +o pipefail
             sudo apt update && sudo apt -y install pigz
             if [ -f /tmp/cache/docker.tar.gz ]; then
