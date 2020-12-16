@@ -1,3 +1,4 @@
+  * FIX: Skip version cache on read-only filesystems (#862)
   * FIX: Honor ``$OMP_NUM_THREADS`` environment variable (#848)
   * CI: Fix up Circle builds (#876)
   *  Merge remote-tracking branch 'upstream/rel/0.15.x'
