@@ -1,30 +1,15 @@
+0.16.0 (January 5, 2021)
+========================
+New feature release in 0.16.x series.
+
+This version removes the FSL dependency from the fMRI workflow.
+
   * FIX: Skip version cache on read-only filesystems (#862)
   * FIX: Honor ``$OMP_NUM_THREADS`` environment variable (#848)
-  * CI: Fix up Circle builds (#876)
-  *  Merge remote-tracking branch 'upstream/rel/0.15.x'
-diff --cc CHANGES.txt
-index c45b7da,11426cf..8f95740
---- a/CHANGES.txt
-+++ b/CHANGES.txt
-@@@ -1,7 -1,9 +1,13 @@@
- +  * RF: Simplify comprehensions, using easy-to-read var names (#875)
- +  * CI: Update machine images on Circle (#874)
--   * FIX: omp_nthreads typo (#846)
- +  * RF: Free the fMRI workflow from FSL (#842)
-++
-+ 0.15.3 (September 18, 2020)
-+ ===========================
-+ A bugfix release to re-enable setting of `--omp-nthreads/--ants-nthreads`.
-+ 
- -  * FIX: omp nthreads typo
-++  * FIX: omp_nthreads typo (#846)
-+ 
-  0.15.2 (April 6, 2020)
-  ======================
-  A bugfix release containing mostly maintenance actions and documentation
   * RF: Simplify comprehensions, using easy-to-read var names (#875)
-  * CI: Update machine images on Circle (#874)
   * RF: Free the fMRI workflow from FSL (#842)
+  * CI: Fix up Circle builds (#876)
+  * CI: Update machine images on Circle (#874)
 
 0.15.3 (September 18, 2020)
 ===========================
