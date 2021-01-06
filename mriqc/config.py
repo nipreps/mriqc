@@ -337,6 +337,8 @@ class execution(_Config):
     """Folder where derivatives will be stored."""
     participant_label = None
     """List of participant identifiers that are to be preprocessed."""
+    pdb = False
+    """Drop into PDB when exceptions are encountered."""
     reports_only = False
     """Only build the reports, based on the reportlets found in a cached working directory."""
     run_id = None

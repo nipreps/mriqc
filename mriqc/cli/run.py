@@ -14,6 +14,10 @@ def main():
     # Run parser
     parse_args()
 
+    if config.execution.pdb:
+        from mriqc.utils.debug import setup_exceptionhook
+        setup_exceptionhook()
+
     # CRITICAL Save the config to a file. This is necessary because the execution graph
     # is built as a separate process to keep the memory footprint low. The most
     # straightforward way to communicate with the child process is via the filesystem.

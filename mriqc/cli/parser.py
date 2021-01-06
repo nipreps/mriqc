@@ -183,6 +183,13 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Cast the input data to float32 if it's represented in higher precision "
         "(saves space and improves perfomance)",
     )
+    g_perfm.add_argument(
+        "--pdb",
+        dest="pdb",
+        action="store_true",
+        default=False,
+        help="open Python debugger (pdb) on exceptions",
+    )
 
     # Control instruments
     g_outputs = parser.add_argument_group("Instrumental options")
