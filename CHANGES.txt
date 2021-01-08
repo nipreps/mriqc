@@ -1,3 +1,4 @@
+  * ENH: Add --pdb option to make debugging easier (#884)
 0.16.0 (January 5, 2021)
 ========================
 New feature release in 0.16.x series.
