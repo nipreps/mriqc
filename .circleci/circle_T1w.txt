@@ -1,3 +1,5 @@
+.bidsignore
+dataset_description.json
 group_T1w.html
 group_T1w.tsv
 logs
