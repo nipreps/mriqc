@@ -10,6 +10,7 @@ def main():
     import gc
     from multiprocessing import Process, Manager
     from .parser import parse_args
+    from ..utils.bids import write_derivative_description, write_bidsignore
 
     # Run parser
     parse_args()
@@ -117,6 +118,11 @@ def main():
             raise Exception("No data found. No group level reports were generated.")
 
         config.loggers.cli.info("Group level finished successfully.")
+
+    config.loggers.cli.info("Generating BIDS Derivatives metadata")
+    write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
+    write_bidsignore(config.execution.output_dir)
+    config.loggers.cli.info("MRIQC completed")
 
 
 if __name__ == "__main__":
