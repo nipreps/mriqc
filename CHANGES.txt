@@ -1,3 +1,4 @@
+  * FIX: Change deprecated ``normed`` to ``density`` in parameters to ``hist()`` (#888)
   * ENH: Write derivatives metadata (#885)
   * ENH: Add --pdb option to make debugging easier (#884)
 0.16.0 (January 5, 2021)
