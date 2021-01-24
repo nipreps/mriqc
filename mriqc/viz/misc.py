@@ -25,7 +25,7 @@ def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
         fc="dodgerblue",
         histtype="stepfilled",
         alpha=0.2,
-        normed=True,
+        density=True,
     )
     fit_pdf[fit_pdf > 1.0] = np.nan
     ax.plot(x_grid, fit_pdf, linewidth=2, alpha=0.5, label="chi2", color="darkorange")
