@@ -40,12 +40,12 @@ def _build_parser():
     def _drop_sub(value):
         """
         Drop ``sub-`` prefix of participant labels.
-        
+
         >>> _drop_sub("s060")
         's060'
         >>> _drop_sub("sub-s060")
         's060'
-        
+
         """
         return re.sub(r"^sub-", "", str(value))
 
