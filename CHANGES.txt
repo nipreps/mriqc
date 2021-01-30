@@ -1,7 +1,15 @@
+0.16.1 (January 30, 2021)
+=========================
+Bug-fix release in 0.16.x series.
+
+This PR improves BIDS Derivatives compliance, fixes an issue with reading datasets with
+subjects of the form ``sub-sXYZ``, and improves compatibility with more recent matplotlib.
+
   * FIX: Participant labels starting with ``[sub]`` cannot be used (#890)
   * FIX: Change deprecated ``normed`` to ``density`` in parameters to ``hist()`` (#888)
   * ENH: Write derivatives metadata (#885)
   * ENH: Add --pdb option to make debugging easier (#884)
+
 0.16.0 (January 5, 2021)
 ========================
 New feature release in 0.16.x series.
