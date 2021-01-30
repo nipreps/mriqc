@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Parser."""
 from .. import config
+import re
 
 
 def _build_parser():
@@ -37,8 +38,16 @@ def _build_parser():
         return int(digits) * scale[units[0]]
 
     def _drop_sub(value):
-        value = str(value)
-        return value.lstrip("sub-")
+        """
+        Drop ``sub-`` prefix of participant labels.
+
+        >>> _drop_sub("s060")
+        's060'
+        >>> _drop_sub("sub-s060")
+        's060'
+
+        """
+        return re.sub(r"^sub-", "", str(value))
 
     def _bids_filter(value):
         from json import loads
