@@ -33,6 +33,21 @@ github using ``pip`` on a Python 3 environment: ::
 .. warning::
 
 	As of MRIQC 0.9.4, Python 2 is no longer supported.
+	
+matplotlib/Tcl warning::
+	MRIQC uses matplotlib to create graphics. By default matlpotlib 
+	uses interactive Tck interface, which requires graphic enveronment working. 
+	If such enveronment is not present (for ex. when running under tmux),
+	you may see an error: ::
+	
+		_tkinter.TclError: couldn't connect to display "localhost:10.0"
+	
+	To fix it you need uncomment "backend : Agg" line in configuration file 
+	of matplotlib. The location of configuration file can be retrieved
+	from python command prompt: ::
+	
+	> import matplotlib
+	> print(matplotlib.matplotlib_fname())
 
 
 Execution system dependencies
