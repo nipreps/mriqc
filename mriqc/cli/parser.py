@@ -86,7 +86,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         type=Path,
         help="The directory where the output files "
         "should be stored. If you are running group level analysis "
-        "this folder should be prepopulated with the results of the"
+        "this folder should be prepopulated with the results of the "
         "participant level analysis.",
     )
     parser.add_argument(
