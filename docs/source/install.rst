@@ -51,8 +51,13 @@ github using ``pip`` on a Python 3 environment: ::
 	configuration file.
 	The location of the configuration file can be retrieved with Python::
 	
-	> import matplotlib
-	> print(matplotlib.matplotlib_fname())
+	  >>> import matplotlib
+	  >>> print(matplotlib.matplotlib_fname())
+
+      Alternatively, you can issue the following shell command-line to edit this setting::
+      
+        $ sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
+
 
 
 Execution system dependencies
