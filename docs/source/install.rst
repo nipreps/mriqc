@@ -35,7 +35,7 @@ github using ``pip`` on a Python 3 environment: ::
 	As of MRIQC 0.9.4, Python 2 is no longer supported.
 	
 matplotlib/Tcl warning::
-	MRIQC uses matplotlib to create graphics. By default matlpotlib 
+	MRIQC uses matplotlib to create graphics. By default, matplotlib is configured to 
 	plot through an interactive Tcl/tk interface, which requires a functional display to be available. 
 	In *head-less* settings (for example, when running under tmux),
 	you may see an error::
