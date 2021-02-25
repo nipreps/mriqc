@@ -42,9 +42,13 @@ matplotlib/Tcl warning::
 	
 		_tkinter.TclError: couldn't connect to display "localhost:10.0"
 	
-	To fix it you need uncomment "backend : Agg" line in configuration file 
-	of matplotlib. The location of configuration file can be retrieved
-	from python command prompt: ::
+	There are two pathways to fix this issue.
+	One is setting up a virtual display with a tool like XVfb.
+	Alternatively, you can configure your matplotlib distribution to perform on
+	head-less mode by default.
+	That is achieved by uncommenting the ``backend : Agg`` line in the matplotlib's
+	configuration file.
+	The location of the configuration file can be retrieved with Python::
 	
 	> import matplotlib
 	> print(matplotlib.matplotlib_fname())
