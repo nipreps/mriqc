@@ -36,7 +36,7 @@ github using ``pip`` on a Python 3 environment: ::
 	
 matplotlib/Tcl warning::
 	MRIQC uses matplotlib to create graphics. By default matlpotlib 
-	uses interactive Tck interface, which requires graphic enveronment working. 
+	plot through an interactive Tcl/tk interface, which requires a functional display to be available. 
 	If such enveronment is not present (for ex. when running under tmux),
 	you may see an error: ::
 	
