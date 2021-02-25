@@ -37,7 +37,7 @@ github using ``pip`` on a Python 3 environment: ::
 matplotlib/Tcl warning::
 	MRIQC uses matplotlib to create graphics. By default matlpotlib 
 	plot through an interactive Tcl/tk interface, which requires a functional display to be available. 
-	If such enveronment is not present (for ex. when running under tmux),
+	In *head-less* settings (for example, when running under tmux),
 	you may see an error::
 	
 		_tkinter.TclError: couldn't connect to display "localhost:10.0"
