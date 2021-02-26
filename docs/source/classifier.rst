@@ -1,6 +1,5 @@
 The MRIQC classifier for T1w images
 ===================================
-
 MRIQC is released with two classifiers (already trained) to predict image quality
 of T1w images.
 
@@ -37,4 +36,3 @@ From our preprint `MRIQC: Advancing the Automatic Prediction of Image Quality in
     :members:
     :undoc-members:
     :show-inheritance:
-
