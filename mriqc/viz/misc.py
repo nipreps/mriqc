@@ -154,7 +154,7 @@ def plot_raters(dataframe, ax=None, width=101, size=0.40):
         for i in range(nblocks):
             if i > 0:
                 matrices.append(nas)
-            matrices.append(matrix[i * width:(i + 1) * width, ...])
+            matrices.append(matrix[i * width : (i + 1) * width, ...])
 
         matrices[-1] = fill_matrix(matrices[-1], width)
         matrix = np.hstack(tuple(matrices))

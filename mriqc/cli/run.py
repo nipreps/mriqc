@@ -5,18 +5,20 @@ from .. import config
 
 def main():
     """Entry point."""
+    import gc
     import os
     import sys
-    import gc
-    from multiprocessing import Process, Manager
+    from multiprocessing import Manager, Process
+
+    from ..utils.bids import write_bidsignore, write_derivative_description
     from .parser import parse_args
-    from ..utils.bids import write_derivative_description, write_bidsignore
 
     # Run parser
     parse_args()
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
+
         setup_exceptionhook()
 
     # CRITICAL Save the config to a file. This is necessary because the execution graph
@@ -80,8 +82,8 @@ def main():
 
     # Set up group level
     if "group" in config.workflow.analysis_level:
-        from ..utils.bids import DEFAULT_TYPES
         from ..reports import group_html
+        from ..utils.bids import DEFAULT_TYPES
         from ..utils.misc import generate_tsv  # , generate_pred
 
         config.loggers.cli.info("Group level started...")

@@ -10,10 +10,11 @@ Reads in and writes CSV files with the IQMs
 
 """
 
+from builtins import str
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from builtins import str
 
 from .. import config
 from ..utils.misc import BIDS_COMP
@@ -244,8 +245,7 @@ def read_dataset(
 
     # Inform about ratings distribution
     labels = sorted(set(x_df[rate_label].values.ravel().tolist()))
-    ldist = [int(np.sum(x_df[rate_label] == label))
-             for label in labels]
+    ldist = [int(np.sum(x_df[rate_label] == label)) for label in labels]
 
     config.loggers.interface.info(
         "Ratings distribution: %s (%s, %s)",

@@ -127,7 +127,7 @@ requested participants have the corresponding folder in the bids_dir.\
     if gsize == 0:
         gsize = len(subject_list)
 
-    groups = [subject_list[i:i + gsize] for i in range(0, len(subject_list), gsize)]
+    groups = [subject_list[i : i + gsize] for i in range(0, len(subject_list), gsize)]
 
     log_arg = "".format
     if opts.log_groups:

@@ -70,7 +70,7 @@ class GCOR(CommandLine):
             for line in runtime.stdout.split("\n")
             if line.strip().startswith("GCOR = ")
         ][-1]
-        setattr(self, "_gcor", float(gcor_line[len("GCOR = "):]))
+        setattr(self, "_gcor", float(gcor_line[len("GCOR = ") :]))
         return runtime
 
     def _list_outputs(self):

@@ -15,8 +15,8 @@ def is_interactive():
 
 def setup_exceptionhook(ipython=False):
     """Overloads default sys.excepthook with our exceptionhook handler.
-       If interactive, our exceptionhook handler will invoke
-       pdb.post_mortem; if not interactive, then invokes default handler.
+    If interactive, our exceptionhook handler will invoke
+    pdb.post_mortem; if not interactive, then invokes default handler.
     """
 
     def _pdb_excepthook(type, value, tb):

@@ -2,9 +2,11 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Version CLI helpers."""
 
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import requests
+
 from .. import __version__
 
 RELEASE_EXPIRY_DAYS = 14
@@ -13,7 +15,7 @@ DATE_FMT = "%Y%m%d"
 
 def check_latest():
     """Determine whether this is the latest version."""
-    from packaging.version import Version, InvalidVersion
+    from packaging.version import InvalidVersion, Version
 
     latest = None
     date = None

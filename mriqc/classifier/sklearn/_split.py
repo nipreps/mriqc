@@ -82,7 +82,7 @@ class BalancedKFold(StratifiedKFold):
                 if len(cls_index) > min_y:
                     cls_index = np.random.choice(cls_index, size=min_y, replace=False)
 
-                new_index[cls * min_y:(cls + 1) * min_y] = cls_index
+                new_index[cls * min_y : (cls + 1) * min_y] = cls_index
             yield train_index, new_index
 
 

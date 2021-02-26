@@ -67,7 +67,9 @@ class AddProvenance(SimpleInterface):
             "software": "mriqc",
             "webapi_url": config.execution.webapi_url,
             "webapi_port": config.execution.webapi_port,
-            "settings": {"testing": config.execution.debug, },
+            "settings": {
+                "testing": config.execution.debug,
+            },
         }
 
         if self.inputs.modality in ("T1w", "T2w"):

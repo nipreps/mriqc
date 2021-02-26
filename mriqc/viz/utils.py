@@ -288,7 +288,7 @@ def plot_mosaic(
             z_vals = z_vals[rem:-rem]
         else:
             # img_data = img_data[..., 2 * rem:]
-            z_vals = z_vals[2 * rem:]
+            z_vals = z_vals[2 * rem :]
 
     while len(z_vals) > zmax:
         # Discard one every two slices

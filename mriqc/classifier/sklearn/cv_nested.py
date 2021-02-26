@@ -202,7 +202,14 @@ class ModelAndGridSearchCV(BaseSearchCV):
         # applicable for that candidate. Use defaultdict as each candidate may
         # not contain all the params
         param_results = defaultdict(
-            partial(MaskedArray, np.empty(n_candidates,), mask=True, dtype=object)
+            partial(
+                MaskedArray,
+                np.empty(
+                    n_candidates,
+                ),
+                mask=True,
+                dtype=object,
+            )
         )
         for cand_i, params in enumerate(candidate_params):
             _, param_values = params
@@ -250,9 +257,7 @@ def _model_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     if verbose > 1:
         msg = "[CV model=%s]" % estimator_str.upper()
         if parameters is not None:
@@ -344,9 +349,7 @@ def nested_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     from sklearn.externals.joblib.logger import short_format_time
 
     # Adjust length of sample weights

@@ -32,7 +32,8 @@ first {} volumes</span>. They were excluded before generating any QC measures an
                 wf_details.append(msg.format(bold_exclude_index))
 
             wf_details.append(
-                "Framewise Displacement was computed using <code>3dvolreg</code> (AFNI)")
+                "Framewise Displacement was computed using <code>3dvolreg</code> (AFNI)"
+            )
 
             fd_thres = sett_dict.pop("fd_thres")
             if fd_thres is not None:

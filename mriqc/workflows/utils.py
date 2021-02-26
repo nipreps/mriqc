@@ -16,17 +16,19 @@ def fmri_getidx(in_file, start_idx, stop_idx):
     """Heuristics to set the start and stop indices of fMRI series"""
     from nibabel import load
     from nipype.interfaces.base import isdefined
+
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
-    if start_idx is None or not isdefined(start_idx) or start_idx < 0 or start_idx > max_idx:
+    if (
+        start_idx is None
+        or not isdefined(start_idx)
+        or start_idx < 0
+        or start_idx > max_idx
+    ):
         start_idx = 0
 
-    if (
-        stop_idx is None
-        or not isdefined(stop_idx)
-        or max_idx < stop_idx < start_idx
-    ):
+    if stop_idx is None or not isdefined(stop_idx) or max_idx < stop_idx < start_idx:
         stop_idx = max_idx
     return start_idx, stop_idx
 
@@ -34,8 +36,12 @@ def fmri_getidx(in_file, start_idx, stop_idx):
 def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
-    return {'fwhm_x': fwhm[0], 'fwhm_y': fwhm[1],
-            'fwhm_z': fwhm[2], 'fwhm_avg': fwhm[3]}
+    return {
+        "fwhm_x": fwhm[0],
+        "fwhm_y": fwhm[1],
+        "fwhm_z": fwhm[2],
+        "fwhm_avg": fwhm[3],
+    }
 
 
 def thresh_image(in_file, thres=0.5, out_file=None):
@@ -45,17 +51,16 @@ def thresh_image(in_file, thres=0.5, out_file=None):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
+        if ext == ".gz":
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath('{}_thresh{}'.format(fname, ext))
+        out_file = op.abspath("{}_thresh{}".format(fname, ext))
 
     im = nb.load(in_file)
     data = im.get_data()
     data[data < thres] = 0
     data[data > 0] = 1
-    nb.Nifti1Image(
-        data, im.affine, im.header).to_filename(out_file)
+    nb.Nifti1Image(data, im.affine, im.header).to_filename(out_file)
     return out_file
 
 
@@ -86,7 +91,7 @@ def spectrum_mask(size):
     return ftmask
 
 
-def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
+def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
     import numpy as np
@@ -98,7 +103,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == '.gz':
+        if ext == ".gz":
             fname, _ = op.splitext(fname)
         out_prefix = op.abspath(fname)
 
@@ -113,8 +118,14 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
         fft_slices = []
         for z in range(func_frame.shape[2]):
             sl = func_frame[..., z]
-            fftsl = median_filter(np.real(np.fft.fft2(sl)).astype(np.float32),
-                                  size=(5, 5), mode='constant') * ftmask
+            fftsl = (
+                median_filter(
+                    np.real(np.fft.fft2(sl)).astype(np.float32),
+                    size=(5, 5),
+                    mode="constant",
+                )
+                * ftmask
+            )
             fft_slices.append(fftsl)
         fft_data.append(np.stack(fft_slices, axis=-1))
 
@@ -129,7 +140,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
     fft_zscored[idxs] /= sigma[idxs]
 
     # save fft z-scored
-    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
+    out_fft = op.abspath(out_prefix + "_zsfft.nii.gz")
     nii = nb.Nifti1Image(fft_zscored.astype(np.float32), np.eye(4), None)
     nii.to_filename(out_fft)
 
@@ -154,18 +165,18 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3., out_prefix=None):
             if sl.sum() > 10:
                 spikes_list.append((t, z))
 
-    out_spikes = op.abspath(out_prefix + '_spikes.tsv')
-    np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
+    out_spikes = op.abspath(out_prefix + "_spikes.tsv")
+    np.savetxt(out_spikes, spikes_list, fmt=b"%d", delimiter=b"\t", header="TR\tZ")
 
     return len(spikes_list), out_spikes, out_fft
 
 
 def get_fwhmx():
     from nipype.interfaces.afni import Info, FWHMx
-    fwhm_args = {"combine": True,
-                 "detrend": True}
-    afni_version = StrictVersion('%s.%s.%s' % Info.version())
+
+    fwhm_args = {"combine": True, "detrend": True}
+    afni_version = StrictVersion("%s.%s.%s" % Info.version())
     if afni_version >= StrictVersion("2017.2.3"):
-        fwhm_args['args'] = '-ShowMeClassicFWHM'
+        fwhm_args["args"] = "-ShowMeClassicFWHM"
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface

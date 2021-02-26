@@ -16,9 +16,7 @@ def init_mriqc_wf():
     if "bold" in config.workflow.inputs:
         workflow.add_nodes([fmri_qc_workflow()])
 
-    if set(("T1w", "T2w")).intersection(
-        config.workflow.inputs.keys()
-    ):
+    if set(("T1w", "T2w")).intersection(config.workflow.inputs.keys()):
         workflow.add_nodes([anat_qc_workflow()])
 
     if not workflow._get_all_nodes():

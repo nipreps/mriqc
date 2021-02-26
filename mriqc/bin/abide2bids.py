@@ -104,7 +104,7 @@ def fetch(args):
                 root = op.join(root, path[0])
             files.append(op.join(root, fname[0]))
 
-    site_name, sub_str = files[0][len(abide_root) + 1:].split("/")[0].split("_")
+    site_name, sub_str = files[0][len(abide_root) + 1 :].split("/")[0].split("_")
     subject_id = "sub-" + sub_str
 
     for i in files:

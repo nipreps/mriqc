@@ -20,6 +20,6 @@ from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
 
 __all__ = [
-    'anat_qc_workflow',
-    'fmri_qc_workflow',
+    "anat_qc_workflow",
+    "fmri_qc_workflow",
 ]
