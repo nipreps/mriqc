@@ -1,6 +1,6 @@
 nipype
 niworkflows
 packaging
-pydot >=1.2.3
+pydot>=1.2.3
 pydotplus
 templateflow

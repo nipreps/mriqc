@@ -12,7 +12,7 @@ jobs:
           command: sudo apt update && sudo apt -y install graphviz
       - run:
           name: Install deps
-          command: pip install --no-cache-dir -r requirements-dev.txt
+          command: pip install --no-cache-dir -r docs/requirements.txt
       - run:
           name: Build MRIQC documentation
           no_output_timeout: 2h
