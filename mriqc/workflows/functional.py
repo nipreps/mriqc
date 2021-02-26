@@ -52,7 +52,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     dataset = config.workflow.inputs.get("bold", [])
     config.loggers.workflow.info(
         f"""\
-Building functional MRIQC workflow for files: {', '.join(dataset)}."""
+Building functional MRIQC workflow for files: {", ".join(dataset)}."""
     )
 
     # Define workflow, inputs and outputs
@@ -61,15 +61,11 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
     inputnode.iterables = [("in_file", dataset)]
 
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]
-        ),
+        niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
         name="outputnode",
     )
 
-    non_steady_state_detector = pe.Node(
-        NonSteadyStateDetector(), name="non_steady_state_detector"
-    )
+    non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
 
     sanitize = pe.Node(SanitizeImage(), name="sanitize", mem_gb=mem_gb * 4.0)
     sanitize.inputs.max_32bit = config.execution.float32
@@ -101,97 +97,48 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
     # Reports
     repwf = individual_reports()
 
-    workflow.connect(
-        [
-            (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
-            (inputnode, sanitize, [("in_file", "in_file")]),
-            (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
-            (
-                non_steady_state_detector,
-                sanitize,
-                [("n_volumes_to_discard", "n_volumes_to_discard")],
-            ),
-            (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
-            (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
-            (hmcwf, mean, [("outputnode.out_file", "in_file")]),
-            (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
-            (mean, ema, [("out_file", "inputnode.epi_mean")]),
-            (
-                skullstrip_epi,
-                ema,
-                [("outputnode.out_file", "inputnode.epi_mask")],
-            ),
-            (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
-            (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
-            (
-                hmcwf,
-                iqmswf,
-                [
-                    ("outputnode.out_file", "inputnode.hmc_epi"),
-                    ("outputnode.out_fd", "inputnode.hmc_fd"),
-                ],
-            ),
-            (
-                skullstrip_epi,
-                iqmswf,
-                [("outputnode.out_file", "inputnode.brainmask")],
-            ),
-            (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
-            (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
-            (mean, repwf, [("out_file", "inputnode.epi_mean")]),
-            (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
-            (
-                skullstrip_epi,
-                repwf,
-                [("outputnode.out_file", "inputnode.brainmask")],
-            ),
-            (
-                hmcwf,
-                repwf,
-                [
-                    ("outputnode.out_fd", "inputnode.hmc_fd"),
-                    ("outputnode.out_file", "inputnode.hmc_epi"),
-                ],
-            ),
-            (
-                ema,
-                repwf,
-                [
-                    ("outputnode.epi_parc", "inputnode.epi_parc"),
-                    ("outputnode.report", "inputnode.mni_report"),
-                ],
-            ),
-            (
-                non_steady_state_detector,
-                iqmswf,
-                [("n_volumes_to_discard", "inputnode.exclude_index")],
-            ),
-            (
-                iqmswf,
-                repwf,
-                [
-                    ("outputnode.out_file", "inputnode.in_iqms"),
-                    ("outputnode.out_dvars", "inputnode.in_dvars"),
-                    ("outputnode.outliers", "inputnode.outliers"),
-                ],
-            ),
-            (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
-        ]
-    )
+    # fmt: off
+
+    workflow.connect([
+        (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
+        (inputnode, sanitize, [("in_file", "in_file")]),
+        (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
+        (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
+        (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
+        (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
+        (hmcwf, mean, [("outputnode.out_file", "in_file")]),
+        (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
+        (mean, ema, [("out_file", "inputnode.epi_mean")]),
+        (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
+        (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
+        (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
+        (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
+                         ("outputnode.out_fd", "inputnode.hmc_fd")]),
+        (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
+        (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
+        (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
+        (mean, repwf, [("out_file", "inputnode.epi_mean")]),
+        (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
+        (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
+        (hmcwf, repwf, [("outputnode.out_fd", "inputnode.hmc_fd"),
+                        ("outputnode.out_file", "inputnode.hmc_epi")]),
+        (ema, repwf, [("outputnode.epi_parc", "inputnode.epi_parc"),
+                      ("outputnode.report", "inputnode.mni_report")]),
+        (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
+        (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms"),
+                         ("outputnode.out_dvars", "inputnode.in_dvars"),
+                         ("outputnode.outliers", "inputnode.outliers")]),
+        (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
+    ])
+    # fmt: on
 
     if config.workflow.fft_spikes_detector:
-        workflow.connect(
-            [
-                (
-                    iqmswf,
-                    repwf,
-                    [
-                        ("outputnode.out_spikes", "inputnode.in_spikes"),
-                        ("outputnode.out_fft", "inputnode.in_fft"),
-                    ],
-                ),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (iqmswf, repwf, [("outputnode.out_spikes", "inputnode.in_spikes"),
+                             ("outputnode.out_fft", "inputnode.in_fft")]),
+        ])
+        # fmt: on
 
     if config.workflow.ica:
         from niworkflows.interfaces import segmentation as nws
@@ -207,17 +154,13 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
             name="ICA",
             mem_gb=max(mem_gb * 5, 8),
         )
-        workflow.connect(
-            [
-                (sanitize, melodic, [("out_file", "in_files")]),
-                (
-                    skullstrip_epi,
-                    melodic,
-                    [("outputnode.out_file", "report_mask")],
-                ),
-                (melodic, repwf, [("out_report", "inputnode.ica_report")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (sanitize, melodic, [("out_file", "in_files")]),
+            (skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")]),
+            (melodic, repwf, [("out_report", "inputnode.ica_report")])
+        ])
+        # fmt: on
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -229,11 +172,11 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
         if config.execution.webapi_port:
             upldwf.inputs.port = config.execution.webapi_port
 
-        workflow.connect(
-            [
-                (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
+        ])
+        # fmt: on
 
     return workflow
 
@@ -323,43 +266,29 @@ def compute_iqms(name="ComputeIQMs"):
 
     measures = pe.Node(FunctionalQC(), name="measures", mem_gb=mem_gb * 3)
 
-    workflow.connect(
-        [
-            (
-                inputnode,
-                dvnode,
-                [("hmc_epi", "in_file"), ("brainmask", "in_mask")],
-            ),
-            (
-                inputnode,
-                measures,
-                [
-                    ("epi_mean", "in_epi"),
-                    ("brainmask", "in_mask"),
-                    ("hmc_epi", "in_hmc"),
-                    ("hmc_fd", "in_fd"),
-                    ("fd_thres", "fd_thres"),
-                    ("in_tsnr", "in_tsnr"),
-                ],
-            ),
-            (
-                inputnode,
-                fwhm,
-                [("epi_mean", "in_file"), ("brainmask", "mask")],
-            ),
-            (inputnode, quality, [("hmc_epi", "in_file")]),
-            (
-                inputnode,
-                outliers,
-                [("hmc_epi", "in_file"), ("brainmask", "mask")],
-            ),
-            (inputnode, gcor, [("hmc_epi", "in_file"), ("brainmask", "mask")]),
-            (dvnode, measures, [("out_all", "in_dvars")]),
-            (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
-            (dvnode, outputnode, [("out_all", "out_dvars")]),
-            (outliers, outputnode, [("out_file", "outliers")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, dvnode, [("hmc_epi", "in_file"),
+                             ("brainmask", "in_mask")]),
+        (inputnode, measures, [("epi_mean", "in_epi"),
+                               ("brainmask", "in_mask"),
+                               ("hmc_epi", "in_hmc"),
+                               ("hmc_fd", "in_fd"),
+                               ("fd_thres", "fd_thres"),
+                               ("in_tsnr", "in_tsnr")]),
+        (inputnode, fwhm, [("epi_mean", "in_file"),
+                           ("brainmask", "mask")]),
+        (inputnode, quality, [("hmc_epi", "in_file")]),
+        (inputnode, outliers, [("hmc_epi", "in_file"),
+                               ("brainmask", "mask")]),
+        (inputnode, gcor, [("hmc_epi", "in_file"),
+                           ("brainmask", "mask")]),
+        (dvnode, measures, [("out_all", "in_dvars")]),
+        (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
+        (dvnode, outputnode, [("out_all", "out_dvars")]),
+        (outliers, outputnode, [("out_file", "outliers")])
+    ])
+    # fmt: on
 
     # Add metadata
     meta = pe.Node(ReadSidecarJSON(), name="metadata", run_without_submitting=True)
@@ -380,36 +309,27 @@ def compute_iqms(name="ComputeIQMs"):
         run_without_submitting=True,
     )
 
-    workflow.connect(
-        [
-            (
-                inputnode,
-                datasink,
-                [("in_file", "in_file"), ("exclude_index", "dummy_trs")],
-            ),
-            (inputnode, meta, [("in_file", "in_file")]),
-            (inputnode, addprov, [("in_file", "in_file")]),
-            (
-                meta,
-                datasink,
-                [
-                    ("subject", "subject_id"),
-                    ("session", "session_id"),
-                    ("task", "task_id"),
-                    ("acquisition", "acq_id"),
-                    ("reconstruction", "rec_id"),
-                    ("run", "run_id"),
-                    ("out_dict", "metadata"),
-                ],
-            ),
-            (addprov, datasink, [("out_prov", "provenance")]),
-            (outliers, datasink, [(("out_file", _parse_tout), "aor")]),
-            (gcor, datasink, [(("out", _tofloat), "gcor")]),
-            (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
-            (measures, datasink, [("out_qc", "root")]),
-            (datasink, outputnode, [("out_file", "out_file")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, datasink, [("in_file", "in_file"),
+                               ("exclude_index", "dummy_trs")]),
+        (inputnode, meta, [("in_file", "in_file")]),
+        (inputnode, addprov, [("in_file", "in_file")]),
+        (meta, datasink, [("subject", "subject_id"),
+                          ("session", "session_id"),
+                          ("task", "task_id"),
+                          ("acquisition", "acq_id"),
+                          ("reconstruction", "rec_id"),
+                          ("run", "run_id"),
+                          ("out_dict", "metadata")]),
+        (addprov, datasink, [("out_prov", "provenance")]),
+        (outliers, datasink, [(("out_file", _parse_tout), "aor")]),
+        (gcor, datasink, [(("out", _tofloat), "gcor")]),
+        (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
+        (measures, datasink, [("out_qc", "root")]),
+        (datasink, outputnode, [("out_file", "out_file")])
+    ])
+    # fmt: on
 
     # FFT spikes finder
     if config.workflow.fft_spikes_detector:
@@ -424,17 +344,15 @@ def compute_iqms(name="ComputeIQMs"):
             name="SpikesFinderFFT",
         )
 
-        workflow.connect(
-            [
-                (inputnode, spikes_fft, [("in_ras", "in_file")]),
-                (
-                    spikes_fft,
-                    outputnode,
-                    [("out_spikes", "out_spikes"), ("out_fft", "out_fft")],
-                ),
-                (spikes_fft, datasink, [("n_spikes", "spikes_num")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (inputnode, spikes_fft, [("in_ras", "in_file")]),
+            (spikes_fft, outputnode, [("out_spikes", "out_spikes"),
+                                      ("out_fft", "out_fft")]),
+            (spikes_fft, datasink, [("n_spikes", "spikes_num")])
+        ])
+        # fmt: on
+
     return workflow
 
 
@@ -505,27 +423,22 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
-    workflow.connect(
-        [
-            (inputnode, spikes_bg, [("in_ras", "in_file")]),
-            (inputnode, spmask, [("in_ras", "in_file")]),
-            (
-                inputnode,
-                bigplot,
-                [
-                    ("hmc_epi", "in_func"),
-                    ("brainmask", "in_mask"),
-                    ("hmc_fd", "fd"),
-                    ("fd_thres", "fd_thres"),
-                    ("in_dvars", "dvars"),
-                    ("epi_parc", "in_segm"),
-                    ("outliers", "outliers"),
-                ],
-            ),
-            (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
-            (spmask, spikes_bg, [("out_file", "in_mask")]),
-        ]
-    )
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, spikes_bg, [("in_ras", "in_file")]),
+        (inputnode, spmask, [("in_ras", "in_file")]),
+        (inputnode, bigplot, [("hmc_epi", "in_func"),
+                              ("brainmask", "in_mask"),
+                              ("hmc_fd", "fd"),
+                              ("fd_thres", "fd_thres"),
+                              ("in_dvars", "dvars"),
+                              ("epi_parc", "in_segm"),
+                              ("outliers", "outliers")]),
+        (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
+        (spmask, spikes_bg, [("out_file", "in_mask")]),
+    ])
+    # fmt: on
 
     mosaic_mean = pe.Node(
         PlotMosaic(out_file="plot_func_mean_mosaic1.svg", cmap="Greys_r"),
@@ -558,18 +471,18 @@ def individual_reports(name="ReportsWorkflow"):
         run_without_submitting=True,
     )
 
-    workflow.connect(
-        [
-            (inputnode, rnode, [("in_iqms", "in_iqms")]),
-            (inputnode, mosaic_mean, [("epi_mean", "in_file")]),
-            (inputnode, mosaic_stddev, [("in_stddev", "in_file")]),
-            (mosaic_mean, mplots, [("out_file", "in1")]),
-            (mosaic_stddev, mplots, [("out_file", "in2")]),
-            (bigplot, mplots, [("out_file", "in3")]),
-            (mplots, rnode, [("out", "in_plots")]),
-            (rnode, dsplots, [("out_file", "@html_report")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, rnode, [("in_iqms", "in_iqms")]),
+        (inputnode, mosaic_mean, [("epi_mean", "in_file")]),
+        (inputnode, mosaic_stddev, [("in_stddev", "in_file")]),
+        (mosaic_mean, mplots, [("out_file", "in1")]),
+        (mosaic_stddev, mplots, [("out_file", "in2")]),
+        (bigplot, mplots, [("out_file", "in3")]),
+        (mplots, rnode, [("out", "in_plots")]),
+        (rnode, dsplots, [("out_file", "@html_report")]),
+    ])
+    # fmt: on
 
     if config.workflow.fft_spikes_detector:
         mosaic_spikes = pe.Node(
@@ -581,24 +494,22 @@ def individual_reports(name="ReportsWorkflow"):
             name="PlotSpikes",
         )
 
-        workflow.connect(
-            [
-                (
-                    inputnode,
-                    mosaic_spikes,
-                    [
-                        ("in_ras", "in_file"),
-                        ("in_spikes", "in_spikes"),
-                        ("in_fft", "in_fft"),
-                    ],
-                ),
-                (mosaic_spikes, mplots, [("out_file", "in4")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (inputnode, mosaic_spikes, [("in_ras", "in_file"),
+                                        ("in_spikes", "in_spikes"),
+                                        ("in_fft", "in_fft")]),
+            (mosaic_spikes, mplots, [("out_file", "in4")])
+        ])
+        # fmt: on
 
     if config.workflow.ica:
         page_number = 4 + config.workflow.fft_spikes_detector
-        workflow.connect([(inputnode, mplots, [("ica_report", "in%d" % page_number)])])
+        # fmt: off
+        workflow.connect([
+            (inputnode, mplots, [("ica_report", "in%d" % page_number)])
+        ])
+        # fmt: on
 
     if not verbose:
         return workflow
@@ -631,25 +542,20 @@ def individual_reports(name="ReportsWorkflow"):
         name="PlotBrainmask",
     )
 
-    workflow.connect(
-        [
-            (
-                inputnode,
-                plot_bmask,
-                [("epi_mean", "in_file"), ("brainmask", "in_contours")],
-            ),
-            (
-                inputnode,
-                mosaic_zoom,
-                [("epi_mean", "in_file"), ("brainmask", "bbox_mask_file")],
-            ),
-            (inputnode, mosaic_noise, [("epi_mean", "in_file")]),
-            (mosaic_zoom, mplots, [("out_file", "in%d" % (pages + 1))]),
-            (mosaic_noise, mplots, [("out_file", "in%d" % (pages + 2))]),
-            (plot_bmask, mplots, [("out_file", "in%d" % (pages + 3))]),
-            (inputnode, mplots, [("mni_report", "in%d" % (pages + 4))]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, plot_bmask, [("epi_mean", "in_file"),
+                                 ("brainmask", "in_contours")]),
+        (inputnode, mosaic_zoom, [("epi_mean", "in_file"),
+                                  ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_noise, [("epi_mean", "in_file")]),
+        (mosaic_zoom, mplots, [("out_file", "in%d" % (pages + 1))]),
+        (mosaic_noise, mplots, [("out_file", "in%d" % (pages + 2))]),
+        (plot_bmask, mplots, [("out_file", "in%d" % (pages + 3))]),
+        (inputnode, mplots, [("mni_report", "in%d" % (pages + 4))]),
+    ])
+    # fmt: on
+
     return workflow
 
 
@@ -674,12 +580,12 @@ def fmri_bmsk_workflow(name="fMRIBrainMask"):
     afni_msk = pe.Node(Automask(outputtype="NIFTI_GZ"), name="afni_msk")
 
     # Connect brain mask extraction
-    workflow.connect(
-        [
-            (inputnode, afni_msk, [("in_file", "in_file")]),
-            (afni_msk, outputnode, [("out_file", "out_file")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, afni_msk, [("in_file", "in_file")]),
+        (afni_msk, outputnode, [("out_file", "out_file")])
+    ])
+    # fmt: on
     return workflow
 
 
@@ -708,9 +614,7 @@ def hmc(name="fMRI_HMC"):
         name="inputnode",
     )
 
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode"
-    )
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     if any(
         (
@@ -719,26 +623,20 @@ def hmc(name="fMRI_HMC"):
         )
     ):
         drop_trs = pe.Node(Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs")
-        workflow.connect(
-            [
-                (
-                    inputnode,
-                    drop_trs,
-                    [
-                        ("in_file", "in_file_a"),
-                        ("start_idx", "start_idx"),
-                        ("stop_idx", "stop_idx"),
-                    ],
-                ),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (inputnode, drop_trs, [("in_file", "in_file_a"),
+                                   ("start_idx", "start_idx"),
+                                   ("stop_idx", "stop_idx")]),
+        ])
+        # fmt: on
     else:
         drop_trs = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="drop_trs")
-        workflow.connect(
-            [
-                (inputnode, drop_trs, [("in_file", "out_file")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (inputnode, drop_trs, [("in_file", "out_file")]),
+        ])
+        # fmt: on
 
     gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
 
@@ -755,15 +653,15 @@ def hmc(name="fMRI_HMC"):
         name="ComputeFD",
     )
 
-    workflow.connect(
-        [
-            (inputnode, fdnode, [("fd_radius", "radius")]),
-            (gen_ref, hmc, [("ref_image", "basefile")]),
-            (hmc, outputnode, [("out_file", "out_file")]),
-            (hmc, fdnode, [("oned_file", "in_file")]),
-            (fdnode, outputnode, [("out_file", "out_fd")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, fdnode, [("fd_radius", "radius")]),
+        (gen_ref, hmc, [("ref_image", "basefile")]),
+        (hmc, outputnode, [("out_file", "out_file")]),
+        (hmc, fdnode, [("oned_file", "in_file")]),
+        (fdnode, outputnode, [("out_file", "out_fd")]),
+    ])
+    # fmt: on
 
     # Slice timing correction, despiking, and deoblique
 
@@ -781,86 +679,73 @@ def hmc(name="fMRI_HMC"):
         )
     ):
 
-        workflow.connect(
-            [
-                (drop_trs, st_corr, [("out_file", "in_file")]),
-                (st_corr, despike_node, [("out_file", "in_file")]),
-                (despike_node, deoblique_node, [("out_file", "in_file")]),
-                (deoblique_node, gen_ref, [("out_file", "in_file")]),
-                (deoblique_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (st_corr, despike_node, [("out_file", "in_file")]),
+            (despike_node, deoblique_node, [("out_file", "in_file")]),
+            (deoblique_node, gen_ref, [("out_file", "in_file")]),
+            (deoblique_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.correct_slice_timing and config.workflow.despike:
-
-        workflow.connect(
-            [
-                (drop_trs, st_corr, [("out_file", "in_file")]),
-                (st_corr, despike_node, [("out_file", "in_file")]),
-                (despike_node, gen_ref, [("out_file", "in_file")]),
-                (despike_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (st_corr, despike_node, [("out_file", "in_file")]),
+            (despike_node, gen_ref, [("out_file", "in_file")]),
+            (despike_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.correct_slice_timing and config.workflow.deoblique:
-
-        workflow.connect(
-            [
-                (drop_trs, st_corr, [("out_file", "in_file")]),
-                (st_corr, deoblique_node, [("out_file", "in_file")]),
-                (deoblique_node, gen_ref, [("out_file", "in_file")]),
-                (deoblique_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (st_corr, deoblique_node, [("out_file", "in_file")]),
+            (deoblique_node, gen_ref, [("out_file", "in_file")]),
+            (deoblique_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.correct_slice_timing:
-
-        workflow.connect(
-            [
-                (drop_trs, st_corr, [("out_file", "in_file")]),
-                (st_corr, gen_ref, [("out_file", "in_file")]),
-                (st_corr, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (st_corr, gen_ref, [("out_file", "in_file")]),
+            (st_corr, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.despike and config.workflow.deoblique:
-
-        workflow.connect(
-            [
-                (drop_trs, despike_node, [("out_file", "in_file")]),
-                (despike_node, deoblique_node, [("out_file", "in_file")]),
-                (deoblique_node, gen_ref, [("out_file", "in_file")]),
-                (deoblique_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, despike_node, [("out_file", "in_file")]),
+            (despike_node, deoblique_node, [("out_file", "in_file")]),
+            (deoblique_node, gen_ref, [("out_file", "in_file")]),
+            (deoblique_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.despike:
-
-        workflow.connect(
-            [
-                (drop_trs, despike_node, [("out_file", "in_file")]),
-                (despike_node, gen_ref, [("out_file", "in_file")]),
-                (despike_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, despike_node, [("out_file", "in_file")]),
+            (despike_node, gen_ref, [("out_file", "in_file")]),
+            (despike_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     elif config.workflow.deoblique:
-
-        workflow.connect(
-            [
-                (drop_trs, deoblique_node, [("out_file", "in_file")]),
-                (deoblique_node, gen_ref, [("out_file", "in_file")]),
-                (deoblique_node, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, deoblique_node, [("out_file", "in_file")]),
+            (deoblique_node, gen_ref, [("out_file", "in_file")]),
+            (deoblique_node, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     else:
-        workflow.connect(
-            [
-                (drop_trs, gen_ref, [("out_file", "in_file")]),
-                (drop_trs, hmc, [("out_file", "in_file")]),
-            ]
-        )
-
+        # fmt: off
+        workflow.connect([
+            (drop_trs, gen_ref, [("out_file", "in_file")]),
+            (drop_trs, hmc, [("out_file", "in_file")]),
+        ])
+        # fmt: on
     return workflow
 
 
@@ -902,9 +787,7 @@ def epi_mni_align(name="SpatialNormalization"):
         name="outputnode",
     )
 
-    n4itk = pe.Node(
-        N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI"
-    )
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI")
 
     norm = pe.Node(
         RobustMNINormalization(
@@ -953,21 +836,21 @@ def epi_mni_align(name="SpatialNormalization"):
         name="ResampleSegmentation",
     )
 
-    workflow.connect(
-        [
-            (inputnode, invt, [("epi_mean", "reference_image")]),
-            (inputnode, n4itk, [("epi_mean", "input_image")]),
-            (inputnode, norm, [("epi_mask", "moving_mask")]),
-            (n4itk, norm, [("output_image", "moving_image")]),
-            (norm, invt, [("inverse_composite_transform", "transforms")]),
-            (invt, outputnode, [("output_image", "epi_parc")]),
-            (
-                norm,
-                outputnode,
-                [("warped_image", "epi_mni"), ("out_report", "report")],
-            ),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, invt, [("epi_mean", "reference_image")]),
+        (inputnode, n4itk, [("epi_mean", "input_image")]),
+        (inputnode, norm, [("epi_mask", "moving_mask")]),
+        (n4itk, norm, [("output_image", "moving_image")]),
+        (norm, invt, [
+            ("inverse_composite_transform", "transforms")]),
+        (invt, outputnode, [("output_image", "epi_parc")]),
+        (norm, outputnode, [("warped_image", "epi_mni"),
+                            ("out_report", "report")]),
+
+    ])
+    # fmt: on
+
     return workflow
 
 
@@ -1003,9 +886,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         longest_axis = np.argmax(bbox)
 
         # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(
-            mask_data, iterations=int(mask_data.shape[longest_axis] / 9)
-        )
+        dil_mask = nd.binary_dilation(mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
 
         rep = list(mask_data.shape)
         rep[longest_axis] = -1
@@ -1024,9 +905,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         new_mask_3d[:, 0:2, :] = True
         new_mask_3d[:, -3:-1, :] = True
 
-    mask_nii = nb.Nifti1Image(
-        new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header
-    )
+    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header)
     mask_nii.to_filename(out_file)
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)

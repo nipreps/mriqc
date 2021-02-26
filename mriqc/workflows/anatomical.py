@@ -138,9 +138,9 @@ def anat_qc_workflow(name="anatMRIQC"):
         (segment, repwf, [("tissue_class_map", "inputnode.segmentation")]),
         (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
         (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
-        (iqmswf, outputnode, [("outputnode.out_file", "out_json")])
+        (iqmswf, outputnode, [("outputnode.out_file", "out_json")]),
     ])
-    # fmt:on
+    # fmt: on
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -152,12 +152,12 @@ def anat_qc_workflow(name="anatMRIQC"):
         if config.execution.webapi_port:
             upldwf.inputs.port = config.execution.webapi_port
 
-        workflow.connect(
-            [
-                (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
-                (upldwf, repwf, [("api_id", "inputnode.api_id")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
+            (upldwf, repwf, [("api_id", "inputnode.api_id")]),
+        ])
+        # fmt: on
 
     return workflow
 
@@ -200,30 +200,16 @@ def spatial_normalization(name="SpatialNormalization", resolution=2):
         get_template(tpl_id, resolution=resolution, desc="brain", suffix="mask")
     )
 
-    workflow.connect(
-        [
-            (
-                inputnode,
-                norm,
-                [
-                    ("moving_image", "moving_image"),
-                    ("moving_mask", "moving_mask"),
-                    ("modality", "reference"),
-                ],
-            ),
-            (
-                norm,
-                outputnode,
-                [
-                    (
-                        "inverse_composite_transform",
-                        "inverse_composite_transform",
-                    ),
-                    ("out_report", "out_report"),
-                ],
-            ),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, norm, [("moving_image", "moving_image"),
+                           ("moving_mask", "moving_mask"),
+                           ("modality", "reference")]),
+        (norm, outputnode, [("inverse_composite_transform", "inverse_composite_transform"),
+                            ("out_report", "out_report")]),
+    ])
+    # fmt: on
+
     return workflow
 
 
@@ -319,80 +305,49 @@ def compute_iqms(name="ComputeIQMs"):
     def _getwm(inlist):
         return inlist[-1]
 
-    workflow.connect(
-        [
-            (inputnode, meta, [("in_file", "in_file")]),
-            (
-                inputnode,
-                datasink,
-                [("in_file", "in_file"), (("in_file", _get_mod), "modality")],
-            ),
-            (inputnode, addprov, [(("in_file", _get_mod), "modality")]),
-            (
-                meta,
-                datasink,
-                [
-                    ("subject", "subject_id"),
-                    ("session", "session_id"),
-                    ("task", "task_id"),
-                    ("acquisition", "acq_id"),
-                    ("reconstruction", "rec_id"),
-                    ("run", "run_id"),
-                    ("out_dict", "metadata"),
-                ],
-            ),
-            (
-                inputnode,
-                addprov,
-                [
-                    ("in_file", "in_file"),
-                    ("airmask", "air_msk"),
-                    ("rotmask", "rot_msk"),
-                ],
-            ),
-            (
-                inputnode,
-                getqi2,
-                [("in_ras", "in_file"), ("hatmask", "air_msk")],
-            ),
-            (
-                inputnode,
-                homog,
-                [("inu_corrected", "in_file"), (("pvms", _getwm), "wm_mask")],
-            ),
-            (
-                inputnode,
-                measures,
-                [
-                    ("in_inu", "in_bias"),
-                    ("in_ras", "in_file"),
-                    ("airmask", "air_msk"),
-                    ("headmask", "head_msk"),
-                    ("artmask", "artifact_msk"),
-                    ("rotmask", "rot_msk"),
-                    ("segmentation", "in_segm"),
-                    ("pvms", "in_pvms"),
-                ],
-            ),
-            (inputnode, fwhm, [("in_ras", "in_file"), ("brainmask", "mask")]),
-            (
-                inputnode,
-                invt,
-                [
-                    ("in_ras", "reference_image"),
-                    ("inverse_composite_transform", "transforms"),
-                ],
-            ),
-            (homog, measures, [("out_file", "in_noinu")]),
-            (invt, measures, [("output_image", "mni_tpms")]),
-            (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
-            (measures, datasink, [("out_qc", "root")]),
-            (addprov, datasink, [("out_prov", "provenance")]),
-            (getqi2, datasink, [("qi2", "qi_2")]),
-            (getqi2, outputnode, [("out_file", "noisefit")]),
-            (datasink, outputnode, [("out_file", "out_file")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, meta, [("in_file", "in_file")]),
+        (inputnode, datasink, [("in_file", "in_file"),
+                               (("in_file", _get_mod), "modality")]),
+        (inputnode, addprov, [(("in_file", _get_mod), "modality")]),
+        (meta, datasink, [("subject", "subject_id"),
+                          ("session", "session_id"),
+                          ("task", "task_id"),
+                          ("acquisition", "acq_id"),
+                          ("reconstruction", "rec_id"),
+                          ("run", "run_id"),
+                          ("out_dict", "metadata")]),
+        (inputnode, addprov, [("in_file", "in_file"),
+                              ("airmask", "air_msk"),
+                              ("rotmask", "rot_msk")]),
+        (inputnode, getqi2, [("in_ras", "in_file"),
+                             ("hatmask", "air_msk")]),
+        (inputnode, homog, [("inu_corrected", "in_file"),
+                            (("pvms", _getwm), "wm_mask")]),
+        (inputnode, measures, [("in_inu", "in_bias"),
+                               ("in_ras", "in_file"),
+                               ("airmask", "air_msk"),
+                               ("headmask", "head_msk"),
+                               ("artmask", "artifact_msk"),
+                               ("rotmask", "rot_msk"),
+                               ("segmentation", "in_segm"),
+                               ("pvms", "in_pvms")]),
+        (inputnode, fwhm, [("in_ras", "in_file"),
+                           ("brainmask", "mask")]),
+        (inputnode, invt, [("in_ras", "reference_image"),
+                           ("inverse_composite_transform", "transforms")]),
+        (homog, measures, [("out_file", "in_noinu")]),
+        (invt, measures, [("output_image", "mni_tpms")]),
+        (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
+        (measures, datasink, [("out_qc", "root")]),
+        (addprov, datasink, [("out_prov", "provenance")]),
+        (getqi2, datasink, [("qi2", "qi_2")]),
+        (getqi2, outputnode, [("out_file", "noisefit")]),
+        (datasink, outputnode, [("out_file", "out_file")]),
+    ])
+    # fmt: on
+
     return workflow
 
 
@@ -463,21 +418,18 @@ def individual_reports(name="ReportsWorkflow"):
         run_without_submitting=True,
     )
 
-    workflow.connect(
-        [
-            (inputnode, rnode, [("in_iqms", "in_iqms")]),
-            (
-                inputnode,
-                mosaic_zoom,
-                [("in_ras", "in_file"), ("brainmask", "bbox_mask_file")],
-            ),
-            (inputnode, mosaic_noise, [("in_ras", "in_file")]),
-            (mosaic_zoom, mplots, [("out_file", "in1")]),
-            (mosaic_noise, mplots, [("out_file", "in2")]),
-            (mplots, rnode, [("out", "in_plots")]),
-            (rnode, dsplots, [("out_file", "@html_report")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, rnode, [("in_iqms", "in_iqms")]),
+        (inputnode, mosaic_zoom, [("in_ras", "in_file"),
+                                  ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_noise, [("in_ras", "in_file")]),
+        (mosaic_zoom, mplots, [("out_file", "in1")]),
+        (mosaic_noise, mplots, [("out_file", "in2")]),
+        (mplots, rnode, [("out", "in_plots")]),
+        (rnode, dsplots, [("out_file", "@html_report")]),
+    ])
+    # fmt: on
 
     if not verbose:
         return workflow
@@ -536,42 +488,28 @@ def individual_reports(name="ReportsWorkflow"):
         name="PlotArtmask",
     )
 
-    workflow.connect(
-        [
-            (
-                inputnode,
-                plot_segm,
-                [("in_ras", "in_file"), ("segmentation", "in_contours")],
-            ),
-            (
-                inputnode,
-                plot_bmask,
-                [("in_ras", "in_file"), ("brainmask", "in_contours")],
-            ),
-            (
-                inputnode,
-                plot_headmask,
-                [("in_ras", "in_file"), ("headmask", "in_contours")],
-            ),
-            (
-                inputnode,
-                plot_airmask,
-                [("in_ras", "in_file"), ("airmask", "in_contours")],
-            ),
-            (
-                inputnode,
-                plot_artmask,
-                [("in_ras", "in_file"), ("artmask", "in_contours")],
-            ),
-            (inputnode, mplots, [("mni_report", f"in{pages + 1}")]),
-            (plot_bmask, mplots, [("out_file", f"in{pages + 2}")]),
-            (plot_segm, mplots, [("out_file", f"in{pages + 3}")]),
-            (plot_artmask, mplots, [("out_file", f"in{pages + 4}")]),
-            (plot_headmask, mplots, [("out_file", f"in{pages + 5}")]),
-            (plot_airmask, mplots, [("out_file", f"in{pages + 6}")]),
-            (inputnode, mplots, [("noisefit", f"in{pages + 7}")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, plot_segm, [("in_ras", "in_file"),
+                                ("segmentation", "in_contours")]),
+        (inputnode, plot_bmask, [("in_ras", "in_file"),
+                                 ("brainmask", "in_contours")]),
+        (inputnode, plot_headmask, [("in_ras", "in_file"),
+                                    ("headmask", "in_contours")]),
+        (inputnode, plot_airmask, [("in_ras", "in_file"),
+                                   ("airmask", "in_contours")]),
+        (inputnode, plot_artmask, [("in_ras", "in_file"),
+                                   ("artmask", "in_contours")]),
+        (inputnode, mplots, [("mni_report", f"in{pages + 1}")]),
+        (plot_bmask, mplots, [("out_file", f"in{pages + 2}")]),
+        (plot_segm, mplots, [("out_file", f"in{pages + 3}")]),
+        (plot_artmask, mplots, [("out_file", f"in{pages + 4}")]),
+        (plot_headmask, mplots, [("out_file", f"in{pages + 5}")]),
+        (plot_airmask, mplots, [("out_file", f"in{pages + 6}")]),
+        (inputnode, mplots, [("noisefit", f"in{pages + 7}")]),
+    ])
+    # fmt: on
+
     return workflow
 
 
@@ -581,8 +519,8 @@ def headmsk_wf(name="HeadMaskWorkflow"):
 
     .. workflow::
 
-        from mriqc.workflows.anatomical import headmsk_wf
         from mriqc.testing import mock_config
+        from mriqc.workflows.anatomical import headmsk_wf
         with mock_config():
             wf = headmsk_wf()
 
@@ -609,12 +547,13 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     if use_bet:
         # Alternative for when dipy is not installed
         bet = pe.Node(fsl.BET(surfaces=True), name="fsl_bet")
-        workflow.connect(
-            [
-                (inputnode, bet, [("in_file", "in_file")]),
-                (bet, outputnode, [("outskin_mask_file", "out_file")]),
-            ]
-        )
+
+        # fmt: off
+        workflow.connect([
+            (inputnode, bet, [("in_file", "in_file")]),
+            (bet, outputnode, [('outskin_mask_file', "out_file")]),
+        ])
+        # fmt: on
 
     else:
         from nipype.interfaces.dipy import Denoise
@@ -653,23 +592,20 @@ def headmsk_wf(name="HeadMaskWorkflow"):
             name="GradientThreshold",
         )
 
-        workflow.connect(
-            [
-                (
-                    inputnode,
-                    estsnr,
-                    [("in_file", "in_file"), ("in_segm", "seg_file")],
-                ),
-                (estsnr, denoise, [("out_snr", "snr")]),
-                (inputnode, enhance, [("in_file", "in_file")]),
-                (enhance, denoise, [("out_file", "in_file")]),
-                (estsnr, gradient, [("out_snr", "snr")]),
-                (denoise, gradient, [("out_file", "in_file")]),
-                (inputnode, thresh, [("in_segm", "in_segm")]),
-                (gradient, thresh, [("out_file", "in_file")]),
-                (thresh, outputnode, [("out_file", "out_file")]),
-            ]
-        )
+        # fmt: off
+        workflow.connect([
+            (inputnode, estsnr, [("in_file", "in_file"),
+                                 ("in_segm", "seg_file")]),
+            (estsnr, denoise, [("out_snr", "snr")]),
+            (inputnode, enhance, [("in_file", "in_file")]),
+            (enhance, denoise, [("out_file", "in_file")]),
+            (estsnr, gradient, [("out_snr", "snr")]),
+            (denoise, gradient, [("out_file", "in_file")]),
+            (inputnode, thresh, [("in_segm", "in_segm")]),
+            (gradient, thresh, [("out_file", "in_file")]),
+            (thresh, outputnode, [("out_file", "out_file")]),
+        ])
+        # fmt: on
 
     return workflow
 
@@ -680,8 +616,8 @@ def airmsk_wf(name="AirMaskWorkflow"):
 
     .. workflow::
 
-        from mriqc.workflows.anatomical import airmsk_wf
         from mriqc.testing import mock_config
+        from mriqc.workflows.anatomical import airmsk_wf
         with mock_config():
             wf = airmsk_wf()
 
@@ -721,36 +657,22 @@ def airmsk_wf(name="AirMaskWorkflow"):
 
     qi1 = pe.Node(ArtifactMask(), name="ArtifactMask")
 
-    workflow.connect(
-        [
-            (inputnode, rotmsk, [("in_file", "in_file")]),
-            (
-                inputnode,
-                qi1,
-                [("in_file", "in_file"), ("head_mask", "head_mask")],
-            ),
-            (rotmsk, qi1, [("out_file", "rot_mask")]),
-            (
-                inputnode,
-                invt,
-                [
-                    ("in_mask", "reference_image"),
-                    ("inverse_composite_transform", "transforms"),
-                ],
-            ),
-            (invt, qi1, [("output_image", "nasion_post_mask")]),
-            (
-                qi1,
-                outputnode,
-                [
-                    ("out_hat_msk", "hat_mask"),
-                    ("out_air_msk", "air_mask"),
-                    ("out_art_msk", "art_mask"),
-                ],
-            ),
-            (rotmsk, outputnode, [("out_file", "rot_mask")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, rotmsk, [("in_file", "in_file")]),
+        (inputnode, qi1, [("in_file", "in_file"),
+                          ("head_mask", "head_mask")]),
+        (rotmsk, qi1, [("out_file", "rot_mask")]),
+        (inputnode, invt, [("in_mask", "reference_image"),
+                           ("inverse_composite_transform", "transforms")]),
+        (invt, qi1, [("output_image", "nasion_post_mask")]),
+        (qi1, outputnode, [("out_hat_msk", "hat_mask"),
+                           ("out_air_msk", "air_mask"),
+                           ("out_art_msk", "art_mask")]),
+        (rotmsk, outputnode, [("out_file", "rot_mask")])
+    ])
+    # fmt:"on"
+
     return workflow
 
 
