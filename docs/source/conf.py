@@ -14,8 +14,9 @@ serve to show the default.
 
 import os
 from datetime import datetime
-from packaging.version import Version
+
 from mriqc.__about__ import __version__
+from packaging.version import Version
 
 # Disable etelemetry during doc builds
 os.environ["NIPYPE_NO_ET"] = "1"
@@ -25,9 +26,6 @@ os.environ["NIPYPE_NO_ET"] = "1"
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 # -- General configuration ------------------------------------------------
-
-# If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "1.5.3"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -248,7 +246,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "mriqc.tex", "mriqc Documentation", "Oscar Esteban", "manual"),
+    (
+        master_doc,
+        "mriqc.tex",
+        "mriqc Documentation",
+        "Oscar Esteban",
+        "manual",
+    ),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
