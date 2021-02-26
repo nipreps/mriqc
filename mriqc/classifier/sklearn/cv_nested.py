@@ -22,14 +22,24 @@ from collections import Sized
 from functools import partial
 
 import numpy as np
-from sklearn.model_selection._search import (BaseSearchCV, Parallel,
-                                             check_scoring, defaultdict,
-                                             delayed, indexable, rankdata)
+from sklearn.model_selection._search import (
+    BaseSearchCV,
+    Parallel,
+    check_scoring,
+    defaultdict,
+    delayed,
+    indexable,
+    rankdata,
+)
 from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._validation import (FitFailedWarning,
-                                                 _index_param_value,
-                                                 _num_samples, _safe_split,
-                                                 _score, logger)
+from sklearn.model_selection._validation import (
+    FitFailedWarning,
+    _index_param_value,
+    _num_samples,
+    _safe_split,
+    _score,
+    logger,
+)
 
 from .parameters import ModelParameterGrid
 

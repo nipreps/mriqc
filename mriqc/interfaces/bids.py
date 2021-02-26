@@ -92,9 +92,7 @@ class IQMFileSink(SimpleInterface):
         in_file = str(path.relative_to(bids_root))
 
         # Build path and ensure directory exists
-        bids_path = out_dir / in_file.replace(
-            "".join(Path(in_file).suffixes), ".json"
-        )
+        bids_path = out_dir / in_file.replace("".join(Path(in_file).suffixes), ".json")
         bids_path.parent.mkdir(parents=True, exist_ok=True)
         self._results["out_file"] = str(bids_path)
         return self._results["out_file"]

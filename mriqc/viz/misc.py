@@ -87,11 +87,7 @@ def plot_batches(fulldata, cols=None, out_file=None, site_labels="left"):
     spines = []
     fulldata["index"] = range(len(fulldata))
     for site in list(set(sites)):
-        indices = (
-            fulldata.loc[fulldata.site == site, "index"]
-            .values.ravel()
-            .tolist()
-        )
+        indices = fulldata.loc[fulldata.site == site, "index"].values.ravel().tolist()
         locations.append(int(np.average(indices)))
         spines.append(indices[0])
 
@@ -167,9 +163,7 @@ def fill_matrix(matrix, width, value="n/a"):
 
 def plot_raters(dataframe, ax=None, width=101, size=0.40):
     raters = sorted(dataframe.columns.ravel().tolist())
-    dataframe["notnan"] = np.any(np.isnan(dataframe[raters]), axis=1).astype(
-        int
-    )
+    dataframe["notnan"] = np.any(np.isnan(dataframe[raters]), axis=1).astype(int)
     dataframe = dataframe.sort_values(by=["notnan"] + raters, ascending=True)
     for rater in raters:
         dataframe[rater] = dataframe[[rater]].astype(str)
@@ -496,9 +490,7 @@ def plot_abide_stripplots(
         except ValueError:
             pass
 
-    zscored = BatchRobustScaler(by="site", columns=FEATURE_NORM).fit_transform(
-        mdata
-    )
+    zscored = BatchRobustScaler(by="site", columns=FEATURE_NORM).fit_transform(mdata)
 
     sites = list(set(mdata.site.values.ravel()))
     nsites = len(sites)
@@ -574,18 +566,10 @@ def plot_abide_stripplots(
         axg_zsc.legend_.remove()
 
         if i == nrows - 1:
-            ax_nzs.set_xticklabels(
-                ax_nzs.xaxis.get_majorticklabels(), rotation=80
-            )
-            ax_zsc.set_xticklabels(
-                ax_zsc.xaxis.get_majorticklabels(), rotation=80
-            )
-            axg_nzs.set_xticklabels(
-                axg_nzs.xaxis.get_majorticklabels(), rotation=80
-            )
-            axg_zsc.set_xticklabels(
-                axg_zsc.xaxis.get_majorticklabels(), rotation=80
-            )
+            ax_nzs.set_xticklabels(ax_nzs.xaxis.get_majorticklabels(), rotation=80)
+            ax_zsc.set_xticklabels(ax_zsc.xaxis.get_majorticklabels(), rotation=80)
+            axg_nzs.set_xticklabels(axg_nzs.xaxis.get_majorticklabels(), rotation=80)
+            axg_zsc.set_xticklabels(axg_zsc.xaxis.get_majorticklabels(), rotation=80)
         else:
             ax_nzs.set_xticklabels([])
             ax_zsc.set_xticklabels([])
@@ -640,9 +624,7 @@ def plot_corrmat(in_csv, out_file=None):
 
     sn.set(style="whitegrid")
 
-    dataframe = pd.read_csv(
-        in_csv, index_col=False, na_values="n/a", na_filter=False
-    )
+    dataframe = pd.read_csv(in_csv, index_col=False, na_values="n/a", na_filter=False)
     colnames = dataframe.columns.ravel().tolist()
 
     for col in ["subject_id", "site", "modality"]:
@@ -772,9 +754,7 @@ def plot_histograms(X, Y, rating_label="rater_1", out_file=None):
         ext = ".svg"
         out_file = fname + ".svg"
 
-    fig.savefig(
-        out_file, format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=100
-    )
+    fig.savefig(out_file, format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=100)
     return fig
 
 

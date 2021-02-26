@@ -31,9 +31,7 @@ def main():
         formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")
-    g_input.add_argument(
-        "-i", "--input-abide-catalog", action="store", required=True
-    )
+    g_input.add_argument("-i", "--input-abide-catalog", action="store", required=True)
     g_input.add_argument(
         "-n", "--dataset-name", action="store", default="ABIDE Dataset"
     )
@@ -48,9 +46,7 @@ def main():
     )
 
     g_outputs = parser.add_argument_group("Outputs")
-    g_outputs.add_argument(
-        "-o", "--output-dir", action="store", default="ABIDE-BIDS"
-    )
+    g_outputs.add_argument("-o", "--output-dir", action="store", default="ABIDE-BIDS")
 
     opts = parser.parse_args()
 
@@ -74,14 +70,10 @@ def main():
         json.dump(dataset_desc, dfile)
 
     catalog = et.parse(opts.input_abide_catalog).getroot()
-    urls = [
-        el.get("URI") for el in catalog.iter() if el.get("URI") is not None
-    ]
+    urls = [el.get("URI") for el in catalog.iter() if el.get("URI") is not None]
 
     pool = Pool()
-    args_list = [
-        (url, opts.nitrc_user, opts.nitrc_password, out_dir) for url in urls
-    ]
+    args_list = [(url, opts.nitrc_user, opts.nitrc_password, out_dir) for url in urls]
     res = pool.map(fetch, args_list)
 
     tsv_data = np.array([("subject_id", "site_name")] + res)
@@ -151,8 +143,7 @@ def fetch(args):
     shutil.rmtree(tmpdir, ignore_errors=True, onerror=_myerror)
 
     print(
-        "Successfully processed subject %s from site %s"
-        % (subject_id[4:], site_name)
+        "Successfully processed subject %s from site %s" % (subject_id[4:], site_name)
     )
     return subject_id[4:], site_name
 

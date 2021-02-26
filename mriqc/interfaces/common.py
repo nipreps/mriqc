@@ -7,9 +7,14 @@ import nibabel as nb
 import numpy as np
 from mriqc import config
 from nipype.interfaces.ants import ApplyTransforms
-from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
-                                    SimpleInterface, TraitedSpec, isdefined,
-                                    traits)
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 from pkg_resources import resource_filename as pkgrf
 
 

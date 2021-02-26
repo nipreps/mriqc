@@ -74,14 +74,10 @@ class AddProvenance(SimpleInterface):
 
         if self.inputs.modality in ("T1w", "T2w"):
             air_msk_size = (
-                np.asanyarray(nb.load(self.inputs.air_msk).dataobj)
-                .astype(bool)
-                .sum()
+                np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(bool).sum()
             )
             rot_msk_size = (
-                np.asanyarray(nb.load(self.inputs.rot_msk).dataobj)
-                .astype(bool)
-                .sum()
+                np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(bool).sum()
             )
             self._results["out_prov"]["warnings"] = {
                 "small_air_mask": bool(air_msk_size < 5e5),

@@ -307,9 +307,7 @@ def plot_mosaic(
         nrows += 1
 
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(
-            nb.load(overlay_mask)
-        ).get_data()
+        overlay_data = nb.as_closest_canonical(nb.load(overlay_mask)).get_data()
 
     # create figures
     if fig is None:

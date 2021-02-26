@@ -93,19 +93,14 @@ requested participants have the corresponding folder in the bids_dir.\
         action="store",
         help="BIDS app to call",
     )
-    parser.add_argument(
-        "--args", default="", action="store", help="append arguments"
-    )
+    parser.add_argument("--args", default="", action="store", help="append arguments")
 
     opts = parser.parse_args()
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
     all_subjects = sorted(
-        [
-            op.basename(subj)[4:]
-            for subj in glob.glob(op.join(bids_dir, "sub-*"))
-        ]
+        [op.basename(subj)[4:] for subj in glob.glob(op.join(bids_dir, "sub-*"))]
     )
 
     subject_list = opts.participant_label

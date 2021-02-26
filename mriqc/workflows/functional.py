@@ -57,9 +57,7 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file"]), name="inputnode"
-    )
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
     outputnode = pe.Node(
@@ -364,9 +362,7 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     # Add metadata
-    meta = pe.Node(
-        ReadSidecarJSON(), name="metadata", run_without_submitting=True
-    )
+    meta = pe.Node(ReadSidecarJSON(), name="metadata", run_without_submitting=True)
     addprov = pe.Node(
         AddProvenance(modality="bold"),
         name="provenance",
@@ -537,9 +533,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     mosaic_stddev = pe.Node(
-        PlotMosaic(
-            out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"
-        ),
+        PlotMosaic(out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"),
         name="PlotMosaicSD",
     )
 
@@ -604,9 +598,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     if config.workflow.ica:
         page_number = 4 + config.workflow.fft_spikes_detector
-        workflow.connect(
-            [(inputnode, mplots, [("ica_report", "in%d" % page_number)])]
-        )
+        workflow.connect([(inputnode, mplots, [("ica_report", "in%d" % page_number)])])
 
     if not verbose:
         return workflow
@@ -677,12 +669,8 @@ def fmri_bmsk_workflow(name="fMRIBrainMask"):
     from nipype.interfaces.afni import Automask
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file"]), name="inputnode"
-    )
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_file"]), name="outputnode"
-    )
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
     afni_msk = pe.Node(Automask(outputtype="NIFTI_GZ"), name="afni_msk")
 
     # Connect brain mask extraction
@@ -716,9 +704,7 @@ def hmc(name="fMRI_HMC"):
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["in_file", "fd_radius", "start_idx", "stop_idx"]
-        ),
+        niu.IdentityInterface(fields=["in_file", "fd_radius", "start_idx", "stop_idx"]),
         name="inputnode",
     )
 
@@ -732,9 +718,7 @@ def hmc(name="fMRI_HMC"):
             config.workflow.stop_idx is not None,
         )
     ):
-        drop_trs = pe.Node(
-            Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs"
-        )
+        drop_trs = pe.Node(Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs")
         workflow.connect(
             [
                 (
@@ -749,9 +733,7 @@ def hmc(name="fMRI_HMC"):
             ]
         )
     else:
-        drop_trs = pe.Node(
-            niu.IdentityInterface(fields=["out_file"]), name="drop_trs"
-        )
+        drop_trs = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="drop_trs")
         workflow.connect(
             [
                 (inputnode, drop_trs, [("in_file", "out_file")]),
@@ -934,9 +916,7 @@ def epi_mni_align(name="SpatialNormalization"):
             num_threads=ants_nthreads,
             reference="boldref",
             reference_image=str(
-                get_template(
-                    "MNI152NLin2009cAsym", resolution=2, suffix="boldref"
-                )
+                get_template("MNI152NLin2009cAsym", resolution=2, suffix="boldref")
             ),
             reference_mask=str(
                 get_template(
@@ -1064,9 +1044,7 @@ def _parse_tqual(in_file):
 
     with open(in_file, "r") as fin:
         lines = fin.readlines()
-    return np.mean(
-        [float(line.strip()) for line in lines if not line.startswith("++")]
-    )
+    return np.mean([float(line.strip()) for line in lines if not line.startswith("++")])
 
 
 def _parse_tout(in_file):

@@ -108,6 +108,4 @@ def write_derivative_description(bids_dir, deriv_dir):
     if "License" in orig_desc:
         desc["License"] = orig_desc["License"]
 
-    Path.write_text(
-        deriv_dir / "dataset_description.json", json.dumps(desc, indent=4)
-    )
+    Path.write_text(deriv_dir / "dataset_description.json", json.dumps(desc, indent=4))

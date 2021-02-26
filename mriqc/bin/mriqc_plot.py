@@ -73,9 +73,7 @@ def main():
 
     settings["work_dir"] = op.abspath(opts.work_dir)
     if not op.exists(settings["work_dir"]):
-        raise RuntimeError(
-            "Work directory of a previous MRIQC run was not found."
-        )
+        raise RuntimeError("Work directory of a previous MRIQC run was not found.")
 
     for dtype in opts.data_type:
         workflow_report(dtype, settings)

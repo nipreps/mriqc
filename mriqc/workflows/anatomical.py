@@ -65,9 +65,9 @@ def anat_qc_workflow(name="anatMRIQC"):
     """
     from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 
-    dataset = config.workflow.inputs.get(
-        "T1w", []
-    ) + config.workflow.inputs.get("T2w", [])
+    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
+        "T2w", []
+    )
 
     message = BUILDING_WORKFLOW.format(dataset=", ".join(dataset))
     config.loggers.workflow.info(message)
@@ -77,14 +77,10 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     # Define workflow, inputs and outputs
     # 0. Get data
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file"]), name="inputnode"
-    )
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_json"]), name="outputnode"
-    )
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_json"]), name="outputnode")
 
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(check_dtype=False), name="conform")
@@ -241,15 +237,11 @@ def spatial_normalization(name="SpatialNormalization", resolution=2):
     # Define workflow interface
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["moving_image", "moving_mask", "modality"]
-        ),
+        niu.IdentityInterface(fields=["moving_image", "moving_mask", "modality"]),
         name="inputnode",
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["inverse_composite_transform", "out_report"]
-        ),
+        niu.IdentityInterface(fields=["inverse_composite_transform", "out_report"]),
         name="outputnode",
     )
 
@@ -269,9 +261,7 @@ def spatial_normalization(name="SpatialNormalization", resolution=2):
         mem_gb=3,
     )
     norm.inputs.reference_mask = str(
-        get_template(
-            tpl_id, resolution=resolution, desc="brain", suffix="mask"
-        )
+        get_template(tpl_id, resolution=resolution, desc="brain", suffix="mask")
     )
 
     workflow.connect(
@@ -349,9 +339,7 @@ def compute_iqms(name="ComputeIQMs"):
     meta = pe.Node(ReadSidecarJSON(), name="metadata")
 
     # Add provenance
-    addprov = pe.Node(
-        AddProvenance(), name="provenance", run_without_submitting=True
-    )
+    addprov = pe.Node(AddProvenance(), name="provenance", run_without_submitting=True)
 
     # AFNI check smoothing
     fwhm_interface = get_fwhmx()
@@ -686,9 +674,7 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     inputnode = pe.Node(
         niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode"
     )
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_file"]), name="outputnode"
-    )
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
 
     if use_bet:
         # Alternative for when dipy is not installed
@@ -784,9 +770,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
         name="inputnode",
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["hat_mask", "air_mask", "art_mask", "rot_mask"]
-        ),
+        niu.IdentityInterface(fields=["hat_mask", "air_mask", "art_mask", "rot_mask"]),
         name="outputnode",
     )
 
@@ -802,9 +786,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
         name="invert_xfm",
     )
     invt.inputs.input_image = str(
-        get_template(
-            "MNI152NLin2009cAsym", resolution=1, desc="head", suffix="mask"
-        )
+        get_template("MNI152NLin2009cAsym", resolution=1, desc="head", suffix="mask")
     )
 
     qi1 = pe.Node(ArtifactMask(), name="ArtifactMask")
@@ -863,9 +845,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
 
     hdr = nii.header.copy()
     hdr.set_data_dtype(np.uint8)
-    nb.Nifti1Image(data.astype(np.uint8), nii.affine, hdr).to_filename(
-        out_file
-    )
+    nb.Nifti1Image(data.astype(np.uint8), nii.affine, hdr).to_filename(out_file)
     return out_file
 
 
@@ -901,9 +881,7 @@ def _enhance(in_file, out_file=None):
     # Resample signal excess pixels
     excess = np.where(data > range_max)
     data[excess] = 0
-    data[excess] = np.random.choice(
-        data[data > range_min], size=len(excess[0])
-    )
+    data[excess] = np.random.choice(data[data > range_min], size=len(excess[0]))
 
     nb.Nifti1Image(data, imnii.affine, imnii.header).to_filename(out_file)
 
@@ -967,9 +945,9 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(
-        segdata, struc, iterations=2, border_value=1
-    ).astype(np.uint8)
+    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(
+        np.uint8
+    )
     mask[segdata > 0] = 1
     mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)
     # Remove small objects
@@ -977,9 +955,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     artmsk = np.zeros_like(mask)
     if nb_labels > 2:
         sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
-        ordered = list(
-            reversed(sorted(zip(sizes, list(range(nb_labels + 1)))))
-        )
+        ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
         for _, label in ordered[2:]:
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
@@ -995,9 +971,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 def _get_imgtype(in_file):
     from pathlib import Path
 
-    return int(
-        Path(in_file).name.rstrip(".gz").rstrip(".nii").split("_")[-1][1]
-    )
+    return int(Path(in_file).name.rstrip(".gz").rstrip(".nii").split("_")[-1][1])
 
 
 def _get_mod(in_file):

@@ -101,9 +101,7 @@ if not any(
 ):
     os.environ["PYTHONWARNINGS"] = "ignore"
 
-logging.addLevelName(
-    25, "IMPORTANT"
-)  # Add a new level between INFO and WARNING
+logging.addLevelName(25, "IMPORTANT")  # Add a new level between INFO and WARNING
 logging.addLevelName(15, "VERBOSE")  # Add a new level between INFO and DEBUG
 
 DEFAULT_MEMORY_MIN_GB = 0.01
@@ -454,9 +452,7 @@ class workflow(_Config):
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
-    _fmt = (
-        "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
-    )
+    _fmt = "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
     _datefmt = "%y%m%d-%H:%M:%S"
     _init = False
 
@@ -519,9 +515,7 @@ class loggers:
         if retval is None:
             setattr(cls, name, logging.getLogger(name))
             _handler = logging.StreamHandler(stream=sys.stdout)
-            _handler.setFormatter(
-                logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
-            )
+            _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
             retval.addHandler(_handler)
             retval.setLevel(execution.log_level)
         return retval

@@ -21,9 +21,7 @@ from nipype.interfaces.base import (
 
 class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_epi = File(exists=True, mandatory=True, desc="input EPI file")
-    in_hmc = File(
-        exists=True, mandatory=True, desc="input motion corrected file"
-    )
+    in_hmc = File(exists=True, mandatory=True, desc="input motion corrected file")
     in_tsnr = File(exists=True, mandatory=True, desc="input tSNR volume")
     in_mask = File(exists=True, mandatory=True, desc="input mask")
     direction = traits.Enum(
@@ -43,9 +41,7 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     fd_thres = traits.Float(
         0.2, usedefault=True, desc="motion threshold for FD computation"
     )
-    in_dvars = File(
-        exists=True, mandatory=True, desc="input file containing DVARS"
-    )
+    in_dvars = File(exists=True, mandatory=True, desc="input file containing DVARS")
     in_fwhm = traits.List(
         traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
     )
@@ -159,8 +155,7 @@ class FunctionalQC(SimpleInterface):
             "z": int(hmcdata.shape[2]),
         }
         self._results["spacing"] = {
-            i: float(v)
-            for i, v in zip(["x", "y", "z"], hmcnii.header.get_zooms()[:3])
+            i: float(v) for i, v in zip(["x", "y", "z"], hmcnii.header.get_zooms()[:3])
         }
 
         try:
@@ -169,9 +164,7 @@ class FunctionalQC(SimpleInterface):
             pass
 
         try:
-            self._results["spacing"]["tr"] = float(
-                hmcnii.header.get_zooms()[3]
-            )
+            self._results["spacing"]["tr"] = float(hmcnii.header.get_zooms()[3])
         except IndexError:
             pass
 
@@ -196,15 +189,11 @@ class SpikesInputSpec(BaseInterfaceInputSpec):
         desc="number of frames to skip in the beginning of the time series",
     )
     out_tsz = File("spikes_tsz.txt", usedefault=True, desc="output file name")
-    out_spikes = File(
-        "spikes_idx.txt", usedefault=True, desc="output file name"
-    )
+    out_spikes = File("spikes_idx.txt", usedefault=True, desc="output file name")
 
 
 class SpikesOutputSpec(TraitedSpec):
-    out_tsz = File(
-        desc="slice-wise z-scored timeseries (Z x N), inside brainmask"
-    )
+    out_tsz = File(desc="slice-wise z-scored timeseries (Z x N), inside brainmask")
     out_spikes = File(desc="indices of spikes")
     num_spikes = traits.Int(desc="number of spikes found (total)")
 
@@ -243,9 +232,7 @@ class Spikes(SimpleInterface):
             func_data[..., nskip:] = clean_data.reshape(new_shape)
 
         if not isdefined(self.inputs.in_mask):
-            _, mask_data, _ = auto_mask(
-                func_data, nskip=self.inputs.skip_frames
-            )
+            _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
         else:
             mask_data = nb.load(self.inputs.in_mask).get_data()
             mask_data[..., :nskip] = 0
@@ -276,10 +263,7 @@ class Spikes(SimpleInterface):
 
 
 def find_peaks(data):
-    t_z = [
-        data[:, :, i, :].mean(axis=0).mean(axis=0)
-        for i in range(data.shape[2])
-    ]
+    t_z = [data[:, :, i, :].mean(axis=0).mean(axis=0) for i in range(data.shape[2])]
     return t_z
 
 
@@ -308,12 +292,8 @@ def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
     _, mask = median_otsu(mn, 3, 2)  # oesteban: masked_data was not used
     mask = np.concatenate(
         (
-            np.tile(
-                True, (data.shape[0], data.shape[1], data.shape[2], nskip)
-            ),
-            np.tile(
-                np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3] - nskip)
-            ),
+            np.tile(True, (data.shape[0], data.shape[1], data.shape[2], nskip)),
+            np.tile(np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3] - nskip)),
         ),
         axis=3,
     )
