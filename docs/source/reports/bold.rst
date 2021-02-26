@@ -2,25 +2,25 @@
 .. _reports-bold:
 
 BOLD images
------------
+===========
 
 One individual report per input functional timeseries will be generated
 in the path ``<output_dir>/reports/sub-IDxxx_task-name_bold.html```.
-An example report is given 
+An example report is given
 `here <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-50013_task-rest_bold.html>`_.
 
 The individual report for the functional images is
 structured as follows:
 
 
-.. _reports-bold-summary: 
+.. _reports-bold-summary:
 
 Summary
-^^^^^^^
+-------
 
 The first section summarizes some important information:
 
-  * subject identifier, date and time of execution of 
+  * subject identifier, date and time of execution of
     ``mriqc``, software version;
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
@@ -29,12 +29,12 @@ The first section summarizes some important information:
 .. _reports-bold-visual:
 
 Visual reports
-^^^^^^^^^^^^^^
+--------------
 
 The section with visual reports contains:
 
 #. Mosaic view of the average BOLD signal.
-  
+
    .. figure:: ../resources/reports-bold_mean.png
      :alt: mean epi mosaic
 
@@ -46,7 +46,7 @@ The section with visual reports contains:
 #. Summary plot, showing the slice-wise
    signal intensity at the extremes for the identification
    of spikes, the outliers metric, the DVARS and the
-   :abbr:`FD (framewise displacement)`. Finally the 
+   :abbr:`FD (framewise displacement)`. Finally the
    so-called carpetplot [Power2016]_
 
    .. figure:: ../resources/reports-bold_summary.png
@@ -56,26 +56,26 @@ The section with visual reports contains:
 .. _reports-bold-verbose:
 
 Verbose reports
-^^^^^^^^^^^^^^^
+---------------
 
 If mriqc was run with the ``--verbose-reports`` flag, the
 following plots will be appended:
 
 #. Mosaic view of the average BOLD signal, zoomed-in
    to the bounding box of brain activation.
-  
+
    .. figure:: ../resources/reports-bold_mean_zoom.png
      :alt: zoomed mean epi mosaic
 
 #. Mosaic view of the average BOLD signal, with background
    enhancement.
-  
+
    .. figure:: ../resources/reports-bold_mean_bg.png
      :alt: mean epi background mosaic
 
 #. One rows of axial views at different Z-axis points
    showing the calculated brain mask.
-    
+
    .. figure:: ../resources/reports-bold_mask.png
      :alt: bold brainmasks
 
@@ -90,7 +90,7 @@ following plots will be appended:
 .. _reports-bold-metadata:
 
 Metadata
-^^^^^^^^
+--------
 
 If some metadata was found in the BIDS structure, it is
 reported here.

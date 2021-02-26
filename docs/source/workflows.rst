@@ -1,9 +1,8 @@
 
 .. _workflows:
 
-===================
-The MRIQC workflows
-===================
+Workflows
+=========
 
 .. automodule:: mriqc.workflows
     :members:

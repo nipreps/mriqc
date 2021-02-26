@@ -23,7 +23,7 @@ Preliminaries
     on a fresh installation of Docker for Mac.
     We recommend increasing the available memory for Docker containers
 
-   When using docker with big datasets (+10GB) docker might fail. 
+   When using docker with big datasets (+10GB) docker might fail.
    Changing the maximum size of the container will solve it: ::
 
     $ service docker stop
@@ -44,12 +44,12 @@ Running mriqc
 -------------
 
 
-1. Test that the mriqc container works correctly. A successful run will show 
+1. Test that the mriqc container works correctly. A successful run will show
    the current mriqc version in the last line of the output:
 
   ::
 
-      
+
       docker run -it poldracklab/mriqc:latest --version
 
 
@@ -57,16 +57,16 @@ Running mriqc
 
   ::
 
-      
+
       docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out participant --participant_label 001 002 003
-      
+
 
 3. Run the group level and report generation on previously processed (use the same ``<output_dir>``)
    subjects:
 
   ::
 
-      
+
       docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out group
 
 
@@ -79,9 +79,9 @@ Running mriqc
 
 .. warning::
 
-    Paths `<bids_dir>` and `<output_dir>` must be absolute.  In particular, specifying relative paths for 
+    Paths `<bids_dir>` and `<output_dir>` must be absolute.  In particular, specifying relative paths for
     `<output_dir>` will generate no error and mriqc will run to completion without error but produce no output.
-    
+
 .. warning::
 
     For security reasons, we recommend to run the docker command with the options
@@ -101,13 +101,13 @@ Let's dissect this command line:
   image (which is the last of docker-related arguments:
   :code:`poldracklab/mriqc:latest`)
 + :code:`-v <bids_dir>:/data:ro` - instructs docker to mount the local
-  directory with your input dataset `<bids_dir>`into :code:`/data` inside 
+  directory with your input dataset `<bids_dir>`into :code:`/data` inside
   the container in a read only mode.
 + :code:`-v <output_dir>:/out`- instructs docker to mount the local
-  directory `<output_dir>`into :code:`/out` inside the container. This is 
+  directory `<output_dir>`into :code:`/out` inside the container. This is
   where the results of the QC analysis (reports, tables) will be stored.
 + :code:`poldracklab/mriqc:latest` - this tells docker to run MRIQC. ``latest``
-  corresponds to the version of MRIQC. You 
+  corresponds to the version of MRIQC. You
   should replace ``latest`` with a version of MRIQC you want to use. Remember
   not to switch versions while analysing one dataset!
 + :code:`/data /scratch/out participant` - are the standard

@@ -2,8 +2,7 @@
 .. _running_mriqc:
 
 Running mriqc
--------------
-
+=============
 
 .. tip::
      Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
@@ -80,7 +79,7 @@ in :ref:`The MRIQC Reports <reports>`.
 
 
 Command line interface
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 .. argparse::
    :ref: mriqc.cli.parser._build_parser
@@ -90,8 +89,8 @@ Command line interface
 
 
 
-Running MRIQC on HPC clusters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Running mriqc on HPC clusters
+-----------------------------
 
 Singularity containers
 ......................

@@ -1,24 +1,24 @@
 
 Installation
-------------
+============
 
 Containerized versions
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 If you have Docker installed, the quickest way to get ``mriqc`` to work
 is following :ref:`the running with docker guide <docker>`.
 
 We recommend trying containerized versions first to avoid installation
 issues.
-MRIQC uses bleeding-edge (oftentimes unreleased) versions of 
+MRIQC uses bleeding-edge (oftentimes unreleased) versions of
 ``nipype`` and ``niworkflows`` and "bare-metal" installations can
 be hard.
 Nonetheless, we offer support on our `github repository
 <https://github.com/poldracklab/mriqc/issues>`_.
 
 
-"Bare-metal" installation (only Python 3)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"Bare-metal" installation (Python 3 only)
+-----------------------------------------
 
 If, for some reason, you really need a bare-metal installation,
 MRIQC can be installed as follows.
@@ -36,7 +36,7 @@ github using ``pip`` on a Python 3 environment: ::
 
 
 Execution system dependencies
-'''''''''''''''''''''''''''''
+.............................
 
 If you are using a a `Neurodebian <http://neuro.debian.net/>`_ Linux distribution,
 installation should be as easy as::
@@ -47,7 +47,7 @@ installation should be as easy as::
 After installation, make sure that all the necessary binaries are added to the ``$PATH`` environment
 variable, for the user that will run ``mriqc``.
 
-Otherwise, you can follow each software installation guide: 
-`FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_, 
-`AFNI <https://afni.nimh.nih.gov/afni/doc/howto/0>`_, 
+Otherwise, you can follow each software installation guide:
+`FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_,
+`AFNI <https://afni.nimh.nih.gov/afni/doc/howto/0>`_,
 and `ANTs <http://stnava.github.io/ANTs/>`_.
