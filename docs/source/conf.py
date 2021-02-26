@@ -250,7 +250,7 @@ latex_documents = [
         master_doc,
         "mriqc.tex",
         "mriqc Documentation",
-        "Oscar Esteban",
+        "The NiPreps developers",
         "manual",
     ),
 ]

@@ -17,8 +17,8 @@ Nonetheless, we offer support on our `github repository
 <https://github.com/poldracklab/mriqc/issues>`_.
 
 
-"Bare-metal" installation (Python 3 only)
------------------------------------------
+"Bare-metal" installation
+-------------------------
 
 If, for some reason, you really need a bare-metal installation,
 MRIQC can be installed as follows.

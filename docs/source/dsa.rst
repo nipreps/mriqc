@@ -3,7 +3,6 @@
 
 Data Sharing Agreement
 ======================
-
 Foundations
 -----------
 
@@ -42,7 +41,6 @@ remain inaccessible to the public as no original data are shared.
 
 Withdrawing records and period of agreement
 ...........................................
-
 If you do not agree to these terms, please make use of the ``--no-sub`` (*do not submit*)
 command line flag with MRIQC.
 MRIQC will not collect any data when you OPT-OUT with this command line flag.
