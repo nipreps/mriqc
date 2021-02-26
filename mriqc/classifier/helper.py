@@ -10,23 +10,27 @@ from builtins import object
 
 import numpy as np
 import pandas as pd
+from mriqc.classifier.data import get_bids_cols, read_dataset
+from mriqc.viz.misc import plot_roc_curve
 from pkg_resources import resource_filename as pkgrf
+
+# xgboost
+from xgboost import XGBClassifier
+
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import (GridSearchCV, PredefinedSplit,
-                                     RandomizedSearchCV,
-                                     RepeatedStratifiedKFold)
+from sklearn.model_selection import (
+    GridSearchCV,
+    PredefinedSplit,
+    RandomizedSearchCV,
+    RepeatedStratifiedKFold,
+)
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.svm import SVC, LinearSVC
-# xgboost
-from xgboost import XGBClassifier
-
-from ..viz.misc import plot_roc_curve
-from .data import get_bids_cols, read_dataset
 
 # sklearn overrides
 
@@ -239,8 +243,10 @@ class CVHelper(CVHelperBase):
         Fits the cross-validation helper
         """
         from .sklearn import preprocessing as mcsp
-        from .sklearn._split import (RepeatedBalancedKFold,
-                                     RepeatedPartiallyHeldOutKFold)
+        from .sklearn._split import (
+            RepeatedBalancedKFold,
+            RepeatedPartiallyHeldOutKFold,
+        )
         from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
         if self._pickled:
@@ -278,7 +284,9 @@ class CVHelper(CVHelperBase):
         # Prepare data splits for CV
         fit_args = {}
         if self._split == "kfold":
-            kf_params = {} if not self._debug else {"n_splits": 2, "n_repeats": 1}
+            kf_params = (
+                {} if not self._debug else {"n_splits": 2, "n_repeats": 1}
+            )
             splits = RepeatedStratifiedKFold(**kf_params)
         elif self._split == "loso":
             splits = LeavePGroupsOut(n_groups=1)
@@ -456,10 +464,14 @@ class CVHelper(CVHelperBase):
 
         LOG.info(
             "Classification report:\n%s",
-            slm.classification_report(leaveout_y, pred_y, target_names=target_names),
+            slm.classification_report(
+                leaveout_y, pred_y, target_names=target_names
+            ),
         )
         score = self._score(leaveout_x, leaveout_y)
-        LOG.info("Performance on balanced left-out (%s=%f)", self._scorer, score)
+        LOG.info(
+            "Performance on balanced left-out (%s=%f)", self._scorer, score
+        )
 
         # Rewrite clf
         LOG.info("Fitting full model (train + balanced left-out) ...")
@@ -474,10 +486,14 @@ class CVHelper(CVHelperBase):
         _, pred_y = self.predict(leaveout_x)
         LOG.info(
             "Classification report:\n%s",
-            slm.classification_report(leaveout_y, pred_y, target_names=target_names),
+            slm.classification_report(
+                leaveout_y, pred_y, target_names=target_names
+            ),
         )
         score = self._score(leaveout_x, leaveout_y)
-        LOG.info("Performance on balanced left-out (%s=%f)", self._scorer, score)
+        LOG.info(
+            "Performance on balanced left-out (%s=%f)", self._scorer, score
+        )
 
     def fit_full(self):
         """
@@ -502,12 +518,18 @@ class CVHelper(CVHelperBase):
         pred_y = self._estimator.predict(X)
         LOG.info(
             "Classification report:\n%s",
-            slm.classification_report(labels_y, pred_y, target_names=target_names),
+            slm.classification_report(
+                labels_y, pred_y, target_names=target_names
+            ),
         )
         score = self._score(X, labels_y)
-        LOG.info("Full model performance on left-out (%s=%f)", self._scorer, score)
+        LOG.info(
+            "Full model performance on left-out (%s=%f)", self._scorer, score
+        )
 
-    def evaluate(self, scoring=None, matrix=False, save_roc=False, save_pred=False):
+    def evaluate(
+        self, scoring=None, matrix=False, save_roc=False, save_pred=False
+    ):
         """
         Evaluate the internal estimator on the test data
         """
@@ -537,18 +559,26 @@ class CVHelper(CVHelperBase):
 
         LOG.info(
             "Predictions: %s",
-            " / ".join(("%d (%s)" % (n, c) for n, c in zip(pred_totals, target_names))),
+            " / ".join(
+                ("%d (%s)" % (n, c) for n, c in zip(pred_totals, target_names))
+            ),
         )
 
         if matrix:
-            LOG.info("Confusion matrix:\n%s", slm.confusion_matrix(test_y, pred_y))
+            LOG.info(
+                "Confusion matrix:\n%s", slm.confusion_matrix(test_y, pred_y)
+            )
             LOG.info(
                 "Classification report:\n%s",
-                slm.classification_report(test_y, pred_y, target_names=target_names),
+                slm.classification_report(
+                    test_y, pred_y, target_names=target_names
+                ),
             )
 
         if save_pred:
-            self._save_pred_table(self._Xtest, prob_y, pred_y, suffix="data-test_pred")
+            self._save_pred_table(
+                self._Xtest, prob_y, pred_y, suffix="data-test_pred"
+            )
 
         if save_roc:
             plot_roc_curve(
@@ -563,7 +593,9 @@ class CVHelper(CVHelperBase):
 
             # Merge test and train
             concatenated_x = pd.concat((self._Xtrain, self._Xtest), axis=0)
-            concatenated_y = concatenated_x[[self._rate_column]].values.ravel().tolist()
+            concatenated_y = (
+                concatenated_x[[self._rate_column]].values.ravel().tolist()
+            )
             test_fold = [-1] * len(self._Xtrain) + [0] * len(self._Xtest)
 
             permutation_scores = permutation_test_score(
@@ -643,7 +675,9 @@ class CVHelper(CVHelperBase):
 
         prob_y, pred_y = self.predict(_xeval[columns])
         if save_pred:
-            self._save_pred_table(_xeval, prob_y, pred_y, suffix="data-%s_pred" % site)
+            self._save_pred_table(
+                _xeval, prob_y, pred_y, suffix="data-%s_pred" % site
+            )
         return pred_y
 
     def _save_pred_table(self, sample, prob_y, pred_y, suffix):
@@ -681,7 +715,9 @@ class CVHelper(CVHelperBase):
         # Store normalization medians
         setattr(self._estimator, "_batch_effect", self._batch_effect)
 
-        filehandler = os.path.abspath(self._gen_fname(suffix=suffix, ext="pklz"))
+        filehandler = os.path.abspath(
+            self._gen_fname(suffix=suffix, ext="pklz")
+        )
 
         LOG.info("Saving classifier to: %s", filehandler)
         savepkl(self._estimator, filehandler, compress=compress)
@@ -715,7 +751,9 @@ class CVHelper(CVHelperBase):
         # Some baseline parameters
         baseparam = {
             "std__by": ["site"],
-            "std__columns": [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            "std__columns": [
+                [ft for ft in self._ftnames if ft in FEATURE_NORM]
+            ],
             "sel_cols__columns": [self._ftnames + ["site"]],
         }
 
@@ -754,7 +792,9 @@ class CVHelper(CVHelperBase):
         prefix = self._model + "__"
         if self._multiclass:
             prefix += "estimator__"
-        modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
+        modparams = {
+            prefix + k: v for k, v in list(clfparams[self._model][0].items())
+        }
 
         # Merge model parameters + preprocessing
         modparams = [{**prep, **modparams} for prep in preparams]
@@ -770,7 +810,9 @@ class CVHelper(CVHelperBase):
             "std__by": ["site"],
             "std__with_centering": [True, False],
             "std__with_scaling": [True, False],
-            "std__columns": [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+            "std__columns": [
+                [ft for ft in self._ftnames if ft in FEATURE_NORM]
+            ],
             "sel_cols__columns": [self._ftnames + ["site"]],
             "ft_sites__disable": [False, True],
             "ft_noise__disable": [False, True],
@@ -787,13 +829,17 @@ class CVHelper(CVHelperBase):
                 else self._param_file
             )
         )
-        modparams = {prefix + k: v for k, v in list(clfparams[self._model][0].items())}
+        modparams = {
+            prefix + k: v for k, v in list(clfparams[self._model][0].items())
+        }
         if self._debug:
             preparams = {
                 "std__by": ["site"],
                 "std__with_centering": [True],
                 "std__with_scaling": [True],
-                "std__columns": [[ft for ft in self._ftnames if ft in FEATURE_NORM]],
+                "std__columns": [
+                    [ft for ft in self._ftnames if ft in FEATURE_NORM]
+                ],
                 "sel_cols__columns": [self._ftnames + ["site"]],
                 "ft_sites__disable": [True],
                 "ft_noise__disable": [True],

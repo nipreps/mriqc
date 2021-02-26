@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """MRIQC run script."""
-from .. import config
+from mriqc import config
 
 
 def main():
@@ -62,7 +62,9 @@ def main():
             sys.exit(retcode)
 
         if mriqc_wf and config.execution.write_graph:
-            mriqc_wf.write_graph(graph2use="colored", format="svg", simple_form=True)
+            mriqc_wf.write_graph(
+                graph2use="colored", format="svg", simple_form=True
+            )
 
         # Clean up master process before running workflow, which may create forks
         gc.collect()
@@ -113,16 +115,22 @@ def main():
                 csv_failed=output_dir / f"group_variant-failed_{mod}.csv",
                 out_file=out_html,
             )
-            config.loggers.cli.info(f"Group-{mod} report generated ({out_html})")
+            config.loggers.cli.info(
+                f"Group-{mod} report generated ({out_html})"
+            )
             mod_group_reports.append(mod)
 
         if not mod_group_reports:
-            raise Exception("No data found. No group level reports were generated.")
+            raise Exception(
+                "No data found. No group level reports were generated."
+            )
 
         config.loggers.cli.info("Group level finished successfully.")
 
     config.loggers.cli.info("Generating BIDS Derivatives metadata")
-    write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
+    write_derivative_description(
+        config.execution.bids_dir, config.execution.output_dir
+    )
     write_bidsignore(config.execution.output_dir)
     config.loggers.cli.info("MRIQC completed")
 

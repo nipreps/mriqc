@@ -9,7 +9,7 @@ from builtins import range  # pylint: disable=W0622
 from random import shuffle
 from textwrap import dedent
 
-from .. import __version__
+from mriqc import __version__
 
 # from lockfile import LockFile
 

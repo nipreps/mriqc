@@ -22,11 +22,10 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
+from mriqc import config
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
-
-from .. import config
 
 
 def fmri_qc_workflow(name="funcMRIQC"):
@@ -901,8 +900,9 @@ def epi_mni_align(name="SpatialNormalization"):
 
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
-    from niworkflows.interfaces.registration import \
-        RobustMNINormalizationRPT as RobustMNINormalization
+    from niworkflows.interfaces.registration import (
+        RobustMNINormalizationRPT as RobustMNINormalization,
+    )
     from templateflow.api import get as get_template
 
     # Get settings

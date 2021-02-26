@@ -2,11 +2,17 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 from urllib.parse import urlparse
 
-from nipype.interfaces.base import (BaseInterfaceInputSpec, Bunch, File,
-                                    SimpleInterface, Str, TraitedSpec,
-                                    isdefined, traits)
-
-from .. import config
+from mriqc import config
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    Bunch,
+    File,
+    SimpleInterface,
+    Str,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 SECRET_KEY = "<secret_token>"
 
@@ -88,7 +94,9 @@ HASH_BIDS = ["subject_id", "session_id"]
 
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
-    in_iqms = File(exists=True, mandatory=True, desc="the input IQMs-JSON file")
+    in_iqms = File(
+        exists=True, mandatory=True, desc="the input IQMs-JSON file"
+    )
     url = Str(mandatory=True, desc="URL (protocol and name) listening")
     port = traits.Int(desc="MRIQCWebAPI service port")
     path = Str(desc="MRIQCWebAPI endpoint root path")
@@ -151,7 +159,9 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = (
                 "QC metrics upload failed to create an ID for the record "
-                "uplOADED. rEsponse from server follows: {}".format(response.text)
+                "uplOADED. rEsponse from server follows: {}".format(
+                    response.text
+                )
             )
             config.loggers.interface.warning(errmsg)
 
@@ -170,7 +180,9 @@ class UploadIQMs(SimpleInterface):
         return runtime
 
 
-def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=None):
+def upload_qc_metrics(
+    in_iqms, loc, path="", scheme="http", port=None, email=None
+):
     """
     Upload qc metrics to remote repository.
 
@@ -236,13 +248,16 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
     headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
 
     webapi_url = "{}://{}:{}/{}{}".format(scheme, loc, port, path, modality)
-    config.loggers.interface.info("MRIQC Web API: submitting to <%s>", webapi_url)
+    config.loggers.interface.info(
+        "MRIQC Web API: submitting to <%s>", webapi_url
+    )
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
         errmsg = (
-            "QC metrics failed to upload due to connection error shown below:\n%s" % err
+            "QC metrics failed to upload due to connection error shown below:\n%s"
+            % err
         )
         return Bunch(status_code=1, text=errmsg)
 

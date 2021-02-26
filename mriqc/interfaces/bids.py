@@ -4,12 +4,19 @@ import re
 from pathlib import Path
 
 import simplejson as json
-from nipype.interfaces.base import (BaseInterfaceInputSpec, DynamicTraitedSpec,
-                                    File, SimpleInterface, Str, TraitedSpec,
-                                    Undefined, isdefined, traits)
-
-from .. import config
-from ..utils.misc import BIDS_COMP
+from mriqc import config
+from mriqc.utils.misc import BIDS_COMP
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    DynamicTraitedSpec,
+    File,
+    SimpleInterface,
+    Str,
+    TraitedSpec,
+    Undefined,
+    isdefined,
+    traits,
+)
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
@@ -85,7 +92,9 @@ class IQMFileSink(SimpleInterface):
         in_file = str(path.relative_to(bids_root))
 
         # Build path and ensure directory exists
-        bids_path = out_dir / in_file.replace("".join(Path(in_file).suffixes), ".json")
+        bids_path = out_dir / in_file.replace(
+            "".join(Path(in_file).suffixes), ".json"
+        )
         bids_path.parent.mkdir(parents=True, exist_ok=True)
         self._results["out_file"] = str(bids_path)
         return self._results["out_file"]
@@ -150,7 +159,12 @@ class IQMFileSink(SimpleInterface):
 
         with open(out_file, "w") as f:
             f.write(
-                json.dumps(self._out_dict, sort_keys=True, indent=2, ensure_ascii=False)
+                json.dumps(
+                    self._out_dict,
+                    sort_keys=True,
+                    indent=2,
+                    ensure_ascii=False,
+                )
             )
 
         return runtime

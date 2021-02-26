@@ -5,11 +5,15 @@ from io import open  # pylint: disable=W0622
 from pathlib import Path
 
 import numpy as np
-from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
-                                    SimpleInterface, TraitedSpec, isdefined,
-                                    traits)
-
-from ..viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from mriqc.viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -22,7 +26,10 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
         [0.5], traits.Float, usedefault=True, desc="add a contour per level"
     )
     colors = traits.List(
-        ["r"], traits.Str, usedefault=True, desc="colors to be used for contours"
+        ["r"],
+        traits.Str,
+        usedefault=True,
+        desc="colors to be used for contours",
     )
     display_mode = traits.Enum(
         "ortho",
@@ -58,7 +65,9 @@ class PlotContours(SimpleInterface):
             in_file_ref = Path(self.inputs.out_file)
 
         fname = in_file_ref.name.rstrip("".join(in_file_ref.suffixes))
-        out_file = (Path(runtime.cwd) / ("plot_%s_contours.svg" % fname)).resolve()
+        out_file = (
+            Path(runtime.cwd) / ("plot_%s_contours.svg" % fname)
+        ).resolve()
         self._results["out_file"] = str(out_file)
 
         vmax = None if not isdefined(self.inputs.vmax) else self.inputs.vmax
@@ -85,7 +94,11 @@ class PlotBaseInputSpec(BaseInterfaceInputSpec):
     title = traits.Str(desc="a title string for the plot")
     annotate = traits.Bool(True, usedefault=True, desc="annotate left/right")
     figsize = traits.Tuple(
-        (11.69, 8.27), traits.Float, traits.Float, usedefault=True, desc="Figure size"
+        (11.69, 8.27),
+        traits.Float,
+        traits.Float,
+        usedefault=True,
+        desc="Figure size",
     )
     dpi = traits.Int(300, usedefault=True, desc="Desired DPI of figure")
     out_file = File("mosaic.svg", usedefault=True, desc="output file name")
@@ -136,7 +149,9 @@ class PlotMosaic(SimpleInterface):
 
 class PlotSpikesInputSpec(PlotBaseInputSpec):
     in_spikes = File(exists=True, mandatory=True, desc="tsv file of spikes")
-    in_fft = File(exists=True, mandatory=True, desc="nifti file with the 4D FFT")
+    in_fft = File(
+        exists=True, mandatory=True, desc="nifti file with the 4D FFT"
+    )
 
 
 class PlotSpikesOutputSpec(TraitedSpec):
@@ -159,11 +174,16 @@ class PlotSpikes(SimpleInterface):
         # No spikes
         if not spikes_list:
             with open(out_file, "w") as f:
-                f.write("<p>No high-frequency spikes were found in this dataset</p>")
+                f.write(
+                    "<p>No high-frequency spikes were found in this dataset</p>"
+                )
             return runtime
 
         spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).tolist()]
         plot_spikes(
-            self.inputs.in_file, self.inputs.in_fft, spikes_list, out_file=out_file
+            self.inputs.in_file,
+            self.inputs.in_fft,
+            spikes_list,
+            out_file=out_file,
         )
         return runtime

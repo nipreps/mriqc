@@ -6,7 +6,7 @@ The mriqc package provides a series of :abbr:`NR (no-reference)`,
 assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 
 """
-from .__about__ import __copyright__, __credits__, __version__
+from mriqc.__about__ import __copyright__, __credits__, __version__
 
 __all__ = [
     "__copyright__",

@@ -3,7 +3,7 @@
 """Parser."""
 import re
 
-from .. import config
+from mriqc import config
 
 
 def _build_parser():

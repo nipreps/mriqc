@@ -15,9 +15,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-from .. import config
-from ..utils.misc import BIDS_COMP
+from mriqc import config
+from mriqc.utils.misc import BIDS_COMP
 
 
 def get_groups(X, label="site"):
@@ -49,8 +48,12 @@ def combine_datasets(inputs, rating_label="rater_1"):
     all_cols = mdata.columns.ravel().tolist()
 
     bids_comps = list(BIDS_COMP.keys())
-    bids_comps_present = list(set(mdata.columns.ravel().tolist()) & set(bids_comps))
-    bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+    bids_comps_present = list(
+        set(mdata.columns.ravel().tolist()) & set(bids_comps)
+    )
+    bids_comps_present = [
+        bit for bit in bids_comps if bit in bids_comps_present
+    ]
 
     ordered_cols = bids_comps_present + ["database", "site", "rater_1"]
     ordered_cols += sorted(list(set(all_cols) - set(ordered_cols)))
@@ -60,7 +63,9 @@ def combine_datasets(inputs, rating_label="rater_1"):
 def get_bids_cols(dataframe):
     """ Returns columns corresponding to BIDS bits """
     bids_comps = list(BIDS_COMP.keys())
-    bids_comps_present = list(set(dataframe.columns.ravel().tolist()) & set(bids_comps))
+    bids_comps_present = list(
+        set(dataframe.columns.ravel().tolist()) & set(bids_comps)
+    )
     return [bit for bit in bids_comps if bit in bids_comps_present]
 
 
@@ -74,8 +79,12 @@ def read_iqms(feat_file):
             feat_file, index_col=False, dtype={col: str for col in bids_comps}
         )
         # Find present bids bits and sort by them
-        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
-        bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+        bids_comps_present = list(
+            set(x_df.columns.ravel().tolist()) & set(bids_comps)
+        )
+        bids_comps_present = [
+            bit for bit in bids_comps if bit in bids_comps_present
+        ]
         x_df = x_df.sort_values(by=bids_comps_present)
         # Remove sub- prefix in subject_id
         x_df.subject_id = x_df.subject_id.str.lstrip("sub-")
@@ -95,7 +104,9 @@ def read_iqms(feat_file):
         x_df = x_df.sort_values(by=["bids_name"])
         x_df["subject_id"] = x_df.bids_name.str.lstrip("sub-")
         x_df = x_df.drop(columns=["bids_name"])
-        x_df.subject_id = ["_".join(v.split("_")[:-1]) for v in x_df.subject_id.ravel()]
+        x_df.subject_id = [
+            "_".join(v.split("_")[:-1]) for v in x_df.subject_id.ravel()
+        ]
         feat_names = list(x_df._get_numeric_data().columns.ravel())
 
     for col in feat_names:
@@ -213,8 +224,12 @@ def read_dataset(
     y_df["bids_ids"] = y_df.subject_id.values.copy()
 
     for comp in bids_comps_x[1:]:
-        x_df["bids_ids"] = x_df.bids_ids.str.cat(x_df.loc[:, comp].astype(str), sep="_")
-        y_df["bids_ids"] = y_df.bids_ids.str.cat(y_df.loc[:, comp].astype(str), sep="_")
+        x_df["bids_ids"] = x_df.bids_ids.str.cat(
+            x_df.loc[:, comp].astype(str), sep="_"
+        )
+        y_df["bids_ids"] = y_df.bids_ids.str.cat(
+            y_df.loc[:, comp].astype(str), sep="_"
+        )
 
     # Remove failed cases from Y, append new columns to X
     y_df = y_df[y_df["bids_ids"].isin(list(x_df.bids_ids.values.ravel()))]
@@ -328,4 +343,6 @@ def zscore_site(args):
     from scipy.stats import zscore
 
     dataframe, columns, site = args
-    return zscore(dataframe.loc[dataframe.site == site, columns].values, ddof=1, axis=0)
+    return zscore(
+        dataframe.loc[dataframe.site == site, columns].values, ddof=1, axis=0
+    )

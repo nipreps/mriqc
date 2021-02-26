@@ -8,31 +8,57 @@ from math import sqrt
 import nibabel as nb
 import numpy as np
 import scipy.ndimage as nd
-from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
-                                    InputMultiPath, SimpleInterface,
-                                    TraitedSpec, isdefined, traits)
+from mriqc.qc.anatomical import (
+    art_qi1,
+    art_qi2,
+    cjv,
+    cnr,
+    efc,
+    fber,
+    rpve,
+    snr,
+    snr_dietrich,
+    summary_stats,
+    volume_fraction,
+    wm2max,
+)
+from mriqc.utils.misc import _flatten_dict
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    InputMultiPath,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 from nipype.utils.filemanip import fname_presuffix
-
-from ..qc.anatomical import (art_qi1, art_qi2, cjv, cnr, efc, fber, rpve, snr,
-                             snr_dietrich, summary_stats, volume_fraction,
-                             wm2max)
-from ..utils.misc import _flatten_dict
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="file to be plotted")
-    in_noinu = File(exists=True, mandatory=True, desc="image after INU correction")
-    in_segm = File(exists=True, mandatory=True, desc="segmentation file from FSL FAST")
+    in_noinu = File(
+        exists=True, mandatory=True, desc="image after INU correction"
+    )
+    in_segm = File(
+        exists=True, mandatory=True, desc="segmentation file from FSL FAST"
+    )
     in_bias = File(exists=True, mandatory=True, desc="bias file")
     head_msk = File(exists=True, mandatory=True, desc="head mask")
     air_msk = File(exists=True, mandatory=True, desc="air mask")
     rot_msk = File(exists=True, mandatory=True, desc="rotation mask")
     artifact_msk = File(exists=True, mandatory=True, desc="air mask")
     in_pvms = InputMultiPath(
-        File(exists=True), mandatory=True, desc="partial volume maps from FSL FAST"
+        File(exists=True),
+        mandatory=True,
+        desc="partial volume maps from FSL FAST",
     )
-    in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
+    in_tpms = InputMultiPath(
+        File(), desc="tissue probability maps from FSL FAST"
+    )
+    mni_tpms = InputMultiPath(
+        File(), desc="tissue probability maps from FSL FAST"
+    )
     in_fwhm = traits.List(
         traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
     )
@@ -55,7 +81,9 @@ class StructuralQCOutputSpec(TraitedSpec):
     wm2max = traits.Float
     cjv = traits.Float
     out_qc = traits.Dict(desc="output flattened dictionary with all measures")
-    out_noisefit = File(exists=True, desc="plot of background noise and chi fitting")
+    out_noisefit = File(
+        exists=True, desc="plot of background noise and chi fitting"
+    )
     tpm_overlap = traits.Dict
 
 
@@ -71,7 +99,9 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = np.all(np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9)
+        erode = np.all(
+            np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9
+        )
 
         # Load image corrected for INU
         inudata = np.nan_to_num(imnii.get_data())
@@ -101,7 +131,11 @@ class StructuralQC(SimpleInterface):
         self._results["snr"] = {}
         for tlabel in ["csf", "wm", "gm"]:
             snrvals.append(
-                snr(stats[tlabel]["median"], stats[tlabel]["stdv"], stats[tlabel]["n"])
+                snr(
+                    stats[tlabel]["median"],
+                    stats[tlabel]["stdv"],
+                    stats[tlabel]["n"],
+                )
             )
             self._results["snr"][tlabel] = snrvals[-1]
         self._results["snr"]["total"] = float(np.mean(snrvals))
@@ -167,7 +201,8 @@ class StructuralQC(SimpleInterface):
             "z": int(inudata.shape[2]),
         }
         self._results["spacing"] = {
-            i: float(v) for i, v in zip(["x", "y", "z"], imnii.header.get_zooms()[:3])
+            i: float(v)
+            for i, v in zip(["x", "y", "z"], imnii.header.get_zooms()[:3])
         }
 
         try:
@@ -208,14 +243,18 @@ class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     head_mask = File(exists=True, mandatory=True, desc="head mask")
     rot_mask = File(exists=True, desc="a rotation mask")
     nasion_post_mask = File(
-        exists=True, mandatory=True, desc="nasion to posterior of cerebellum mask"
+        exists=True,
+        mandatory=True,
+        desc="nasion to posterior of cerebellum mask",
     )
 
 
 class ArtifactMaskOutputSpec(TraitedSpec):
     out_hat_msk = File(exists=True, desc='output "hat" mask')
     out_art_msk = File(exists=True, desc="output artifacts mask")
-    out_air_msk = File(exists=True, desc='output "hat" mask, without artifacts')
+    out_air_msk = File(
+        exists=True, desc='output "hat" mask, without artifacts'
+    )
 
 
 class ArtifactMask(SimpleInterface):
@@ -261,9 +300,15 @@ class ArtifactMask(SimpleInterface):
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
 
-        self._results["out_hat_msk"] = op.abspath("{}_hat{}".format(fname, ext))
-        self._results["out_art_msk"] = op.abspath("{}_art{}".format(fname, ext))
-        self._results["out_air_msk"] = op.abspath("{}_air{}".format(fname, ext))
+        self._results["out_hat_msk"] = op.abspath(
+            "{}_hat{}".format(fname, ext)
+        )
+        self._results["out_art_msk"] = op.abspath(
+            "{}_art{}".format(fname, ext)
+        )
+        self._results["out_air_msk"] = op.abspath(
+            "{}_air{}".format(fname, ext)
+        )
 
         hdr = imnii.header.copy()
         hdr.set_data_dtype(np.uint8)
@@ -284,7 +329,9 @@ class ArtifactMask(SimpleInterface):
 
 class ComputeQI2InputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
-    air_msk = File(exists=True, mandatory=True, desc="air (without artifacts) mask")
+    air_msk = File(
+        exists=True, mandatory=True, desc="air (without artifacts) mask"
+    )
 
 
 class ComputeQI2OutputSpec(TraitedSpec):
@@ -318,7 +365,9 @@ class HarmonizeInputSpec(BaseInterfaceInputSpec):
 
 
 class HarmonizeOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc="input data (after intensity harmonization)")
+    out_file = File(
+        exists=True, desc="input data (after intensity harmonization)"
+    )
 
 
 class Harmonize(SimpleInterface):
@@ -341,7 +390,9 @@ class Harmonize(SimpleInterface):
             # Create a structural element to be used in an opening operation.
             struc = nd.generate_binary_structure(3, 2)
             # Perform an opening operation on the background data.
-            wm_mask = nd.binary_erosion(wm_mask, structure=struc).astype(np.uint8)
+            wm_mask = nd.binary_erosion(wm_mask, structure=struc).astype(
+                np.uint8
+            )
 
         data = in_file.get_data()
         data *= 1000.0 / np.median(data[wm_mask > 0])
@@ -349,7 +400,9 @@ class Harmonize(SimpleInterface):
         out_file = fname_presuffix(
             self.inputs.in_file, suffix="_harmonized", newpath="."
         )
-        in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)
+        in_file.__class__(data, in_file.affine, in_file.header).to_filename(
+            out_file
+        )
 
         self._results["out_file"] = out_file
 
@@ -388,7 +441,9 @@ class RotationMask(SimpleInterface):
         label_im, nb_labels = nd.label(mask)
         if nb_labels > 2:
             sizes = nd.sum(mask, label_im, list(range(nb_labels + 1)))
-            ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+            ordered = list(
+                reversed(sorted(zip(sizes, list(range(nb_labels + 1)))))
+            )
             for _, label in ordered[2:]:
                 mask[label_im == label] = 0
 
@@ -402,7 +457,9 @@ class RotationMask(SimpleInterface):
         out_img = in_file.__class__(mask, in_file.affine, in_file.header)
         out_img.header.set_data_dtype(np.uint8)
 
-        out_file = fname_presuffix(self.inputs.in_file, suffix="_rotmask", newpath=".")
+        out_file = fname_presuffix(
+            self.inputs.in_file, suffix="_rotmask", newpath="."
+        )
         out_img.to_filename(out_file)
         self._results["out_file"] = out_file
         return runtime

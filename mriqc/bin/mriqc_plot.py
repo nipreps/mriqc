@@ -14,8 +14,8 @@ import os
 import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter
 
-from .. import __version__
-from ..reports import workflow_report
+from mriqc import __version__
+from mriqc.reports import workflow_report
 
 
 def main():
@@ -42,13 +42,20 @@ def main():
     )
 
     g_input.add_argument(
-        "--nthreads", action="store", default=0, type=int, help="number of threads"
+        "--nthreads",
+        action="store",
+        default=0,
+        type=int,
+        help="number of threads",
     )
 
     g_outputs = parser.add_argument_group("Outputs")
     g_outputs.add_argument("-o", "--output-dir", action="store")
     g_outputs.add_argument(
-        "-w", "--work-dir", action="store", default=op.join(os.getcwd(), "work")
+        "-w",
+        "--work-dir",
+        action="store",
+        default=op.join(os.getcwd(), "work"),
     )
 
     opts = parser.parse_args()
@@ -66,7 +73,9 @@ def main():
 
     settings["work_dir"] = op.abspath(opts.work_dir)
     if not op.exists(settings["work_dir"]):
-        raise RuntimeError("Work directory of a previous MRIQC run was not found.")
+        raise RuntimeError(
+            "Work directory of a previous MRIQC run was not found."
+        )
 
     for dtype in opts.data_type:
         workflow_report(dtype, settings)

@@ -2,13 +2,18 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """mriqc nipype interfaces """
 
-from .anatomical import (ArtifactMask, ComputeQI2, Harmonize, RotationMask,
-                         StructuralQC)
-from .bids import IQMFileSink
-from .common import ConformImage, EnsureSize
-from .functional import FunctionalQC, Spikes
-from .viz import PlotContours, PlotMosaic, PlotSpikes
-from .webapi import UploadIQMs
+from mriqc.interfaces.anatomical import (
+    ArtifactMask,
+    ComputeQI2,
+    Harmonize,
+    RotationMask,
+    StructuralQC,
+)
+from mriqc.interfaces.bids import IQMFileSink
+from mriqc.interfaces.common import ConformImage, EnsureSize
+from mriqc.interfaces.functional import FunctionalQC, Spikes
+from mriqc.interfaces.viz import PlotContours, PlotMosaic, PlotSpikes
+from mriqc.interfaces.webapi import UploadIQMs
 
 __all__ = [
     "ArtifactMask",

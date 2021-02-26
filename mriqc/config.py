@@ -87,7 +87,7 @@ finally:
     from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
 
-    from . import __version__
+    from mriqc import __version__
 
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
