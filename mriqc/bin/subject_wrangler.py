@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """BIDS-Apps subject wrangler."""
 import glob
 import os.path as op
@@ -10,8 +7,6 @@ from random import shuffle
 from textwrap import dedent
 
 from mriqc import __version__
-
-# from lockfile import LockFile
 
 
 def main():
@@ -39,8 +34,7 @@ requested participants have the corresponding folder in the bids_dir.\
     parser.add_argument(
         "bids_dir",
         action="store",
-        help="The directory with the input dataset "
-        "formatted according to the BIDS standard.",
+        help="The directory with the input dataset " "formatted according to the BIDS standard.",
     )
     parser.add_argument(
         "output_dir",
@@ -127,8 +121,7 @@ requested participants have the corresponding folder in the bids_dir.\
 
     if gsize < 0:
         raise RuntimeError(
-            "group size should be at least 0 "
-            "(all participants assigned to same group"
+            "group size should be at least 0 " "(all participants assigned to same group"
         )
     if gsize == 0:
         gsize = len(subject_list)

@@ -1,6 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-
 from os import path as op
 
 import nibabel as nb
@@ -204,9 +201,7 @@ class EnsureSize(SimpleInterface):
         new_size = np.array(extent_mm / self.inputs.pixel_size, dtype=int)
 
         # 5) Initialize new base affine
-        new_base = (
-            aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
-        )
+        new_base = aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
 
         # 6) Find new center
         new_center_idx = (new_size - 1) * 0.5
@@ -250,9 +245,9 @@ class EnsureSize(SimpleInterface):
             hdr.set_data_shape(new_size)
             hdr.set_data_dtype(np.uint8)
             ref_mask = "mask_ref.nii.gz"
-            nb.Nifti1Image(
-                np.zeros(new_size, dtype=np.uint8), new_affine, hdr
-            ).to_filename(ref_mask)
+            nb.Nifti1Image(np.zeros(new_size, dtype=np.uint8), new_affine, hdr).to_filename(
+                ref_mask
+            )
 
             out_mask = op.abspath("%s_resmask%s" % (out_prefix, ext))
             ApplyTransforms(

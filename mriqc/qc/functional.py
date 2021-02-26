@@ -1,10 +1,6 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 r"""
-MRIQC: image quality metrics for functional MRI.
-
 Measures for the spatial information
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+====================================
 
 Definitions are given in the
 :ref:`summary of structural IQMs <iqms_t1w>`.
@@ -31,7 +27,7 @@ Definitions are given in the
 
 
 Measures for the temporal information
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 
 .. _iqms_dvars :
 
@@ -94,7 +90,7 @@ Temporal SNR (:abbr:`tSNR (temporal SNR)`, ``tsnr``)
 
 
 Measures for artifacts and other
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------
 
 .. _iqms_fd:
 
@@ -187,11 +183,6 @@ Number of *dummy* scans** (``dummy``)
     in Resting-State FMRI*, Brain Conn 3(4):339-352,
     2013, doi:`10.1089/brain.2013.0156
     <http://dx.doi.org/10.1089/brain.2013.0156>`_.
-
-
-mriqc.qc.functional module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 """
 import os.path as op
 

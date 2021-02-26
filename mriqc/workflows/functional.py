@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
 Functional workflow
 ===================
@@ -20,7 +18,6 @@ The functional workflow follows the following steps:
 #. Individual-reports generation -- :py:func:`individual_reports`.
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
-
 """
 from mriqc import config
 from nipype.interfaces import io as nio

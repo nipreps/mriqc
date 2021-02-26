@@ -1,9 +1,6 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 r"""
-
 Measures based on noise measurements
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+====================================
 
 .. _iqms_cjv:
 
@@ -44,7 +41,7 @@ Measures based on noise measurements
   Lower values are better.
 
 Measures based on information theory
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 .. _iqms_efc:
 
@@ -67,7 +64,7 @@ Measures based on information theory
   Higher values are better.
 
 Measures targeting specific artifacts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 
 .. _iqms_inu:
 
@@ -180,11 +177,6 @@ Other measures
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
-
-
-mriqc.qc.anatomical module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 """
 import os.path as op
 from math import pi, sqrt
@@ -245,9 +237,7 @@ def snr_dietrich(mu_fg, sigma_air):
     if sigma_air < 1.0:
         from .. import config
 
-        config.loggers.interface.warning(
-            f"SNRd - background sigma is too small ({sigma_air})"
-        )
+        config.loggers.interface.warning(f"SNRd - background sigma is too small ({sigma_air})")
         sigma_air += 1.0
 
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
@@ -373,10 +363,7 @@ def efc(img, framemask=None):
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
     return float(
         (1.0 / efc_max)
-        * np.sum(
-            (img[framemask == 0] / b_max)
-            * np.log((img[framemask == 0] + 1e-16) / b_max)
-        )
+        * np.sum((img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max))
     )
 
 
@@ -435,10 +422,9 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
+    from mriqc.viz.misc import plot_qi2
     from scipy.stats import chi2
     from sklearn.neighbors import KernelDensity
-
-    from mriqc.viz.misc import plot_qi2
 
     # S. Ogawa was born
     np.random.seed(1191935)
@@ -459,9 +445,9 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
     x_grid = np.linspace(0.0, np.percentile(data, 99), 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(
-        bandwidth=0.05 * np.percentile(data, 98), kernel="gaussian"
-    ).fit(modelx[:, np.newaxis])
+    kde_skl = KernelDensity(bandwidth=0.05 * np.percentile(data, 98), kernel="gaussian").fit(
+        modelx[:, np.newaxis]
+    )
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
     # Find cutoff
@@ -528,9 +514,7 @@ def rpve(pvms, seg):
         loth = np.percentile(pvmap[pvmap > 0], 2)
         pvmap[pvmap < loth] = 0
         pvmap[pvmap > upth] = 0
-        pvfs[k] = (
-            pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()
-        ) / totalvol
+        pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
 
@@ -565,9 +549,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
     elif dims == 3:
         stats_pvms = [np.ones_like(pvms) - pvms, pvms]
     else:
-        raise RuntimeError(
-            "Incorrect image dimensions ({0:d})".format(np.array(pvms).ndim)
-        )
+        raise RuntimeError("Incorrect image dimensions ({0:d})".format(np.array(pvms).ndim))
 
     if airmask is not None:
         stats_pvms[0] = airmask
@@ -588,8 +570,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         nvox = float(mask.sum())
         if nvox < 1e3:
             config.loggers.interface.warning(
-                'calculating summary stats of label "%s" in a very small '
-                "mask (%d voxels)",
+                'calculating summary stats of label "%s" in a very small ' "mask (%d voxels)",
                 k,
                 int(nvox),
             )

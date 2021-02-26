@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Helper functions for the figures in the paper."""
 import os.path as op
 
@@ -215,9 +213,7 @@ def plot_raters(dataframe, ax=None, width=101, size=0.40):
             w = "n/a"
 
         color = palette[w]
-        rect = plt.Circle(
-            [x + offset, y + offset], size, facecolor=color, edgecolor=color
-        )
+        rect = plt.Circle([x + offset, y + offset], size, facecolor=color, edgecolor=color)
         ax.add_patch(rect)
 
     # text_x = ((nsamples - 1) % width) + 6.5
@@ -317,9 +313,7 @@ def raters_variability_plot(
 
     blocks = [(slen - 1) // width + 1 for slen in sites_len]
     fig = plt.figure(figsize=figsize)
-    gs = GridSpec(
-        len(sites_list), 1, width_ratios=[1], height_ratios=blocks, hspace=0.05
-    )
+    gs = GridSpec(len(sites_list), 1, width_ratios=[1], height_ratios=blocks, hspace=0.05)
 
     for s, gsel in zip(sites_list, gs):
         ax = plt.subplot(gsel)
@@ -441,9 +435,7 @@ def raters_variability_plot(
     return fig
 
 
-def plot_abide_stripplots(
-    inputs, figsize=(15, 2), out_file=None, rating_label="rater_1", dpi=100
-):
+def plot_abide_stripplots(inputs, figsize=(15, 2), out_file=None, rating_label="rater_1", dpi=100):
     import seaborn as sn
 
     from ..classifier.data import read_dataset
@@ -664,9 +656,7 @@ def plot_corrmat(in_csv, out_file=None):
         ext = ".svg"
         out_file = fname + ".svg"
 
-    corrplot.savefig(
-        out_file, format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=100
-    )
+    corrplot.savefig(out_file, format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=100)
     return corrplot
 
 
@@ -885,9 +875,7 @@ def plot_artifact(
     return nplt_disp, ax
 
 
-def figure1_a(
-    image_path, display_mode="y", vmax=300, cut_coords=None, figsize=(20, 20)
-):
+def figure1_a(image_path, display_mode="y", vmax=300, cut_coords=None, figsize=(20, 20)):
     import matplotlib.patches as patches
 
     if cut_coords is None:
@@ -927,9 +915,7 @@ def figure1_a(
     return disp
 
 
-def figure1_b(
-    image_path, display_mode="z", vmax=400, cut_coords=None, figsize=(20, 20)
-):
+def figure1_b(image_path, display_mode="z", vmax=400, cut_coords=None, figsize=(20, 20)):
     import matplotlib.patches as patches
 
     if cut_coords is None:

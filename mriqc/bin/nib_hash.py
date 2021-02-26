@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2016-03-16 11:28:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:50:21
-
 """
 Extracts the sha hash of the contents of a nifti file.
-
 """
-
 from hashlib import sha1
 
 import nibabel as nb

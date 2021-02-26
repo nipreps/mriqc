@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """MRIQC run script."""
 from mriqc import config
 

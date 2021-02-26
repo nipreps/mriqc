@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """mriqc_fit command line interface definition."""
 import logging
 import sys
@@ -57,9 +56,7 @@ def get_parser():
     parser.add_argument(
         "--test", nargs="*", help="test data tables, X and Y, leave empty for DS030."
     )
-    parser.add_argument(
-        "-X", "--evaluation-data", help="classify this CSV table of IQMs"
-    )
+    parser.add_argument("-X", "--evaluation-data", help="classify this CSV table of IQMs")
 
     parser.add_argument(
         "--train-balanced-leaveout",
@@ -131,9 +128,7 @@ def get_parser():
         default=0,
         help="increases log verbosity for each occurence.",
     )
-    g_input.add_argument(
-        "--njobs", action="store", default=-1, type=int, help="number of jobs"
-    )
+    g_input.add_argument("--njobs", action="store", default=-1, type=int, help="number of jobs")
 
     g_input.add_argument(
         "-t",
@@ -234,8 +229,7 @@ def main():
             if load_classifier != "":
                 msg = '("%s") was not found' % load_classifier
             raise RuntimeError(
-                "No training samples were given, and the --load-classifier "
-                "option %s." % msg
+                "No training samples were given, and the --load-classifier " "option %s." % msg
             )
 
         cvhelper = CVHelper(
@@ -251,9 +245,7 @@ def main():
         # Set held-out data
         cvhelper.setXtest(test_path[0], test_path[1])
         # Evaluate
-        cvhelper.evaluate(
-            matrix=True, scoring=[opts.scorer, "accuracy"], save_pred=True
-        )
+        cvhelper.evaluate(matrix=True, scoring=[opts.scorer, "accuracy"], save_pred=True)
 
         # Pickle if required
         if not clf_loaded:
@@ -261,9 +253,7 @@ def main():
             cvhelper.save(suffix="data-all_estimator")
 
     if opts.evaluation_data:
-        cvhelper.predict_dataset(
-            opts.evaluation_data, save_pred=True, thres=opts.threshold
-        )
+        cvhelper.predict_dataset(opts.evaluation_data, save_pred=True, thres=opts.threshold)
 
     LOGGER.info("Results saved as %s", abspath(cvhelper._base_name + "*"))
 
@@ -290,8 +280,7 @@ def _parse_set(arg, default):
                 if not fexists
             ]
             raise RuntimeError(
-                "Errors (%d) loading training set: %s."
-                % (len(errors), ", ".join(errors))
+                "Errors (%d) loading training set: %s." % (len(errors), ", ".join(errors))
             )
     return arg
 

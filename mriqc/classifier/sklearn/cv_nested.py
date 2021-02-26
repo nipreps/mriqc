@@ -1,17 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2015-11-19 16:44:27
-
 """
-=====================
 Extensions to sklearn
 =====================
-
-
-Extends sklearn's GridSearchCV to a model search object
-
-
+Extends sklearn's GridSearchCV to a model search object.
 """
 import logging
 import numbers
@@ -22,6 +12,7 @@ from collections import Sized
 from functools import partial
 
 import numpy as np
+
 from sklearn.model_selection._search import (
     BaseSearchCV,
     Parallel,
@@ -112,9 +103,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         cv_iter = list(cv.split(X, y, groups))
-        out = Parallel(
-            n_jobs=self.n_jobs, verbose=self.verbose, pre_dispatch=pre_dispatch
-        )(
+        out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, pre_dispatch=pre_dispatch)(
             delayed(_model_fit_and_score)(
                 estimator,
                 X,
@@ -146,9 +135,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
                 parameters,
             ) = zip(*out)
         else:
-            (test_scores, test_sample_counts, fit_time, score_time, parameters) = zip(
-                *out
-            )
+            (test_scores, test_sample_counts, fit_time, score_time, parameters) = zip(*out)
 
         candidate_params = parameters[::n_splits]
         n_candidates = len(candidate_params)
@@ -166,9 +153,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
             results["mean_%s" % key_name] = array_means
             # Weighted std is not directly available in numpy
             array_stds = np.sqrt(
-                np.average(
-                    (array - array_means[:, np.newaxis]) ** 2, axis=1, weights=weights
-                )
+                np.average((array - array_means[:, np.newaxis]) ** 2, axis=1, weights=weights)
             )
             results["std_%s" % key_name] = array_stds
 
@@ -266,9 +251,7 @@ def _model_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -352,9 +335,7 @@ def nested_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -415,16 +396,13 @@ def nested_fit_and_score(
             score_time = time.time() - start_time - fit_time
         else:
             LOG.warning(
-                "Test set has no positive labels, scoring has been skipped "
-                "in this loop."
+                "Test set has no positive labels, scoring has been skipped " "in this loop."
             )
 
         if return_train_score:
             train_score = _score(estimator, X_train, y_train, scorer)
 
-        acc_score = _score(
-            estimator, X_test, y_test, check_scoring(estimator, scoring="accuracy")
-        )
+        acc_score = _score(estimator, X_test, y_test, check_scoring(estimator, scoring="accuracy"))
 
     if verbose > 0:
         total_time = score_time + fit_time

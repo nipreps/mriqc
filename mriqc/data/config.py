@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Utilities: Jinja2 templates."""
 
 from io import open  # pylint: disable=W0622
@@ -38,9 +36,7 @@ class IndividualTemplate(Template):
     """Specific template for the individual report"""
 
     def __init__(self):
-        super(IndividualTemplate, self).__init__(
-            pkgrf("mriqc", "data/reports/individual.html")
-        )
+        super(IndividualTemplate, self).__init__(pkgrf("mriqc", "data/reports/individual.html"))
 
 
 class GroupTemplate(Template):

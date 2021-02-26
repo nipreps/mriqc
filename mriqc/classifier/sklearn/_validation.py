@@ -1,15 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2017-06-21 16:44:27
-
-
 import logging
 import numbers
 import time
 import warnings
 
 import numpy as np
+
 from sklearn.base import clone, is_classifier
 from sklearn.exceptions import FitFailedWarning
 from sklearn.externals.joblib import Parallel, delayed, logger
@@ -96,9 +91,7 @@ def _fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -177,8 +170,7 @@ def _score(estimator, X_test, y_test, scorer):
             pass
     if not isinstance(score, numbers.Number):
         raise ValueError(
-            "scoring must return a number, got %s (%s) instead."
-            % (str(score), type(score))
+            "scoring must return a number, got %s (%s) instead." % (str(score), type(score))
         )
     return score
 

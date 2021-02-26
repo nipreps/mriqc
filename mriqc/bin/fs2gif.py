@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2016-03-16 11:28:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:48:39
-
 """
-Batch export freesurfer results to animated gifs
-
+Batch export freesurfer results to animated gifs.
 """
-
 import os
 import os.path as op
 import subprocess as sp
@@ -92,9 +83,7 @@ set i 0
 
         niifile = op.join(tmp_sub, "%s.nii.gz") % subid
         ref_file = op.join(sub_path, "mri", "T1.mgz")
-        sp.call(
-            ["mri_convert", op.join(sub_path, "mri", "norm.mgz"), niifile], cwd=tmp_sub
-        )
+        sp.call(["mri_convert", op.join(sub_path, "mri", "norm.mgz"), niifile], cwd=tmp_sub)
         data = nb.load(niifile).get_data()
         data[data > 0] = 1
 
@@ -123,10 +112,7 @@ set i 0
                 )
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
-                tclfp.write(
-                    '    SaveTIFF [format "%s/%s-' % (tmp_sub, subid)
-                    + '%03d.tif" $i]\n'
-                )
+                tclfp.write('    SaveTIFF [format "%s/%s-' % (tmp_sub, subid) + '%03d.tif" $i]\n')
                 tclfp.write("    incr i\n")
                 tclfp.write("}\n")
                 tclfp.write("QuitMedit\n")
@@ -169,16 +155,11 @@ set i 0
                     "for { set slice %d } { $slice < %d } { incr slice } {"
                     % (bbox_min[2], bbox_max[2])
                 )
-                tclfp.write(
-                    "    SetZoomCenter %d %d $slice\n"
-                    % (center[0] + 30, center[1] - 10)
-                )
+                tclfp.write("    SetZoomCenter %d %d $slice\n" % (center[0] + 30, center[1] - 10))
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
                 tclfp.write(
-                    '    SaveTIFF [format "{}/{}-lh-%03d.tif" $i]\n'.format(
-                        tmp_sub, subid
-                    )
+                    '    SaveTIFF [format "{}/{}-lh-%03d.tif" $i]\n'.format(tmp_sub, subid)
                 )
                 tclfp.write("    incr i\n")
                 tclfp.write("}\n")
@@ -201,16 +182,11 @@ set i 0
                     "for { set slice %d } { $slice < %d } { incr slice } {"
                     % (bbox_min[2], bbox_max[2])
                 )
-                tclfp.write(
-                    "    SetZoomCenter %d %d $slice\n"
-                    % (center[0] - 30, center[1] - 10)
-                )
+                tclfp.write("    SetZoomCenter %d %d $slice\n" % (center[0] - 30, center[1] - 10))
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
                 tclfp.write(
-                    '    SaveTIFF [format "{}/{}-rh-%03d.tif" $slice]\n'.format(
-                        tmp_sub, subid
-                    )
+                    '    SaveTIFF [format "{}/{}-rh-%03d.tif" $slice]\n'.format(tmp_sub, subid)
                 )
                 tclfp.write("    incr i\n")
                 tclfp.write("}\n")

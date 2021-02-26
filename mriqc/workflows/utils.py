@@ -1,6 +1,4 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Helper functions for the workflows"""
+"""Helper functions for the workflows."""
 from builtins import range
 from distutils.version import StrictVersion
 
@@ -20,12 +18,7 @@ def fmri_getidx(in_file, start_idx, stop_idx):
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
-    if (
-        start_idx is None
-        or not isdefined(start_idx)
-        or start_idx < 0
-        or start_idx > max_idx
-    ):
+    if start_idx is None or not isdefined(start_idx) or start_idx < 0 or start_idx > max_idx:
         start_idx = 0
 
     if stop_idx is None or not isdefined(stop_idx) or max_idx < stop_idx < start_idx:
@@ -98,11 +91,10 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
 
     import nibabel as nb
     import numpy as np
+    from mriqc.workflows.utils import spectrum_mask
     from scipy.ndimage import binary_erosion, generate_binary_structure
     from scipy.ndimage.filters import median_filter
     from statsmodels.robust.scale import mad
-
-    from mriqc.workflows.utils import spectrum_mask
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))

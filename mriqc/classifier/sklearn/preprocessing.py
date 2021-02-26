@@ -1,17 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-# @Author: oesteban
-# @Date:   2017-06-08 17:11:58
 """
-Extensions to the sklearn's default data preprocessing filters
-
+Extensions to the sklearn's default data preprocessing filters.
 """
 import logging
 
 import numpy as np
 import pandas as pd
+
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelBinarizer, RobustScaler
@@ -150,9 +144,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                 if not np.any(mask):
                     continue
                 scaler = self._scalers[batch]
-                new_x.ix[mask, self._colmask] = scaler.transform(
-                    X.ix[mask, self._colmask]
-                )
+                new_x.ix[mask, self._colmask] = scaler.transform(X.ix[mask, self._colmask])
             else:
                 colmask = self._colmask
                 if self.by in self._colnames and len(colmask) == len(self._colnames):
@@ -341,9 +333,7 @@ class CustFsNoiseWinnow(BaseEstimator, TransformerMixin):
 
             k = 1
             if np.all(importances[0:-1] > k * importances[-1]):
-                LOG.log(
-                    19, "All features (%d) are better than noise", len(idx_keep) - 1
-                )
+                LOG.log(19, "All features (%d) are better than noise", len(idx_keep) - 1)
                 # all features better than noise
                 # comment out to force counter renditions of winnowing
                 # noise_flag = False
@@ -419,9 +409,7 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(
-        self, target_auc=0.6, disable=False, max_iter=None, max_remove=0.7, site_col=-1
-    ):
+    def __init__(self, target_auc=0.6, disable=False, max_iter=None, max_remove=0.7, site_col=-1):
         self.disable = disable
         self.target_auc = target_auc
         self.mask_ = None
@@ -519,9 +507,7 @@ class SiteCorrelationSelector(BaseEstimator, TransformerMixin):
 
             i += 1
 
-        LOG.info(
-            "Feature selection: kept %d of %d features", np.sum(self.mask_), n_feature
-        )
+        LOG.info("Feature selection: kept %d of %d features", np.sum(self.mask_), n_feature)
         return self
 
     def fit_transform(self, X, y=None, n_jobs=1):
@@ -568,19 +554,13 @@ def _generate_noise(n_sample, y, clf_flag=True):
     """
     if clf_flag:
         noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
-        noise_score = roc_auc_score(
-            y, noise_feature, average="macro", sample_weight=None
-        )
+        noise_score = roc_auc_score(y, noise_feature, average="macro", sample_weight=None)
         while (noise_score > 0.6) or (noise_score < 0.4):
             noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
-            noise_score = roc_auc_score(
-                y, noise_feature, average="macro", sample_weight=None
-            )
+            noise_score = roc_auc_score(y, noise_feature, average="macro", sample_weight=None)
     else:
         noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
-        while (
-            np.abs(np.corrcoef(noise_feature, y[:, np.newaxis], rowvar=0)[0][1]) > 0.05
-        ):
+        while np.abs(np.corrcoef(noise_feature, y[:, np.newaxis], rowvar=0)[0][1]) > 0.05:
             noise_feature = np.random.normal(loc=0, scale=10.0, size=(n_sample, 1))
 
     return noise_feature

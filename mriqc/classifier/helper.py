@@ -1,9 +1,6 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
 Cross-validation helper module.
 """
-
 import logging
 import os
 from builtins import object
@@ -243,10 +240,7 @@ class CVHelper(CVHelperBase):
         Fits the cross-validation helper
         """
         from .sklearn import preprocessing as mcsp
-        from .sklearn._split import (
-            RepeatedBalancedKFold,
-            RepeatedPartiallyHeldOutKFold,
-        )
+        from .sklearn._split import RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold
         from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
         if self._pickled:
@@ -583,9 +577,7 @@ class CVHelper(CVHelperBase):
             )
 
             score = scores[scoring.index("accuracy")]
-            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (
-                self._permutation_test + 1
-            )
+            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (self._permutation_test + 1)
             LOG.info(
                 "Permutation test (N=%d) for accuracy score %f (pvalue=%f)",
                 self._permutation_test,
@@ -669,9 +661,7 @@ class CVHelper(CVHelperBase):
             predf["prob_y"] = prob_y[:, 1]
             predf["pred_y"] = pred_y
 
-        predf[bidts + cols].to_csv(
-            self._gen_fname(suffix=suffix, ext="csv"), index=False
-        )
+        predf[bidts + cols].to_csv(self._gen_fname(suffix=suffix, ext="csv"), index=False)
 
     def save(self, suffix="estimator", compress=3):
         """

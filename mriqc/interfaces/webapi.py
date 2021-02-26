@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 from urllib.parse import urlparse
 
 from mriqc import config
@@ -99,15 +97,11 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     port = traits.Int(desc="MRIQCWebAPI service port")
     path = Str(desc="MRIQCWebAPI endpoint root path")
     email = Str(desc="set sender email")
-    strict = traits.Bool(
-        False, usedefault=True, desc="crash if upload was not succesfull"
-    )
+    strict = traits.Bool(False, usedefault=True, desc="crash if upload was not succesfull")
 
 
 class UploadIQMsOutputSpec(TraitedSpec):
-    api_id = traits.Either(
-        None, traits.Str, desc="Id for report returned by the web api"
-    )
+    api_id = traits.Either(None, traits.Str, desc="Id for report returned by the web api")
 
 
 class UploadIQMs(SimpleInterface):
@@ -247,9 +241,7 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
-        errmsg = (
-            "QC metrics failed to upload due to connection error shown below:\n%s" % err
-        )
+        errmsg = "QC metrics failed to upload due to connection error shown below:\n%s" % err
         return Bunch(status_code=1, text=errmsg)
 
     return response

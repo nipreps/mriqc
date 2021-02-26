@@ -1,6 +1,4 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-""" Encapsulates report generation functions """
+"""Encapsulates report generation functions."""
 
 
 def individual_html(in_iqms, in_plots=None, api_id=None):
@@ -23,9 +21,7 @@ def individual_html(in_iqms, in_plots=None, api_id=None):
         if modality == "bold":
             bold_exclude_index = in_iqms.get("dumb_trs")
             if bold_exclude_index is None:
-                config.loggers.cli.warning(
-                    "Building bold report: no exclude index was found"
-                )
+                config.loggers.cli.warning("Building bold report: no exclude index was found")
             elif bold_exclude_index > 0:
                 msg = """\
 <span class="problematic">Non-steady state (strong T1 contrast) has been detected in the \
@@ -79,8 +75,7 @@ first {} volumes</span>. They were excluded before generating any QC measures an
             REPORT_TITLES["bold"].insert(3, ("Spikes", "spikes"))
 
         in_plots = [
-            (REPORT_TITLES[mod][i] + (read_report_snippet(v),))
-            for i, v in enumerate(in_plots)
+            (REPORT_TITLES[mod][i] + (read_report_snippet(v),)) for i, v in enumerate(in_plots)
         ]
 
     pred_qa = None  # metadata.pop('mriqc_pred', None)

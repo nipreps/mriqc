@@ -1,19 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2015-11-19 16:44:27
-
 """
 Parameters grid
 ===============
-
-
-Extends sklearn's ModelParameterGrid so the grid includes
-different models.
-
-
+Extends sklearn's ModelParameterGrid so the grid includes different models.
 """
-
 import operator
 from builtins import object, zip
 from collections import Mapping
@@ -105,9 +94,7 @@ class ModelParameterGrid(object):
     def __len__(self):
         """Number of points on the grid."""
         # Product function that can handle iterables (np.product can't).
-        return sum(
-            _len(points) for p in self.param_grid for estim, points in list(p.items())
-        )
+        return sum(_len(points) for p in self.param_grid for estim, points in list(p.items()))
 
     def __getitem__(self, ind):
         """Get the parameters that would be ``ind``th in iteration

@@ -1,6 +1,4 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-"""SVG handling utilities """
+"""SVG handling utilities."""
 
 
 def svg2str(display_object, dpi=300):
@@ -39,9 +37,7 @@ def combine_svg(svg_list, axis="vertical"):
             for i, els in enumerate(sizes):
                 scales[i] = ref_size[0] / els[0]
 
-        newsizes = [
-            tuple(size) for size in np.array(sizes) * np.array(scales)[..., np.newaxis]
-        ]
+        newsizes = [tuple(size) for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
         totalsize = [newsizes[0][0], np.sum(newsizes, axis=0)[1]]
 
     elif axis == "horizontal":
@@ -52,9 +48,7 @@ def combine_svg(svg_list, axis="vertical"):
             for i, els in enumerate(sizes):
                 scales[i] = ref_size[1] / els[1]
 
-        newsizes = [
-            tuple(size) for size in np.array(sizes) * np.array(scales)[..., np.newaxis]
-        ]
+        newsizes = [tuple(size) for size in np.array(sizes) * np.array(scales)[..., np.newaxis]]
         totalsize = [np.sum(newsizes, axis=0)[0], newsizes[0][1]]
 
     # Compose the views panel: total size is the width of
