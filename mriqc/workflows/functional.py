@@ -1,9 +1,8 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """
-=======================
-The functional workflow
-=======================
+Functional workflow
+===================
 
 .. image :: _static/functional_workflow_source.svg
 
@@ -23,10 +22,11 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 
 """
-from .. import config
-from nipype.pipeline import engine as pe
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
+from nipype.pipeline import engine as pe
+
+from .. import config
 
 
 def fmri_qc_workflow(name="funcMRIQC"):
@@ -42,8 +42,8 @@ def fmri_qc_workflow(name="funcMRIQC"):
             wf = fmri_qc_workflow()
 
     """
-    from nipype.interfaces.afni import TStat
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
+    from nipype.interfaces.afni import TStat
     from niworkflows.interfaces.utils import SanitizeImage
 
     workflow = pe.Workflow(name=name)
@@ -58,7 +58,9 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
+    inputnode = pe.Node(
+        niu.IdentityInterface(fields=["in_file"]), name="inputnode"
+    )
     inputnode.iterables = [("in_file", dataset)]
 
     outputnode = pe.Node(
@@ -85,7 +87,9 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
 
     # 2. Compute mean fmri
     mean = pe.Node(
-        TStat(options="-mean", outputtype="NIFTI_GZ"), name="mean", mem_gb=mem_gb * 1.5
+        TStat(options="-mean", outputtype="NIFTI_GZ"),
+        name="mean",
+        mem_gb=mem_gb * 1.5,
     )
     skullstrip_epi = fmri_bmsk_workflow()
 
@@ -115,7 +119,11 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
             (hmcwf, mean, [("outputnode.out_file", "in_file")]),
             (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
             (mean, ema, [("out_file", "inputnode.epi_mean")]),
-            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
+            (
+                skullstrip_epi,
+                ema,
+                [("outputnode.out_file", "inputnode.epi_mask")],
+            ),
             (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
             (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
             (
@@ -126,12 +134,20 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
                     ("outputnode.out_fd", "inputnode.hmc_fd"),
                 ],
             ),
-            (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (
+                skullstrip_epi,
+                iqmswf,
+                [("outputnode.out_file", "inputnode.brainmask")],
+            ),
             (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
             (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
             (mean, repwf, [("out_file", "inputnode.epi_mean")]),
             (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
-            (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (
+                skullstrip_epi,
+                repwf,
+                [("outputnode.out_file", "inputnode.brainmask")],
+            ),
             (
                 hmcwf,
                 repwf,
@@ -197,7 +213,11 @@ Building functional MRIQC workflow for files: {', '.join(dataset)}."""
         workflow.connect(
             [
                 (sanitize, melodic, [("out_file", "in_files")]),
-                (skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")]),
+                (
+                    skullstrip_epi,
+                    melodic,
+                    [("outputnode.out_file", "report_mask")],
+                ),
                 (melodic, repwf, [("out_report", "inputnode.ica_report")]),
             ]
         )
@@ -234,13 +254,13 @@ def compute_iqms(name="ComputeIQMs"):
 
     """
     from nipype.algorithms.confounds import ComputeDVARS
-    from nipype.interfaces.afni import QualityIndex, OutlierCount
+    from nipype.interfaces.afni import OutlierCount, QualityIndex
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from .utils import get_fwhmx, _tofloat
-    from ..interfaces.transitional import GCOR
     from ..interfaces import FunctionalQC, IQMFileSink
     from ..interfaces.reports import AddProvenance
+    from ..interfaces.transitional import GCOR
+    from .utils import _tofloat, get_fwhmx
 
     mem_gb = config.workflow.biggest_file_gb
 
@@ -264,7 +284,13 @@ def compute_iqms(name="ComputeIQMs"):
     )
     outputnode = pe.Node(
         niu.IdentityInterface(
-            fields=["out_file", "out_dvars", "outliers", "out_spikes", "out_fft"]
+            fields=[
+                "out_file",
+                "out_dvars",
+                "outliers",
+                "out_spikes",
+                "out_fft",
+            ]
         ),
         name="outputnode",
     )
@@ -302,7 +328,11 @@ def compute_iqms(name="ComputeIQMs"):
 
     workflow.connect(
         [
-            (inputnode, dvnode, [("hmc_epi", "in_file"), ("brainmask", "in_mask")]),
+            (
+                inputnode,
+                dvnode,
+                [("hmc_epi", "in_file"), ("brainmask", "in_mask")],
+            ),
             (
                 inputnode,
                 measures,
@@ -315,9 +345,17 @@ def compute_iqms(name="ComputeIQMs"):
                     ("in_tsnr", "in_tsnr"),
                 ],
             ),
-            (inputnode, fwhm, [("epi_mean", "in_file"), ("brainmask", "mask")]),
+            (
+                inputnode,
+                fwhm,
+                [("epi_mean", "in_file"), ("brainmask", "mask")],
+            ),
             (inputnode, quality, [("hmc_epi", "in_file")]),
-            (inputnode, outliers, [("hmc_epi", "in_file"), ("brainmask", "mask")]),
+            (
+                inputnode,
+                outliers,
+                [("hmc_epi", "in_file"), ("brainmask", "mask")],
+            ),
             (inputnode, gcor, [("hmc_epi", "in_file"), ("brainmask", "mask")]),
             (dvnode, measures, [("out_all", "in_dvars")]),
             (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
@@ -327,9 +365,13 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(), name="metadata", run_without_submitting=True)
+    meta = pe.Node(
+        ReadSidecarJSON(), name="metadata", run_without_submitting=True
+    )
     addprov = pe.Node(
-        AddProvenance(modality="bold"), name="provenance", run_without_submitting=True
+        AddProvenance(modality="bold"),
+        name="provenance",
+        run_without_submitting=True,
     )
 
     # Save to JSON file
@@ -414,7 +456,8 @@ def individual_reports(name="ReportsWorkflow"):
 
     """
     from niworkflows.interfaces.plotting import FMRISummary
-    from ..interfaces import PlotMosaic, Spikes, PlotSpikes
+
+    from ..interfaces import PlotMosaic, PlotSpikes, Spikes
     from ..interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -495,7 +538,9 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     mosaic_stddev = pe.Node(
-        PlotMosaic(out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"),
+        PlotMosaic(
+            out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"
+        ),
         name="PlotMosaicSD",
     )
 
@@ -513,7 +558,8 @@ def individual_reports(name="ReportsWorkflow"):
     # Link images that should be reported
     dsplots = pe.Node(
         nio.DataSink(
-            base_directory=str(config.execution.output_dir), parameterization=False
+            base_directory=str(config.execution.output_dir),
+            parameterization=False,
         ),
         name="dsplots",
         run_without_submitting=True,
@@ -559,7 +605,9 @@ def individual_reports(name="ReportsWorkflow"):
 
     if config.workflow.ica:
         page_number = 4 + config.workflow.fft_spikes_detector
-        workflow.connect([(inputnode, mplots, [("ica_report", "in%d" % page_number)])])
+        workflow.connect(
+            [(inputnode, mplots, [("ica_report", "in%d" % page_number)])]
+        )
 
     if not verbose:
         return workflow
@@ -571,7 +619,9 @@ def individual_reports(name="ReportsWorkflow"):
 
     mosaic_noise = pe.Node(
         PlotMosaic(
-            out_file="plot_anat_mosaic2_noise.svg", only_noise=True, cmap="viridis_r"
+            out_file="plot_anat_mosaic2_noise.svg",
+            only_noise=True,
+            cmap="viridis_r",
         ),
         name="PlotMosaicNoise",
     )
@@ -628,8 +678,12 @@ def fmri_bmsk_workflow(name="fMRIBrainMask"):
     from nipype.interfaces.afni import Automask
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
+    inputnode = pe.Node(
+        niu.IdentityInterface(fields=["in_file"]), name="inputnode"
+    )
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=["out_file"]), name="outputnode"
+    )
     afni_msk = pe.Node(Automask(outputtype="NIFTI_GZ"), name="afni_msk")
 
     # Connect brain mask extraction
@@ -655,7 +709,7 @@ def hmc(name="fMRI_HMC"):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Calc, TShift, Refit, Despike, Volreg
+    from nipype.interfaces.afni import Calc, Despike, Refit, TShift, Volreg
     from niworkflows.interfaces.registration import EstimateReferenceImage
 
     mem_gb = config.workflow.biggest_file_gb
@@ -663,7 +717,9 @@ def hmc(name="fMRI_HMC"):
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "fd_radius", "start_idx", "stop_idx"]),
+        niu.IdentityInterface(
+            fields=["in_file", "fd_radius", "start_idx", "stop_idx"]
+        ),
         name="inputnode",
     )
 
@@ -672,9 +728,14 @@ def hmc(name="fMRI_HMC"):
     )
 
     if any(
-        (config.workflow.start_idx is not None, config.workflow.stop_idx is not None)
+        (
+            config.workflow.start_idx is not None,
+            config.workflow.stop_idx is not None,
+        )
     ):
-        drop_trs = pe.Node(Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs")
+        drop_trs = pe.Node(
+            Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs"
+        )
         workflow.connect(
             [
                 (
@@ -689,7 +750,9 @@ def hmc(name="fMRI_HMC"):
             ]
         )
     else:
-        drop_trs = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="drop_trs")
+        drop_trs = pe.Node(
+            niu.IdentityInterface(fields=["out_file"]), name="drop_trs"
+        )
         workflow.connect(
             [
                 (inputnode, drop_trs, [("in_file", "out_file")]),
@@ -838,10 +901,9 @@ def epi_mni_align(name="SpatialNormalization"):
 
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
+    from niworkflows.interfaces.registration import \
+        RobustMNINormalizationRPT as RobustMNINormalization
     from templateflow.api import get as get_template
-    from niworkflows.interfaces.registration import (
-        RobustMNINormalizationRPT as RobustMNINormalization,
-    )
 
     # Get settings
     testing = config.execution.debug
@@ -850,7 +912,8 @@ def epi_mni_align(name="SpatialNormalization"):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
-        niu.IdentityInterface(fields=["epi_mean", "epi_mask"]), name="inputnode"
+        niu.IdentityInterface(fields=["epi_mean", "epi_mask"]),
+        name="inputnode",
     )
     outputnode = pe.Node(
         niu.IdentityInterface(fields=["epi_mni", "epi_parc", "report"]),
@@ -871,11 +934,16 @@ def epi_mni_align(name="SpatialNormalization"):
             num_threads=ants_nthreads,
             reference="boldref",
             reference_image=str(
-                get_template("MNI152NLin2009cAsym", resolution=2, suffix="boldref")
+                get_template(
+                    "MNI152NLin2009cAsym", resolution=2, suffix="boldref"
+                )
             ),
             reference_mask=str(
                 get_template(
-                    "MNI152NLin2009cAsym", resolution=2, desc="brain", suffix="mask"
+                    "MNI152NLin2009cAsym",
+                    resolution=2,
+                    desc="brain",
+                    suffix="mask",
                 )
             ),
             template="MNI152NLin2009cAsym",
@@ -892,7 +960,10 @@ def epi_mni_align(name="SpatialNormalization"):
             float=True,
             input_image=str(
                 get_template(
-                    "MNI152NLin2009cAsym", resolution=1, desc="carpet", suffix="dseg"
+                    "MNI152NLin2009cAsym",
+                    resolution=1,
+                    desc="carpet",
+                    suffix="dseg",
                 )
             ),
             dimension=3,
@@ -910,7 +981,11 @@ def epi_mni_align(name="SpatialNormalization"):
             (n4itk, norm, [("output_image", "moving_image")]),
             (norm, invt, [("inverse_composite_transform", "transforms")]),
             (invt, outputnode, [("output_image", "epi_parc")]),
-            (norm, outputnode, [("warped_image", "epi_mni"), ("out_report", "report")]),
+            (
+                norm,
+                outputnode,
+                [("warped_image", "epi_mni"), ("out_report", "report")],
+            ),
         ]
     )
     return workflow
@@ -919,6 +994,7 @@ def epi_mni_align(name="SpatialNormalization"):
 def spikes_mask(in_file, in_mask=None, out_file=None):
     """Calculate a mask in which check for :abbr:`EM (electromagnetic)` spikes."""
     import os.path as op
+
     import nibabel as nb
     import numpy as np
     from nilearn.image import mean_img
@@ -988,7 +1064,9 @@ def _parse_tqual(in_file):
 
     with open(in_file, "r") as fin:
         lines = fin.readlines()
-    return np.mean([float(line.strip()) for line in lines if not line.startswith("++")])
+    return np.mean(
+        [float(line.strip()) for line in lines if not line.startswith("++")]
+    )
 
 
 def _parse_tout(in_file):
