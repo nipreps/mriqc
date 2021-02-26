@@ -31,14 +31,8 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 """
 from mriqc import config
-from mriqc.interfaces import (
-    ArtifactMask,
-    ComputeQI2,
-    ConformImage,
-    IQMFileSink,
-    RotationMask,
-    StructuralQC,
-)
+from mriqc.interfaces import (ArtifactMask, ComputeQI2, ConformImage,
+                              IQMFileSink, RotationMask, StructuralQC)
 from mriqc.interfaces.reports import AddProvenance
 from mriqc.messages import BUILDING_WORKFLOW
 from mriqc.workflows.utils import get_fwhmx
@@ -65,9 +59,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     """
     from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 
-    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
-        "T2w", []
-    )
+    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get("T2w", [])
 
     message = BUILDING_WORKFLOW.format(dataset=", ".join(dataset))
     config.loggers.workflow.info(message)
@@ -106,47 +98,47 @@ def anat_qc_workflow(name="anatMRIQC"):
     # Connect all nodes
     # fmt: off
     workflow.connect([
-        (inputnode, to_ras, [('in_file', 'in_file')]),
-        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
-        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
-        (inputnode, segment, [(('in_file', _get_imgtype), 'img_type')]),
-        (to_ras, asw, [('out_file', 'inputnode.in_file')]),
-        (asw, segment, [('outputnode.out_file', 'in_files')]),
-        (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
-        (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
-        (asw, norm, [('outputnode.bias_corrected', 'inputnode.moving_image'),
-                     ('outputnode.out_mask', 'inputnode.moving_mask')]),
+        (inputnode, to_ras, [("in_file", "in_file")]),
+        (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
+        (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
+        (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
+        (to_ras, asw, [("out_file", "inputnode.in_file")]),
+        (asw, segment, [("outputnode.out_file", "in_files")]),
+        (asw, hmsk, [("outputnode.bias_corrected", "inputnode.in_file")]),
+        (segment, hmsk, [("tissue_class_map", "inputnode.in_segm")]),
+        (asw, norm, [("outputnode.bias_corrected", "inputnode.moving_image"),
+                     ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
-            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+            ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, iqmswf, [
-            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+            ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, repwf, ([
-            ('outputnode.out_report', 'inputnode.mni_report')])),
-        (to_ras, amw, [('out_file', 'inputnode.in_file')]),
-        (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
-        (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
-        (to_ras, iqmswf, [('out_file', 'inputnode.in_ras')]),
-        (asw, iqmswf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
-                       ('outputnode.bias_image', 'inputnode.in_inu'),
-                       ('outputnode.out_mask', 'inputnode.brainmask')]),
-        (amw, iqmswf, [('outputnode.air_mask', 'inputnode.airmask'),
-                       ('outputnode.hat_mask', 'inputnode.hatmask'),
-                       ('outputnode.art_mask', 'inputnode.artmask'),
-                       ('outputnode.rot_mask', 'inputnode.rotmask')]),
-        (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
-                           ('partial_volume_files', 'inputnode.pvms')]),
-        (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
-        (to_ras, repwf, [('out_file', 'inputnode.in_ras')]),
-        (asw, repwf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
-                      ('outputnode.out_mask', 'inputnode.brainmask')]),
-        (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
-        (amw, repwf, [('outputnode.air_mask', 'inputnode.airmask'),
-                      ('outputnode.art_mask', 'inputnode.artmask'),
-                      ('outputnode.rot_mask', 'inputnode.rotmask')]),
-        (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
-        (iqmswf, repwf, [('outputnode.noisefit', 'inputnode.noisefit')]),
-        (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
-        (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
+            ("outputnode.out_report", "inputnode.mni_report")])),
+        (to_ras, amw, [("out_file", "inputnode.in_file")]),
+        (asw, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
+        (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
+        (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
+        (asw, iqmswf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
+                       ("outputnode.bias_image", "inputnode.in_inu"),
+                       ("outputnode.out_mask", "inputnode.brainmask")]),
+        (amw, iqmswf, [("outputnode.air_mask", "inputnode.airmask"),
+                       ("outputnode.hat_mask", "inputnode.hatmask"),
+                       ("outputnode.art_mask", "inputnode.artmask"),
+                       ("outputnode.rot_mask", "inputnode.rotmask")]),
+        (segment, iqmswf, [("tissue_class_map", "inputnode.segmentation"),
+                           ("partial_volume_files", "inputnode.pvms")]),
+        (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
+        (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
+        (asw, repwf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
+                      ("outputnode.out_mask", "inputnode.brainmask")]),
+        (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
+        (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
+                      ("outputnode.art_mask", "inputnode.artmask"),
+                      ("outputnode.rot_mask", "inputnode.rotmask")]),
+        (segment, repwf, [("tissue_class_map", "inputnode.segmentation")]),
+        (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
+        (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
+        (iqmswf, outputnode, [("outputnode.out_file", "out_json")])
     ])
     # fmt:on
 
@@ -172,9 +164,8 @@ def anat_qc_workflow(name="anatMRIQC"):
 
 def spatial_normalization(name="SpatialNormalization", resolution=2):
     """Create a simplied workflow to perform fast spatial normalization."""
-    from niworkflows.interfaces.registration import (
-        RobustMNINormalizationRPT as RobustMNINormalization,
-    )
+    from niworkflows.interfaces.registration import \
+        RobustMNINormalizationRPT as RobustMNINormalization
 
     # Have the template id handy
     tpl_id = config.workflow.template_id
@@ -302,9 +293,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     # Project MNI segmentation to T1 space
     invt = pe.MapNode(
-        ants.ApplyTransforms(
-            dimension=3, default_value=0, interpolation="Linear", float=True
-        ),
+        ants.ApplyTransforms(dimension=3, default_value=0, interpolation="Linear", float=True),
         iterfield=["input_image"],
         name="MNItpms2t1",
     )
@@ -611,14 +600,10 @@ def headmsk_wf(name="HeadMaskWorkflow"):
             pass
 
     if not use_bet and not has_dipy:
-        raise RuntimeError(
-            "DIPY is not installed and ``config.workflow.headmask`` is not BET."
-        )
+        raise RuntimeError("DIPY is not installed and ``config.workflow.headmask`` is not BET.")
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode"
-    )
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode")
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
 
     if use_bet:
@@ -890,9 +875,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(
-        np.uint8
-    )
+    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(np.uint8)
     mask[segdata > 0] = 1
     mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)
     # Remove small objects
@@ -905,9 +888,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
 
-    mask = sim.binary_fill_holes(mask, struc).astype(
-        np.uint8
-    )  # pylint: disable=no-member
+    mask = sim.binary_fill_holes(mask, struc).astype(np.uint8)  # pylint: disable=no-member
 
     nb.Nifti1Image(mask, imnii.affine, hdr).to_filename(out_file)
     return out_file
