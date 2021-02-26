@@ -211,7 +211,9 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         default=Path("work").absolute(),
         help="Path where intermediate results should be stored.",
     )
-    g_outputs.add_argument("--verbose-reports", default=False, action="store_true")
+    g_outputs.add_argument(
+        "--verbose-reports", default=False, action="store_true"
+    )
     g_outputs.add_argument(
         "--write-graph",
         action="store_true",
@@ -493,7 +495,9 @@ Please, check out your currently set filters:
         )
 
     # Check no DWI or others are sneaked into MRIQC
-    unknown_mods = set(config.workflow.inputs.keys()) - set(("T1w", "T2w", "bold"))
+    unknown_mods = set(config.workflow.inputs.keys()) - set(
+        ("T1w", "T2w", "bold")
+    )
     if unknown_mods:
         parser.error(
             "MRIQC is unable to process the following modalities: "
