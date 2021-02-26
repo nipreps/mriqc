@@ -1,9 +1,10 @@
 """Utilities and mocks for testing and documentation building."""
 from contextlib import contextmanager
 from pathlib import Path
+from tempfile import mkdtemp
+
 from pkg_resources import resource_filename as pkgrf
 from toml import loads
-from tempfile import mkdtemp
 
 
 @contextmanager
@@ -21,7 +22,9 @@ def mock_config():
     config.loggers.init()
 
     config.execution.work_dir = Path(mkdtemp())
-    config.execution.bids_dir = Path(pkgrf("mriqc", "data/tests/ds000005")).absolute()
+    config.execution.bids_dir = Path(
+        pkgrf("mriqc", "data/tests/ds000005")
+    ).absolute()
     config.execution.init()
 
     yield

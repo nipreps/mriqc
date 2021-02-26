@@ -80,12 +80,13 @@ finally:
     # ignoring the most annoying warnings
     import os
     import sys
-
-    from uuid import uuid4
     from pathlib import Path
     from time import strftime
+    from uuid import uuid4
+
     from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
+
     from . import __version__
 
 if not hasattr(sys, "_is_pytest_session"):
@@ -100,7 +101,9 @@ if not any(
 ):
     os.environ["PYTHONWARNINGS"] = "ignore"
 
-logging.addLevelName(25, "IMPORTANT")  # Add a new level between INFO and WARNING
+logging.addLevelName(
+    25, "IMPORTANT"
+)  # Add a new level between INFO and WARNING
 logging.addLevelName(15, "VERBOSE")  # Add a new level between INFO and DEBUG
 
 DEFAULT_MEMORY_MIN_GB = 0.01
@@ -124,7 +127,8 @@ if os.getenv("IS_DOCKER_8395080871"):
 
 _templateflow_home = Path(
     os.getenv(
-        "TEMPLATEFLOW_HOME", os.path.join(os.getenv("HOME"), ".cache", "templateflow")
+        "TEMPLATEFLOW_HOME",
+        os.path.join(os.getenv("HOME"), ".cache", "templateflow"),
     )
 )
 
@@ -383,6 +387,7 @@ class execution(_Config):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
         if cls._layout is None:
             import re
+
             from bids.layout import BIDSLayout
 
             work_dir = cls.work_dir / "bids.db"
@@ -449,7 +454,9 @@ class workflow(_Config):
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
-    _fmt = "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
+    _fmt = (
+        "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
+    )
     _datefmt = "%y%m%d-%H:%M:%S"
     _init = False
 
@@ -512,7 +519,9 @@ class loggers:
         if retval is None:
             setattr(cls, name, logging.getLogger(name))
             _handler = logging.StreamHandler(stream=sys.stdout)
-            _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
+            _handler.setFormatter(
+                logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
+            )
             retval.addHandler(_handler)
             retval.setLevel(execution.log_level)
         return retval
