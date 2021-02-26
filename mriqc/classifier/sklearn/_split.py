@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import _RepeatedSplits
 from sklearn.utils import indexable

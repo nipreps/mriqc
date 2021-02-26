@@ -12,8 +12,7 @@ MRIQC Plot script
 
 import os
 import os.path as op
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 from .. import __version__
 from ..reports import workflow_report

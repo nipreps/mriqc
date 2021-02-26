@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """mriqc_fit command line interface definition."""
-import sys
-from os.path import isfile, abspath
-import warnings
 import logging
-from pkg_resources import resource_filename as pkgrf
+import sys
+import warnings
+from os.path import abspath, isfile
 
 import matplotlib
+from pkg_resources import resource_filename as pkgrf
 
 matplotlib.use("Agg")
 
@@ -33,8 +33,7 @@ def warn_redirect(message, category, filename, lineno, file=None, line=None):
 
 
 def get_parser():
-    from argparse import ArgumentParser
-    from argparse import RawTextHelpFormatter
+    from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
         description="MRIQC model selection and held-out evaluation",
@@ -152,6 +151,7 @@ def main():
     """Entry point"""
     import re
     from datetime import datetime
+
     from .. import __version__
     from ..classifier.helper import CVHelper
 

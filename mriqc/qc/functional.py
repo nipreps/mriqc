@@ -194,6 +194,7 @@ mriqc.qc.functional module
 
 """
 import os.path as op
+
 import numpy as np
 
 RAS_AXIS_ORDER = {"x": 0, "y": 1, "z": 2}

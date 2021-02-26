@@ -2,9 +2,10 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Helper functions """
 
-from pathlib import Path
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+from pathlib import Path
+
 import pandas as pd
 
 try:

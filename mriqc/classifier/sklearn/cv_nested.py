@@ -13,37 +13,25 @@ Extends sklearn's GridSearchCV to a model search object
 
 
 """
-import warnings
+import logging
 import numbers
 import time
-
-from functools import partial
-from collections import Sized
-import numpy as np
-
-from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._search import (
-    BaseSearchCV,
-    check_scoring,
-    indexable,
-    Parallel,
-    delayed,
-    defaultdict,
-    rankdata,
-)
-from sklearn.model_selection._validation import (
-    _score,
-    _num_samples,
-    _index_param_value,
-    _safe_split,
-    FitFailedWarning,
-    logger,
-)
-
-import logging
-from .parameters import ModelParameterGrid
-
+import warnings
 from builtins import object, zip
+from collections import Sized
+from functools import partial
+
+import numpy as np
+from sklearn.model_selection._search import (BaseSearchCV, Parallel,
+                                             check_scoring, defaultdict,
+                                             delayed, indexable, rankdata)
+from sklearn.model_selection._split import check_cv
+from sklearn.model_selection._validation import (FitFailedWarning,
+                                                 _index_param_value,
+                                                 _num_samples, _safe_split,
+                                                 _score, logger)
+
+from .parameters import ModelParameterGrid
 
 try:
     from sklearn.utils.fixes import MaskedArray

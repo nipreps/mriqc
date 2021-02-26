@@ -4,27 +4,27 @@
 # @Date:   2017-06-21 16:44:27
 
 
-import warnings
+import logging
 import numbers
 import time
+import warnings
 
 import numpy as np
+from sklearn.base import clone, is_classifier
+from sklearn.exceptions import FitFailedWarning
+from sklearn.externals.joblib import Parallel, delayed, logger
+from sklearn.metrics.scorer import check_scoring
+from sklearn.model_selection._split import check_cv
+from sklearn.model_selection._validation import _index_param_value
+from sklearn.utils import check_random_state, indexable, safe_indexing
+from sklearn.utils.metaestimators import _safe_split
+from sklearn.utils.validation import _num_samples
 
 # import scipy.sparse as sp
 
-from sklearn.base import is_classifier, clone
-from sklearn.utils import indexable, check_random_state, safe_indexing
-from sklearn.utils.validation import _num_samples
-from sklearn.utils.metaestimators import _safe_split
-from sklearn.externals.joblib import Parallel, delayed, logger
-from sklearn.metrics.scorer import check_scoring
-from sklearn.exceptions import FitFailedWarning
-from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._validation import _index_param_value
 
 # from sklearn.preprocessing import LabelEncoder
 
-import logging
 
 LOG = logging.getLogger("mriqc.classifier")
 

@@ -5,11 +5,12 @@
 # @Author: dbirman
 # @Date:   2017-06-14 16:51:24
 
-import sys
 import csv
-import random
-import webbrowser
 import os
+import random
+import sys
+import webbrowser
+
 import numpy as np
 
 # other functions

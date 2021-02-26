@@ -6,8 +6,7 @@
 
 def get_parser():
     """Build parser object"""
-    from argparse import ArgumentParser
-    from argparse import RawTextHelpFormatter
+    from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
         description="MRIQCWebAPI: Check entries", formatter_class=RawTextHelpFormatter
@@ -36,8 +35,9 @@ def get_parser():
 
 def main():
     """Entry point"""
-    from requests import get
     import logging
+
+    from requests import get
 
     # Run parser
     MRIQC_LOG = logging.getLogger(__name__)

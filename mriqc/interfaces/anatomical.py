@@ -2,38 +2,21 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Nipype interfaces to support anatomical workflow """
 import os.path as op
-import numpy as np
-import nibabel as nb
-from math import sqrt
-import scipy.ndimage as nd
 from builtins import zip
+from math import sqrt
 
+import nibabel as nb
+import numpy as np
+import scipy.ndimage as nd
+from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
+                                    InputMultiPath, SimpleInterface,
+                                    TraitedSpec, isdefined, traits)
 from nipype.utils.filemanip import fname_presuffix
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    isdefined,
-    InputMultiPath,
-    BaseInterfaceInputSpec,
-    SimpleInterface,
-)
 
+from ..qc.anatomical import (art_qi1, art_qi2, cjv, cnr, efc, fber, rpve, snr,
+                             snr_dietrich, summary_stats, volume_fraction,
+                             wm2max)
 from ..utils.misc import _flatten_dict
-from ..qc.anatomical import (
-    snr,
-    snr_dietrich,
-    cnr,
-    fber,
-    efc,
-    art_qi1,
-    art_qi2,
-    volume_fraction,
-    rpve,
-    summary_stats,
-    cjv,
-    wm2max,
-)
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):

@@ -187,12 +187,12 @@ mriqc.qc.anatomical module
 
 """
 import os.path as op
-from sys import version_info
 from math import pi, sqrt
+from sys import version_info
+
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
-
 
 DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {"csf": 1, "gm": 2, "wm": 3, "bg": 0}
@@ -435,8 +435,9 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
-    from sklearn.neighbors import KernelDensity
     from scipy.stats import chi2
+    from sklearn.neighbors import KernelDensity
+
     from mriqc.viz.misc import plot_qi2
 
     # S. Ogawa was born
@@ -552,8 +553,9 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
 
     """
-    from .. import config
     from statsmodels.robust.scale import mad
+
+    from .. import config
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim

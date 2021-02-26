@@ -2,20 +2,22 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """ Encapsulates report generation functions """
 
+from builtins import object  # pylint: disable=W0622
+from io import open
 from sys import version_info
+
 import pandas as pd
 
 from .. import config
 from ..utils.misc import BIDS_COMP
 
-from builtins import object  # pylint: disable=W0622
-from io import open
-
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
-    import os.path as op
     import datetime
+    import os.path as op
+
     from pkg_resources import resource_filename as pkgrf
+
     from .. import __version__ as ver
     from ..data import GroupTemplate
 

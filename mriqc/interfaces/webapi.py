@@ -1,16 +1,11 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-from nipype.interfaces.base import (
-    Bunch,
-    traits,
-    isdefined,
-    TraitedSpec,
-    BaseInterfaceInputSpec,
-    File,
-    Str,
-    SimpleInterface,
-)
 from urllib.parse import urlparse
+
+from nipype.interfaces.base import (BaseInterfaceInputSpec, Bunch, File,
+                                    SimpleInterface, Str, TraitedSpec,
+                                    isdefined, traits)
+
 from .. import config
 
 SECRET_KEY = "<secret_token>"
@@ -190,10 +185,11 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
 
     """
-    from pathlib import Path
-    from json import loads, dumps
-    import requests
     from copy import deepcopy
+    from json import dumps, loads
+    from pathlib import Path
+
+    import requests
 
     if port is None:
         port = 443 if scheme == "https" else 80

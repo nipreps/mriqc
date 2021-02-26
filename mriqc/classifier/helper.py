@@ -11,24 +11,19 @@ from builtins import object
 import numpy as np
 import pandas as pd
 from pkg_resources import resource_filename as pkgrf
-
-# xgboost
-from xgboost import XGBClassifier
-
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import (
-    GridSearchCV,
-    PredefinedSplit,
-    RandomizedSearchCV,
-    RepeatedStratifiedKFold,
-)
+from sklearn.model_selection import (GridSearchCV, PredefinedSplit,
+                                     RandomizedSearchCV,
+                                     RepeatedStratifiedKFold)
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.svm import SVC, LinearSVC
+# xgboost
+from xgboost import XGBClassifier
 
 from ..viz.misc import plot_roc_curve
 from .data import get_bids_cols, read_dataset
@@ -244,10 +239,8 @@ class CVHelper(CVHelperBase):
         Fits the cross-validation helper
         """
         from .sklearn import preprocessing as mcsp
-        from .sklearn._split import (
-            RepeatedBalancedKFold,
-            RepeatedPartiallyHeldOutKFold,
-        )
+        from .sklearn._split import (RepeatedBalancedKFold,
+                                     RepeatedPartiallyHeldOutKFold)
         from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
         if self._pickled:

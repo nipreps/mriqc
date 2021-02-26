@@ -10,8 +10,9 @@ Extracts the sha hash of the contents of a nifti file.
 
 """
 
-import nibabel as nb
 from hashlib import sha1
+
+import nibabel as nb
 
 
 def get_parser():

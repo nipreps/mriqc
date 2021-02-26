@@ -11,12 +11,13 @@
 """
 Anatomical tests
 """
-from tempfile import mkdtemp
+from builtins import object
 from shutil import rmtree
+from tempfile import mkdtemp
+
 import numpy as np
 import pytest
 from scipy.stats import rice
-from builtins import object
 
 # from numpy.testing import allclose
 from ..anatomical import art_qi2

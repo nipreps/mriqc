@@ -8,14 +8,13 @@
 Extensions to the sklearn's default data preprocessing filters
 
 """
+import logging
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
-from sklearn.preprocessing import RobustScaler
 from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import LabelBinarizer
-
-import logging
+from sklearn.preprocessing import LabelBinarizer, RobustScaler
 
 LOG = logging.getLogger("mriqc.classifier")
 

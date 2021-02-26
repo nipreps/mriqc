@@ -11,8 +11,9 @@ Compares pandas dataframes by columns
 """
 
 import sys
-from pathlib import Path
 from argparse import ArgumentParser, RawTextHelpFormatter
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 

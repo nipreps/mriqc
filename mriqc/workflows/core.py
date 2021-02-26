@@ -2,6 +2,7 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """The core module combines the existing workflows."""
 from nipype.pipeline.engine import Workflow
+
 from .anatomical import anat_qc_workflow
 from .functional import fmri_qc_workflow
 

@@ -45,8 +45,9 @@ Submodules
 
 """
 from copy import deepcopy
-from .individual import individual_html
+
 from .group import gen_html as group_html
+from .individual import individual_html
 
 REPORT_TITLES = {
     "bold": [

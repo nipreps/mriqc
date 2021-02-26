@@ -13,13 +13,13 @@ Batch export freesurfer results to animated gifs
 import os
 import os.path as op
 import subprocess as sp
-from shutil import rmtree
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
-from tempfile import mkdtemp
+from argparse import ArgumentParser, RawTextHelpFormatter
 from errno import EEXIST
-import numpy as np
+from shutil import rmtree
+from tempfile import mkdtemp
+
 import nibabel as nb
+import numpy as np
 from skimage import exposure
 
 

@@ -3,19 +3,14 @@
 
 from os import path as op
 
-from pkg_resources import resource_filename as pkgrf
-import numpy as np
 import nibabel as nb
-
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    BaseInterfaceInputSpec,
-    File,
-    isdefined,
-    SimpleInterface,
-)
+import numpy as np
 from nipype.interfaces.ants import ApplyTransforms
+from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
+                                    SimpleInterface, TraitedSpec, isdefined,
+                                    traits)
+from pkg_resources import resource_filename as pkgrf
+
 from .. import config
 
 

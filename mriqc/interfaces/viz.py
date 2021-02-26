@@ -1,18 +1,14 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Visualization interfaces."""
-from pathlib import Path
-import numpy as np
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    BaseInterfaceInputSpec,
-    isdefined,
-    SimpleInterface,
-)
-
 from io import open  # pylint: disable=W0622
+from pathlib import Path
+
+import numpy as np
+from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
+                                    SimpleInterface, TraitedSpec, isdefined,
+                                    traits)
+
 from ..viz.utils import plot_mosaic, plot_segmentation, plot_spikes
 
 

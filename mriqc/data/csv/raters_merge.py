@@ -9,8 +9,7 @@ import pandas as pd
 
 def get_parser():
     """Entry point"""
-    from argparse import ArgumentParser
-    from argparse import RawTextHelpFormatter
+    from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
         description="Merge ratings from two raters",

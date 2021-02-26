@@ -14,12 +14,13 @@ different models.
 
 """
 
-from itertools import product
-from collections import Mapping
 import operator
-import numpy as np
 from builtins import object, zip
+from collections import Mapping
 from functools import partial, reduce
+from itertools import product
+
+import numpy as np
 
 
 def _len(indict):

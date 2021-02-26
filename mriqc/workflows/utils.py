@@ -1,8 +1,8 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Helper functions for the workflows"""
-from distutils.version import StrictVersion
 from builtins import range
+from distutils.version import StrictVersion
 
 
 def _tofloat(inlist):
@@ -47,6 +47,7 @@ def fwhm_dict(fwhm):
 def thresh_image(in_file, thres=0.5, out_file=None):
     """Thresholds an image"""
     import os.path as op
+
     import nibabel as nb
 
     if out_file is None:
@@ -94,12 +95,14 @@ def spectrum_mask(size):
 def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
     """Search for spikes in slices using the 2D FFT"""
     import os.path as op
-    import numpy as np
+
     import nibabel as nb
-    from mriqc.workflows.utils import spectrum_mask
+    import numpy as np
+    from scipy.ndimage import binary_erosion, generate_binary_structure
     from scipy.ndimage.filters import median_filter
-    from scipy.ndimage import generate_binary_structure, binary_erosion
     from statsmodels.robust.scale import mad
+
+    from mriqc.workflows.utils import spectrum_mask
 
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -172,7 +175,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
 
 
 def get_fwhmx():
-    from nipype.interfaces.afni import Info, FWHMx
+    from nipype.interfaces.afni import FWHMx, Info
 
     fwhm_args = {"combine": True, "detrend": True}
     afni_version = StrictVersion("%s.%s.%s" % Info.version())

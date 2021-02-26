@@ -3,6 +3,7 @@
 """Utilities: Jinja2 templates."""
 
 from io import open  # pylint: disable=W0622
+
 import jinja2
 from pkg_resources import resource_filename as pkgrf
 

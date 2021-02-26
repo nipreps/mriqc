@@ -4,14 +4,15 @@
 
 
 def individual_html(in_iqms, in_plots=None, api_id=None):
-    from pathlib import Path
     import datetime
     from json import load
+    from pathlib import Path
+
     from .. import config
-    from ..utils.misc import BIDS_COMP
+    from ..data import IndividualTemplate
     from ..reports import REPORT_TITLES
     from ..reports.utils import iqms2html, read_report_snippet
-    from ..data import IndividualTemplate
+    from ..utils.misc import BIDS_COMP
 
     def _get_details(in_iqms, modality):
         in_prov = in_iqms.pop("provenance", {})
