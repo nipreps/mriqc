@@ -77,7 +77,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "bids_dir",
         action="store",
         type=PathExists,
-        help="the root folder of a BIDS valid dataset (sub-XXXXX folders should "
+        help="The root folder of a BIDS valid dataset (sub-XXXXX folders should "
         "be found at the top level in this folder).",
     )
     parser.add_argument(
@@ -86,7 +86,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         type=Path,
         help="The directory where the output files "
         "should be stored. If you are running group level analysis "
-        "this folder should be prepopulated with the results of the"
+        "this folder should be prepopulated with the results of the "
         "participant level analysis.",
     )
     parser.add_argument(
@@ -107,7 +107,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         dest="verbose_count",
         action="count",
         default=0,
-        help="increases log verbosity for each occurrence, debug level is -vvv",
+        help="Increases log verbosity for each occurrence, debug level is -vvv.",
     )
 
     g_bids = parser.add_argument_group("Options for filtering BIDS queries")
@@ -117,38 +117,38 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="store",
         nargs="+",
         type=_drop_sub,
-        help="a space delimited list of participant identifiers or a single "
-        "identifier (the sub- prefix can be removed)",
+        help="A space delimited list of participant identifiers or a single "
+        "identifier (the sub- prefix can be removed).",
     )
     g_bids.add_argument(
         "--session-id",
         action="store",
         nargs="*",
         type=str,
-        help="filter input dataset by session id",
+        help="Filter input dataset by session ID.",
     )
     g_bids.add_argument(
         "--run-id",
         action="store",
         type=int,
         nargs="*",
-        help="filter input dataset by run id (only integer run ids are valid)",
+        help="Filter input dataset by run ID (only integer run IDs are valid).",
     )
     g_bids.add_argument(
         "--task-id",
         action="store",
         nargs="*",
         type=str,
-        help="filter input dataset by task id",
+        help="Filter input dataset by task ID.",
     )
     g_bids.add_argument(
         "-m",
         "--modalities",
         action="store",
         nargs="*",
-        help="filter input dataset by MRI type",
+        help="Filter input dataset by MRI type.",
     )
-    g_bids.add_argument("--dsname", type=str, help="a dataset name")
+    g_bids.add_argument("--dsname", type=str, help="A dataset name.")
 
     # General performance
     g_perfm = parser.add_argument_group("Options to handle performance")
@@ -159,14 +159,14 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "-n-cpus",
         action="store",
         type=PositiveInt,
-        help="maximum number of threads across all processes",
+        help="Maximum number of threads across all processes.",
     )
     g_perfm.add_argument(
         "--omp-nthreads",
         "--ants-nthreads",
         action="store",
         type=PositiveInt,
-        help="maximum number of threads per-process",
+        help="Maximum number of threads per-process.",
     )
     g_perfm.add_argument(
         "--mem",
@@ -175,14 +175,14 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         dest="memory_gb",
         action="store",
         type=_to_gb,
-        help="upper bound memory limit for MRIQC processes",
+        help="Upper bound memory limit for MRIQC processes.",
     )
     g_perfm.add_argument(
         "--testing",
         dest="debug",
         action="store_true",
         default=False,
-        help="use testing settings for a minimal footprint",
+        help="Use testing settings for a minimal footprint.",
     )
     g_perfm.add_argument(
         "-f",
@@ -190,14 +190,14 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="store_true",
         default=True,
         help="Cast the input data to float32 if it's represented in higher precision "
-        "(saves space and improves perfomance)",
+        "(saves space and improves perfomance).",
     )
     g_perfm.add_argument(
         "--pdb",
         dest="pdb",
         action="store_true",
         default=False,
-        help="open Python debugger (pdb) on exceptions",
+        help="Open Python debugger (pdb) on exceptions.",
     )
 
     # Control instruments
@@ -208,7 +208,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="store",
         type=Path,
         default=Path("work").absolute(),
-        help="path where intermediate results should be stored",
+        help="Path where intermediate results should be stored.",
     )
     g_outputs.add_argument("--verbose-reports", default=False, action="store_true")
     g_outputs.add_argument(
@@ -224,14 +224,14 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--profile",
         action="store_true",
         default=False,
-        help="hook up the resource profiler callback to nipype",
+        help="Hook up the resource profiler callback to nipype.",
     )
     g_outputs.add_argument(
         "--use-plugin",
         action="store",
         default=None,
         type=Path,
-        help="nipype plugin configuration file",
+        help="Nipype plugin configuration file.",
     )
     g_outputs.add_argument(
         "--no-sub",
@@ -252,20 +252,20 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--webapi-url",
         action="store",
         type=str,
-        help="IP address where the MRIQC WebAPI is listening",
+        help="IP address where the MRIQC WebAPI is listening.",
     )
     g_outputs.add_argument(
         "--webapi-port",
         action="store",
         type=int,
-        help="port where the MRIQC WebAPI is listening",
+        help="Port where the MRIQC WebAPI is listening.",
     )
 
     g_outputs.add_argument(
         "--upload-strict",
         action="store_true",
         default=False,
-        help="upload will fail if if upload is strict",
+        help="Upload will fail if upload is strict.",
     )
 
     # ANTs options
@@ -274,12 +274,12 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--ants-float",
         action="store_true",
         default=False,
-        help="use float number precision on ANTs computations",
+        help="Use float number precision on ANTs computations.",
     )
     g_ants.add_argument(
         "--ants-settings",
         action="store",
-        help="path to JSON file with settings for ANTS",
+        help="Path to JSON file with settings for ANTs.",
     )
 
     # Functional workflow settings
@@ -290,7 +290,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
             action="store_true",
             default=False,
             help="Run ICA on the raw data and include the components "
-            "in the individual reports (slow but potentially very insightful)",
+            "in the individual reports (slow but potentially very insightful).",
         )
     g_func.add_argument(
         "--fft-spikes-detector",
@@ -303,41 +303,41 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="store",
         default=0.2,
         type=float,
-        help="Threshold on Framewise Displacement estimates to detect outliers.",
+        help="Threshold on framewise displacement estimates to detect outliers.",
     )
     g_func.add_argument(
         "--deoblique",
         action="store_true",
         default=False,
-        help="Deoblique the functional scans during head motion "
-        "correction preprocessing",
+        help="Deoblique the functional scans during head motion correction "
+        "preprocessing.",
     )
     g_func.add_argument(
         "--despike",
         action="store_true",
         default=False,
         help="Despike the functional scans during head motion correction "
-        "preprocessing",
+        "preprocessing.",
     )
     g_func.add_argument(
         "--start-idx",
         action="store",
         type=int,
         help="Initial volume in functional timeseries that should be "
-        "considered for preprocessing",
+        "considered for preprocessing.",
     )
     g_func.add_argument(
         "--stop-idx",
         action="store",
         type=int,
         help="Final volume in functional timeseries that should be "
-        "considered for preprocessing",
+        "considered for preprocessing.",
     )
     g_func.add_argument(
         "--correct-slice-timing",
         action="store_true",
         default=False,
-        help="Perform slice timing correction",
+        help="Perform slice timing correction.",
     )
 
     latest = check_latest()
