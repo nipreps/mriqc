@@ -29,7 +29,6 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
     with mock_config():
         wf = afni_wf()
 
-
 """
 from nipype.interfaces import ants, fsl
 from nipype.interfaces import io as nio
@@ -37,15 +36,11 @@ from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from templateflow.api import get as get_template
 
+from mriqc.messages import BUILDING_WORKFLOW
+
 from .. import config
-from ..interfaces import (
-    ArtifactMask,
-    ComputeQI2,
-    ConformImage,
-    IQMFileSink,
-    RotationMask,
-    StructuralQC,
-)
+from ..interfaces import (ArtifactMask, ComputeQI2, ConformImage, IQMFileSink,
+                          RotationMask, StructuralQC)
 from ..interfaces.reports import AddProvenance
 from .utils import get_fwhmx
 
@@ -70,10 +65,8 @@ def anat_qc_workflow(name="anatMRIQC"):
         "T1w", []
     ) + config.workflow.inputs.get("T2w", [])
 
-    config.loggers.workflow.info(
-        f"""\
-Building anatomical MRIQC workflow for files: {', '.join(dataset)}."""
-    )
+    message = BUILDING_WORKFLOW.format(dataset=", ".join(dataset))
+    config.loggers.workflow.info(message)
 
     # Initialize workflow
     workflow = pe.Workflow(name=name)
@@ -234,9 +227,8 @@ Building anatomical MRIQC workflow for files: {', '.join(dataset)}."""
 
 def spatial_normalization(name="SpatialNormalization", resolution=2):
     """Create a simplied workflow to perform fast spatial normalization."""
-    from niworkflows.interfaces.registration import (
-        RobustMNINormalizationRPT as RobustMNINormalization,
-    )
+    from niworkflows.interfaces.registration import \
+        RobustMNINormalizationRPT as RobustMNINormalization
 
     # Have the template id handy
     tpl_id = config.workflow.template_id
@@ -875,6 +867,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
 def _estimate_snr(in_file, seg_file):
     import nibabel as nb
     import numpy as np
+
     from mriqc.qc.anatomical import snr
 
     data = nb.load(in_file).get_data()
