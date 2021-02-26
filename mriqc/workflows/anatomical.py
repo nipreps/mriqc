@@ -104,106 +104,51 @@ def anat_qc_workflow(name="anatMRIQC"):
     repwf = individual_reports()
 
     # Connect all nodes
-    workflow.connect(
-        [
-            (inputnode, to_ras, [("in_file", "in_file")]),
-            (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
-            (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
-            (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
-            (to_ras, asw, [("out_file", "inputnode.in_file")]),
-            (asw, segment, [("outputnode.out_file", "in_files")]),
-            (asw, hmsk, [("outputnode.bias_corrected", "inputnode.in_file")]),
-            (segment, hmsk, [("tissue_class_map", "inputnode.in_segm")]),
-            (
-                asw,
-                norm,
-                [
-                    ("outputnode.bias_corrected", "inputnode.moving_image"),
-                    ("outputnode.out_mask", "inputnode.moving_mask"),
-                ],
-            ),
-            (
-                norm,
-                amw,
-                [
-                    (
-                        "outputnode.inverse_composite_transform",
-                        "inputnode.inverse_composite_transform",
-                    )
-                ],
-            ),
-            (
-                norm,
-                iqmswf,
-                [
-                    (
-                        "outputnode.inverse_composite_transform",
-                        "inputnode.inverse_composite_transform",
-                    )
-                ],
-            ),
-            (
-                norm,
-                repwf,
-                ([("outputnode.out_report", "inputnode.mni_report")]),
-            ),
-            (to_ras, amw, [("out_file", "inputnode.in_file")]),
-            (asw, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
-            (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
-            (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
-            (
-                asw,
-                iqmswf,
-                [
-                    ("outputnode.bias_corrected", "inputnode.inu_corrected"),
-                    ("outputnode.bias_image", "inputnode.in_inu"),
-                    ("outputnode.out_mask", "inputnode.brainmask"),
-                ],
-            ),
-            (
-                amw,
-                iqmswf,
-                [
-                    ("outputnode.air_mask", "inputnode.airmask"),
-                    ("outputnode.hat_mask", "inputnode.hatmask"),
-                    ("outputnode.art_mask", "inputnode.artmask"),
-                    ("outputnode.rot_mask", "inputnode.rotmask"),
-                ],
-            ),
-            (
-                segment,
-                iqmswf,
-                [
-                    ("tissue_class_map", "inputnode.segmentation"),
-                    ("partial_volume_files", "inputnode.pvms"),
-                ],
-            ),
-            (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
-            (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
-            (
-                asw,
-                repwf,
-                [
-                    ("outputnode.bias_corrected", "inputnode.inu_corrected"),
-                    ("outputnode.out_mask", "inputnode.brainmask"),
-                ],
-            ),
-            (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
-            (
-                amw,
-                repwf,
-                [
-                    ("outputnode.air_mask", "inputnode.airmask"),
-                    ("outputnode.art_mask", "inputnode.artmask"),
-                    ("outputnode.rot_mask", "inputnode.rotmask"),
-                ],
-            ),
-            (segment, repwf, [("tissue_class_map", "inputnode.segmentation")]),
-            (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
-            (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
-            (iqmswf, outputnode, [("outputnode.out_file", "out_json")]),
-        ]
-    )
+    # fmt: off
+    workflow.connect([
+        (inputnode, to_ras, [('in_file', 'in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
+        (inputnode, segment, [(('in_file', _get_imgtype), 'img_type')]),
+        (to_ras, asw, [('out_file', 'inputnode.in_file')]),
+        (asw, segment, [('outputnode.out_file', 'in_files')]),
+        (asw, hmsk, [('outputnode.bias_corrected', 'inputnode.in_file')]),
+        (segment, hmsk, [('tissue_class_map', 'inputnode.in_segm')]),
+        (asw, norm, [('outputnode.bias_corrected', 'inputnode.moving_image'),
+                     ('outputnode.out_mask', 'inputnode.moving_mask')]),
+        (norm, amw, [
+            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+        (norm, iqmswf, [
+            ('outputnode.inverse_composite_transform', 'inputnode.inverse_composite_transform')]),
+        (norm, repwf, ([
+            ('outputnode.out_report', 'inputnode.mni_report')])),
+        (to_ras, amw, [('out_file', 'inputnode.in_file')]),
+        (asw, amw, [('outputnode.out_mask', 'inputnode.in_mask')]),
+        (hmsk, amw, [('outputnode.out_file', 'inputnode.head_mask')]),
+        (to_ras, iqmswf, [('out_file', 'inputnode.in_ras')]),
+        (asw, iqmswf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
+                       ('outputnode.bias_image', 'inputnode.in_inu'),
+                       ('outputnode.out_mask', 'inputnode.brainmask')]),
+        (amw, iqmswf, [('outputnode.air_mask', 'inputnode.airmask'),
+                       ('outputnode.hat_mask', 'inputnode.hatmask'),
+                       ('outputnode.art_mask', 'inputnode.artmask'),
+                       ('outputnode.rot_mask', 'inputnode.rotmask')]),
+        (segment, iqmswf, [('tissue_class_map', 'inputnode.segmentation'),
+                           ('partial_volume_files', 'inputnode.pvms')]),
+        (hmsk, iqmswf, [('outputnode.out_file', 'inputnode.headmask')]),
+        (to_ras, repwf, [('out_file', 'inputnode.in_ras')]),
+        (asw, repwf, [('outputnode.bias_corrected', 'inputnode.inu_corrected'),
+                      ('outputnode.out_mask', 'inputnode.brainmask')]),
+        (hmsk, repwf, [('outputnode.out_file', 'inputnode.headmask')]),
+        (amw, repwf, [('outputnode.air_mask', 'inputnode.airmask'),
+                      ('outputnode.art_mask', 'inputnode.artmask'),
+                      ('outputnode.rot_mask', 'inputnode.rotmask')]),
+        (segment, repwf, [('tissue_class_map', 'inputnode.segmentation')]),
+        (iqmswf, repwf, [('outputnode.noisefit', 'inputnode.noisefit')]),
+        (iqmswf, repwf, [('outputnode.out_file', 'inputnode.in_iqms')]),
+        (iqmswf, outputnode, [('outputnode.out_file', 'out_json')])
+    ])
+    # fmt:on
 
     # Upload metrics
     if not config.execution.no_sub:
