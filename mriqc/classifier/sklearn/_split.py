@@ -1,9 +1,10 @@
+import logging
+
 import numpy as np
-from sklearn.utils import indexable
+
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import _RepeatedSplits
-
-import logging
+from sklearn.utils import indexable
 
 LOG = logging.getLogger("mriqc.classifier")
 
@@ -44,7 +45,9 @@ class RobustLeavePGroupsOut(LeavePGroupsOut):
 
         if rmfold:
             self._splits = [
-                split for i, split in enumerate(self._splits) if i not in rmfold
+                split
+                for i, split in enumerate(self._splits)
+                if i not in rmfold
             ]
             LOG.warning(
                 "Some splits (%d) were dropped because one or more classes"
@@ -80,9 +83,13 @@ class BalancedKFold(StratifiedKFold):
             for cls in classes_y:
                 cls_index = test_index[split_y == cls]
                 if len(cls_index) > min_y:
-                    cls_index = np.random.choice(cls_index, size=min_y, replace=False)
+                    cls_index = np.random.choice(
+                        cls_index, size=min_y, replace=False
+                    )
 
-                new_index[cls * min_y : (cls + 1) * min_y] = cls_index
+                i = cls * min_y
+                j = (cls + 1) * min_y
+                new_index[i:j] = cls_index
             yield train_index, new_index
 
 
@@ -103,7 +110,9 @@ class PartiallyHeldOutKFold(StratifiedKFold):
     augmented with the original train set (in whole).
     """
 
-    def __init__(self, n_splits=3, shuffle=False, random_state=None, groups=None):
+    def __init__(
+        self, n_splits=3, shuffle=False, random_state=None, groups=None
+    ):
         self._splits = None
         self._groups = groups
         super(PartiallyHeldOutKFold, self).__init__(
@@ -139,7 +148,9 @@ class RepeatedPartiallyHeldOutKFold(_RepeatedSplits):
     A repeated RepeatedPartiallyHeldOutKFold split
     """
 
-    def __init__(self, n_splits=5, n_repeats=10, random_state=None, groups=None):
+    def __init__(
+        self, n_splits=5, n_repeats=10, random_state=None, groups=None
+    ):
         super(RepeatedPartiallyHeldOutKFold, self).__init__(
             PartiallyHeldOutKFold,
             n_repeats,

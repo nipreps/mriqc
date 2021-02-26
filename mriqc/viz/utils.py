@@ -4,13 +4,13 @@
 
 import math
 import os.path as op
-import numpy as np
-import nibabel as nb
 
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+import nibabel as nb
+import numpy as np
 import seaborn as sns
+from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+from matplotlib.gridspec import GridSpec
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -168,7 +168,12 @@ def plot_slice_tern(
 
 
 def plot_spikes(
-    in_file, in_fft, spikes_list, cols=3, labelfmt="t={0:.3f}s (z={1:d})", out_file=None
+    in_file,
+    in_fft,
+    spikes_list,
+    cols=3,
+    labelfmt="t={0:.3f}s (z={1:d})",
+    out_file=None,
 ):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -288,7 +293,8 @@ def plot_mosaic(
             z_vals = z_vals[rem:-rem]
         else:
             # img_data = img_data[..., 2 * rem:]
-            z_vals = z_vals[2 * rem :]
+            start_index = 2 * rem
+            z_vals = z_vals[start_index:]
 
     while len(z_vals) > zmax:
         # Discard one every two slices
@@ -301,7 +307,9 @@ def plot_mosaic(
         nrows += 1
 
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(nb.load(overlay_mask)).get_data()
+        overlay_data = nb.as_closest_canonical(
+            nb.load(overlay_mask)
+        ).get_data()
 
     # create figures
     if fig is None:
@@ -545,7 +553,9 @@ def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
         vmin=vmin,
     )
     disp.add_contours(
-        segmentation, levels=kwargs.get("levels", [1]), colors=kwargs.get("colors", "r")
+        segmentation,
+        levels=kwargs.get("levels", [1]),
+        colors=kwargs.get("colors", "r"),
     )
     disp.savefig(out_file)
     disp.close()

@@ -1,16 +1,22 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """PyBIDS tooling"""
-import os
 import json
-from pathlib import Path
+import os
 from collections import defaultdict
+from pathlib import Path
 
 DEFAULT_TYPES = ["bold", "T1w", "T2w"]
+DOI = "https://doi.org/10.1371/journal.pone.0184661"
 
 
 def collect_bids_data(
-    layout, participant_label=None, session=None, run=None, task=None, bids_type=None
+    layout,
+    participant_label=None,
+    session=None,
+    run=None,
+    task=None,
+    bids_type=None,
 ):
     """Get files in dataset"""
 
@@ -31,7 +37,10 @@ def collect_bids_data(
     imaging_data = defaultdict(list, {})
     for btype in bids_type:
         imaging_data[btype] = layout.get(
-            suffix=btype, return_type="file", extension=["nii", "nii.gz"], **basequery
+            suffix=btype,
+            return_type="file",
+            extension=["nii", "nii.gz"],
+            **basequery,
         )
 
     return imaging_data
@@ -51,7 +60,7 @@ def write_bidsignore(deriv_dir):
 
 
 def write_derivative_description(bids_dir, deriv_dir):
-    from ..__about__ import __version__, __download__
+    from ..__about__ import __download__, __version__
 
     bids_dir = Path(bids_dir)
     deriv_dir = Path(deriv_dir)
@@ -66,7 +75,7 @@ def write_derivative_description(bids_dir, deriv_dir):
                 "CodeURL": __download__,
             }
         ],
-        "HowToAcknowledge": "Please cite our paper (https://doi.org/10.1371/journal.pone.0184661).",
+        "HowToAcknowledge": f"Please cite our paper ({DOI}).",
     }
 
     # Keys that can only be set by environment
@@ -99,4 +108,6 @@ def write_derivative_description(bids_dir, deriv_dir):
     if "License" in orig_desc:
         desc["License"] = orig_desc["License"]
 
-    Path.write_text(deriv_dir / "dataset_description.json", json.dumps(desc, indent=4))
+    Path.write_text(
+        deriv_dir / "dataset_description.json", json.dumps(desc, indent=4)
+    )

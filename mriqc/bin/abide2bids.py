@@ -10,26 +10,30 @@ ABIDE2BIDS downloader tool
 
 """
 
+import errno
+import json
 import os
 import os.path as op
-import errno
 import shutil
-import json
 import subprocess as sp
 import tempfile
-from xml.etree import ElementTree as et
-from multiprocessing import Pool
 from argparse import ArgumentParser, RawTextHelpFormatter
+from multiprocessing import Pool
+from xml.etree import ElementTree as et
+
 import numpy as np
 
 
 def main():
     """Entry point"""
     parser = ArgumentParser(
-        description="ABIDE2BIDS downloader", formatter_class=RawTextHelpFormatter
+        description="ABIDE2BIDS downloader",
+        formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")
-    g_input.add_argument("-i", "--input-abide-catalog", action="store", required=True)
+    g_input.add_argument(
+        "-i", "--input-abide-catalog", action="store", required=True
+    )
     g_input.add_argument(
         "-n", "--dataset-name", action="store", default="ABIDE Dataset"
     )
@@ -37,11 +41,16 @@ def main():
         "-u", "--nitrc-user", action="store", default=os.getenv("NITRC_USER")
     )
     g_input.add_argument(
-        "-p", "--nitrc-password", action="store", default=os.getenv("NITRC_PASSWORD")
+        "-p",
+        "--nitrc-password",
+        action="store",
+        default=os.getenv("NITRC_PASSWORD"),
     )
 
     g_outputs = parser.add_argument_group("Outputs")
-    g_outputs.add_argument("-o", "--output-dir", action="store", default="ABIDE-BIDS")
+    g_outputs.add_argument(
+        "-o", "--output-dir", action="store", default="ABIDE-BIDS"
+    )
 
     opts = parser.parse_args()
 
@@ -65,14 +74,23 @@ def main():
         json.dump(dataset_desc, dfile)
 
     catalog = et.parse(opts.input_abide_catalog).getroot()
-    urls = [el.get("URI") for el in catalog.iter() if el.get("URI") is not None]
+    urls = [
+        el.get("URI") for el in catalog.iter() if el.get("URI") is not None
+    ]
 
     pool = Pool()
-    args_list = [(url, opts.nitrc_user, opts.nitrc_password, out_dir) for url in urls]
+    args_list = [
+        (url, opts.nitrc_user, opts.nitrc_password, out_dir) for url in urls
+    ]
     res = pool.map(fetch, args_list)
 
     tsv_data = np.array([("subject_id", "site_name")] + res)
-    np.savetxt(op.join(out_dir, "participants.tsv"), tsv_data, fmt="%s", delimiter="\t")
+    np.savetxt(
+        op.join(out_dir, "participants.tsv"),
+        tsv_data,
+        fmt="%s",
+        delimiter="\t",
+    )
 
 
 def fetch(args):
@@ -104,7 +122,8 @@ def fetch(args):
                 root = op.join(root, path[0])
             files.append(op.join(root, fname[0]))
 
-    site_name, sub_str = files[0][len(abide_root) + 1 :].split("/")[0].split("_")
+    index = len(abide_root) + 1
+    site_name, sub_str = files[0][index:].split("/")[0].split("_")
     subject_id = "sub-" + sub_str
 
     for i in files:
@@ -132,7 +151,8 @@ def fetch(args):
     shutil.rmtree(tmpdir, ignore_errors=True, onerror=_myerror)
 
     print(
-        "Successfully processed subject %s from site %s" % (subject_id[4:], site_name)
+        "Successfully processed subject %s from site %s"
+        % (subject_id[4:], site_name)
     )
     return subject_id[4:], site_name
 

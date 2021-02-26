@@ -2,19 +2,16 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """BIDS-Apps subject wrangler."""
-from builtins import range  # pylint: disable=W0622
-
-import os.path as op
 import glob
+import os.path as op
+from argparse import ArgumentParser, RawTextHelpFormatter
+from builtins import range  # pylint: disable=W0622
 from random import shuffle
-
-# from lockfile import LockFile
-
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
 from textwrap import dedent
 
 from .. import __version__
+
+# from lockfile import LockFile
 
 
 def main():
@@ -33,7 +30,10 @@ requested participants have the corresponding folder in the bids_dir.\
     )
 
     parser.add_argument(
-        "-v", "--version", action="version", version="mriqc v{}".format(__version__)
+        "-v",
+        "--version",
+        action="version",
+        version="mriqc v{}".format(__version__),
     )
 
     parser.add_argument(
@@ -76,7 +76,10 @@ requested participants have the corresponding folder in the bids_dir.\
         help="do not randomize participants list before grouping",
     )
     parser.add_argument(
-        "--log-groups", default=False, action="store_true", help="append logging output"
+        "--log-groups",
+        default=False,
+        action="store_true",
+        help="append logging output",
     )
     parser.add_argument(
         "--multiple-workdir",
@@ -85,16 +88,24 @@ requested participants have the corresponding folder in the bids_dir.\
         help="split work directories by jobs",
     )
     parser.add_argument(
-        "--bids-app-name", default="mriqc", action="store", help="BIDS app to call"
+        "--bids-app-name",
+        default="mriqc",
+        action="store",
+        help="BIDS app to call",
     )
-    parser.add_argument("--args", default="", action="store", help="append arguments")
+    parser.add_argument(
+        "--args", default="", action="store", help="append arguments"
+    )
 
     opts = parser.parse_args()
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
     all_subjects = sorted(
-        [op.basename(subj)[4:] for subj in glob.glob(op.join(bids_dir, "sub-*"))]
+        [
+            op.basename(subj)[4:]
+            for subj in glob.glob(op.join(bids_dir, "sub-*"))
+        ]
     )
 
     subject_list = opts.participant_label
@@ -127,7 +138,8 @@ requested participants have the corresponding folder in the bids_dir.\
     if gsize == 0:
         gsize = len(subject_list)
 
-    groups = [subject_list[i : i + gsize] for i in range(0, len(subject_list), gsize)]
+    j = i + gsize
+    groups = [subject_list[i:j] for i in range(0, len(subject_list), gsize)]
 
     log_arg = "".format
     if opts.log_groups:

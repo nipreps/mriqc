@@ -2,11 +2,11 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 from nipype.interfaces.base import (
-    File,
-    traits,
     CommandLine,
-    TraitedSpec,
     CommandLineInputSpec,
+    File,
+    TraitedSpec,
+    traits,
 )
 
 
@@ -31,7 +31,9 @@ class GCORInputSpec(CommandLineInputSpec):
         0, argstr="-nfirst %d", desc="specify number of initial TRs to ignore"
     )
     no_demean = traits.Bool(
-        False, argstr="-no_demean", desc="do not (need to) demean as first step"
+        False,
+        argstr="-no_demean",
+        desc="do not (need to) demean as first step",
     )
 
 
@@ -70,7 +72,8 @@ class GCOR(CommandLine):
             for line in runtime.stdout.split("\n")
             if line.strip().startswith("GCOR = ")
         ][-1]
-        setattr(self, "_gcor", float(gcor_line[len("GCOR = ") :]))
+        str_len = len("GCOR = ")
+        setattr(self, "_gcor", float(gcor_line[str_len:]))
         return runtime
 
     def _list_outputs(self):
