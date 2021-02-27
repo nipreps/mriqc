@@ -7,8 +7,13 @@ import nibabel as nib
 import numpy as np
 from mriqc import config, messages
 from mriqc.interfaces import data_types
-from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
-                                    SimpleInterface, TraitedSpec, traits)
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    traits,
+)
 
 #: Output file name format.
 OUT_FILE = "{prefix}_conformed{ext}"
