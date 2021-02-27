@@ -1,18 +1,19 @@
+"""
+Definition of the :class:`ConformImage` interface.
+"""
 from os import path as op
 
 import nibabel as nib
 import numpy as np
 from mriqc import config, messages
 from mriqc.interfaces import data_types
-from nipype.interfaces.base import (
-    BaseInterfaceInputSpec,
-    File,
-    SimpleInterface,
-    TraitedSpec,
-    traits,
-)
+from nipype.interfaces.base import (BaseInterfaceInputSpec, File,
+                                    SimpleInterface, TraitedSpec, traits)
 
+#: Output file name format.
 OUT_FILE = "{prefix}_conformed{ext}"
+
+#: NIfTI header datatype code to numpy dtype.
 NUMPY_DTYPE = {
     1: np.uint8,
     2: np.uint8,
@@ -27,12 +28,20 @@ NUMPY_DTYPE = {
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
+    """
+    Input specification for the :class:`ConformImage` interface.
+    """
+
     in_file = File(exists=True, mandatory=True, desc="input image")
     check_ras = traits.Bool(True, usedefault=True, desc="check that orientation is RAS")
     check_dtype = traits.Bool(True, usedefault=True, desc="check data type")
 
 
 class ConformImageOutputSpec(TraitedSpec):
+    """
+    Output specification for the :class:`ConformImage` interface.
+    """
+
     out_file = File(exists=True, desc="output conformed file")
 
 
@@ -60,6 +69,14 @@ class ConformImage(SimpleInterface):
     output_spec = ConformImageOutputSpec
 
     def _warn_suspicious_dtype(self, dtype: int) -> None:
+        """
+        Warns about binary type *nii* images.
+
+        Parameters
+        ----------
+        dtype : int
+            NIfTI header datatype
+        """
         if dtype == 1:
             dtype_message = messages.SUSPICIOUS_DATA_TYPE.format(
                 in_file=self.inputs.in_file, dtype=dtype
@@ -67,6 +84,20 @@ class ConformImage(SimpleInterface):
             config.loggers.interface.warning(dtype_message)
 
     def _check_dtype(self, nii: nib.Nifti1Image) -> nib.Nifti1Image:
+        """
+        Checks the NIfTI header datatype and converts the data to the matching
+        numpy dtype.
+
+        Parameters
+        ----------
+        nii : nib.Nifti1Image
+            Input image
+
+        Returns
+        -------
+        nib.Nifti1Image
+            Converted input image
+        """
         header = nii.header.copy()
         datatype = int(header["datatype"])
         self._warn_suspicious_dtype(datatype)
@@ -80,6 +111,22 @@ class ConformImage(SimpleInterface):
             return nib.Nifti1Image(converted, nii.affine, header)
 
     def _run_interface(self, runtime):
+        """
+        Execute this interface with the provided runtime.
+
+        TODO: Is the *runtime* argument required? It doesn't seem to be used
+              anywhere.
+
+        Parameters
+        ----------
+        runtime : Any
+            Execution runtime ?
+
+        Returns
+        -------
+        Any
+            Execution runtime ?
+        """
         # Squeeze 4th dimension if possible (#660)
         nii = nib.squeeze_image(nib.load(self.inputs.in_file))
 
