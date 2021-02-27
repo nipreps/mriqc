@@ -3,7 +3,6 @@
 
 Workflows
 =========
-
 .. automodule:: mriqc.workflows
     :members:
     :undoc-members:

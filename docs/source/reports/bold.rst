@@ -3,21 +3,17 @@
 
 BOLD images
 ===========
-
 One individual report per input functional timeseries will be generated
 in the path ``<output_dir>/reports/sub-IDxxx_task-name_bold.html```.
 An example report is given
 `here <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-50013_task-rest_bold.html>`_.
 
-The individual report for the functional images is
-structured as follows:
-
+The individual report for the functional images is structured as follows:
 
 .. _reports-bold-summary:
 
 Summary
 -------
-
 The first section summarizes some important information:
 
   * subject identifier, date and time of execution of
@@ -25,12 +21,10 @@ The first section summarizes some important information:
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
 
-
 .. _reports-bold-visual:
 
 Visual reports
 --------------
-
 The section with visual reports contains:
 
 #. Mosaic view of the average BOLD signal.
@@ -52,12 +46,10 @@ The section with visual reports contains:
    .. figure:: ../resources/reports-bold_summary.png
      :alt: fMRI summary plot
 
-
 .. _reports-bold-verbose:
 
 Verbose reports
 ---------------
-
 If mriqc was run with the ``--verbose-reports`` flag, the
 following plots will be appended:
 
@@ -86,15 +78,12 @@ following plots will be appended:
    .. figure:: ../resources/reports-bold_mni.png
      :alt: bold-mni coregistration
 
-
 .. _reports-bold-metadata:
 
 Metadata
 --------
-
 If some metadata was found in the BIDS structure, it is
 reported here.
-
 
 .. topic:: References
 

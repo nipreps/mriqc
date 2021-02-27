@@ -7,7 +7,7 @@ Welcome to mriqc's documentation!
 .. image :: _static/OHBM2017-poster.png
 
 Contents
-========
+--------
 .. toctree::
    :maxdepth: 3
 

@@ -3,11 +3,8 @@
 
 Run mriqc with docker
 =====================
-
-
 Preliminaries
 -------------
-
 #. Get the Docker Engine (https://docs.docker.com/engine/installation/)
 #. Have your data organized in BIDS
    (`get BIDS specification <http://bids.neuroimaging.io/>`_,
@@ -42,8 +39,6 @@ Preliminaries
 
 Running mriqc
 -------------
-
-
 1. Test that the mriqc container works correctly. A successful run will show
    the current mriqc version in the last line of the output:
 
@@ -89,13 +84,9 @@ Running mriqc
     read-only mode, and map the temporary folders ``/run`` and ``/tmp`` to the temporal
     folder of the host.
 
-
-
 Explaining the mriqc-docker command line
 ----------------------------------------
-
 Let's dissect this command line:
-
 
 + :code:`docker run`- instructs the docker engine to get and run a certain
   image (which is the last of docker-related arguments:

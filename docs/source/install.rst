@@ -1,10 +1,8 @@
 
 Installation
 ============
-
 Containerized versions
 ----------------------
-
 If you have Docker installed, the quickest way to get ``mriqc`` to work
 is following :ref:`the running with docker guide <docker>`.
 
@@ -19,7 +17,6 @@ Nonetheless, we offer support on our `github repository
 
 "Bare-metal" installation
 -------------------------
-
 If, for some reason, you really need a bare-metal installation,
 MRIQC can be installed as follows.
 First, please make sure you have the execution system dependencies
@@ -37,7 +34,6 @@ github using ``pip`` on a Python 3 environment: ::
 
 Execution system dependencies
 .............................
-
 If you are using a a `Neurodebian <http://neuro.debian.net/>`_ Linux distribution,
 installation should be as easy as::
 

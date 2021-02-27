@@ -1,9 +1,7 @@
-
 .. _reports-smri:
 
 T1 and T2 -weighed images
 =========================
-
 One individual report per input structural volume will be generated
 in the path ``<output_dir>/reports/sub-IDxxx_T1w.html```.
 An example report is given
@@ -12,12 +10,10 @@ An example report is given
 The individual report for the structural images is
 structured as follows:
 
-
 .. _reports-smri-summary:
 
 Summary
 -------
-
 The first section summarizes some important information:
 
   * subject identifier, date and time of execution of
@@ -25,12 +21,10 @@ The first section summarizes some important information:
   * workflow details and flags raised during execution; and
   * the extracted IQMs.
 
-
 .. _reports-smri-visual:
 
 Visual reports
 --------------
-
 The section with visual reports contains:
 
 #. Mosaic view, zoomed-in over the parenchyma of the brain.
@@ -43,12 +37,10 @@ The section with visual reports contains:
    .. figure:: ../resources/reports-t1w_background.png
      :alt: t1 background
 
-
 .. _reports-smri-verbose:
 
 Verbose reports
 ---------------
-
 If mriqc was run with the ``--verbose-reports`` flag, the
 following plots will be appended:
 
@@ -78,11 +70,9 @@ following plots will be appended:
    .. figure:: ../resources/reports-t1w_qi2.png
      :alt: t1 fitting of QI2
 
-
 .. _reports-smri-metadata:
 
 Metadata
 --------
-
 If some metadata was found in the BIDS structure, it is
 reported here.

@@ -1,9 +1,7 @@
-
 .. _reports-group:
 
 Group reports
 =============
-
 Once a sample has been processed with the appropriate
 :ref:`workflow <workflows>`, all the :abbr:`IQMs (image quality metrics)`
 written out in JSON files are collected in a
@@ -18,7 +16,6 @@ table to generate one strip-plot per IQM:
 
 .. figure:: ../resources/reports-group_overview.png
   :alt: appearance of the group reports
-
 
 The strip-plots are interactive, so each sample (the value of a specific
 IQM associated to an input image) can be clicked to open up the corresponding
