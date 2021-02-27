@@ -1,4 +1,5 @@
 """Encapsulates report generation functions."""
+from mriqc import messages
 
 
 def individual_html(in_iqms, in_plots=None, api_id=None):
@@ -105,5 +106,6 @@ first {} volumes</span>. They were excluded before generating any QC measures an
     tpl = IndividualTemplate()
     tpl.generate_conf(_config, out_file)
 
-    config.loggers.cli.info("Generated individual log (%s)", out_file)
+    end_message = messages.INDIVIDUAL_REPORT_GENERATED.format(out_file=out_file)
+    config.loggers.cli.info(end_message)
     return out_file

@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from mriqc import config
+from mriqc import config, messages
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     Bunch,
@@ -156,7 +156,7 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.warning(errmsg)
 
         if response.status_code == 201:
-            config.loggers.interface.info("QC metrics successfully uploaded.")
+            config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
         errmsg = "QC metrics failed to upload. Status %d: %s" % (
@@ -235,8 +235,9 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
     headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
 
-    webapi_url = "{}://{}:{}/{}{}".format(scheme, loc, port, path, modality)
-    config.loggers.interface.info("MRIQC Web API: submitting to <%s>", webapi_url)
+    webapi_url = "{scheme}://{loc}:{port}/{path}{modality}"
+    start_message = messages.QC_UPLOAD_START.format(url=webapi_url)
+    config.loggers.interface.info(start_message)
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))

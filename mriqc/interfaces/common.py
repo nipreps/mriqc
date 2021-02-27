@@ -2,7 +2,7 @@ from os import path as op
 
 import nibabel as nb
 import numpy as np
-from mriqc import config
+from mriqc import config, messages
 from nipype.interfaces.ants import ApplyTransforms
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
@@ -13,6 +13,9 @@ from nipype.interfaces.base import (
     traits,
 )
 from pkg_resources import resource_filename as pkgrf
+
+REF_FILE_NAME = "resample_ref.nii.gz"
+OUT_FILE_NAME = "{prefix}_resampled{ext}"
 
 
 class ConformImageInputSpec(BaseInterfaceInputSpec):
@@ -165,23 +168,16 @@ class EnsureSize(SimpleInterface):
         zooms = nii.header.get_zooms()
         size_diff = np.array(zooms[:3]) - (self.inputs.pixel_size - 0.1)
         if np.all(size_diff >= -1e-3):
-            config.loggers.interface.info("Voxel size is large enough")
+            config.loggers.interface.info(messages.VOXEL_SIZE_OK)
             self._results["out_file"] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
                 self._results["out_mask"] = self.inputs.in_mask
             return runtime
 
-        config.loggers.interface.info(
-            "One or more voxel dimensions (%f, %f, %f) are smaller than "
-            "the requested voxel size (%f) - diff=(%f, %f, %f)",
-            zooms[0],
-            zooms[1],
-            zooms[2],
-            self.inputs.pixel_size,
-            size_diff[0],
-            size_diff[1],
-            size_diff[2],
+        small_voxel_message = messages.VOXEL_SIZE_SMALL.format(
+            *zooms[:3], self.inputs.pixel_size, *size_diff
         )
+        config.loggers.interface.info(small_voxel_message)
 
         # Figure out new matrix
         # 1) Get base affine
@@ -216,23 +212,23 @@ class EnsureSize(SimpleInterface):
         # 8) Generate new reference image
         hdr = nii.header.copy()
         hdr.set_data_shape(new_size)
-        ref_file = "resample_ref.nii.gz"
         nb.Nifti1Image(
             np.zeros(new_size, dtype=nii.get_data_dtype()), new_affine, hdr
-        ).to_filename(ref_file)
+        ).to_filename(REF_FILE_NAME)
 
         out_prefix, ext = op.splitext(op.basename(self.inputs.in_file))
         if ext == ".gz":
             out_prefix, ext2 = op.splitext(out_prefix)
             ext = ext2 + ext
 
-        out_file = op.abspath("%s_resampled%s" % (out_prefix, ext))
+        out_file_name = OUT_FILE_NAME.format(prefix=out_prefix, ext=ext)
+        out_file = op.abspath(out_file_name)
 
         # 9) Resample new image
         ApplyTransforms(
             dimension=3,
             input_image=self.inputs.in_file,
-            reference_image=ref_file,
+            reference_image=REF_FILE_NAME,
             interpolation="LanczosWindowedSinc",
             transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
             output_image=out_file,
