@@ -235,7 +235,7 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
     headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
 
-    webapi_url = "{scheme}://{loc}:{port}/{path}{modality}"
+    webapi_url = f"{scheme}://{loc}:{port}/{path}{modality}"
     start_message = messages.QC_UPLOAD_START.format(url=webapi_url)
     config.loggers.interface.info(start_message)
     try:
