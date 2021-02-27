@@ -18,7 +18,9 @@ from nipype.interfaces.base import (
 from pkg_resources import resource_filename as pkgrf
 
 OUT_FILE_NAME = "{prefix}_resampled{ext}"
+OUT_MASK_NAME = "{prefix}_resmask{ext}"
 REF_FILE_NAME = "resample_ref.nii.gz"
+REF_MASK_NAME = "mask_ref.nii.gz"
 
 
 class EnsureSizeInputSpec(BaseInterfaceInputSpec):
@@ -130,16 +132,16 @@ class EnsureSize(SimpleInterface):
                 hdr = nii.header.copy()
                 hdr.set_data_shape(new_size)
                 hdr.set_data_dtype(np.uint8)
-                ref_mask = "mask_ref.nii.gz"
                 nib.Nifti1Image(np.zeros(new_size, dtype=np.uint8), new_affine, hdr).to_filename(
-                    ref_mask
+                    REF_MASK_NAME
                 )
 
-                out_mask = op.abspath("%s_resmask%s" % (out_prefix, ext))
+                out_mask_name = OUT_MASK_NAME.format(prefix=out_prefix, ext=ext)
+                out_mask = op.abspath(out_mask_name)
                 ApplyTransforms(
                     dimension=3,
                     input_image=self.inputs.in_mask,
-                    reference_image=ref_mask,
+                    reference_image=REF_MASK_NAME,
                     interpolation="NearestNeighbor",
                     transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
                     output_image=out_mask,
