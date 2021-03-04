@@ -1,3 +1,6 @@
+from mriqc.bin import messages
+
+
 def get_parser():
     """
     Build parser object.
@@ -38,10 +41,13 @@ def main():
     # Run parser
     MRIQC_LOG = logging.getLogger(__name__)
     opts = get_parser().parse_args()
-    MRIQC_LOG.info("Sending GET to %s", opts.webapi_url)
-    resp = get(opts.webapi_url).json()
-    MRIQC_LOG.info("There are %d records in database", resp["_meta"]["total"])
-    assert opts.expected == resp["_meta"]["total"]
+    get_log_message = messages.WEBAPI_GET.format(address=opts.webapi_url)
+    MRIQC_LOG.info(get_log_message)
+    response = get(opts.webapi_url).json()
+    n_records = response["_meta"]["total"]
+    response_log_message = messages.WEBAPI_REPORT.format(n_records=n_records)
+    MRIQC_LOG.info(response_log_message)
+    assert opts.expected == n_records
 
 
 if __name__ == "__main__":

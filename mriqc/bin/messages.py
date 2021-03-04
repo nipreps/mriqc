@@ -22,3 +22,5 @@ BIDS-Apps participants wrangler tool
 This command arranges the participant labels in groups for computation, and checks that the \
 requested participants have the corresponding folder in the bids_dir.\
 """
+WEBAPI_GET = "Sending GET to {address}."
+WEBAPI_REPORT = "There are {n_records} records in database."
