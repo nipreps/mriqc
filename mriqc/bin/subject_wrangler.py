@@ -1,4 +1,6 @@
-"""BIDS-Apps subject wrangler."""
+"""
+BIDS-Apps subject wrangler.
+"""
 import glob
 import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter
@@ -8,6 +10,8 @@ from textwrap import dedent
 
 from mriqc import __version__
 from mriqc.bin import messages
+
+COMMAND = "{exec} {bids_dir} {out_dir} participant --participant_label {labels} {work_dir} {arguments} {logfile}"
 
 
 def main():
@@ -21,7 +25,7 @@ def main():
         "-v",
         "--version",
         action="version",
-        version="mriqc v{}".format(__version__),
+        version=f"mriqc v{__version__}",
     )
 
     parser.add_argument(
@@ -86,9 +90,8 @@ def main():
 
     # Build settings dict
     bids_dir = op.abspath(opts.bids_dir)
-    all_subjects = sorted(
-        [op.basename(subj)[4:] for subj in glob.glob(op.join(bids_dir, "sub-*"))]
-    )
+    subject_dirs = glob.glob(op.join(bids_dir, "sub-*"))
+    all_subjects = sorted([op.basename(subj)[4:] for subj in subject_dirs])
 
     subject_list = opts.participant_label
     if subject_list is None or not subject_list:
@@ -102,10 +105,8 @@ def main():
 
         if list(set(subject_list) - set(all_subjects)):
             non_exist = list(set(subject_list) - set(all_subjects))
-            raise RuntimeError(
-                "Participant label(s) not found in the "
-                "BIDS root directory: {}".format(" ".join(non_exist))
-            )
+            missing_label_error = messages.BIDS_LABEL_MISSING.format(label=" ".join(non_exist))
+            raise RuntimeError(missing_label_error)
 
     if not opts.no_randomize:
         shuffle(subject_list)
@@ -113,40 +114,26 @@ def main():
     gsize = opts.group_size
 
     if gsize < 0:
-        raise RuntimeError(
-            "group size should be at least 0 " "(all participants assigned to same group"
-        )
+        raise RuntimeError(messages.BIDS_GROUP_SIZE)
     if gsize == 0:
         gsize = len(subject_list)
 
     j = i + gsize
     groups = [subject_list[i:j] for i in range(0, len(subject_list), gsize)]
 
-    log_arg = "".format
-    if opts.log_groups:
-        log_arg = ">> log/mriqc-{:04d}.log".format
-
-    cmdline = (
-        "{exec} {bids_dir} {out_dir} participant --participant_label {labels}"
-        "{work_dir} {arguments} {logfile}"
-    ).format
+    log_arg = ">> log/mriqc-{:04d}.log" if opts.log_groups else ""
+    workdir_arg = " -w work/sjob-{:04d}" if opts.multiple_workdir else ""
     for i, part_group in enumerate(groups):
-        workdir = ""
-        if opts.multiple_workdir:
-            workdir = " -w work/sjob-{:04d}".format(i)
-        print(
-            cmdline(
-                **{
-                    "exec": opts.bids_app_name,
-                    "bids_dir": bids_dir,
-                    "out_dir": opts.output_dir,
-                    "labels": " ".join(part_group),
-                    "work_dir": workdir,
-                    "arguments": opts.args,
-                    "logfile": log_arg(i),
-                }
-            )
-        )
+        kwargs = {
+            "exec": opts.bids_app_name,
+            "bids_dir": bids_dir,
+            "out_dir": opts.output_dir,
+            "labels": " ".join(part_group),
+            "work_dir": workdir_arg.format(i),
+            "arguments": opts.args,
+            "logfile": log_arg.format(i),
+        }
+        print(COMMAND.format(**kwargs))
 
 
 if __name__ == "__main__":

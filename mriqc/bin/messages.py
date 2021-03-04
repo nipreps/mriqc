@@ -1,5 +1,7 @@
 ABIDE_SUBJECT_FETCHED = "Successfully processed subject {subject_id} from site {site_name}"
 ABIDE_TEMPORAL_WARNING = "WARNING: Error deleting temporal files: {message}"
+BIDS_LABEL_MISSING = "Participant label(s) not found in the BIDS root directory: {label}"
+BIDS_GROUP_SIZE = "Group size should be at least 0 (i.e. all participants assigned to same group)."
 CLF_CAPTURED_WARNING = "Captured warning ({category}): {message}"
 CLF_CLASSIFIER_MISSING = "No training samples were given, and the --load-classifier option {info}."
 CLF_SAVED_RESULTS = "Results saved as {path}."
@@ -13,6 +15,7 @@ DFCHECK_DIFFERENT_LENGTH = (
 )
 DFCHECK_IQMS_CORRELATED = "All IQMs show a Pearson correlation >= 0.95."
 DFCHECK_IQMS_UNDER_095 = "IQMs with Pearson correlation < 0.95:\n{iqms}"
+HASH_REPORT = "{sha} {file_name}"
 PLOT_REPORT_VERSION = "mriqc version:\t{version}"
 PLOT_WORK_MISSING = "Work directory of a previous MRIQC run was not found."
 SUBJECT_WRANGLER_DESCRIPTION = """\
