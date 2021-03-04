@@ -8,8 +8,7 @@ from mriqc.interfaces.anatomical import (
     StructuralQC,
 )
 from mriqc.interfaces.bids import IQMFileSink
-from mriqc.interfaces.conform_image import ConformImage
-from mriqc.interfaces.ensure_size import EnsureSize
+from mriqc.interfaces.common import ConformImage, EnsureSize
 from mriqc.interfaces.functional import FunctionalQC, Spikes
 from mriqc.interfaces.viz import PlotContours, PlotMosaic, PlotSpikes
 from mriqc.interfaces.webapi import UploadIQMs
