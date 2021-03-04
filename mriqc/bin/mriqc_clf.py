@@ -35,7 +35,7 @@ def get_parser():
     from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
-        description="MRIQC model selection and held-out evaluation",
+        description="MRIQC model selection and held-out evaluation.",
         formatter_class=RawTextHelpFormatter,
     )
 
@@ -143,7 +143,7 @@ def get_parser():
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     import re
     from datetime import datetime
 

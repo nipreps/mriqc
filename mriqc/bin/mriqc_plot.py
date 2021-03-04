@@ -10,7 +10,7 @@ from mriqc.reports import workflow_report
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     parser = ArgumentParser(
         description="MRI Quality Control", formatter_class=RawTextHelpFormatter
     )
@@ -29,7 +29,7 @@ def main():
         "--version",
         action="store_true",
         default=False,
-        help="Show current mriqc version",
+        help="show current mriqc version",
     )
 
     g_input.add_argument(

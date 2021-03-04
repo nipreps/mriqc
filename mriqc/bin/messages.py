@@ -8,3 +8,10 @@ DFCHECK_DIFFERENT_LENGTH = (
 )
 DFCHECK_IQMS_CORRELATED = "All IQMs show a Pearson correlation >= 0.95."
 DFCHECK_IQMS_UNDER_095 = "IQMs with Pearson correlation < 0.95:\n{iqms}"
+SUBJECT_WRANGLER_DESCRIPTION = """\
+BIDS-Apps participants wrangler tool
+------------------------------------
+
+This command arranges the participant labels in groups for computation, and checks that the \
+requested participants have the corresponding folder in the bids_dir.\
+"""

@@ -7,21 +7,14 @@ from random import shuffle
 from textwrap import dedent
 
 from mriqc import __version__
+from mriqc.bin import messages
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     parser = ArgumentParser(
         formatter_class=RawTextHelpFormatter,
-        description=dedent(
-            """\
-BIDS-Apps participants wrangler tool
-------------------------------------
-
-This command arranges the participant labels in groups for computation, and checks that the \
-requested participants have the corresponding folder in the bids_dir.\
-"""
-        ),
+        description=dedent(messages.SUBJECT_WRANGLER_DESCRIPTION),
     )
 
     parser.add_argument(
@@ -34,7 +27,7 @@ requested participants have the corresponding folder in the bids_dir.\
     parser.add_argument(
         "bids_dir",
         action="store",
-        help="The directory with the input dataset " "formatted according to the BIDS standard.",
+        help="The directory with the input dataset formatted according to the BIDS standard.",
     )
     parser.add_argument(
         "output_dir",
@@ -61,33 +54,33 @@ requested participants have the corresponding folder in the bids_dir.\
         default=1,
         action="store",
         type=int,
-        help="parallelize participants in groups",
+        help="Parallelize participants in groups.",
     )
     parser.add_argument(
         "--no-randomize",
         default=False,
         action="store_true",
-        help="do not randomize participants list before grouping",
+        help="Do not randomize participants list before grouping.",
     )
     parser.add_argument(
         "--log-groups",
         default=False,
         action="store_true",
-        help="append logging output",
+        help="Append logging output.",
     )
     parser.add_argument(
         "--multiple-workdir",
         default=False,
         action="store_true",
-        help="split work directories by jobs",
+        help="Split work directories by jobs.",
     )
     parser.add_argument(
         "--bids-app-name",
         default="mriqc",
         action="store",
-        help="BIDS app to call",
+        help="BIDS app to call.",
     )
-    parser.add_argument("--args", default="", action="store", help="append arguments")
+    parser.add_argument("--args", default="", action="store", help="Append arguments.")
 
     opts = parser.parse_args()
 

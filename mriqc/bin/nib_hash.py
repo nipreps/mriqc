@@ -7,7 +7,9 @@ import nibabel as nb
 
 
 def get_parser():
-    """ A trivial parser """
+    """
+    A trivial parser.
+    """
     from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
@@ -19,14 +21,16 @@ def get_parser():
 
 
 def get_hash(nii_file):
-    """ Compute hash """
+    """
+    Computes the sha1 hash for a given NIfTI format file.
+    """
     data = nb.load(nii_file).get_data()
     data.flags.writeable = False
     return sha1(data.data.tobytes()).hexdigest()
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     fname = get_parser().parse_args().input_file
     sha = get_hash(fname)
     print("%s %s" % (sha, fname))

@@ -20,7 +20,7 @@ from mriqc.bin import messages
 def main():
     """Entry point."""
     parser = ArgumentParser(
-        description="ABIDE2BIDS downloader",
+        description="ABIDE2BIDS downloader.",
         formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")

@@ -17,7 +17,7 @@ from skimage import exposure
 def main():
     """Entry point"""
     parser = ArgumentParser(
-        description="Batch export freesurfer results to animated gifs",
+        description="Batch export freesurfer results to animated gifs.",
         formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")

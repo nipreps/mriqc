@@ -1,9 +1,11 @@
 def get_parser():
-    """Build parser object"""
+    """
+    Build parser object.
+    """
     from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
-        description="MRIQCWebAPI: Check entries", formatter_class=RawTextHelpFormatter
+        description="MRIQCWebAPI: Check entries.", formatter_class=RawTextHelpFormatter
     )
     parser.add_argument(
         "modality",
@@ -28,7 +30,7 @@ def get_parser():
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     import logging
 
     from requests import get
