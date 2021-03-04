@@ -10,25 +10,23 @@ import subprocess as sp
 import tempfile
 from argparse import ArgumentParser, RawTextHelpFormatter
 from multiprocessing import Pool
+from typing import Tuple
 from xml.etree import ElementTree as et
 
 import numpy as np
+from mriqc.bin import messages
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     parser = ArgumentParser(
         description="ABIDE2BIDS downloader",
         formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")
     g_input.add_argument("-i", "--input-abide-catalog", action="store", required=True)
-    g_input.add_argument(
-        "-n", "--dataset-name", action="store", default="ABIDE Dataset"
-    )
-    g_input.add_argument(
-        "-u", "--nitrc-user", action="store", default=os.getenv("NITRC_USER")
-    )
+    g_input.add_argument("-n", "--dataset-name", action="store", default="ABIDE Dataset")
+    g_input.add_argument("-u", "--nitrc-user", action="store", default=os.getenv("NITRC_USER"))
     g_input.add_argument(
         "-p",
         "--nitrc-password",
@@ -76,8 +74,20 @@ def main():
     )
 
 
-def fetch(args):
-    """ Downloads a subject and formats it into BIDS """
+def fetch(args: Tuple[str, str, str, str]) -> Tuple[str, str]:
+    """
+    Downloads a subject and formats it into BIDS.
+
+    Parameters
+    ----------
+    args : Tuple[str, str, str, str]
+        URL, NITRC user, NITRC password, destination
+
+    Returns
+    -------
+    Tuple[str, str]
+        Subject ID, Site name
+    """
     out_dir = None
     if len(args) == 3:
         url, user, password = args
@@ -133,14 +143,24 @@ def fetch(args):
 
     shutil.rmtree(tmpdir, ignore_errors=True, onerror=_myerror)
 
-    print(
-        "Successfully processed subject %s from site %s" % (subject_id[4:], site_name)
+    success_message = messages.ABIDE_SUBJECT_FETCHED.format(
+        subject_id=subject_id[4:], site_name=site_name
     )
+    print(success_message)
     return subject_id[4:], site_name
 
 
-def _myerror(msg):
-    print("WARNING: Error deleting temporal files: %s" % msg)
+def _myerror(message: str):
+    """
+    Print warning in case an exception is raised for temporal files removal.
+
+    Parameters
+    ----------
+    message : str
+        `shutil.rmtree()` error message
+    """
+    warning = messages.ABIDE_TEMPORAL_WARNING.format(message=message)
+    print(warning)
 
 
 if __name__ == "__main__":
