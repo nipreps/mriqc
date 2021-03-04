@@ -297,7 +297,7 @@ def main():
 
 def _parse_set(arg, default):
     if arg is not None and len(arg) == 0:
-        names = "x_{default}.csv", "y_{default}.csv"
+        names = f"x_{default}.csv", f"y_{default}.csv"
         return [pkgrf("mriqc", f"data/csv/{name}") for name in names]
 
     if arg is not None and len(arg) not in (0, 2):
