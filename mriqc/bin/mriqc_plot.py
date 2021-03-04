@@ -6,13 +6,14 @@ import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter
 
 from mriqc import __version__
+from mriqc.bin import messages
 from mriqc.reports import workflow_report
 
 
 def main():
     """Entry point."""
     parser = ArgumentParser(
-        description="MRI Quality Control", formatter_class=RawTextHelpFormatter
+        description="MRI Quality Control.", formatter_class=RawTextHelpFormatter
     )
 
     g_input = parser.add_argument_group("Inputs")
@@ -50,8 +51,10 @@ def main():
     )
 
     opts = parser.parse_args()
+
     if opts.version:
-        print("mriqc version " + __version__)
+        version_message = messages.PLOT_REPORT_VERSION.format(version=__version__)
+        print(version_message)
         exit(0)
 
     settings = {"output_dir": os.getcwd(), "nthreads": opts.nthreads}
@@ -64,7 +67,7 @@ def main():
 
     settings["work_dir"] = op.abspath(opts.work_dir)
     if not op.exists(settings["work_dir"]):
-        raise RuntimeError("Work directory of a previous MRIQC run was not found.")
+        raise RuntimeError(messages.PLOT_WORK_MISSING)
 
     for dtype in opts.data_type:
         workflow_report(dtype, settings)

@@ -13,6 +13,8 @@ DFCHECK_DIFFERENT_LENGTH = (
 )
 DFCHECK_IQMS_CORRELATED = "All IQMs show a Pearson correlation >= 0.95."
 DFCHECK_IQMS_UNDER_095 = "IQMs with Pearson correlation < 0.95:\n{iqms}"
+PLOT_REPORT_VERSION = "mriqc version:\t{version}"
+PLOT_WORK_MISSING = "Work directory of a previous MRIQC run was not found."
 SUBJECT_WRANGLER_DESCRIPTION = """\
 BIDS-Apps participants wrangler tool
 ------------------------------------
