@@ -7,10 +7,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from mriqc.bin import messages
 
 
 def main():
-    """Entry point"""
+    """Entry point."""
     from ..classifier.data import read_iqms
 
     parser = ArgumentParser(
@@ -50,19 +51,19 @@ def main():
     tst_df.set_index(tst_bids)
 
     if sorted(ref_bids) != sorted(tst_bids):
-        sys.exit("Dataset has different BIDS bits w.r.t. reference")
+        sys.exit(messages.DFCHECK_DIFFERENT_BITS)
 
     if sorted(ref_names) != sorted(tst_names):
-        sys.exit("Output CSV file changed number of columns")
+        sys.exit(messages.DFCHECK_CSV_COLUMNS)
 
     ref_df = ref_df.sort_values(by=ref_bids)
     tst_df = tst_df.sort_values(by=tst_bids)
 
     if len(ref_df) != len(tst_df):
-        print(
-            "Input datases have different lengths (input %d, reference %d)."
-            % (len(ref_df), len(tst_df))
+        different_length_message = messages.DFCHECK_DIFFERENT_LENGTH.format(
+            len_input=len(ref_df), len_reference=len(tst_df)
         )
+        print(different_length_message)
         tst_rows = tst_df[tst_bids]
         ref_rows = ref_df[ref_bids]
 
@@ -100,11 +101,12 @@ def main():
         ]
 
         if np.any(corr.cc < 0.95):
-            print("IQMs with Pearson correlation < 0.95:")
-            print(corr[corr.cc < 0.95])
-            sys.exit("Output CSV file changed one or more values")
+            iqms = corr[corr.cc < 0.95]
+            iqms_message = messages.DFCHECK_IQMS_UNDER_095.format(iqms=iqms)
+            print(iqms_message)
+            sys.exit(messages.DFCHECK_CSV_CHANGED)
         else:
-            print("All IQMs show a Pearson correlation >= 0.95")
+            print(messages.DFCHECK_IQMS_CORRELATED)
 
     sys.exit(0)
 
