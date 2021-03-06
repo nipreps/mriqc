@@ -303,11 +303,14 @@ def _parse_set(arg, default):
     if arg is not None and len(arg) not in (0, 2):
         raise RuntimeError(messages.CLF_WRONG_PARAMETER_COUNT)
 
+    if arg is None:
+        return None
+
     if len(arg) == 2:
         train_exists = [isfile(fname) for fname in arg]
         if len(train_exists) > 0 and not all(train_exists):
             errors = [
-                "file '{fname}' not found"
+                f"file '{fname}' not found"
                 for fexists, fname in zip(train_exists, arg)
                 if not fexists
             ]
