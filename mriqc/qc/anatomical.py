@@ -156,7 +156,7 @@ Other measures
 
   .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
     a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
-    doi:`10.3389/finf.201600010 <http://dx.doi.org/10.3389/finf.201600010>`_.
+    doi:`10.3389/fninf.2016.00010 <https://doi.org/10.3389/fninf.2016.00010>`_.
 
   .. [Magnota2006] Magnotta, VA., & Friedman, L., *Measurement of signal-to-noise
     and contrast-to-noise in the fBIRN multicenter imaging study*.
