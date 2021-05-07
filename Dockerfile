@@ -39,7 +39,8 @@ RUN apt-get update && \
                     xfonts-base \
                     xvfb \
                     fsl-core=5.0.9-5~nd16.04+1 \
-                    fsl-mni152-templates && \
+                    fsl-mni152-templates \
+                    wkhtmltopdf && \
     curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
                     nodejs && \
@@ -135,9 +136,14 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
-
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
+
+#Install pdfkit
+#RUN pip install pdfkit
+
+#Copy xnatwrapper
+COPY xnatwrapper /opt/xnatwrapper
 
 # Precaching atlases
 COPY setup.cfg setup.cfg
@@ -170,6 +176,8 @@ WORKDIR /tmp/
 
 # Run mriqc by default
 ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
+
+
 
 ARG BUILD_DATE
 ARG VCS_REF
