@@ -1,15 +1,23 @@
+#!/usr/bin/env python3
 #install pdfkit and wkhtmltopdf 
 
-import pdfkit
+import pdfkit, os, glob
 from html.parser import HTMLParser
 
-with open('sub-229415_ses-1_T1w.html',"r") as html_out:
-    file_data = html_out.readlines()
+subject = os.environ["SUBJ"]
+ses = os.environ["SES"]
+outdir = os.environ["outdir"]
 
-parsed_data = file_data[:12781]+file_data[12795:]
+html_out = glob.glob('/*.html')
 
-myString = ''
-for i in parsed_data:
-    myString += i
+for x in html_out:
+	with open(x,"r") as file:
+		file_data = file.readlines()
 
-pdfkit.from_string(myString, 'html.pdf')
+	parsed_data = file_data[:12781]+file_data[12795:]
+
+	myString = ''
+	for i in parsed_data:
+		myString += i
+
+	pdfkit.from_string(myString, x.replace('.html','.pdf'))

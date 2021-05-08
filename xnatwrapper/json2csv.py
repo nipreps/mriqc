@@ -1,18 +1,25 @@
+#!/usr/bin/env python3
+import json,csv,os,glob
 
-import json,csv
-
+subject = os.environ["SUBJ"]
+ses = os.environ["SES"]
+outdir = os.environ["outdir"]
 
 #Import json file
-with open('/home/rdlawless/Documents/MRIQC/outputs/sub-229415/ses-1/anat/sub-229415_ses-1_T1w.json','r') as file:
-	json_data=json.load(file);
+for folder in glob.glob(subject+'/'+ses+'/*/'):
+	for json_file in glob.glob(folder+'/*.json'):
+		with open(json_file,'r') as file:
+			json_data=json.load(file);
 
-json_data.pop('bids_meta','provenance');
+		json_data.pop('bids_meta','provenance');
 
-csv_file = open('csv_file.csv','w');
+		#file_name = os.path.basename(json_file)
 
-write=csv.writer(csv_file);
+		csv_file = open(json_file.replace('.json','.csv'),'w');
 
-write.writecol(json_data.keys());
-write.writecol(json_data.values());
+		write=csv.writer(csv_file);
 
-csv_file.close();
+		write.writerow(json_data.keys());
+		write.writerow(json_data.values());
+
+		csv_file.close();
