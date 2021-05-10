@@ -525,8 +525,9 @@ def rpve(pvms, seg):
         totalvol = np.sum(pvmap > 0.0)
         upth = np.percentile(pvmap[pvmap > 0], 98)
         loth = np.percentile(pvmap[pvmap > 0], 2)
-        pvfs[k] = (pvmap[(pvmap>=0.5) & (pvmap<=upth)].sum() + (1 - pvmap[(pvmap>=loth) & (pvmap<0.5)]).sum()) / totalvol
-        
+        pvfs[k] = (
+            pvmap[(pvmap >=0.5) & (pvmap <=upth)].sum() + (1 - pvmap[(pvmap >=loth) & (pvmap <0.5)]).sum()
+        ) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
 
