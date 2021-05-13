@@ -50,21 +50,27 @@ outdir=$2
 level=$3
 
 #Check for BIDS data structure
-# Install dax in DOCKERFILE
-
 
 
 #Run MRIQC
 mriqc $bidsdir $outdir $level
 
 #Convert outputs
+cd $outdir
 
+#Find names through folders
 SUBJ=$(echo | find sub-*/ -type f | cut -d'/' -f1)
 SES=$(echo | find sub-*/ -type f | cut -d'/' -f2)
 
+#Remove repeat folder names
+SUBJ=$(echo $SUBJ | cut -d' ' -f1)
+SUBJ=$(echo $SUBJ | cut -d' ' -f1)
+
+#export variables for py scripts
 export SUBJ
 export SES
 export outdir
 
+#Run py scripts to convert outputs
 /opt/xnatwrapper/html2pdf.py
 /opt/xnatwrapper/json2csv.py
