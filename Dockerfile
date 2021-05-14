@@ -175,7 +175,7 @@ RUN ldconfig
 WORKDIR /tmp/
 
 # Run mriqc by default
-ENTRYPOINT ["/opt/xnatwrapper/run_mriqc"]
+ENTRYPOINT ["/opt/xnatwrapper/run_mriqc.sh"]
 
 
 
