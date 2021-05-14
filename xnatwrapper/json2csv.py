@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 import json,csv,os,glob
 
-subject = os.environ["SUBJ"]
-ses = os.environ["SES"]
-outdir = os.environ["outdir"]
-
 #Import json file
-for folder in glob.glob(subject+'/'+ses+'/*/'):
+for folder in glob.glob('sub-*/ses-*/*'):
 	for json_file in glob.glob(folder+'/*.json'):
 		with open(json_file,'r') as file:
 			json_data=json.load(file);

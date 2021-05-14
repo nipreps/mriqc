@@ -3,73 +3,35 @@
 ## Script for mriqc docker container
 
 
-# Command line options
+# Initialize defaults
+export bidsdir=NO_BIDS
+export outdir=NO_OUTDIR
+export level=participant
 
-#while getopts 'b' OPTION; do
- #   case "$OPTION" in
-  #      b)
-   #         echo "Option -b is given, converting data to BIDS format."
-    #        ;;
-     #   
-      #  *)
-       #     echo "Usage: $0 [-b] bids-root output-folder level[participant,group]" >&2
-        #    exit 1
-        #;;
-    #esac
-#done
+# Parse options
 
-shift "$(($OPTIND -1))"
-
-if [ -z $1 ]; then
-    echo "The BIDS input folder is not set"
-    exit 1
-else
-    echo "BIDS folder: $1"
-
-fi
-
-if [ ! -z $2 ]; then
-    echo "The output folder: $2"
-else
-    echo "The output folder is not set"
-    exit 1
-fi
-
-if [ -z $3 ]; then
-    echo "The subject level is not set"
-    exit 1
-else
-    echo "Subject level: $3"
-
-fi
+while [[ $# -gt 0 ]]; do
+  key="${1}"
+  case $key in
+    --bidsdir)
+      export bidsdir="${2}"; shift; shift ;;
+    --outdir)
+      export outdir="${2}"; shift; shift ;;
+    *)
+      echo Unknown input "${1}"; shift ;;
+  esac
+done
 
 
-# Organize Inputs
-bidsdir=$1
-outdir=$2
-level=$3
-
-#Check for BIDS data structure
+#Check for single subject, report error if group
 
 
 #Run MRIQC
-mriqc $bidsdir $outdir $level
+mriqc ${bidsdir} ${outdir} ${level}
+
 
 #Convert outputs
-cd $outdir
-
-#Find names through folders
-SUBJ=$(echo | find sub-*/ -type f | cut -d'/' -f1)
-SES=$(echo | find sub-*/ -type f | cut -d'/' -f2)
-
-#Remove repeat folder names
-SUBJ=$(echo $SUBJ | cut -d' ' -f1)
-SUBJ=$(echo $SUBJ | cut -d' ' -f1)
-
-#export variables for py scripts
-export SUBJ
-export SES
-export outdir
+cd ${outdir}
 
 #Run py scripts to convert outputs
 /opt/xnatwrapper/html2pdf.py

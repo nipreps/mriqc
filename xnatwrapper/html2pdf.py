@@ -4,10 +4,6 @@
 import pdfkit, os, glob
 from html.parser import HTMLParser
 
-subject = os.environ["SUBJ"]
-ses = os.environ["SES"]
-outdir = os.environ["outdir"]
-
 html_out = glob.glob('*.html')
 
 for x in html_out:
