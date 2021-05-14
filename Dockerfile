@@ -140,7 +140,7 @@ RUN python -c "from matplotlib import font_manager" && \
 WORKDIR /src/
 
 #Install pdfkit
-#RUN pip install pdfkit
+RUN pip install pdfkit
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
@@ -175,7 +175,7 @@ RUN ldconfig
 WORKDIR /tmp/
 
 # Run mriqc by default
-ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
+ENTRYPOINT ["/opt/xnatwrapper/run_mriqc.sh"]
 
 
 
