@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
-#install pdfkit and wkhtmltopdf 
+#!/usr/bin/env python
+
+# install pdfkit and wkhtmltopdf 
 
 import pdfkit, os, glob
 from html.parser import HTMLParser
