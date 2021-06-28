@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # install pdfkit and wkhtmltopdf 
 
 import pdfkit, os, glob
 from html.parser import HTMLParser
+from xvfbwrapper import Xvfb
 
 html_out = glob.glob('*.html')
 
@@ -31,4 +33,5 @@ for x in html_out:
 	for i in parsed_data:
 		myString += i
 
-	pdfkit.from_string(myString, x.replace('.html','.pdf'))
+	with Xvfb():
+		pdfkit.from_string(myString, x.replace('.html','.pdf'))
