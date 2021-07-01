@@ -139,9 +139,10 @@ RUN python -c "from matplotlib import font_manager" && \
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
 
-#Install pdfkit and xvfbwrapper
-RUN pip install --no-cache-dir pdfkit
-RUN pip install --no-cache-dir xvfbwrapper
+#Install pdfkit and xvfbwrapper, generate machine ID
+RUN pip install --no-cache-dir pdfkit && \
+    pip install --no-cache-dir xvfbwrapper && \
+    dbus-uuidgen > /etc/machine-id
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
