@@ -33,5 +33,12 @@ for x in html_out:
 	for i in parsed_data:
 		myString += i
 
-	with Xvfb():
-		pdfkit.from_string(myString, x.replace('.html','.pdf'))
+	#xvfb-run --server-args="-screen 0 1024x768x24" /usr/bin/wkhtmltopdf_bin -q $*
+	#with Xvfb() as xvfb:
+	
+	vdisplay = Xvfb(width=1280, height=740, colordepth=16)
+	vdisplay.start()
+
+	pdfkit.from_string(myString, x.replace('.html','.pdf'))
+
+	vdisplay.stop()
