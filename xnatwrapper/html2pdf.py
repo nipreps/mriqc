@@ -39,6 +39,6 @@ for x in html_out:
 	vdisplay = Xvfb(width=1280, height=740, colordepth=16)
 	vdisplay.start()
 
-	pdfkit.from_string(html_name, x.replace('.html','.pdf'),options={"encoding":"utf8","images",})
+	pdfkit.from_string(html_name, x.replace('.html','.pdf'),options={"encoding":"utf8"})
 
 	vdisplay.stop()
