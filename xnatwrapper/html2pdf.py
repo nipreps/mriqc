@@ -29,16 +29,17 @@ for x in html_out:
 	#add in first and last line variables
 	parsed_data = file_data[:first_line[0]]+file_data[last_line[0]:]
 
-	html_name = ''
+	html = ''
 	for i in parsed_data:
-		html_name += i
+		html += i
 
 	#xvfb-run --server-args="-screen 0 1024x768x24" /usr/bin/wkhtmltopdf_bin -q $*
 	#with Xvfb() as xvfb:
+
 	
-	vdisplay = Xvfb(width=1280, height=740, colordepth=16)
+	vdisplay = Xvfb(width=1920, height=1080, colordepth=24)
 	vdisplay.start()
 
-	pdfkit.from_string(html_name, x.replace('.html','.pdf'),options={"encoding":"utf8"})
+	pdfkit.from_string(html, x.replace('.html','.pdf'),options={"encoding":"utf8","image-dpi": 1920, "disable-smart-shrinking": None})
 
 	vdisplay.stop()

@@ -40,7 +40,8 @@ RUN apt-get update && \
                     xvfb \
                     fsl-core=5.0.9-5~nd16.04+1 \
                     fsl-mni152-templates \
-                    wkhtmltopdf && \
+                    wkhtmltopdf=0.12.3 \
+                    wget && \
     curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
                     nodejs && \
