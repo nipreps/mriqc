@@ -40,7 +40,6 @@ RUN apt-get update && \
                     xvfb \
                     fsl-core=5.0.9-5~nd16.04+1 \
                     fsl-mni152-templates \
-                    wkhtmltopdf=0.12.3 \
                     wget && \
     curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
     apt-get install -y --no-install-recommends \
@@ -137,8 +136,13 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
-# Installing dev requirements (packages that are not in pypi)
-WORKDIR /src/
+
+# Install wkhtmltopdf with Qt patch
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz && \
+    tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz && \
+    mv wkhtmltox/bin/wkhtmlto* /usr/bin/ && \
+    rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+
 
 #Install pdfkit and xvfbwrapper, generate machine ID
 RUN pip install --no-cache-dir pdfkit && \
@@ -147,6 +151,9 @@ RUN pip install --no-cache-dir pdfkit && \
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
+
+# Installing dev requirements (packages that are not in pypi)
+WORKDIR /src/
 
 # Precaching atlases
 COPY setup.cfg setup.cfg
