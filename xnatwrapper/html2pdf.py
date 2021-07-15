@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- 
 
-import pdfgen, os, glob
+import pdfgen, os, glob, asyncio
 from html.parser import HTMLParser
+from pyppeteer import launch
 
+
+async def main():
+	browser = await launch(executablePath='/usr/bin/google-chrome-stable', headless=True, args=['--no-sandbox'])
+	#browser = await launch(headless=True, args=['--no-sandbox'])
+	await pdfgen.from_file("tmp_html.html",x.replace('.html','.pdf'))
+	await browser.close()
 
 html_out = glob.glob('sub-*.html')
 
@@ -32,7 +39,8 @@ for x in html_out:
 	tmp_file.close()
 
 	#Apply html to pdf conversion
-	pdfgen.sync.from_file("tmp_html.html",x.replace('.html','.pdf'))
+	asyncio.get_event_loop().run_until_complete(main())
+	
 
 	#delete temporary file
 	if os.path.exists("tmp_html.html"):
@@ -42,3 +50,5 @@ for x in html_out:
 
 #	with Xvfb() as xvfb:
 		#pdfkit.from_string(html, x.replace('.html','.pdf'),options={"encoding":"utf8","image-dpi": 1920, "disable-smart-shrinking": None, "enable-local-file-access":None})
+
+
