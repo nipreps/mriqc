@@ -138,16 +138,23 @@ RUN python -c "from matplotlib import font_manager" && \
 
 
 # Install wkhtmltopdf with Qt patch
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz && \
-    tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz && \
-    mv wkhtmltox/bin/wkhtmlto* /usr/bin/ && \
-    rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+#RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
+#   tar xvf wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
+#    mv wkhtmltox/bin/wkhtmlto* /usr/bin/ && \
+#    rm -rf wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
 
 
-#Install pdfkit and xvfbwrapper, generate machine ID
-RUN pip install --no-cache-dir pdfkit && \
-    pip install --no-cache-dir xvfbwrapper && \
-    dbus-uuidgen > /etc/machine-id
+# Generate machine ID
+RUN dbus-uuidgen > /etc/machine-id
+
+#Install pdfkit and xvfbwrapper, 
+#RUN pip install --no-cache-dir pdfkit && \
+#    pip install --no-cache-dir xvfbwrapper && \
+#    
+
+#Install pyppeteer and pdfgen
+RUN pip install --no-cache-dir pdfgen && \
+    pip install --no-cache-dir pyppeteer
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
