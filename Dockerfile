@@ -182,8 +182,10 @@ RUN apt-get update && \
       fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
 
 #Install pyppeteer and pdfgen
-RUN pip install --no-cache-dir pdfgen && \
-    pip install --no-cache-dir -Iv pyppeteer==0.0.25
+#
+RUN pip install --no-cache-dir -Iv websockets==6.0 && \
+    pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
+    pip install --no-cache-dir -Iv pyppeteer==0.2.2
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper

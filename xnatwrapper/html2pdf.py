@@ -5,6 +5,19 @@ import pdfgen, os, glob, asyncio
 from html.parser import HTMLParser
 from pyppeteer import launch
 
+#def patch_websockets():
+#	import websockets.client
+#	original_method = websockets.client.connect
+
+#	def new_method(*args, **kwargs):
+#		kwargs['ping_interval'] = None
+#		kwargs['ping_timeout'] = None
+#		return original_method(*args, **kwargs)
+
+#    websockets.client.connect = new_method
+
+#patch_websockets()
+
 async def main():
 	#browser = await launch(headless=True, args=['--no-sandbox'])
 	await pdfgen.from_file("tmp_html.html",x.replace('.html','.pdf'))
