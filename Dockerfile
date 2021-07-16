@@ -183,7 +183,7 @@ RUN apt-get update && \
 
 #Install pyppeteer and pdfgen
 RUN pip install --no-cache-dir pdfgen && \
-    pip install --no-cache-dir pyppeteer
+    pip install --no-cache-dir -Iv pyppeteer==0.0.25
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
