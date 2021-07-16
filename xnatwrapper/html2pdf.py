@@ -19,7 +19,7 @@ async def main():
 		])
 	#browser = await launch(headless=True, args=['--no-sandbox'])
 	await pdfgen.from_file("tmp_html.html",x.replace('.html','.pdf'))
-#	await browser.close()
+	await browser.close()
 
 html_out = glob.glob('sub-*.html')
 
