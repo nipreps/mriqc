@@ -183,7 +183,8 @@ RUN apt-get update && \
 
 #Install pyppeteer and pdfgen
 #
-RUN pip install --no-cache-dir -Iv websockets==6.0 && \
+RUN pip install --no-cache-dir -Iv urllib==1.23 && \
+    pip install --no-cache-dir -Iv websockets==6.0 && \
     pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
     pip install --no-cache-dir -Iv pyppeteer==0.2.2
 
