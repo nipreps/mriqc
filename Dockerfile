@@ -217,7 +217,7 @@ RUN ldconfig
 WORKDIR /tmp/
 
 # Run as non-privileged user
-%USER pptruser
+# USER pptruser
 
 # Run mriqc by default
 ENTRYPOINT ["/opt/xnatwrapper/run_mriqc.sh"]
