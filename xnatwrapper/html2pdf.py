@@ -19,8 +19,27 @@ from pyppeteer import launch
 #patch_websockets()
 
 async def main():
+	browser = await launch(
+	executablePath='/usr/bin/google-chrome-stable', 
+	headless=True, 
+	args=[
+		'--no-sandbox',
+		'--single-process',
+		'--disable-dev-shm-usage',
+		'--disable-gpu',
+		'--disable-setuid-sandbox',
+		'--window-position={217},{172}'
+		'--window-size={1300},{600}'
+		'--disable-infobars',
+		'--disable-extensions',
+		'--disable-web-security',
+		'--disable-features=IsolateOrigins,site-per-process',
+		'--allow-cross-origin-auth-prompt',
+		'--no-first-run'
+	])
 	#browser = await launch(headless=True, args=['--no-sandbox'])
 	await pdfgen.from_file("tmp_html.html",x.replace('.html','.pdf'))
+	await browser.close()
 
 html_out = glob.glob('sub-*.html')
 
@@ -46,19 +65,10 @@ for x in html_out:
 	tmp_file = open("tmp_html.html","w")
 	tmp_file.write(html)
 	tmp_file.close()
-	browser = launch(
-		executablePath='/usr/bin/google-chrome-stable', 
-		headless=True, 
-		args=[
-			'--no-sandbox',
-			'--single-process',
-			'--disable-dev-shm-usage',
-			'--disable-gpu',
-			'--no-zygote'
-		])
+
 	#Apply html to pdf conversion
 	asyncio.get_event_loop().run_until_complete(main())
-	browser.close()
+
 	#delete temporary file
 	if os.path.exists("tmp_html.html"):
 		os.remove("tmp_html.html")
