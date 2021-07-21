@@ -198,7 +198,9 @@ class StructuralQC(SimpleInterface):
         self._results["cnr"] = cnr(
             stats["wm"]["median"],
             stats["gm"]["median"],
-            sqrt(sum(stats[k]["stdv"] ** 2 for k in ["bg", "gm", "wm"])),
+            stats["bg"]["stdv"],
+            stats["wm"]["stdv"],
+            stats["gm"]["stdv"]
         )
 
         # FBER

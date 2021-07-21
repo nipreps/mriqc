@@ -267,7 +267,7 @@ def snr_dietrich(mu_fg, sigma_air):
     return float(DIETRICH_FACTOR * mu_fg / sigma_air)
 
 
-def cnr(mu_wm, mu_gm, sigma_air):
+def cnr(mu_wm, mu_gm, sigma_air, sigma_wm, sigma_gm):
     r"""
     Calculate the :abbr:`CNR (Contrast-to-Noise Ratio)` [Magnota2006]_.
     Higher values are better.
@@ -284,12 +284,13 @@ def cnr(mu_wm, mu_gm, sigma_air):
     :param float mu_wm: mean of signal within white-matter mask.
     :param float mu_gm: mean of signal within gray-matter mask.
     :param float sigma_air: standard deviation of the air surrounding the head ("hat" mask).
+    :param float sigma_wm: standard deviation within white-matter mask.
+    :param float sigma_gm: standard within gray-matter mask.
 
     :return: the computed CNR
 
     """
-    return float(abs(mu_wm - mu_gm) / sigma_air)
-
+    return float(abs(mu_wm - mu_gm) / sqrt(sigma_air + sigma_gm + sigma_wm))
 
 def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     r"""
