@@ -290,7 +290,7 @@ def cnr(mu_wm, mu_gm, sigma_air, sigma_wm, sigma_gm):
     :return: the computed CNR
 
     """
-    return float(abs(mu_wm - mu_gm) / sqrt(sigma_air + sigma_gm + sigma_wm))
+    return float(abs(mu_wm - mu_gm) / sqrt(sigma_air ** 2 + sigma_gm ** 2 + sigma_wm ** 2))
 
 def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     r"""
