@@ -73,7 +73,7 @@ for x in html_out:
 	tmp_file.close()
 
 	#Apply html to pdf conversion
-	asyncio.get_event_loop().run_until_complete(main(),debug=True)
+	asyncio.get_event_loop().run_until_complete(main())
 
 	#delete temporary file
 	if os.path.exists("tmp_html.html"):
