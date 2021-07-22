@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- 
 
-import pdfgen, os, glob, asyncio
+import pdfgen, os, glob, asyncio, pyppeteer
 from html.parser import HTMLParser
 from pyppeteer import launch
 
@@ -17,6 +17,8 @@ from pyppeteer import launch
 #    websockets.client.connect = new_method
 
 #patch_websockets()
+
+pyppeteer.DEBUG = True  # print suppressed errors as error log
 
 async def main():
 	browser = await launch(

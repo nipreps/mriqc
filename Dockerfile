@@ -158,13 +158,13 @@ RUN apt-get update \
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
     && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
       --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # It won't run from the root user.
 # Install puppeteer so it's available in the container.
-#RUN npm i puppeteer \
+RUN npm i puppeteer \
     # Add user so we don't need --no-sandbox.
     # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
  #   && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
@@ -179,14 +179,16 @@ RUN apt-get update && \
       libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
       libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
       libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates \
-      fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget
+      fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget \
+      && rm -rf /var/lib/apt/lists/*
 
 #Install pyppeteer and pdfgen
 #
-RUN pip install --no-cache-dir -Iv urllib3==1.23 && \
+RUN apt-get remove urllib3 && \
+    pip install --no-cache-dir -Iv urllib3==1.23 && \
     pip install --no-cache-dir -Iv websockets==6.0 && \
     pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
-    pip install --no-cache-dir -Iv pyppeteer==0.2.2
+    pip install --no-cache-dir -Iv pyppeteer==0.2.2 && pyppeteer-install
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
