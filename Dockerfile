@@ -184,7 +184,7 @@ RUN apt-get update && \
 
 #Install pyppeteer and pdfgen
 #
-RUN apt-get remove urllib3 && \
+RUN pip uninstall urllib3 -y && \
     pip install --no-cache-dir -Iv urllib3==1.23 && \
     pip install --no-cache-dir -Iv websockets==6.0 && \
     pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
