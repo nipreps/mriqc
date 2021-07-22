@@ -179,16 +179,19 @@ RUN apt-get update && \
     libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
     libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
     libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates \
-    fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils wget \
+    fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
 #Install pyppeteer and pdfgen
 #
-RUN pip uninstall urllib3 -y && \
-    pip install --no-cache-dir -Iv urllib3==1.23 && \
-    pip install --no-cache-dir -Iv websockets==6.0 && \
-    pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
-    pip install --no-cache-dir -Iv pyppeteer==0.2.2 && pyppeteer-install
+#RUN pip uninstall urllib3 websockets-y && \
+#    pip install --no-cache-dir -Iv urllib3==1.23 && \
+#    pip install --no-cache-dir -Iv websockets==6.0 && \
+#    pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
+#    pip install --no-cache-dir -Iv pyppeteer==0.2.2 && pyppeteer-install
+
+RUN pip install --no-cache-dir -Iv pdfgen && \
+    pip install --no-cache-dir -Iv pyppeteer && pyppeteer-install
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper

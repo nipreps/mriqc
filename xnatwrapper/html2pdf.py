@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- 
 
-import pdfgen, os, glob, asyncio, pyppeteer
+import pdfgen, os, glob, asyncio, pyppeteer, logging
 from html.parser import HTMLParser
 from pyppeteer import launch
 
@@ -19,6 +19,10 @@ from pyppeteer import launch
 #patch_websockets()
 
 pyppeteer.DEBUG = True  # print suppressed errors as error log
+
+logger = logging.getLogger('websockets')
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 async def main():
 	browser = await launch(
@@ -69,7 +73,7 @@ for x in html_out:
 	tmp_file.close()
 
 	#Apply html to pdf conversion
-	asyncio.get_event_loop().run_until_complete(main())
+	asyncio.get_event_loop().run_until_complete(main(),debug=True)
 
 	#delete temporary file
 	if os.path.exists("tmp_html.html"):
