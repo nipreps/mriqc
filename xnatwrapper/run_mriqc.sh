@@ -34,5 +34,4 @@ mriqc ${bidsdir} ${outdir} ${level} --no-sub
 cd ${outdir}
 
 #Run py scripts to convert outputs
-/opt/xnatwrapper/html2pdf.py
-/opt/xnatwrapper/json2csv.py
+/opt/xnatwrapper/convert_outputs.py
