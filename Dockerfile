@@ -136,12 +136,9 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
-
 #Install fpdf, generate machine ID
 RUN pip install --no-cache-dir fpdf && \
     dbus-uuidgen > /etc/machine-id
-#    pip install --no-cache-dir xvfbwrapper && \
-    
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
@@ -177,6 +174,9 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 # Best practices
 RUN ldconfig
 WORKDIR /tmp/
+
+# Run as non-privileged user
+# USER pptruser
 
 # Run mriqc by default
 ENTRYPOINT ["/opt/xnatwrapper/run_mriqc.sh"]
