@@ -136,64 +136,16 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+### Additions by Dylan Lawless for VUIIS
 
-# Install wkhtmltopdf with Qt patch
-#RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
-#   tar xvf wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
-#    mv wkhtmltox/bin/wkhtmlto* /usr/bin/ && \
-#    rm -rf wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
-
-
-# Generate machine ID
-RUN dbus-uuidgen > /etc/machine-id
-
-#Install pdfkit and xvfbwrapper, 
-#RUN pip install --no-cache-dir pdfkit && \
-#    pip install --no-cache-dir xvfbwrapper && \
-#    
-
-# Install chrome for pyppeteer
-RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-      --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# It won't run from the root user.
-# Install puppeteer so it's available in the container.
-# RUN npm i puppeteer \
-    # Add user so we don't need --no-sandbox.
- #   && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
- #   && mkdir -p /home/pptruser/Downloads \
- #   && chown -R pptruser:pptruser /home/pptruser \
- #   && chown -R pptruser:pptruser /node_modules
-
-# chromium fix
-RUN apt-get update && \
-    apt-get install -yq \
-    gconf-service libasound2 libatk1.0-0 libatk-bridge2.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
-    libexpat1 libfontconfig1 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 \
-    libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
-    libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates \
-    fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils \
-    && rm -rf /var/lib/apt/lists/*
-
-#Install pyppeteer and pdfgen
-#
-#RUN pip uninstall urllib3 websockets-y && \
-#    pip install --no-cache-dir -Iv urllib3==1.23 && \
-#    pip install --no-cache-dir -Iv websockets==6.0 && \
-#    pip install --no-cache-dir -Iv pdfgen==1.0.4 && \
-#    pip install --no-cache-dir -Iv pyppeteer==0.2.2 && pyppeteer-install
-
-RUN pip install --no-cache-dir -Iv pdfgen && \
-    pip install --no-cache-dir -Iv pyppeteer && pyppeteer-install
+#Install fpdf, generate machine ID
+RUN pip install --no-cache-dir fpdf && \
+    dbus-uuidgen > /etc/machine-id
 
 #Copy xnatwrapper
 COPY xnatwrapper /opt/xnatwrapper
+
+### End
 
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
@@ -227,12 +179,9 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 RUN ldconfig
 WORKDIR /tmp/
 
-# Run as non-privileged user
-# USER pptruser
 
 # Run mriqc by default
 ENTRYPOINT ["/opt/xnatwrapper/run_mriqc.sh"]
-
 
 
 ARG BUILD_DATE
