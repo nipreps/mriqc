@@ -27,7 +27,7 @@ done
 
 
 #Run MRIQC
-mriqc ${bidsdir} ${outdir} ${level} --no-sub
+mriqc --no-sub -v ${bidsdir} ${outdir} ${level} 
 
 
 #Convert outputs
