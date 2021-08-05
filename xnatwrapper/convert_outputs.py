@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 
-<<<<<<< HEAD
-=======
-# To add:
-#	Add outlog to pdf (seperate?)
-
-
->>>>>>> 5cdf1166ac37b5054341e7bcffbc9e777295a131
 import json,csv,os,glob
 from fpdf import FPDF
 
