@@ -1,6 +1,7 @@
 #!/bin/bash
 
-## Script for mriqc docker container
+### Script for mriqc docker container
+# Dylan Lawless
 
 
 # Initialize defaults
@@ -9,7 +10,6 @@ export outdir=NO_OUTDIR
 export level=participant
 
 # Parse options
-
 while [[ $# -gt 0 ]]; do
   key="${1}"
   case $key in
@@ -22,13 +22,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-
-#Check for single subject, report error if group
-
-
 #Run MRIQC
-mriqc ${bidsdir} ${outdir} ${level} --no-sub
-
+mriqc --no-sub -v ${bidsdir} ${outdir} ${level} 
 
 #Convert outputs
 cd ${outdir}

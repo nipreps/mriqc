@@ -28,8 +28,8 @@ pdf=FPDF()
 pdf.add_page()
 page_width = pdf.w - 2 * pdf.l_margin
 pdf.set_font('Times','B',16.0)
-pdf.cell(page_width,0.0,fldrs[0] + ' ' + fldrs[1] + ' Image Quality Metrics',align='C')
-pdf.ln(10)
+pdf.cell(page_width,0.0,fldrs[0].capitalize() + ' ' + fldrs[1].capitalize() + ' Image Quality Metrics',align='C')
+pdf.ln(15)
 
 #Load in csv file and write to pdf
 for folder in glob.glob('sub-*/ses-*/*'):
@@ -39,13 +39,13 @@ for folder in glob.glob('sub-*/ses-*/*'):
 			tmp = csv_file.split('_')
 			scan = tmp[-1].replace('.csv','')
 
-			pdf.set_font('Times','',14.0)
-			pdf.cell(page_width,0.0,scan,align='C')
+			pdf.set_font('Times','B',14.0)
+			pdf.cell(page_width,0.0,scan.capitalize())
 			pdf.ln(10)
 
 			reader = csv.reader(f)
 
-			pdf.set_font('Courier', '', 12)
+			pdf.set_font('Times', '', 12)
 			col_width = page_width/3
 			th=pdf.font_size
 			for row in zip(*reader): 
@@ -55,9 +55,6 @@ for folder in glob.glob('sub-*/ses-*/*'):
 
 			pdf.add_page()
 
-# Gather logs and write to pdf
-
-
 
 # Finalize pdf
-pdf.output(sub+'_'+ses+'.pdf','F')
+pdf.output(fldrs[0] + '_' + fldrs[1] + '_MRIQC_IQMs.pdf','F')
