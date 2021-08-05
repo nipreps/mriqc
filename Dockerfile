@@ -165,7 +165,9 @@ RUN pip install --no-cache-dir "$( grep templateflow setup.cfg | xargs )" && \
 
 # Installing MRIQC
 COPY . /src/mriqc
-ENV VERSION
+
+ARG VERSION
+ENV version=$VERSION
 
 # Force static versioning within container
 RUN echo "${VERSION}" > /src/mriqc/mriqc/VERSION && \

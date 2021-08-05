@@ -44,7 +44,7 @@ else:
 pdf.ln(8)
 
 # Write MRIQC version to header
-version = os.environ["VERSION"]
+version = os.environ["version"]
 
 pdf.cell(page_width,0.0,'MRIQC Version ' + version,align='C')
 pdf.ln(8)
