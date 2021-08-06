@@ -8,9 +8,6 @@
 export bidsdir=NO_BIDS
 export outdir=NO_OUTDIR
 export level=participant
-#export label_info='project subject session scan'
-
-export VERSION
 
 # Parse options
 while [[ $# -gt 0 ]]; do
