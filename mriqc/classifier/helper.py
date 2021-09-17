@@ -1,41 +1,35 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
-Cross-validation helper
-^^^^^^^^^^^^^^^^^^^^^^^
-
+Cross-validation helper module.
 """
-
+import logging
 import os
+
 import numpy as np
 import pandas as pd
+from mriqc.classifier.data import get_bids_cols, read_dataset
+from mriqc.viz.misc import plot_roc_curve
 from pkg_resources import resource_filename as pkgrf
-
-# sklearn overrides
-
-# sklearn module
-from sklearn import metrics as slm
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.metrics.scorer import check_scoring
-from sklearn.model_selection import (
-    RepeatedStratifiedKFold,
-    GridSearchCV,
-    RandomizedSearchCV,
-    PredefinedSplit,
-)
-from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.svm import SVC, LinearSVC
-from sklearn.multiclass import OneVsRestClassifier
 
 # xgboost
 from xgboost import XGBClassifier
 
-import logging
-from .data import read_dataset, get_bids_cols
-from ..viz.misc import plot_roc_curve
+# sklearn module
+from sklearn import metrics as slm
+from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.metrics.scorer import check_scoring
+from sklearn.model_selection import (
+    GridSearchCV,
+    PredefinedSplit,
+    RandomizedSearchCV,
+    RepeatedStratifiedKFold,
+)
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.svm import SVC, LinearSVC
 
-from builtins import object
+# sklearn overrides
+
 
 LOG = logging.getLogger("mriqc.classifier")
 LOG.setLevel(logging.INFO)
@@ -245,11 +239,8 @@ class CVHelper(CVHelperBase):
         Fits the cross-validation helper
         """
         from .sklearn import preprocessing as mcsp
-        from .sklearn._split import (
-            RobustLeavePGroupsOut as LeavePGroupsOut,
-            RepeatedBalancedKFold,
-            RepeatedPartiallyHeldOutKFold,
-        )
+        from .sklearn._split import RepeatedBalancedKFold, RepeatedPartiallyHeldOutKFold
+        from .sklearn._split import RobustLeavePGroupsOut as LeavePGroupsOut
 
         if self._pickled:
             LOG.info("Classifier was loaded from file, cancelling fitting.")
@@ -585,9 +576,7 @@ class CVHelper(CVHelperBase):
             )
 
             score = scores[scoring.index("accuracy")]
-            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (
-                self._permutation_test + 1
-            )
+            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (self._permutation_test + 1)
             LOG.info(
                 "Permutation test (N=%d) for accuracy score %f (pvalue=%f)",
                 self._permutation_test,
@@ -671,9 +660,7 @@ class CVHelper(CVHelperBase):
             predf["prob_y"] = prob_y[:, 1]
             predf["pred_y"] = pred_y
 
-        predf[bidts + cols].to_csv(
-            self._gen_fname(suffix=suffix, ext="csv"), index=False
-        )
+        predf[bidts + cols].to_csv(self._gen_fname(suffix=suffix, ext="csv"), index=False)
 
     def save(self, suffix="estimator", compress=3):
         """
@@ -813,8 +800,9 @@ class CVHelper(CVHelperBase):
 
 def _load_parameters(param_file):
     """Load parameters from file"""
-    import yaml
     from io import open
+
+    import yaml
 
     with open(param_file) as paramfile:
         parameters = yaml.load(paramfile)

@@ -1,10 +1,4 @@
-nipype
-niworkflows
-packaging
-pydot >=1.2.3
-pydotplus
-sphinx >=2.1.2,<3.0
-sphinx-argparse
-sphinx_rtd_theme >=0.2.4
-templateflow
-toml
+-r ../requirements.txt
+sphinx~=3.5
+sphinx-argparse~=0.2
+sphinx_rtd_theme~=0.5

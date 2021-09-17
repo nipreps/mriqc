@@ -1,6 +1,6 @@
 """Manipulate Python warnings."""
-import warnings
 import logging
+import warnings
 
 _wlog = logging.getLogger("py.warnings")
 _wlog.addHandler(logging.NullHandler())

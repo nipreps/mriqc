@@ -1,18 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-# @Author: dbirman
-# @Date:   2017-06-14 16:51:24
-
-import sys
 import csv
-import random
-import webbrowser
 import os
-import numpy as np
+import random
+import sys
+import webbrowser
 
-# other functions
+import numpy as np
 
 
 def num_rows(data):

@@ -1,19 +1,17 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Reports."""
-import numpy as np
 import nibabel as nb
+import numpy as np
+from mriqc import config
+from mriqc.reports.individual import individual_html
 from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    isdefined,
-    InputMultiObject,
     BaseInterfaceInputSpec,
+    File,
+    InputMultiObject,
     SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
 )
-from .. import config
-from ..reports.individual import individual_html
 
 
 class _IndividualReportInputSpec(BaseInterfaceInputSpec):
@@ -67,16 +65,14 @@ class AddProvenance(SimpleInterface):
             "software": "mriqc",
             "webapi_url": config.execution.webapi_url,
             "webapi_port": config.execution.webapi_port,
-            "settings": {"testing": config.execution.debug, },
+            "settings": {
+                "testing": config.execution.debug,
+            },
         }
 
         if self.inputs.modality in ("T1w", "T2w"):
-            air_msk_size = (
-                np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(bool).sum()
-            )
-            rot_msk_size = (
-                np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(bool).sum()
-            )
+            air_msk_size = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(bool).sum()
+            rot_msk_size = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(bool).sum()
             self._results["out_prov"]["warnings"] = {
                 "small_air_mask": bool(air_msk_size < 5e5),
                 "large_rot_frame": bool(rot_msk_size > 500),

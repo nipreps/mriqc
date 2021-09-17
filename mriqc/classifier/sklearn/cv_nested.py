@@ -1,49 +1,38 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2015-11-19 16:44:27
-
 """
-=====================
 Extensions to sklearn
 =====================
-
-
-Extends sklearn's GridSearchCV to a model search object
-
-
+Extends sklearn's GridSearchCV to a model search object.
 """
-import warnings
+import logging
 import numbers
 import time
-
-from functools import partial
+import warnings
+from builtins import object, zip
 from collections import Sized
+from functools import partial
+
 import numpy as np
 
-from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._search import (
     BaseSearchCV,
-    check_scoring,
-    indexable,
     Parallel,
-    delayed,
+    check_scoring,
     defaultdict,
+    delayed,
+    indexable,
     rankdata,
 )
+from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import (
-    _score,
-    _num_samples,
-    _index_param_value,
-    _safe_split,
     FitFailedWarning,
+    _index_param_value,
+    _num_samples,
+    _safe_split,
+    _score,
     logger,
 )
 
-import logging
 from .parameters import ModelParameterGrid
-
-from builtins import object, zip
 
 try:
     from sklearn.utils.fixes import MaskedArray
@@ -114,9 +103,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
         pre_dispatch = self.pre_dispatch
 
         cv_iter = list(cv.split(X, y, groups))
-        out = Parallel(
-            n_jobs=self.n_jobs, verbose=self.verbose, pre_dispatch=pre_dispatch
-        )(
+        out = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, pre_dispatch=pre_dispatch)(
             delayed(_model_fit_and_score)(
                 estimator,
                 X,
@@ -148,9 +135,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
                 parameters,
             ) = zip(*out)
         else:
-            (test_scores, test_sample_counts, fit_time, score_time, parameters) = zip(
-                *out
-            )
+            (test_scores, test_sample_counts, fit_time, score_time, parameters) = zip(*out)
 
         candidate_params = parameters[::n_splits]
         n_candidates = len(candidate_params)
@@ -168,9 +153,7 @@ class ModelAndGridSearchCV(BaseSearchCV):
             results["mean_%s" % key_name] = array_means
             # Weighted std is not directly available in numpy
             array_stds = np.sqrt(
-                np.average(
-                    (array - array_means[:, np.newaxis]) ** 2, axis=1, weights=weights
-                )
+                np.average((array - array_means[:, np.newaxis]) ** 2, axis=1, weights=weights)
             )
             results["std_%s" % key_name] = array_stds
 
@@ -202,7 +185,14 @@ class ModelAndGridSearchCV(BaseSearchCV):
         # applicable for that candidate. Use defaultdict as each candidate may
         # not contain all the params
         param_results = defaultdict(
-            partial(MaskedArray, np.empty(n_candidates,), mask=True, dtype=object)
+            partial(
+                MaskedArray,
+                np.empty(
+                    n_candidates,
+                ),
+                mask=True,
+                dtype=object,
+            )
         )
         for cand_i, params in enumerate(candidate_params):
             _, param_values = params
@@ -250,9 +240,7 @@ def _model_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     if verbose > 1:
         msg = "[CV model=%s]" % estimator_str.upper()
         if parameters is not None:
@@ -263,9 +251,7 @@ def _model_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -344,16 +330,12 @@ def nested_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     from sklearn.externals.joblib.logger import short_format_time
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -414,16 +396,13 @@ def nested_fit_and_score(
             score_time = time.time() - start_time - fit_time
         else:
             LOG.warning(
-                "Test set has no positive labels, scoring has been skipped "
-                "in this loop."
+                "Test set has no positive labels, scoring has been skipped " "in this loop."
             )
 
         if return_train_score:
             train_score = _score(estimator, X_train, y_train, scorer)
 
-        acc_score = _score(
-            estimator, X_test, y_test, check_scoring(estimator, scoring="accuracy")
-        )
+        acc_score = _score(estimator, X_test, y_test, check_scoring(estimator, scoring="accuracy"))
 
     if verbose > 0:
         total_time = score_time + fit_time

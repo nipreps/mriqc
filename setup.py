@@ -1,8 +1,9 @@
-#!/usr/bin/env python
 """MRIQC setup script."""
 
 import sys
+
 from setuptools import setup
+
 import versioneer
 
 # Give setuptools a hint to complain if it's too old a version

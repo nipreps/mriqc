@@ -1,10 +1,9 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-"""Helper functions """
+"""Helper functions."""
 
-from pathlib import Path
-from collections import OrderedDict
 import json
+from collections import OrderedDict
+from pathlib import Path
+
 import pandas as pd
 
 try:

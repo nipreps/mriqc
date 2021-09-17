@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 r"""
 A Python module to maintain unique, run-wide *MRIQC* settings.
 
@@ -80,13 +78,14 @@ finally:
     # ignoring the most annoying warnings
     import os
     import sys
-
-    from uuid import uuid4
     from pathlib import Path
     from time import strftime
+    from uuid import uuid4
+
     from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
-    from . import __version__
+
+    from mriqc import __version__
 
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
@@ -124,7 +123,8 @@ if os.getenv("IS_DOCKER_8395080871"):
 
 _templateflow_home = Path(
     os.getenv(
-        "TEMPLATEFLOW_HOME", os.path.join(os.getenv("HOME"), ".cache", "templateflow")
+        "TEMPLATEFLOW_HOME",
+        os.path.join(os.getenv("HOME"), ".cache", "templateflow"),
     )
 )
 
@@ -148,13 +148,8 @@ try:
             _proc_oc_kbytes = Path("/proc/sys/vm/overcommit_kbytes")
             if _proc_oc_kbytes.exists():
                 _oc_limit = _proc_oc_kbytes.read_text().strip()
-            if (
-                _oc_limit in ("0", "n/a")
-                and Path("/proc/sys/vm/overcommit_ratio").exists()
-            ):
-                _oc_limit = "{}%".format(
-                    Path("/proc/sys/vm/overcommit_ratio").read_text().strip()
-                )
+            if _oc_limit in ("0", "n/a") and Path("/proc/sys/vm/overcommit_ratio").exists():
+                _oc_limit = "{}%".format(Path("/proc/sys/vm/overcommit_ratio").read_text().strip())
 except Exception:
     pass
 
@@ -246,7 +241,7 @@ class nipype(_Config):
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
     nprocs = os.cpu_count()
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
-    omp_nthreads = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
+    omp_nthreads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
     """Number of CPUs a single process can access for multithreaded execution."""
     plugin = "MultiProc"
     """NiPype's execution plugin."""
@@ -383,6 +378,7 @@ class execution(_Config):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
         if cls._layout is None:
             import re
+
             from bids.layout import BIDSLayout
 
             work_dir = cls.work_dir / "bids.db"
@@ -485,9 +481,7 @@ class loggers:
 
             if not len(cls.cli.handlers):
                 _handler = logging.StreamHandler(stream=sys.stdout)
-                _handler.setFormatter(
-                    logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
-                )
+                _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
                 cls.cli.addHandler(_handler)
             cls._init = True
 
@@ -497,7 +491,12 @@ class loggers:
         cls.workflow.setLevel(execution.log_level)
         cls.utils.setLevel(execution.log_level)
         ncfg.update_config(
-            {"logging": {"log_directory": str(execution.log_dir), "log_to_file": True}, }
+            {
+                "logging": {
+                    "log_directory": str(execution.log_dir),
+                    "log_to_file": True,
+                },
+            }
         )
 
     @classmethod

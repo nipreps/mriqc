@@ -1,16 +1,13 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-""" Visualization utilities """
-
+"""Visualization utilities."""
 import math
 import os.path as op
-import numpy as np
-import nibabel as nb
 
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+import nibabel as nb
+import numpy as np
 import seaborn as sns
+from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+from matplotlib.gridspec import GridSpec
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -168,7 +165,12 @@ def plot_slice_tern(
 
 
 def plot_spikes(
-    in_file, in_fft, spikes_list, cols=3, labelfmt="t={0:.3f}s (z={1:d})", out_file=None
+    in_file,
+    in_fft,
+    spikes_list,
+    cols=3,
+    labelfmt="t={0:.3f}s (z={1:d})",
+    out_file=None,
 ):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -288,7 +290,8 @@ def plot_mosaic(
             z_vals = z_vals[rem:-rem]
         else:
             # img_data = img_data[..., 2 * rem:]
-            z_vals = z_vals[2 * rem:]
+            start_index = 2 * rem
+            z_vals = z_vals[start_index:]
 
     while len(z_vals) > zmax:
         # Discard one every two slices
@@ -371,9 +374,7 @@ def plot_mosaic(
             )
             naxis += 1
 
-    fig.subplots_adjust(
-        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05
-    )
+    fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05)
 
     if title:
         fig.suptitle(title, fontsize="10")
@@ -491,9 +492,7 @@ def _calc_fd(fd_file, fd_radius):
     translations = np.transpose(np.abs(np.diff(cols[0:3, :])))
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
-    fd_power = np.sum(translations, axis=1) + (fd_radius * pi / 180) * np.sum(
-        rotations, axis=1
-    )
+    fd_power = np.sum(translations, axis=1) + (fd_radius * pi / 180) * np.sum(rotations, axis=1)
 
     # FD is zero for the first time point
     fd_power = np.insert(fd_power, 0, 0)
@@ -545,7 +544,9 @@ def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
         vmin=vmin,
     )
     disp.add_contours(
-        segmentation, levels=kwargs.get("levels", [1]), colors=kwargs.get("colors", "r")
+        segmentation,
+        levels=kwargs.get("levels", [1]),
+        colors=kwargs.get("colors", "r"),
     )
     disp.savefig(out_file)
     disp.close()

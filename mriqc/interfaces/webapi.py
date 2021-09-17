@@ -1,17 +1,16 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-from nipype.interfaces.base import (
-    Bunch,
-    traits,
-    isdefined,
-    TraitedSpec,
-    BaseInterfaceInputSpec,
-    File,
-    Str,
-    SimpleInterface,
-)
 from urllib.parse import urlparse
-from .. import config
+
+from mriqc import config, messages
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    Bunch,
+    File,
+    SimpleInterface,
+    Str,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 SECRET_KEY = "<secret_token>"
 
@@ -98,15 +97,11 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     port = traits.Int(desc="MRIQCWebAPI service port")
     path = Str(desc="MRIQCWebAPI endpoint root path")
     email = Str(desc="set sender email")
-    strict = traits.Bool(
-        False, usedefault=True, desc="crash if upload was not succesfull"
-    )
+    strict = traits.Bool(False, usedefault=True, desc="crash if upload was not succesfull")
 
 
 class UploadIQMsOutputSpec(TraitedSpec):
-    api_id = traits.Either(
-        None, traits.Str, desc="Id for report returned by the web api"
-    )
+    api_id = traits.Either(None, traits.Str, desc="Id for report returned by the web api")
 
 
 class UploadIQMs(SimpleInterface):
@@ -161,7 +156,7 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.warning(errmsg)
 
         if response.status_code == 201:
-            config.loggers.interface.info("QC metrics successfully uploaded.")
+            config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
         errmsg = "QC metrics failed to upload. Status %d: %s" % (
@@ -190,10 +185,11 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
 
     """
-    from pathlib import Path
-    from json import loads, dumps
-    import requests
     from copy import deepcopy
+    from json import dumps, loads
+    from pathlib import Path
+
+    import requests
 
     if port is None:
         port = 443 if scheme == "https" else 80
@@ -239,15 +235,14 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
     headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
 
-    webapi_url = "{}://{}:{}/{}{}".format(scheme, loc, port, path, modality)
-    config.loggers.interface.info("MRIQC Web API: submitting to <%s>", webapi_url)
+    webapi_url = f"{scheme}://{loc}:{port}/{path}{modality}"
+    start_message = messages.QC_UPLOAD_START.format(url=webapi_url)
+    config.loggers.interface.info(start_message)
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))
     except requests.ConnectionError as err:
-        errmsg = (
-            "QC metrics failed to upload due to connection error shown below:\n%s" % err
-        )
+        errmsg = "QC metrics failed to upload due to connection error shown below:\n%s" % err
         return Bunch(status_code=1, text=errmsg)
 
     return response

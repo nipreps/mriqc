@@ -1,4 +1,3 @@
-
 .. _clf-data:
 
 .. automodule:: mriqc.classifier.data

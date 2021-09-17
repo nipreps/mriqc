@@ -1,13 +1,10 @@
 
 .. _dsa:
 
-======================
 Data Sharing Agreement
 ======================
-
 Foundations
 -----------
-
 (Text in this section has been retrieved from https://www.ihris.org/toolkit/tools/data-sharing.html)
 
 Data-sharing is an important way to increase the ability of researchers, scientists and policy-makers
@@ -15,19 +12,18 @@ to analyze and translate data into meaningful reports and knowledge.
 Sharing data discourages duplication of effort in data collection and encourages diverse thinking,
 as others are able to use the data to answer questions that the initial data collectors may not
 have considered.
-Sharing data also encourages accountability and transparency, enabling researchers to validate 
+Sharing data also encourages accountability and transparency, enabling researchers to validate
 one another's findings.
 Finally, data from multiple sources can often be combined to allow for comparisons that cross national
 and departmental lines.
 
 MRIQC DSA (Data Sharing Agreement)
 ----------------------------------
-
 MRIQC extracts a vector of :abbr:`IQMs (image quality metrics)` from the input dataset.
 These :abbr:`IQMs (image quality metrics)` are estimations of numerical properties of the
 data array in the image, hence they are not usable in identifying data.
 In other words, it is not possible to identify a natural person from this information.
-Additionally, MRIQC collects metadata from the appropriate fields found in the BIDS 
+Additionally, MRIQC collects metadata from the appropriate fields found in the BIDS
 structure of the input dataset.
 Any information that could be used to identify the natural person the original data
 were obtained from are stripped out (e.g. the subject identifier in the context of the
@@ -40,10 +36,8 @@ This checksum cannot be used to regenerate the original data it was calculated f
 Therefore, in the case that MRIQC was run on private data, the original images
 remain inaccessible to the public as no original data are shared.
 
-
 Withdrawing records and period of agreement
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+...........................................
 If you do not agree to these terms, please make use of the ``--no-sub`` (*do not submit*)
 command line flag with MRIQC.
 MRIQC will not collect any data when you OPT-OUT with this command line flag.
@@ -64,10 +58,8 @@ In the case the service is shut down, existing records will be posted in a perma
 static storage service.
 This agreement does not expire.
 
-
 Intended use of the data
-~~~~~~~~~~~~~~~~~~~~~~~~
-
+........................
 The resource is particularly designed for researchers to share image quality metrics and
 annotations that can readily be reused in training human experts and machine learning
 algorithms.
@@ -75,18 +67,14 @@ The ultimate goal of the MRIQC Web-API is to allow the development of fully auto
 quality control tools that outperform expert ratings in identifying degenerate images.
 
 Constraints on use of the data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+..............................
 Data are shared under a CC0 (public domain) license.
 
-
 Data confidentiality
-~~~~~~~~~~~~~~~~~~~~
-
+....................
 Please use please make use of the ``--no-sub`` (*do not submit*) command line flag with MRIQC
 to ensure that your data remain confidential.
 
 Financial costs of data-sharing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+...............................
 The MRIQC Web-API infrastructure is funded by NIMH grants R24MH117179, and ZICMH002960.

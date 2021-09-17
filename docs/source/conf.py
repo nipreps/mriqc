@@ -14,8 +14,9 @@ serve to show the default.
 
 import os
 from datetime import datetime
-from packaging.version import Version
+
 from mriqc.__about__ import __version__
+from packaging.version import Version
 
 # Disable etelemetry during doc builds
 os.environ["NIPYPE_NO_ET"] = "1"
@@ -25,9 +26,6 @@ os.environ["NIPYPE_NO_ET"] = "1"
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 # -- General configuration ------------------------------------------------
-
-# If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "1.5.3"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -235,20 +233,26 @@ htmlhelp_basename = "mriqcdoc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
     # Latex figure (float) alignment
-    #'figure_align': 'htbp',
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "mriqc.tex", "mriqc Documentation", "Oscar Esteban", "manual"),
+    (
+        master_doc,
+        "mriqc.tex",
+        "mriqc Documentation",
+        "The NiPreps developers",
+        "manual",
+    ),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

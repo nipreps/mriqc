@@ -1,21 +1,19 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Parser."""
-from .. import config
 import re
+
+from mriqc import config
 
 
 def _build_parser():
     """Build parser object."""
     import sys
-    from shutil import which
+    from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
     from functools import partial
     from pathlib import Path
-    from argparse import (
-        ArgumentParser,
-        ArgumentDefaultsHelpFormatter,
-    )
+    from shutil import which
+
     from packaging.version import Version
+
     from .version import check_latest, is_flagged
 
     def _path_exists(path, parser):
@@ -34,7 +32,8 @@ def _build_parser():
     def _to_gb(value):
         scale = {"G": 1, "T": 10 ** 3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
         digits = "".join([c for c in value if c.isdigit()])
-        units = value[len(digits):] or "G"
+        n_digits = len(digits)
+        units = value[n_digits:] or "G"
         return int(digits) * scale[units[0]]
 
     def _drop_sub(value):
@@ -218,7 +217,10 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Write workflow graph.",
     )
     g_outputs.add_argument(
-        "--dry-run", action="store_true", default=False, help="Do not run the workflow."
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Do not run the workflow.",
     )
     g_outputs.add_argument(
         "--profile",
@@ -237,8 +239,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--no-sub",
         default=False,
         action="store_true",
-        help="Turn off submission of anonymized quality metrics "
-        "to MRIQC's metrics repository.",
+        help="Turn off submission of anonymized quality metrics " "to MRIQC's metrics repository.",
     )
     g_outputs.add_argument(
         "--email",
@@ -309,15 +310,13 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--deoblique",
         action="store_true",
         default=False,
-        help="Deoblique the functional scans during head motion correction "
-        "preprocessing.",
+        help="Deoblique the functional scans during head motion correction " "preprocessing.",
     )
     g_func.add_argument(
         "--despike",
         action="store_true",
         default=False,
-        help="Despike the functional scans during head motion correction "
-        "preprocessing.",
+        help="Despike the functional scans during head motion correction " "preprocessing.",
     )
     g_func.add_argument(
         "--start-idx",
@@ -366,6 +365,7 @@ discourage its usage.""",
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
     from logging import DEBUG
+
     from ..utils.bids import collect_bids_data
 
     parser = _build_parser()
@@ -384,9 +384,7 @@ def parse_args(args=None, namespace=None):
         if _plugin:
             config.nipype.plugin = _plugin
             config.nipype.plugin_args = plugin_settings.get("plugin_args", {})
-            config.nipype.nprocs = config.nipype.plugin_args.get(
-                "nprocs", config.nipype.nprocs
-            )
+            config.nipype.nprocs = config.nipype.plugin_args.get("nprocs", config.nipype.nprocs)
 
     # Resource management options
     # Note that we're making strong assumptions about valid plugin args
@@ -471,9 +469,7 @@ def parse_args(args=None, namespace=None):
     }
     config.workflow.inputs = {
         mod: files
-        for mod, files in collect_bids_data(
-            config.execution.layout, **bids_filters
-        ).items()
+        for mod, files in collect_bids_data(config.execution.layout, **bids_filters).items()
         if files
     }
 
@@ -491,8 +487,7 @@ Please, check out your currently set filters:
     unknown_mods = set(config.workflow.inputs.keys()) - set(("T1w", "T2w", "bold"))
     if unknown_mods:
         parser.error(
-            "MRIQC is unable to process the following modalities: "
-            f'{", ".join(unknown_mods)}.'
+            "MRIQC is unable to process the following modalities: " f'{", ".join(unknown_mods)}.'
         )
 
     # Estimate the biggest file size

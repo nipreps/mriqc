@@ -1,32 +1,29 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Visualization interfaces."""
-from pathlib import Path
-import numpy as np
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    BaseInterfaceInputSpec,
-    isdefined,
-    SimpleInterface,
-)
-
 from io import open  # pylint: disable=W0622
-from ..viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from pathlib import Path
+
+import numpy as np
+from mriqc.viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
-    in_contours = File(
-        exists=True, mandatory=True, desc="file to pick the contours from"
-    )
+    in_contours = File(exists=True, mandatory=True, desc="file to pick the contours from")
     cut_coords = traits.Int(8, usedefault=True, desc="number of slices")
-    levels = traits.List(
-        [0.5], traits.Float, usedefault=True, desc="add a contour per level"
-    )
+    levels = traits.List([0.5], traits.Float, usedefault=True, desc="add a contour per level")
     colors = traits.List(
-        ["r"], traits.Str, usedefault=True, desc="colors to be used for contours"
+        ["r"],
+        traits.Str,
+        usedefault=True,
+        desc="colors to be used for contours",
     )
     display_mode = traits.Enum(
         "ortho",
@@ -89,7 +86,11 @@ class PlotBaseInputSpec(BaseInterfaceInputSpec):
     title = traits.Str(desc="a title string for the plot")
     annotate = traits.Bool(True, usedefault=True, desc="annotate left/right")
     figsize = traits.Tuple(
-        (11.69, 8.27), traits.Float, traits.Float, usedefault=True, desc="Figure size"
+        (11.69, 8.27),
+        traits.Float,
+        traits.Float,
+        usedefault=True,
+        desc="Figure size",
     )
     dpi = traits.Int(300, usedefault=True, desc="Desired DPI of figure")
     out_file = File("mosaic.svg", usedefault=True, desc="output file name")
@@ -132,9 +133,7 @@ class PlotMosaic(SimpleInterface):
             cmap=self.inputs.cmap,
             annotate=self.inputs.annotate,
         )
-        self._results["out_file"] = str(
-            (Path(runtime.cwd) / self.inputs.out_file).resolve()
-        )
+        self._results["out_file"] = str((Path(runtime.cwd) / self.inputs.out_file).resolve())
         return runtime
 
 
@@ -168,6 +167,9 @@ class PlotSpikes(SimpleInterface):
 
         spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).tolist()]
         plot_spikes(
-            self.inputs.in_file, self.inputs.in_fft, spikes_list, out_file=out_file
+            self.inputs.in_file,
+            self.inputs.in_fft,
+            spikes_list,
+            out_file=out_file,
         )
         return runtime

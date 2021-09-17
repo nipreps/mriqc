@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
 Generate individual and group reports.
 
@@ -45,8 +43,9 @@ Submodules
 
 """
 from copy import deepcopy
-from .individual import individual_html
+
 from .group import gen_html as group_html
+from .individual import individual_html
 
 REPORT_TITLES = {
     "bold": [

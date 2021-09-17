@@ -1,6 +1,5 @@
 version: 2
 jobs:
-
   build_docs:
     docker:
       - image: circleci/python:3.8.5
@@ -131,8 +130,8 @@ jobs:
             docker save ubuntu:xenial-20200114 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
       - save_cache:
-         key: docker-v1-{{ .Branch }}-{{ epoch }}
-         paths:
+          key: docker-v1-{{ .Branch }}-{{ epoch }}
+          paths:
             - /tmp/cache/docker.tar.gz
             - /tmp/cache/webapi.tar.gz
       - persist_to_workspace:
@@ -184,8 +183,8 @@ jobs:
             echo "hash_method = content" >> /tmp/t1w/nipype.cfg
             cp /tmp/t1w/nipype.cfg /tmp/bold/nipype.cfg
       - save_cache:
-         key: data-v2-{{ epoch }}
-         paths:
+          key: data-v2-{{ epoch }}
+          paths:
             - /tmp/data
             - /tmp/t1w
             - /tmp/bold
@@ -317,8 +316,8 @@ jobs:
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v3-{{ epoch }}
-         paths:
+          key: t1w-v3-{{ epoch }}
+          paths:
             - /tmp/t1w/work
 
       - run:
@@ -470,8 +469,8 @@ jobs:
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v2-{{ epoch }}
-         paths:
+          key: bold-v2-{{ epoch }}
+          paths:
             - /tmp/bold/work
 
       - run:

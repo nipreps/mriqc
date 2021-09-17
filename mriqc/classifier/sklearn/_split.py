@@ -1,9 +1,9 @@
+import logging
+
 import numpy as np
-from sklearn.utils import indexable
 from sklearn.model_selection import LeavePGroupsOut, StratifiedKFold
 from sklearn.model_selection._split import _RepeatedSplits
-
-import logging
+from sklearn.utils import indexable
 
 LOG = logging.getLogger("mriqc.classifier")
 
@@ -82,7 +82,9 @@ class BalancedKFold(StratifiedKFold):
                 if len(cls_index) > min_y:
                     cls_index = np.random.choice(cls_index, size=min_y, replace=False)
 
-                new_index[cls * min_y:(cls + 1) * min_y] = cls_index
+                i = cls * min_y
+                j = (cls + 1) * min_y
+                new_index[i:j] = cls_index
             yield train_index, new_index
 
 

@@ -1,22 +1,15 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
-===================
 Data handler module
 ===================
-
-Reads in and writes CSV files with the IQMs
-
-
+Reads in and writes CSV files with the IQMs.
 """
-
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from builtins import str
-
-from .. import config
-from ..utils.misc import BIDS_COMP
+from mriqc import config
+from mriqc.messages import CREATED_DATASET, DROPPING_NON_NUMERICAL, POST_Z_NANS, Z_SCORING
+from mriqc.utils.misc import BIDS_COMP
 
 
 def get_groups(X, label="site"):
@@ -69,9 +62,7 @@ def read_iqms(feat_file):
 
     if feat_file.suffix == ".csv":
         bids_comps = list(BIDS_COMP.keys())
-        x_df = pd.read_csv(
-            feat_file, index_col=False, dtype={col: str for col in bids_comps}
-        )
+        x_df = pd.read_csv(feat_file, index_col=False, dtype={col: str for col in bids_comps})
         # Find present bids bits and sort by them
         bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
         bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
@@ -88,9 +79,7 @@ def read_iqms(feat_file):
                 pass
     else:
         bids_comps_present = ["subject_id"]
-        x_df = pd.read_csv(
-            feat_file, index_col=False, sep="\t", dtype={"bids_name": str}
-        )
+        x_df = pd.read_csv(feat_file, index_col=False, sep="\t", dtype={"bids_name": str})
         x_df = x_df.sort_values(by=["bids_name"])
         x_df["subject_id"] = x_df.bids_name.str.lstrip("sub-")
         x_df = x_df.drop(columns=["bids_name"])
@@ -122,9 +111,7 @@ def read_labels(
     output_labels = rate_label
 
     bids_comps = list(BIDS_COMP.keys())
-    y_df = pd.read_csv(
-        label_file, index_col=False, dtype={col: str for col in bids_comps}
-    )
+    y_df = pd.read_csv(label_file, index_col=False, dtype={col: str for col in bids_comps})
 
     # Find present bids bits and sort by them
     bids_comps_present = get_bids_cols(y_df)
@@ -231,26 +218,25 @@ def read_dataset(
     # Drop samples with invalid rating
     nan_labels = x_df[x_df[rate_label].isnull()].index.ravel().tolist()
     if nan_labels:
-        config.loggers.interface.info(
-            f"Dropping {len(nan_labels)} samples for having non-numerical labels,"
-        )
+        message = DROPPING_NON_NUMERICAL.format(n_labels=len(nan_labels))
+        config.loggers.interface.info(message)
         x_df = x_df.drop(nan_labels)
 
     # Print out some info
-    nsamples = len(x_df)
-    config.loggers.interface.info(
-        f'Created dataset X="{feat_file}", Y="{label_file}" (N={nsamples} valid samples)'
+    n_samples = len(x_df)
+    ds_created_message = CREATED_DATASET.format(
+        feat_file=feat_file, label_file=label_file, n_samples=n_samples
     )
+    config.loggers.interface.info(ds_created_message)
 
     # Inform about ratings distribution
     labels = sorted(set(x_df[rate_label].values.ravel().tolist()))
-    ldist = [int(np.sum(x_df[rate_label] == label))
-             for label in labels]
+    ldist = [int(np.sum(x_df[rate_label] == label)) for label in labels]
 
     config.loggers.interface.info(
         "Ratings distribution: %s (%s, %s)",
         "/".join(["%d" % x for x in ldist]),
-        "/".join(["%.2f%%" % (100 * x / nsamples) for x in ldist]),
+        "/".join(["%.2f%%" % (100 * x / n_samples) for x in ldist]),
         "accept/exclude" if len(ldist) == 2 else "exclude/doubtful/accept",
     )
 
@@ -278,10 +264,10 @@ def balanced_leaveout(dataframe, site_column="site", rate_label="rater_1"):
 
 
 def zscore_dataset(dataframe, excl_columns=None, by="site", njobs=-1):
-    """ Returns a dataset zscored by the column given as argument """
+    """ Returns a dataset z-scored by the *by* keyword argument column. """
     from multiprocessing import Pool, cpu_count
 
-    config.loggers.interface.info("z-scoring dataset ...")
+    config.loggers.interface.info(Z_SCORING)
 
     if njobs <= 0:
         njobs = cpu_count()
@@ -315,9 +301,8 @@ def zscore_dataset(dataframe, excl_columns=None, by="site", njobs=-1):
     nan_columns = zs_df.columns[zs_df.isnull().any()].tolist()
 
     if nan_columns:
-        config.loggers.interface.warning(
-            f'Columns {", ".join(nan_columns)} contain NaNs after z-scoring.'
-        )
+        nan_message = POST_Z_NANS.format(nan_columns=", ".join(nan_columns))
+        config.loggers.interface.warning(nan_message)
         zs_df[nan_columns] = dataframe[nan_columns].values
 
     return zs_df

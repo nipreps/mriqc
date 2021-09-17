@@ -1,21 +1,20 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-from pathlib import Path
 import re
+from pathlib import Path
+
 import simplejson as json
+from mriqc import config
+from mriqc.utils.misc import BIDS_COMP
 from nipype.interfaces.base import (
-    traits,
-    isdefined,
-    TraitedSpec,
-    DynamicTraitedSpec,
     BaseInterfaceInputSpec,
+    DynamicTraitedSpec,
     File,
-    Undefined,
-    Str,
     SimpleInterface,
+    Str,
+    TraitedSpec,
+    Undefined,
+    isdefined,
+    traits,
 )
-from .. import config
-from ..utils.misc import BIDS_COMP
 
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
@@ -120,8 +119,7 @@ class IQMFileSink(SimpleInterface):
                 self._out_dict.update(val)
             else:
                 config.loggers.interface.warning(
-                    'Output "%s" is not a dictionary (value="%s"), '
-                    "discarding output.",
+                    'Output "%s" is not a dictionary (value="%s"), ' "discarding output.",
                     root_key,
                     str(val),
                 )
@@ -156,7 +154,12 @@ class IQMFileSink(SimpleInterface):
 
         with open(out_file, "w") as f:
             f.write(
-                json.dumps(self._out_dict, sort_keys=True, indent=2, ensure_ascii=False)
+                json.dumps(
+                    self._out_dict,
+                    sort_keys=True,
+                    indent=2,
+                    ensure_ascii=False,
+                )
             )
 
         return runtime

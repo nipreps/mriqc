@@ -1,5 +1,12 @@
   * Fixes for #891 (#892)
   * DOC: Various fixes to "Running mriqc" section (#897)
+  * FIX: Rebuilt and updated documentation.
+  * ENH: Updated and organized project requirements.
+  * ENH: Fixed linting issues and standardized code formatting.
+  * ENH: Refactored long strings to a :mod:`mriqc.messages` module.
+  * ENH: Refactored :mod:`mriqc.interfaces.common` module.
+  * ENH: Integrated `isort <https://isort.readthedocs.io/en/latest/>`.
+
 0.16.1 (January 30, 2021)
 =========================
 Bug-fix release in 0.16.x series.
@@ -61,8 +68,8 @@ A maintenance patch release updating PyBIDS.
 
 0.15.0 (April 5, 2019)
 ======================
-A long overdue update, pinning updated versions of 
-`TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and 
+A long overdue update, pinning updated versions of
+`TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and
 `Niworkflows <https://github.com/poldracklab/niworkflows>`__.
 With thanks to @garciadias for contributions.
 
@@ -212,7 +219,7 @@ With thanks to Jan Varada (@jvarada) for the session/run filtering.
     * Revised labels file for ds030.
     * Add IQMs for ABIDE and DS030 calculated with MRIQC 0.9.6.
   * ANNOUNCEMENT: Dropped support for Python<=3.4
-  * WARNING (#596): 
+  * WARNING (#596):
     We have changed the default number of threads for ANTs. Using parallelism with ANTs
     causes numerical instability on the calculated measures. The most sensitive metrics to this
     problem are the kurtosis calculations on the intensities of regions and qi_2.

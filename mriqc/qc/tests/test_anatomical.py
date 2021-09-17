@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
+
 #
 # @Author: oesteban
 # @Date:   2016-01-05 11:29:40
@@ -11,12 +10,13 @@
 """
 Anatomical tests
 """
-from tempfile import mkdtemp
+from builtins import object
 from shutil import rmtree
+from tempfile import mkdtemp
+
 import numpy as np
 import pytest
 from scipy.stats import rice
-from builtins import object
 
 # from numpy.testing import allclose
 from ..anatomical import art_qi2
@@ -42,9 +42,7 @@ class GroundTruth(object):
         elif noise == "rayleigh":
             test_data += np.random.rayleigh(scale=sigma * wm_mean, size=test_data.shape)
         else:
-            test_data += np.random.normal(
-                0.0, scale=sigma * wm_mean, size=test_data.shape
-            )
+            test_data += np.random.normal(0.0, scale=sigma * wm_mean, size=test_data.shape)
 
         return test_data, wmdata, bgdata
 
