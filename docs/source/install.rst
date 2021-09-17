@@ -32,7 +32,32 @@ github using ``pip`` on a Python 3 environment: ::
 
 .. warning::
 
-	As of MRIQC 0.9.4, Python 2 is no longer supported.
+        As of MRIQC 0.9.4, Python 2 is no longer supported.
+
+.. warning::
+
+        MRIQC uses matplotlib to create graphics. By default, matplotlib is configured to 
+        plot through an interactive Tcl/tk interface, which requires a functional display to be available. 
+        In *head-less* settings (for example, when running under tmux),
+        you may see an error::
+
+                _tkinter.TclError: couldn't connect to display "localhost:10.0"
+
+        There are two pathways to fix this issue.
+        One is setting up a virtual display with a tool like XVfb.
+        Alternatively, you can configure your matplotlib distribution to perform on
+        head-less mode by default.
+        That is achieved by uncommenting the ``backend : Agg`` line in the matplotlib's
+        configuration file.
+        The location of the configuration file can be retrieved with Python::
+
+          >>> import matplotlib
+          >>> print(matplotlib.matplotlib_fname())
+
+        Alternatively, you can issue the following shell command-line to edit this setting::
+
+        $ sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
+
 
 
 Execution system dependencies
