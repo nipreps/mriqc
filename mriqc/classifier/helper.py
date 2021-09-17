@@ -3,7 +3,6 @@ Cross-validation helper module.
 """
 import logging
 import os
-from builtins import object
 
 import numpy as np
 import pandas as pd

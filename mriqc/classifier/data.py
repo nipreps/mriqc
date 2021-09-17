@@ -3,7 +3,6 @@ Data handler module
 ===================
 Reads in and writes CSV files with the IQMs.
 """
-from builtins import str
 from pathlib import Path
 
 import numpy as np

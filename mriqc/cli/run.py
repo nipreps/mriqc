@@ -1,13 +1,9 @@
-"""
-Definition of the command line interface's (CLI) entry point.
-"""
+"""Definition of the command line interface's (CLI) entry point."""
 from mriqc import config, messages
 
 
 def main():
-    """
-    Entry point for `mriqc`'s CLI.
-    """
+    """Entry point for MRIQC's CLI."""
     import gc
     import os
     import sys

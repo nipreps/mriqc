@@ -1,7 +1,4 @@
   * DOC: Various fixes to "Running mriqc" section (#897)
-0.16.2 ()
-=====================
-
   * FIX: Rebuilt and updated documentation.
   * ENH: Updated and organized project requirements.
   * ENH: Fixed linting issues and standardized code formatting.
