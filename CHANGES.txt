@@ -1,3 +1,4 @@
+  * Fixes for #891 (#892)
   * DOC: Various fixes to "Running mriqc" section (#897)
 0.16.1 (January 30, 2021)
 =========================
