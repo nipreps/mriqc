@@ -1,4 +1,8 @@
-TEST_PATH=./
+# Basic actions
+
+TEST_PATH = ./
+MRIQC_VERSION = latest
+
 
 .PHONY: clean-pyc
 clean-pyc:
@@ -35,7 +39,7 @@ docker:
 		docker build -t poldracklab/mriqc:$(MRIQC_VERSION) \
 			--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 			--build-arg VCS_REF=`git rev-parse --short HEAD` \
-			--build-arg VERSION=$(MRIQC_VERSION) .
+			--build-arg VERSION=`python setup.py --version` .
 
 .PHONY: release
 release: clean-build tag docker

@@ -40,6 +40,7 @@ RUN apt-get update && \
                     bzip2 \
                     ca-certificates \
                     curl \
+                    gnupg2 \
                     libtool \
                     lsb-release \
                     pkg-config \
@@ -80,6 +81,7 @@ RUN apt-get update && \
                     libxrender1 \
                     libxt6 \
                     netpbm \
+                    wget \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -106,8 +108,8 @@ RUN apt-get update && \
 RUN echo "Downloading FSL ..." \
     && mkdir -p /opt/fsl-5.0.11 \
     && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos6_64.tar.gz \
-    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1 \
-    && echo "Installing FSL conda environment ..." \
+    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1
+RUN echo "Installing FSL conda environment ..." \
     && bash /opt/fsl-5.0.11/etc/fslconf/fslpython_install.sh -f /opt/fsl-5.0.11
 ENV FSLDIR="/opt/fsl-5.0.11" \
     PATH="/opt/fsl-5.0.11/bin:$PATH" \
