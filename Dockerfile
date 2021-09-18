@@ -28,8 +28,8 @@ FROM ubuntu:focal-20210416
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 ENV DEBIAN_FRONTEND="noninteractive" \
-    LANG="en_US.UTF-8" \
-    LC_ALL="en_US.UTF-8"
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8"
 
 # Prepare environment
 RUN apt-get update && \
@@ -108,8 +108,8 @@ RUN apt-get update && \
 RUN echo "Downloading FSL ..." \
     && mkdir -p /opt/fsl-5.0.11 \
     && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos6_64.tar.gz \
-    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1
-RUN echo "Installing FSL conda environment ..." \
+    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1 \
+    && echo "Installing FSL conda environment ..." \
     && bash /opt/fsl-5.0.11/etc/fslconf/fslpython_install.sh -f /opt/fsl-5.0.11
 ENV FSLDIR="/opt/fsl-5.0.11" \
     PATH="/opt/fsl-5.0.11/bin:$PATH" \
@@ -152,8 +152,6 @@ RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-py38_4.9.2-Linux-x
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
 ENV PATH="${CONDA_PATH}/bin:$PATH" \
     CPATH="${CONDA_PATH}/include:$CPATH" \
-    LANG="C.UTF-8" \
-    LC_ALL="C.UTF-8" \
     PYTHONNOUSERSITE=1
 
 # Installing conda/python environment
