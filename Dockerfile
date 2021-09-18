@@ -159,10 +159,10 @@ RUN conda install -y -c conda-forge -c anaconda \
                      python=3.8 \
                      git \
                      git-annex \
-                     graphviz=2.40 \
-                     libxml2=2.9 \
-                     libxslt=1.1 \
-                     matplotlib=3.3 \
+                     graphviz \
+                     libxml2 \
+                     libxslt \
+                     matplotlib=3 \
                      mkl \
                      mkl-service \
                      nodejs \
