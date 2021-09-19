@@ -162,8 +162,9 @@ def anat_qc_workflow(name="anatMRIQC"):
 
 def spatial_normalization(name="SpatialNormalization", resolution=2):
     """Create a simplied workflow to perform fast spatial normalization."""
-    from niworkflows.interfaces.registration import \
-        RobustMNINormalizationRPT as RobustMNINormalization
+    from niworkflows.interfaces.reportlets.registration import (
+        SpatialNormalizationRPT as RobustMNINormalization
+    )
 
     # Have the template id handy
     tpl_id = config.workflow.template_id
