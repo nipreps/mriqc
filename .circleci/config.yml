@@ -274,11 +274,14 @@ jobs:
           path: /home/circleci/out/tests
 
   T1w:
-    machine:
-      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/t1w
     steps:
       - attach_workspace:
@@ -320,17 +323,12 @@ jobs:
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
 
-            docker pull localhost:5000/python
-            docker tag localhost:5000/python python
-
-            docker pull localhost:5000/nginx
-            docker tag localhost:5000/nginx nginx
-
-            docker pull localhost:5000/mongo
-            docker tag localhost:5000/mongo mongo
-
-            docker pull localhost:5000/swaggerapi/swagger-ui
-            docker tag localhost:5000/swaggerapi/swagger-ui swaggerapi/swagger-ui
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            set +e
+            for image in ${webapi_images[@]}; do
+                docker pull localhost:5000/${image}
+                docker tag localhost:5000/${image} ${image}
+            done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
@@ -435,11 +433,14 @@ jobs:
       #     path: /tmp/t1w/test
 
   bold:
-    machine:
-      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/bold
     steps:
       - attach_workspace:
@@ -488,17 +489,12 @@ jobs:
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
 
-            docker pull localhost:5000/python
-            docker tag localhost:5000/python python
-
-            docker pull localhost:5000/nginx
-            docker tag localhost:5000/nginx nginx
-
-            docker pull localhost:5000/mongo
-            docker tag localhost:5000/mongo mongo
-
-            docker pull localhost:5000/swaggerapi/swagger-ui
-            docker tag localhost:5000/swaggerapi/swagger-ui swaggerapi/swagger-ui
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            set +e
+            for image in ${webapi_images[@]}; do
+                docker pull localhost:5000/${image}
+                docker tag localhost:5000/${image} ${image}
+            done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
