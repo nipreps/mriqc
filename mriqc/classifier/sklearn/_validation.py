@@ -5,13 +5,12 @@ import warnings
 
 import numpy as np
 
+from joblib import Parallel, delayed, logger
 from sklearn.base import clone, is_classifier
 from sklearn.exceptions import FitFailedWarning
-from sklearn.externals.joblib import Parallel, delayed, logger
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
 from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._validation import _index_param_value
-from sklearn.utils import check_random_state, indexable, safe_indexing
+from sklearn.utils import check_random_state, indexable, _safe_indexing as safe_indexing
 from sklearn.utils.metaestimators import _safe_split
 from sklearn.utils.validation import _num_samples
 
@@ -240,3 +239,13 @@ def _shuffle(y, groups, random_state):
             this_mask = groups == group
             indices[this_mask] = random_state.permutation(indices[this_mask])
     return safe_indexing(y, indices)
+
+
+def _index_param_value(X, v, indices):
+    """Private helper function for parameter value indexing."""
+    if not _is_arraylike(v) or _num_samples(v) != _num_samples(X):
+        # pass through: skip indexing
+        return v
+    if sp.issparse(v):
+        v = v.tocsr()
+    return safe_indexing(v, indices)

@@ -16,7 +16,7 @@ or 10-fold.
 Running::
 
   docker run -ti -v $PWD:/scratch -w /scratch \
-             --entrypoint=/usr/local/miniconda/bin/mriqc_clf \
+             --entrypoint=/opt/conda/bin/mriqc_clf \
              poldracklab/mriqc:0.9.7 \
              --train --test --log-file --nested_cv_kfold --cv kfold -v --debug
 
@@ -46,7 +46,7 @@ dataset, the AUC dropped to 0.68 and the accuracy to 75%.
 Let's repeat the experiment, but using :abbr:`LoSo (leave-one-site-out)` in the inner loop::
 
   docker run -ti -v $PWD:/scratch -w /scratch \
-             --entrypoint=/usr/local/miniconda/bin/mriqc_clf \
+             --entrypoint=/opt/conda/bin/mriqc_clf \
              poldracklab/mriqc:0.9.7 \
              --train --test --log-file --nested_cv_kfold --cv loso -v --debug
 
@@ -80,7 +80,7 @@ if we test the model on our left-out dataset, the final AUC is 0.71 and the accu
 Two more evaluations, now using :abbr:`LoSo (leave-one-site-out)` in the outer loop::
 
   docker run -ti -v $PWD:/scratch -w /scratch \
-             --entrypoint=/usr/local/miniconda/bin/mriqc_clf \
+             --entrypoint=/opt/conda/bin/mriqc_clf \
              poldracklab/mriqc:0.9.7 \
              --train --test --log-file --nested_cv --cv kfold -v --debug
 
@@ -107,7 +107,7 @@ Two more evaluations, now using :abbr:`LoSo (leave-one-site-out)` in the outer l
 And finally :abbr:`LoSo (leave-one-site-out)` in both outer and inner loops::
 
   docker run -ti -v $PWD:/scratch -w /scratch \
-              --entrypoint=/usr/local/miniconda/bin/mriqc_clf \
+              --entrypoint=/opt/conda/bin/mriqc_clf \
               poldracklab/mriqc:0.9.7 \
               --train --test --log-file --nested_cv --cv loso -v --debug
 
