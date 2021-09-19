@@ -40,7 +40,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     """
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from nipype.interfaces.afni import TStat
-    from niworkflows.interfaces.utils import SanitizeImage
+    from niworkflows.interfaces.header import SanitizeImage
 
     workflow = pe.Workflow(name=name)
 
@@ -138,10 +138,10 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         # fmt: on
 
     if config.workflow.ica:
-        from niworkflows.interfaces import segmentation as nws
+        from niworkflows.interfaces.reportlets.segmentation import MELODICRPT
 
         melodic = pe.Node(
-            nws.MELODICRPT(
+            MELODICRPT(
                 no_bet=True,
                 no_mask=True,
                 no_mm=True,
@@ -161,7 +161,7 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
 
     # Upload metrics
     if not config.execution.no_sub:
-        from ..interfaces.webapi import UploadIQMs
+        from mriqc.interfaces.webapi import UploadIQMs
 
         upldwf = pe.Node(UploadIQMs(), name="UploadMetrics")
         upldwf.inputs.url = config.execution.webapi_url
@@ -194,10 +194,10 @@ def compute_iqms(name="ComputeIQMs"):
     from nipype.interfaces.afni import OutlierCount, QualityIndex
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from ..interfaces import FunctionalQC, IQMFileSink
-    from ..interfaces.reports import AddProvenance
-    from ..interfaces.transitional import GCOR
-    from .utils import _tofloat, get_fwhmx
+    from mriqc.interfaces import FunctionalQC, IQMFileSink
+    from mriqc.interfaces.reports import AddProvenance
+    from mriqc.interfaces.transitional import GCOR
+    from mriqc.utils import _tofloat, get_fwhmx
 
     mem_gb = config.workflow.biggest_file_gb
 
@@ -367,8 +367,8 @@ def individual_reports(name="ReportsWorkflow"):
     """
     from niworkflows.interfaces.plotting import FMRISummary
 
-    from ..interfaces import PlotMosaic, PlotSpikes, Spikes
-    from ..interfaces.reports import IndividualReport
+    from mriqc.interfaces import PlotMosaic, PlotSpikes, Spikes
+    from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
     mem_gb = config.workflow.biggest_file_gb
@@ -600,7 +600,6 @@ def hmc(name="fMRI_HMC"):
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Calc, Despike, Refit, TShift, Volreg
-    from niworkflows.interfaces.registration import EstimateReferenceImage
 
     mem_gb = config.workflow.biggest_file_gb
 
@@ -635,8 +634,6 @@ def hmc(name="fMRI_HMC"):
         ])
         # fmt: on
 
-    gen_ref = pe.Node(EstimateReferenceImage(mc_method="AFNI"), name="gen_ref")
-
     # calculate hmc parameters
     hmc = pe.Node(
         Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
@@ -653,7 +650,6 @@ def hmc(name="fMRI_HMC"):
     # fmt: off
     workflow.connect([
         (inputnode, fdnode, [("fd_radius", "radius")]),
-        (gen_ref, hmc, [("ref_image", "basefile")]),
         (hmc, outputnode, [("out_file", "out_file")]),
         (hmc, fdnode, [("oned_file", "in_file")]),
         (fdnode, outputnode, [("out_file", "out_fd")]),
@@ -681,7 +677,6 @@ def hmc(name="fMRI_HMC"):
             (drop_trs, st_corr, [("out_file", "in_file")]),
             (st_corr, despike_node, [("out_file", "in_file")]),
             (despike_node, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, gen_ref, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -690,7 +685,6 @@ def hmc(name="fMRI_HMC"):
         workflow.connect([
             (drop_trs, st_corr, [("out_file", "in_file")]),
             (st_corr, despike_node, [("out_file", "in_file")]),
-            (despike_node, gen_ref, [("out_file", "in_file")]),
             (despike_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -699,7 +693,6 @@ def hmc(name="fMRI_HMC"):
         workflow.connect([
             (drop_trs, st_corr, [("out_file", "in_file")]),
             (st_corr, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, gen_ref, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -707,7 +700,6 @@ def hmc(name="fMRI_HMC"):
         # fmt: off
         workflow.connect([
             (drop_trs, st_corr, [("out_file", "in_file")]),
-            (st_corr, gen_ref, [("out_file", "in_file")]),
             (st_corr, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -716,7 +708,6 @@ def hmc(name="fMRI_HMC"):
         workflow.connect([
             (drop_trs, despike_node, [("out_file", "in_file")]),
             (despike_node, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, gen_ref, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -724,7 +715,6 @@ def hmc(name="fMRI_HMC"):
         # fmt: off
         workflow.connect([
             (drop_trs, despike_node, [("out_file", "in_file")]),
-            (despike_node, gen_ref, [("out_file", "in_file")]),
             (despike_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -732,14 +722,12 @@ def hmc(name="fMRI_HMC"):
         # fmt: off
         workflow.connect([
             (drop_trs, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, gen_ref, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     else:
         # fmt: off
         workflow.connect([
-            (drop_trs, gen_ref, [("out_file", "in_file")]),
             (drop_trs, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
@@ -764,8 +752,8 @@ def epi_mni_align(name="SpatialNormalization"):
 
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
-    from niworkflows.interfaces.registration import (
-        RobustMNINormalizationRPT as RobustMNINormalization,
+    from niworkflows.interfaces.reportlets.registration import (
+        SpatialNormalizationRPT as RobustMNINormalization
     )
     from templateflow.api import get as get_template
 
