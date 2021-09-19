@@ -36,7 +36,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/compose
+            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -90,9 +90,10 @@ jobs:
           name: Prepare MRIQCWebAPI
           command: |
 
-            if [[ ! -f /tmp/compose/docker-compose ]]; then
-              mkdir -p /tmp/compose/
-              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/compose/docker-compose
+            if [[ ! -f /tmp/docker-compose/docker-compose ]]; then
+              mkdir -p /tmp/docker-compose/
+              curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose/docker-compose
+              chmod a+rx /tmp/docker-compose/docker-compose
             fi
 
             rm -rf /tmp/src/mriqcwebapi
@@ -102,8 +103,8 @@ jobs:
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
-            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -154,7 +155,7 @@ jobs:
          paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/compose
+            - /tmp/docker-compose
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -300,7 +301,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/compose
+            - /tmp/docker-compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -333,7 +334,7 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
       - restore_cache:
           keys:
@@ -461,7 +462,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/compose
+            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -501,7 +502,7 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
       - restore_cache:
