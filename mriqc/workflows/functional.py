@@ -197,7 +197,7 @@ def compute_iqms(name="ComputeIQMs"):
     from mriqc.interfaces import FunctionalQC, IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces.transitional import GCOR
-    from mriqc.utils import _tofloat, get_fwhmx
+    from mriqc.workflows.utils import _tofloat, get_fwhmx
 
     mem_gb = config.workflow.biggest_file_gb
 

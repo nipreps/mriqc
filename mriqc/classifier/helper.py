@@ -16,7 +16,7 @@ from xgboost import XGBClassifier
 # sklearn module
 from sklearn import metrics as slm
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.metrics.scorer import check_scoring
+from sklearn.metrics import check_scoring
 from sklearn.model_selection import (
     GridSearchCV,
     PredefinedSplit,
