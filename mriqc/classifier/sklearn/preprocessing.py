@@ -82,7 +82,7 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
 
         col_order = X.columns
         scaled_x = pd.DataFrame(self._scaler.transform(X[columns]), columns=columns)
-        unscaled_x = X.ix[:, ~X.columns.isin(columns)]
+        unscaled_x = X.loc[:, ~X.columns.isin(columns)]
         return pd.concat([unscaled_x, scaled_x], axis=1)[col_order]
 
 
@@ -125,7 +125,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
             mask = self._groups == gid
             if not np.any(mask):
                 continue
-            self._scalers[batch] = scaler.fit(X.ix[mask, self._colmask], y)
+            self._scalers[batch] = scaler.fit(X.loc[mask, self._colmask], y)
 
         return self
 
@@ -144,14 +144,14 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                 if not np.any(mask):
                     continue
                 scaler = self._scalers[batch]
-                new_x.ix[mask, self._colmask] = scaler.transform(X.ix[mask, self._colmask])
+                new_x.loc[mask, self._colmask] = scaler.transform(X.loc[mask, self._colmask])
             else:
                 colmask = self._colmask
                 if self.by in self._colnames and len(colmask) == len(self._colnames):
                     del colmask[self._colnames.index(self.by)]
 
                 scaler = clone(self._base_scaler)
-                new_x.ix[:, colmask] = scaler.fit_transform(X.ix[:, colmask])
+                new_x.loc[:, colmask] = scaler.fit_transform(X.loc[:, colmask])
         return new_x
 
 
@@ -197,7 +197,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
         if self.by not in columns:
             new_x[self.by] = ["Unknown"] * new_x.shape[0]
 
-        new_x.ix[:, self.ftmask_] = super(BatchScaler, self).transform(
+        new_x.loc[:, self.ftmask_] = super(BatchScaler, self).transform(
             new_x[new_x.columns[self.ftmask_]], y
         )
         return new_x
@@ -641,8 +641,8 @@ def _generate_noise(n_sample, y, clf_flag=True):
 #         vals = dataframe.loc[dataframe.site == site, numcols]
 #         vals -= np.median(vals, axis=0)
 #         iqr = np.percentile(vals, 75, axis=0) - np.percentile(vals, 25, axis=0)
-#         vals.iloc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
-#         changecols = vals.iloc[:, iqr > 1.e-5].columns.ravel().tolist()
+#         vals.loc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
+#         changecols = vals.loc[:, iqr > 1.e-5].columns.ravel().tolist()
 #         dataframe.loc[dataframe.site == site, changecols] = vals
 
 #     return dataframe

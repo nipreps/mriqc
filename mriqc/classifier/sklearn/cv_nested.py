@@ -25,13 +25,13 @@ from sklearn.model_selection._search import (
 from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import (
     FitFailedWarning,
-    _index_param_value,
     _num_samples,
     _safe_split,
     _score,
     logger,
 )
 
+from mriqc.classifier.sklearn._validation import _index_param_value
 from .parameters import ModelParameterGrid
 
 try:
@@ -251,7 +251,8 @@ def _model_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
+    fit_params = {k: _index_param_value(X, v, train)
+                  for k, v in fit_params.items()}
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -335,7 +336,8 @@ def nested_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict([(k, _index_param_value(X, v, train)) for k, v in fit_params.items()])
+    fit_params = {k: _index_param_value(X, v, train)
+                  for k, v in fit_params.items()}
 
     if parameters is not None:
         estimator.set_params(**parameters)
