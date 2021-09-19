@@ -7,6 +7,7 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.0.6
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
@@ -35,6 +36,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
+            - /tmp/compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -66,9 +68,9 @@ jobs:
             if [[ "$success" = "0" ]]; then
                 echo "Pulling from local registry"
                 docker tag localhost:5000/ubuntu ubuntu:focal-20210416
-                docker pull localhost:5000/fmriprep
-                docker tag localhost:5000/fmriprep nipreps/mriqc:latest
-                docker tag localhost:5000/fmriprep nipreps/mriqc
+                docker pull localhost:5000/mriqc
+                docker tag localhost:5000/mriqc nipreps/mriqc:latest
+                docker tag localhost:5000/mriqc nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
                 docker pull ubuntu:focal-20210416
@@ -77,10 +79,21 @@ jobs:
                 docker pull nipreps/mriqc:latest
             fi
 
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            set +e
+            for image in ${webapi_images[@]}; do
+                docker pull localhost:5000/${image}
+                docker tag localhost:5000/${image} ${image}
+            done;
+
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+            if [[ ! -f /tmp/compose/docker-compose ]]; then
+              mkdir -p /tmp/compose/
+              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/compose/docker-compose
+            fi
 
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
@@ -89,18 +102,8 @@ jobs:
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
-      - run:
-          name: Save WebAPI Docker images
-          no_output_timeout: 40m
-          command: |
-            mkdir -p /tmp/cache
-            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
-            for image in $WEBAPI_IMAGES; do
-                docker tag $image localhost:5000/${image}
-                docker push localhost:5000/${image}
-            done
+            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -136,6 +139,11 @@ jobs:
           command: |
             docker tag nipreps/mriqc:latest localhost:5000/mriqc
             docker push localhost:5000/mriqc
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            for image in ${webapi_images[@]}; do
+                docker tag ${image} localhost:5000/${image}
+                docker push localhost:5000/${image}
+            done
       - run:
           name: Docker registry garbage collection
           command: |
@@ -146,6 +154,7 @@ jobs:
          paths:
             - /tmp/docker
             - /tmp/images
+            - /tmp/compose
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -291,13 +300,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-      - docker/install-docker-credential-helper
-      - run:
-          name: Docker authentication
-          command: |
-            if [[ -n $DOCKER_PAT ]]; then
-              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
-            fi
+            - /tmp/compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -315,10 +318,22 @@ jobs:
           command: |
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
+            docker pull localhost:5000/python
+            docker tag localhost:5000/python python
+
+            docker pull localhost:5000/nginx
+            docker tag localhost:5000/nginx nginx
+
+            docker pull localhost:5000/mongo
+            docker tag localhost:5000/mongo mongo
+
+            docker pull localhost:5000/swaggerapi/swagger-ui
+            docker tag localhost:5000/swaggerapi/swagger-ui swaggerapi/swagger-ui
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
       - restore_cache:
           keys:
@@ -446,6 +461,7 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
+            - /tmp/compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -470,10 +486,22 @@ jobs:
           command: |
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
+            docker pull localhost:5000/python
+            docker tag localhost:5000/python python
+
+            docker pull localhost:5000/nginx
+            docker tag localhost:5000/nginx nginx
+
+            docker pull localhost:5000/mongo
+            docker tag localhost:5000/mongo mongo
+
+            docker pull localhost:5000/swaggerapi/swagger-ui
+            docker tag localhost:5000/swaggerapi/swagger-ui swaggerapi/swagger-ui
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
       - restore_cache:
