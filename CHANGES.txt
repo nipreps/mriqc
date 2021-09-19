@@ -1,3 +1,4 @@
+  * FIX: Update dependencies and repair T1w workflow accordingly (#925)
   * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
   * Miscellaneous updates (#901)
 diff --cc CHANGES.txt
