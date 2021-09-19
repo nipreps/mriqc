@@ -80,7 +80,8 @@ jobs:
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-            python3 -m pip install "docker-compose==1.23.2"
+            sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
