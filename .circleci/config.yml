@@ -67,14 +67,14 @@ jobs:
                 echo "Pulling from local registry"
                 docker tag localhost:5000/ubuntu ubuntu:focal-20210416
                 docker pull localhost:5000/fmriprep
-                docker tag localhost:5000/fmriprep poldracklab/mriqc:latest
-                docker tag localhost:5000/fmriprep poldracklab/mriqc
+                docker tag localhost:5000/fmriprep nipreps/mriqc:latest
+                docker tag localhost:5000/fmriprep nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
                 docker pull ubuntu:focal-20210416
                 docker tag ubuntu:focal-20210416 localhost:5000/ubuntu
                 docker push localhost:5000/ubuntu
-                docker pull poldracklab/mriqc:latest
+                docker pull nipreps/mriqc:latest
             fi
 
       - run:
@@ -122,8 +122,8 @@ jobs:
             # Build docker image
             e=1 && for i in {1..5}; do
               docker build \
-                --cache-from=poldracklab/mriqc \
-                -t poldracklab/mriqc:latest \
+                --cache-from=nipreps/mriqc \
+                -t nipreps/mriqc:latest \
                 --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                 --build-arg VCS_REF=`git rev-parse --short HEAD` \
                 --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
@@ -133,7 +133,7 @@ jobs:
           name: Docker push to local registry
           no_output_timeout: 40m
           command: |
-            docker tag poldracklab/mriqc:latest localhost:5000/mriqc
+            docker tag nipreps/mriqc:latest localhost:5000/mriqc
             docker push localhost:5000/mriqc
       - run:
           name: Docker registry garbage collection
@@ -248,14 +248,14 @@ jobs:
           name: Pull images from local registry
           command: |
             docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
               -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
-              poldracklab/mriqc:latest mriqc \
+              nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
@@ -313,7 +313,7 @@ jobs:
           name: Pull images from local registry
           command: |
             docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
@@ -336,7 +336,7 @@ jobs:
             docker run -u $( id -u ) --rm=false -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
@@ -353,7 +353,7 @@ jobs:
             docker run -u $( id -u ) --rm=false -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m T1w -vv
 
@@ -374,7 +374,7 @@ jobs:
             mkdir -p /tmp/t1w/test
             export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/opt/conda/bin/nib-hash \
-                                       poldracklab/mriqc:latest"
+                                       nipreps/mriqc:latest"
             find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
             exit $?
@@ -391,7 +391,7 @@ jobs:
           name: Checking changes on IQMs
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
 
@@ -400,7 +400,7 @@ jobs:
           command: |
             docker run --rm=false -ti \
               --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
-              poldracklab/mriqc:latest \
+              nipreps/mriqc:latest \
               T1w 4 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
 
@@ -408,11 +408,11 @@ jobs:
       #     name: Test classifier
       #     command: |
       #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-      #                  --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
       #                  --train --test -P /opt/conda/lib/python3.8/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
       #       # Run the classifier on the test data
       #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-      #                  --entrypoint=mriqc_clf poldracklab/mriqc:latest \
+      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
       #                  --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
       # - store_artifacts:
       #     path: /tmp/t1w/test
@@ -468,7 +468,7 @@ jobs:
           name: Pull images from local registry
           command: |
             docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
@@ -492,7 +492,7 @@ jobs:
             # Run MRIQC
             docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
@@ -509,7 +509,7 @@ jobs:
           command: |
             docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m bold -vv
 
@@ -530,7 +530,7 @@ jobs:
             mkdir -p /tmp/bold/test
             export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
                                        --entrypoint=/opt/conda/bin/nib-hash \
-                                       poldracklab/mriqc:latest"
+                                       nipreps/mriqc:latest"
             find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
             diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
             exit $?
@@ -547,7 +547,7 @@ jobs:
           name: Checking changes on IQMs
           command: |
             docker run -u $( id -u ) --rm=false -ti -v $PWD:/scratch -w /scratch \
-              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
 
@@ -556,7 +556,7 @@ jobs:
           command: |
             docker run --rm=false -ti \
               --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
-              poldracklab/mriqc:latest \
+              nipreps/mriqc:latest \
               bold 9 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
 
@@ -700,9 +700,9 @@ jobs:
           command: |
             if [[ -n "$DOCKER_PASS" ]]; then
               docker login -u $DOCKER_USER -p $DOCKER_PASS
-              docker push poldracklab/mriqc:latest
-              docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG
-              docker push poldracklab/mriqc:$CIRCLE_TAG
+              docker push nipreps/mriqc:latest
+              docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
+              docker push nipreps/mriqc:$CIRCLE_TAG
             fi
 
 workflows:
