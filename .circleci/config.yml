@@ -1,36 +1,16 @@
-version: 2
-jobs:
-  build_docs:
-    docker:
-      - image: circleci/python:3.8.5
-    environment:
-      - FSLOUTPUTTYPE: NIFTI
-    steps:
-      - checkout
-      - run:
-          name: Install Graphviz
-          command: sudo apt update && sudo apt -y install graphviz
-      - run:
-          name: Install deps
-          command: pip install --no-cache-dir -r docs/requirements.txt
-      - run:
-          name: Build MRIQC documentation
-          no_output_timeout: 2h
-          command: |
-            make -C docs html
-            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
-            # cat $PWD/builddocs.log
-            # grep -qv "ERROR" $PWD/builddocs.log
-      - store_artifacts:
-          path: ./docs/_build/html
+version: 2.1
+orbs:
+  docker: circleci/docker@1.6.0
 
+jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.0.6
-
-    docker:
-      - image: docker:18.01.0-ce-git
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -41,37 +21,62 @@ jobs:
       - run:
           name: Check whether build should be skipped
           command: |
-            cd /tmp/src/mriqc
             if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
               echo "Only docs build"
               circleci step halt
             fi
-      - setup_remote_docker
-      - run:
-          name: Install parallel gzip and python3
-          command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - build-v1--{{ .Revision }}
+            - build-v1-{{ .Branch }}-
+            - build-v1-master-
+            - build-v1-
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+      - run:
+          name: Set up Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+              mkdir -p /tmp/images
+              docker save registry:2 | gzip > /tmp/images/registry.tar.gz
             fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images
+          command: |
+            set +e
+            docker pull localhost:5000/ubuntu
+            success=$?
+            set -e
+            if [[ "$success" = "0" ]]; then
+                echo "Pulling from local registry"
+                docker tag localhost:5000/ubuntu ubuntu:focal-20210416
+                docker pull localhost:5000/fmriprep
+                docker tag localhost:5000/fmriprep poldracklab/mriqc:latest
+                docker tag localhost:5000/fmriprep poldracklab/mriqc
+            else
+                echo "Pulling from Docker Hub"
+                docker pull ubuntu:focal-20210416
+                docker tag ubuntu:focal-20210416 localhost:5000/ubuntu
+                docker push localhost:5000/ubuntu
+                docker pull poldracklab/mriqc:latest
+            fi
+
       - run:
           name: Prepare MRIQCWebAPI
           command: |
@@ -91,7 +96,10 @@ jobs:
           command: |
             mkdir -p /tmp/cache
             WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
-            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
+            for image in $WEBAPI_IMAGES; do
+                docker tag $image localhost:5000/${image}
+                docker push localhost:5000/${image}
+            done
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -115,7 +123,6 @@ jobs:
             e=1 && for i in {1..5}; do
               docker build \
                 --cache-from=poldracklab/mriqc \
-                --rm=false \
                 -t poldracklab/mriqc:latest \
                 --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                 --build-arg VCS_REF=`git rev-parse --short HEAD` \
@@ -123,17 +130,21 @@ jobs:
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
       - run:
-          name: Docker save
+          name: Docker push to local registry
           no_output_timeout: 40m
           command: |
-            mkdir -p /tmp/cache
-            docker save ubuntu:focal-20210416 poldracklab/mriqc:latest \
-              | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+            docker tag poldracklab/mriqc:latest localhost:5000/mriqc
+            docker push localhost:5000/mriqc
+      - run:
+          name: Docker registry garbage collection
+          command: |
+            docker exec -it registry /bin/registry garbage-collect --delete-untagged \
+              /etc/docker/registry/config.yml
       - save_cache:
-          key: docker-v1-{{ .Branch }}-{{ epoch }}
-          paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+         key: build-v1-{{ .Branch }}-{{ .Revision }}
+         paths:
+            - /tmp/docker
+            - /tmp/images
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -142,7 +153,7 @@ jobs:
 
   get_data:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -210,24 +221,34 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+            fi
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
       - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
@@ -265,29 +286,34 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            python3 -m pip install --upgrade pip
-            python3 -m pip install docker-compose
-            docker info
-            set +o pipefail
-            sudo apt update && sudo apt -y install pigz
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
             fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
@@ -415,29 +441,34 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            python3 -m pip install --upgrade pip
-            python3 -m pip install docker-compose
-            set +o pipefail
-            sudo apt update && sudo apt -y install pigz
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
             fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc poldracklab/mriqc:latest
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
@@ -531,6 +562,30 @@ jobs:
 
       - store_artifacts:
           path: /tmp/bold/test
+
+  build_docs:
+    docker:
+      - image: circleci/python:3.8.5
+    environment:
+      - FSLOUTPUTTYPE: NIFTI
+    steps:
+      - checkout
+      - run:
+          name: Install Graphviz
+          command: sudo apt update && sudo apt -y install graphviz
+      - run:
+          name: Install deps
+          command: pip install --no-cache-dir -r docs/requirements.txt
+      - run:
+          name: Build MRIQC documentation
+          no_output_timeout: 2h
+          command: |
+            make -C docs html
+            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
+            # cat $PWD/builddocs.log
+            # grep -qv "ERROR" $PWD/builddocs.log
+      - store_artifacts:
+          path: ./docs/_build/html
 
   update_changes:
     machine:
