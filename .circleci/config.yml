@@ -127,7 +127,7 @@ jobs:
           no_output_timeout: 40m
           command: |
             mkdir -p /tmp/cache
-            docker save ubuntu:xenial-20200114 poldracklab/mriqc:latest \
+            docker save ubuntu:focal-20210416 poldracklab/mriqc:latest \
               | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
       - save_cache:
           key: docker-v1-{{ .Branch }}-{{ epoch }}

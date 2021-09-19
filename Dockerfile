@@ -1,130 +1,189 @@
-# Use Ubuntu 16.04 LTS
-FROM ubuntu:xenial-20200114
+# MRIQC Docker Container Image distribution
+#
+# MIT License
+#
+# Copyright (c) 2021 The NiPreps Developers
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Use Ubuntu 20.04 LTS
+FROM ubuntu:focal-20210416
 
 # Pre-cache neurodebian key
 COPY docker/files/neurodebian.gpg /usr/local/etc/neurodebian.gpg
-
-# Installing Neurodebian packages (FSL, AFNI, git)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    curl -sSL "http://neuro.debian.net/lists/xenial.us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key add /usr/local/etc/neurodebian.gpg && \
-    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8"
 
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+                    apt-utils \
                     autoconf \
                     build-essential \
                     bzip2 \
                     ca-certificates \
                     curl \
-                    cython3 \
+                    gnupg2 \
+                    libtool \
+                    lsb-release \
+                    pkg-config \
+                    tcsh \
+                    xfonts-base \
+                    xvfb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Installing Neurodebian packages (FSL, AFNI, git)
+RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key add /usr/local/etc/neurodebian.gpg && \
+    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
+
+# Prepare environment
+RUN apt-get update && \
+    apt-get install -y -q --no-install-recommends \
+                    bc \
+                    dc \
                     ed \
-                    git \
-                    git-annex-standalone \
-                    graphviz=2.38.0-12ubuntu2 \
+                    file \
                     gsl-bin \
+                    libfontconfig1 \
+                    libfreetype6 \
+                    libgl1-mesa-dev \
+                    libgl1-mesa-dri \
                     libglib2.0-0 \
                     libglu1-mesa-dev \
                     libglw1-mesa \
                     libgomp1 \
+                    libice6 \
                     libjpeg62 \
                     libtool \
+                    libxcursor1 \
+                    libxft2 \
+                    libxinerama1 \
                     libxm4 \
+                    libxrandr2 \
+                    libxrender1 \
+                    libxt6 \
                     netpbm \
-                    pkg-config \
-                    tcsh \
-                    xfonts-base \
-                    xvfb \
-                    fsl-core=5.0.9-5~nd16.04+1 \
-                    fsl-mni152-templates && \
-    curl -sSL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install -y --no-install-recommends \
-                    nodejs && \
-    echo "Install libxp (not in all ubuntu/debian repositories)" && \
-    apt-get install -yq --no-install-recommends libxp6 \
-    || /bin/bash -c " \
-       curl --retry 5 -o /tmp/libxp6.deb -sSL http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
-       && dpkg -i /tmp/libxp6.deb && rm -f /tmp/libxp6.deb" && \
-    echo "Install libpng12 (not in all ubuntu/debian repositories" && \
-    apt-get install -yq --no-install-recommends libpng12-0 \
-    || /bin/bash -c " \
-       curl -o /tmp/libpng12.deb -sSL http://mirrors.kernel.org/debian/pool/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
-       && dpkg -i /tmp/libpng12.deb && rm -f /tmp/libpng12.deb" && \
-    ln -s /usr/lib/x86_64-linux-gnu/libgsl.so.19 /usr/lib/x86_64-linux-gnu/libgsl.so.0 && \
-    ldconfig && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+                    wget \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.2_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && curl -sSL --retry 5 -o /tmp/libxp6.deb http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
+    && dpkg -i /tmp/libxp6.deb \
+    && rm /tmp/libxp6.deb \
+    && curl -sSL --retry 5 -o /tmp/libpng.deb http://snapshot.debian.org/archive/debian-security/20160113T213056Z/pool/updates/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
+    && dpkg -i /tmp/libpng.deb \
+    && rm /tmp/libpng.deb \
+    && apt-get install -f \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && gsl2_path="$(find / -name 'libgsl.so.23' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+         ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig
 
-ENV FSLDIR="/usr/share/fsl/5.0" \
+
+# Install FSL 5.0.11 (neurodocker build variant)
+RUN echo "Downloading FSL ..." \
+    && mkdir -p /opt/fsl-5.0.11 \
+    && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos6_64.tar.gz \
+    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1 \
+    && echo "Installing FSL conda environment ..." \
+    && bash /opt/fsl-5.0.11/etc/fslconf/fslpython_install.sh -f /opt/fsl-5.0.11
+ENV FSLDIR="/opt/fsl-5.0.11" \
+    PATH="/opt/fsl-5.0.11/bin:$PATH" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
     FSLMULTIFILEQUIT="TRUE" \
-    POSSUMDIR="/usr/share/fsl/5.0" \
-    LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH" \
-    FSLTCLSH="/usr/bin/tclsh" \
-    FSLWISH="/usr/bin/wish"
-ENV PATH="/usr/lib/fsl/5.0:/usr/lib/afni/bin:$PATH"
+    FSLTCLSH="/opt/fsl-5.0.11/bin/fsltclsh" \
+    FSLWISH="/opt/fsl-5.0.11/bin/fslwish" \
+    FSLLOCKDIR="" \
+    FSLMACHINELIST="" \
+    FSLREMOTECALL="" \
+    FSLGECUDAQ="cuda.q" \
+    POSSUMDIR="/opt/fsl-5.0.11" \
+    LD_LIBRARY_PATH="/opt/fsl-5.0.11:$LD_LIBRARY_PATH"
 
-# Installing ANTs 2.2.0 (NeuroDocker build)
-ENV ANTSPATH=/usr/lib/ants
-RUN mkdir -p $ANTSPATH && \
-    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
-    | tar -xzC $ANTSPATH --strip-components 1
-ENV PATH=$ANTSPATH:$PATH
-
-# Installing AFNI (version 17_3_03 archived on OSF)
-RUN mkdir -p /opt/afni && \
-    curl -o afni.tar.gz -sSLO "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5a0dd9a7b83f69027512a12b" && \
-    tar zxv -C /opt/afni --strip-components=1 -f afni.tar.gz && \
-    rm -rf afni.tar.gz
-ENV PATH=/opt/afni:$PATH \
-    AFNI_MODELPATH="/opt/afni/models" \
+# Install AFNI latest (neurodocker build)
+ENV AFNI_DIR="/opt/afni"
+RUN echo "Downloading AFNI ..." \
+    && mkdir -p ${AFNI_DIR} \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C ${AFNI_DIR} --strip-components 1
+ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_IMSAVE_WARNINGS="NO" \
-    AFNI_TTATLAS_DATASET="/opt/afni/atlases" \
-    AFNI_PLUGINPATH="/opt/afni/plugins"
+    AFNI_MODELPATH="${AFNI_DIR}/models" \
+    AFNI_TTATLAS_DATASET="${AFNI_DIR}/atlases" \
+    AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
-# Create a shared $HOME directory
-RUN useradd -m -s /bin/bash -G users bidsapp
-WORKDIR /home/bidsapp
-ENV HOME="/home/bidsapp"
-
-# Installing SVGO
-RUN npm install -g svgo
+# Installing ANTs 2.3.4 (NeuroDocker build)
+ENV ANTSPATH="/opt/ants"
+WORKDIR $ANTSPATH
+RUN curl -sSL "https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_64-v2.3.4.tar.gz" \
+    | tar -xzC $ANTSPATH --strip-components 1
+ENV PATH="$ANTSPATH:$PATH"
 
 # Installing and setting up miniconda
-RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
-    bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
-    rm Miniconda3-4.5.11-Linux-x86_64.sh
+ENV CONDA_PATH="/opt/conda"
+RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh && \
+    bash Miniconda3-py38_4.9.2-Linux-x86_64.sh -b -p ${CONDA_PATH} && \
+    rm Miniconda3-py38_4.9.2-Linux-x86_64.sh
 
 # Set CPATH for packages relying on compiled libs (e.g. indexed_gzip)
-ENV PATH="/usr/local/miniconda/bin:$PATH" \
-    CPATH="/usr/local/miniconda/include/:$CPATH" \
-    LANG="C.UTF-8" \
-    LC_ALL="C.UTF-8" \
+ENV PATH="${CONDA_PATH}/bin:$PATH" \
+    CPATH="${CONDA_PATH}/include:$CPATH" \
     PYTHONNOUSERSITE=1
-# Consider PYTHONWARNINGS="ignore,default:::mriqc,default:::nipype"
 
-# Installing precomputed python packages
-RUN conda install -y python=3.7.1 \
-                     graphviz=2.40.1 \
-                     libxml2=2.9.8 \
-                     libxslt=1.1.32 \
-                     matplotlib=2.2.2 \
+# Installing conda/python environment
+RUN conda install -y -c conda-forge -c anaconda \
+                     python=3.8 \
+                     git \
+                     git-annex \
+                     graphviz \
+                     libxml2 \
+                     libxslt \
+                     matplotlib=3 \
+                     mkl \
                      mkl-service \
-                     mkl=2018.0.3 \
-                     numpy=1.15.4 \
-                     pandas=0.23.4 \
-                     scikit-learn=0.19.1 \
-                     scipy=1.1.0 \
-                     setuptools>=40.0.0 \
-                     traits=4.6.0 \
-                     pip=19.1 \
-                     zlib; sync && \
-    chmod -R a+rX /usr/local/miniconda; sync && \
-    chmod +x /usr/local/miniconda/bin/*; sync && \
-    conda build purge-all; sync && \
-    conda clean -tipsy && sync
+                     nodejs \
+                     numpy=1.20 \
+                     pandas=1.2 \
+                     pandoc=2.11 \
+                     pip=21 \
+                     scikit-image=0.18 \
+                     scikit-learn=0.24 \
+                     scipy=1.6 \
+                     setuptools \
+                     setuptools_scm \
+                     toml \
+                     traits=6.2 \
+                     zlib \
+                     zstd; \
+                     sync && \
+    chmod -R a+rX ${CONDA_PATH}; sync && \
+    chmod +x ${CONDA_PATH}/bin/*; sync && \
+    conda clean -y --all && sync && \
+    rm -rf ~/.conda ~/.cache/pip/*; sync
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -135,22 +194,32 @@ ENV MKL_NUM_THREADS=1 \
 RUN python -c "from matplotlib import font_manager" && \
     sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+# Installing SVGO and bids-validator
+RUN npm install -g svgo@^2.3 bids-validator@1.8.0 \
+  && rm -rf ~/.npm ~/.empty /root/.npm
+
+RUN pip install --no-cache-dir templateflow
+
+# Create a shared $HOME directory
+RUN useradd -m -s /bin/bash -G users mriqc
+WORKDIR /home/mriqc
+ENV HOME="/home/mriqc"
+
+# Refresh linked libraries
+RUN ldconfig
 
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
 
 # Precaching atlases
-COPY setup.cfg setup.cfg
-RUN pip install --no-cache-dir "$( grep templateflow setup.cfg | xargs )" && \
-    python -c "from templateflow import api as tfapi; \
+RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='T1w', desc=None); \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
                          desc=['brain', 'head']); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
                          label=['CSF', 'GM', 'WM']);\
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')" && \
-    rm setup.cfg
+               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
 
 # Installing MRIQC
 COPY . /src/mriqc
@@ -158,18 +227,17 @@ ARG VERSION
 # Force static versioning within container
 RUN echo "${VERSION}" > /src/mriqc/mriqc/VERSION && \
     echo "include mriqc/VERSION" >> /src/mriqc/MANIFEST.in && \
-    cd /src/mriqc && \
-    pip install --no-cache-dir .[all]
+    pip install --no-cache-dir "/src/mriqc[all]"
 
 RUN find $HOME -type d -exec chmod go=u {} + && \
-    find $HOME -type f -exec chmod go=u {} +
+    find $HOME -type f -exec chmod go=u {} + && \
+    rm -rf $HOME/.npm $HOME/.conda $HOME/.empty
 
 # Best practices
 RUN ldconfig
 WORKDIR /tmp/
-
 # Run mriqc by default
-ENTRYPOINT ["/usr/local/miniconda/bin/mriqc"]
+ENTRYPOINT ["/opt/conda/bin/mriqc"]
 
 ARG BUILD_DATE
 ARG VCS_REF

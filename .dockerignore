@@ -27,26 +27,26 @@ Makefile
 .git/**/*
 .git
 
-# other
-docs/**/*
-docs
-notebooks/**/*
-notebooks
-.zenodo.json
-
-# CircleCI and Travis
+# Maintenance
 .circleci/
+.maint/
 .codecov.yml
 .coveragerc
 .pep8speaks.yml
 .pylintrc
 .readthedocs.yml
 .travis.yml
-codecov.yml
+.zenodo.json
 CONTRIBUTING.md
+codecov.yml
+docs
+docs/**/*
+get_version.py
+long_description.rst
+notebooks
+notebooks/**/*
+requirements-dev.txt
+requirements.txt
+update_changes.py
 venv/
 venv/**/*
-
-# Maintenance
-update_changes.py
-get_version.py
