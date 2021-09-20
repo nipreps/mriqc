@@ -8,7 +8,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from mriqc import config
-from mriqc.messages import CREATED_DATASET, DROPPING_NON_NUMERICAL, POST_Z_NANS, Z_SCORING
+from mriqc.messages import (
+    CREATED_DATASET,
+    DROPPING_NON_NUMERICAL,
+    POST_Z_NANS,
+    Z_SCORING,
+)
 from mriqc.utils.misc import BIDS_COMP
 
 
@@ -62,7 +67,9 @@ def read_iqms(feat_file):
 
     if feat_file.suffix == ".csv":
         bids_comps = list(BIDS_COMP.keys())
-        x_df = pd.read_csv(feat_file, index_col=False, dtype={col: str for col in bids_comps})
+        x_df = pd.read_csv(
+            feat_file, index_col=False, dtype={col: str for col in bids_comps}
+        )
         # Find present bids bits and sort by them
         bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
         bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
@@ -79,7 +86,9 @@ def read_iqms(feat_file):
                 pass
     else:
         bids_comps_present = ["subject_id"]
-        x_df = pd.read_csv(feat_file, index_col=False, sep="\t", dtype={"bids_name": str})
+        x_df = pd.read_csv(
+            feat_file, index_col=False, sep="\t", dtype={"bids_name": str}
+        )
         x_df = x_df.sort_values(by=["bids_name"])
         x_df["subject_id"] = x_df.bids_name.str.lstrip("sub-")
         x_df = x_df.drop(columns=["bids_name"])
@@ -111,7 +120,9 @@ def read_labels(
     output_labels = rate_label
 
     bids_comps = list(BIDS_COMP.keys())
-    y_df = pd.read_csv(label_file, index_col=False, dtype={col: str for col in bids_comps})
+    y_df = pd.read_csv(
+        label_file, index_col=False, dtype={col: str for col in bids_comps}
+    )
 
     # Find present bids bits and sort by them
     bids_comps_present = get_bids_cols(y_df)

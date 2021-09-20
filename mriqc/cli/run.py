@@ -109,7 +109,9 @@ def main():
                 csv_failed=output_dir / f"group_variant-failed_{mod}.csv",
                 out_file=out_html,
             )
-            report_message = messages.GROUP_REPORT_GENERATED.format(modality=mod, path=out_html)
+            report_message = messages.GROUP_REPORT_GENERATED.format(
+                modality=mod, path=out_html
+            )
             config.loggers.cli.info(report_message)
             mod_group_reports.append(mod)
 

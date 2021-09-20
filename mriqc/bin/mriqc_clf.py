@@ -37,7 +37,12 @@ cached_warnings = []
 
 
 def warn_redirect(
-    message: str, category: str, filename: str, lineno: int, file: str = None, line: str = None
+    message: str,
+    category: str,
+    filename: str,
+    lineno: int,
+    file: str = None,
+    line: str = None,
 ) -> None:
     """
     Caches a list of raised warning categories.
@@ -59,7 +64,9 @@ def warn_redirect(
     """
     if category not in cached_warnings:
         # Log captured warning
-        debug_message = messages.CLF_CAPTURED_WARNING.format(category=category, message=message)
+        debug_message = messages.CLF_CAPTURED_WARNING.format(
+            category=category, message=message
+        )
         LOGGER.debug(debug_message)
         # Add category to cache
         cached_warnings.append(category)
@@ -88,7 +95,9 @@ def get_parser() -> ArgumentParser:
     parser.add_argument(
         "--test", nargs="*", help="test data tables, X and Y, leave empty for DS030"
     )
-    parser.add_argument("-X", "--evaluation-data", help="classify this CSV table of IQMs")
+    parser.add_argument(
+        "-X", "--evaluation-data", help="classify this CSV table of IQMs"
+    )
 
     parser.add_argument(
         "--train-balanced-leaveout",
@@ -160,7 +169,9 @@ def get_parser() -> ArgumentParser:
         default=0,
         help="increases log verbosity for each occurence.",
     )
-    g_input.add_argument("--njobs", action="store", default=-1, type=int, help="number of jobs")
+    g_input.add_argument(
+        "--njobs", action="store", default=-1, type=int, help="number of jobs"
+    )
 
     g_input.add_argument(
         "-t",
@@ -280,7 +291,9 @@ def main():
         # Set held-out data
         cv_helper.setXtest(test_path[0], test_path[1])
         # Evaluate
-        cv_helper.evaluate(matrix=True, scoring=[opts.scorer, "accuracy"], save_pred=True)
+        cv_helper.evaluate(
+            matrix=True, scoring=[opts.scorer, "accuracy"], save_pred=True
+        )
 
         # Pickle if required
         if not clf_loaded:
@@ -288,7 +301,9 @@ def main():
             cv_helper.save(suffix="data-all_estimator")
 
     if opts.evaluation_data:
-        cv_helper.predict_dataset(opts.evaluation_data, save_pred=True, thres=opts.threshold)
+        cv_helper.predict_dataset(
+            opts.evaluation_data, save_pred=True, thres=opts.threshold
+        )
 
     results_path = abspath(cv_helper._base_name + "*")
     saved_results_message = messages.CLF_SAVED_RESULTS.format(path=results_path)

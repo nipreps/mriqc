@@ -16,9 +16,13 @@ from nipype.interfaces.base import (
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
-    in_contours = File(exists=True, mandatory=True, desc="file to pick the contours from")
+    in_contours = File(
+        exists=True, mandatory=True, desc="file to pick the contours from"
+    )
     cut_coords = traits.Int(8, usedefault=True, desc="number of slices")
-    levels = traits.List([0.5], traits.Float, usedefault=True, desc="add a contour per level")
+    levels = traits.List(
+        [0.5], traits.Float, usedefault=True, desc="add a contour per level"
+    )
     colors = traits.List(
         ["r"],
         traits.Str,
@@ -133,7 +137,9 @@ class PlotMosaic(SimpleInterface):
             cmap=self.inputs.cmap,
             annotate=self.inputs.annotate,
         )
-        self._results["out_file"] = str((Path(runtime.cwd) / self.inputs.out_file).resolve())
+        self._results["out_file"] = str(
+            (Path(runtime.cwd) / self.inputs.out_file).resolve()
+        )
         return runtime
 
 

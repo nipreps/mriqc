@@ -18,7 +18,12 @@ def fmri_getidx(in_file, start_idx, stop_idx):
     nvols = load(in_file).shape[3]
     max_idx = nvols - 1
 
-    if start_idx is None or not isdefined(start_idx) or start_idx < 0 or start_idx > max_idx:
+    if (
+        start_idx is None
+        or not isdefined(start_idx)
+        or start_idx < 0
+        or start_idx > max_idx
+    ):
         start_idx = 0
 
     if stop_idx is None or not isdefined(stop_idx) or max_idx < stop_idx < start_idx:

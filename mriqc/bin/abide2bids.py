@@ -25,8 +25,12 @@ def main():
     )
     g_input = parser.add_argument_group("Inputs")
     g_input.add_argument("-i", "--input-abide-catalog", action="store", required=True)
-    g_input.add_argument("-n", "--dataset-name", action="store", default="ABIDE Dataset")
-    g_input.add_argument("-u", "--nitrc-user", action="store", default=os.getenv("NITRC_USER"))
+    g_input.add_argument(
+        "-n", "--dataset-name", action="store", default="ABIDE Dataset"
+    )
+    g_input.add_argument(
+        "-u", "--nitrc-user", action="store", default=os.getenv("NITRC_USER")
+    )
     g_input.add_argument(
         "-p",
         "--nitrc-password",

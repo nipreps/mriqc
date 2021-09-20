@@ -72,7 +72,9 @@ def main():
         tst_keep = np.sum(tst_rows.isin(ref_rows).values.ravel().tolist())
         print(tst_keep)
 
-    diff = ~np.isclose(ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance)
+    diff = ~np.isclose(
+        ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance
+    )
     if np.any(diff):
         # ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
         # ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()

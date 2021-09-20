@@ -89,7 +89,9 @@ class EnsureSize(SimpleInterface):
             new_size = np.array(extent_mm / self.inputs.pixel_size, dtype=int)
 
             # 5) Initialize new base affine
-            new_base = aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
+            new_base = (
+                aff_base[:3, :3] * np.abs(aff_base_inv[:3, :3]) * self.inputs.pixel_size
+            )
 
             # 6) Find new center
             new_center_idx = (new_size - 1) * 0.5
@@ -132,9 +134,9 @@ class EnsureSize(SimpleInterface):
                 hdr = nii.header.copy()
                 hdr.set_data_shape(new_size)
                 hdr.set_data_dtype(np.uint8)
-                nib.Nifti1Image(np.zeros(new_size, dtype=np.uint8), new_affine, hdr).to_filename(
-                    REF_MASK_NAME
-                )
+                nib.Nifti1Image(
+                    np.zeros(new_size, dtype=np.uint8), new_affine, hdr
+                ).to_filename(REF_MASK_NAME)
 
                 out_mask_name = OUT_MASK_NAME.format(prefix=out_prefix, ext=ext)
                 out_mask = op.abspath(out_mask_name)

@@ -42,7 +42,9 @@ class GroundTruth(object):
         elif noise == "rayleigh":
             test_data += np.random.rayleigh(scale=sigma * wm_mean, size=test_data.shape)
         else:
-            test_data += np.random.normal(0.0, scale=sigma * wm_mean, size=test_data.shape)
+            test_data += np.random.normal(
+                0.0, scale=sigma * wm_mean, size=test_data.shape
+            )
 
         return test_data, wmdata, bgdata
 
