@@ -1,8 +1,7 @@
-Welcome to mriqc's documentation!
-=================================
+Welcome to *MRIQC*'s documentation!
+===================================
 .. include:: ../../README.rst
    :start-line: 3
-   :end-line: 38
 
 .. image :: _static/OHBM2017-poster.png
 
