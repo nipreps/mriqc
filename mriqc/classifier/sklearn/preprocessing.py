@@ -20,6 +20,10 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+#
+# STATEMENT OF CHANGES: This file is derived from the sources of scikit-learn 0.19,
+# which licensed under the BSD 3-clause.
+# This file contains extensions and modifications to the original code.
 """
 Extensions to the sklearn's default data preprocessing filters.
 """
