@@ -29,3 +29,7 @@ You may obtain a copy of the License at
 https://opensource.org/licenses/BSD-3-Clause
 
 All trademarks referenced herein are property of their respective holders.
+
+Notice
+------
+  .. include:: ../../NOTICE
