@@ -1,3 +1,4 @@
+  * STY: Run ``black`` at the top of the repo (#932)
   * MAINT: New Docker layer caching system of other NiPreps (#929)
   * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
   * FIX: Update unit tests (#927)
