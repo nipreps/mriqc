@@ -94,7 +94,9 @@ class ModelParameterGrid(object):
     def __len__(self):
         """Number of points on the grid."""
         # Product function that can handle iterables (np.product can't).
-        return sum(_len(points) for p in self.param_grid for estim, points in list(p.items()))
+        return sum(
+            _len(points) for p in self.param_grid for estim, points in list(p.items())
+        )
 
     def __getitem__(self, ind):
         """Get the parameters that would be ``ind``th in iteration

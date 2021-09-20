@@ -189,9 +189,13 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         )
 
         id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
-        dataframe["label"] = dataframe[id_labels].apply(_format_labels, args=(id_labels,), axis=1)
+        dataframe["label"] = dataframe[id_labels].apply(
+            _format_labels, args=(id_labels,), axis=1
+        )
     else:
-        dataframe = pd.read_csv(csv_file, index_col=False, sep="\t", dtype={"bids_name": object})
+        dataframe = pd.read_csv(
+            csv_file, index_col=False, sep="\t", dtype={"bids_name": object}
+        )
         dataframe = dataframe.rename(index=str, columns={"bids_name": "label"})
 
     nPart = len(dataframe)
@@ -248,7 +252,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                 )
             ).read(),
             "d3_js": open(
-                pkgrf("mriqc", op.join("data", "reports", "embed_resources", "d3.min.js"))
+                pkgrf(
+                    "mriqc", op.join("data", "reports", "embed_resources", "d3.min.js")
+                )
             ).read(),
             "boxplots_css": open(
                 pkgrf(

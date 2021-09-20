@@ -37,12 +37,18 @@ def main():
     idcol = "participant_id"
     if opts.mapping_file:
         idcol = "subject_id"
-        name_mapping = pd.read_csv(opts.mapping_file, sep=" ", header=None, usecols=[0, 1])
+        name_mapping = pd.read_csv(
+            opts.mapping_file, sep=" ", header=None, usecols=[0, 1]
+        )
         name_mapping.columns = ["subject_id", "participant_id"]
-        name_mapping["participant_id"] = name_mapping.participant_id.astype(str) + ".gif"
+        name_mapping["participant_id"] = (
+            name_mapping.participant_id.astype(str) + ".gif"
+        )
         merged = pd.merge(name_mapping, merged, on="participant_id", how="outer")
 
-    merged[[idcol, "rater_1", "rater_2"]].sort_values(by=idcol).to_csv(opts.output, index=False)
+    merged[[idcol, "rater_1", "rater_2"]].sort_values(by=idcol).to_csv(
+        opts.output, index=False
+    )
 
 
 if __name__ == "__main__":

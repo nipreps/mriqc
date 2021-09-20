@@ -239,7 +239,8 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--no-sub",
         default=False,
         action="store_true",
-        help="Turn off submission of anonymized quality metrics " "to MRIQC's metrics repository.",
+        help="Turn off submission of anonymized quality metrics "
+        "to MRIQC's metrics repository.",
     )
     g_outputs.add_argument(
         "--email",
@@ -310,13 +311,15 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--deoblique",
         action="store_true",
         default=False,
-        help="Deoblique the functional scans during head motion correction " "preprocessing.",
+        help="Deoblique the functional scans during head motion correction "
+        "preprocessing.",
     )
     g_func.add_argument(
         "--despike",
         action="store_true",
         default=False,
-        help="Despike the functional scans during head motion correction " "preprocessing.",
+        help="Despike the functional scans during head motion correction "
+        "preprocessing.",
     )
     g_func.add_argument(
         "--start-idx",
@@ -384,7 +387,9 @@ def parse_args(args=None, namespace=None):
         if _plugin:
             config.nipype.plugin = _plugin
             config.nipype.plugin_args = plugin_settings.get("plugin_args", {})
-            config.nipype.nprocs = config.nipype.plugin_args.get("nprocs", config.nipype.nprocs)
+            config.nipype.nprocs = config.nipype.plugin_args.get(
+                "nprocs", config.nipype.nprocs
+            )
 
     # Resource management options
     # Note that we're making strong assumptions about valid plugin args
@@ -469,7 +474,9 @@ def parse_args(args=None, namespace=None):
     }
     config.workflow.inputs = {
         mod: files
-        for mod, files in collect_bids_data(config.execution.layout, **bids_filters).items()
+        for mod, files in collect_bids_data(
+            config.execution.layout, **bids_filters
+        ).items()
         if files
     }
 
@@ -487,7 +494,8 @@ Please, check out your currently set filters:
     unknown_mods = set(config.workflow.inputs.keys()) - set(("T1w", "T2w", "bold"))
     if unknown_mods:
         parser.error(
-            "MRIQC is unable to process the following modalities: " f'{", ".join(unknown_mods)}.'
+            "MRIQC is unable to process the following modalities: "
+            f'{", ".join(unknown_mods)}.'
         )
 
     # Estimate the biggest file size

@@ -374,7 +374,9 @@ def plot_mosaic(
             )
             naxis += 1
 
-    fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05)
+    fig.subplots_adjust(
+        left=0.05, right=0.95, bottom=0.05, top=0.95, wspace=0.05, hspace=0.05
+    )
 
     if title:
         fig.suptitle(title, fontsize="10")
@@ -492,7 +494,9 @@ def _calc_fd(fd_file, fd_radius):
     translations = np.transpose(np.abs(np.diff(cols[0:3, :])))
     rotations = np.transpose(np.abs(np.diff(cols[3:6, :])))
 
-    fd_power = np.sum(translations, axis=1) + (fd_radius * pi / 180) * np.sum(rotations, axis=1)
+    fd_power = np.sum(translations, axis=1) + (fd_radius * pi / 180) * np.sum(
+        rotations, axis=1
+    )
 
     # FD is zero for the first time point
     fd_power = np.insert(fd_power, 0, 0)

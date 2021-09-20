@@ -576,7 +576,9 @@ class CVHelper(CVHelperBase):
             )
 
             score = scores[scoring.index("accuracy")]
-            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (self._permutation_test + 1)
+            pvalue = (np.sum(permutation_scores >= score) + 1.0) / (
+                self._permutation_test + 1
+            )
             LOG.info(
                 "Permutation test (N=%d) for accuracy score %f (pvalue=%f)",
                 self._permutation_test,
@@ -660,7 +662,9 @@ class CVHelper(CVHelperBase):
             predf["prob_y"] = prob_y[:, 1]
             predf["pred_y"] = pred_y
 
-        predf[bidts + cols].to_csv(self._gen_fname(suffix=suffix, ext="csv"), index=False)
+        predf[bidts + cols].to_csv(
+            self._gen_fname(suffix=suffix, ext="csv"), index=False
+        )
 
     def save(self, suffix="estimator", compress=3):
         """

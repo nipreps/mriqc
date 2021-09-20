@@ -148,8 +148,13 @@ try:
             _proc_oc_kbytes = Path("/proc/sys/vm/overcommit_kbytes")
             if _proc_oc_kbytes.exists():
                 _oc_limit = _proc_oc_kbytes.read_text().strip()
-            if _oc_limit in ("0", "n/a") and Path("/proc/sys/vm/overcommit_ratio").exists():
-                _oc_limit = "{}%".format(Path("/proc/sys/vm/overcommit_ratio").read_text().strip())
+            if (
+                _oc_limit in ("0", "n/a")
+                and Path("/proc/sys/vm/overcommit_ratio").exists()
+            ):
+                _oc_limit = "{}%".format(
+                    Path("/proc/sys/vm/overcommit_ratio").read_text().strip()
+                )
 except Exception:
     pass
 
@@ -481,7 +486,9 @@ class loggers:
 
             if not len(cls.cli.handlers):
                 _handler = logging.StreamHandler(stream=sys.stdout)
-                _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
+                _handler.setFormatter(
+                    logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
+                )
                 cls.cli.addHandler(_handler)
             cls._init = True
 

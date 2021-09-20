@@ -105,7 +105,9 @@ def main():
 
         if list(set(subject_list) - set(all_subjects)):
             non_exist = list(set(subject_list) - set(all_subjects))
-            missing_label_error = messages.BIDS_LABEL_MISSING.format(label=" ".join(non_exist))
+            missing_label_error = messages.BIDS_LABEL_MISSING.format(
+                label=" ".join(non_exist)
+            )
             raise RuntimeError(missing_label_error)
 
     if not opts.no_randomize:

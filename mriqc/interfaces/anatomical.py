@@ -49,7 +49,9 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     )
     in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
     mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
+    in_fwhm = traits.List(
+        traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
+    )
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -162,7 +164,9 @@ class StructuralQC(SimpleInterface):
         )
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.header.get_zooms()[:3])
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(
+            imnii.header.get_zooms()[:3]
+        )
         self._results["fwhm"] = {
             "x": float(fwhm[0]),
             "y": float(fwhm[1]),
@@ -199,7 +203,9 @@ class StructuralQC(SimpleInterface):
         # Bias
         bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
         self._results["inu"] = {
-            "range": float(np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))),
+            "range": float(
+                np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))
+            ),
             "med": float(np.median(bias)),
         }  # pylint: disable=E1101
 
@@ -283,12 +289,18 @@ class ArtifactMask(SimpleInterface):
 
         hdr = imnii.header.copy()
         hdr.set_data_dtype(np.uint8)
-        nb.Nifti1Image(qi1_img, imnii.affine, hdr).to_filename(self._results["out_art_msk"])
+        nb.Nifti1Image(qi1_img, imnii.affine, hdr).to_filename(
+            self._results["out_art_msk"]
+        )
 
-        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(self._results["out_hat_msk"])
+        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
+            self._results["out_hat_msk"]
+        )
 
         airdata[qi1_img > 0] = 0
-        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(self._results["out_air_msk"])
+        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
+            self._results["out_air_msk"]
+        )
         return runtime
 
 
@@ -320,7 +332,9 @@ class ComputeQI2(SimpleInterface):
 
 
 class HarmonizeInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="input data (after bias correction)")
+    in_file = File(
+        exists=True, mandatory=True, desc="input data (after bias correction)"
+    )
     wm_mask = File(exists=True, mandatory=True, desc="white-matter mask")
     erodemsk = traits.Bool(True, usedefault=True, desc="erode mask")
 
@@ -354,7 +368,9 @@ class Harmonize(SimpleInterface):
         data = in_file.get_data()
         data *= 1000.0 / np.median(data[wm_mask > 0])
 
-        out_file = fname_presuffix(self.inputs.in_file, suffix="_harmonized", newpath=".")
+        out_file = fname_presuffix(
+            self.inputs.in_file, suffix="_harmonized", newpath="."
+        )
         in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)
 
         self._results["out_file"] = out_file

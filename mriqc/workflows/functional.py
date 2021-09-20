@@ -58,11 +58,15 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
     inputnode.iterables = [("in_file", dataset)]
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
+        niu.IdentityInterface(
+            fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]
+        ),
         name="outputnode",
     )
 
-    non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
+    non_steady_state_detector = pe.Node(
+        NonSteadyStateDetector(), name="non_steady_state_detector"
+    )
 
     sanitize = pe.Node(SanitizeImage(), name="sanitize", mem_gb=mem_gb * 4.0)
     sanitize.inputs.max_32bit = config.execution.float32
@@ -610,7 +614,9 @@ def hmc(name="fMRI_HMC"):
         name="inputnode",
     )
 
-    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode"
+    )
 
     if any(
         (
@@ -753,7 +759,7 @@ def epi_mni_align(name="SpatialNormalization"):
     """
     from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
     from niworkflows.interfaces.reportlets.registration import (
-        SpatialNormalizationRPT as RobustMNINormalization
+        SpatialNormalizationRPT as RobustMNINormalization,
     )
     from templateflow.api import get as get_template
 
@@ -772,7 +778,9 @@ def epi_mni_align(name="SpatialNormalization"):
         name="outputnode",
     )
 
-    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI")
+    n4itk = pe.Node(
+        N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI"
+    )
 
     norm = pe.Node(
         RobustMNINormalization(
@@ -871,7 +879,9 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         longest_axis = np.argmax(bbox)
 
         # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
+        dil_mask = nd.binary_dilation(
+            mask_data, iterations=int(mask_data.shape[longest_axis] / 9)
+        )
 
         rep = list(mask_data.shape)
         rep[longest_axis] = -1
@@ -890,7 +900,9 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         new_mask_3d[:, 0:2, :] = True
         new_mask_3d[:, -3:-1, :] = True
 
-    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header)
+    mask_nii = nb.Nifti1Image(
+        new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header
+    )
     mask_nii.to_filename(out_file)
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
