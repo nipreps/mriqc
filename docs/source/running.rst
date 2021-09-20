@@ -117,3 +117,5 @@ on ds030 of OpenfMRI:
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
   .. [BIDSApps] `BIDS-Apps: portable neuroimaging pipelines that understand BIDS
      datasets <http://bids-apps.neuroimaging.io/>`_
+
+.. include:: license.rst

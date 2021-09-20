@@ -20,6 +20,7 @@ Contents
    workflows
    classifier
    dsa
+   license
 
 Indices and tables
 ==================

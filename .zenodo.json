@@ -83,6 +83,6 @@
       "scheme": "doi"
     }
   ],
-  "license": "BSD-3-Clause",
+  "license": "Apache-2.0",
   "upload_type": "software"
 }
