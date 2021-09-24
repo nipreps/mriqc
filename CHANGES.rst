@@ -1,20 +1,26 @@
-  * MAINT: Revise Docker image settings & CircleCI (#937)
-  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
-  * STY: Run ``black`` at the top of the repo (#932)
-  * MAINT: New Docker layer caching system of other NiPreps (#929)
+21.0.0 (TBD)
+============
+First official release after migrating the repository into the *NiPreps*' organization.
+This release updates the Docker image with up-to-date dependencies, updates
+*MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
+Finally, this release also contains a major style overhaul by Zvi Baratz (@zvibaratz).
+With thanks to Zvi for their contributions.
+  * FIX: Revise building documentation at RTD after migration (#935)
   * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
   * FIX: Update unit tests (#927)
+  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
   * FIX: Update dependencies and repair T1w workflow accordingly (#925)
-  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
-  * Miscellaneous updates (#901)
-  * Fixes for #891 (#892)
+  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
+  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
   * DOC: Various fixes to "Running mriqc" section (#897)
-  * FIX: Rebuilt and updated documentation.
-  * ENH: Updated and organized project requirements.
-  * ENH: Fixed linting issues and standardized code formatting.
-  * ENH: Refactored long strings to a :mod:`mriqc.messages` module.
-  * ENH: Refactored :mod:`mriqc.interfaces.common` module.
-  * ENH: Integrated `isort <https://isort.readthedocs.io/en/latest/>`.
+  * MAINT: Revise Docker image settings & CircleCI (#937)
+  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
+  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
+  * MAINT: New Docker layer caching system of other NiPreps (#929)
+  * MAINT: Code style overhaul (#901)
+  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
+  * STY: Run ``black`` at the top of the repo (#932)
 
 0.16.1 (January 30, 2021)
 =========================

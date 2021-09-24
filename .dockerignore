@@ -16,6 +16,7 @@ mriqc.egg-info
 src/**/*
 src/
 notebooks/
+.maint/
 
 # releasing
 Makefile
