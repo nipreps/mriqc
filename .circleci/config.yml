@@ -107,6 +107,14 @@ jobs:
               chmod a+rx /tmp/docker-compose/docker-compose
             fi
 
+            set +e
+            docker pull localhost:5000/dockereve-master_eve:latest
+            success=$?
+            set -e
+            if [[ "$success" = 0 ]]; then
+                docker tag localhost:5000/dockereve-master_eve:latest dockereve-master_eve:latest
+            fi
+
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/nipreps/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
@@ -116,6 +124,9 @@ jobs:
             fi
             /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
             /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+
+            docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
+            docker push localhost:5000/dockereve-master_eve:latest
       - run:
           name: Build Docker image
           no_output_timeout: 60m
