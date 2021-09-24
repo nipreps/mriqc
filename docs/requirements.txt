@@ -1,4 +1,7 @@
--r ../requirements.txt
+nipype
+packaging
+pydot>=1.2.3
+pydotplus
+sphinx-argparse
+sphinx_rtd_theme
 sphinx~=3.5
-sphinx-argparse~=0.2
-sphinx_rtd_theme~=0.5
