@@ -79,11 +79,22 @@ jobs:
                 docker pull nipreps/mriqc:latest
             fi
 
+      - run:
+          name: MRIQCWebAPI - Pull Docker images
+          command: |
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
-            set +e
             for image in ${webapi_images[@]}; do
+                set +e
                 docker pull localhost:5000/${image}
-                docker tag localhost:5000/${image} ${image}
+                success=$?
+                set -e
+                if [[ "$success" = "0" ]]; then
+                    docker tag localhost:5000/${image} ${image}
+                else
+                    docker pull ${image}
+                    docker tag ${image} localhost:5000/${image}
+                    docker push localhost:5000/${image}
+                fi
             done;
 
       - run:
