@@ -648,13 +648,13 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-            - "39:23:4c:9c:3e:29:c1:44:45:f2:bb:e5:cb:b7:65:c2"
+            - "80:ec:ae:e8:92:1f:88:83:2a:e0:ee:35:39:79:85:88"
 
       - run:
           name: Checkout origin/master
           command: |
-            git config user.email "${GITHUB_EMAIL}"
-            git config user.name "CircleCI Deploy"
+            git config user.email "nipreps@gmail.com"
+            git config user.name "NiPreps Bot"
             git fetch origin
             git checkout -f origin/master
       - run:
