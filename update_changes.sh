@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Collects the pull-requests since the latest release and
-# aranges them in the CHANGES.txt file.
+# aranges them in the CHANGES.rst file.
 #
 # This is a script to be run before releasing a new version.
 #
@@ -13,10 +13,10 @@ set -u         # Treat unset variables as an error when substituting.
 set -x         # Print command traces before executing command.
 
 # Check whether the Upcoming release header is present
-head -1 CHANGES.txt | grep -q Upcoming
+head -1 CHANGES.rst | grep -q Upcoming
 UPCOMING=$?
 if [[ "$UPCOMING" == "0" ]]; then
-    head -n3  CHANGES.txt >> newchanges
+    head -n3  CHANGES.rst >> newchanges
 fi
 
 # Search for PRs since previous release
@@ -24,11 +24,11 @@ git show --pretty='format:  * %b %s'  HEAD | sed 's/Merge pull request \#\([^\d]
 
 # Add back the Upcoming header if it was present
 if [[ "$UPCOMING" == "0" ]]; then
-    tail -n+4 CHANGES.txt >> newchanges
+    tail -n+4 CHANGES.rst >> newchanges
 else
-    cat CHANGES.txt >> newchanges
+    cat CHANGES.rst >> newchanges
 fi
 
-# Replace old CHANGES.txt with new file
-mv newchanges CHANGES.txt
+# Replace old CHANGES.rst with new file
+mv newchanges CHANGES.rst
 
