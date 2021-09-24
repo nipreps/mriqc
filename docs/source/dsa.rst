@@ -42,7 +42,7 @@ If you do not agree to these terms, please make use of the ``--no-sub`` (*do not
 command line flag with MRIQC.
 MRIQC will not collect any data when you OPT-OUT with this command line flag.
 If you wish to withdraw :abbr:`IQMs (image quality metrics)` records from the database,
-please send a request to Oscar Esteban <oesteban@stanford.edu> indicating the
+please send a request to the NiPreps Developers <nipreps@gmail.com> indicating the
 MD5 checksums of the datasets that are to be removed.
 If any MD5 checksum matches any image publicly available or one or more associated
 quality rating records were found, then the corresponding record cannot be destroyed,
