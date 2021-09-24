@@ -107,7 +107,7 @@
       "type": "Researcher"
     },
     {
-      "name": "",
+      "name": "@justbennet",
       "type": "Researcher",
       "affiliation": "Unknown affiliation"
     },
@@ -149,18 +149,6 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-6755-0259",
-      "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Russell A. Poldrack",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0001-8435-6191",
-      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne",
-      "name": "Oscar Esteban",
-      "type": "Researcher"
-    },
-    {
       "orcid": "0000-0001-8179-6511",
       "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
       "name": "Sean Marret",
@@ -170,6 +158,12 @@
       "orcid": "0000-0002-2850-1419",
       "affiliation": "Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA",
       "name": "Adam G. Thomas",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0001-6755-0259",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Russell A. Poldrack",
       "type": "Researcher"
     }
   ],
