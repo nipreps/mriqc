@@ -12,7 +12,7 @@ MRIQC uses bleeding-edge (oftentimes unreleased) versions of
 ``nipype`` and ``niworkflows`` and "bare-metal" installations can
 be hard.
 Nonetheless, we offer support on our `github repository
-<https://github.com/poldracklab/mriqc/issues>`_.
+<https://github.com/nipreps/mriqc/issues>`_.
 
 
 "Bare-metal" installation
@@ -33,8 +33,8 @@ github using ``pip`` on a Python 3 environment: ::
 
 .. warning::
 
-        MRIQC uses matplotlib to create graphics. By default, matplotlib is configured to 
-        plot through an interactive Tcl/tk interface, which requires a functional display to be available. 
+        MRIQC uses matplotlib to create graphics. By default, matplotlib is configured to
+        plot through an interactive Tcl/tk interface, which requires a functional display to be available.
         In *head-less* settings (for example, when running under tmux),
         you may see an error::
 

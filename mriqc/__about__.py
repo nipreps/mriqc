@@ -27,5 +27,5 @@ __version__ = get_versions()["version"]
 del get_versions
 
 __copyright__ = "Copyright 2020 The NiPreps Developers"
-__download__ = f"https://github.com/poldracklab/mriqc/archive/{__version__}.tar.gz"
+__download__ = f"https://github.com/nipreps/mriqc/archive/{__version__}.tar.gz"
 __all__ = ["__version__", "__copyright__", "__download__"]
