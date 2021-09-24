@@ -97,7 +97,7 @@ jobs:
             fi
 
             rm -rf /tmp/src/mriqcwebapi
-            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
+            git clone https://github.com/nipreps/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env

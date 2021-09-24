@@ -27,7 +27,7 @@ software engineering principles:
    by testing its robustness against data variability (acquisition parameters,
    physiological differences, etc.) using images from `OpenfMRI <https://openfmri.org>`_.
    Its reliability is permanently checked and maintained with
-   `CircleCI <https://circleci.com/gh/poldracklab/mriqc>`_.
+   `CircleCI <https://circleci.com/gh/nipreps/mriqc>`_.
 
 Citation
 --------
@@ -44,7 +44,7 @@ The documentation of this project is found here: http://mriqc.readthedocs.io/.
 Users can get help using the `mriqc-users google group <https://groups.google.com/forum/#!forum/mriqc-users>`_.
 
 All bugs, concerns and enhancement requests for this software can be submitted here:
-https://github.com/poldracklab/mriqc/issues.
+https://github.com/nipreps/mriqc/issues.
 
 License information
 -------------------
@@ -109,7 +109,7 @@ brain connectivity using MRI*” (grant number
    :target: https://pypi.python.org/pypi/mriqc/
 .. |Documentation| image:: https://readthedocs.org/projects/mriqc/badge/?version=latest
    :target: http://mriqc.readthedocs.io/en/latest/?badge=latest
-.. |CircleCI| image:: https://circleci.com/gh/poldracklab/mriqc/tree/master.svg?style=shield
-   :target: https://circleci.com/gh/poldracklab/mriqc/tree/master
+.. |CircleCI| image:: https://circleci.com/gh/nipreps/mriqc/tree/master.svg?style=shield
+   :target: https://circleci.com/gh/nipreps/mriqc/tree/master
 .. |Codacy| image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
    :target: https://www.codacy.com/app/code_3/mriqc

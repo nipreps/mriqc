@@ -45,7 +45,7 @@ Running mriqc
   ::
 
 
-      docker run -it poldracklab/mriqc:latest --version
+      docker run -it nipreps/mriqc:latest --version
 
 
 2. Run the :code:`participant` level in subjects 001 002 003:
@@ -53,7 +53,7 @@ Running mriqc
   ::
 
 
-      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out participant --participant_label 001 002 003
+      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out nipreps/mriqc:latest /data /out participant --participant_label 001 002 003
 
 
 3. Run the group level and report generation on previously processed (use the same ``<output_dir>``)
@@ -62,7 +62,7 @@ Running mriqc
   ::
 
 
-      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out poldracklab/mriqc:latest /data /out group
+      docker run -it --rm -v <bids_dir>:/data:ro -v <output_dir>:/out nipreps/mriqc:latest /data /out group
 
 
 .. note::
@@ -90,14 +90,14 @@ Let's dissect this command line:
 
 + :code:`docker run`- instructs the docker engine to get and run a certain
   image (which is the last of docker-related arguments:
-  :code:`poldracklab/mriqc:latest`)
+  :code:`nipreps/mriqc:latest`)
 + :code:`-v <bids_dir>:/data:ro` - instructs docker to mount the local
   directory with your input dataset `<bids_dir>`into :code:`/data` inside
   the container in a read only mode.
 + :code:`-v <output_dir>:/out`- instructs docker to mount the local
   directory `<output_dir>`into :code:`/out` inside the container. This is
   where the results of the QC analysis (reports, tables) will be stored.
-+ :code:`poldracklab/mriqc:latest` - this tells docker to run MRIQC. ``latest``
++ :code:`nipreps/mriqc:latest` - this tells docker to run MRIQC. ``latest``
   corresponds to the version of MRIQC. You
   should replace ``latest`` with a version of MRIQC you want to use. Remember
   not to switch versions while analysing one dataset!

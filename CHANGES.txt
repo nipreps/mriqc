@@ -78,7 +78,7 @@ A maintenance patch release updating PyBIDS.
 ======================
 A long overdue update, pinning updated versions of
 `TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and
-`Niworkflows <https://github.com/poldracklab/niworkflows>`__.
+`Niworkflows <https://github.com/nipreps/niworkflows>`__.
 With thanks to @garciadias for contributions.
 
   * ENH: Revision of QI2 (#606) @oesteban

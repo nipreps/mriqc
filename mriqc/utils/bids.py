@@ -104,7 +104,7 @@ def write_derivative_description(bids_dir, deriv_dir):
     if "MRIQC_DOCKER_TAG" in os.environ:
         desc["GeneratedBy"][0]["Container"] = {
             "Type": "docker",
-            "Tag": f"poldracklab/mriqc:{os.environ['MRIQC_DOCKER_TAG']}",
+            "Tag": f"nipreps/mriqc:{os.environ['MRIQC_DOCKER_TAG']}",
         }
     if "MRIQC_SINGULARITY_URL" in os.environ:
         desc["GeneratedBy"][0]["Container"] = {
