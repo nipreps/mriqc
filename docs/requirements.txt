@@ -5,3 +5,4 @@ pydotplus
 sphinx-argparse
 sphinx_rtd_theme
 sphinx~=3.5
+toml
