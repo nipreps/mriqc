@@ -299,7 +299,7 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
@@ -346,7 +346,6 @@ jobs:
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
-            set +e
             for image in ${webapi_images[@]}; do
                 docker pull localhost:5000/${image}
                 docker tag localhost:5000/${image} ${image}
@@ -458,7 +457,7 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
@@ -512,7 +511,6 @@ jobs:
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
-            set +e
             for image in ${webapi_images[@]}; do
                 docker pull localhost:5000/${image}
                 docker tag localhost:5000/${image} ${image}
