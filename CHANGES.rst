@@ -1,20 +1,61 @@
-  * MAINT: Revise Docker image settings & CircleCI (#937)
-  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
-  * STY: Run ``black`` at the top of the repo (#932)
-  * MAINT: New Docker layer caching system of other NiPreps (#929)
+21.0.0 (TBD)
+============
+First official release after migrating the repository into the *NiPreps*' organization.
+This release updates the Docker image with up-to-date dependencies, updates
+*MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
+Finally, this release also contains a major code style overhaul by Zvi Baratz (@zvibaratz).
+With thanks to Zvi Baratz, Nikita Beliy, Michael (@octomike), Benjamin Kay, Adam Huffman,
+and Ursula Tooley for their contributions.
+
+  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
+  * FIX: Revise building documentation at RTD after migration (#935)
   * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
   * FIX: Update unit tests (#927)
+  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
   * FIX: Update dependencies and repair T1w workflow accordingly (#925)
-  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
-  * Miscellaneous updates (#901)
-  * Fixes for #891 (#892)
+  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
+  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
   * DOC: Various fixes to "Running mriqc" section (#897)
-  * FIX: Rebuilt and updated documentation.
-  * ENH: Updated and organized project requirements.
-  * ENH: Fixed linting issues and standardized code formatting.
-  * ENH: Refactored long strings to a :mod:`mriqc.messages` module.
-  * ENH: Refactored :mod:`mriqc.interfaces.common` module.
-  * ENH: Integrated `isort <https://isort.readthedocs.io/en/latest/>`.
+  * MAINT: Revise Docker image settings & CircleCI (#937)
+  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
+  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
+  * MAINT: New Docker layer caching system of other *NiPreps* (#929)
+  * MAINT: Code style overhaul (#901)
+  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
+  * STY: Run ``black`` at the top of the repo (#932)
+
+.. admonition:: Author list for papers based on *MRIQC* 21.0.x
+
+    As described in the `Contributor Guidelines
+    <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
+    anyone listed as developer or contributor may write and submit manuscripts
+    about *MRIQC*.
+    To do so, please move the author(s) name(s) to the front of the following list:
+
+    Zvi Baratz \ :sup:`1`\ ; Krzysztof J. Gorgolewski \ :sup:`2`\ ; Daniel Birman \ :sup:`3`\ ; Christopher J. Markiewicz \ :sup:`3`\ ; Nikita Beliy \ :sup:`4`\ ; Ursula A. Tooley \ :sup:`5`\ ; Ross W. Blair \ :sup:`3`\ ; Jan Varada \ :sup:`6`\ ; Taylor Salo \ :sup:`7`\ ; Mathias Goncalves \ :sup:`3`\ ; Thomas Nichols \ :sup:`8`\ ; Asier Erramuzpe \ :sup:`9`\ ; Joke Durnez \ :sup:`3`\ ; Rafael Garcia-Dias \ :sup:`10`\ ; Dylan Nielson \ :sup:`11`\ ; Benjamin Kay \ :sup:`12`\ ; Aaron Piccirilli \ :sup:`13`\ ; @justbennet \ :sup:`12`\ ; Adam Huffman \ :sup:`12`\ ; James D. Kent \ :sup:`14`\ ; John Lee \ :sup:`15`\ ; Michael \ :sup:`16`\ ; Michael Clark \ :sup:`12`\ ; Pablo Velasco \ :sup:`17`\ ; Satrajit S. Ghosh \ :sup:`18`\ ; Sean Marret \ :sup:`6`\ ; Adam G. Thomas \ :sup:`11`\ ; Russell A. Poldrack \ :sup:`3`\ ; Oscar Esteban \ :sup:`19`\ .
+
+    Affiliations:
+    
+      1. Neuroscience Program, Tel-Aviv University
+      2. Google LLC
+      3. Department of Psychology, Stanford University, CA, USA
+      4. CRC ULiege, Liege, Belgium
+      5. Department of Neuroscience, University of Pennsylvania, PA, USA
+      6. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
+      7. Department of Psychology, Florida International University, FL, USA
+      8. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      9. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      10. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      11. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      12. Unaffiliated
+      13. Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA
+      14. Neuroscience Program, University of Iowa
+      15. Quansight, Dublin, Ireland
+      16. Max Planck Institute for Human Development, Berlin, Germany
+      17. Center for Brain Imaging, New York University, NY, USA
+      18. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      19. Department of Radiology, Lausanne University Hospital and University of Lausanne
 
 0.16.1 (January 30, 2021)
 =========================
@@ -26,7 +67,7 @@ subjects of the form ``sub-sXYZ``, and improves compatibility with more recent m
   * FIX: Participant labels starting with ``[sub]`` cannot be used (#890)
   * FIX: Change deprecated ``normed`` to ``density`` in parameters to ``hist()`` (#888)
   * ENH: Write derivatives metadata (#885)
-  * ENH: Add --pdb option to make debugging easier (#884)
+  * ENH: Add ``--pdb`` option to make debugging easier (#884)
 
 0.16.0 (January 5, 2021)
 ========================
