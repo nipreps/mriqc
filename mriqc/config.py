@@ -427,6 +427,7 @@ class execution(_Config):
                     "derivatives",
                     "scripts",
                     re.compile(r"^\."),
+                    # Exclude modalities and contrasts ignored by MRIQC (doesn't know how to QC)
                     re.compile(
                         r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
                     ),
