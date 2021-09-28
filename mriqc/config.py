@@ -427,9 +427,19 @@ class execution(_Config):
                     "derivatives",
                     "scripts",
                     re.compile(r"^\."),
-                    re.compile(r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(fmap|dwi)/"),
                     re.compile(
-                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(beh|dwi|eeg|ieeg|meg|perf)"
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/anat/.*_"
+                        r"(PDw|T2starw|FLAIR|inplaneT1|inplaneT2|PDT2|angio|T2star"
+                        r"|FLASH|PD|T1map|T2map|T2starmap|R1map|R2map|R2starmap|PDmap"
+                        r"|MTRmap|MTsat|UNIT1|T1rho|MWFmap|MTVmap|PDT2map|Chimap"
+                        r"|S0map|M0map|defacemask|MESE|MEGRE|VFA|IRT1|MP2RAGE|MPM|MTS|MTR)\."
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/func/.*"
+                        r"_(cbv|sbref|phase|events|physio|stim)\."
                     ),
                 ),
             )
