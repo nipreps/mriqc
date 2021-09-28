@@ -7,6 +7,7 @@ Finally, this release also contains a major code style overhaul by Zvi Baratz (@
 With thanks to Zvi Baratz, Nikita Beliy, Michael (@octomike), Benjamin Kay, Adam Huffman,
 and Ursula Tooley for their contributions.
 
+  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
   * FIX: Revise building documentation at RTD after migration (#935)
   * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
   * FIX: Update unit tests (#927)
