@@ -405,24 +405,41 @@ class execution(_Config):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
         if cls._layout is None:
             import re
-
+            from bids.layout.index import BIDSLayoutIndexer
             from bids.layout import BIDSLayout
 
-            work_dir = cls.work_dir / "bids.db"
-            work_dir.mkdir(exist_ok=True, parents=True)
-            cls._layout = BIDSLayout(
-                str(cls.bids_dir),
+            _db_path = cls.bids_database_dir or (
+                cls.work_dir / "bids_db"
+            )
+            _db_path.mkdir(exist_ok=True, parents=True)
+
+            # Recommended after PyBIDS 12.1
+            _indexer = BIDSLayoutIndexer(
                 validate=False,
-                # database_path=str(work_dir),
                 ignore=(
                     "code",
                     "stimuli",
                     "sourcedata",
                     "models",
                     "derivatives",
+                    "scripts",
                     re.compile(r"^\."),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(fmap|dwi)/"
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(beh|dwi|eeg|ieeg|meg|perf)"
+                    ),
                 ),
             )
+            cls._layout = BIDSLayout(
+                str(cls.bids_dir),
+                database_path=_db_path,
+                reset_database=cls.bids_database_dir is None,
+                indexer=_indexer,
+            )
+            cls.bids_database_dir = _db_path
+
         cls.layout = cls._layout
 
 
