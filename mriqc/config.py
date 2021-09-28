@@ -333,6 +333,8 @@ class execution(_Config):
     """Use float number precision for ANTs computations."""
     bids_dir = None
     """An existing path to the dataset, which must be BIDS-compliant."""
+    bids_database_dir = None
+    """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
     debug = False
@@ -391,6 +393,7 @@ class execution(_Config):
     _paths = (
         "anat_derivatives",
         "bids_dir",
+        "bids_database_dir",
         "fs_license_file",
         "fs_subjects_dir",
         "layout",
@@ -409,7 +412,7 @@ class execution(_Config):
             from bids.layout import BIDSLayout
 
             _db_path = cls.bids_database_dir or (
-                cls.work_dir / "bids_db"
+                cls.work_dir / cls.run_uuid / "bids_db"
             )
             _db_path.mkdir(exist_ok=True, parents=True)
 
@@ -424,9 +427,7 @@ class execution(_Config):
                     "derivatives",
                     "scripts",
                     re.compile(r"^\."),
-                    re.compile(
-                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(fmap|dwi)/"
-                    ),
+                    re.compile(r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(fmap|dwi)/"),
                     re.compile(
                         r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(beh|dwi|eeg|ieeg|meg|perf)"
                     ),
