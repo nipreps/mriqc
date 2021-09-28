@@ -485,13 +485,6 @@ jobs:
             - /tmp/docker
             - /tmp/images
             - /tmp/docker-compose
-      - docker/install-docker-credential-helper
-      - run:
-          name: Docker authentication
-          command: |
-            if [[ -n $DOCKER_PAT ]]; then
-              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
-            fi
       - run:
           name: Set-up a Docker registry
           command: |
@@ -711,6 +704,12 @@ jobs:
           name: Deploy to PyPi
           command: |
             echo "${CIRCLE_TAG}" > mriqc/VERSION
+            # Inject MRIQC-WebAPI secret
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+            fi
             python setup.py sdist
             python -m twine check dist/*
             python -m twine upload dist/*
@@ -722,34 +721,43 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+            fi
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
       - run:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
-              docker push nipreps/mriqc:latest
-              docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
-              docker push nipreps/mriqc:$CIRCLE_TAG
-            fi
+            docker push nipreps/mriqc:latest
+            docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
+            docker push nipreps/mriqc:$CIRCLE_TAG
 
 workflows:
   version: 2
