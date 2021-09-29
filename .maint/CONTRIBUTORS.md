@@ -21,7 +21,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
 | Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
 | Huffman | Adam | @verdurin | | |
-| Kay | Benjamin | @benkay86 | Washington University School of Medicine, St.Louis, MO, USA |
+| Kay | Benjamin | @benkay86 | | Washington University School of Medicine, St.Louis, MO, USA |
 | Kent | James D. | @jdkent | 0000-0002-4892-2659 | Neuroscience Program, University of Iowa |
 | Lee | John | @leej3 | | Quansight, Dublin, Ireland |
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
