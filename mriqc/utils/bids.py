@@ -49,6 +49,9 @@ def collect_bids_data(
         "session": session,
         "task": task,
         "run": run,
+        "datatype": "func",
+        "return_type": "file",
+        "extension": ["nii", "nii.gz"],
     }
     # Filter empty lists, strings, zero runs, and Nones
     basequery = {k: v for k, v in basequery.items() if v}
@@ -56,12 +59,13 @@ def collect_bids_data(
     # Start querying
     imaging_data = defaultdict(list, {})
     for btype in bids_type:
-        imaging_data[btype] = layout.get(
-            suffix=btype,
-            return_type="file",
-            extension=["nii", "nii.gz"],
-            **basequery,
-        )
+        _entities = basequery.copy()
+        _entities["suffix"] = btype
+        if btype in ("T1w", "T2w"):
+            _entities["datatype"] = "anat"
+            _entities.pop("task", None)
+
+        imaging_data[btype] = layout.get(**_entities)
 
     return imaging_data
 
