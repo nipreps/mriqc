@@ -15,6 +15,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Clark | Michael | @mgclark | | |
 | Durnez | Joke | @jokedurnez | 0000-0001-9030-2202 | Department of Psychology, Stanford University, CA, USA |
 | Erramuzpe | Asier | @erramuzpe | 0000-0002-9402-2184 | Computational Neuroimaging Lab, BioCruces Health Research Institute |
+| Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
 | Garcia-Dias | Rafael | @garciadias | 0000-0001-9332-1580 | Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK |
 | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
 | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
@@ -30,5 +31,4 @@ Before every release, unlisted contributors will be invited again to add their n
 | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
 | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
 | Velasco | Pablo | @pvelasco | | Center for Brain Imaging, New York University, NY, USA |
-| Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
 | | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
