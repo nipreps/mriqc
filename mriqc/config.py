@@ -333,6 +333,8 @@ class execution(_Config):
     """Use float number precision for ANTs computations."""
     bids_dir = None
     """An existing path to the dataset, which must be BIDS-compliant."""
+    bids_database_dir = None
+    """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
     debug = False
@@ -391,6 +393,7 @@ class execution(_Config):
     _paths = (
         "anat_derivatives",
         "bids_dir",
+        "bids_database_dir",
         "fs_license_file",
         "fs_subjects_dir",
         "layout",
@@ -405,24 +408,50 @@ class execution(_Config):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
         if cls._layout is None:
             import re
-
+            from bids.layout.index import BIDSLayoutIndexer
             from bids.layout import BIDSLayout
 
-            work_dir = cls.work_dir / "bids.db"
-            work_dir.mkdir(exist_ok=True, parents=True)
-            cls._layout = BIDSLayout(
-                str(cls.bids_dir),
+            _db_path = cls.bids_database_dir or (
+                cls.work_dir / cls.run_uuid / "bids_db"
+            )
+            _db_path.mkdir(exist_ok=True, parents=True)
+
+            # Recommended after PyBIDS 12.1
+            _indexer = BIDSLayoutIndexer(
                 validate=False,
-                # database_path=str(work_dir),
                 ignore=(
                     "code",
                     "stimuli",
                     "sourcedata",
                     "models",
                     "derivatives",
+                    "scripts",
                     re.compile(r"^\."),
+                    # Exclude modalities and contrasts ignored by MRIQC (doesn't know how to QC)
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/anat/.*_"
+                        r"(PDw|T2starw|FLAIR|inplaneT1|inplaneT2|PDT2|angio|T2star"
+                        r"|FLASH|PD|T1map|T2map|T2starmap|R1map|R2map|R2starmap|PDmap"
+                        r"|MTRmap|MTsat|UNIT1|T1rho|MWFmap|MTVmap|PDT2map|Chimap"
+                        r"|S0map|M0map|defacemask|MESE|MEGRE|VFA|IRT1|MP2RAGE|MPM|MTS|MTR)\."
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/func/.*"
+                        r"_(cbv|sbref|phase|events|physio|stim)\."
+                    ),
                 ),
             )
+            cls._layout = BIDSLayout(
+                str(cls.bids_dir),
+                database_path=_db_path,
+                reset_database=cls.bids_database_dir is None,
+                indexer=_indexer,
+            )
+            cls.bids_database_dir = _db_path
+
         cls.layout = cls._layout
 
 

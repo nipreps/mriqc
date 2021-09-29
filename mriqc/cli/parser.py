@@ -170,6 +170,13 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Filter input dataset by MRI type.",
     )
     g_bids.add_argument("--dsname", type=str, help="A dataset name.")
+    g_bids.add_argument(
+        "--bids-database-dir",
+        metavar="PATH",
+        type=PathExists,
+        help="Path to an existing PyBIDS database folder, for faster indexing "
+        "(especially useful for large datasets).",
+    )
 
     # General performance
     g_perfm = parser.add_argument_group("Options to handle performance")
