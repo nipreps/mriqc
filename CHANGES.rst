@@ -1,3 +1,4 @@
+  * ENH: Optimize *PyBIDS*' layout initialization (#939)
   * FIX: T2w image of MNI template unavailable in Singularity (#940)
   * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token  (#938)
 21.0.0 (TBD)
