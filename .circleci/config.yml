@@ -405,17 +405,6 @@ jobs:
             exit $?
 
       - run:
-          name: Checking changes on MD5 sums of intermediate files of MRIQC
-          command: |
-            mkdir -p /tmp/t1w/test
-            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
-                                       --entrypoint=/opt/conda/bin/nib-hash \
-                                       nipreps/mriqc:latest"
-            find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
-            exit $?
-
-      - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
             find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
@@ -561,17 +550,6 @@ jobs:
             mkdir -p /tmp/bold/test
             find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
-            exit $?
-
-      - run:
-          name: Checking changes on MD5 sums of intermediate files of MRIQC
-          command: |
-            mkdir -p /tmp/bold/test
-            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
-                                       --entrypoint=/opt/conda/bin/nib-hash \
-                                       nipreps/mriqc:latest"
-            find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
             exit $?
 
       - run:

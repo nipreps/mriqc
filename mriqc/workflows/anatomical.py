@@ -190,7 +190,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     return workflow
 
 
-def spatial_normalization(name="SpatialNormalization", resolution=2):
+def spatial_normalization(name="SpatialNormalization"):
     """Create a simplied workflow to perform fast spatial normalization."""
     from niworkflows.interfaces.reportlets.registration import (
         SpatialNormalizationRPT as RobustMNINormalization,
@@ -217,7 +217,6 @@ def spatial_normalization(name="SpatialNormalization", resolution=2):
             num_threads=config.nipype.omp_nthreads,
             float=config.execution.ants_float,
             template=tpl_id,
-            template_resolution=resolution,
             generate_report=True,
         ),
         name="SpatialNormalization",
@@ -226,7 +225,7 @@ def spatial_normalization(name="SpatialNormalization", resolution=2):
         mem_gb=3,
     )
     norm.inputs.reference_mask = str(
-        get_template(tpl_id, resolution=resolution, desc="brain", suffix="mask")
+        get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
     )
 
     # fmt: off
