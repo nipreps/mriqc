@@ -825,7 +825,6 @@ def epi_mni_align(name="SpatialNormalization"):
                 )
             ),
             template="MNI152NLin2009cAsym",
-            template_resolution=2,
         ),
         name="EPI2MNI",
         num_threads=n_procs,
