@@ -1,0 +1,17 @@
+# Comment to be posted to on pull requests merged by a first time user
+firstPRMergeComment: >
+  Thanks for opening this pull request and congratulations for taking it to the finish line!
+  It looks like this is your first time contributing to *MRIQC*. :smile:
+  
+  We invite you to list yourself as an *MRIQC* contributor.
+  To learn more about what that entails and how we credit our contributors,
+  please check out the
+  [contributing guidelines](https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions).
+  If your name is not already on the list, please insert it, in alphabetical order of (i) lastname and
+  (ii) firstname, into the
+  [``.maint/CONTRIBUTORS.md`` file](https://github.com/nipreps/mriqc/blob/master/.maint/CONTRIBUTORS.md).
+
+  Of course, if you want to opt-out this time, there is no
+  problem at all with adding your name later.
+  You will be always welcome to add it in the future whenever
+  you feel it should be listed.
