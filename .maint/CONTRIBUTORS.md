@@ -30,5 +30,5 @@ Before every release, unlisted contributors will be invited again to add their n
 | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
 | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
 | Velasco | Pablo | @pvelasco | | Center for Brain Imaging, New York University, NY, USA |
-| | | @justbennet | | |
+| Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
 | | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
