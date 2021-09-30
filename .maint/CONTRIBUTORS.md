@@ -8,7 +8,7 @@ Before every release, unlisted contributors will be invited again to add their n
 
 | **Lastname** | **Name** | **Handle** | **ORCID** | **Affiliation** |
 | --- | --- | --- | --- | --- |
-| Baratz | Zvi | @ZviBaratz | | Neuroscience Program, Tel-Aviv University |
+| Baratz | Zvi | @ZviBaratz | 0000-0001-7159-1387 | Sagol School of Neuroscience, Tel-Aviv University |
 | Beliy | Nikita | @nbeliy | | CRC ULiege, Liege, Belgium |
 | Birman | Daniel | @dbirman | 0000-0003-3748-6289 | Department of Psychology, Stanford University, CA, USA |
 | Blair | Ross W. | @rwblair | 0000-0003-3007-1056 | Department of Psychology, Stanford University, CA, USA |
