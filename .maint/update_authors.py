@@ -186,7 +186,9 @@ def zenodo(
     zen_pi = _namelast(reversed(read_md_table(Path(pi).read_text())))
 
     zenodo["creators"] = zen_creators
-    zenodo["contributors"] = zen_contributors + zen_pi
+    zenodo["contributors"] = zen_contributors + [
+        pi for pi in zen_pi if pi not in zen_contributors
+    ]
     creator_names = {
         c["name"] for c in zenodo["creators"]
         if c["name"] != "<Unknown Name>"

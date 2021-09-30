@@ -15,31 +15,25 @@
   ],
   "contributors": [
     {
-      "affiliation": "Neuroscience Program, Tel-Aviv University",
-      "name": "Zvi Baratz",
-      "type": "Researcher"
-    },
-    {
       "orcid": "0000-0003-3321-7583",
       "affiliation": "Google LLC",
       "name": "Krzysztof J. Gorgolewski",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-3748-6289",
-      "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Daniel Birman",
+      "affiliation": "Neuroscience Program, Tel-Aviv University",
+      "name": "Zvi Baratz",
       "type": "Researcher"
     },
     {
-      "affiliation": "CRC ULiege, Liege, Belgium",
-      "name": "Nikita Beliy",
+      "orcid": "0000-0003-4613-6643",
+      "affiliation": "Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Dylan Nielson",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-6377-3885",
-      "affiliation": "Department of Neuroscience, University of Pennsylvania, PA, USA",
-      "name": "Ursula A. Tooley",
+      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Jan Varada",
       "type": "Researcher"
     },
     {
@@ -49,8 +43,36 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
-      "name": "Jan Varada",
+      "orcid": "0000-0002-9546-1306",
+      "affiliation": "University of Florida: Gainesville, Florida, US",
+      "name": "William Triplett",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "CRC ULiege, Liege, Belgium",
+      "name": "Nikita Beliy",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Quansight, Dublin, Ireland",
+      "name": "John A. Lee",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0001-6377-3885",
+      "affiliation": "Department of Neuroscience, University of Pennsylvania, PA, USA",
+      "name": "Ursula A. Tooley",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "University of Michigan, Ann Arbor, USA",
+      "name": "Bennet Fauber",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-4892-2659",
+      "affiliation": "Neuroscience Program, University of Iowa",
+      "name": "James D. Kent",
       "type": "Researcher"
     },
     {
@@ -72,9 +94,8 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0002-9402-2184",
-      "affiliation": "Computational Neuroimaging Lab, BioCruces Health Research Institute",
-      "name": "Asier Erramuzpe",
+      "affiliation": "Department of Physics, Imperial College London, London, UK",
+      "name": "Adam Huffman",
       "type": "Researcher"
     },
     {
@@ -82,60 +103,6 @@
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Joke Durnez",
       "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0001-9332-1580",
-      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
-      "name": "Rafael Garcia-Dias",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0003-4613-6643",
-      "affiliation": "Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA",
-      "name": "Dylan Nielson",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "Washington University School of Medicine, St.Louis, MO, USA",
-      "name": "Benjamin Kay",
-      "type": "Researcher",
-      "affiliation": "Unknown affiliation"
-    },
-    {
-      "affiliation": "Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA",
-      "name": "Aaron Piccirilli",
-      "type": "Researcher"
-    },
-    {
-      "name": "@justbennet",
-      "type": "Researcher",
-      "affiliation": "Unknown affiliation"
-    },
-    {
-      "name": "Adam Huffman",
-      "type": "Researcher",
-      "affiliation": "Unknown affiliation"
-    },
-    {
-      "orcid": "0000-0002-4892-2659",
-      "affiliation": "Neuroscience Program, University of Iowa",
-      "name": "James D. Kent",
-      "type": "Researcher"
-    },
-    {
-      "affiliation": "Quansight, Dublin, Ireland",
-      "name": "John Lee",
-      "type": "Researcher"
-    },
-    {
-      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
-      "name": "Michael",
-      "type": "Researcher"
-    },
-    {
-      "name": "Michael Clark",
-      "type": "Researcher",
-      "affiliation": "Unknown affiliation"
     },
     {
       "affiliation": "Center for Brain Imaging, New York University, NY, USA",
@@ -146,6 +113,44 @@
       "orcid": "0000-0002-5312-6729",
       "affiliation": "McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA",
       "name": "Satrajit S. Ghosh",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA",
+      "name": "Aaron Piccirilli",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-9402-2184",
+      "affiliation": "Computational Neuroimaging Lab, BioCruces Health Research Institute",
+      "name": "Asier Erramuzpe",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Washington University School of Medicine, St.Louis, MO, USA",
+      "name": "Benjamin Kay",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0003-3748-6289",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Daniel Birman",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "National Institutes of Health, USA",
+      "name": "Michael G. Clark",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
+      "name": "Michael Krause",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0001-9332-1580",
+      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
+      "name": "Rafael Garcia-Dias",
       "type": "Researcher"
     },
     {
