@@ -1,3 +1,4 @@
+  * Remove @apiccirilli (#948)
   * Add @pvelasco's ORCID (#946)
   * Updating contributor info per request (#944)
   * FIX: ``template_resolution`` deprecation warning (#941)
