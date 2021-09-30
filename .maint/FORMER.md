@@ -6,3 +6,5 @@ Should you desire to be considered back as a contributor or maintainer, please r
 
 | **Lastname** | **Name** | **Handle** |
 | --- | --- | --- |
+| Bot | NiPreps | @nipreps-bot |
+| Ma | Conrad | @394822740 |

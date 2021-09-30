@@ -246,11 +246,12 @@ def publication(
         _namelast(read_md_table(Path(maintainers).read_text()))
         + _namelast(read_md_table(Path(contributors).read_text()))
     )
+    former_names = _namelast(read_md_table(Path(former_file).read_text()))
 
     hits, misses = sort_contributors(
         members,
         get_git_lines(),
-        exclude=_namelast(read_md_table(Path(former_file).read_text())),
+        exclude=former_names,
     )
 
     pi_hits = _namelast(reversed(read_md_table(Path(pi).read_text())))
