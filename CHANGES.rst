@@ -1,3 +1,4 @@
+  * Add @pvelasco's ORCID (#946)
   * Updating contributor info per request (#944)
   * FIX: ``template_resolution`` deprecation warning (#941)
   * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
