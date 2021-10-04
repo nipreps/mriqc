@@ -1,20 +1,15 @@
-  * Remove @apiccirilli (#948)
-  * Add @pvelasco's ORCID (#946)
-  * Updating contributor info per request (#944)
-  * FIX: ``template_resolution`` deprecation warning (#941)
-  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
-  * ENH: Optimize *PyBIDS*' layout initialization (#939)
-  * FIX: T2w image of MNI template unavailable in Singularity (#940)
-  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token  (#938)
 21.0.0 (TBD)
 ============
 First official release after migrating the repository into the *NiPreps*' organization.
 This release updates the Docker image with up-to-date dependencies, updates
 *MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
-Finally, this release also contains a major code style overhaul by Zvi Baratz (@zvibaratz).
-With thanks to Zvi Baratz, Nikita Beliy, Michael (@octomike), Benjamin Kay, Adam Huffman,
-and Ursula Tooley for their contributions.
+Finally, this release also contains a major code style overhaul by Zvi Baratz.
+With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley
+for their contributions.
 
+  * FIX: ``template_resolution`` deprecation warning (#941)
+  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
+  * FIX: T2w image of MNI template unavailable in Singularity (#940)
   * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
   * FIX: Revise building documentation at RTD after migration (#935)
   * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
@@ -22,9 +17,11 @@ and Ursula Tooley for their contributions.
   * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
   * FIX: Update dependencies and repair T1w workflow accordingly (#925)
   * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+  * ENH: Optimize *PyBIDS*' layout initialization (#939)
   * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
   * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
   * DOC: Various fixes to "Running mriqc" section (#897)
+  * MAINT: Updates to ``CONTRIBUTORS.md`` file
   * MAINT: Revise Docker image settings & CircleCI (#937)
   * MAINT: Finalize transfer to ``nipreps`` organization (#936)
   * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
@@ -41,29 +38,41 @@ and Ursula Tooley for their contributions.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Zvi Baratz \ :sup:`1`\ ; Krzysztof J. Gorgolewski \ :sup:`2`\ ; Daniel Birman \ :sup:`3`\ ; Christopher J. Markiewicz \ :sup:`3`\ ; Nikita Beliy \ :sup:`4`\ ; Ursula A. Tooley \ :sup:`5`\ ; Ross W. Blair \ :sup:`3`\ ; Jan Varada \ :sup:`6`\ ; Taylor Salo \ :sup:`7`\ ; Mathias Goncalves \ :sup:`3`\ ; Thomas Nichols \ :sup:`8`\ ; Asier Erramuzpe \ :sup:`9`\ ; Joke Durnez \ :sup:`3`\ ; Rafael Garcia-Dias \ :sup:`10`\ ; Dylan Nielson \ :sup:`11`\ ; Benjamin Kay \ :sup:`12`\ ; Aaron Piccirilli \ :sup:`13`\ ; @justbennet \ :sup:`12`\ ; Adam Huffman \ :sup:`12`\ ; James D. Kent \ :sup:`14`\ ; John Lee \ :sup:`15`\ ; Michael \ :sup:`16`\ ; Michael Clark \ :sup:`12`\ ; Pablo Velasco \ :sup:`17`\ ; Satrajit S. Ghosh \ :sup:`18`\ ; Sean Marret \ :sup:`6`\ ; Adam G. Thomas \ :sup:`11`\ ; Russell A. Poldrack \ :sup:`3`\ ; Oscar Esteban \ :sup:`19`\ .
+    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Dylan Nielson \ :sup:`3`\ ; Jan Varada \ :sup:`4`\ ;
+    Ross W. Blair \ :sup:`2`\ ; William Triplett \ :sup:`5`\ ; Nikita Beliy \ :sup:`6`\ ; John A. Lee \ :sup:`7`\ ;
+    Ursula A. Tooley \ :sup:`8`\ ; Bennet Fauber \ :sup:`9`\ ; James D. Kent \ :sup:`10`\ ; Taylor Salo \ :sup:`11`\ ;
+    Mathias Goncalves \ :sup:`2`\ ; Thomas Nichols \ :sup:`12`\ ; Adam Huffman \ :sup:`13`\ ; Joke Durnez \ :sup:`2`\ ;
+    Pablo Velasco \ :sup:`14`\ ; Satrajit S. Ghosh \ :sup:`15`\ ; Aaron Piccirilli \ :sup:`16`\ ; Asier Erramuzpe \ :sup:`17`\ ;
+    Benjamin Kay \ :sup:`18`\ ; Daniel Birman \ :sup:`2`\ ; Michael G. Clark \ :sup:`19`\ ; Michael Krause \ :sup:`20`\ ;
+    Rafael Garcia-Dias \ :sup:`21`\ ; Sean Marret \ :sup:`4`\ ; Adam G. Thomas \ :sup:`22`\ ;
+    Russell A. Poldrack \ :sup:`2`\ ; Krzysztof J. Gorgolewski \ :sup:`23`\ ; Oscar Esteban \ :sup:`24`\ .
 
     Affiliations:
-    
+
       1. Neuroscience Program, Tel-Aviv University
-      2. Google LLC
-      3. Department of Psychology, Stanford University, CA, USA
-      4. CRC ULiege, Liege, Belgium
-      5. Department of Neuroscience, University of Pennsylvania, PA, USA
-      6. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
-      7. Department of Psychology, Florida International University, FL, USA
-      8. Oxford Big Data Institute, University of Oxford, Oxford, GB
-      9. Computational Neuroimaging Lab, BioCruces Health Research Institute
-      10. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
-      11. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
-      12. Unaffiliated
-      13. Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA
-      14. Neuroscience Program, University of Iowa
-      15. Quansight, Dublin, Ireland
-      16. Max Planck Institute for Human Development, Berlin, Germany
-      17. Center for Brain Imaging, New York University, NY, USA
-      18. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
-      19. Department of Radiology, Lausanne University Hospital and University of Lausanne
+      2. Department of Psychology, Stanford University, CA, USA
+      3. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
+      4. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
+      5. University of Florida: Gainesville, Florida, US
+      6. CRC ULiege, Liege, Belgium
+      7. Quansight, Dublin, Ireland
+      8. Department of Neuroscience, University of Pennsylvania, PA, USA
+      9. University of Michigan, Ann Arbor, USA
+      10. Neuroscience Program, University of Iowa
+      11. Department of Psychology, Florida International University, FL, USA
+      12. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      13. Department of Physics, Imperial College London, London, UK
+      14. Center for Brain Imaging, New York University, NY, USA
+      15. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      16. Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA
+      17. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      18. Washington University School of Medicine, St.Louis, MO, USA
+      19. National Institutes of Health, USA
+      20. Max Planck Institute for Human Development, Berlin, Germany
+      21. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      22. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      23. Google LLC
+      24. Department of Radiology, Lausanne University Hospital and University of Lausanne
 
 0.16.1 (January 30, 2021)
 =========================
