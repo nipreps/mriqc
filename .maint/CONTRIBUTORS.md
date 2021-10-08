@@ -22,7 +22,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
 | Huffman | Adam | @verdurin | | Department of Physics, Imperial College London, London, UK |
 | Kay | Benjamin | @benkay86 | | Washington University School of Medicine, St.Louis, MO, USA |
-| Kent | James D. | @jdkent | 0000-0002-4892-2659 | Neuroscience Program, University of Iowa |
+| Kent | James D. | @jdkent | 0000-0002-4892-2659 | Department of Psychology, University of Texas at Austin, TX, USA |
 | Krause | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
 | Lee | John A. | @leej3 | | Quansight, Dublin, Ireland |
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
