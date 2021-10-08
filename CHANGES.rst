@@ -1,3 +1,4 @@
+  * update contributer location (#952)
   * 21.0.0rc2
 
 First official release after migrating the repository into the *NiPreps*' organization.
