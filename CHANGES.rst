@@ -1,3 +1,4 @@
+  * Update CONTRIBUTORS.md (#953)
   * update contributer location (#952)
   * 21.0.0rc2
 
