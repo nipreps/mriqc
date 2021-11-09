@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 
-#	 4. Show a string that we'll pass in from the yaml,
-#	  that would have the XNAT-specific project, subject, session, scan
-
 import json,csv,os,glob
 from fpdf import FPDF
 from datetime import datetime
-
-
 
 #Import json file and write to csv
 for folder in glob.glob('sub-*/ses-*/*'):

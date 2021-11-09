@@ -2,12 +2,14 @@
 
 ### Script for mriqc docker container
 # Dylan Lawless
+# Usage: run_mriqc: [--bidsdir] [--outdir] [--wrkdir] [--label_info]
 
 
 # Initialize defaults
 export bidsdir=NO_BIDS
 export outdir=NO_OUTDIR
 export level=participant
+export wrkdir=NO_WRKDIR
 
 # Parse options
 while [[ $# -gt 0 ]]; do
@@ -17,6 +19,8 @@ while [[ $# -gt 0 ]]; do
       export bidsdir="${2}"; shift; shift ;;
     --outdir)
       export outdir="${2}"; shift; shift ;;
+    --wrkdir)
+      export wrkdir="${2}"; shift; shift ;;
     --label_info)
       export label_info="${2}"; shift; shift ;;
     *)
@@ -25,7 +29,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 #Run MRIQC
-mriqc --no-sub ${bidsdir} ${outdir} ${level} 
+mriqc --no-sub -w ${wrkdir} ${bidsdir} ${outdir} ${level} 
 
 #Convert outputs
 cd ${outdir}

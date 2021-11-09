@@ -139,7 +139,7 @@ RUN python -c "from matplotlib import font_manager" && \
 ### Additions by Dylan Lawless for VUIIS
 
 #Install fpdf, generate machine ID
-RUN pip install --no-cache-dir fpdf && \
+RUN pip install --no-cache-dir fpdf xvfbwrapper && \
     dbus-uuidgen > /etc/machine-id
 
 #Copy xnatwrapper
