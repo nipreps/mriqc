@@ -1,19 +1,45 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 """Helper functions for the figures in the paper."""
 import os.path as op
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 from matplotlib.font_manager import FontProperties
+from matplotlib.gridspec import GridSpec
 
 
 def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
     fig, ax = plt.subplots()
 
     ax.plot(
-        x_grid, ref_pdf, linewidth=2, alpha=0.5, label="background", color="dodgerblue"
+        x_grid,
+        ref_pdf,
+        linewidth=2,
+        alpha=0.5,
+        label="background",
+        color="dodgerblue",
     )
 
     refmax = np.percentile(ref_data, 99.95)
@@ -28,11 +54,20 @@ def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
         density=True,
     )
     fit_pdf[fit_pdf > 1.0] = np.nan
-    ax.plot(x_grid, fit_pdf, linewidth=2, alpha=0.5, label="chi2", color="darkorange")
+    ax.plot(
+        x_grid,
+        fit_pdf,
+        linewidth=2,
+        alpha=0.5,
+        label="chi2",
+        color="darkorange",
+    )
 
     ylims = ax.get_ylim()
     ax.axvline(
-        x_grid[-cutoff_idx], ymax=ref_pdf[-cutoff_idx] / ylims[1], color="dodgerblue"
+        x_grid[-cutoff_idx],
+        ymax=ref_pdf[-cutoff_idx] / ylims[1],
+        color="dodgerblue",
     )
     plt.xlabel('Intensity within "hat" mask')
     plt.ylabel("Frequency")
@@ -62,7 +97,10 @@ def plot_batches(fulldata, cols=None, out_file=None, site_labels="left"):
 
     fig, ax = plt.subplots(figsize=(20, 10))
     ax.imshow(
-        numdata.values, cmap=plt.cm.viridis, interpolation="nearest", aspect="auto"
+        numdata.values,
+        cmap=plt.cm.viridis,
+        interpolation="nearest",
+        aspect="auto",
     )
 
     locations = []
@@ -78,7 +116,9 @@ def plot_batches(fulldata, cols=None, out_file=None, site_labels="left"):
         ax.yaxis.set_label_position("right")
 
     plt.xticks(
-        range(numdata.shape[1]), numdata.columns.ravel().tolist(), rotation="vertical"
+        range(numdata.shape[1]),
+        numdata.columns.ravel().tolist(),
+        rotation="vertical",
     )
     plt.yticks(locations, list(set(sites)))
     for line in spines[1:]:
@@ -90,13 +130,21 @@ def plot_batches(fulldata, cols=None, out_file=None, site_labels="left"):
     ax.grid(False)
 
     ticks_font = FontProperties(
-        family="FreeSans", style="normal", size=14, weight="normal", stretch="normal"
+        family="FreeSans",
+        style="normal",
+        size=14,
+        weight="normal",
+        stretch="normal",
     )
     for label in ax.get_yticklabels():
         label.set_fontproperties(ticks_font)
 
     ticks_font = FontProperties(
-        family="FreeSans", style="normal", size=12, weight="normal", stretch="normal"
+        family="FreeSans",
+        style="normal",
+        size=12,
+        weight="normal",
+        stretch="normal",
     )
     for label in ax.get_xticklabels():
         label.set_fontproperties(ticks_font)
@@ -154,12 +202,19 @@ def plot_raters(dataframe, ax=None, width=101, size=0.40):
         for i in range(nblocks):
             if i > 0:
                 matrices.append(nas)
-            matrices.append(matrix[i * width:(i + 1) * width, ...])
+            start_index = i * width
+            stop_index = (i + 1) * width
+            matrices.append(matrix[start_index:stop_index, ...])
 
         matrices[-1] = fill_matrix(matrices[-1], width)
         matrix = np.hstack(tuple(matrices))
 
-    palette = {"1.0": "limegreen", "0.0": "dimgray", "-1.0": "tomato", "n/a": "w"}
+    palette = {
+        "1.0": "limegreen",
+        "0.0": "dimgray",
+        "-1.0": "tomato",
+        "n/a": "w",
+    }
 
     ax = ax if ax is not None else plt.gca()
 
@@ -245,7 +300,11 @@ def plot_raters(dataframe, ax=None, width=101, size=0.40):
     ax.tick_params(axis="y", which="major", pad=15)
 
     ticks_font = FontProperties(
-        family="FreeSans", style="normal", size=20, weight="normal", stretch="normal"
+        family="FreeSans",
+        style="normal",
+        size=20,
+        weight="normal",
+        stretch="normal",
     )
     for label in ax.get_yticklabels():
         label.set_fontproperties(ticks_font)
@@ -393,7 +452,11 @@ def raters_variability_plot(
         out_file = fname + ".svg"
 
     fig.savefig(
-        op.abspath(out_file), format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=300
+        op.abspath(out_file),
+        format=ext[1:],
+        bbox_inches="tight",
+        pad_inches=0,
+        dpi=300,
     )
     return fig
 
@@ -402,8 +465,9 @@ def plot_abide_stripplots(
     inputs, figsize=(15, 2), out_file=None, rating_label="rater_1", dpi=100
 ):
     import seaborn as sn
-    from ..classifier.helper import FEATURE_NORM
+
     from ..classifier.data import read_dataset
+    from ..classifier.helper import FEATURE_NORM
     from ..classifier.sklearn.preprocessing import BatchRobustScaler
 
     sn.set(style="whitegrid")
@@ -432,7 +496,14 @@ def plot_abide_stripplots(
 
     mdata = mdata.loc[mdata[rating_label].notnull()]
 
-    for col in ["size_x", "size_y", "size_z", "spacing_x", "spacing_y", "spacing_z"]:
+    for col in [
+        "size_x",
+        "size_y",
+        "size_z",
+        "spacing_x",
+        "spacing_y",
+        "spacing_z",
+    ]:
         del mdata[col]
         try:
             pp_cols.remove(col)
@@ -544,7 +615,8 @@ def plot_abide_stripplots(
             yt.label1.set_visible(False)
 
         for yt in zip(
-            ax_zsc.yaxis.get_majorticklabels(), axg_zsc.yaxis.get_majorticklabels()
+            ax_zsc.yaxis.get_majorticklabels(),
+            axg_zsc.yaxis.get_majorticklabels(),
         ):
             yt[0].set_visible(False)
             yt[1].set_visible(False)
@@ -558,7 +630,11 @@ def plot_abide_stripplots(
         out_file = fname + ".svg"
 
     fig.savefig(
-        op.abspath(out_file), format=ext[1:], bbox_inches="tight", pad_inches=0, dpi=dpi
+        op.abspath(out_file),
+        format=ext[1:],
+        bbox_inches="tight",
+        pad_inches=0,
+        dpi=dpi,
     )
     return fig
 
@@ -590,7 +666,12 @@ def plot_corrmat(in_csv, out_file=None):
 
     # Draw the heatmap with the mask and correct aspect ratio
     corrplot = sn.clustermap(
-        corr, cmap=cmap, center=0.0, method="average", square=True, linewidths=0.5
+        corr,
+        cmap=cmap,
+        center=0.0,
+        method="average",
+        square=True,
+        linewidths=0.5,
     )
     plt.setp(corrplot.ax_heatmap.yaxis.get_ticklabels(), rotation="horizontal")
     # , mask=mask, square=True, linewidths=.5, cbar_kws={"shrink": .5})
@@ -611,7 +692,9 @@ def plot_corrmat(in_csv, out_file=None):
 
 def plot_histograms(X, Y, rating_label="rater_1", out_file=None):
     import re
+
     import seaborn as sn
+
     from ..classifier.data import read_dataset
 
     sn.set(style="whitegrid")
@@ -696,7 +779,13 @@ def plot_histograms(X, Y, rating_label="rater_1", out_file=None):
 
 
 def inter_rater_variability(
-    y1, y2, figsize=(4, 4), normed=True, raters=None, labels=None, out_file=None
+    y1,
+    y2,
+    figsize=(4, 4),
+    normed=True,
+    raters=None,
+    labels=None,
+    out_file=None,
 ):
     plt.rcParams["font.family"] = "sans-serif"
     plt.rcParams["font.sans-serif"] = "FreeSans"
@@ -923,8 +1012,9 @@ def figure1_b(
 
 
 def figure1(artifact1, artifact2, out_file):
-    from .svg import svg2str, combine_svg
+    from .svg import combine_svg, svg2str
 
     combine_svg(
-        [svg2str(figure1_b(artifact2)), svg2str(figure1_a(artifact1))], axis="vertical"
+        [svg2str(figure1_b(artifact2)), svg2str(figure1_a(artifact1))],
+        axis="vertical",
     ).save(out_file)

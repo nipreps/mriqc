@@ -1,5 +1,25 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 r"""
 A Python module to maintain unique, run-wide *MRIQC* settings.
 
@@ -80,13 +100,14 @@ finally:
     # ignoring the most annoying warnings
     import os
     import sys
-
-    from uuid import uuid4
     from pathlib import Path
     from time import strftime
+    from uuid import uuid4
+
     from nipype import __version__ as _nipype_ver
     from templateflow import __version__ as _tf_ver
-    from . import __version__
+
+    from mriqc import __version__
 
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
@@ -124,7 +145,8 @@ if os.getenv("IS_DOCKER_8395080871"):
 
 _templateflow_home = Path(
     os.getenv(
-        "TEMPLATEFLOW_HOME", os.path.join(os.getenv("HOME"), ".cache", "templateflow")
+        "TEMPLATEFLOW_HOME",
+        os.path.join(os.getenv("HOME"), ".cache", "templateflow"),
     )
 )
 
@@ -246,7 +268,7 @@ class nipype(_Config):
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
     nprocs = os.cpu_count()
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
-    omp_nthreads = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
+    omp_nthreads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
     """Number of CPUs a single process can access for multithreaded execution."""
     plugin = "MultiProc"
     """NiPype's execution plugin."""
@@ -311,6 +333,8 @@ class execution(_Config):
     """Use float number precision for ANTs computations."""
     bids_dir = None
     """An existing path to the dataset, which must be BIDS-compliant."""
+    bids_database_dir = None
+    """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
     debug = False
@@ -369,6 +393,7 @@ class execution(_Config):
     _paths = (
         "anat_derivatives",
         "bids_dir",
+        "bids_database_dir",
         "fs_license_file",
         "fs_subjects_dir",
         "layout",
@@ -383,23 +408,50 @@ class execution(_Config):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
         if cls._layout is None:
             import re
+            from bids.layout.index import BIDSLayoutIndexer
             from bids.layout import BIDSLayout
 
-            work_dir = cls.work_dir / "bids.db"
-            work_dir.mkdir(exist_ok=True, parents=True)
-            cls._layout = BIDSLayout(
-                str(cls.bids_dir),
+            _db_path = cls.bids_database_dir or (
+                cls.work_dir / cls.run_uuid / "bids_db"
+            )
+            _db_path.mkdir(exist_ok=True, parents=True)
+
+            # Recommended after PyBIDS 12.1
+            _indexer = BIDSLayoutIndexer(
                 validate=False,
-                # database_path=str(work_dir),
                 ignore=(
                     "code",
                     "stimuli",
                     "sourcedata",
                     "models",
                     "derivatives",
+                    "scripts",
                     re.compile(r"^\."),
+                    # Exclude modalities and contrasts ignored by MRIQC (doesn't know how to QC)
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/anat/.*_"
+                        r"(PDw|T2starw|FLAIR|inplaneT1|inplaneT2|PDT2|angio|T2star"
+                        r"|FLASH|PD|T1map|T2map|T2starmap|R1map|R2map|R2starmap|PDmap"
+                        r"|MTRmap|MTsat|UNIT1|T1rho|MWFmap|MTVmap|PDT2map|Chimap"
+                        r"|S0map|M0map|defacemask|MESE|MEGRE|VFA|IRT1|MP2RAGE|MPM|MTS|MTR)\."
+                    ),
+                    re.compile(
+                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/func/.*"
+                        r"_(cbv|sbref|phase|events|physio|stim)\."
+                    ),
                 ),
             )
+            cls._layout = BIDSLayout(
+                str(cls.bids_dir),
+                database_path=_db_path,
+                reset_database=cls.bids_database_dir is None,
+                indexer=_indexer,
+            )
+            cls.bids_database_dir = _db_path
+
         cls.layout = cls._layout
 
 
@@ -497,7 +549,12 @@ class loggers:
         cls.workflow.setLevel(execution.log_level)
         cls.utils.setLevel(execution.log_level)
         ncfg.update_config(
-            {"logging": {"log_directory": str(execution.log_dir), "log_to_file": True}, }
+            {
+                "logging": {
+                    "log_directory": str(execution.log_dir),
+                    "log_to_file": True,
+                },
+            }
         )
 
     @classmethod

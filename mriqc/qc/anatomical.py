@@ -1,9 +1,28 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 r"""
-
 Measures based on noise measurements
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+====================================
 
 .. _iqms_cjv:
 
@@ -44,7 +63,7 @@ Measures based on noise measurements
   Lower values are better.
 
 Measures based on information theory
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 .. _iqms_efc:
 
@@ -67,7 +86,7 @@ Measures based on information theory
   Higher values are better.
 
 Measures targeting specific artifacts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 
 .. _iqms_inu:
 
@@ -156,7 +175,7 @@ Other measures
 
   .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
     a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
-    doi:`10.3389/finf.201600010 <http://dx.doi.org/10.3389/finf.201600010>`_.
+    doi:`10.3389/fninf.2016.00010 <https://doi.org/10.3389/fninf.2016.00010>`_.
 
   .. [Magnota2006] Magnotta, VA., & Friedman, L., *Measurement of signal-to-noise
     and contrast-to-noise in the fBIRN multicenter imaging study*.
@@ -180,19 +199,14 @@ Other measures
      magnetic resonance imaging (fMRI): use of a cluster-size threshold*,
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
-
-
-mriqc.qc.anatomical module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 """
 import os.path as op
-from sys import version_info
 from math import pi, sqrt
+from sys import version_info
+
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
-
 
 DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {"csf": 1, "gm": 2, "wm": 3, "bg": 0}
@@ -435,9 +449,9 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
-    from sklearn.neighbors import KernelDensity
-    from scipy.stats import chi2
     from mriqc.viz.misc import plot_qi2
+    from scipy.stats import chi2
+    from sklearn.neighbors import KernelDensity
 
     # S. Ogawa was born
     np.random.seed(1191935)
@@ -552,8 +566,9 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
 
     """
-    from .. import config
     from statsmodels.robust.scale import mad
+
+    from .. import config
 
     # Check type of input masks
     dims = np.squeeze(np.array(pvms)).ndim

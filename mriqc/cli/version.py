@@ -1,11 +1,31 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 """Version CLI helpers."""
-
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import requests
-from .. import __version__
+from mriqc import __version__
 
 RELEASE_EXPIRY_DAYS = 14
 DATE_FMT = "%Y%m%d"
@@ -13,7 +33,7 @@ DATE_FMT = "%Y%m%d"
 
 def check_latest():
     """Determine whether this is the latest version."""
-    from packaging.version import Version, InvalidVersion
+    from packaging.version import InvalidVersion, Version
 
     latest = None
     date = None
@@ -66,12 +86,12 @@ def check_latest():
 
 def is_flagged():
     """Check whether current version is flagged."""
-    # https://raw.githubusercontent.com/poldracklab/mriqc/master/.versions.json
+    # https://raw.githubusercontent.com/nipreps/mriqc/master/.versions.json
     flagged = tuple()
     try:
         response = requests.get(
             url="""\
-https://raw.githubusercontent.com/poldracklab/mriqc/master/.versions.json""",
+https://raw.githubusercontent.com/nipreps/mriqc/master/.versions.json""",
             timeout=1.0,
         )
     except Exception:

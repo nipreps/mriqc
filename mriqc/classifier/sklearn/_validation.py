@@ -1,30 +1,49 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2017-06-21 16:44:27
-
-
-import warnings
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+# STATEMENT OF CHANGES: This file is derived from the sources of scikit-learn 0.19,
+# which licensed under the BSD 3-clause.
+# This file contains extensions and modifications to the original code.
+import logging
 import numbers
 import time
+import warnings
 
 import numpy as np
 
+from joblib import Parallel, delayed, logger
+from sklearn.base import clone, is_classifier
+from sklearn.exceptions import FitFailedWarning
+from sklearn.metrics import check_scoring
+from sklearn.model_selection._split import check_cv
+from sklearn.utils import check_random_state, indexable, _safe_indexing as safe_indexing
+from sklearn.utils.metaestimators import _safe_split
+from sklearn.utils.validation import _num_samples
+
 # import scipy.sparse as sp
 
-from sklearn.base import is_classifier, clone
-from sklearn.utils import indexable, check_random_state, safe_indexing
-from sklearn.utils.validation import _num_samples
-from sklearn.utils.metaestimators import _safe_split
-from sklearn.externals.joblib import Parallel, delayed, logger
-from sklearn.metrics.scorer import check_scoring
-from sklearn.exceptions import FitFailedWarning
-from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._validation import _index_param_value
 
 # from sklearn.preprocessing import LabelEncoder
 
-import logging
 
 LOG = logging.getLogger("mriqc.classifier")
 
@@ -248,3 +267,13 @@ def _shuffle(y, groups, random_state):
             this_mask = groups == group
             indices[this_mask] = random_state.permutation(indices[this_mask])
     return safe_indexing(y, indices)
+
+
+def _index_param_value(X, v, indices):
+    """Private helper function for parameter value indexing."""
+    if not _is_arraylike(v) or _num_samples(v) != _num_samples(X):
+        # pass through: skip indexing
+        return v
+    if sp.issparse(v):
+        v = v.tocsr()
+    return safe_indexing(v, indices)

@@ -1,32 +1,45 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2016-03-16 11:28:27
-# @Last Modified by:   oesteban
-# @Last Modified time: 2018-03-12 11:48:39
-
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 """
-Batch export freesurfer results to animated gifs
-
+Batch export freesurfer results to animated gifs.
 """
-
 import os
 import os.path as op
 import subprocess as sp
-from shutil import rmtree
-from argparse import ArgumentParser
-from argparse import RawTextHelpFormatter
-from tempfile import mkdtemp
+from argparse import ArgumentParser, RawTextHelpFormatter
 from errno import EEXIST
-import numpy as np
+from shutil import rmtree
+from tempfile import mkdtemp
+
 import nibabel as nb
+import numpy as np
 from skimage import exposure
 
 
 def main():
     """Entry point"""
     parser = ArgumentParser(
-        description="Batch export freesurfer results to animated gifs",
+        description="Batch export freesurfer results to animated gifs.",
         formatter_class=RawTextHelpFormatter,
     )
     g_input = parser.add_argument_group("Inputs")

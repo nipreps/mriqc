@@ -1,21 +1,41 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 """Parser."""
-from .. import config
 import re
+
+from mriqc import config
 
 
 def _build_parser():
     """Build parser object."""
     import sys
-    from shutil import which
+    from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
     from functools import partial
     from pathlib import Path
-    from argparse import (
-        ArgumentParser,
-        ArgumentDefaultsHelpFormatter,
-    )
+    from shutil import which
+
     from packaging.version import Version
+
     from .version import check_latest, is_flagged
 
     def _path_exists(path, parser):
@@ -34,7 +54,8 @@ def _build_parser():
     def _to_gb(value):
         scale = {"G": 1, "T": 10 ** 3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
         digits = "".join([c for c in value if c.isdigit()])
-        units = value[len(digits):] or "G"
+        n_digits = len(digits)
+        units = value[n_digits:] or "G"
         return int(digits) * scale[units[0]]
 
     def _drop_sub(value):
@@ -149,6 +170,13 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Filter input dataset by MRI type.",
     )
     g_bids.add_argument("--dsname", type=str, help="A dataset name.")
+    g_bids.add_argument(
+        "--bids-database-dir",
+        metavar="PATH",
+        type=PathExists,
+        help="Path to an existing PyBIDS database folder, for faster indexing "
+        "(especially useful for large datasets).",
+    )
 
     # General performance
     g_perfm = parser.add_argument_group("Options to handle performance")
@@ -218,7 +246,10 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Write workflow graph.",
     )
     g_outputs.add_argument(
-        "--dry-run", action="store_true", default=False, help="Do not run the workflow."
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Do not run the workflow.",
     )
     g_outputs.add_argument(
         "--profile",
@@ -366,6 +397,7 @@ discourage its usage.""",
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
     from logging import DEBUG
+
     from ..utils.bids import collect_bids_data
 
     parser = _build_parser()

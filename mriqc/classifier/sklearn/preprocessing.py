@@ -1,21 +1,40 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-# @Author: oesteban
-# @Date:   2017-06-08 17:11:58
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+#
+# STATEMENT OF CHANGES: This file is derived from the sources of scikit-learn 0.19,
+# which licensed under the BSD 3-clause.
+# This file contains extensions and modifications to the original code.
 """
-Extensions to the sklearn's default data preprocessing filters
+Extensions to the sklearn's default data preprocessing filters.
+"""
+import logging
 
-"""
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin, clone
-from sklearn.preprocessing import RobustScaler
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import LabelBinarizer
 
-import logging
+from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import LabelBinarizer, RobustScaler
 
 LOG = logging.getLogger("mriqc.classifier")
 
@@ -89,7 +108,7 @@ class ColumnsScaler(BaseEstimator, TransformerMixin):
 
         col_order = X.columns
         scaled_x = pd.DataFrame(self._scaler.transform(X[columns]), columns=columns)
-        unscaled_x = X.ix[:, ~X.columns.isin(columns)]
+        unscaled_x = X.loc[:, ~X.columns.isin(columns)]
         return pd.concat([unscaled_x, scaled_x], axis=1)[col_order]
 
 
@@ -132,7 +151,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
             mask = self._groups == gid
             if not np.any(mask):
                 continue
-            self._scalers[batch] = scaler.fit(X.ix[mask, self._colmask], y)
+            self._scalers[batch] = scaler.fit(X.loc[mask, self._colmask], y)
 
         return self
 
@@ -151,8 +170,8 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                 if not np.any(mask):
                     continue
                 scaler = self._scalers[batch]
-                new_x.ix[mask, self._colmask] = scaler.transform(
-                    X.ix[mask, self._colmask]
+                new_x.loc[mask, self._colmask] = scaler.transform(
+                    X.loc[mask, self._colmask]
                 )
             else:
                 colmask = self._colmask
@@ -160,7 +179,7 @@ class GroupsScaler(BaseEstimator, TransformerMixin):
                     del colmask[self._colnames.index(self.by)]
 
                 scaler = clone(self._base_scaler)
-                new_x.ix[:, colmask] = scaler.fit_transform(X.ix[:, colmask])
+                new_x.loc[:, colmask] = scaler.fit_transform(X.loc[:, colmask])
         return new_x
 
 
@@ -206,7 +225,7 @@ class BatchScaler(GroupsScaler, TransformerMixin):
         if self.by not in columns:
             new_x[self.by] = ["Unknown"] * new_x.shape[0]
 
-        new_x.ix[:, self.ftmask_] = super(BatchScaler, self).transform(
+        new_x.loc[:, self.ftmask_] = super(BatchScaler, self).transform(
             new_x[new_x.columns[self.ftmask_]], y
         )
         return new_x
@@ -662,8 +681,8 @@ def _generate_noise(n_sample, y, clf_flag=True):
 #         vals = dataframe.loc[dataframe.site == site, numcols]
 #         vals -= np.median(vals, axis=0)
 #         iqr = np.percentile(vals, 75, axis=0) - np.percentile(vals, 25, axis=0)
-#         vals.iloc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
-#         changecols = vals.iloc[:, iqr > 1.e-5].columns.ravel().tolist()
+#         vals.loc[:, iqr > 1.e-5] *= (1.0 / iqr[iqr > 1.e-5])
+#         changecols = vals.loc[:, iqr > 1.e-5].columns.ravel().tolist()
 #         dataframe.loc[dataframe.site == site, changecols] = vals
 
 #     return dataframe

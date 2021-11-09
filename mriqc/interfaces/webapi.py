@@ -1,17 +1,38 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-from nipype.interfaces.base import (
-    Bunch,
-    traits,
-    isdefined,
-    TraitedSpec,
-    BaseInterfaceInputSpec,
-    File,
-    Str,
-    SimpleInterface,
-)
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 from urllib.parse import urlparse
-from .. import config
+
+from mriqc import config, messages
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    Bunch,
+    File,
+    SimpleInterface,
+    Str,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 SECRET_KEY = "<secret_token>"
 
@@ -161,7 +182,7 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.warning(errmsg)
 
         if response.status_code == 201:
-            config.loggers.interface.info("QC metrics successfully uploaded.")
+            config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
         errmsg = "QC metrics failed to upload. Status %d: %s" % (
@@ -190,10 +211,11 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
 
     """
-    from pathlib import Path
-    from json import loads, dumps
-    import requests
     from copy import deepcopy
+    from json import dumps, loads
+    from pathlib import Path
+
+    import requests
 
     if port is None:
         port = 443 if scheme == "https" else 80
@@ -239,8 +261,9 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
     headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
 
-    webapi_url = "{}://{}:{}/{}{}".format(scheme, loc, port, path, modality)
-    config.loggers.interface.info("MRIQC Web API: submitting to <%s>", webapi_url)
+    webapi_url = f"{scheme}://{loc}:{port}/{path}{modality}"
+    start_message = messages.QC_UPLOAD_START.format(url=webapi_url)
+    config.loggers.interface.info(start_message)
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(webapi_url, headers=headers, data=dumps(data))

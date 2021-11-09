@@ -1,37 +1,17 @@
-version: 2
+version: 2.1
+orbs:
+  docker: circleci/docker@1.6.0
+
 jobs:
-
-  build_docs:
-    docker:
-      - image: circleci/python:3.8.5
-    environment:
-      - FSLOUTPUTTYPE: NIFTI
-    steps:
-      - checkout
-      - run:
-          name: Install Graphviz
-          command: sudo apt update && sudo apt -y install graphviz
-      - run:
-          name: Install deps
-          command: pip install --no-cache-dir -r docs/requirements.txt
-      - run:
-          name: Build MRIQC documentation
-          no_output_timeout: 2h
-          command: |
-            make -C docs html
-            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
-            # cat $PWD/builddocs.log
-            # grep -qv "ERROR" $PWD/builddocs.log
-      - store_artifacts:
-          path: ./docs/_build/html
-
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.0.6
-
-    docker:
-      - image: docker:18.01.0-ce-git
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -42,57 +22,111 @@ jobs:
       - run:
           name: Check whether build should be skipped
           command: |
-            cd /tmp/src/mriqc
             if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
               echo "Only docs build"
               circleci step halt
             fi
-      - setup_remote_docker
-      - run:
-          name: Install parallel gzip and python3
-          command: apk add --no-cache pigz python3
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - build-v1--{{ .Revision }}
+            - build-v1-{{ .Branch }}-
+            - build-v1-master-
+            - build-v1-
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
+      - run:
+          name: Set up Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+              mkdir -p /tmp/images
+              docker save registry:2 | gzip > /tmp/images/registry.tar.gz
             fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images
+          command: |
+            set +e
+            docker pull localhost:5000/ubuntu
+            success=$?
+            set -e
+            if [[ "$success" = "0" ]]; then
+                echo "Pulling from local registry"
+                docker tag localhost:5000/ubuntu ubuntu:focal-20210416
+                docker pull localhost:5000/mriqc
+                docker tag localhost:5000/mriqc nipreps/mriqc:latest
+                docker tag localhost:5000/mriqc nipreps/mriqc
+            else
+                echo "Pulling from Docker Hub"
+                docker pull ubuntu:focal-20210416
+                docker tag ubuntu:focal-20210416 localhost:5000/ubuntu
+                docker push localhost:5000/ubuntu
+                docker pull nipreps/mriqc:latest
+            fi
+
+      - run:
+          name: MRIQCWebAPI - Pull Docker images
+          command: |
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            for image in ${webapi_images[@]}; do
+                set +e
+                docker pull localhost:5000/${image}
+                success=$?
+                set -e
+                if [[ "$success" = "0" ]]; then
+                    docker tag localhost:5000/${image} ${image}
+                else
+                    docker pull ${image}
+                    docker tag ${image} localhost:5000/${image}
+                    docker push localhost:5000/${image}
+                fi
+            done;
+
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-            python3 -m pip install "docker-compose==1.23.2"
+
+            if [[ ! -f /tmp/docker-compose/docker-compose ]]; then
+              mkdir -p /tmp/docker-compose/
+              curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose/docker-compose
+              chmod a+rx /tmp/docker-compose/docker-compose
+            fi
+
+            set +e
+            docker pull localhost:5000/dockereve-master_eve:latest
+            success=$?
+            set -e
+            if [[ "$success" = 0 ]]; then
+                docker tag localhost:5000/dockereve-master_eve:latest dockereve-master_eve:latest
+            fi
+
             rm -rf /tmp/src/mriqcwebapi
-            git clone https://github.com/poldracklab/mriqcwebapi.git /tmp/src/mriqcwebapi
+            git clone https://github.com/nipreps/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
-      - run:
-          name: Save WebAPI Docker images
-          no_output_timeout: 40m
-          command: |
-            mkdir -p /tmp/cache
-            WEBAPI_IMAGES=$(docker images | grep -E 'python|swaggerapi/swagger-ui|nginx|mongo' | awk '{ printf "%s:%s ", $1, $2}')
-            docker save ${WEBAPI_IMAGES} | pigz -2 -p 3 > /tmp/cache/webapi.tar.gz
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+
+            docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
+            docker push localhost:5000/dockereve-master_eve:latest
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -115,26 +149,35 @@ jobs:
             # Build docker image
             e=1 && for i in {1..5}; do
               docker build \
-                --cache-from=poldracklab/mriqc \
-                --rm=false \
-                -t poldracklab/mriqc:latest \
+                --cache-from=nipreps/mriqc \
+                -t nipreps/mriqc:latest \
                 --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                 --build-arg VCS_REF=`git rev-parse --short HEAD` \
                 --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
       - run:
-          name: Docker save
+          name: Docker push to local registry
           no_output_timeout: 40m
           command: |
-            mkdir -p /tmp/cache
-            docker save ubuntu:xenial-20200114 poldracklab/mriqc:latest \
-              | pigz -2 -p 3 > /tmp/cache/docker.tar.gz
+            docker tag nipreps/mriqc:latest localhost:5000/mriqc
+            docker push localhost:5000/mriqc
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            for image in ${webapi_images[@]}; do
+                docker tag ${image} localhost:5000/${image}
+                docker push localhost:5000/${image}
+            done
+      - run:
+          name: Docker registry garbage collection
+          command: |
+            docker exec -it registry /bin/registry garbage-collect --delete-untagged \
+              /etc/docker/registry/config.yml
       - save_cache:
-         key: docker-v1-{{ .Branch }}-{{ epoch }}
+         key: build-v1-{{ .Branch }}-{{ .Revision }}
          paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -143,7 +186,7 @@ jobs:
 
   get_data:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -184,8 +227,8 @@ jobs:
             echo "hash_method = content" >> /tmp/t1w/nipype.cfg
             cp /tmp/t1w/nipype.cfg /tmp/bold/nipype.cfg
       - save_cache:
-         key: data-v2-{{ epoch }}
-         paths:
+          key: data-v2-{{ epoch }}
+          paths:
             - /tmp/data
             - /tmp/t1w
             - /tmp/bold
@@ -211,31 +254,41 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+            fi
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
             docker run -ti --rm=false \
               -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
-              poldracklab/mriqc:latest mriqc \
+              nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
               --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
@@ -243,11 +296,14 @@ jobs:
           path: /home/circleci/out/tests
 
   T1w:
-    machine:
-      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/t1w
     steps:
       - attach_workspace:
@@ -266,33 +322,38 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Set-up a Docker registry
           command: |
-            python3 -m pip install --upgrade pip
-            python3 -m pip install docker-compose
-            docker info
-            set +o pipefail
-            sudo apt update && sudo apt -y install pigz
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
-            fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            for image in ${webapi_images[@]}; do
+                docker pull localhost:5000/${image}
+                docker tag localhost:5000/${image} ${image}
+            done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
       - restore_cache:
           keys:
@@ -311,14 +372,14 @@ jobs:
             docker run -u $( id -u ) --rm=false -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: t1w-v3-{{ epoch }}
-         paths:
+          key: t1w-v3-{{ epoch }}
+          paths:
             - /tmp/t1w/work
 
       - run:
@@ -328,7 +389,7 @@ jobs:
             docker run -u $( id -u ) --rm=false -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m T1w -vv
 
@@ -344,17 +405,6 @@ jobs:
             exit $?
 
       - run:
-          name: Checking changes on MD5 sums of intermediate files of MRIQC
-          command: |
-            mkdir -p /tmp/t1w/test
-            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
-                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
-                                       poldracklab/mriqc:latest"
-            find /tmp/t1w/work -name "*.nii.gz" -type f  | sed s+/tmp/t1w/++ | sort | xargs -n1 $HASHCMD >> /tmp/t1w/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_T1w.txt /tmp/t1w/test/nii_outputs.txt
-            exit $?
-
-      - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
             find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
@@ -366,7 +416,7 @@ jobs:
           name: Checking changes on IQMs
           command: |
             docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
 
@@ -374,31 +424,33 @@ jobs:
           name: WebAPI - Check records
           command: |
             docker run --rm=false -ti \
-              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
-              poldracklab/mriqc:latest \
+              --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
+              nipreps/mriqc:latest \
               T1w 4 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
 
-      - run:
-          name: Test classifier
-          command: |
-            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
-                       --train --test -P /usr/local/miniconda/lib/python3.7/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
-            # Run the classifier on the test data
-            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-                       --entrypoint=mriqc_clf poldracklab/mriqc:latest \
-                       --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
-
+      # - run:
+      #     name: Test classifier
+      #     command: |
+      #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
+      #                  --train --test -P /opt/conda/lib/python3.8/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
+      #       # Run the classifier on the test data
+      #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
+      #                  --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
       - store_artifacts:
           path: /tmp/t1w/test
 
   bold:
-    machine:
-      image: ubuntu-1604:202007-01
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
+      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+    machine:
+      # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
+      # upgrade Docker version
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/bold
     steps:
       - attach_workspace:
@@ -417,33 +469,38 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Set-up a Docker registry
           command: |
-            docker info
-            python3 -m pip install --upgrade pip
-            python3 -m pip install docker-compose
-            set +o pipefail
-            sudo apt update && sudo apt -y install pigz
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
             fi
-            if [ -f /tmp/cache/webapi.tar.gz ]; then
-              pigz -d --stdout /tmp/cache/webapi.tar.gz | docker load
-            fi
-            docker images
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
+            webapi_images=($MRIQC_API_DOCKER_IMAGES)
+            for image in ${webapi_images[@]}; do
+                docker pull localhost:5000/${image}
+                docker tag localhost:5000/${image} ${image}
+            done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
       - restore_cache:
@@ -463,15 +520,15 @@ jobs:
             # Run MRIQC
             docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
-         key: bold-v2-{{ epoch }}
-         paths:
+          key: bold-v2-{{ epoch }}
+          paths:
             - /tmp/bold/work
 
       - run:
@@ -480,7 +537,7 @@ jobs:
           command: |
             docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
-                       poldracklab/mriqc:latest \
+                       nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m bold -vv
 
@@ -496,17 +553,6 @@ jobs:
             exit $?
 
       - run:
-          name: Checking changes on MD5 sums of intermediate files of MRIQC
-          command: |
-            mkdir -p /tmp/bold/test
-            export HASHCMD="docker run -u $( id -u ) --rm=false -i -v $PWD:/scratch -w /scratch \
-                                       --entrypoint=/usr/local/miniconda/bin/nib-hash \
-                                       poldracklab/mriqc:latest"
-            find /tmp/bold/work -name "*.nii.gz" -type f  | sed s+/tmp/bold/++ | sort | xargs -n1 $HASHCMD >> /tmp/bold/test/nii_outputs.txt
-            diff /tmp/src/mriqc/.circleci/nii_bold.txt /tmp/bold/test/nii_outputs.txt
-            exit $?
-
-      - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
             find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
@@ -518,7 +564,7 @@ jobs:
           name: Checking changes on IQMs
           command: |
             docker run -u $( id -u ) --rm=false -ti -v $PWD:/scratch -w /scratch \
-              --entrypoint="dfcheck" poldracklab/mriqc:latest \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
 
@@ -526,13 +572,37 @@ jobs:
           name: WebAPI - Check records
           command: |
             docker run --rm=false -ti \
-              --entrypoint="/usr/local/miniconda/bin/mriqcwebapi_test" \
-              poldracklab/mriqc:latest \
+              --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
+              nipreps/mriqc:latest \
               bold 9 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
 
       - store_artifacts:
           path: /tmp/bold/test
+
+  build_docs:
+    docker:
+      - image: circleci/python:3.8.5
+    environment:
+      - FSLOUTPUTTYPE: NIFTI
+    steps:
+      - checkout
+      - run:
+          name: Install Graphviz
+          command: sudo apt update && sudo apt -y install graphviz
+      - run:
+          name: Install deps
+          command: pip install --no-cache-dir -r docs/requirements.txt
+      - run:
+          name: Build MRIQC documentation
+          no_output_timeout: 2h
+          command: |
+            make -C docs html
+            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
+            # cat $PWD/builddocs.log
+            # grep -qv "ERROR" $PWD/builddocs.log
+      - store_artifacts:
+          path: ./docs/_build/html
 
   update_changes:
     machine:
@@ -547,13 +617,13 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-            - "39:23:4c:9c:3e:29:c1:44:45:f2:bb:e5:cb:b7:65:c2"
+            - "80:ec:ae:e8:92:1f:88:83:2a:e0:ee:35:39:79:85:88"
 
       - run:
           name: Checkout origin/master
           command: |
-            git config user.email "${GITHUB_EMAIL}"
-            git config user.name "CircleCI Deploy"
+            git config user.email "nipreps@gmail.com"
+            git config user.name "NiPreps Bot"
             git fetch origin
             git checkout -f origin/master
       - run:
@@ -561,7 +631,7 @@ jobs:
           command: |
             if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
               bash update_changes.sh
-              git add CHANGES.txt
+              git add CHANGES.rst
               git commit -m "auto: Update CHANGES [skip ci]"
               git push origin HEAD:master
             fi
@@ -612,6 +682,12 @@ jobs:
           name: Deploy to PyPi
           command: |
             echo "${CIRCLE_TAG}" > mriqc/VERSION
+            # Inject MRIQC-WebAPI secret
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+            fi
             python setup.py sdist
             python -m twine check dist/*
             python -m twine upload dist/*
@@ -623,34 +699,43 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - docker-v1-{{ .Branch }}-{{ epoch }}
-            - docker-v1-{{ .Branch }}-
-            - docker-v1-master-
-            - docker-v1-
+            - build-v1-{{ .Branch }}-{{ .Revision }}
           paths:
-            - /tmp/cache/docker.tar.gz
-            - /tmp/cache/webapi.tar.gz
+            - /tmp/docker
+            - /tmp/images
+            - /tmp/docker-compose
+      - docker/install-docker-credential-helper
       - run:
-          name: Load Docker image layer cache
-          no_output_timeout: 30m
+          name: Docker authentication
           command: |
-            docker info
-            set +o pipefail
-            if [ -f /tmp/cache/docker.tar.gz ]; then
-              sudo apt update && sudo apt -y install pigz
-              pigz -d --stdout /tmp/cache/docker.tar.gz | docker load
-              docker images
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
             fi
+      - run:
+          name: Set-up a Docker registry
+          command: |
+            if [[ -f /tmp/images/registry.tar.gz ]]; then
+              echo "Loading saved registry image"
+              docker load < /tmp/images/registry.tar.gz
+            else
+              echo "Pulling registry image from DockerHub"
+              docker pull registry:2
+            fi
+            docker run -d -p 5000:5000 --restart=always --name=registry \
+                -v /tmp/docker:/var/lib/registry registry:2
+      - run:
+          name: Pull images from local registry
+          command: |
+            docker pull localhost:5000/mriqc
+            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+
       - run:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            if [[ -n "$DOCKER_PASS" ]]; then
-              docker login -u $DOCKER_USER -p $DOCKER_PASS
-              docker push poldracklab/mriqc:latest
-              docker tag poldracklab/mriqc poldracklab/mriqc:$CIRCLE_TAG
-              docker push poldracklab/mriqc:$CIRCLE_TAG
-            fi
+            docker push nipreps/mriqc:latest
+            docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
+            docker push nipreps/mriqc:$CIRCLE_TAG
 
 workflows:
   version: 2

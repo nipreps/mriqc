@@ -1,4 +1,8 @@
-TEST_PATH=./
+# Basic actions
+
+TEST_PATH = ./
+MRIQC_VERSION = latest
+
 
 .PHONY: clean-pyc
 clean-pyc:
@@ -32,10 +36,10 @@ dist: clean-build clean-pyc
 
 .PHONY: docker
 docker:
-		docker build -t poldracklab/mriqc:$(MRIQC_VERSION) \
+		docker build -t nipreps/mriqc:$(MRIQC_VERSION) \
 			--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 			--build-arg VCS_REF=`git rev-parse --short HEAD` \
-			--build-arg VERSION=$(MRIQC_VERSION) .
+			--build-arg VERSION=`python setup.py --version` .
 
 .PHONY: release
 release: clean-build tag docker
@@ -48,5 +52,5 @@ singularity: docker
     	-v /var/run/docker.sock:/var/run/docker.sock \
     	-v $(shell pwd)/build/singularity:/output \
     	singularityware/docker2singularity \
-    	poldracklab/mriqc:$(MRIQC_VERSION)
+    	nipreps/mriqc:$(MRIQC_VERSION)
 

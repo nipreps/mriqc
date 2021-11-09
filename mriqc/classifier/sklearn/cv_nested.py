@@ -1,49 +1,64 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Author: oesteban
-# @Date:   2015-11-19 16:44:27
-
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+#
+# STATEMENT OF CHANGES: This file is derived from the sources of scikit-learn 0.19,
+# which licensed under the BSD 3-clause.
+# This file contains extensions and modifications to the original code.
 """
-=====================
 Extensions to sklearn
 =====================
-
-
-Extends sklearn's GridSearchCV to a model search object
-
-
+Extends sklearn's GridSearchCV to a model search object.
 """
-import warnings
+import logging
 import numbers
 import time
-
-from functools import partial
+import warnings
+from builtins import object, zip
 from collections import Sized
+from functools import partial
+
 import numpy as np
 
-from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._search import (
     BaseSearchCV,
-    check_scoring,
-    indexable,
     Parallel,
-    delayed,
+    check_scoring,
     defaultdict,
+    delayed,
+    indexable,
     rankdata,
 )
+from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import (
-    _score,
-    _num_samples,
-    _index_param_value,
-    _safe_split,
     FitFailedWarning,
+    _num_samples,
+    _safe_split,
+    _score,
     logger,
 )
 
-import logging
+from mriqc.classifier.sklearn._validation import _index_param_value
 from .parameters import ModelParameterGrid
-
-from builtins import object, zip
 
 try:
     from sklearn.utils.fixes import MaskedArray
@@ -202,7 +217,14 @@ class ModelAndGridSearchCV(BaseSearchCV):
         # applicable for that candidate. Use defaultdict as each candidate may
         # not contain all the params
         param_results = defaultdict(
-            partial(MaskedArray, np.empty(n_candidates,), mask=True, dtype=object)
+            partial(
+                MaskedArray,
+                np.empty(
+                    n_candidates,
+                ),
+                mask=True,
+                dtype=object,
+            )
         )
         for cand_i, params in enumerate(candidate_params):
             _, param_values = params
@@ -250,9 +272,7 @@ def _model_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     if verbose > 1:
         msg = "[CV model=%s]" % estimator_str.upper()
         if parameters is not None:
@@ -263,9 +283,7 @@ def _model_fit_and_score(
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = {k: _index_param_value(X, v, train) for k, v in fit_params.items()}
 
     if parameters is not None:
         estimator.set_params(**parameters)
@@ -344,16 +362,12 @@ def nested_fit_and_score(
     return_times=False,
     error_score="raise",
 ):
-    """
-
-    """
+    """"""
     from sklearn.externals.joblib.logger import short_format_time
 
     # Adjust length of sample weights
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict(
-        [(k, _index_param_value(X, v, train)) for k, v in fit_params.items()]
-    )
+    fit_params = {k: _index_param_value(X, v, train) for k, v in fit_params.items()}
 
     if parameters is not None:
         estimator.set_params(**parameters)

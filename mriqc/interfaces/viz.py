@@ -1,19 +1,39 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 """Visualization interfaces."""
-from pathlib import Path
-import numpy as np
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    BaseInterfaceInputSpec,
-    isdefined,
-    SimpleInterface,
-)
-
 from io import open  # pylint: disable=W0622
-from ..viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from pathlib import Path
+
+import numpy as np
+from mriqc.viz.utils import plot_mosaic, plot_segmentation, plot_spikes
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
 
 
 class PlotContoursInputSpec(BaseInterfaceInputSpec):
@@ -26,7 +46,10 @@ class PlotContoursInputSpec(BaseInterfaceInputSpec):
         [0.5], traits.Float, usedefault=True, desc="add a contour per level"
     )
     colors = traits.List(
-        ["r"], traits.Str, usedefault=True, desc="colors to be used for contours"
+        ["r"],
+        traits.Str,
+        usedefault=True,
+        desc="colors to be used for contours",
     )
     display_mode = traits.Enum(
         "ortho",
@@ -89,7 +112,11 @@ class PlotBaseInputSpec(BaseInterfaceInputSpec):
     title = traits.Str(desc="a title string for the plot")
     annotate = traits.Bool(True, usedefault=True, desc="annotate left/right")
     figsize = traits.Tuple(
-        (11.69, 8.27), traits.Float, traits.Float, usedefault=True, desc="Figure size"
+        (11.69, 8.27),
+        traits.Float,
+        traits.Float,
+        usedefault=True,
+        desc="Figure size",
     )
     dpi = traits.Int(300, usedefault=True, desc="Desired DPI of figure")
     out_file = File("mosaic.svg", usedefault=True, desc="output file name")
@@ -168,6 +195,9 @@ class PlotSpikes(SimpleInterface):
 
         spikes_list = [tuple(i) for i in np.atleast_2d(spikes_list).tolist()]
         plot_spikes(
-            self.inputs.in_file, self.inputs.in_fft, spikes_list, out_file=out_file
+            self.inputs.in_file,
+            self.inputs.in_fft,
+            spikes_list,
+            out_file=out_file,
         )
         return runtime

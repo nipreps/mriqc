@@ -1,10 +1,28 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 r"""
-MRIQC: image quality metrics for functional MRI.
-
 Measures for the spatial information
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+====================================
 
 Definitions are given in the
 :ref:`summary of structural IQMs <iqms_t1w>`.
@@ -31,7 +49,7 @@ Definitions are given in the
 
 
 Measures for the temporal information
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------------------
 
 .. _iqms_dvars :
 
@@ -94,7 +112,7 @@ Temporal SNR (:abbr:`tSNR (temporal SNR)`, ``tsnr``)
 
 
 Measures for artifacts and other
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------
 
 .. _iqms_fd:
 
@@ -187,13 +205,9 @@ Number of *dummy* scans** (``dummy``)
     in Resting-State FMRI*, Brain Conn 3(4):339-352,
     2013, doi:`10.1089/brain.2013.0156
     <http://dx.doi.org/10.1089/brain.2013.0156>`_.
-
-
-mriqc.qc.functional module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 """
 import os.path as op
+
 import numpy as np
 
 RAS_AXIS_ORDER = {"x": 0, "y": 1, "z": 2}

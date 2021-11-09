@@ -1,4 +1,137 @@
+  * Update CONTRIBUTORS.md (#953)
+  * update contributer location (#952)
+  * 21.0.0rc2
+
+First official release after migrating the repository into the *NiPreps*' organization.
+This release updates the Docker image with up-to-date dependencies, updates
+*MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
+Finally, this release also contains a major code style overhaul by Zvi Baratz.
+With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley for their contributions.
+
+  * FIX: ``template_resolution`` deprecation warning (#941)
+  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
+  * FIX: T2w image of MNI template unavailable in Singularity (#940)
+  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
+  * FIX: Revise building documentation at RTD after migration (#935)
+  * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
+  * FIX: Update unit tests (#927)
+  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
+  * FIX: Update dependencies and repair T1w workflow accordingly (#925)
+  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+  * ENH: Optimize *PyBIDS*' layout initialization (#939)
+  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
+  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
   * DOC: Various fixes to "Running mriqc" section (#897)
+  * MAINT: Updates to ``CONTRIBUTORS.md`` file
+  * MAINT: Revise Docker image settings & CircleCI (#937)
+  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
+  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
+  * MAINT: New Docker layer caching system of other *NiPreps* (#929)
+  * MAINT: Code style overhaul (#901)
+  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
+  * STY: Run ``black`` at the top of the repo (#932)
+ Merge tag '21.0.0rc2'
+diff --cc .maint/CONTRIBUTORS.md
+index 5bfd46b,c2ca94f..fd55380
+--- a/.maint/CONTRIBUTORS.md
++++ b/.maint/CONTRIBUTORS.md
+@@@ -20,14 -20,16 +20,15 @@@ Before every release, unlisted contribu
+  | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
+  | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
+  | Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
+- | Huffman | Adam | @verdurin | | |
++ | Huffman | Adam | @verdurin | | Department of Physics, Imperial College London, London, UK |
+  | Kay | Benjamin | @benkay86 | | Washington University School of Medicine, St.Louis, MO, USA |
+  | Kent | James D. | @jdkent | 0000-0002-4892-2659 | Neuroscience Program, University of Iowa |
+- | Lee | John | @leej3 | | Quansight, Dublin, Ireland |
++ | Krause | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
++ | Lee | John A. | @leej3 | | Quansight, Dublin, Ireland |
+  | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
+  | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
+ -| Piccirilli | Aaron | @apiccirilli | | Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA |
+  | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
+  | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
++ | Triplett | William | @wtriplett | 0000-0002-9546-1306 | University of Florida: Gainesville, Florida, US |
+  | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
+ -| Velasco | Pablo | @pvelasco | | Center for Brain Imaging, New York University, NY, USA |
+ +| Velasco | Pablo | @pvelasco | 0000-0002-5749-6049 | Center for Brain Imaging, New York University, NY, USA |
+- | | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
+21.0.0 (TBD)
+============
+First official release after migrating the repository into the *NiPreps*' organization.
+This release updates the Docker image with up-to-date dependencies, updates
+*MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
+Finally, this release also contains a major code style overhaul by Zvi Baratz.
+With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley
+for their contributions.
+
+  * FIX: ``template_resolution`` deprecation warning (#941)
+  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
+  * FIX: T2w image of MNI template unavailable in Singularity (#940)
+  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
+  * FIX: Revise building documentation at RTD after migration (#935)
+  * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
+  * FIX: Update unit tests (#927)
+  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
+  * FIX: Update dependencies and repair T1w workflow accordingly (#925)
+  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+  * ENH: Optimize *PyBIDS*' layout initialization (#939)
+  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
+  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
+  * DOC: Various fixes to "Running mriqc" section (#897)
+  * MAINT: Updates to ``CONTRIBUTORS.md`` file
+  * MAINT: Revise Docker image settings & CircleCI (#937)
+  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
+  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
+  * MAINT: New Docker layer caching system of other *NiPreps* (#929)
+  * MAINT: Code style overhaul (#901)
+  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
+  * STY: Run ``black`` at the top of the repo (#932)
+
+.. admonition:: Author list for papers based on *MRIQC* 21.0.x
+
+    As described in the `Contributor Guidelines
+    <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
+    anyone listed as developer or contributor may write and submit manuscripts
+    about *MRIQC*.
+    To do so, please move the author(s) name(s) to the front of the following list:
+
+    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Dylan Nielson \ :sup:`3`\ ; Jan Varada \ :sup:`4`\ ;
+    Ross W. Blair \ :sup:`2`\ ; William Triplett \ :sup:`5`\ ; Nikita Beliy \ :sup:`6`\ ; John A. Lee \ :sup:`7`\ ;
+    Ursula A. Tooley \ :sup:`8`\ ; Bennet Fauber \ :sup:`9`\ ; James D. Kent \ :sup:`10`\ ; Taylor Salo \ :sup:`11`\ ;
+    Mathias Goncalves \ :sup:`2`\ ; Thomas Nichols \ :sup:`12`\ ; Adam Huffman \ :sup:`13`\ ; Joke Durnez \ :sup:`2`\ ;
+    Pablo Velasco \ :sup:`14`\ ; Satrajit S. Ghosh \ :sup:`15`\ ; Aaron Piccirilli \ :sup:`16`\ ; Asier Erramuzpe \ :sup:`17`\ ;
+    Benjamin Kay \ :sup:`18`\ ; Daniel Birman \ :sup:`2`\ ; Michael G. Clark \ :sup:`19`\ ; Michael Krause \ :sup:`20`\ ;
+    Rafael Garcia-Dias \ :sup:`21`\ ; Sean Marret \ :sup:`4`\ ; Adam G. Thomas \ :sup:`22`\ ;
+    Russell A. Poldrack \ :sup:`2`\ ; Krzysztof J. Gorgolewski \ :sup:`23`\ ; Oscar Esteban \ :sup:`24`\ .
+
+    Affiliations:
+
+      1. Neuroscience Program, Tel-Aviv University
+      2. Department of Psychology, Stanford University, CA, USA
+      3. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
+      4. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
+      5. University of Florida: Gainesville, Florida, US
+      6. CRC ULiege, Liege, Belgium
+      7. Quansight, Dublin, Ireland
+      8. Department of Neuroscience, University of Pennsylvania, PA, USA
+      9. University of Michigan, Ann Arbor, USA
+      10. Neuroscience Program, University of Iowa
+      11. Department of Psychology, Florida International University, FL, USA
+      12. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      13. Department of Physics, Imperial College London, London, UK
+      14. Center for Brain Imaging, New York University, NY, USA
+      15. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      16. Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA
+      17. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      18. Washington University School of Medicine, St.Louis, MO, USA
+      19. National Institutes of Health, USA
+      20. Max Planck Institute for Human Development, Berlin, Germany
+      21. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      22. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      23. Google LLC
+      24. Department of Radiology, Lausanne University Hospital and University of Lausanne
+
 0.16.1 (January 30, 2021)
 =========================
 Bug-fix release in 0.16.x series.
@@ -9,7 +142,7 @@ subjects of the form ``sub-sXYZ``, and improves compatibility with more recent m
   * FIX: Participant labels starting with ``[sub]`` cannot be used (#890)
   * FIX: Change deprecated ``normed`` to ``density`` in parameters to ``hist()`` (#888)
   * ENH: Write derivatives metadata (#885)
-  * ENH: Add --pdb option to make debugging easier (#884)
+  * ENH: Add ``--pdb`` option to make debugging easier (#884)
 
 0.16.0 (January 5, 2021)
 ========================
@@ -60,9 +193,9 @@ A maintenance patch release updating PyBIDS.
 
 0.15.0 (April 5, 2019)
 ======================
-A long overdue update, pinning updated versions of 
-`TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and 
-`Niworkflows <https://github.com/poldracklab/niworkflows>`__.
+A long overdue update, pinning updated versions of
+`TemplateFlow <https://doi.org/10.5281/zenodo.2583289>`__ and
+`Niworkflows <https://github.com/nipreps/niworkflows>`__.
 With thanks to @garciadias for contributions.
 
   * ENH: Revision of QI2 (#606) @oesteban
@@ -211,7 +344,7 @@ With thanks to Jan Varada (@jvarada) for the session/run filtering.
     * Revised labels file for ds030.
     * Add IQMs for ABIDE and DS030 calculated with MRIQC 0.9.6.
   * ANNOUNCEMENT: Dropped support for Python<=3.4
-  * WARNING (#596): 
+  * WARNING (#596):
     We have changed the default number of threads for ANTs. Using parallelism with ANTs
     causes numerical instability on the calculated measures. The most sensitive metrics to this
     problem are the kurtosis calculations on the intensities of regions and qi_2.

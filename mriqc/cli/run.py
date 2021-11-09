@@ -1,22 +1,45 @@
-#!/usr/bin/env python
-"""MRIQC run script."""
-from .. import config
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+"""Definition of the command line interface's (CLI) entry point."""
+from mriqc import config, messages
 
 
 def main():
-    """Entry point."""
+    """Entry point for MRIQC's CLI."""
+    import gc
     import os
     import sys
-    import gc
-    from multiprocessing import Process, Manager
+    from multiprocessing import Manager, Process
+
+    from ..utils.bids import write_bidsignore, write_derivative_description
     from .parser import parse_args
-    from ..utils.bids import write_derivative_description, write_bidsignore
 
     # Run parser
     parse_args()
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
+
         setup_exceptionhook()
 
     # CRITICAL Save the config to a file. This is necessary because the execution graph
@@ -27,15 +50,13 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
-        config.loggers.cli.log(
-            25,
-            f"""
-    Running MRIQC version {config.environment.version}:
-      * BIDS dataset path: {config.execution.bids_dir}.
-      * Output folder: {config.execution.output_dir}.
-      * Analysis levels: {config.workflow.analysis_level}.
-""",
+        start_message = messages.PARTICIPANT_START.format(
+            version=config.environment.version,
+            bids_dir=config.execution.bids_dir,
+            output_dir=config.execution.output_dir,
+            analysis_level=config.workflow.analysis_level,
         )
+        config.loggers.cli.log(25, start_message)
         # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
         # Because Python on Linux does not ever free virtual memory (VM), running the
         # workflow construction jailed within a process preempts excessive VM buildup.
@@ -76,15 +97,15 @@ def main():
             # Warn about submitting measures AFTER
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
-        config.loggers.cli.log(25, "Participant level finished successfully.")
+        config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
 
     # Set up group level
     if "group" in config.workflow.analysis_level:
-        from ..utils.bids import DEFAULT_TYPES
         from ..reports import group_html
+        from ..utils.bids import DEFAULT_TYPES
         from ..utils.misc import generate_tsv  # , generate_pred
 
-        config.loggers.cli.info("Group level started...")
+        config.loggers.cli.info(messages.GROUP_START)
 
         # Generate reports
         mod_group_reports = []
@@ -95,9 +116,8 @@ def main():
             if dataframe is None:
                 continue
 
-            config.loggers.cli.info(
-                f"Generated summary TSV table for the {mod} data ({out_tsv})"
-            )
+            tsv_message = messages.TSV_GENERATED.format(modality=mod, path=out_tsv)
+            config.loggers.cli.info(tsv_message)
 
             # out_pred = generate_pred(derivatives_dir, settings['output_dir'], mod)
             # if out_pred is not None:
@@ -111,18 +131,21 @@ def main():
                 csv_failed=output_dir / f"group_variant-failed_{mod}.csv",
                 out_file=out_html,
             )
-            config.loggers.cli.info(f"Group-{mod} report generated ({out_html})")
+            report_message = messages.GROUP_REPORT_GENERATED.format(
+                modality=mod, path=out_html
+            )
+            config.loggers.cli.info(report_message)
             mod_group_reports.append(mod)
 
         if not mod_group_reports:
-            raise Exception("No data found. No group level reports were generated.")
+            raise Exception(messages.GROUP_NO_DATA)
 
-        config.loggers.cli.info("Group level finished successfully.")
+        config.loggers.cli.info(messages.GROUP_FINISHED)
 
-    config.loggers.cli.info("Generating BIDS Derivatives metadata")
+    config.loggers.cli.info(messages.BIDS_META)
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
-    config.loggers.cli.info("MRIQC completed")
+    config.loggers.cli.info(messages.RUN_FINISHED)
 
 
 if __name__ == "__main__":

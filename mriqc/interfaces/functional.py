@@ -1,23 +1,41 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-
-from os import path as op
-import numpy as np
-import nibabel as nb
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
 from builtins import zip
+from os import path as op
 
+import nibabel as nb
+import numpy as np
+from mriqc.qc.anatomical import efc, fber, snr, summary_stats
+from mriqc.qc.functional import gsr
+from mriqc.utils.misc import _flatten_dict
 from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    isdefined,
     BaseInterfaceInputSpec,
+    File,
     SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
 )
-
-from ..utils.misc import _flatten_dict
-from ..qc.anatomical import snr, fber, efc, summary_stats
-from ..qc.functional import gsr
 
 
 class FunctionalQCInputSpec(BaseInterfaceInputSpec):
@@ -35,7 +53,9 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
         desc="direction for GSR computation",
     )
     in_fd = File(
-        exists=True, mandatory=True, desc="motion parameters for FD computation"
+        exists=True,
+        mandatory=True,
+        desc="motion parameters for FD computation",
     )
     fd_thres = traits.Float(
         0.2, usedefault=True, desc="motion threshold for FD computation"

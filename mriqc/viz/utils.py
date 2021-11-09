@@ -1,16 +1,35 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-""" Visualization utilities """
-
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+"""Visualization utilities."""
 import math
 import os.path as op
-import numpy as np
-import nibabel as nb
 
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+import nibabel as nb
+import numpy as np
 import seaborn as sns
+from matplotlib.backends.backend_pdf import FigureCanvasPdf as FigureCanvas
+from matplotlib.gridspec import GridSpec
 
 DEFAULT_DPI = 300
 DINA4_LANDSCAPE = (11.69, 8.27)
@@ -168,7 +187,12 @@ def plot_slice_tern(
 
 
 def plot_spikes(
-    in_file, in_fft, spikes_list, cols=3, labelfmt="t={0:.3f}s (z={1:d})", out_file=None
+    in_file,
+    in_fft,
+    spikes_list,
+    cols=3,
+    labelfmt="t={0:.3f}s (z={1:d})",
+    out_file=None,
 ):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -288,7 +312,8 @@ def plot_mosaic(
             z_vals = z_vals[rem:-rem]
         else:
             # img_data = img_data[..., 2 * rem:]
-            z_vals = z_vals[2 * rem:]
+            start_index = 2 * rem
+            z_vals = z_vals[start_index:]
 
     while len(z_vals) > zmax:
         # Discard one every two slices
@@ -545,7 +570,9 @@ def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
         vmin=vmin,
     )
     disp.add_contours(
-        segmentation, levels=kwargs.get("levels", [1]), colors=kwargs.get("colors", "r")
+        segmentation,
+        levels=kwargs.get("levels", [1]),
+        colors=kwargs.get("colors", "r"),
     )
     disp.savefig(out_file)
     disp.close()

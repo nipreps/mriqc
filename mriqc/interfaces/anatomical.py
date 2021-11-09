@@ -1,39 +1,58 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-""" Nipype interfaces to support anatomical workflow """
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+"""Nipype interfaces to support anatomical workflow."""
 import os.path as op
-import numpy as np
-import nibabel as nb
-from math import sqrt
-import scipy.ndimage as nd
 from builtins import zip
+from math import sqrt
 
-from nipype.utils.filemanip import fname_presuffix
-from nipype.interfaces.base import (
-    traits,
-    TraitedSpec,
-    File,
-    isdefined,
-    InputMultiPath,
-    BaseInterfaceInputSpec,
-    SimpleInterface,
-)
-
-from ..utils.misc import _flatten_dict
-from ..qc.anatomical import (
-    snr,
-    snr_dietrich,
-    cnr,
-    fber,
-    efc,
+import nibabel as nb
+import numpy as np
+import scipy.ndimage as nd
+from mriqc.qc.anatomical import (
     art_qi1,
     art_qi2,
-    volume_fraction,
-    rpve,
-    summary_stats,
     cjv,
+    cnr,
+    efc,
+    fber,
+    rpve,
+    snr,
+    snr_dietrich,
+    summary_stats,
+    volume_fraction,
     wm2max,
 )
+from mriqc.utils.misc import _flatten_dict
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    InputMultiPath,
+    SimpleInterface,
+    TraitedSpec,
+    isdefined,
+    traits,
+)
+from nipype.utils.filemanip import fname_presuffix
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
@@ -46,7 +65,9 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     rot_msk = File(exists=True, mandatory=True, desc="rotation mask")
     artifact_msk = File(exists=True, mandatory=True, desc="air mask")
     in_pvms = InputMultiPath(
-        File(exists=True), mandatory=True, desc="partial volume maps from FSL FAST"
+        File(exists=True),
+        mandatory=True,
+        desc="partial volume maps from FSL FAST",
     )
     in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
     mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
@@ -118,7 +139,11 @@ class StructuralQC(SimpleInterface):
         self._results["snr"] = {}
         for tlabel in ["csf", "wm", "gm"]:
             snrvals.append(
-                snr(stats[tlabel]["median"], stats[tlabel]["stdv"], stats[tlabel]["n"])
+                snr(
+                    stats[tlabel]["median"],
+                    stats[tlabel]["stdv"],
+                    stats[tlabel]["n"],
+                )
             )
             self._results["snr"][tlabel] = snrvals[-1]
         self._results["snr"]["total"] = float(np.mean(snrvals))
@@ -225,7 +250,9 @@ class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     head_mask = File(exists=True, mandatory=True, desc="head mask")
     rot_mask = File(exists=True, desc="a rotation mask")
     nasion_post_mask = File(
-        exists=True, mandatory=True, desc="nasion to posterior of cerebellum mask"
+        exists=True,
+        mandatory=True,
+        desc="nasion to posterior of cerebellum mask",
     )
 
 
