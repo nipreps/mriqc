@@ -29,6 +29,7 @@ def main():
     import gc
     import os
     import sys
+    from tempfile import mktemp
     from multiprocessing import Manager, Process
 
     from ..utils.bids import write_bidsignore, write_derivative_description
@@ -45,7 +46,9 @@ def main():
     # CRITICAL Save the config to a file. This is necessary because the execution graph
     # is built as a separate process to keep the memory footprint low. The most
     # straightforward way to communicate with the child process is via the filesystem.
-    config_file = config.execution.work_dir / ".mriqc.toml"
+    # The config file name needs to be unique, otherwise multiple mriqc instances
+    # will create write conflicts.
+    config_file = mktemp(dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml')
     config.to_filename(config_file)
 
     # Set up participant level

@@ -58,7 +58,7 @@ graph is built across processes.
 .. code-block:: Python
 
     from mriqc import config
-    config_file = config.execution.work_dir / '.mriqc.toml'
+    config_file = mktemp(dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml')
     config.to_filename(config_file)
     # Call build_workflow(config_file, retval) in a subprocess
     with Manager() as mgr:
