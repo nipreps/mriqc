@@ -392,6 +392,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     """
     from niworkflows.interfaces.plotting import FMRISummary
+    from niworkflows.interfaces.morphology import CrownMask
 
     from mriqc.interfaces import PlotMosaic, PlotSpikes, Spikes
     from mriqc.interfaces.reports import IndividualReport
@@ -420,7 +421,7 @@ def individual_reports(name="ReportsWorkflow"):
                 "in_spikes",
                 "in_fft",
                 "mni_report",
-                "ica_report",
+                "ica_report"
             ]
         ),
         name="inputnode",
@@ -445,6 +446,9 @@ def individual_reports(name="ReportsWorkflow"):
         mem_gb=mem_gb * 2.5,
     )
 
+    # Generate crown mask
+    crown_mask = pe.Node(CrownMask(), name="crown_mask")
+
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
 
     # fmt: off
@@ -452,12 +456,14 @@ def individual_reports(name="ReportsWorkflow"):
         (inputnode, spikes_bg, [("in_ras", "in_file")]),
         (inputnode, spmask, [("in_ras", "in_file")]),
         (inputnode, bigplot, [("hmc_epi", "in_func"),
-                              ("brainmask", "in_mask"),
                               ("hmc_fd", "fd"),
                               ("fd_thres", "fd_thres"),
                               ("in_dvars", "dvars"),
                               ("epi_parc", "in_segm"),
                               ("outliers", "outliers")]),
+        (inputnode, crown_mask, [("brainmask", "in_brainmask")]),
+        (inputnode, crown_mask, [("epi_parc", "in_segm")]),
+        (crown_mask, bigplot, [("out_mask", "in_crown")]),
         (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
         (spmask, spikes_bg, [("out_file", "in_mask")]),
     ])
