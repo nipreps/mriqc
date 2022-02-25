@@ -821,10 +821,10 @@ def epi_mni_align(name="SpatialNormalization"):
     )
 
     if config.workflow.species.lower() == "human":
-        norm.inputs.reference_image=str(
+        norm.inputs.reference_image = str(
             get_template(config.workflow.template_id, resolution=2, suffix="boldref")
         ),
-        norm.inputs.reference_mask=str(
+        norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
                 resolution=2,
@@ -836,12 +836,12 @@ def epi_mni_align(name="SpatialNormalization"):
     else:
         from nirodents.workflows.brainextraction import _bspline_grid
 
-        n4itk.inputs.shrink_factor=1
-        n4itk.inputs.n_iterations=[50] * 4
-        norm.inputs.reference_image=str(
+        n4itk.inputs.shrink_factor = 1
+        n4itk.inputs.n_iterations = [50] * 4
+        norm.inputs.reference_image = str(
             get_template(config.workflow.template_id, suffix="T2w")
         )
-        norm.inputs.reference_mask=str(
+        norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
                 desc="brain",
@@ -870,7 +870,7 @@ def epi_mni_align(name="SpatialNormalization"):
     )
 
     if config.workflow.species.lower() == 'human':
-        invt.inputs.input_image=str(
+        invt.inputs.input_image = str(
             get_template(
                 config.workflow.template_id,
                 resolution=1,
@@ -879,7 +879,7 @@ def epi_mni_align(name="SpatialNormalization"):
             )
         )
     else:
-        invt.inputs.input_image=str(
+        invt.inputs.input_image = str(
             get_template(
                 config.workflow.template_id,
                 suffix="dseg",
@@ -898,12 +898,10 @@ def epi_mni_align(name="SpatialNormalization"):
         (norm, outputnode, [("warped_image", "epi_mni"),
                             ("out_report", "report")]),
     ])
-    
-    if config.workflow.species.lower() == 'human':
-        workflow.connect([
-                (inputnode, norm, [("epi_mask", "moving_mask")]),                            
-    ])
     # fmt: on
+
+    if config.workflow.species.lower() == 'human':
+        workflow.connect([(inputnode, norm, [("epi_mask", "moving_mask")])])
 
     return workflow
 

@@ -131,7 +131,7 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Increases log verbosity for each occurrence, debug level is -vvv.",
     )
 
-    #TODO: add 'mouse', 'macaque', and other populations once the pipeline is working
+    # TODO: add 'mouse', 'macaque', and other populations once the pipeline is working
     parser.add_argument(
         "--species",
         action="store",
