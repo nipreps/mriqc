@@ -107,7 +107,6 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         name="mean",
         mem_gb=mem_gb * 1.5,
     )
-    skullstrip_epi = fmri_bmsk_workflow()
 
     # EPI to MNI registration
     ema = epi_mni_align()
@@ -128,21 +127,17 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
-        (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
         (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
         (mean, ema, [("out_file", "inputnode.epi_mean")]),
-        (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
         (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
         (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
                          ("outputnode.out_fd", "inputnode.hmc_fd")]),
-        (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
         (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
         (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
         (mean, repwf, [("out_file", "inputnode.epi_mean")]),
         (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
-        (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
         (hmcwf, repwf, [("outputnode.out_fd", "inputnode.hmc_fd"),
                         ("outputnode.out_file", "inputnode.hmc_epi")]),
         (ema, repwf, [("outputnode.epi_parc", "inputnode.epi_parc"),
@@ -181,10 +176,44 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         # fmt: off
         workflow.connect([
             (sanitize, melodic, [("out_file", "in_files")]),
-            (skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")]),
             (melodic, repwf, [("out_report", "inputnode.ica_report")])
         ])
         # fmt: on
+
+    # population specific changes to brain masking
+    if config.workflow.species == "human":
+        skullstrip_epi = fmri_bmsk_workflow()
+        # fmt: off
+        workflow.connect([
+            (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
+            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")])
+            (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
+        ])
+        # fmt: on
+        if config.workflow.ica:
+            workflow.connect([(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])])
+
+    else:
+        from .anatomical import _binarize
+
+        binarise_labels = pe.Node(niu.Function(
+            input_names=["in_file", "threshold"],
+            output_names=["out_file"],
+            function=_binarize),
+            name="binarise_labels"
+        )
+
+        # fmt: off
+        workflow.connect([
+            (ema, binarise_labels, [("outputnode.epi_parc", "in_file")]),
+            (binarise_labels, iqmswf, [("out_file", "inputnode.brainmask")]),
+            (binarise_labels, repwf, [("out_file","inputnode.brainmask")])
+        ])
+        # fmt: on
+
+        if config.workflow.ica:
+            workflow.connect([(binarise_labels, melodic, [("out_file", "report_mask")])])
 
     # Upload metrics
     if not config.execution.no_sub:
