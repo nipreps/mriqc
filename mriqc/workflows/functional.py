@@ -813,42 +813,78 @@ def epi_mni_align(name="SpatialNormalization"):
             moving="boldref",
             num_threads=ants_nthreads,
             reference="boldref",
-            reference_image=str(
-                get_template("MNI152NLin2009cAsym", resolution=2, suffix="boldref")
-            ),
-            reference_mask=str(
-                get_template(
-                    "MNI152NLin2009cAsym",
-                    resolution=2,
-                    desc="brain",
-                    suffix="mask",
-                )
-            ),
-            template="MNI152NLin2009cAsym",
+            template=config.workflow.template_id,
         ),
         name="EPI2MNI",
         num_threads=n_procs,
         mem_gb=3,
     )
 
+    if config.workflow.species.lower() == "human":
+        norm.inputs.reference_image=str(
+            get_template(config.workflow.template_id, resolution=2, suffix="boldref")
+        ),
+        norm.inputs.reference_mask=str(
+            get_template(
+                config.workflow.template_id,
+                resolution=2,
+                desc="brain",
+                suffix="mask",
+            )
+        )
+    # adapt some population-specific settings
+    else:
+        from nirodents.workflows.brainextraction import _bspline_grid
+
+        n4itk.inputs.shrink_factor=1
+        n4itk.inputs.n_iterations=[50] * 4
+        norm.inputs.reference_image=str(
+            get_template(config.workflow.template_id, suffix="T2w")
+        )
+        norm.inputs.reference_mask=str(
+            get_template(
+                config.workflow.template_id,
+                desc="brain",
+                suffix="mask",
+            )[0]
+        )
+
+        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name="bspline_grid")
+
+        # fmt: off
+        workflow.connect([
+            (inputnode, bspline_grid, [('epi_mean', 'in_file')]),
+            (bspline_grid, n4itk, [('out', 'args')])
+        ])
+        # fmt: on
+
     # Warp segmentation into EPI space
     invt = pe.Node(
         ApplyTransforms(
             float=True,
-            input_image=str(
-                get_template(
-                    "MNI152NLin2009cAsym",
-                    resolution=1,
-                    desc="carpet",
-                    suffix="dseg",
-                )
-            ),
             dimension=3,
             default_value=0,
             interpolation="MultiLabel",
         ),
         name="ResampleSegmentation",
     )
+
+    if config.workflow.species.lower() == 'human':
+        invt.inputs.input_image=str(
+            get_template(
+                config.workflow.template_id,
+                resolution=1,
+                desc="carpet",
+                suffix="dseg",
+            )
+        )
+    else:
+        invt.inputs.input_image=str(
+            get_template(
+                config.workflow.template_id,
+                suffix="dseg",
+            )[-1]
+        )
 
     # fmt: off
     workflow.connect([
@@ -861,7 +897,11 @@ def epi_mni_align(name="SpatialNormalization"):
         (invt, outputnode, [("output_image", "epi_parc")]),
         (norm, outputnode, [("warped_image", "epi_mni"),
                             ("out_report", "report")]),
-
+    ])
+    
+    if config.workflow.species.lower() == 'human':
+        workflow.connect([
+                (inputnode, norm, [("epi_mask", "moving_mask")]),                            
     ])
     # fmt: on
 
