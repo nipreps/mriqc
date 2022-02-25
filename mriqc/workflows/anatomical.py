@@ -649,12 +649,15 @@ def headmsk_wf(name="HeadMaskWorkflow"):
         )
         thresh = pe.Node(
             niu.Function(
-                input_names=["in_file", "in_segm"],
+                input_names=["in_file", "in_segm", "aniso", "thresh"],
                 output_names=["out_file"],
                 function=gradient_threshold,
             ),
             name="GradientThreshold",
         )
+        if config.workflow.species != "human":
+            thresh.inputs.aniso = True
+            thresh.inputs.thresh = 5.0
 
         # fmt: off
         workflow.connect([
@@ -837,8 +840,27 @@ def image_gradient(in_file, snr, out_file=None):
     nb.Nifti1Image(grad, imnii.affine, imnii.header).to_filename(out_file)
     return out_file
 
+def generate_aniso_structure(in_file, dist):
+    """Generate an anisotropic binary structure, taking into account
+    differences in slice thickness. Written by EK, 25/1/2022 """
+    import nibabel as nb
+    import numpy as np
+    from scipy.ndimage import distance_transform_edt
 
-def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
+    img = nb.load(in_file)
+    zooms = img.header.get_zooms()
+    dim = img.header['dim'][0]
+
+    radius = int(np.ceil(dist /  min(zooms)))
+
+    x = np.ones((2*radius + 1) * np.ones(dim, dtype=np.int8))
+    np.put(x, x.size // 2, 0)
+    d = np.round(distance_transform_edt(x, sampling = zooms), 5)
+    struc = d <= dist
+    
+    return struc
+
+def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
     """ Compute a threshold from the histogram of the magnitude gradient image """
     import os.path as op
 
@@ -846,7 +868,11 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     import numpy as np
     from scipy import ndimage as sim
 
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+    dist = 2
+    if not aniso: 
+        struc = sim.iterate_structure(sim.generate_binary_structure(3, dist), 2)
+    else:
+        struc = generate_aniso_structure(in_file, dist)
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -863,7 +889,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     data = imnii.get_data().astype(np.float32)
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
-    mask[data > 15.0] = 1
+    mask[data > thresh] = 1
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
