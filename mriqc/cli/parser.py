@@ -545,10 +545,12 @@ Please, check out your currently set filters:
     # set specifics for alternative populations
     if not opts.species.lower() == 'human':
         config.workflow.species = opts.species
+        # TODO: add other species once rats are working
         if opts.species.lower() == 'rat':
             config.workflow.template_id = 'Fischer344'
             config.workflow.headmask = 'NoBET'
-            # TODO: add other species once rats are working
+            # block uploads for the moment; can be reversed before wider release
+            config.execution.no_sub = True
 
 
 def _get_biggest_file_size_gb(files):
