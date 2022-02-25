@@ -861,6 +861,7 @@ def generate_aniso_structure(in_file, dist):
 
     return struc
 
+
 def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
     """ Compute a threshold from the histogram of the magnitude gradient image """
     import os.path as op
