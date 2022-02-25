@@ -185,7 +185,7 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         # fmt: off
         workflow.connect([
             (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
-            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")])
+            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
             (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
             (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
         ])
@@ -207,7 +207,7 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         workflow.connect([
             (ema, binarise_labels, [("outputnode.epi_parc", "in_file")]),
             (binarise_labels, iqmswf, [("out_file", "inputnode.brainmask")]),
-            (binarise_labels, repwf, [("out_file","inputnode.brainmask")])
+            (binarise_labels, repwf, [("out_file", "inputnode.brainmask")])
         ])
         # fmt: on
 
