@@ -890,7 +890,6 @@ def epi_mni_align(name="SpatialNormalization"):
     workflow.connect([
         (inputnode, invt, [("epi_mean", "reference_image")]),
         (inputnode, n4itk, [("epi_mean", "input_image")]),
-        (inputnode, norm, [("epi_mask", "moving_mask")]),
         (n4itk, norm, [("output_image", "moving_image")]),
         (norm, invt, [
             ("inverse_composite_transform", "transforms")]),
