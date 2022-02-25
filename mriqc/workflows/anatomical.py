@@ -82,7 +82,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         with mock_config():
             wf = anat_qc_workflow()
 
-    """ 
+    """
 
     dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
         "T2w", []
@@ -159,8 +159,8 @@ def anat_qc_workflow(name="anatMRIQC"):
         (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
         (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
         (skull_stripping, iqmswf, [(ss_bias_corrected, "inputnode.inu_corrected"),
-                       (ss_bias_field, "inputnode.in_inu"),
-                       ("outputnode.out_mask", "inputnode.brainmask")]),
+                                   (ss_bias_field, "inputnode.in_inu"),
+                                   ("outputnode.out_mask", "inputnode.brainmask")]),
         (amw, iqmswf, [("outputnode.air_mask", "inputnode.airmask"),
                        ("outputnode.hat_mask", "inputnode.hatmask"),
                        ("outputnode.art_mask", "inputnode.artmask"),
@@ -723,7 +723,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
             get_template(config.workflow.template_id, resolution=1, desc="head", suffix="mask")
         )
     else:
-        #TODO: provide options for other populations
+        # TODO: provide options for other populations
         invt.inputs.input_image = str(
             get_template(config.workflow.template_id, desc="brain", suffix="mask")[0]
         )
@@ -840,6 +840,7 @@ def image_gradient(in_file, snr, out_file=None):
     nb.Nifti1Image(grad, imnii.affine, imnii.header).to_filename(out_file)
     return out_file
 
+
 def generate_aniso_structure(in_file, dist):
     """Generate an anisotropic binary structure, taking into account
     differences in slice thickness. Written by EK, 25/1/2022 """
@@ -851,13 +852,13 @@ def generate_aniso_structure(in_file, dist):
     zooms = img.header.get_zooms()
     dim = img.header['dim'][0]
 
-    radius = int(np.ceil(dist /  min(zooms)))
+    radius = int(np.ceil(dist / min(zooms)))
 
-    x = np.ones((2*radius + 1) * np.ones(dim, dtype=np.int8))
+    x = np.ones((2 * radius + 1) * np.ones(dim, dtype=np.int8))
     np.put(x, x.size // 2, 0)
-    d = np.round(distance_transform_edt(x, sampling = zooms), 5)
+    d = np.round(distance_transform_edt(x, sampling=zooms), 5)
     struc = d <= dist
-    
+
     return struc
 
 def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
@@ -869,7 +870,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     from scipy import ndimage as sim
 
     dist = 2
-    if not aniso: 
+    if not aniso:
         struc = sim.iterate_structure(sim.generate_binary_structure(3, dist), 2)
     else:
         struc = generate_aniso_structure(in_file, dist)
