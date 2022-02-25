@@ -840,7 +840,7 @@ def epi_mni_align(name="SpatialNormalization"):
     if config.workflow.species.lower() == "human":
         norm.inputs.reference_image = str(
             get_template(config.workflow.template_id, resolution=2, suffix="boldref")
-        ),
+        )
         norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
