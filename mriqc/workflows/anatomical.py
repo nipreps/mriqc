@@ -82,8 +82,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         with mock_config():
             wf = anat_qc_workflow()
 
-    """
-    from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+    """ 
 
     dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
         "T2w", []
@@ -104,8 +103,21 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(check_dtype=False), name="conform")
-    # 2. Skull-stripping (afni)
-    asw = skullstrip_wf(n4_nthreads=config.nipype.omp_nthreads, unifize=False)
+    # 2. species specific skull-stripping
+    if config.workflow.species.lower() == 'human':
+        from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+        skull_stripping = skullstrip_wf(n4_nthreads=config.nipype.omp_nthreads, unifize=False)
+        ss_in_file = "inputnode.in_file"
+        ss_bias_corrected = "outputnode.bias_corrected"
+        ss_skull_stripped = "outputnode.out_file"
+        ss_bias_field = "outputnode.bias_image"
+    else:
+        from nirodents.workflows.brainextraction import init_rodent_brain_extraction_wf
+        skull_stripping = init_rodent_brain_extraction_wf(template_id=config.workflow.template_id)
+        ss_in_file = "inputnode.in_files"
+        ss_bias_corrected = "outputnode.out_corrected"
+        ss_skull_stripped = "outputnode.out_brain"
+        ss_bias_field = "final_n4.bias_image"
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
@@ -130,11 +142,11 @@ def anat_qc_workflow(name="anatMRIQC"):
         (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
         (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
         (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
-        (to_ras, asw, [("out_file", "inputnode.in_file")]),
-        (asw, segment, [("outputnode.out_file", "in_files")]),
-        (asw, hmsk, [("outputnode.bias_corrected", "inputnode.in_file")]),
+        (to_ras, skull_stripping, [("out_file", ss_in_file)]),
+        (skull_stripping, segment, [(ss_skull_stripped, "in_files")]),
+        (skull_stripping, hmsk, [(ss_bias_corrected, "inputnode.in_file")]),
         (segment, hmsk, [("tissue_class_map", "inputnode.in_segm")]),
-        (asw, norm, [("outputnode.bias_corrected", "inputnode.moving_image"),
+        (skull_stripping, norm, [(ss_bias_corrected, "inputnode.moving_image"),
                      ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
@@ -143,11 +155,11 @@ def anat_qc_workflow(name="anatMRIQC"):
         (norm, repwf, ([
             ("outputnode.out_report", "inputnode.mni_report")])),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
-        (asw, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
+        (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
         (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
         (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
-        (asw, iqmswf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
-                       ("outputnode.bias_image", "inputnode.in_inu"),
+        (skull_stripping, iqmswf, [(ss_bias_corrected, "inputnode.inu_corrected"),
+                       (ss_bias_field, "inputnode.in_inu"),
                        ("outputnode.out_mask", "inputnode.brainmask")]),
         (amw, iqmswf, [("outputnode.air_mask", "inputnode.airmask"),
                        ("outputnode.hat_mask", "inputnode.hatmask"),
@@ -157,7 +169,7 @@ def anat_qc_workflow(name="anatMRIQC"):
                            ("partial_volume_files", "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
         (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
-        (asw, repwf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
+        (skull_stripping, repwf, [(ss_bias_corrected, "inputnode.inu_corrected"),
                       ("outputnode.out_mask", "inputnode.brainmask")]),
         (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
         (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
@@ -224,9 +236,17 @@ def spatial_normalization(name="SpatialNormalization"):
         num_threads=config.nipype.omp_nthreads,
         mem_gb=3,
     )
-    norm.inputs.reference_mask = str(
-        get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
-    )
+    if config.workflow.species.lower() == 'human':
+        norm.inputs.reference_mask = str(
+            get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
+        )
+    else:
+        norm.inputs.reference_image = str(
+            get_template(tpl_id, suffix="T2w")
+        )
+        norm.inputs.reference_mask = str(
+            get_template(tpl_id, desc="brain", suffix="mask")[0]
+        )
 
     # fmt: off
     workflow.connect([
@@ -313,15 +333,25 @@ def compute_iqms(name="ComputeIQMs"):
         iterfield=["input_image"],
         name="MNItpms2t1",
     )
-    invt.inputs.input_image = [
-        str(p)
-        for p in get_template(
-            config.workflow.template_id,
-            suffix="probseg",
-            resolution=1,
-            label=["CSF", "GM", "WM"],
-        )
-    ]
+    if config.workflow.species.lower() == 'human':
+        invt.inputs.input_image = [
+            str(p)
+            for p in get_template(
+                config.workflow.template_id,
+                suffix="probseg",
+                resolution=1,
+                label=["CSF", "GM", "WM"],
+            )
+        ]
+    else:
+        invt.inputs.input_image = [
+            str(p)
+            for p in get_template(
+                config.workflow.template_id,
+                suffix="probseg",
+                label=["CSF", "GM", "WM"],
+            )
+        ]
 
     datasink = pe.Node(
         IQMFileSink(
@@ -685,9 +715,15 @@ def airmsk_wf(name="AirMaskWorkflow"):
         ),
         name="invert_xfm",
     )
-    invt.inputs.input_image = str(
-        get_template("MNI152NLin2009cAsym", resolution=1, desc="head", suffix="mask")
-    )
+    if config.workflow.species.lower() == 'human':
+        invt.inputs.input_image = str(
+            get_template(config.workflow.template_id, resolution=1, desc="head", suffix="mask")
+        )
+    else:
+        #TODO: provide options for other populations
+        invt.inputs.input_image = str(
+            get_template(config.workflow.template_id, desc="brain", suffix="mask")[0]
+        )
 
     qi1 = pe.Node(ArtifactMask(), name="ArtifactMask")
 
