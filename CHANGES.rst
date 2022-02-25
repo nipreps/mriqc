@@ -1,3 +1,4 @@
+  * DOC: Add ``sbatch`` file example for SLURM execution (#963)
   * Update CONTRIBUTORS.md (#953)
   * update contributer location (#952)
   * 21.0.0rc2
