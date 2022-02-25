@@ -131,6 +131,16 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Increases log verbosity for each occurrence, debug level is -vvv.",
     )
 
+    #TODO: add 'mouse', 'macaque', and other populations once the pipeline is working
+    parser.add_argument(
+        "--species",
+        action="store",
+        type=str,
+        default="human",
+        choices=['human', 'rat'],
+        help="Use appropriate template for population",
+    )
+
     g_bids = parser.add_argument_group("Options for filtering BIDS queries")
     g_bids.add_argument(
         "--participant-label",
@@ -531,6 +541,14 @@ Please, check out your currently set filters:
     config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
         [i for sublist in config.workflow.inputs.values() for i in sublist]
     )
+
+    # set specifics for alternative populations
+    if not opts.species.lower() == 'human':
+        config.workflow.species = opts.species
+        if opts.species.lower() == 'rat':
+            config.workflow.template_id = 'Fischer344'
+            config.workflow.headmask = 'NoBET'
+            # TODO: add other species once rats are working
 
 
 def _get_biggest_file_size_gb(files):
