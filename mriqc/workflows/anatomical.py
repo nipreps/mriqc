@@ -641,7 +641,7 @@ def headmsk_wf(name="HeadMaskWorkflow"):
         denoise = pe.Node(Denoise(), name="Denoise")
         gradient = pe.Node(
             niu.Function(
-                input_names=["in_file", "snr"],
+                input_names=["in_file", "snr", "sigma"],
                 output_names=["out_file"],
                 function=image_gradient,
             ),
@@ -656,8 +656,21 @@ def headmsk_wf(name="HeadMaskWorkflow"):
             name="GradientThreshold",
         )
         if config.workflow.species != "human":
+            calc_sigma = pe.Node(
+                niu.Function(
+                    input_names=["in_file"],
+                    output_names=["sigma"],
+                    function=sigma_calc,
+                ),
+                name="calc_sigma"
+            )
+            workflow.connect([
+                (inputnode, calc_sigma, [('in_file', 'in_file')]),
+                (calc_sigma, gradient, [("sigma", "sigma")]),
+            ])
+
             thresh.inputs.aniso = True
-            thresh.inputs.thresh = 5.0
+            thresh.inputs.thresh = 4.0
 
         # fmt: off
         workflow.connect([
@@ -812,8 +825,16 @@ def _enhance(in_file, out_file=None):
 
     return out_file
 
+def sigma_calc(in_file):
+    import nibabel as nb
 
-def image_gradient(in_file, snr, out_file=None):
+    zooms = nb.load(in_file).header.get_zooms()
+    sigma = [ (zoom / min(zooms)) * 3 for zoom in zooms ]
+
+    return sigma
+
+
+def image_gradient(in_file, snr, sigma=3.0, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
     import os.path as op
 
@@ -832,34 +853,13 @@ def image_gradient(in_file, snr, out_file=None):
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
     datamax = np.percentile(data.reshape(-1), 99.5)
     data *= 100 / datamax
-    grad = gradient(data, 3.0)
+    grad = gradient(data, sigma)
     gradmax = np.percentile(grad.reshape(-1), 99.5)
     grad *= 100.0
     grad /= gradmax
 
     nb.Nifti1Image(grad, imnii.affine, imnii.header).to_filename(out_file)
     return out_file
-
-
-def generate_aniso_structure(in_file, dist):
-    """Generate an anisotropic binary structure, taking into account
-    differences in slice thickness. Written by EK, 25/1/2022 """
-    import nibabel as nb
-    import numpy as np
-    from scipy.ndimage import distance_transform_edt
-
-    img = nb.load(in_file)
-    zooms = img.header.get_zooms()
-    dim = img.header['dim'][0]
-
-    radius = int(np.ceil(dist / min(zooms)))
-
-    x = np.ones((2 * radius + 1) * np.ones(dim, dtype=np.int8))
-    np.put(x, x.size // 2, 0)
-    d = np.round(distance_transform_edt(x, sampling=zooms), 5)
-    struc = d <= dist
-
-    return struc
 
 
 def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
@@ -870,11 +870,19 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     import numpy as np
     from scipy import ndimage as sim
 
-    dist = 2
     if not aniso:
-        struc = sim.iterate_structure(sim.generate_binary_structure(3, dist), 2)
+        struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
     else:
-        struc = generate_aniso_structure(in_file, dist)
+        # Generate an anisotropic binary structure, taking into account slice thickness
+        img = nb.load(in_file)
+        zooms = img.header.get_zooms()
+        dist = max(zooms)
+        dim = img.header['dim'][0]
+
+        x = np.ones((5) * np.ones(dim, dtype=np.int8))
+        np.put(x, x.size // 2, 0)
+        dist_matrix = np.round(sim.distance_transform_edt(x, sampling=zooms), 5)
+        struc = dist_matrix <= dist
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
