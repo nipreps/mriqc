@@ -1,3 +1,4 @@
+  * ENH: Update to new niworkflows' API, which adds the crown to the carpetplot (#968)
   * DOC: Add ``sbatch`` file example for SLURM execution (#963)
   * Update CONTRIBUTORS.md (#953)
   * update contributer location (#952)
