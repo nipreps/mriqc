@@ -1,3 +1,4 @@
+  * FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
   * ENH: Update to new niworkflows' API, which adds the crown to the carpetplot (#968)
   * DOC: Add ``sbatch`` file example for SLURM execution (#963)
   * Update CONTRIBUTORS.md (#953)
