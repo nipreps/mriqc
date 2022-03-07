@@ -150,7 +150,8 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
         (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms"),
                          ("outputnode.out_dvars", "inputnode.in_dvars"),
-                         ("outputnode.outliers", "inputnode.outliers")]),
+                         ("outputnode.outliers", "inputnode.outliers"),
+                         ("outputnode.meta_sidecar", "inputnode.meta_sidecar")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
     ])
     # fmt: on
@@ -253,6 +254,7 @@ def compute_iqms(name="ComputeIQMs"):
                 "outliers",
                 "out_spikes",
                 "out_fft",
+                "meta_sidecar",
             ]
         ),
         name="outputnode",
@@ -350,7 +352,8 @@ def compute_iqms(name="ComputeIQMs"):
         (gcor, datasink, [(("out", _tofloat), "gcor")]),
         (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
         (measures, datasink, [("out_qc", "root")]),
-        (datasink, outputnode, [("out_file", "out_file")])
+        (datasink, outputnode, [("out_file", "out_file")]),
+        (meta, outputnode, [("out_dict", "meta_sidecar")]),
     ])
     # fmt: on
 
@@ -422,6 +425,7 @@ def individual_reports(name="ReportsWorkflow"):
                 "in_fft",
                 "mni_report",
                 "ica_report",
+                "meta_sidecar",
             ]
         ),
         name="inputnode",
@@ -463,7 +467,8 @@ def individual_reports(name="ReportsWorkflow"):
                               ("hmc_fd", "fd"),
                               ("fd_thres", "fd_thres"),
                               ("in_dvars", "dvars"),
-                              ("outliers", "outliers")]),
+                              ("outliers", "outliers"),
+                              (("meta_sidecar", _get_tr), "tr")]),
         (inputnode, parcels, [("epi_parc", "segmentation")]),
         (inputnode, dilated_mask, [("brainmask", "in_mask")]),
         (inputnode, subtract_mask, [("brainmask", "in_subtract")]),
@@ -985,3 +990,7 @@ def _carpet_parcellation(segmentation, crown_mask):
     out_file = Path("segments.nii.gz").absolute()
     outimg.to_filename(out_file)
     return str(out_file)
+
+
+def _get_tr(meta_dict):
+    return meta_dict.get("RepetitionTime", None)
