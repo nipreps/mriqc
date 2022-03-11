@@ -291,7 +291,7 @@ jobs:
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
-              --ignore=mriqc/classifier/sklearn --ignore=mriqc/interfaces/transitional.py
+              --ignore=mriqc/interfaces/transitional.py
       - store_test_results:
           path: /home/circleci/out/tests
 
@@ -429,16 +429,6 @@ jobs:
               T1w 4 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
 
-      # - run:
-      #     name: Test classifier
-      #     command: |
-      #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
-      #                  --train --test -P /opt/conda/lib/python3.8/site-packages/mriqc/data/mclf_run-20170724-191452_mod-rfc_ver-0.9.7-rc8_class-2_cv-loso_data-all_settings.yml -v
-      #       # Run the classifier on the test data
-      #       docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
-      #                  --entrypoint=mriqc_clf nipreps/mriqc:latest \
-      #                  --load-classifier $( basename `ls mclf_run-*_class-2_cv-loso_data-all_estimator.pklz` ) -X /scratch/derivatives/group_T1w.tsv -v
       - store_artifacts:
           path: /tmp/t1w/test
 
