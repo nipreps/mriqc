@@ -4,64 +4,9 @@
   * FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
   * ENH: Update to new niworkflows' API, which adds the crown to the carpetplot (#968)
   * DOC: Add ``sbatch`` file example for SLURM execution (#963)
-  * Update CONTRIBUTORS.md (#953)
-  * update contributer location (#952)
-  * 21.0.0rc2
+  * MAINT: Update ``CONTRIBUTORS.md`` (#953)
+  * MAINT: Update contributer location (#952)
 
-First official release after migrating the repository into the *NiPreps*' organization.
-This release updates the Docker image with up-to-date dependencies, updates
-*MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
-Finally, this release also contains a major code style overhaul by Zvi Baratz.
-With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley for their contributions.
-
-  * FIX: ``template_resolution`` deprecation warning (#941)
-  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
-  * FIX: T2w image of MNI template unavailable in Singularity (#940)
-  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
-  * FIX: Revise building documentation at RTD after migration (#935)
-  * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
-  * FIX: Update unit tests (#927)
-  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
-  * FIX: Update dependencies and repair T1w workflow accordingly (#925)
-  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
-  * ENH: Optimize *PyBIDS*' layout initialization (#939)
-  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
-  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
-  * DOC: Various fixes to "Running mriqc" section (#897)
-  * MAINT: Updates to ``CONTRIBUTORS.md`` file
-  * MAINT: Revise Docker image settings & CircleCI (#937)
-  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
-  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
-  * MAINT: New Docker layer caching system of other *NiPreps* (#929)
-  * MAINT: Code style overhaul (#901)
-  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
-  * STY: Run ``black`` at the top of the repo (#932)
- Merge tag '21.0.0rc2'
-diff --cc .maint/CONTRIBUTORS.md
-index 5bfd46b,c2ca94f..fd55380
---- a/.maint/CONTRIBUTORS.md
-+++ b/.maint/CONTRIBUTORS.md
-@@@ -20,14 -20,16 +20,15 @@@ Before every release, unlisted contribu
-  | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
-  | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
-  | Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
-- | Huffman | Adam | @verdurin | | |
-+ | Huffman | Adam | @verdurin | | Department of Physics, Imperial College London, London, UK |
-  | Kay | Benjamin | @benkay86 | | Washington University School of Medicine, St.Louis, MO, USA |
-  | Kent | James D. | @jdkent | 0000-0002-4892-2659 | Neuroscience Program, University of Iowa |
-- | Lee | John | @leej3 | | Quansight, Dublin, Ireland |
-+ | Krause | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
-+ | Lee | John A. | @leej3 | | Quansight, Dublin, Ireland |
-  | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
-  | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
- -| Piccirilli | Aaron | @apiccirilli | | Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA |
-  | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
-  | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
-+ | Triplett | William | @wtriplett | 0000-0002-9546-1306 | University of Florida: Gainesville, Florida, US |
-  | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
- -| Velasco | Pablo | @pvelasco | | Center for Brain Imaging, New York University, NY, USA |
- +| Velasco | Pablo | @pvelasco | 0000-0002-5749-6049 | Center for Brain Imaging, New York University, NY, USA |
-- | | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
 21.0.0 (TBD)
 ============
 First official release after migrating the repository into the *NiPreps*' organization.
