@@ -1,0 +1,98 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python package
+
+on:
+  push:
+    branches: [ '*' ]
+    tags: [ '*' ]
+  pull_request:
+    branches: [ master, 'maint/*' ]
+
+jobs:
+  build:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/checkout@v2
+      with:
+        ssh-key: "${{ secrets.NIPREPS_DEPLOY }}"
+        fetch-depth: 0
+    - name: Build in confined, updated environment and interpolate version
+      run: |
+        python -m venv /tmp/buildenv
+        source /tmp/buildenv/bin/activate
+        python -m pip install -U "setuptools~=58.0" "setuptools_scm>=6.2" pip wheel twine docutils
+
+        # Interpolate version
+        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          TAG=${GITHUB_REF##*/}
+        fi
+        THISVERSION=$( python setup.py --version )
+        THISVERSION=${TAG:-$THISVERSION}
+        echo "Expected VERSION: \"${THISVERSION}\""
+        echo "THISVERSION=${THISVERSION}" >> ${GITHUB_ENV}
+
+        python setup.py sdist
+        python -m twine check dist/mriqc-${THISVERSION}.tar.gz
+
+        python setup.py bdist_wheel
+        python -m twine check dist/mriqc-${THISVERSION}-py3-none-any.whl
+
+    - name: Install in confined environment [sdist]
+      run: |
+        python -m venv /tmp/install_sdist
+        source /tmp/install_sdist/bin/activate
+        python -m pip install --upgrade pip wheel
+        python -m pip install dist/mriqc-${THISVERSION}.tar.gz
+        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        echo "VERSION: \"${THISVERSION}\""
+        echo "INSTALLED: \"${INSTALLED_VERSION}\""
+        test "${INSTALLED_VERSION}" = "${THISVERSION}"
+    - name: Install in confined environment [wheel]
+      run: |
+        python -m venv /tmp/install_wheel
+        source /tmp/install_wheel/bin/activate
+        python -m pip install --upgrade pip wheel
+        python -m pip install dist/mriqc-${THISVERSION}-py3-none-any.whl
+        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        echo "INSTALLED: \"${INSTALLED_VERSION}\""
+        test "${INSTALLED_VERSION}" = "${THISVERSION}"
+    - name: Install in confined environment [pip install .]
+      run: |
+        python -m venv /tmp/setup_install
+        source /tmp/setup_install/bin/activate
+        python -m pip install --upgrade pip wheel
+        python -m pip install .
+        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        echo "INSTALLED: \"${INSTALLED_VERSION}\""
+        test "${INSTALLED_VERSION}" = "${THISVERSION}"
+    - name: Install in confined environment [pip install -e .]
+      run: |
+        python -m venv /tmp/setup_develop
+        source /tmp/setup_develop/bin/activate
+        python -m pip install pip
+        python -m pip install --upgrade pip wheel
+        python -m pip install -e .
+        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        echo "INSTALLED: \"${INSTALLED_VERSION}\""
+        test "${INSTALLED_VERSION}" = "${THISVERSION}"
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - run: pip install flake8
+    - run: flake8 mriqc/
