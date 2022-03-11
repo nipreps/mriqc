@@ -28,11 +28,11 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v1-{{ .Branch }}-{{ .Revision }}
-            - build-v1--{{ .Revision }}
-            - build-v1-{{ .Branch }}-
-            - build-v1-master-
-            - build-v1-
+            - built-v2-{{ .Branch }}-{{ .Revision }}
+            - built-v2--{{ .Revision }}
+            - built-v2-{{ .Branch }}-
+            - built-v2-master-
+            - built-v2-
           paths:
             - /tmp/docker
             - /tmp/images
@@ -173,7 +173,7 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-         key: build-v1-{{ .Branch }}-{{ .Revision }}
+         key: built-v2-{{ .Branch }}-{{ .Revision }}
          paths:
             - /tmp/docker
             - /tmp/images
@@ -254,7 +254,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - built-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -322,7 +322,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - built-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -459,7 +459,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - built-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -689,7 +689,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - build-v1-{{ .Branch }}-{{ .Revision }}
+            - built-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
