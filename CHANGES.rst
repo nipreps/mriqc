@@ -1,3 +1,4 @@
+  * FIX: Make toml config unique, works around #912 (#960)
   * MAINT: Outsource the classifier into nipreps/mriqc-learn (#973)
   * FIX: Nipype multiproc plugin expects ``n_procs`` and not ``nprocs`` (#961)
   * FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
