@@ -136,7 +136,7 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 RUN ldconfig
 WORKDIR /tmp/
 # Run mriqc by default
-ENTRYPOINT ["${CONDA_PATH}/bin/mriqc"]
+ENTRYPOINT ["/opt/conda/bin/mriqc"]
 
 ARG BUILD_DATE
 ARG VCS_REF
