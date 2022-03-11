@@ -87,27 +87,32 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
-from ._warnings import logging
+from multiprocessing import set_start_method
+from contextlib import suppress
 
-try:
-    from multiprocessing import set_start_method
-
+with suppress(RuntimeError):
     set_start_method("forkserver")
-except RuntimeError:
-    pass  # context has been already set
-finally:
-    # Defer all custom import for after initializing the forkserver and
-    # ignoring the most annoying warnings
-    import os
-    import sys
-    from pathlib import Path
-    from time import strftime
-    from uuid import uuid4
 
-    from nipype import __version__ as _nipype_ver
-    from templateflow import __version__ as _tf_ver
+# Defer all custom import for after initializing the forkserver and
+# ignoring the most annoying warnings
+from ._warnings import logging
+import os
+import sys
+from pathlib import Path
+from time import strftime
+from uuid import uuid4
 
-    from mriqc import __version__
+from nipype import __version__ as _nipype_ver
+from templateflow import __version__ as _tf_ver
+
+from mriqc import __version__
+
+# Disable NiPype etelemetry always
+_disable_et = bool(
+    os.getenv("NO_ET") is not None or os.getenv("NIPYPE_NO_ET") is not None
+)
+os.environ["NIPYPE_NO_ET"] = "1"
+os.environ["NO_ET"] = "1"
 
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings

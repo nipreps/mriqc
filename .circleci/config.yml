@@ -28,11 +28,11 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v2-{{ .Branch }}-{{ .Revision }}
-            - built-v2--{{ .Revision }}
-            - built-v2-{{ .Branch }}-
-            - built-v2-master-
-            - built-v2-
+            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - built-v3--{{ .Revision }}
+            - built-v3-{{ .Branch }}-
+            - built-v3-master-
+            - built-v3-
           paths:
             - /tmp/docker
             - /tmp/images
@@ -173,7 +173,7 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-         key: built-v2-{{ .Branch }}-{{ .Revision }}
+         key: built-v3-{{ .Branch }}-{{ .Revision }}
          paths:
             - /tmp/docker
             - /tmp/images
@@ -254,7 +254,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v2-{{ .Branch }}-{{ .Revision }}
+            - built-v3-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -286,7 +286,7 @@ jobs:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
-            docker run -ti \
+            docker run --rm -ti \
               -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
@@ -322,7 +322,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v2-{{ .Branch }}-{{ .Revision }}
+            - built-v3-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -369,7 +369,7 @@ jobs:
           command: |
             mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
             # Run MRIQC
-            docker run -u $( id -u ) -ti \
+            docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
                        nipreps/mriqc:latest \
@@ -386,7 +386,7 @@ jobs:
           name: Run group-level on T1w images
           no_output_timeout: 2h
           command: |
-            docker run -u $( id -u ) --rm=false -ti \
+            docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
                        nipreps/mriqc:latest \
@@ -415,7 +415,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run --rm=false -ti -v $PWD:/scratch -w /scratch \
+            docker run --rm -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
@@ -423,7 +423,7 @@ jobs:
       - run:
           name: WebAPI - Check records
           command: |
-            docker run --rm=false -ti \
+            docker run --rm -ti \
               --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
               nipreps/mriqc:latest \
               T1w 4 \
@@ -459,7 +459,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v2-{{ .Branch }}-{{ .Revision }}
+            - built-v3-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -508,7 +508,7 @@ jobs:
           command: |
             mkdir -p /tmp/bold/work /tmp/bold/derivatives
             # Run MRIQC
-            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+            docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
@@ -525,7 +525,7 @@ jobs:
           name: Run group-level on BOLD images
           no_output_timeout: 2h
           command: |
-            docker run -u $( id -u ) --rm=false -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+            docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
                        nipreps/mriqc:latest \
                        /data derivatives/ group \
@@ -553,7 +553,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run -u $( id -u ) --rm=false -ti -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm -ti -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
@@ -561,7 +561,7 @@ jobs:
       - run:
           name: WebAPI - Check records
           command: |
-            docker run --rm=false -ti \
+            docker run --rm -ti \
               --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
               nipreps/mriqc:latest \
               bold 9 \
@@ -689,7 +689,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - built-v2-{{ .Branch }}-{{ .Revision }}
+            - built-v3-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images

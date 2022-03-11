@@ -26,17 +26,31 @@
 FROM nipreps/miniconda:py38_1.4.2
 
 ARG DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${CONDA_PATH}/lib"
+
+# Install AFNI latest (neurodocker build)
+ENV AFNI_DIR="/opt/afni"
+RUN echo "Downloading AFNI ..." \
+    && mkdir -p ${AFNI_DIR} \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C ${AFNI_DIR} --strip-components 1
+ENV PATH="${AFNI_DIR}:$PATH" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_MODELPATH="${AFNI_DIR}/models" \
+    AFNI_TTATLAS_DATASET="${AFNI_DIR}/atlases" \
+    AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
 # Install AFNI's dependencies
 RUN ${CONDA_PATH}/bin/conda install -c conda-forge -c anaconda \
-                            xorg-libxp     \
-                            gsl            \
-                            libopenblas    \
-                            openblas       \
-                            libglu         \
+                            gsl                                \
+                            xorg-libxp                         \
+                            scipy=1.8                          \
+    && ${CONDA_PATH}/bin/conda install -c sssdgc png \
     && sync \
     && ${CONDA_PATH}/bin/conda clean -afy; sync \
     && rm -rf ~/.conda ~/.cache/pip/*; sync \
+    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
+    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.0 \
     && ldconfig
 
 RUN apt-get update \
@@ -56,21 +70,8 @@ RUN apt-get update \
                     netpbm                            \
                     tcsh                              \
                     xfonts-base                       \
- && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*                      \
- && ln -s /usr/lib/x86_64-linux-gnu/libgsl.so.23 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
  && ldconfig
-
-# Install AFNI latest (neurodocker build)
-ENV AFNI_DIR="/opt/afni"
-RUN echo "Downloading AFNI ..." \
-    && mkdir -p ${AFNI_DIR} \
-    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
-    | tar -xz -C ${AFNI_DIR} --strip-components 1
-ENV PATH="${AFNI_DIR}:$PATH" \
-    AFNI_IMSAVE_WARNINGS="NO" \
-    AFNI_MODELPATH="${AFNI_DIR}/models" \
-    AFNI_TTATLAS_DATASET="${AFNI_DIR}/atlases" \
-    AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
 # Installing ANTs 2.3.4 (NeuroDocker build)
 ENV ANTSPATH="/opt/ants"
@@ -106,7 +107,7 @@ ENV FSLDIR="/opt/fsl" \
     FSLREMOTECALL="" \
     FSLGECUDAQ="cuda.q" \
     POSSUMDIR="/opt/fsl" \
-    LD_LIBRARY_PATH="/opt/fsl:$LD_LIBRARY_PATH"
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/fsl"
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -117,13 +118,10 @@ ENV MKL_NUM_THREADS=1 \
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
 ENV HOME="/home/mriqc"
-
 # Refresh linked libraries
 RUN ldconfig
-
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
-
 # Precaching atlases
 RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
@@ -133,7 +131,6 @@ RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
                          label=['CSF', 'GM', 'WM']);\
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
-
 # Installing MRIQC
 COPY . /src/mriqc
 ARG VERSION
@@ -141,17 +138,17 @@ ARG VERSION
 RUN echo "${VERSION}" > /src/mriqc/mriqc/VERSION && \
     echo "include mriqc/VERSION" >> /src/mriqc/MANIFEST.in && \
     pip install --no-cache-dir "/src/mriqc[all]"
-
 RUN find $HOME -type d -exec chmod go=u {} + && \
     find $HOME -type f -exec chmod go=u {} + && \
     rm -rf $HOME/.npm $HOME/.conda $HOME/.empty
 
 # Best practices
 RUN ldconfig
+
 WORKDIR /tmp/
+
 # Run mriqc by default
 ENTRYPOINT ["/opt/conda/bin/mriqc"]
-
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.label-schema.build-date=$BUILD_DATE \
