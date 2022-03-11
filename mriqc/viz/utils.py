@@ -580,6 +580,57 @@ def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
     return out_file
 
 
+def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
+    fig, ax = plt.subplots()
+
+    ax.plot(
+        x_grid,
+        ref_pdf,
+        linewidth=2,
+        alpha=0.5,
+        label="background",
+        color="dodgerblue",
+    )
+
+    refmax = np.percentile(ref_data, 99.95)
+    x_max = x_grid[-1]
+
+    ax.hist(
+        ref_data,
+        40 * max(int(refmax / x_max), 1),
+        fc="dodgerblue",
+        histtype="stepfilled",
+        alpha=0.2,
+        density=True,
+    )
+    fit_pdf[fit_pdf > 1.0] = np.nan
+    ax.plot(
+        x_grid,
+        fit_pdf,
+        linewidth=2,
+        alpha=0.5,
+        label="chi2",
+        color="darkorange",
+    )
+
+    ylims = ax.get_ylim()
+    ax.axvline(
+        x_grid[-cutoff_idx],
+        ymax=ref_pdf[-cutoff_idx] / ylims[1],
+        color="dodgerblue",
+    )
+    plt.xlabel('Intensity within "hat" mask')
+    plt.ylabel("Frequency")
+    ax.set_xlim([0, x_max])
+    plt.legend()
+
+    if out_file is None:
+        out_file = op.abspath("qi2_plot.svg")
+
+    fig.savefig(out_file, bbox_inches="tight", pad_inches=0, dpi=300)
+    return out_file
+
+
 def _get_limits(nifti_file, only_plot_noise=False):
     if isinstance(nifti_file, str):
         nii = nb.as_closest_canonical(nb.load(nifti_file))

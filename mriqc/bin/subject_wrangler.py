@@ -20,9 +20,7 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""
-BIDS-Apps subject wrangler.
-"""
+"""BIDS-Apps subject wrangler."""
 import glob
 import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter

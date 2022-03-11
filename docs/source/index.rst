@@ -17,7 +17,6 @@ Contents
    measures
    reports
    workflows
-   classifier
    dsa
    license
 
