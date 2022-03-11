@@ -28,19 +28,27 @@ FROM nipreps/miniconda:py38_1.4.2
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install AFNI's dependencies
+RUN ${CONDA_PATH}/bin/conda install -c conda-forge -c anaconda \
+                            xorg-libxp     \
+                            gsl            \
+                            libopenblas    \
+                            openblas       \
+                            libglu         \
+    && sync \
+    && ${CONDA_PATH}/bin/conda clean -afy; sync \
+    && rm -rf ~/.conda ~/.cache/pip/*; sync \
+    && ldconfig
+
 RUN apt-get update \
  && apt-get install -y -q --no-install-recommends     \
-                    gsl-bin                           \
                     libcurl4-openssl-dev              \
                     libgdal-dev                       \
                     libgfortran-8-dev                 \
                     libgfortran4                      \
-                    libglu1-mesa-dev                  \
                     libglw1-mesa                      \
                     libgomp1                          \
                     libjpeg62                         \
                     libnode-dev                       \
-                    libopenblas-dev                   \
                     libssl-dev                        \
                     libudunits2-dev                   \
                     libxm4                            \
@@ -71,28 +79,34 @@ RUN curl -sSL "https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_6
     | tar -xzC $ANTSPATH --strip-components 1
 ENV PATH="$ANTSPATH:$PATH"
 
-# Install FSL 5.0.11 (neurodocker build variant)
-RUN echo "Downloading FSL ..." \
-    && mkdir -p /opt/fsl-5.0.11 \
-    && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos6_64.tar.gz \
-    | tar -xz -C /opt/fsl-5.0.11 --strip-components 1 \
-    && echo "Installing FSL conda environment ..." \
-    && bash /opt/fsl-5.0.11/etc/fslconf/fslpython_install.sh -f /opt/fsl-5.0.11 \
-    && rm -fr /opt/fsl-5.0.11/{doc,extras,fslpython,python,refdoc,src,tcl} \
-    && rm -fr /opt/fsl-5.0.11/data/{atlases,mist,possum}
+# Install FSL 5.0.11
+RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt \
+    --exclude='fsl/doc' \
+    --exclude='fsl/refdoc' \
+    --exclude='fsl/python/oxford_asl' \
+    --exclude='fsl/data/possum' \
+    --exclude='fsl/data/first' \
+    --exclude='fsl/data/mist' \
+    --exclude='fsl/data/atlases' \
+    --exclude='fsl/data/xtract_data' \
+    --exclude='fsl/extras/doc' \
+    --exclude='fsl/extras/man' \
+    --exclude='fsl/extras/src' \
+    --exclude='fsl/src' \
+    --exclude='fsl/tcl'
 
-ENV FSLDIR="/opt/fsl-5.0.11" \
-    PATH="/opt/fsl-5.0.11/bin:$PATH" \
+ENV FSLDIR="/opt/fsl" \
+    PATH="/opt/fsl/bin:$PATH" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
     FSLMULTIFILEQUIT="TRUE" \
-    FSLTCLSH="/opt/fsl-5.0.11/bin/fsltclsh" \
-    FSLWISH="/opt/fsl-5.0.11/bin/fslwish" \
+    FSLTCLSH="/opt/fsl/bin/fsltclsh" \
+    FSLWISH="/opt/fsl/bin/fslwish" \
     FSLLOCKDIR="" \
     FSLMACHINELIST="" \
     FSLREMOTECALL="" \
     FSLGECUDAQ="cuda.q" \
-    POSSUMDIR="/opt/fsl-5.0.11" \
-    LD_LIBRARY_PATH="/opt/fsl-5.0.11:$LD_LIBRARY_PATH"
+    POSSUMDIR="/opt/fsl" \
+    LD_LIBRARY_PATH="/opt/fsl:$LD_LIBRARY_PATH"
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization

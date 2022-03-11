@@ -286,7 +286,7 @@ jobs:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
-            docker run -ti --rm=false \
+            docker run -ti \
               -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
@@ -369,7 +369,7 @@ jobs:
           command: |
             mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
             # Run MRIQC
-            docker run -u $( id -u ) --rm=false -ti \
+            docker run -u $( id -u ) -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
                        nipreps/mriqc:latest \

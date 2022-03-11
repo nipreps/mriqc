@@ -21,10 +21,8 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Utilities: Jinja2 templates."""
-
 from io import open  # pylint: disable=W0622
 
-import jinja2
 from pkg_resources import resource_filename as pkgrf
 
 
@@ -35,6 +33,8 @@ class Template(object):
     """
 
     def __init__(self, template_str):
+        import jinja2
+
         self.template_str = template_str
         self.env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(searchpath="/"),
