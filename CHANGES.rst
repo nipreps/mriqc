@@ -1,3 +1,4 @@
+  * MAINT: Refactor ``Dockerfile`` using new miniconda image (#974)
   * FIX: Make toml config unique, works around #912 (#960)
   * MAINT: Outsource the classifier into nipreps/mriqc-learn (#973)
   * FIX: Nipype multiproc plugin expects ``n_procs`` and not ``nprocs`` (#961)
