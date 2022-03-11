@@ -11,6 +11,11 @@
       "orcid": "0000-0002-6533-164X",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Christopher J. Markiewicz"
+    },
+    {
+      "orcid": "0000-0002-1668-9629",
+      "affiliation": "Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland",
+      "name": "C\u00e9line Provins"
     }
   ],
   "contributors": [
@@ -21,7 +26,8 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Neuroscience Program, Tel-Aviv University",
+      "orcid": "0000-0001-7159-1387",
+      "affiliation": "Sagol School of Neuroscience, Tel-Aviv University",
       "name": "Zvi Baratz",
       "type": "Researcher"
     },
@@ -54,6 +60,7 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0001-5884-4247",
       "affiliation": "Quansight, Dublin, Ireland",
       "name": "John A. Lee",
       "type": "Researcher"
@@ -65,14 +72,14 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "University of Michigan, Ann Arbor, USA",
-      "name": "Bennet Fauber",
+      "orcid": "0000-0002-4892-2659",
+      "affiliation": "Department of Psychology, University of Texas at Austin, TX, USA",
+      "name": "James D. Kent",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0002-4892-2659",
-      "affiliation": "Neuroscience Program, University of Iowa",
-      "name": "James D. Kent",
+      "affiliation": "University of Michigan, Ann Arbor, USA",
+      "name": "Bennet Fauber",
       "type": "Researcher"
     },
     {
@@ -85,6 +92,12 @@
       "orcid": "0000-0002-7252-7771",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Mathias Goncalves",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-5749-6049",
+      "affiliation": "Center for Brain Imaging, New York University, NY, USA",
+      "name": "Pablo Velasco",
       "type": "Researcher"
     },
     {
@@ -105,19 +118,14 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Center for Brain Imaging, New York University, NY, USA",
-      "name": "Pablo Velasco",
+      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
+      "name": "Michael Krause",
       "type": "Researcher"
     },
     {
       "orcid": "0000-0002-5312-6729",
       "affiliation": "McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA",
       "name": "Satrajit S. Ghosh",
-      "type": "Researcher"
-    },
-    {
-      "affiliation": "Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA",
-      "name": "Aaron Piccirilli",
       "type": "Researcher"
     },
     {
@@ -140,11 +148,6 @@
     {
       "affiliation": "National Institutes of Health, USA",
       "name": "Michael G. Clark",
-      "type": "Researcher"
-    },
-    {
-      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
-      "name": "Michael Krause",
       "type": "Researcher"
     },
     {

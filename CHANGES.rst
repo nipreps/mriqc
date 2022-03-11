@@ -1,46 +1,53 @@
-  * MAINT: Refactor ``Dockerfile`` using new miniconda image (#974)
-  * FIX: Make toml config unique, works around #912 (#960)
-  * MAINT: Outsource the classifier into nipreps/mriqc-learn (#973)
-  * FIX: Nipype multiproc plugin expects ``n_procs`` and not ``nprocs`` (#961)
-  * FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
-  * ENH: Update to new niworkflows' API, which adds the crown to the carpetplot (#968)
-  * DOC: Add ``sbatch`` file example for SLURM execution (#963)
-  * MAINT: Update ``CONTRIBUTORS.md`` (#953)
-  * MAINT: Update contributer location (#952)
-
-21.0.0 (TBD)
+22.0.0 (TBD)
 ============
 First official release after migrating the repository into the *NiPreps*' organization.
 This release updates the Docker image with up-to-date dependencies, updates
 *MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
+
+The code, modules and data related to the MRIQC classifier have been extracted into an
+isolated package called *MRIQC-learn*.
+
 Finally, this release also contains a major code style overhaul by Zvi Baratz.
+
+The contributor/author crediting system has been adapted to the current draft of the
+*NiPreps Community* Governance documents.
+
 With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley
 for their contributions.
 
-  * FIX: ``template_resolution`` deprecation warning (#941)
-  * FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
-  * FIX: T2w image of MNI template unavailable in Singularity (#940)
-  * FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
-  * FIX: Revise building documentation at RTD after migration (#935)
-  * FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
-  * FIX: Update unit tests (#927)
-  * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
-  * FIX: Update dependencies and repair T1w workflow accordingly (#925)
-  * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
-  * ENH: Optimize *PyBIDS*' layout initialization (#939)
-  * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
-  * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
-  * DOC: Various fixes to "Running mriqc" section (#897)
-  * MAINT: Updates to ``CONTRIBUTORS.md`` file
-  * MAINT: Revise Docker image settings & CircleCI (#937)
-  * MAINT: Finalize transfer to ``nipreps`` organization (#936)
-  * MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
-  * MAINT: New Docker layer caching system of other *NiPreps* (#929)
-  * MAINT: Code style overhaul (#901)
-  * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
-  * STY: Run ``black`` at the top of the repo (#932)
+* FIX: Make toml config unique, works around #912 (#960)
+* FIX: Nipype multiproc plugin expects ``n_procs`` and not ``nprocs`` (#961)
+* FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
+* FIX: ``template_resolution`` deprecation warning (#941)
+* FIX: Set entity ``datatype`` in ``BIDSLayout`` queries (#942)
+* FIX: T2w image of MNI template unavailable in Singularity (#940)
+* FIX: Release process -- Docker deployment not working + Python package lacks WebAPI token (#938)
+* FIX: Revise building documentation at RTD after migration (#935)
+* FIX: Final touch-ups in the maintenance of Docker image + CI (#928)
+* FIX: Update unit tests (#927)
+* FIX: Update dependencies and repair BOLD workflow accordingly (#926)
+* FIX: Update dependencies and repair T1w workflow accordingly (#925)
+* FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+* ENH: Update to new *NiWorkflows*' API, which adds the crown to the carpetplot (#968)
+* ENH: Optimize *PyBIDS*' layout initialization (#939)
+* ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
+* ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
+* DOC: Add ``sbatch`` file example for SLURM execution (#963)
+* DOC: Various fixes to "Running mriqc" section (#897)
+* MAINT: Refactor ``Dockerfile`` using new miniconda image (#974)
+* MAINT: Outsource the classifier into nipreps/mriqc-learn (#973)
+* MAINT: Update ``CONTRIBUTORS.md`` (#953)
+* MAINT: Update contributer location (#952)
+* MAINT: Updates to ``CONTRIBUTORS.md`` file
+* MAINT: Revise Docker image settings & CircleCI (#937)
+* MAINT: Finalize transfer to ``nipreps`` organization (#936)
+* MAINT: Relicensing to Apache-2.0, for compliance with *NiPreps* and prior transfer to the org (#930)
+* MAINT: New Docker layer caching system of other *NiPreps* (#929)
+* MAINT: Code style overhaul (#901)
+* MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
+* STY: Run ``black`` at the top of the repo (#932)
 
-.. admonition:: Author list for papers based on *MRIQC* 21.0.x
+.. admonition:: Author list for papers based on *MRIQC* 22.0.x
 
     As described in the `Contributor Guidelines
     <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
@@ -48,37 +55,30 @@ for their contributions.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Dylan Nielson \ :sup:`3`\ ; Jan Varada \ :sup:`4`\ ;
-    Ross W. Blair \ :sup:`2`\ ; William Triplett \ :sup:`5`\ ; Nikita Beliy \ :sup:`6`\ ; John A. Lee \ :sup:`7`\ ;
-    Ursula A. Tooley \ :sup:`8`\ ; Bennet Fauber \ :sup:`9`\ ; James D. Kent \ :sup:`10`\ ; Taylor Salo \ :sup:`11`\ ;
-    Mathias Goncalves \ :sup:`2`\ ; Thomas Nichols \ :sup:`12`\ ; Adam Huffman \ :sup:`13`\ ; Joke Durnez \ :sup:`2`\ ;
-    Pablo Velasco \ :sup:`14`\ ; Satrajit S. Ghosh \ :sup:`15`\ ; Aaron Piccirilli \ :sup:`16`\ ; Asier Erramuzpe \ :sup:`17`\ ;
-    Benjamin Kay \ :sup:`18`\ ; Daniel Birman \ :sup:`2`\ ; Michael G. Clark \ :sup:`19`\ ; Michael Krause \ :sup:`20`\ ;
-    Rafael Garcia-Dias \ :sup:`21`\ ; Sean Marret \ :sup:`4`\ ; Adam G. Thomas \ :sup:`22`\ ;
-    Russell A. Poldrack \ :sup:`2`\ ; Krzysztof J. Gorgolewski \ :sup:`23`\ ; Oscar Esteban \ :sup:`24`\ .
+    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Dylan Nielson \ :sup:`3`\ ; Jan Varada \ :sup:`4`\ ; Ross W. Blair \ :sup:`2`\ ; William Triplett \ :sup:`5`\ ; Nikita Beliy \ :sup:`6`\ ; Céline Provins \ :sup:`7`\ ; John A. Lee \ :sup:`8`\ ; Ursula A. Tooley \ :sup:`9`\ ; James D. Kent \ :sup:`10`\ ; Bennet Fauber \ :sup:`11`\ ; Taylor Salo \ :sup:`12`\ ; Mathias Goncalves \ :sup:`2`\ ; Pablo Velasco \ :sup:`13`\ ; Thomas Nichols \ :sup:`14`\ ; Adam Huffman \ :sup:`15`\ ; Joke Durnez \ :sup:`2`\ ; Michael Krause \ :sup:`16`\ ; Satrajit S. Ghosh \ :sup:`17`\ ; Asier Erramuzpe \ :sup:`18`\ ; Benjamin Kay \ :sup:`19`\ ; Daniel Birman \ :sup:`2`\ ; Michael G. Clark \ :sup:`20`\ ; Rafael Garcia-Dias \ :sup:`21`\ ; Sean Marret \ :sup:`4`\ ; Adam G. Thomas \ :sup:`22`\ ; Russell A. Poldrack \ :sup:`2`\ ; Krzysztof J. Gorgolewski \ :sup:`23`\ ; Oscar Esteban \ :sup:`24`\ .
 
     Affiliations:
 
-      1. Neuroscience Program, Tel-Aviv University
+      1. Sagol School of Neuroscience, Tel-Aviv University
       2. Department of Psychology, Stanford University, CA, USA
       3. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
       4. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
       5. University of Florida: Gainesville, Florida, US
       6. CRC ULiege, Liege, Belgium
-      7. Quansight, Dublin, Ireland
-      8. Department of Neuroscience, University of Pennsylvania, PA, USA
-      9. University of Michigan, Ann Arbor, USA
-      10. Neuroscience Program, University of Iowa
-      11. Department of Psychology, Florida International University, FL, USA
-      12. Oxford Big Data Institute, University of Oxford, Oxford, GB
-      13. Department of Physics, Imperial College London, London, UK
-      14. Center for Brain Imaging, New York University, NY, USA
-      15. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
-      16. Center for Interdisciplinary Brain Sciences Research, Stanford University, CA, USA
-      17. Computational Neuroimaging Lab, BioCruces Health Research Institute
-      18. Washington University School of Medicine, St.Louis, MO, USA
-      19. National Institutes of Health, USA
-      20. Max Planck Institute for Human Development, Berlin, Germany
+      7. Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland
+      8. Quansight, Dublin, Ireland
+      9. Department of Neuroscience, University of Pennsylvania, PA, USA
+      10. Department of Psychology, University of Texas at Austin, TX, USA
+      11. University of Michigan, Ann Arbor, USA
+      12. Department of Psychology, Florida International University, FL, USA
+      13. Center for Brain Imaging, New York University, NY, USA
+      14. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      15. Department of Physics, Imperial College London, London, UK
+      16. Max Planck Institute for Human Development, Berlin, Germany
+      17. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      18. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      19. Washington University School of Medicine, St.Louis, MO, USA
+      20. National Institutes of Health, USA
       21. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
       22. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
       23. Google LLC
