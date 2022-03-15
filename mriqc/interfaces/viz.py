@@ -73,7 +73,7 @@ class PlotContoursOutputSpec(TraitedSpec):
 
 
 class PlotContours(SimpleInterface):
-    """ Plot contours """
+    """Plot contours"""
 
     input_spec = PlotContoursInputSpec
     output_spec = PlotContoursOutputSpec

@@ -192,16 +192,20 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         ])
         # fmt: on
         if config.workflow.ica:
-            workflow.connect([(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])])
+            workflow.connect(
+                [(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])]
+            )
 
     else:
         from .anatomical import _binarize
 
-        binarise_labels = pe.Node(niu.Function(
-            input_names=["in_file", "threshold"],
-            output_names=["out_file"],
-            function=_binarize),
-            name="binarise_labels"
+        binarise_labels = pe.Node(
+            niu.Function(
+                input_names=["in_file", "threshold"],
+                output_names=["out_file"],
+                function=_binarize,
+            ),
+            name="binarise_labels",
         )
 
         # fmt: off
@@ -213,7 +217,9 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         # fmt: on
 
         if config.workflow.ica:
-            workflow.connect([(binarise_labels, melodic, [("out_file", "report_mask")])])
+            workflow.connect(
+                [(binarise_labels, melodic, [("out_file", "report_mask")])]
+            )
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -483,8 +489,7 @@ def individual_reports(name="ReportsWorkflow"):
     # Create the crown mask
     dilated_mask = pe.Node(BinaryDilation(), name="dilated_mask")
     subtract_mask = pe.Node(BinarySubtraction(), name="subtract_mask")
-    parcels = pe.Node(niu.Function(function=_carpet_parcellation),
-                      name="parcels")
+    parcels = pe.Node(niu.Function(function=_carpet_parcellation), name="parcels")
 
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
 
@@ -895,7 +900,9 @@ def epi_mni_align(name="SpatialNormalization"):
             )[0]
         )
 
-        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name="bspline_grid")
+        bspline_grid = pe.Node(
+            niu.Function(function=_bspline_grid), name="bspline_grid"
+        )
 
         # fmt: off
         workflow.connect([
@@ -915,7 +922,7 @@ def epi_mni_align(name="SpatialNormalization"):
         name="ResampleSegmentation",
     )
 
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         invt.inputs.input_image = str(
             get_template(
                 config.workflow.template_id,
@@ -945,7 +952,7 @@ def epi_mni_align(name="SpatialNormalization"):
     ])
     # fmt: on
 
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         workflow.connect([(inputnode, norm, [("epi_mask", "moving_mask")])])
 
     return workflow
@@ -1044,9 +1051,9 @@ def _carpet_parcellation(segmentation, crown_mask):
 
     lut = np.zeros((256,), dtype="uint8")
     lut[100:201] = 1  # Ctx GM
-    lut[30:99] = 2    # dGM
-    lut[1:11] = 3     # WM+CSF
-    lut[255] = 4      # Cerebellum
+    lut[30:99] = 2  # dGM
+    lut[1:11] = 3  # WM+CSF
+    lut[255] = 4  # Cerebellum
     # Apply lookup table
     seg = lut[np.asanyarray(img.dataobj, dtype="uint16")]
     seg[np.asanyarray(nb.load(crown_mask).dataobj, dtype=int) > 0] = 5

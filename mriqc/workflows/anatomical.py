@@ -104,16 +104,22 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(check_dtype=False), name="conform")
     # 2. species specific skull-stripping
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-        skull_stripping = skullstrip_wf(n4_nthreads=config.nipype.omp_nthreads, unifize=False)
+
+        skull_stripping = skullstrip_wf(
+            n4_nthreads=config.nipype.omp_nthreads, unifize=False
+        )
         ss_in_file = "inputnode.in_file"
         ss_bias_corrected = "outputnode.bias_corrected"
         ss_skull_stripped = "outputnode.out_file"
         ss_bias_field = "outputnode.bias_image"
     else:
         from nirodents.workflows.brainextraction import init_rodent_brain_extraction_wf
-        skull_stripping = init_rodent_brain_extraction_wf(template_id=config.workflow.template_id)
+
+        skull_stripping = init_rodent_brain_extraction_wf(
+            template_id=config.workflow.template_id
+        )
         ss_in_file = "inputnode.in_files"
         ss_bias_corrected = "outputnode.out_corrected"
         ss_skull_stripped = "outputnode.out_brain"
@@ -125,7 +131,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         segment = pe.Node(
             fsl.FAST(segments=True, out_basename="segment"),
             name="segmentation",
@@ -138,11 +144,9 @@ def anat_qc_workflow(name="anatMRIQC"):
         from niworkflows.interfaces.fixes import ApplyTransforms
 
         tpms = [
-            str(tpm) for tpm in
-            get_template(
-                config.workflow.template_id,
-                label=["CSF", "GM", "WM"],
-                suffix="probseg"
+            str(tpm)
+            for tpm in get_template(
+                config.workflow.template_id, label=["CSF", "GM", "WM"], suffix="probseg"
             )
         ]
 
@@ -152,7 +156,7 @@ def anat_qc_workflow(name="anatMRIQC"):
                 default_value=0,
                 float=True,
                 interpolation="Gaussian",
-                output_image="prior.nii.gz"
+                output_image="prior.nii.gz",
             ),
             iterfield=["input_image"],
             name="xfm_tpms",
@@ -164,9 +168,10 @@ def anat_qc_workflow(name="anatMRIQC"):
                 input_names=["in_files"],
                 output_names=["file_format"],
                 function=_format_tpm_names,
-                execution={"keep_inputs": True, "remove_unnecessary_outputs": False}
+                execution={"keep_inputs": True, "remove_unnecessary_outputs": False},
             ),
-            name="format_tpm_names")
+            name="format_tpm_names",
+        )
 
         segment = pe.Node(
             ants.Atropos(
@@ -177,7 +182,7 @@ def anat_qc_workflow(name="anatMRIQC"):
                 mrf_smoothing_factor=0.01,
                 save_posteriors=True,
                 out_classified_image_name="segment.nii.gz",
-                output_posteriors_name_template="segment_%02d.nii.gz"
+                output_posteriors_name_template="segment_%02d.nii.gz",
             ),
             name="segmentation",
             mem_gb=5,
@@ -306,14 +311,12 @@ def spatial_normalization(name="SpatialNormalization"):
         num_threads=config.nipype.omp_nthreads,
         mem_gb=3,
     )
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         norm.inputs.reference_mask = str(
             get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
         )
     else:
-        norm.inputs.reference_image = str(
-            get_template(tpl_id, suffix="T2w")
-        )
+        norm.inputs.reference_image = str(get_template(tpl_id, suffix="T2w"))
         norm.inputs.reference_mask = str(
             get_template(tpl_id, desc="brain", suffix="mask")[0]
         )
@@ -403,7 +406,7 @@ def compute_iqms(name="ComputeIQMs"):
         iterfield=["input_image"],
         name="MNItpms2t1",
     )
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         invt.inputs.input_image = [
             str(p)
             for p in get_template(
@@ -732,12 +735,14 @@ def headmsk_wf(name="HeadMaskWorkflow"):
                     output_names=["sigma"],
                     function=sigma_calc,
                 ),
-                name="calc_sigma"
+                name="calc_sigma",
             )
-            workflow.connect([
-                (inputnode, calc_sigma, [('in_file', 'in_file')]),
-                (calc_sigma, gradient, [("sigma", "sigma")]),
-            ])
+            workflow.connect(
+                [
+                    (inputnode, calc_sigma, [("in_file", "in_file")]),
+                    (calc_sigma, gradient, [("sigma", "sigma")]),
+                ]
+            )
 
             thresh.inputs.aniso = True
             thresh.inputs.thresh = 4.0
@@ -801,9 +806,11 @@ def airmsk_wf(name="AirMaskWorkflow"):
         ),
         name="invert_xfm",
     )
-    if config.workflow.species.lower() == 'human':
+    if config.workflow.species.lower() == "human":
         invt.inputs.input_image = str(
-            get_template(config.workflow.template_id, resolution=1, desc="head", suffix="mask")
+            get_template(
+                config.workflow.template_id, resolution=1, desc="head", suffix="mask"
+            )
         )
     else:
         # TODO: provide options for other populations
@@ -934,7 +941,7 @@ def image_gradient(in_file, snr, sigma=3.0, out_file=None):
 
 
 def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
-    """ Compute a threshold from the histogram of the magnitude gradient image """
+    """Compute a threshold from the histogram of the magnitude gradient image"""
     import os.path as op
 
     import nibabel as nb
@@ -948,7 +955,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
         img = nb.load(in_file)
         zooms = img.header.get_zooms()
         dist = max(zooms)
-        dim = img.header['dim'][0]
+        dim = img.header["dim"][0]
 
         x = np.ones((5) * np.ones(dim, dtype=np.int8))
         np.put(x, x.size // 2, 0)
@@ -1019,7 +1026,7 @@ def _format_tpm_names(in_files, fname_string=None):
     # copy files to cwd and rename iteratively
     for count, fname in enumerate(in_files):
         img = nb.load(fname)
-        extension = ''.join(Path(fname).suffixes)
+        extension = "".join(Path(fname).suffixes)
         out_fname = f"priors_{1 + count:02}{extension}"
         nb.save(img, Path(out_path, out_fname))
 
@@ -1027,8 +1034,7 @@ def _format_tpm_names(in_files, fname_string=None):
         fname_string = f"priors_%02d{extension}"
 
     out_files = [
-        str(prior) for prior in glob.glob(
-            str(Path(out_path, f"priors*{extension}")))
+        str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))
     ]
 
     # return path with c-style format string for Atropos

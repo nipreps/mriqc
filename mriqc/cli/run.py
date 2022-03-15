@@ -48,7 +48,9 @@ def main():
     # straightforward way to communicate with the child process is via the filesystem.
     # The config file name needs to be unique, otherwise multiple mriqc instances
     # will create write conflicts.
-    config_file = mktemp(dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml')
+    config_file = mktemp(
+        dir=config.execution.work_dir, prefix=".mriqc.", suffix=".toml"
+    )
     config.to_filename(config_file)
 
     # Set up participant level
