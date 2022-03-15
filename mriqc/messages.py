@@ -20,9 +20,7 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""
-Logging and console messages.
-"""
+"""Logging and console messages."""
 
 BIDS_META = "Generating BIDS derivatives metadata."
 BUILDING_WORKFLOW = "Building anatomical MRIQC workflow for files: {dataset}"
@@ -49,7 +47,8 @@ RUN_FINISHED = "MRIQC completed."
 SUSPICIOUS_DATA_TYPE = "Input image {in_file} has a suspicious data type: '{dtype}'"
 TSV_GENERATED = "Generated summary TSV table for {modality} data: {path}"
 VOXEL_SIZE_OK = "Voxel size is large enough."
-VOXEL_SIZE_SMALL = "One or more voxel dimensions (%f, %f, %f) are smaller than the requested voxel size (%f) - diff=(%f, %f, %f)"
+VOXEL_SIZE_SMALL = (
+    "One or more voxel dimensions (%f, %f, %f) are smaller than the "
+    "requested voxel size (%f) - diff=(%f, %f, %f)"
+)
 Z_SCORING = "z-scoring dataset..."
-
-# flake8: noqa: E502

@@ -58,7 +58,7 @@ graph is built across processes.
 .. code-block:: Python
 
     from mriqc import config
-    config_file = config.execution.work_dir / '.mriqc.toml'
+    config_file = mktemp(dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml')
     config.to_filename(config_file)
     # Call build_workflow(config_file, retval) in a subprocess
     with Manager() as mgr:
@@ -87,27 +87,32 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
-from ._warnings import logging
+from multiprocessing import set_start_method
+from contextlib import suppress
 
-try:
-    from multiprocessing import set_start_method
-
+with suppress(RuntimeError):
     set_start_method("forkserver")
-except RuntimeError:
-    pass  # context has been already set
-finally:
-    # Defer all custom import for after initializing the forkserver and
-    # ignoring the most annoying warnings
-    import os
-    import sys
-    from pathlib import Path
-    from time import strftime
-    from uuid import uuid4
 
-    from nipype import __version__ as _nipype_ver
-    from templateflow import __version__ as _tf_ver
+# Defer all custom import for after initializing the forkserver and
+# ignoring the most annoying warnings
+from ._warnings import logging
+import os
+import sys
+from pathlib import Path
+from time import strftime
+from uuid import uuid4
 
-    from mriqc import __version__
+from nipype import __version__ as _nipype_ver
+from templateflow import __version__ as _tf_ver
+
+from mriqc import __version__
+
+# Disable NiPype etelemetry always
+_disable_et = bool(
+    os.getenv("NO_ET") is not None or os.getenv("NIPYPE_NO_ET") is not None
+)
+os.environ["NIPYPE_NO_ET"] = "1"
+os.environ["NO_ET"] = "1"
 
 if not hasattr(sys, "_is_pytest_session"):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
@@ -290,7 +295,7 @@ class nipype(_Config):
             "plugin_args": cls.plugin_args,
         }
         if cls.plugin in ("MultiProc", "LegacyMultiProc"):
-            out["plugin_args"]["nprocs"] = int(cls.nprocs)
+            out["plugin_args"]["n_procs"] = int(cls.nprocs)
             if cls.memory_gb:
                 out["plugin_args"]["memory_gb"] = float(cls.memory_gb)
         return out

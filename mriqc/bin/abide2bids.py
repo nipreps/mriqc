@@ -20,9 +20,7 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""
-ABIDE2BIDS download tool.
-"""
+"""ABIDE2BIDS download tool."""
 import errno
 import json
 import os

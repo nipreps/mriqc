@@ -145,7 +145,8 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
         (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms"),
                          ("outputnode.out_dvars", "inputnode.in_dvars"),
-                         ("outputnode.outliers", "inputnode.outliers")]),
+                         ("outputnode.outliers", "inputnode.outliers"),
+                         ("outputnode.meta_sidecar", "inputnode.meta_sidecar")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
     ])
     # fmt: on
@@ -282,6 +283,7 @@ def compute_iqms(name="ComputeIQMs"):
                 "outliers",
                 "out_spikes",
                 "out_fft",
+                "meta_sidecar",
             ]
         ),
         name="outputnode",
@@ -379,7 +381,8 @@ def compute_iqms(name="ComputeIQMs"):
         (gcor, datasink, [(("out", _tofloat), "gcor")]),
         (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
         (measures, datasink, [("out_qc", "root")]),
-        (datasink, outputnode, [("out_file", "out_file")])
+        (datasink, outputnode, [("out_file", "out_file")]),
+        (meta, outputnode, [("out_dict", "meta_sidecar")]),
     ])
     # fmt: on
 
@@ -421,6 +424,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     """
     from niworkflows.interfaces.plotting import FMRISummary
+    from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
     from mriqc.interfaces import PlotMosaic, PlotSpikes, Spikes
     from mriqc.interfaces.reports import IndividualReport
@@ -450,6 +454,7 @@ def individual_reports(name="ReportsWorkflow"):
                 "in_fft",
                 "mni_report",
                 "ica_report",
+                "meta_sidecar",
             ]
         ),
         name="inputnode",
@@ -474,6 +479,13 @@ def individual_reports(name="ReportsWorkflow"):
         mem_gb=mem_gb * 2.5,
     )
 
+    # Generate crown mask
+    # Create the crown mask
+    dilated_mask = pe.Node(BinaryDilation(), name="dilated_mask")
+    subtract_mask = pe.Node(BinarySubtraction(), name="subtract_mask")
+    parcels = pe.Node(niu.Function(function=_carpet_parcellation),
+                      name="parcels")
+
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
 
     # fmt: off
@@ -481,12 +493,17 @@ def individual_reports(name="ReportsWorkflow"):
         (inputnode, spikes_bg, [("in_ras", "in_file")]),
         (inputnode, spmask, [("in_ras", "in_file")]),
         (inputnode, bigplot, [("hmc_epi", "in_func"),
-                              ("brainmask", "in_mask"),
                               ("hmc_fd", "fd"),
                               ("fd_thres", "fd_thres"),
                               ("in_dvars", "dvars"),
-                              ("epi_parc", "in_segm"),
-                              ("outliers", "outliers")]),
+                              ("outliers", "outliers"),
+                              (("meta_sidecar", _get_tr), "tr")]),
+        (inputnode, parcels, [("epi_parc", "segmentation")]),
+        (inputnode, dilated_mask, [("brainmask", "in_mask")]),
+        (inputnode, subtract_mask, [("brainmask", "in_subtract")]),
+        (dilated_mask, subtract_mask, [("out_mask", "in_base")]),
+        (subtract_mask, parcels, [("out_mask", "crown_mask")]),
+        (parcels, bigplot, [("out", "in_segm")]),
         (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
         (spmask, spikes_bg, [("out_file", "in_mask")]),
     ])
@@ -1015,3 +1032,31 @@ def _parse_tout(in_file):
 
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
+
+
+def _carpet_parcellation(segmentation, crown_mask):
+    """Generate the union of two masks."""
+    from pathlib import Path
+    import numpy as np
+    import nibabel as nb
+
+    img = nb.load(segmentation)
+
+    lut = np.zeros((256,), dtype="uint8")
+    lut[100:201] = 1  # Ctx GM
+    lut[30:99] = 2    # dGM
+    lut[1:11] = 3     # WM+CSF
+    lut[255] = 4      # Cerebellum
+    # Apply lookup table
+    seg = lut[np.asanyarray(img.dataobj, dtype="uint16")]
+    seg[np.asanyarray(nb.load(crown_mask).dataobj, dtype=int) > 0] = 5
+
+    outimg = img.__class__(seg.astype("uint8"), img.affine, img.header)
+    outimg.set_data_dtype("uint8")
+    out_file = Path("segments.nii.gz").absolute()
+    outimg.to_filename(out_file)
+    return str(out_file)
+
+
+def _get_tr(meta_dict):
+    return meta_dict.get("RepetitionTime", None)
