@@ -125,11 +125,69 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(
-        fsl.FAST(segments=True, out_basename="segment"),
-        name="segmentation",
-        mem_gb=5,
-    )
+    if config.workflow.species.lower() == 'human':
+        segment = pe.Node(
+            fsl.FAST(segments=True, out_basename="segment"),
+            name="segmentation",
+            mem_gb=5,
+        )
+        seg_in_file="in_files"
+        dseg_out="tissue_class_map"
+        pve_out="partial_volume_files"
+    else:
+        from niworkflows.interfaces.fixes import ApplyTransforms
+        from nipype.utils.filemanip import copyfiles
+
+        
+        tpms = [
+            str(tpm) for tpm in 
+            get_template(
+                config.workflow.template_id,
+                label=["CSF", "GM", "WM"],
+                suffix="probseg"
+            )
+        ]
+
+        xfm_tpms = pe.MapNode(
+            ApplyTransforms(
+                dimension=3,
+                default_value=0,
+                float=True,
+                interpolation="Gaussian",
+                output_image="prior.nii.gz"
+            ),
+            iterfield=["input_image"],
+            name="xfm_tpms",
+        )
+        xfm_tpms.inputs.input_image = tpms
+
+        format_tpm_names=pe.Node(
+            niu.Function(
+                input_names=["in_files"],
+                output_names=["file_format"],
+                function=_format_tpm_names,
+                execution={"keep_inputs": True, "remove_unnecessary_outputs": False}
+                ),
+            name="format_tpm_names")
+
+        segment = pe.Node(
+            ants.Atropos(
+                initialization="PriorProbabilityImages",
+                number_of_tissue_classes=3,
+                prior_weighting=0.1,
+                mrf_radius=[1, 1, 1],
+                mrf_smoothing_factor=0.01,
+                save_posteriors=True,
+                out_classified_image_name="segment.nii.gz",
+                output_posteriors_name_template="segment_%02d.nii.gz"
+            ),
+            name="segmentation",
+            mem_gb=5,
+        )
+        seg_in_file="intensity_images"
+        dseg_out="classified_image"
+        pve_out="posteriors"
+            
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
@@ -141,11 +199,10 @@ def anat_qc_workflow(name="anatMRIQC"):
         (inputnode, to_ras, [("in_file", "in_file")]),
         (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
         (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
-        (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
         (to_ras, skull_stripping, [("out_file", ss_in_file)]),
-        (skull_stripping, segment, [(ss_skull_stripped, "in_files")]),
+        (skull_stripping, segment, [(ss_skull_stripped, seg_in_file)]),
         (skull_stripping, hmsk, [(ss_bias_corrected, "inputnode.in_file")]),
-        (segment, hmsk, [("tissue_class_map", "inputnode.in_segm")]),
+        (segment, hmsk, [(dseg_out, "inputnode.in_segm")]),
         (skull_stripping, norm, [(ss_bias_corrected, "inputnode.moving_image"),
                      ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
@@ -165,8 +222,8 @@ def anat_qc_workflow(name="anatMRIQC"):
                        ("outputnode.hat_mask", "inputnode.hatmask"),
                        ("outputnode.art_mask", "inputnode.artmask"),
                        ("outputnode.rot_mask", "inputnode.rotmask")]),
-        (segment, iqmswf, [("tissue_class_map", "inputnode.segmentation"),
-                           ("partial_volume_files", "inputnode.pvms")]),
+        (segment, iqmswf, [(dseg_out, "inputnode.segmentation"),
+                           (pve_out, "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
         (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
         (skull_stripping, repwf, [(ss_bias_corrected, "inputnode.inu_corrected"),
@@ -175,11 +232,24 @@ def anat_qc_workflow(name="anatMRIQC"):
         (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
                       ("outputnode.art_mask", "inputnode.artmask"),
                       ("outputnode.rot_mask", "inputnode.rotmask")]),
-        (segment, repwf, [("tissue_class_map", "inputnode.segmentation")]),
+        (segment, repwf, [(dseg_out, "inputnode.segmentation")]),
         (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
         (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
         (iqmswf, outputnode, [("outputnode.out_file", "out_json")]),
     ])
+
+    if config.workflow.species.lower() == 'human':
+        workflow.connect([
+            (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
+        ])
+    else:
+        workflow.connect([
+            (skull_stripping, xfm_tpms, [(ss_skull_stripped, "reference_image")]),
+            (norm, xfm_tpms, [("outputnode.inverse_composite_transform", "transforms")]),
+            (xfm_tpms, format_tpm_names, [('output_image', 'in_files')]),
+            (format_tpm_names, segment, [(('file_format', _pop), 'prior_image')]),
+            (skull_stripping, segment, [("outputnode.out_mask", "mask_image")]),
+        ])
     # fmt: on
 
     # Upload metrics
@@ -936,3 +1006,33 @@ def _get_mod(in_file):
     from pathlib import Path
 
     return Path(in_file).name.rstrip(".gz").rstrip(".nii").split("_")[-1]
+
+def _format_tpm_names(in_files, fname_string=None):
+    from pathlib import Path
+    import nibabel as nb
+    import glob
+
+    out_path = Path.cwd().absolute()
+
+    # copy files to cwd and rename iteratively
+    for count, fname in enumerate(in_files):
+        img = nb.load(fname)
+        extension = ''.join(Path(fname).suffixes)
+        out_fname = f"priors_{1 + count:02}{extension}"
+        nb.save(img, Path(out_path, out_fname))
+    
+    if fname_string is None:
+        fname_string=f"priors_%02d{extension}"
+
+    out_files = [ str(prior) for prior in glob.glob(
+        str(Path(out_path, f"priors*{extension}")))
+    ]
+
+    # return path with c-style format string for Atropos
+    file_format = str(Path(out_path, fname_string))
+    return file_format, out_files
+
+def _pop(inlist):
+    if isinstance(inlist, (list, tuple)):
+        return inlist[0]
+    return inlist
