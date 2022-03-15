@@ -131,16 +131,14 @@ def anat_qc_workflow(name="anatMRIQC"):
             name="segmentation",
             mem_gb=5,
         )
-        seg_in_file="in_files"
-        dseg_out="tissue_class_map"
-        pve_out="partial_volume_files"
+        seg_in_file = "in_files"
+        dseg_out = "tissue_class_map"
+        pve_out = "partial_volume_files"
     else:
         from niworkflows.interfaces.fixes import ApplyTransforms
-        from nipype.utils.filemanip import copyfiles
 
-        
         tpms = [
-            str(tpm) for tpm in 
+            str(tpm) for tpm in
             get_template(
                 config.workflow.template_id,
                 label=["CSF", "GM", "WM"],
@@ -161,13 +159,13 @@ def anat_qc_workflow(name="anatMRIQC"):
         )
         xfm_tpms.inputs.input_image = tpms
 
-        format_tpm_names=pe.Node(
+        format_tpm_names = pe.Node(
             niu.Function(
                 input_names=["in_files"],
                 output_names=["file_format"],
                 function=_format_tpm_names,
                 execution={"keep_inputs": True, "remove_unnecessary_outputs": False}
-                ),
+            ),
             name="format_tpm_names")
 
         segment = pe.Node(
@@ -184,10 +182,10 @@ def anat_qc_workflow(name="anatMRIQC"):
             name="segmentation",
             mem_gb=5,
         )
-        seg_in_file="intensity_images"
-        dseg_out="classified_image"
-        pve_out="posteriors"
-            
+        seg_in_file = "intensity_images"
+        dseg_out = "classified_image"
+        pve_out = "posteriors"
+
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
@@ -895,11 +893,12 @@ def _enhance(in_file, out_file=None):
 
     return out_file
 
+
 def sigma_calc(in_file):
     import nibabel as nb
 
     zooms = nb.load(in_file).header.get_zooms()
-    sigma = [ (zoom / min(zooms)) * 3 for zoom in zooms ]
+    sigma = [(zoom / min(zooms)) * 3 for zoom in zooms]
 
     return sigma
 
@@ -1007,6 +1006,7 @@ def _get_mod(in_file):
 
     return Path(in_file).name.rstrip(".gz").rstrip(".nii").split("_")[-1]
 
+
 def _format_tpm_names(in_files, fname_string=None):
     from pathlib import Path
     import nibabel as nb
@@ -1020,17 +1020,19 @@ def _format_tpm_names(in_files, fname_string=None):
         extension = ''.join(Path(fname).suffixes)
         out_fname = f"priors_{1 + count:02}{extension}"
         nb.save(img, Path(out_path, out_fname))
-    
-    if fname_string is None:
-        fname_string=f"priors_%02d{extension}"
 
-    out_files = [ str(prior) for prior in glob.glob(
-        str(Path(out_path, f"priors*{extension}")))
+    if fname_string is None:
+        fname_string = f"priors_%02d{extension}"
+
+    out_files = [
+        str(prior) for prior in glob.glob(
+            str(Path(out_path, f"priors*{extension}")))
     ]
 
     # return path with c-style format string for Atropos
     file_format = str(Path(out_path, fname_string))
     return file_format, out_files
+
 
 def _pop(inlist):
     if isinstance(inlist, (list, tuple)):
