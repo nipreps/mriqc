@@ -543,7 +543,7 @@ Please, check out your currently set filters:
     )
 
     # set specifics for alternative populations
-    if not opts.species.lower() == 'human':
+    if opts.species.lower() != 'human':
         config.workflow.species = opts.species
         # TODO: add other species once rats are working
         if opts.species.lower() == 'rat':
