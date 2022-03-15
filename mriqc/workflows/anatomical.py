@@ -201,8 +201,9 @@ def anat_qc_workflow(name="anatMRIQC"):
         (skull_stripping, segment, [(ss_skull_stripped, seg_in_file)]),
         (skull_stripping, hmsk, [(ss_bias_corrected, "inputnode.in_file")]),
         (segment, hmsk, [(dseg_out, "inputnode.in_segm")]),
-        (skull_stripping, norm, [(ss_bias_corrected, "inputnode.moving_image"),
-                     ("outputnode.out_mask", "inputnode.moving_mask")]),
+        (skull_stripping, norm, [
+            (ss_bias_corrected, "inputnode.moving_image"),
+            ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, iqmswf, [
@@ -224,8 +225,9 @@ def anat_qc_workflow(name="anatMRIQC"):
                            (pve_out, "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
         (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
-        (skull_stripping, repwf, [(ss_bias_corrected, "inputnode.inu_corrected"),
-                      ("outputnode.out_mask", "inputnode.brainmask")]),
+        (skull_stripping, repwf, [
+            (ss_bias_corrected, "inputnode.inu_corrected"),
+            ("outputnode.out_mask", "inputnode.brainmask")]),
         (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
         (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
                       ("outputnode.art_mask", "inputnode.artmask"),
