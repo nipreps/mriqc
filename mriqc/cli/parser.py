@@ -52,7 +52,7 @@ def _build_parser():
         return value
 
     def _to_gb(value):
-        scale = {"G": 1, "T": 10 ** 3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
+        scale = {"G": 1, "T": 10**3, "M": 1e-3, "K": 1e-6, "B": 1e-9}
         digits = "".join([c for c in value if c.isdigit()])
         n_digits = len(digits)
         units = value[n_digits:] or "G"
@@ -129,6 +129,16 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         action="count",
         default=0,
         help="Increases log verbosity for each occurrence, debug level is -vvv.",
+    )
+
+    # TODO: add 'mouse', 'macaque', and other populations once the pipeline is working
+    parser.add_argument(
+        "--species",
+        action="store",
+        type=str,
+        default="human",
+        choices=["human", "rat"],
+        help="Use appropriate template for population",
     )
 
     g_bids = parser.add_argument_group("Options for filtering BIDS queries")
@@ -532,13 +542,23 @@ Please, check out your currently set filters:
         [i for sublist in config.workflow.inputs.values() for i in sublist]
     )
 
+    # set specifics for alternative populations
+    if opts.species.lower() != "human":
+        config.workflow.species = opts.species
+        # TODO: add other species once rats are working
+        if opts.species.lower() == "rat":
+            config.workflow.template_id = "Fischer344"
+            config.workflow.headmask = "NoBET"
+            # block uploads for the moment; can be reversed before wider release
+            config.execution.no_sub = True
+
 
 def _get_biggest_file_size_gb(files):
     import os
 
     max_size = 0
     for file in files:
-        size = os.path.getsize(file) / (1024 ** 3)
+        size = os.path.getsize(file) / (1024**3)
         if size > max_size:
             max_size = size
     return max_size

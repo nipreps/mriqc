@@ -107,7 +107,6 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         name="mean",
         mem_gb=mem_gb * 1.5,
     )
-    skullstrip_epi = fmri_bmsk_workflow()
 
     # EPI to MNI registration
     ema = epi_mni_align()
@@ -128,21 +127,17 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
-        (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
         (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
         (mean, ema, [("out_file", "inputnode.epi_mean")]),
-        (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
         (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
         (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
                          ("outputnode.out_fd", "inputnode.hmc_fd")]),
-        (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
         (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
         (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
         (mean, repwf, [("out_file", "inputnode.epi_mean")]),
         (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
-        (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
         (hmcwf, repwf, [("outputnode.out_fd", "inputnode.hmc_fd"),
                         ("outputnode.out_file", "inputnode.hmc_epi")]),
         (ema, repwf, [("outputnode.epi_parc", "inputnode.epi_parc"),
@@ -181,10 +176,50 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
         # fmt: off
         workflow.connect([
             (sanitize, melodic, [("out_file", "in_files")]),
-            (skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")]),
             (melodic, repwf, [("out_report", "inputnode.ica_report")])
         ])
         # fmt: on
+
+    # population specific changes to brain masking
+    if config.workflow.species == "human":
+        skullstrip_epi = fmri_bmsk_workflow()
+        # fmt: off
+        workflow.connect([
+            (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
+            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
+            (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
+        ])
+        # fmt: on
+        if config.workflow.ica:
+            workflow.connect(
+                [(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])]
+            )
+
+    else:
+        from .anatomical import _binarize
+
+        binarise_labels = pe.Node(
+            niu.Function(
+                input_names=["in_file", "threshold"],
+                output_names=["out_file"],
+                function=_binarize,
+            ),
+            name="binarise_labels",
+        )
+
+        # fmt: off
+        workflow.connect([
+            (ema, binarise_labels, [("outputnode.epi_parc", "in_file")]),
+            (binarise_labels, iqmswf, [("out_file", "inputnode.brainmask")]),
+            (binarise_labels, repwf, [("out_file", "inputnode.brainmask")])
+        ])
+        # fmt: on
+
+        if config.workflow.ica:
+            workflow.connect(
+                [(binarise_labels, melodic, [("out_file", "report_mask")])]
+            )
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -454,8 +489,7 @@ def individual_reports(name="ReportsWorkflow"):
     # Create the crown mask
     dilated_mask = pe.Node(BinaryDilation(), name="dilated_mask")
     subtract_mask = pe.Node(BinarySubtraction(), name="subtract_mask")
-    parcels = pe.Node(niu.Function(function=_carpet_parcellation),
-                      name="parcels")
+    parcels = pe.Node(niu.Function(function=_carpet_parcellation), name="parcels")
 
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
 
@@ -830,36 +864,57 @@ def epi_mni_align(name="SpatialNormalization"):
             moving="boldref",
             num_threads=ants_nthreads,
             reference="boldref",
-            reference_image=str(
-                get_template("MNI152NLin2009cAsym", resolution=2, suffix="boldref")
-            ),
-            reference_mask=str(
-                get_template(
-                    "MNI152NLin2009cAsym",
-                    resolution=2,
-                    desc="brain",
-                    suffix="mask",
-                )
-            ),
-            template="MNI152NLin2009cAsym",
+            template=config.workflow.template_id,
         ),
         name="EPI2MNI",
         num_threads=n_procs,
         mem_gb=3,
     )
 
+    if config.workflow.species.lower() == "human":
+        norm.inputs.reference_image = str(
+            get_template(config.workflow.template_id, resolution=2, suffix="boldref")
+        )
+        norm.inputs.reference_mask = str(
+            get_template(
+                config.workflow.template_id,
+                resolution=2,
+                desc="brain",
+                suffix="mask",
+            )
+        )
+    # adapt some population-specific settings
+    else:
+        from nirodents.workflows.brainextraction import _bspline_grid
+
+        n4itk.inputs.shrink_factor = 1
+        n4itk.inputs.n_iterations = [50] * 4
+        norm.inputs.reference_image = str(
+            get_template(config.workflow.template_id, suffix="T2w")
+        )
+        norm.inputs.reference_mask = str(
+            get_template(
+                config.workflow.template_id,
+                desc="brain",
+                suffix="mask",
+            )[0]
+        )
+
+        bspline_grid = pe.Node(
+            niu.Function(function=_bspline_grid), name="bspline_grid"
+        )
+
+        # fmt: off
+        workflow.connect([
+            (inputnode, bspline_grid, [('epi_mean', 'in_file')]),
+            (bspline_grid, n4itk, [('out', 'args')])
+        ])
+        # fmt: on
+
     # Warp segmentation into EPI space
     invt = pe.Node(
         ApplyTransforms(
             float=True,
-            input_image=str(
-                get_template(
-                    "MNI152NLin2009cAsym",
-                    resolution=1,
-                    desc="carpet",
-                    suffix="dseg",
-                )
-            ),
             dimension=3,
             default_value=0,
             interpolation="MultiLabel",
@@ -867,20 +922,38 @@ def epi_mni_align(name="SpatialNormalization"):
         name="ResampleSegmentation",
     )
 
+    if config.workflow.species.lower() == "human":
+        invt.inputs.input_image = str(
+            get_template(
+                config.workflow.template_id,
+                resolution=1,
+                desc="carpet",
+                suffix="dseg",
+            )
+        )
+    else:
+        invt.inputs.input_image = str(
+            get_template(
+                config.workflow.template_id,
+                suffix="dseg",
+            )[-1]
+        )
+
     # fmt: off
     workflow.connect([
         (inputnode, invt, [("epi_mean", "reference_image")]),
         (inputnode, n4itk, [("epi_mean", "input_image")]),
-        (inputnode, norm, [("epi_mask", "moving_mask")]),
         (n4itk, norm, [("output_image", "moving_image")]),
         (norm, invt, [
             ("inverse_composite_transform", "transforms")]),
         (invt, outputnode, [("output_image", "epi_parc")]),
         (norm, outputnode, [("warped_image", "epi_mni"),
                             ("out_report", "report")]),
-
     ])
     # fmt: on
+
+    if config.workflow.species.lower() == "human":
+        workflow.connect([(inputnode, norm, [("epi_mask", "moving_mask")])])
 
     return workflow
 
@@ -978,9 +1051,9 @@ def _carpet_parcellation(segmentation, crown_mask):
 
     lut = np.zeros((256,), dtype="uint8")
     lut[100:201] = 1  # Ctx GM
-    lut[30:99] = 2    # dGM
-    lut[1:11] = 3     # WM+CSF
-    lut[255] = 4      # Cerebellum
+    lut[30:99] = 2  # dGM
+    lut[1:11] = 3  # WM+CSF
+    lut[255] = 4  # Cerebellum
     # Apply lookup table
     seg = lut[np.asanyarray(img.dataobj, dtype="uint16")]
     seg[np.asanyarray(nb.load(crown_mask).dataobj, dtype=int) > 0] = 5

@@ -158,7 +158,7 @@ _templateflow_home = Path(
 try:
     from psutil import virtual_memory
 
-    _free_mem_at_start = round(virtual_memory().free / 1024 ** 3, 1)
+    _free_mem_at_start = round(virtual_memory().free / 1024**3, 1)
 except Exception:
     _free_mem_at_start = None
 
@@ -499,6 +499,8 @@ class workflow(_Config):
     """Initial volume in functional timeseries that should be considered for preprocessing."""
     stop_idx = None
     """Final volume in functional timeseries that should be considered for preprocessing."""
+    species = "human"
+    """Subject species to choose most appropriate template"""
     template_id = "MNI152NLin2009cAsym"
     """TemplateFlow ID of template used for the anatomical processing."""
 

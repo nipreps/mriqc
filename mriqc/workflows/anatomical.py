@@ -83,7 +83,6 @@ def anat_qc_workflow(name="anatMRIQC"):
             wf = anat_qc_workflow()
 
     """
-    from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
 
     dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
         "T2w", []
@@ -104,8 +103,27 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     # 1. Reorient anatomical image
     to_ras = pe.Node(ConformImage(check_dtype=False), name="conform")
-    # 2. Skull-stripping (afni)
-    asw = skullstrip_wf(n4_nthreads=config.nipype.omp_nthreads, unifize=False)
+    # 2. species specific skull-stripping
+    if config.workflow.species.lower() == "human":
+        from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
+
+        skull_stripping = skullstrip_wf(
+            n4_nthreads=config.nipype.omp_nthreads, unifize=False
+        )
+        ss_in_file = "inputnode.in_file"
+        ss_bias_corrected = "outputnode.bias_corrected"
+        ss_skull_stripped = "outputnode.out_file"
+        ss_bias_field = "outputnode.bias_image"
+    else:
+        from nirodents.workflows.brainextraction import init_rodent_brain_extraction_wf
+
+        skull_stripping = init_rodent_brain_extraction_wf(
+            template_id=config.workflow.template_id
+        )
+        ss_in_file = "inputnode.in_files"
+        ss_bias_corrected = "outputnode.out_corrected"
+        ss_skull_stripped = "outputnode.out_brain"
+        ss_bias_field = "final_n4.bias_image"
     # 3. Head mask
     hmsk = headmsk_wf()
     # 4. Spatial Normalization, using ANTs
@@ -113,11 +131,66 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 5. Air mask (with and without artifacts)
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
-    segment = pe.Node(
-        fsl.FAST(segments=True, out_basename="segment"),
-        name="segmentation",
-        mem_gb=5,
-    )
+    if config.workflow.species.lower() == "human":
+        segment = pe.Node(
+            fsl.FAST(segments=True, out_basename="segment"),
+            name="segmentation",
+            mem_gb=5,
+        )
+        seg_in_file = "in_files"
+        dseg_out = "tissue_class_map"
+        pve_out = "partial_volume_files"
+    else:
+        from niworkflows.interfaces.fixes import ApplyTransforms
+
+        tpms = [
+            str(tpm)
+            for tpm in get_template(
+                config.workflow.template_id, label=["CSF", "GM", "WM"], suffix="probseg"
+            )
+        ]
+
+        xfm_tpms = pe.MapNode(
+            ApplyTransforms(
+                dimension=3,
+                default_value=0,
+                float=True,
+                interpolation="Gaussian",
+                output_image="prior.nii.gz",
+            ),
+            iterfield=["input_image"],
+            name="xfm_tpms",
+        )
+        xfm_tpms.inputs.input_image = tpms
+
+        format_tpm_names = pe.Node(
+            niu.Function(
+                input_names=["in_files"],
+                output_names=["file_format"],
+                function=_format_tpm_names,
+                execution={"keep_inputs": True, "remove_unnecessary_outputs": False},
+            ),
+            name="format_tpm_names",
+        )
+
+        segment = pe.Node(
+            ants.Atropos(
+                initialization="PriorProbabilityImages",
+                number_of_tissue_classes=3,
+                prior_weighting=0.1,
+                mrf_radius=[1, 1, 1],
+                mrf_smoothing_factor=0.01,
+                save_posteriors=True,
+                out_classified_image_name="segment.nii.gz",
+                output_posteriors_name_template="segment_%02d.nii.gz",
+            ),
+            name="segmentation",
+            mem_gb=5,
+        )
+        seg_in_file = "intensity_images"
+        dseg_out = "classified_image"
+        pve_out = "posteriors"
+
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
@@ -129,13 +202,13 @@ def anat_qc_workflow(name="anatMRIQC"):
         (inputnode, to_ras, [("in_file", "in_file")]),
         (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
         (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
-        (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
-        (to_ras, asw, [("out_file", "inputnode.in_file")]),
-        (asw, segment, [("outputnode.out_file", "in_files")]),
-        (asw, hmsk, [("outputnode.bias_corrected", "inputnode.in_file")]),
-        (segment, hmsk, [("tissue_class_map", "inputnode.in_segm")]),
-        (asw, norm, [("outputnode.bias_corrected", "inputnode.moving_image"),
-                     ("outputnode.out_mask", "inputnode.moving_mask")]),
+        (to_ras, skull_stripping, [("out_file", ss_in_file)]),
+        (skull_stripping, segment, [(ss_skull_stripped, seg_in_file)]),
+        (skull_stripping, hmsk, [(ss_bias_corrected, "inputnode.in_file")]),
+        (segment, hmsk, [(dseg_out, "inputnode.in_segm")]),
+        (skull_stripping, norm, [
+            (ss_bias_corrected, "inputnode.moving_image"),
+            ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, iqmswf, [
@@ -143,31 +216,45 @@ def anat_qc_workflow(name="anatMRIQC"):
         (norm, repwf, ([
             ("outputnode.out_report", "inputnode.mni_report")])),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
-        (asw, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
+        (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
         (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
         (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
-        (asw, iqmswf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
-                       ("outputnode.bias_image", "inputnode.in_inu"),
-                       ("outputnode.out_mask", "inputnode.brainmask")]),
+        (skull_stripping, iqmswf, [(ss_bias_corrected, "inputnode.inu_corrected"),
+                                   (ss_bias_field, "inputnode.in_inu"),
+                                   ("outputnode.out_mask", "inputnode.brainmask")]),
         (amw, iqmswf, [("outputnode.air_mask", "inputnode.airmask"),
                        ("outputnode.hat_mask", "inputnode.hatmask"),
                        ("outputnode.art_mask", "inputnode.artmask"),
                        ("outputnode.rot_mask", "inputnode.rotmask")]),
-        (segment, iqmswf, [("tissue_class_map", "inputnode.segmentation"),
-                           ("partial_volume_files", "inputnode.pvms")]),
+        (segment, iqmswf, [(dseg_out, "inputnode.segmentation"),
+                           (pve_out, "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
         (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
-        (asw, repwf, [("outputnode.bias_corrected", "inputnode.inu_corrected"),
-                      ("outputnode.out_mask", "inputnode.brainmask")]),
+        (skull_stripping, repwf, [
+            (ss_bias_corrected, "inputnode.inu_corrected"),
+            ("outputnode.out_mask", "inputnode.brainmask")]),
         (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
         (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
                       ("outputnode.art_mask", "inputnode.artmask"),
                       ("outputnode.rot_mask", "inputnode.rotmask")]),
-        (segment, repwf, [("tissue_class_map", "inputnode.segmentation")]),
+        (segment, repwf, [(dseg_out, "inputnode.segmentation")]),
         (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
         (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
         (iqmswf, outputnode, [("outputnode.out_file", "out_json")]),
     ])
+
+    if config.workflow.species.lower() == 'human':
+        workflow.connect([
+            (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
+        ])
+    else:
+        workflow.connect([
+            (skull_stripping, xfm_tpms, [(ss_skull_stripped, "reference_image")]),
+            (norm, xfm_tpms, [("outputnode.inverse_composite_transform", "transforms")]),
+            (xfm_tpms, format_tpm_names, [('output_image', 'in_files')]),
+            (format_tpm_names, segment, [(('file_format', _pop), 'prior_image')]),
+            (skull_stripping, segment, [("outputnode.out_mask", "mask_image")]),
+        ])
     # fmt: on
 
     # Upload metrics
@@ -224,9 +311,15 @@ def spatial_normalization(name="SpatialNormalization"):
         num_threads=config.nipype.omp_nthreads,
         mem_gb=3,
     )
-    norm.inputs.reference_mask = str(
-        get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
-    )
+    if config.workflow.species.lower() == "human":
+        norm.inputs.reference_mask = str(
+            get_template(tpl_id, resolution=2, desc="brain", suffix="mask")
+        )
+    else:
+        norm.inputs.reference_image = str(get_template(tpl_id, suffix="T2w"))
+        norm.inputs.reference_mask = str(
+            get_template(tpl_id, desc="brain", suffix="mask")[0]
+        )
 
     # fmt: off
     workflow.connect([
@@ -313,15 +406,25 @@ def compute_iqms(name="ComputeIQMs"):
         iterfield=["input_image"],
         name="MNItpms2t1",
     )
-    invt.inputs.input_image = [
-        str(p)
-        for p in get_template(
-            config.workflow.template_id,
-            suffix="probseg",
-            resolution=1,
-            label=["CSF", "GM", "WM"],
-        )
-    ]
+    if config.workflow.species.lower() == "human":
+        invt.inputs.input_image = [
+            str(p)
+            for p in get_template(
+                config.workflow.template_id,
+                suffix="probseg",
+                resolution=1,
+                label=["CSF", "GM", "WM"],
+            )
+        ]
+    else:
+        invt.inputs.input_image = [
+            str(p)
+            for p in get_template(
+                config.workflow.template_id,
+                suffix="probseg",
+                label=["CSF", "GM", "WM"],
+            )
+        ]
 
     datasink = pe.Node(
         IQMFileSink(
@@ -611,7 +714,7 @@ def headmsk_wf(name="HeadMaskWorkflow"):
         denoise = pe.Node(Denoise(), name="Denoise")
         gradient = pe.Node(
             niu.Function(
-                input_names=["in_file", "snr"],
+                input_names=["in_file", "snr", "sigma"],
                 output_names=["out_file"],
                 function=image_gradient,
             ),
@@ -619,12 +722,30 @@ def headmsk_wf(name="HeadMaskWorkflow"):
         )
         thresh = pe.Node(
             niu.Function(
-                input_names=["in_file", "in_segm"],
+                input_names=["in_file", "in_segm", "aniso", "thresh"],
                 output_names=["out_file"],
                 function=gradient_threshold,
             ),
             name="GradientThreshold",
         )
+        if config.workflow.species != "human":
+            calc_sigma = pe.Node(
+                niu.Function(
+                    input_names=["in_file"],
+                    output_names=["sigma"],
+                    function=sigma_calc,
+                ),
+                name="calc_sigma",
+            )
+            workflow.connect(
+                [
+                    (inputnode, calc_sigma, [("in_file", "in_file")]),
+                    (calc_sigma, gradient, [("sigma", "sigma")]),
+                ]
+            )
+
+            thresh.inputs.aniso = True
+            thresh.inputs.thresh = 4.0
 
         # fmt: off
         workflow.connect([
@@ -685,9 +806,17 @@ def airmsk_wf(name="AirMaskWorkflow"):
         ),
         name="invert_xfm",
     )
-    invt.inputs.input_image = str(
-        get_template("MNI152NLin2009cAsym", resolution=1, desc="head", suffix="mask")
-    )
+    if config.workflow.species.lower() == "human":
+        invt.inputs.input_image = str(
+            get_template(
+                config.workflow.template_id, resolution=1, desc="head", suffix="mask"
+            )
+        )
+    else:
+        # TODO: provide options for other populations
+        invt.inputs.input_image = str(
+            get_template(config.workflow.template_id, desc="brain", suffix="mask")[0]
+        )
 
     qi1 = pe.Node(ArtifactMask(), name="ArtifactMask")
 
@@ -774,7 +903,16 @@ def _enhance(in_file, out_file=None):
     return out_file
 
 
-def image_gradient(in_file, snr, out_file=None):
+def sigma_calc(in_file):
+    import nibabel as nb
+
+    zooms = nb.load(in_file).header.get_zooms()
+    sigma = [(zoom / min(zooms)) * 3 for zoom in zooms]
+
+    return sigma
+
+
+def image_gradient(in_file, snr, sigma=3.0, out_file=None):
     """Computes the magnitude gradient of an image using numpy"""
     import os.path as op
 
@@ -793,7 +931,7 @@ def image_gradient(in_file, snr, out_file=None):
     data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
     datamax = np.percentile(data.reshape(-1), 99.5)
     data *= 100 / datamax
-    grad = gradient(data, 3.0)
+    grad = gradient(data, sigma)
     gradmax = np.percentile(grad.reshape(-1), 99.5)
     grad *= 100.0
     grad /= gradmax
@@ -802,15 +940,27 @@ def image_gradient(in_file, snr, out_file=None):
     return out_file
 
 
-def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
-    """ Compute a threshold from the histogram of the magnitude gradient image """
+def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
+    """Compute a threshold from the histogram of the magnitude gradient image"""
     import os.path as op
 
     import nibabel as nb
     import numpy as np
     from scipy import ndimage as sim
 
-    struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+    if not aniso:
+        struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+    else:
+        # Generate an anisotropic binary structure, taking into account slice thickness
+        img = nb.load(in_file)
+        zooms = img.header.get_zooms()
+        dist = max(zooms)
+        dim = img.header["dim"][0]
+
+        x = np.ones((5) * np.ones(dim, dtype=np.int8))
+        np.put(x, x.size // 2, 0)
+        dist_matrix = np.round(sim.distance_transform_edt(x, sampling=zooms), 5)
+        struc = dist_matrix <= dist
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -827,7 +977,7 @@ def gradient_threshold(in_file, in_segm, thresh=1.0, out_file=None):
     data = imnii.get_data().astype(np.float32)
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
-    mask[data > 15.0] = 1
+    mask[data > thresh] = 1
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
@@ -864,3 +1014,35 @@ def _get_mod(in_file):
     from pathlib import Path
 
     return Path(in_file).name.rstrip(".gz").rstrip(".nii").split("_")[-1]
+
+
+def _format_tpm_names(in_files, fname_string=None):
+    from pathlib import Path
+    import nibabel as nb
+    import glob
+
+    out_path = Path.cwd().absolute()
+
+    # copy files to cwd and rename iteratively
+    for count, fname in enumerate(in_files):
+        img = nb.load(fname)
+        extension = "".join(Path(fname).suffixes)
+        out_fname = f"priors_{1 + count:02}{extension}"
+        nb.save(img, Path(out_path, out_fname))
+
+    if fname_string is None:
+        fname_string = f"priors_%02d{extension}"
+
+    out_files = [
+        str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))
+    ]
+
+    # return path with c-style format string for Atropos
+    file_format = str(Path(out_path, fname_string))
+    return file_format, out_files
+
+
+def _pop(inlist):
+    if isinstance(inlist, (list, tuple)):
+        return inlist[0]
+    return inlist
