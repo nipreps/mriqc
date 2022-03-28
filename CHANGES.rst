@@ -1,3 +1,4 @@
+  * rodentQC (#969)
 22.0.0 (TBD)
 ============
 First official release after migrating the repository into the *NiPreps*' organization.
