@@ -74,6 +74,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     in_fwhm = traits.List(
         traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
     )
+    human = traits.Bool(True, usedefault=True, desc="human workflow")
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -109,7 +110,9 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = np.all(np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9)
+        erode = np.all(
+            np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9
+        ) if self.inputs.human else False
 
         # Load image corrected for INU
         inudata = np.nan_to_num(imnii.get_data())
@@ -359,6 +362,7 @@ class HarmonizeInputSpec(BaseInterfaceInputSpec):
     )
     wm_mask = File(exists=True, mandatory=True, desc="white-matter mask")
     erodemsk = traits.Bool(True, usedefault=True, desc="erode mask")
+    thresh = traits.Float(0.9, usedefault=True, desc="WM probability threshold")
 
 
 class HarmonizeOutputSpec(TraitedSpec):
