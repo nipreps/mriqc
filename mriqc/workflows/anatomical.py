@@ -391,12 +391,18 @@ def compute_iqms(name="ComputeIQMs"):
 
     # Harmonize
     homog = pe.Node(Harmonize(), name="harmonize")
+    if config.workflow.species.lower() != "human":
+        homog.inputs.erodemsk = False
+        homog.inputs.thresh = 0.8
 
     # Mortamet's QI2
     getqi2 = pe.Node(ComputeQI2(), name="ComputeQI2")
 
     # Compute python-coded measures
-    measures = pe.Node(StructuralQC(), "measures")
+    measures = pe.Node(
+        StructuralQC(human=config.workflow.species.lower() == "human"),
+        "measures"
+    )
 
     # Project MNI segmentation to T1 space
     invt = pe.MapNode(
