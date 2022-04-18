@@ -1,3 +1,4 @@
+  * FIX: Resource profiler was broken with config file (#981)
   *  (#979)
   * PIN: jinja2 < 3.1 (#978)
   * rodentQC (#969)
