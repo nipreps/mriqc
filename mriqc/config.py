@@ -91,7 +91,7 @@ from multiprocessing import set_start_method
 from contextlib import suppress
 
 with suppress(RuntimeError):
-    set_start_method("forkserver")
+    set_start_method("spawn")
 
 # Defer all custom import for after initializing the forkserver and
 # ignoring the most annoying warnings
