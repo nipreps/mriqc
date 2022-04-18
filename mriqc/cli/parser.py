@@ -262,7 +262,9 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         help="Do not run the workflow.",
     )
     g_outputs.add_argument(
+        "--resource-monitor",
         "--profile",
+        dest="resource_monitor",
         action="store_true",
         default=False,
         help="Hook up the resource profiler callback to nipype.",
