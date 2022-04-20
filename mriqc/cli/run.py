@@ -37,6 +37,7 @@ def main():
 
     _plugin = config.nipype.get_plugin()
     if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
+        from contextlib import suppress
         import multiprocessing as mp
         import multiprocessing.forkserver
 
