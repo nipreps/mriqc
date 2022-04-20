@@ -87,25 +87,33 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
-from multiprocessing import set_start_method
-from contextlib import suppress
-
-with suppress(RuntimeError):
-    set_start_method("forkserver")
-
-# Defer all custom import for after initializing the forkserver and
-# ignoring the most annoying warnings
-from ._warnings import logging
 import os
 import sys
 from pathlib import Path
 from time import strftime
 from uuid import uuid4
 
-from nipype import __version__ as _nipype_ver
-from templateflow import __version__ as _tf_ver
+try:
+    # This option is only available with Python 3.8
+    from importlib.metadata import version as get_version
+except ImportError:
 
-from mriqc import __version__
+    def get_version(module_name):
+        """Get version of package without importing it."""
+        from pkg_resources import get_distribution, DistributionNotFound
+
+        try:
+            return get_distribution(module_name).version
+        except DistributionNotFound as err:
+            from importlib.metadata import PackageNotFoundError
+
+            raise PackageNotFoundError from err
+
+
+# Ignore annoying warnings
+from mriqc._warnings import logging
+
+__version__ = get_version("mriqc")
 
 # Disable NiPype etelemetry always
 _disable_et = bool(
@@ -254,9 +262,9 @@ class environment(_Config):
     """Linux's kernel virtual memory overcommit policy."""
     overcommit_limit = _oc_limit
     """Linux's kernel virtual memory overcommit limits."""
-    nipype_version = _nipype_ver
+    nipype_version = get_version("nipype")
     """Nipype's current version."""
-    templateflow_version = _tf_ver
+    templateflow_version = get_version("templateflow")
     """The TemplateFlow client version installed."""
     version = __version__
     """*MRIQC*'s version."""
@@ -462,9 +470,7 @@ class execution(_Config):
 
 # These variables are not necessary anymore
 del _exec_env
-del _nipype_ver
 del _templateflow_home
-del _tf_ver
 del _free_mem_at_start
 del _oc_limit
 del _oc_policy
@@ -625,6 +631,7 @@ def dumps():
 def to_filename(filename):
     """Write settings to file."""
     filename = Path(filename)
+    filename.parent.mkdir(exist_ok=True, parents=True)
     filename.write_text(dumps())
 
 

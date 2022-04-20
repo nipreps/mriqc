@@ -21,7 +21,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Definition of the command line interface's (CLI) entry point."""
-from mriqc import config, messages
 
 
 def main():
@@ -30,13 +29,29 @@ def main():
     import os
     import sys
     from tempfile import mktemp
-    from multiprocessing import Manager, Process
-
-    from ..utils.bids import write_bidsignore, write_derivative_description
-    from .parser import parse_args
+    from mriqc import config, messages
+    from mriqc.cli.parser import parse_args
 
     # Run parser
     parse_args()
+
+    _plugin = config.nipype.get_plugin()
+    if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
+        from importlib import import_module
+        from multiprocessing import set_start_method
+        from contextlib import suppress
+
+        with suppress(RuntimeError):
+            set_start_method("forkserver")
+
+        Plugin = getattr(
+            import_module(f"nipype.pipeline.plugins.{config.nipype.plugin.lower()}"),
+            f"{config.nipype.plugin}Plugin",
+        )
+        _plugin = {
+            "plugin": Plugin(plugin_args=config.nipype.plugin_args),
+        }
+        gc.collect()
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
@@ -55,6 +70,8 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
+        from mriqc.workflows.core import init_mriqc_wf
+
         start_message = messages.PARTICIPANT_START.format(
             version=config.environment.version,
             bids_dir=config.execution.bids_dir,
@@ -62,42 +79,22 @@ def main():
             analysis_level=config.workflow.analysis_level,
         )
         config.loggers.cli.log(25, start_message)
-        # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
-        # Because Python on Linux does not ever free virtual memory (VM), running the
-        # workflow construction jailed within a process preempts excessive VM buildup.
-        with Manager() as mgr:
-            from .workflow import build_workflow
-
-            retval = mgr.dict()
-            p = Process(target=build_workflow, args=(str(config_file), retval))
-            p.start()
-            p.join()
-
-            mriqc_wf = retval.get("workflow", None)
-            retcode = p.exitcode or retval.get("return_code", 0)
-
-        # CRITICAL Load the config from the file. This is necessary because the ``build_workflow``
-        # function executed constrained in a process may change the config (and thus the global
-        # state of MRIQC).
-        config.load(config_file)
-
-        retcode = retcode or (mriqc_wf is None) * os.EX_SOFTWARE
-        if retcode != 0:
-            sys.exit(retcode)
+        mriqc_wf = init_mriqc_wf()
+        if mriqc_wf is None:
+            sys.exit(os.EX_SOFTWARE)
 
         if mriqc_wf and config.execution.write_graph:
             mriqc_wf.write_graph(graph2use="colored", format="svg", simple_form=True)
-
-        # Clean up master process before running workflow, which may create forks
-        gc.collect()
 
         if not config.execution.dry_run:
             # Warn about submitting measures BEFORE
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
 
+            # Clean up master process before running workflow, which may create forks
+            gc.collect()
             # run MRIQC
-            mriqc_wf.run(**config.nipype.get_plugin())
+            mriqc_wf.run(**_plugin)
 
             # Warn about submitting measures AFTER
             if not config.execution.no_sub:
@@ -146,6 +143,8 @@ def main():
             raise Exception(messages.GROUP_NO_DATA)
 
         config.loggers.cli.info(messages.GROUP_FINISHED)
+
+    from mriqc.utils.bids import write_bidsignore, write_derivative_description
 
     config.loggers.cli.info(messages.BIDS_META)
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
