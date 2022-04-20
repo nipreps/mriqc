@@ -37,20 +37,12 @@ def main():
 
     _plugin = config.nipype.get_plugin()
     if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
-        from importlib import import_module
-        from multiprocessing import set_start_method
-        from contextlib import suppress
+        import multiprocessing as mp
+        import multiprocessing.forkserver
 
         with suppress(RuntimeError):
-            set_start_method("forkserver")
-
-        Plugin = getattr(
-            import_module(f"nipype.pipeline.plugins.{config.nipype.plugin.lower()}"),
-            f"{config.nipype.plugin}Plugin",
-        )
-        _plugin = {
-            "plugin": Plugin(plugin_args=config.nipype.plugin_args),
-        }
+            mp.set_start_method("forkserver")
+            mp.forkserver.ensure_running()
         gc.collect()
 
     if config.execution.pdb:
