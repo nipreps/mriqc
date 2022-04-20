@@ -323,19 +323,6 @@ class nipype(_Config):
         """Set NiPype configurations."""
         from nipype import config as ncfg
 
-        # Configure resource_monitor
-        if cls.resource_monitor:
-            ncfg.update_config(
-                {
-                    "monitoring": {
-                        "enabled": cls.resource_monitor,
-                        "sample_frequency": "0.5",
-                        "summary_append": True,
-                    }
-                }
-            )
-            ncfg.enable_resource_monitor()
-
         # Nipype config (logs and execution)
         ncfg.update_config(
             {

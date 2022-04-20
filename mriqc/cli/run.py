@@ -68,6 +68,12 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
+        _resmon = None
+        if config.nipype.resource_monitor:
+            from mriqc.instrumentation.resources import ResourceRecorder
+
+            _resmon = ResourceRecorder(log_file=config.execution.work_dir / ".resources.tsv")
+
         from mriqc.workflows.core import init_mriqc_wf
 
         start_message = messages.PARTICIPANT_START.format(
@@ -98,6 +104,7 @@ def main():
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
+        _resmon.stop()
 
     # Set up group level
     if "group" in config.workflow.analysis_level:
