@@ -97,17 +97,7 @@ try:
     # This option is only available with Python 3.8
     from importlib.metadata import version as get_version
 except ImportError:
-
-    def get_version(module_name):
-        """Get version of package without importing it."""
-        from pkg_resources import get_distribution, DistributionNotFound
-
-        try:
-            return get_distribution(module_name).version
-        except DistributionNotFound as err:
-            from importlib.metadata import PackageNotFoundError
-
-            raise PackageNotFoundError from err
+    from importlib_metadata import version as get_version
 
 
 # Ignore annoying warnings
