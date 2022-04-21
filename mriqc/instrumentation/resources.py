@@ -155,12 +155,8 @@ class ResourceRecorder(threading.Thread):
 
     def excepthook(self, args):
         print(
-            "\n".join(
-                [
-                    datetime.now().strftime(
-                        "# MRIQC Resource recorder stopped with error (%Y/%m/%d; %H:%M:%S)"
-                    )
-                ]
+            datetime.now().strftime(
+                "# MRIQC Resource recorder stopped with error (%Y/%m/%d; %H:%M:%S)"
             ),
             file=self._logfile,
         )
@@ -171,10 +167,12 @@ class ResourceRecorder(threading.Thread):
             self._event.set()
 
         tb = "\n    ".join(args.exc_traceback)
-        warnings.warning(f"""ResourceRecorder errored.
+        warnings.warning(
+            f"""ResourceRecorder errored.
     {args.exc_type}: {args.exc_value}
     {tb}
-""")
+"""
+        )
 
     def stop(self):
         """Stop monitoring."""
@@ -185,12 +183,8 @@ class ResourceRecorder(threading.Thread):
         # Final sample
         sample2file(self._pid, fd=self._logfile)
         print(
-            "\n".join(
-                [
-                    datetime.now().strftime(
-                        "# MRIQC Resource recorder stopped (%Y/%m/%d; %H:%M:%S)"
-                    )
-                ]
+            datetime.now().strftime(
+                "# MRIQC Resource recorder stopped (%Y/%m/%d; %H:%M:%S)"
             ),
             file=self._logfile,
         )
