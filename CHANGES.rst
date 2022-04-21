@@ -1,3 +1,4 @@
+  * ENH: Revise plugin and workflow initialization (#983)
   * FIX: Resource profiler was broken with config file (#981)
   *  (#979)
   * PIN: jinja2 < 3.1 (#978)
