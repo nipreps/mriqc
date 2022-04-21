@@ -99,7 +99,6 @@ try:
 except ImportError:
     from importlib_metadata import version as get_version
 
-
 # Ignore annoying warnings
 from mriqc._warnings import logging
 
