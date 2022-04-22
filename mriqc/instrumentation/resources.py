@@ -21,13 +21,13 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Instrumentation to profile resource utilization."""
-import warnings
-from time import time
+from time import time_ns, sleep
 from datetime import datetime
 from tempfile import mkstemp
 from pathlib import Path
-import threading
+from multiprocessing import Process, Event
 from contextlib import suppress
+import signal
 import psutil
 
 _MB = 1024.0**2
@@ -47,6 +47,7 @@ def sample(
     pid=None,
     recursive=True,
     attrs=SAMPLE_ATTRS,
+    exclude=tuple(),
 ):
     """
     Probe process tree and snapshot current resource utilization.
@@ -63,7 +64,6 @@ def sample(
         sampling.
 
     """
-
     proc_list = [psutil.Process(pid)]
     if proc_list and recursive:
         with suppress(psutil.NoSuchProcess):
@@ -71,32 +71,17 @@ def sample(
 
     proc_info = []
     for process in proc_list:
+        if process.pid in exclude:
+            continue
         with suppress(psutil.NoSuchProcess):
             proc_info.append(process.as_dict(attrs=attrs))
 
     return proc_info
 
 
-def sample2file(pid=None, recursive=True, timestamp=None, fd=None, flush=True):
-    if fd is None:
-        return
-
-    print(
-        "\n".join(
-            [
-                "\t".join(parse_sample(s, timestamp=timestamp))
-                for s in sample(pid=pid, recursive=recursive)
-            ]
-        ),
-        file=fd,
-    )
-    if flush:
-        fd.flush()
-
-
 def parse_sample(datapoint, timestamp=None, attrs=SAMPLE_ATTRS):
     """Convert a sample dictionary into a list of string values."""
-    retval = [f"{timestamp or time()}"]
+    retval = [f"{timestamp or time_ns()}"]
 
     for attr in attrs:
         value = datapoint.get(attr, None)
@@ -116,88 +101,101 @@ def parse_sample(datapoint, timestamp=None, attrs=SAMPLE_ATTRS):
     return retval
 
 
-class ResourceRecorder(threading.Thread):
+def sample2file(
+    pid=None, recursive=True, timestamp=None, fd=None, flush=True, exclude=tuple()
+):
+    if fd is None:
+        return
+
+    print(
+        "\n".join(
+            [
+                "\t".join(parse_sample(s, timestamp=timestamp))
+                for s in sample(pid=pid, recursive=recursive, exclude=exclude)
+            ]
+        ),
+        file=fd,
+    )
+    if flush:
+        fd.flush()
+
+
+class ResourceRecorder(Process):
     """Attach a ``Thread`` to sample a specific PID with a certain frequence."""
 
-    def __init__(self, pid=None, freq=0.2, log_file=None):
-        """Initialize a resource recorder."""
-        threading.Thread.__init__(self)
+    def __init__(
+        self, pid, frequency=0.2, log_file=None, exclude_probe=True, **process_kwargs
+    ):
+        Process.__init__(self, name="nipype_resmon", daemon=True, **process_kwargs)
 
-        self._freq = max(freq, 0.01)
-        """Frequency (seconds) with which the probe must sample."""
         self._pid = pid
         """The process to be sampled."""
+        self._logfile = log_file
+        """An open file descriptor where results are dumped."""
+        self._exclude = exclude_probe or tuple()
+        """A list/tuple containing PIDs that should not be monitored."""
+        self._freq_ns = int(max(frequency, 0.02) * 1e9)
+        """Sampling frequency (stored in ns)."""
+        self._done = Event()
+        """Flag indicating if the process is marked to finish."""
 
-        _log_file = (
-            Path(log_file)
-            if log_file
+        signal.signal(signal.SIGINT, self.stop)
+        signal.signal(signal.SIGTERM, self.stop)
+
+    def run(self, *args, **kwargs):
+        """Core monitoring function, called by start()"""
+
+        # Open file now, because it cannot be pickled.
+        _logfile = (
+            Path(self._logfile)
+            if self._logfile
             else Path(mkstemp(prefix="prof-", suffix=".tsv")[1])
         )
-        _log_file.parent.mkdir(parents=True, exist_ok=True)
+        _logfile.parent.mkdir(parents=True, exist_ok=True)
+        self._logfile = str(_logfile.absolute())
 
-        # Open file and write headers (comment trace + header row)
-        self._logfile = _log_file.absolute().open("w")
+        _logfile = _logfile.open("w")
 
+        # Write headers (comment trace + header row)
         _header = [
-            datetime.now().strftime(
-                "# MRIQC Resource recorder started (%Y/%m/%d; %H:%M:%S)"
-            ),
+            f"# MRIQC Resource recorder started tracking PID {self._pid} "
+            f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
             "\t".join(("timestamp", *SAMPLE_ATTRS)).replace(
                 "memory_info", "mem_rss_mb\tmem_vsm_mb"
             ),
         ]
-        print("\n".join(_header), file=self._logfile)
-        sample2file(self._pid, fd=self._logfile)
+        print("\n".join(_header), file=_logfile)
 
-        # Start thread
-        self._event = threading.Event()
-        self.start()
+        # Add self to exclude list if pertinent
+        if self._exclude is True:
+            self._exclude = (psutil.Process().pid,)
 
-    def excepthook(self, args):
-        print(
-            datetime.now().strftime(
-                "# MRIQC Resource recorder stopped with error (%Y/%m/%d; %H:%M:%S)"
-            ),
-            file=self._logfile,
-        )
-        self._logfile.flush()
+        # Initiate periodic sampling
+        start_time = time_ns()
+        wait_til = start_time
+        while not self._done.is_set():
+            try:
+                sample2file(self._pid, fd=_logfile, timestamp=wait_til)
+            except psutil.NoSuchProcess:
+                print(
+                    f"# MRIQC Resource recorder killed "
+                    f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
+                    file=_logfile,
+                )
+                _logfile.flush()
+                _logfile.close()
+                break
+
+            wait_til += self._freq_ns
+            sleep(max(0, (wait_til - time_ns()) / 1.0e9))
+
         self._logfile.close()
-
-        if not self._event.is_set():
-            self._event.set()
-
-        tb = "\n    ".join(args.exc_traceback)
-        warnings.warning(
-            f"""ResourceRecorder errored.
-    {args.exc_type}: {args.exc_value}
-    {tb}
-"""
-        )
 
     def stop(self):
-        """Stop monitoring."""
-        if not self._event.is_set():
-            self._event.set()
-            self.join()
-
-        # Final sample
-        sample2file(self._pid, fd=self._logfile)
-        print(
-            datetime.now().strftime(
-                "# MRIQC Resource recorder stopped (%Y/%m/%d; %H:%M:%S)"
-            ),
-            file=self._logfile,
-        )
-        self._logfile.flush()
-        self._logfile.close()
-
-        return self._logfile.name
-
-    def run(self):
-        """Core monitoring function, called by start()"""
-        start_time = time()
-        wait_til = start_time
-        while not self._event.is_set():
-            sample2file(self._pid, fd=self._logfile, timestamp=wait_til)
-            wait_til += self._freq
-            self._event.wait(max(0, wait_til - time()))
+        # Tear-down process
+        self._done.set()
+        with Path(self._logfile).open("a") as f:
+            f.write(
+                f"# MRIQC Resource recorder finished "
+                f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
+            )

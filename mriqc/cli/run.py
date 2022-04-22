@@ -35,22 +35,6 @@ def main():
     # Run parser
     parse_args()
 
-    _plugin = config.nipype.get_plugin()
-    if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
-        from contextlib import suppress
-        import multiprocessing as mp
-        import multiprocessing.forkserver
-        from mriqc.engine.plugin import MultiProcPlugin
-
-        with suppress(RuntimeError):
-            mp.set_start_method("forkserver")
-            mp.forkserver.ensure_running()
-
-        gc.collect()
-        _plugin = {
-            "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
-        }
-
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
 
@@ -68,14 +52,6 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
-        _resmon = None
-        if config.nipype.resource_monitor:
-            from mriqc.instrumentation.resources import ResourceRecorder
-
-            _resmon = ResourceRecorder(log_file=config.execution.work_dir / ".resources.tsv")
-
-        from mriqc.workflows.core import init_mriqc_wf
-
         start_message = messages.PARTICIPANT_START.format(
             version=config.environment.version,
             bids_dir=config.execution.bids_dir,
@@ -83,6 +59,38 @@ def main():
             analysis_level=config.workflow.analysis_level,
         )
         config.loggers.cli.log(25, start_message)
+
+        _plugin = config.nipype.get_plugin()
+        if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
+            from contextlib import suppress
+            import multiprocessing as mp
+            import multiprocessing.forkserver
+            from mriqc.engine.plugin import MultiProcPlugin
+
+            with suppress(RuntimeError):
+                mp.set_start_method("forkserver")
+                mp.forkserver.ensure_running()
+            gc.collect()
+
+        _plugin = {
+            "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
+        }
+
+        _resmon = None
+        if config.execution.resource_monitor:
+            from mriqc.instrumentation.resources import ResourceRecorder
+
+            _resmon = ResourceRecorder(
+                pid=os.getpid(),
+                log_file=mktemp(
+                    dir=config.execution.work_dir, prefix=".resources.", suffix=".tsv"
+                ),
+            )
+            config.loggers.cli.info(f"Started resource recording at {_resmon._logfile}.")
+            _resmon.start()
+
+        from mriqc.workflows.core import init_mriqc_wf
+
         mriqc_wf = init_mriqc_wf()
         if mriqc_wf is None:
             sys.exit(os.EX_SOFTWARE)
@@ -104,7 +112,9 @@ def main():
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
-        _resmon.stop()
+
+        if _resmon is not None:
+            _resmon.stop()
 
     # Set up group level
     if "group" in config.workflow.analysis_level:

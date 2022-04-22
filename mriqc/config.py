@@ -374,6 +374,8 @@ class execution(_Config):
     """Drop into PDB when exceptions are encountered."""
     reports_only = False
     """Only build the reports, based on the reportlets found in a cached working directory."""
+    resource_monitor = False
+    """Enable resource monitor."""
     run_id = None
     """Filter input dataset by run identifier."""
     run_uuid = "%s_%s" % (strftime("%Y%m%d-%H%M%S"), uuid4())
