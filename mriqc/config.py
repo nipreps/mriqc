@@ -537,10 +537,9 @@ class loggers:
             * Logger configuration.
 
         """
-        from nipype import config as ncfg
-
         if not cls._init:
             from nipype import logging as nlogging
+            from nipype import config as ncfg
 
             cls.workflow = nlogging.getLogger("nipype.workflow")
             cls.interface = nlogging.getLogger("nipype.interface")
@@ -552,6 +551,15 @@ class loggers:
                     logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
                 )
                 cls.cli.addHandler(_handler)
+
+            ncfg.update_config(
+                {
+                    "logging": {
+                        "log_directory": str(execution.log_dir),
+                        "log_to_file": True,
+                    },
+                }
+            )
             cls._init = True
 
         cls.default.setLevel(execution.log_level)
@@ -559,14 +567,6 @@ class loggers:
         cls.interface.setLevel(execution.log_level)
         cls.workflow.setLevel(execution.log_level)
         cls.utils.setLevel(execution.log_level)
-        ncfg.update_config(
-            {
-                "logging": {
-                    "log_directory": str(execution.log_dir),
-                    "log_to_file": True,
-                },
-            }
-        )
 
     @classmethod
     def getLogger(cls, name):
@@ -583,10 +583,9 @@ class loggers:
 
 def from_dict(settings):
     """Read settings from a flat dictionary."""
-    nipype.load(settings)
     execution.load(settings)
     workflow.load(settings)
-    loggers.init()
+    nipype.load(settings, init=False)
 
 
 def load(filename):
@@ -631,7 +630,3 @@ def to_filename(filename):
     filename = Path(filename)
     filename.parent.mkdir(exist_ok=True, parents=True)
     filename.write_text(dumps())
-
-
-# Make sure loggers are started
-loggers.init()

@@ -52,14 +52,6 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
-        start_message = messages.PARTICIPANT_START.format(
-            version=config.environment.version,
-            bids_dir=config.execution.bids_dir,
-            output_dir=config.execution.output_dir,
-            analysis_level=config.workflow.analysis_level,
-        )
-        config.loggers.cli.log(25, start_message)
-
         _plugin = config.nipype.get_plugin()
         if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
             from contextlib import suppress
@@ -72,9 +64,9 @@ def main():
                 mp.forkserver.ensure_running()
             gc.collect()
 
-        _plugin = {
-            "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
-        }
+            _plugin = {
+                "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
+            }
 
         _resmon = None
         if config.execution.resource_monitor:
@@ -86,10 +78,59 @@ def main():
                     dir=config.execution.work_dir, prefix=".resources.", suffix=".tsv"
                 ),
             )
-            config.loggers.cli.info(f"Started resource recording at {_resmon._logfile}.")
             _resmon.start()
 
-        from mriqc.workflows.core import init_mriqc_wf
+        # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
+        # Because Python on Linux does not ever free virtual memory (VM), running the
+        # workflow construction jailed within a process preempts excessive VM buildup.
+        from multiprocessing import Manager, Process
+        with Manager() as mgr:
+            from .workflow import build_workflow
+
+            retval = mgr.dict()
+            p = Process(target=build_workflow, args=(str(config_file), retval))
+            p.start()
+            p.join()
+
+            mriqc_wf = retval.get("workflow", None)
+            retcode = p.exitcode or retval.get("return_code", 0)
+
+        # CRITICAL Load the config from the file. This is necessary because the ``build_workflow``
+        # function executed constrained in a process may change the config (and thus the global
+        # state of MRIQC).
+        config.load(config_file)
+
+        retcode = retcode or (mriqc_wf is None) * os.EX_SOFTWARE
+        if retcode != 0:
+            sys.exit(retcode)
+
+        # Initalize nipype config
+        config.nipype.init()
+        # Make sure loggers are started
+        config.loggers.init()
+
+        start_message = messages.PARTICIPANT_START.format(
+            version=config.environment.version,
+            bids_dir=config.execution.bids_dir,
+            output_dir=config.execution.output_dir,
+            analysis_level=config.workflow.analysis_level,
+        )
+        config.loggers.cli.log(25, start_message)
+
+        if _resmon:
+            config.loggers.cli.info(f"Started resource recording at {_resmon._logfile}.")
+
+        # Resource management options
+        if (
+            config.nipype.plugin in ("MultiProc", "LegacyMultiProc")
+            and (1 < config.nipype.nprocs < config.nipype.omp_nthreads)
+        ):
+            config.loggers.cli.warning(
+                "Per-process threads (--omp-nthreads=%d) exceed total "
+                "threads (--nthreads/--n_cpus=%d)",
+                config.nipype.omp_nthreads,
+                config.nipype.nprocs,
+            )
 
         mriqc_wf = init_mriqc_wf()
         if mriqc_wf is None:

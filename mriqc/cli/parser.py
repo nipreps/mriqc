@@ -416,7 +416,6 @@ def parse_args(args=None, namespace=None):
     opts = parser.parse_args(args, namespace)
     config.execution.log_level = int(max(25 - 5 * opts.verbose_count, DEBUG))
     config.from_dict(vars(opts))
-    config.loggers.init()
 
     # Load base plugin_settings from file if --use-plugin
     if opts.use_plugin is not None:
@@ -431,17 +430,6 @@ def parse_args(args=None, namespace=None):
             config.nipype.nprocs = config.nipype.plugin_args.get(
                 "nprocs", config.nipype.nprocs
             )
-
-    # Resource management options
-    # Note that we're making strong assumptions about valid plugin args
-    # This may need to be revisited if people try to use batch plugins
-    if 1 < config.nipype.nprocs < config.nipype.omp_nthreads:
-        config.loggers.cli.warning(
-            "Per-process threads (--omp-nthreads=%d) exceed total "
-            "threads (--nthreads/--n_cpus=%d)",
-            config.nipype.omp_nthreads,
-            config.nipype.nprocs,
-        )
 
     bids_dir = config.execution.bids_dir
     output_dir = config.execution.output_dir
