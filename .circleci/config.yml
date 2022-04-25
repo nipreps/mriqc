@@ -375,6 +375,7 @@ jobs:
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
+                       --resource-monitor \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - save_cache:
@@ -407,7 +408,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
+            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -and -not -name ".mriqc.*.toml" -and -not -name ".resources.*.tsv" -delete
 
       - store_artifacts:
           path: /tmp/t1w/work
@@ -514,8 +515,10 @@ jobs:
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --resource-monitor \
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+
       - save_cache:
           key: bold-v2-{{ epoch }}
           paths:
@@ -545,7 +548,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
+            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -and -not -name ".mriqc.*.toml" -and -not -name ".resources.*.tsv" -delete
 
       - store_artifacts:
           path: /tmp/bold/work
