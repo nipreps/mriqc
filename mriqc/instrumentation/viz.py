@@ -30,7 +30,6 @@ _TIME_LABEL = "runtime"
 
 def plot(filename, param="mem_vsm_mb", mask_processes=tuple()):
     """Plot a recording file."""
-
     data = pd.read_csv(filename, sep=r"\s+", comment="#")
 
     # Rebase all events to be relative to start and convert to seconds
@@ -60,7 +59,7 @@ def plot(filename, param="mem_vsm_mb", mask_processes=tuple()):
         unified.loc[rows, label] += pid_info[param].values / 1024
 
     unified[proc_names] = unified[proc_names].replace({0: np.nan})
-    fig = unified.plot.area(x=_TIME_LABEL, cmap="tab20", figsize=(15, 10))
+    fig = unified.plot.area(x=_TIME_LABEL, cmap="tab20", figsize=(15, 10), linewidth=0)
     plt.gca().legend(loc="center left", bbox_to_anchor=(1, 0.5))
     plt.gca().set_xlabel("Run time (mm:ss)")
     plt.gca().set_ylabel("Memory fingerprint (GB)")
