@@ -346,6 +346,8 @@ class execution(_Config):
     """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
+    cwd = os.getcwd()
+    """Current working directory."""
     debug = False
     """Run in sloppy mode (meaning, suboptimal parameters that minimize run-time)."""
     dry_run = False
@@ -630,3 +632,9 @@ def to_filename(filename):
     filename = Path(filename)
     filename.parent.mkdir(exist_ok=True, parents=True)
     filename.write_text(dumps())
+
+
+def _process_initializer(cwd):
+    """Initialize the environment of the child process."""
+    os.chdir(cwd)
+    os.environ["NIPYPE_NO_ET"] = "1"

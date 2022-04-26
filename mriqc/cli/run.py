@@ -52,21 +52,23 @@ def main():
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
-        _plugin = config.nipype.get_plugin()
+        _pool = None
         if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
             from contextlib import suppress
             import multiprocessing as mp
             import multiprocessing.forkserver
-            from mriqc.engine.plugin import MultiProcPlugin
+            from concurrent.futures import ProcessPoolExecutor
 
             with suppress(RuntimeError):
                 mp.set_start_method("forkserver")
                 mp.forkserver.ensure_running()
             gc.collect()
 
-            _plugin = {
-                "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
-            }
+            _pool = ProcessPoolExecutor(
+                max_workers=config.nipype.nprocs,
+                initializer=config._process_initializer,
+                initargs=(config.execution.cwd,),
+            )
 
         _resmon = None
         if config.execution.resource_monitor:
@@ -138,6 +140,12 @@ def main():
             # Clean up master process before running workflow, which may create forks
             gc.collect()
             # run MRIQC
+            _plugin = config.nipype.get_plugin()
+            if _pool:
+                from mriqc.engine.plugin import MultiProcPlugin
+                _plugin = {
+                    "plugin": MultiProcPlugin(pool=_pool, plugin_args=config.nipype.plugin_args),
+                }
             mriqc_wf.run(**_plugin)
 
             # Warn about submitting measures AFTER
