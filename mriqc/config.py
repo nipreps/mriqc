@@ -183,6 +183,20 @@ try:
 except Exception:
     pass
 
+_memory_gb = None
+try:
+    if "linux" in sys.platform:
+        with open("/proc/meminfo", "r") as f_in:
+            _meminfo_lines = f_in.readlines()
+            _mem_total_line = [line for line in _meminfo_lines if "MemTotal" in line][0]
+            _mem_total = float(_mem_total_line.split()[1])
+            _memory_gb = _mem_total / (1024.0**2)
+    elif "darwin" in sys.platform:
+        _mem_str = os.popen("sysctl hw.memsize").read().strip().split(" ")[-1]
+        _memory_gb = float(_mem_str) / (1024.0**3)
+except Exception:
+    pass
+
 
 class _Config:
     """An abstract class forbidding instantiation."""
@@ -256,6 +270,8 @@ class environment(_Config):
     """Nipype's current version."""
     templateflow_version = get_version("templateflow")
     """The TemplateFlow client version installed."""
+    total_memory = _memory_gb
+    """Total memory available, in GB."""
     version = __version__
     """*MRIQC*'s version."""
 
@@ -267,6 +283,8 @@ class nipype(_Config):
     """The file format for crashfiles, either text or pickle."""
     get_linked_libs = False
     """Run NiPype's tool to enlist linked libraries for every interface."""
+    local_hash_check = True
+    """Check if interface is cached locally before executing."""
     memory_gb = None
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
     nprocs = os.cpu_count()
@@ -280,6 +298,8 @@ class nipype(_Config):
         "raise_insufficient": False,
     }
     """Settings for NiPype's execution plugin."""
+    remove_node_directories = False
+    """Remove directories whose outputs have already been used up."""
     resource_monitor = False
     """Enable resource monitor."""
     stop_on_first_crash = True

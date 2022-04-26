@@ -40,11 +40,16 @@ def main():
         from contextlib import suppress
         import multiprocessing as mp
         import multiprocessing.forkserver
+        from mriqc.engine.plugin import MultiProcPlugin
 
         with suppress(RuntimeError):
             mp.set_start_method("forkserver")
             mp.forkserver.ensure_running()
+
         gc.collect()
+        _plugin = {
+            "plugin": MultiProcPlugin(plugin_args=config.nipype.plugin_args),
+        }
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
