@@ -33,10 +33,23 @@ a hard-limited memory-scope.
 
 def build_workflow(config_file, retval):
     """Create the Nipype Workflow that supports the whole execution graph."""
-    from .. import config
-    from ..workflows.core import init_mriqc_wf
+    from mriqc import config, messages
+    from mriqc.workflows.core import init_mriqc_wf
 
     config.load(config_file)
+    # Initalize nipype config
+    config.nipype.init()
+    # Make sure loggers are started
+    config.loggers.init()
+
+    start_message = messages.PARTICIPANT_START.format(
+        version=config.environment.version,
+        bids_dir=config.execution.bids_dir,
+        output_dir=config.execution.output_dir,
+        analysis_level=config.workflow.analysis_level,
+    )
+    config.loggers.cli.log(25, start_message)
+
     retval["return_code"] = 1
     retval["workflow"] = None
 

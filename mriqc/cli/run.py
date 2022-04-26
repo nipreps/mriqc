@@ -109,14 +109,6 @@ def main():
         # Make sure loggers are started
         config.loggers.init()
 
-        start_message = messages.PARTICIPANT_START.format(
-            version=config.environment.version,
-            bids_dir=config.execution.bids_dir,
-            output_dir=config.execution.output_dir,
-            analysis_level=config.workflow.analysis_level,
-        )
-        config.loggers.cli.log(25, start_message)
-
         if _resmon:
             config.loggers.cli.info(f"Started resource recording at {_resmon._logfile}.")
 
@@ -132,7 +124,6 @@ def main():
                 config.nipype.nprocs,
             )
 
-        mriqc_wf = init_mriqc_wf()
         if mriqc_wf is None:
             sys.exit(os.EX_SOFTWARE)
 
