@@ -99,11 +99,14 @@ try:
 except ImportError:
     from importlib_metadata import version as get_version
 
-
 # Ignore annoying warnings
 from mriqc._warnings import logging
 
 __version__ = get_version("mriqc")
+_pre_exec_env = dict(os.environ)
+
+# Reduce numpy's vms by limiting OMP_NUM_THREADS
+_default_omp_threads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
 
 # Disable NiPype etelemetry always
 _disable_et = bool(
@@ -274,6 +277,8 @@ class environment(_Config):
     """Total memory available, in GB."""
     version = __version__
     """*MRIQC*'s version."""
+    _pre_mriqc = _pre_exec_env
+    """Environment variables before MRIQC's execution."""
 
 
 class nipype(_Config):
@@ -289,7 +294,7 @@ class nipype(_Config):
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
     nprocs = os.cpu_count()
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
-    omp_nthreads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
+    omp_nthreads = _default_omp_threads
     """Number of CPUs a single process can access for multithreaded execution."""
     plugin = "MultiProc"
     """NiPype's execution plugin."""
@@ -323,19 +328,6 @@ class nipype(_Config):
         """Set NiPype configurations."""
         from nipype import config as ncfg
 
-        # Configure resource_monitor
-        if cls.resource_monitor:
-            ncfg.update_config(
-                {
-                    "monitoring": {
-                        "enabled": cls.resource_monitor,
-                        "sample_frequency": "0.5",
-                        "summary_append": True,
-                    }
-                }
-            )
-            ncfg.enable_resource_monitor()
-
         # Nipype config (logs and execution)
         ncfg.update_config(
             {
@@ -360,6 +352,8 @@ class execution(_Config):
     """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
+    cwd = os.getcwd()
+    """Current working directory."""
     debug = False
     """Run in sloppy mode (meaning, suboptimal parameters that minimize run-time)."""
     dry_run = False
@@ -388,6 +382,8 @@ class execution(_Config):
     """Drop into PDB when exceptions are encountered."""
     reports_only = False
     """Only build the reports, based on the reportlets found in a cached working directory."""
+    resource_monitor = False
+    """Enable resource monitor."""
     run_id = None
     """Filter input dataset by run identifier."""
     run_uuid = "%s_%s" % (strftime("%Y%m%d-%H%M%S"), uuid4())
@@ -549,10 +545,9 @@ class loggers:
             * Logger configuration.
 
         """
-        from nipype import config as ncfg
-
         if not cls._init:
             from nipype import logging as nlogging
+            from nipype import config as ncfg
 
             cls.workflow = nlogging.getLogger("nipype.workflow")
             cls.interface = nlogging.getLogger("nipype.interface")
@@ -564,6 +559,15 @@ class loggers:
                     logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
                 )
                 cls.cli.addHandler(_handler)
+
+            ncfg.update_config(
+                {
+                    "logging": {
+                        "log_directory": str(execution.log_dir),
+                        "log_to_file": True,
+                    },
+                }
+            )
             cls._init = True
 
         cls.default.setLevel(execution.log_level)
@@ -571,14 +575,6 @@ class loggers:
         cls.interface.setLevel(execution.log_level)
         cls.workflow.setLevel(execution.log_level)
         cls.utils.setLevel(execution.log_level)
-        ncfg.update_config(
-            {
-                "logging": {
-                    "log_directory": str(execution.log_dir),
-                    "log_to_file": True,
-                },
-            }
-        )
 
     @classmethod
     def getLogger(cls, name):
@@ -595,10 +591,9 @@ class loggers:
 
 def from_dict(settings):
     """Read settings from a flat dictionary."""
-    nipype.load(settings)
     execution.load(settings)
     workflow.load(settings)
-    loggers.init()
+    nipype.load(settings, init=False)
 
 
 def load(filename):
@@ -645,5 +640,18 @@ def to_filename(filename):
     filename.write_text(dumps())
 
 
-# Make sure loggers are started
-loggers.init()
+def _process_initializer(cwd, omp_nthreads):
+    """Initialize the environment of the child process."""
+    os.chdir(cwd)
+    os.environ["NIPYPE_NO_ET"] = "1"
+    os.environ["OMP_NUM_THREADS"] = f"{omp_nthreads}"
+
+
+def restore_env():
+    """Restore the original environment."""
+
+    for k in os.environ.keys():
+        del os.environ[k]
+
+    for k, v in environment._pre_mriqc.items():
+        os.environ[k] = v

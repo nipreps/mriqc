@@ -32,8 +32,6 @@ from concurrent.futures import ProcessPoolExecutor
 from traceback import format_exception
 import gc
 
-import numpy as np
-
 
 # Run node
 def run_node(node, updatehash, taskid):
@@ -66,12 +64,6 @@ def run_node(node, updatehash, taskid):
 
     # Return the result dictionary
     return result
-
-
-def process_initializer(cwd):
-    """Initialize the environment of the child process."""
-    os.chdir(cwd)
-    os.environ["NIPYPE_NO_ET"] = "1"
 
 
 class PluginBase:
@@ -150,7 +142,7 @@ class DistributedPluginBase(PluginBase):
         self.proc_done = None
         self.proc_pending = None
         self.pending_tasks = []
-        self.max_jobs = self.plugin_args.get("max_jobs", np.inf)
+        self.max_jobs = self.plugin_args.get("max_jobs", None)
 
     def _prerun_check(self, graph):
         """Stub method to validate/massage graph and nodes before running."""
@@ -160,6 +152,8 @@ class DistributedPluginBase(PluginBase):
 
     def run(self, graph, config, updatehash=False):
         """Execute a pre-defined pipeline using distributed approaches."""
+        import numpy as np
+
         self._config = config
         poll_sleep_secs = float(config["execution"]["poll_sleep_duration"])
 
@@ -202,7 +196,7 @@ class DistributedPluginBase(PluginBase):
                 self.pending_tasks.extend(toappend)
 
             num_jobs = len(self.pending_tasks)
-            if num_jobs < self.max_jobs:
+            if self.max_jobs is None or num_jobs < self.max_jobs:
                 self._send_procs_to_workers(updatehash=updatehash, graph=graph)
 
             sleep_til = loop_start + poll_sleep_secs
@@ -234,7 +228,7 @@ class DistributedPluginBase(PluginBase):
         raise NotImplementedError
 
     def _report_crash(self, node, result=None):
-        from nipype.tools import report_crash
+        from nipype.pipeline.plugins.tools import report_crash
 
         tb = None
         if result is not None:
@@ -275,6 +269,7 @@ class DistributedPluginBase(PluginBase):
         """Submit tasks to workers when system resources are available."""
 
     def _submit_mapnode(self, jobid):
+        import numpy as np
         import scipy.sparse as ssp
 
         if jobid in self.mapnodes:
@@ -348,6 +343,7 @@ class DistributedPluginBase(PluginBase):
 
     def _generate_dependency_list(self, graph):
         """Generate a dependency list for a list of graphs."""
+        import numpy as np
         import networkx as nx
         from nipype.pipeline.engine.utils import topological_sort
 
@@ -375,6 +371,7 @@ class DistributedPluginBase(PluginBase):
 
     def _remove_node_dirs(self):
         """Remove directories whose outputs have already been used up."""
+        import numpy as np
         from shutil import rmtree
         from mriqc import config
 
@@ -418,7 +415,7 @@ class MultiProcPlugin(DistributedPluginBase):
     - mp_context: name of multiprocessing context to use
     """
 
-    def __init__(self, plugin_args=None):
+    def __init__(self, pool=None, plugin_args=None):
         """Initialize the plugin."""
         from mriqc import config
 
@@ -441,10 +438,10 @@ class MultiProcPlugin(DistributedPluginBase):
 
         # Instantiate different thread pools for non-daemon processes
         mp_context = mp.get_context(self.plugin_args.get("mp_context"))
-        self.pool = ProcessPoolExecutor(
+        self.pool = pool or ProcessPoolExecutor(
             max_workers=self.processors,
-            initializer=process_initializer,
-            initargs=(self._cwd,),
+            initializer=config._process_initializer,
+            initargs=(config.execution.cwd, config.nipype.omp_nthreads),
             mp_context=mp_context,
         )
 
@@ -474,6 +471,8 @@ class MultiProcPlugin(DistributedPluginBase):
 
     def _prerun_check(self, graph):
         """Check if any node exeeds the available resources."""
+        import numpy as np
+
         tasks_mem_gb = []
         tasks_num_th = []
         for node in graph.nodes():
@@ -501,6 +500,8 @@ class MultiProcPlugin(DistributedPluginBase):
 
     def _send_procs_to_workers(self, updatehash=False, graph=None):
         """Submit tasks to workers when system resources are available."""
+        import numpy as np
+
         # Check to see if a job is available (jobs with all dependencies run)
         # See https://github.com/nipy/nipype/pull/2200#discussion_r141605722
         # See also https://github.com/nipy/nipype/issues/2372
