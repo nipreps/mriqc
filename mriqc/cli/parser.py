@@ -197,14 +197,25 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "-n-cpus",
         action="store",
         type=PositiveInt,
-        help="Maximum number of threads across all processes.",
+        help="""\
+Maximum number of simultaneously running parallel processes executed by *MRIQC*
+(e.g., several instances of ANTs' registration).
+However, when ``--nprocs`` is greater or equal to the ``--omp-nthreads`` option,
+it also sets the maximum number of threads that simultaneously running processes
+may aggregate (meaning, with ``--nprocs 16 --omp-nthreads 8`` a maximum of two
+8-CPU-threaded processes will be running at a given time).
+Under this mode of operation, ``--nprocs`` sets the maximum number of processors
+that can be assigned work within an *MRIQC* job, which includes all the processors
+used by currently running single- and multi-threaded processes.""",
     )
     g_perfm.add_argument(
         "--omp-nthreads",
         "--ants-nthreads",
         action="store",
         type=PositiveInt,
-        help="Maximum number of threads per-process.",
+        help="""\
+Maximum number of threads that multi-threaded processes executed by *MRIQC*
+(e.g., ANTs' registration) can use.""",
     )
     g_perfm.add_argument(
         "--mem",
