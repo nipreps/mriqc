@@ -62,6 +62,8 @@ def main():
             import multiprocessing.forkserver
             from concurrent.futures import ProcessPoolExecutor
 
+            os.environ["OMP_NUM_THREADS"] = "1"
+
             with suppress(RuntimeError):
                 mp.set_start_method("fork")
             gc.collect()

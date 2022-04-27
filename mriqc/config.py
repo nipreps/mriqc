@@ -107,7 +107,6 @@ _pre_exec_env = dict(os.environ)
 
 # Reduce numpy's vms by limiting OMP_NUM_THREADS
 _default_omp_threads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
-os.environ["OMP_NUM_THREADS"] = f"{min(1, _default_omp_threads)}"
 
 # Disable NiPype etelemetry always
 _disable_et = bool(

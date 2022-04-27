@@ -33,8 +33,13 @@ a hard-limited memory-scope.
 
 def build_workflow(config_file, retval):
     """Create the Nipype Workflow that supports the whole execution graph."""
+    import os
     from mriqc import config, messages
+    os.environ["OMP_NUM_THREADS"] = "1"
+
     from mriqc.workflows.core import init_mriqc_wf
+
+    # We do not need OMP > 1 for workflow creation
 
     config.load(config_file)
     # Initalize nipype config
