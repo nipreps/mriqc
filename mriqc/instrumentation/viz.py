@@ -63,8 +63,7 @@ def plot(filename, param="mem_vsm_mb", mask_processes=tuple()):
     plt.gca().legend(loc="center left", bbox_to_anchor=(1, 0.5))
     plt.gca().set_xlabel("Run time (mm:ss)")
     plt.gca().set_ylabel("Memory fingerprint (GB)")
-    plt.gca().set_xticklabels([
-        f"{int(float(v) // 60)}:{int(float(v) % 60)}"
-        for v in plt.gca().get_xticks()
-    ])
+    plt.gca().set_xticklabels(
+        [f"{int(float(v) // 60)}:{int(float(v) % 60)}" for v in plt.gca().get_xticks()]
+    )
     return fig

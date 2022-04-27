@@ -88,6 +88,7 @@ def main():
         # Because Python on Linux does not ever free virtual memory (VM), running the
         # workflow construction jailed within a process preempts excessive VM buildup.
         from multiprocessing import Manager, Process
+
         with Manager() as mgr:
             from .workflow import build_workflow
 
@@ -114,12 +115,13 @@ def main():
         config.loggers.init()
 
         if _resmon:
-            config.loggers.cli.info(f"Started resource recording at {_resmon._logfile}.")
+            config.loggers.cli.info(
+                f"Started resource recording at {_resmon._logfile}."
+            )
 
         # Resource management options
-        if (
-            config.nipype.plugin in ("MultiProc", "LegacyMultiProc")
-            and (1 < config.nipype.nprocs < config.nipype.omp_nthreads)
+        if config.nipype.plugin in ("MultiProc", "LegacyMultiProc") and (
+            1 < config.nipype.nprocs < config.nipype.omp_nthreads
         ):
             config.loggers.cli.warning(
                 "Per-process threads (--omp-nthreads=%d) exceed total "
@@ -145,8 +147,11 @@ def main():
             _plugin = config.nipype.get_plugin()
             if _pool:
                 from mriqc.engine.plugin import MultiProcPlugin
+
                 _plugin = {
-                    "plugin": MultiProcPlugin(pool=_pool, plugin_args=config.nipype.plugin_args),
+                    "plugin": MultiProcPlugin(
+                        pool=_pool, plugin_args=config.nipype.plugin_args
+                    ),
                 }
             mriqc_wf.run(**_plugin)
 

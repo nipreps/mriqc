@@ -472,6 +472,7 @@ class MultiProcPlugin(DistributedPluginBase):
     def _prerun_check(self, graph):
         """Check if any node exeeds the available resources."""
         import numpy as np
+
         tasks_mem_gb = []
         tasks_num_th = []
         for node in graph.nodes():
