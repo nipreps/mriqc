@@ -1,3 +1,4 @@
+  * ENH: Add instrumentation to monitor resources (#984)
   * ENH: Standalone, lightweight version of MultiProc plugin (#985)
   * ENH: Revise plugin and workflow initialization (#983)
   * FIX: Resource profiler was broken with config file (#981)
