@@ -29,8 +29,11 @@ def main():
     import os
     import sys
     from tempfile import mktemp
+    import atexit
     from mriqc import config, messages
     from mriqc.cli.parser import parse_args
+
+    atexit.register(config.restore_env)
 
     # Run parser
     parse_args()
@@ -60,14 +63,13 @@ def main():
             from concurrent.futures import ProcessPoolExecutor
 
             with suppress(RuntimeError):
-                mp.set_start_method("forkserver")
-                mp.forkserver.ensure_running()
+                mp.set_start_method("fork")
             gc.collect()
 
             _pool = ProcessPoolExecutor(
                 max_workers=config.nipype.nprocs,
                 initializer=config._process_initializer,
-                initargs=(config.execution.cwd,),
+                initargs=(config.execution.cwd, config.nipype.omp_nthreads),
             )
 
         _resmon = None

@@ -66,12 +66,6 @@ def run_node(node, updatehash, taskid):
     return result
 
 
-def process_initializer(cwd):
-    """Initialize the environment of the child process."""
-    os.chdir(cwd)
-    os.environ["NIPYPE_NO_ET"] = "1"
-
-
 class PluginBase:
     """Base class for plugins."""
 
@@ -446,8 +440,8 @@ class MultiProcPlugin(DistributedPluginBase):
         mp_context = mp.get_context(self.plugin_args.get("mp_context"))
         self.pool = pool or ProcessPoolExecutor(
             max_workers=self.processors,
-            initializer=process_initializer,
-            initargs=(self._cwd,),
+            initializer=config._process_initializer,
+            initargs=(config.execution.cwd, config.nipype.omp_nthreads),
             mp_context=mp_context,
         )
 

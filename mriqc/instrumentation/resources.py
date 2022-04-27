@@ -189,9 +189,9 @@ class ResourceRecorder(Process):
             wait_til += self._freq_ns
             sleep(max(0, (wait_til - time_ns()) / 1.0e9))
 
-        self._logfile.close()
+        _logfile.close()
 
-    def stop(self):
+    def stop(self, *args):
         # Tear-down process
         self._done.set()
         with Path(self._logfile).open("a") as f:

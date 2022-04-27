@@ -103,6 +103,11 @@ except ImportError:
 from mriqc._warnings import logging
 
 __version__ = get_version("mriqc")
+_pre_exec_env = dict(os.environ)
+
+# Reduce numpy's vms by limiting OMP_NUM_THREADS
+_default_omp_threads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
+os.environ["OMP_NUM_THREADS"] = f"{min(1, _default_omp_threads)}"
 
 # Disable NiPype etelemetry always
 _disable_et = bool(
@@ -273,6 +278,8 @@ class environment(_Config):
     """Total memory available, in GB."""
     version = __version__
     """*MRIQC*'s version."""
+    _pre_mriqc = _pre_exec_env
+    """Environment variables before MRIQC's execution."""
 
 
 class nipype(_Config):
@@ -288,7 +295,7 @@ class nipype(_Config):
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
     nprocs = os.cpu_count()
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
-    omp_nthreads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
+    omp_nthreads = _default_omp_threads
     """Number of CPUs a single process can access for multithreaded execution."""
     plugin = "MultiProc"
     """NiPype's execution plugin."""
@@ -634,7 +641,18 @@ def to_filename(filename):
     filename.write_text(dumps())
 
 
-def _process_initializer(cwd):
+def _process_initializer(cwd, omp_nthreads):
     """Initialize the environment of the child process."""
     os.chdir(cwd)
     os.environ["NIPYPE_NO_ET"] = "1"
+    os.environ["OMP_NUM_THREADS"] = f"{omp_nthreads}"
+
+
+def restore_env():
+    """Restore the original environment."""
+
+    for k in os.environ.keys():
+        del os.environ[k]
+
+    for k, v in environment._pre_mriqc.items():
+        os.environ[k] = v
