@@ -163,7 +163,18 @@ def main():
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
 
         if _resmon is not None:
+            from mriqc.instrumentation.viz import plot
             _resmon.stop()
+            plot(
+                _resmon._logfile,
+                param="mem_rss_mb",
+                out_file=str(_resmon._logfile).replace(".tsv", ".rss.png"),
+            )
+            plot(
+                _resmon._logfile,
+                param="mem_vsm_mb",
+                out_file=str(_resmon._logfile).replace(".tsv", ".vsm.png"),
+            )
 
     # Set up group level
     if "group" in config.workflow.analysis_level:

@@ -28,7 +28,7 @@ import pandas as pd
 _TIME_LABEL = "runtime"
 
 
-def plot(filename, param="mem_vsm_mb", mask_processes=tuple()):
+def plot(filename, param="mem_vsm_mb", mask_processes=tuple(), out_file=None):
     """Plot a recording file."""
     data = pd.read_csv(filename, sep=r"\s+", comment="#")
 
@@ -56,14 +56,30 @@ def plot(filename, param="mem_vsm_mb", mask_processes=tuple()):
             proc_names.append(label)
             unified[label] = 0
 
-        unified.loc[rows, label] += pid_info[param].values / 1024
+        unified.loc[rows, label] += (
+            pid_info[param].values
+            / (1024 if param.startswith("mem") else 1)
+        )
 
     unified[proc_names] = unified[proc_names].replace({0: np.nan})
-    fig = unified.plot.area(x=_TIME_LABEL, cmap="tab20", figsize=(15, 10), linewidth=0)
-    plt.gca().legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    plt.gca().set_xlabel("Run time (mm:ss)")
-    plt.gca().set_ylabel("Memory fingerprint (GB)")
-    plt.gca().set_xticklabels(
-        [f"{int(float(v) // 60)}:{int(float(v) % 60)}" for v in plt.gca().get_xticks()]
+
+    fig = plt.figure(figsize=(15, 10), facecolor="white")
+    ax = plt.gca()
+    _ = unified.plot.area(x=_TIME_LABEL, cmap="tab20", linewidth=0, ax=ax)
+    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    ax.set_xlabel("Run time (mm:ss)")
+    if param.startswith("mem"):
+        ax.set_ylabel("Memory fingerprint (GB)")
+    elif param.startswith("cpu"):
+        ax.set_ylabel("CPU utilization")
+    else:
+        ax.set_ylabel(param)
+
+    ax.set_xticklabels(
+        [f"{int(float(v) // 60)}:{int(float(v) % 60)}" for v in ax.get_xticks()]
     )
+    if out_file is not None:
+        fig.savefig(out_file, bbox_inches="tight", pad_inches=0, dpi=300)
+        return
+
     return fig
