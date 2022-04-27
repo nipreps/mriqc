@@ -1,3 +1,4 @@
+  * DOC: Improve documentation of ``--nprocs`` and ``--omp-nthreads`` (#986)
   * ENH: Add instrumentation to monitor resources (#984)
   * ENH: Standalone, lightweight version of MultiProc plugin (#985)
   * ENH: Revise plugin and workflow initialization (#983)
