@@ -363,6 +363,14 @@ jobs:
           keys:
             - t1w-v3-{{ epoch }}
             - t1w-v3-
+
+      - run:
+          name: Remove old, cached configs
+          command: |
+            rm -f /tmp/t1w/work/.mriqc.*.toml
+            rm -f /tmp/t1w/work/.resources.*.tsv
+            rm -f /tmp/t1w/work/.resources.*.png
+
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -378,6 +386,18 @@ jobs:
                        --resource-monitor \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+
+      - run:
+          name: Move temporary but relevant artifacts
+          command: |
+            mkdir /tmp/t1w/misc
+            mv /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/misc
+            mv /tmp/t1w/work/.resources.*.tsv /tmp/t1w/misc
+            mv /tmp/t1w/work/.resources.*.png /tmp/t1w/misc
+
+      - store_artifacts:
+          path: /tmp/t1w/misc
+
       - save_cache:
           key: t1w-v3-{{ epoch }}
           paths:
@@ -408,7 +428,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -and -not -name ".mriqc.*.toml" -and -not -name ".resources.*.tsv" -delete
+            find /tmp/t1w/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
 
       - store_artifacts:
           path: /tmp/t1w/work
@@ -504,6 +524,13 @@ jobs:
             - bold-v2-
 
       - run:
+          name: Remove old, cached configs
+          command: |
+            rm -f /tmp/bold/work/.mriqc.*.toml
+            rm -f /tmp/bold/work/.resources.*.tsv
+            rm -f /tmp/bold/work/.resources.*.png
+
+      - run:
           name: Run participant-level on BOLD images
           no_output_timeout: 2h
           command: |
@@ -518,6 +545,16 @@ jobs:
                        --resource-monitor \
                        --testing --ica \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+      - run:
+          name: Move temporary but relevant artifacts
+          command: |
+            mkdir /tmp/bold/misc
+            mv /tmp/bold/work/.mriqc.*.toml /tmp/bold/misc
+            mv /tmp/bold/work/.resources.*.tsv /tmp/bold/misc
+            mv /tmp/bold/work/.resources.*.png /tmp/bold/misc
+
+      - store_artifacts:
+          path: /tmp/bold/misc
 
       - save_cache:
           key: bold-v2-{{ epoch }}
@@ -548,7 +585,7 @@ jobs:
       - run:
           name: Clean-up work directory (just leave reports & commandlines)
           command: |
-            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -and -not -name ".mriqc.*.toml" -and -not -name ".resources.*.tsv" -delete
+            find /tmp/bold/work -type f -not -name "report.rst" -and -not -name "command.txt" -delete
 
       - store_artifacts:
           path: /tmp/bold/work
