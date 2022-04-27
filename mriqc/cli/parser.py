@@ -206,7 +206,9 @@ may aggregate (meaning, with ``--nprocs 16 --omp-nthreads 8`` a maximum of two \
 8-CPU-threaded processes will be running at a given time). \
 Under this mode of operation, ``--nprocs`` sets the maximum number of processors \
 that can be assigned work within an *MRIQC* job, which includes all the processors \
-used by currently running single- and multi-threaded processes.""",
+used by currently running single- and multi-threaded processes. \
+If ``None``, the number of CPUs available will be automatically assigned (which may \
+not be what you want in, e.g., shared systems like a HPC cluster.""",
     )
     g_perfm.add_argument(
         "--omp-nthreads",
@@ -214,8 +216,10 @@ used by currently running single- and multi-threaded processes.""",
         action="store",
         type=PositiveInt,
         help="""\
-Maximum number of threads that multi-threaded processes executed by *MRIQC*
-(e.g., ANTs' registration) can use.""",
+Maximum number of threads that multi-threaded processes executed by *MRIQC* \
+(e.g., ANTs' registration) can use. \
+If ``None``, the number of CPUs available will be automatically assigned (which may \
+not be what you want in, e.g., shared systems like a HPC cluster.""",
     )
     g_perfm.add_argument(
         "--mem",
