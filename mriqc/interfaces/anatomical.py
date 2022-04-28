@@ -110,28 +110,32 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = np.all(
-            np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9
-        ) if self.inputs.human else False
+        erode = (
+            np.all(np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9)
+            if self.inputs.human
+            else False
+        )
 
         # Load image corrected for INU
-        inudata = np.nan_to_num(imnii.get_data())
+        inudata = np.nan_to_num(imnii.get_fdata())
         inudata[inudata < 0] = 0
 
         # Load binary segmentation from FSL FAST
         segnii = nb.load(self.inputs.in_segm)
-        segdata = segnii.get_data().astype(np.uint8)
+        segdata = np.asanyarray(segnii.dataobj).astype(np.uint8)
 
         # Load air, artifacts and head masks
-        airdata = nb.load(self.inputs.air_msk).get_data().astype(np.uint8)
-        artdata = nb.load(self.inputs.artifact_msk).get_data().astype(np.uint8)
-        headdata = nb.load(self.inputs.head_msk).get_data().astype(np.uint8)
-        rotdata = nb.load(self.inputs.rot_msk).get_data().astype(np.uint8)
+        airdata = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(np.uint8)
+        artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(
+            np.uint8
+        )
+        headdata = np.asanyarray(nb.load(self.inputs.head_msk).dataobj).astype(np.uint8)
+        rotdata = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(np.uint8)
 
         # Load Partial Volume Maps (pvms) from FSL FAST
         pvmdata = []
         for fname in self.inputs.in_pvms:
-            pvmdata.append(nb.load(fname).get_data().astype(np.float32))
+            pvmdata.append(nb.load(fname).get_fdata(dtype="float32"))
 
         # Summary stats
         stats = summary_stats(inudata, pvmdata, airdata, erode=erode)
@@ -226,7 +230,7 @@ class StructuralQC(SimpleInterface):
             pass
 
         # Bias
-        bias = nb.load(self.inputs.in_bias).get_data()[segdata > 0]
+        bias = nb.load(self.inputs.in_bias).get_fdata()[segdata > 0]
         self._results["inu"] = {
             "range": float(
                 np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))
@@ -234,8 +238,8 @@ class StructuralQC(SimpleInterface):
             "med": float(np.median(bias)),
         }  # pylint: disable=E1101
 
-        mni_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.mni_tpms]
-        in_tpms = [nb.load(tpm).get_data() for tpm in self.inputs.in_pvms]
+        mni_tpms = [nb.load(tpm).get_fdata() for tpm in self.inputs.mni_tpms]
+        in_tpms = [nb.load(tpm).get_fdata() for tpm in self.inputs.in_pvms]
         overlap = fuzzy_jaccard(in_tpms, mni_tpms)
         self._results["tpm_overlap"] = {
             "csf": overlap[0],
@@ -275,13 +279,13 @@ class ArtifactMask(SimpleInterface):
 
     def _run_interface(self, runtime):
         imnii = nb.load(self.inputs.in_file)
-        imdata = np.nan_to_num(imnii.get_data().astype(np.float32))
+        imdata = np.nan_to_num(imnii.get_fdata().astype(np.float32))
 
         # Remove negative values
         imdata[imdata < 0] = 0
 
-        hmdata = nb.load(self.inputs.head_mask).get_data()
-        npdata = nb.load(self.inputs.nasion_post_mask).get_data()
+        hmdata = np.asanyarray(nb.load(self.inputs.head_mask).dataobj)
+        npdata = np.asanyarray(nb.load(self.inputs.nasion_post_mask).dataobj)
 
         # Invert head mask
         airdata = np.ones_like(hmdata, dtype=np.uint8)
@@ -297,7 +301,7 @@ class ArtifactMask(SimpleInterface):
 
         # Apply rotation mask (if supplied)
         if isdefined(self.inputs.rot_mask):
-            rotmskdata = nb.load(self.inputs.rot_mask).get_data()
+            rotmskdata = np.asanyarray(nb.load(self.inputs.rot_mask).dataobj)
             airdata[rotmskdata == 1] = 0
 
         # Run the artifact detection
@@ -348,8 +352,8 @@ class ComputeQI2(SimpleInterface):
     output_spec = ComputeQI2OutputSpec
 
     def _run_interface(self, runtime):
-        imdata = nb.load(self.inputs.in_file).get_data()
-        airdata = nb.load(self.inputs.air_msk).get_data()
+        imdata = nb.load(self.inputs.in_file).get_fdata()
+        airdata = nb.load(self.inputs.air_msk).get_fdata()
         qi2, out_file = art_qi2(imdata, airdata)
         self._results["qi2"] = qi2
         self._results["out_file"] = out_file
@@ -380,7 +384,7 @@ class Harmonize(SimpleInterface):
     def _run_interface(self, runtime):
 
         in_file = nb.load(self.inputs.in_file)
-        wm_mask = nb.load(self.inputs.wm_mask).get_data()
+        wm_mask = nb.load(self.inputs.wm_mask).get_fdata()
         wm_mask[wm_mask < 0.9] = 0
         wm_mask[wm_mask > 0] = 1
         wm_mask = wm_mask.astype(np.uint8)
@@ -391,7 +395,7 @@ class Harmonize(SimpleInterface):
             # Perform an opening operation on the background data.
             wm_mask = nd.binary_erosion(wm_mask, structure=struc).astype(np.uint8)
 
-        data = in_file.get_data()
+        data = in_file.get_fdata()
         data *= 1000.0 / np.median(data[wm_mask > 0])
 
         out_file = fname_presuffix(
@@ -422,7 +426,7 @@ class RotationMask(SimpleInterface):
 
     def _run_interface(self, runtime):
         in_file = nb.load(self.inputs.in_file)
-        data = in_file.get_data()
+        data = in_file.get_fdata()
         mask = data <= 0
 
         # Pad one pixel to control behavior on borders of binary_opening
