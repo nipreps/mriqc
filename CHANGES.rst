@@ -1,3 +1,4 @@
+  * ENH: Improve building workflow message feedback (#990)
   * FIX: Plot segmentations after dropping off-diagonal (#989)
   * FIX: Replace all deprecated ``nibabel.get_data()`` in anatomical module (#988)
   * DOC: Improve documentation of ``--nprocs`` and ``--omp-nthreads`` (#986)
