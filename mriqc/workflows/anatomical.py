@@ -891,11 +891,11 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
         (synthstrip, final_masked, [("out_mask", "in_mask")]),
         (pre_clip, post_n4, [("out_file", "input_image")]),
         (post_n4, final_inu, [("bias_image", "bias_image")]),
-        (final_inu, final_masked, [("out", "in_file")]),
+        (post_n4, final_masked, [("output_image", "in_file")]),
+        (final_masked, outputnode, [("out_file", "out_brain")]),
         (post_n4, outputnode, [("bias_image", "bias_image")]),
         (synthstrip, outputnode, [("out_mask", "out_mask")]),
-        (final_inu, outputnode, [("out", "out_corrected")]),
-        (final_masked, outputnode, [("out_file", "out_brain")]),
+        (post_n4, outputnode, [("output_image", "out_corrected")]),
     ])
     # fmt: on
     return workflow
