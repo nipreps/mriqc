@@ -88,7 +88,12 @@ def anat_qc_workflow(name="anatMRIQC"):
         "T2w", []
     )
 
-    message = BUILDING_WORKFLOW.format(dataset=", ".join(dataset))
+    message = BUILDING_WORKFLOW.format(
+        detail=(
+            f"for {len(dataset)} NIfTI files." if len(dataset) > 2
+            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+        ),
+    )
     config.loggers.workflow.info(message)
 
     # Initialize workflow

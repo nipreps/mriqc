@@ -23,7 +23,7 @@
 """Logging and console messages."""
 
 BIDS_META = "Generating BIDS derivatives metadata."
-BUILDING_WORKFLOW = "Building anatomical MRIQC workflow for files: {dataset}"
+BUILDING_WORKFLOW = "Building anatomical MRIQC workflow {detail}."
 CREATED_DATASET = (
     'Created dataset X="{feat_file}", Y="{label_file}" (N={n_samples} valid samples)'
 )
