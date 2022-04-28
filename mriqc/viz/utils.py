@@ -197,9 +197,9 @@ def plot_spikes(
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     nii = nb.as_closest_canonical(nb.load(in_file))
-    fft = nb.load(in_fft).get_data()
+    fft = nb.load(in_fft).get_fdata()
 
-    data = nii.get_data()
+    data = nii.get_fdata()
     zooms = nii.header.get_zooms()[:2]
     tstep = nii.header.get_zooms()[-1]
     ntpoints = data.shape[-1]
@@ -281,7 +281,7 @@ def plot_mosaic(
 
     if isinstance(img, (str, bytes)):
         nii = nb.as_closest_canonical(nb.load(img))
-        img_data = nii.get_data()
+        img_data = nii.get_fdata()
         zooms = nii.header.get_zooms()
     else:
         img_data = img
@@ -298,7 +298,7 @@ def plot_mosaic(
         img_data = _bbox(img_data, mask_file)
 
     if bbox_mask_file is not None:
-        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_data()
+        bbox_data = nb.as_closest_canonical(nb.load(bbox_mask_file)).get_fdata()
         img_data = _bbox(img_data, bbox_data)
 
     z_vals = np.array(list(range(0, img_data.shape[2])))
@@ -326,7 +326,7 @@ def plot_mosaic(
         nrows += 1
 
     if overlay_mask:
-        overlay_data = nb.as_closest_canonical(nb.load(overlay_mask)).get_data()
+        overlay_data = nb.as_closest_canonical(nb.load(overlay_mask)).get_fdata()
 
     # create figures
     if fig is None:
@@ -539,9 +539,9 @@ def _get_mean_fd_distribution(fd_files, fd_radius):
 
 def _get_values_inside_a_mask(main_file, mask_file):
     main_nii = nb.load(main_file)
-    main_data = main_nii.get_data()
+    main_data = main_nii.get_fdata()
     nan_mask = np.logical_not(np.isnan(main_data))
-    mask = nb.load(mask_file).get_data() > 0
+    mask = nb.load(mask_file).get_fdata() > 0
 
     data = main_data[np.logical_and(nan_mask, mask)]
     return data
@@ -549,20 +549,34 @@ def _get_values_inside_a_mask(main_file, mask_file):
 
 def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
     from nilearn.plotting import plot_anat
+    from nitransforms.io.afni import _dicom_real_to_card
 
     vmax = kwargs.get("vmax")
     vmin = kwargs.get("vmin")
 
+    anat_ras = nb.as_closest_canonical(nb.load(anat_file))
+    anat_ras_plumb = anat_ras.__class__(
+        anat_ras.dataobj,
+        _dicom_real_to_card(anat_ras.affine),
+        anat_ras.header
+    )
+
+    seg_ras = nb.as_closest_canonical(nb.load(segmentation))
+    seg_ras_plumb = seg_ras.__class__(
+        seg_ras.dataobj,
+        _dicom_real_to_card(seg_ras.affine),
+        seg_ras.header
+    )
+
     if kwargs.get("saturate", False):
-        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 70)
+        vmax = np.percentile(anat_ras.get_fdata().reshape(-1), 70)
 
     if vmax is None and vmin is None:
-
-        vmin = np.percentile(nb.load(anat_file).get_data().reshape(-1), 10)
-        vmax = np.percentile(nb.load(anat_file).get_data().reshape(-1), 99)
+        vmin = np.percentile(anat_ras.get_fdata().reshape(-1), 10)
+        vmax = np.percentile(anat_ras.get_fdata().reshape(-1), 99)
 
     disp = plot_anat(
-        anat_file,
+        anat_ras_plumb,
         display_mode=kwargs.get("display_mode", "ortho"),
         cut_coords=kwargs.get("cut_coords", 8),
         title=kwargs.get("title"),
@@ -570,7 +584,7 @@ def plot_segmentation(anat_file, segmentation, out_file, **kwargs):
         vmin=vmin,
     )
     disp.add_contours(
-        segmentation,
+        seg_ras_plumb,
         levels=kwargs.get("levels", [1]),
         colors=kwargs.get("colors", "r"),
     )
@@ -634,7 +648,7 @@ def plot_qi2(x_grid, ref_pdf, fit_pdf, ref_data, cutoff_idx, out_file=None):
 def _get_limits(nifti_file, only_plot_noise=False):
     if isinstance(nifti_file, str):
         nii = nb.as_closest_canonical(nb.load(nifti_file))
-        data = nii.get_data()
+        data = nii.get_fdata()
     else:
         data = nifti_file
 
