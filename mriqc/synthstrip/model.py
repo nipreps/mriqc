@@ -1,4 +1,48 @@
-#!/usr/bin/env python
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2022 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+# STATEMENT OF CHANGES: This file is derived from sources licensed under the FreeSurfer 1.0 license
+# terms, and this file has been changed.
+# The full licensing terms of the original work are found at:
+# https://github.com/freesurfer/freesurfer/blob/2995ded957961a7f3704de57eee88eb6cc30d52d/LICENSE.txt
+# A copy of the license has been archived in the ORIGINAL_LICENSE file
+# found within this redistribution.
+#
+# The original file this work derives from is found at:
+# https://github.com/freesurfer/freesurfer/blob/2995ded957961a7f3704de57eee88eb6cc30d52d/mri_synthstrip/mri_synthstrip
+#
+# [April 2022] CHANGES:
+#    * MAINT: Split the monolithic file into model and CLI submodules
+#    * ENH: Replace freesurfer Python bundle with in-house code.
+#
+"""
+Robust, universal skull-stripping for brain images of any type.
+If you use SynthStrip in your analysis, please cite:
+
+  A Hoopes, JS Mora, AV Dalca, B Fischl, M Hoffmann.
+  SynthStrip: Skull-Stripping for Any Brain Image.
+  https://arxiv.org/abs/2203.09974
+
+"""
 
 import torch
 import torch.nn as nn

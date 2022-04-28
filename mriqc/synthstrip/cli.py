@@ -20,12 +20,27 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+# STATEMENT OF CHANGES: This file is derived from sources licensed under the FreeSurfer 1.0 license
+# terms, and this file has been changed.
+# The full licensing terms of the original work are found at:
+# https://github.com/freesurfer/freesurfer/blob/2995ded957961a7f3704de57eee88eb6cc30d52d/LICENSE.txt
+# A copy of the license has been archived in the ORIGINAL_LICENSE file
+# found within this redistribution.
+#
+# The original file this work derives from is found at:
+# https://github.com/freesurfer/freesurfer/blob/2995ded957961a7f3704de57eee88eb6cc30d52d/mri_synthstrip/mri_synthstrip
+#
+# [April 2022] CHANGES:
+#    * MAINT: Split the monolithic file into model and CLI submodules
+#    * ENH: Replace freesurfer Python bundle with in-house code.
+#
 """
 Robust, universal skull-stripping for brain images of any type.
 If you use SynthStrip in your analysis, please cite:
 
-  SynthStrip: Skull-Stripping for Any Brain Image.
   A Hoopes, JS Mora, AV Dalca, B Fischl, M Hoffmann.
+  SynthStrip: Skull-Stripping for Any Brain Image.
+  https://arxiv.org/abs/2203.09974
 
 """
 
