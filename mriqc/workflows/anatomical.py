@@ -873,7 +873,7 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
     )
 
     synthstrip = pe.Node(
-        SynthStrip(model="/home/oesteban/tmp/synthstrip.1.pt"),
+        SynthStrip(),
         name="synthstrip",
     )
 
