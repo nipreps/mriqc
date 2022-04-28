@@ -21,14 +21,22 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """SynthStrip interface."""
-
+import os
+from pathlib import Path
 from nipype.interfaces.base import (
     CommandLine,
     CommandLineInputSpec,
     File,
     TraitedSpec,
     traits,
+    Undefined,
 )
+
+_fs_home = os.getenv("FREESURFER_HOME", None)
+_default_model_path = Path(_fs_home) / "models" / "synthstrip.1.pt" if _fs_home else Undefined
+
+if _fs_home and not _default_model_path.exists():
+    _default_model_path = Undefined
 
 
 class _SynthStripInputSpec(CommandLineInputSpec):
@@ -42,8 +50,9 @@ class _SynthStripInputSpec(CommandLineInputSpec):
         False, usedefault=True, argstr="-g", desc="Use GPU", nohash=True
     )
     model = File(
+        str(_default_model_path),
+        usedefault=True,
         exists=True,
-        mandatory=True,
         argstr="--model %s",
         desc="file containing model's weights",
     )
