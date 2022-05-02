@@ -1,3 +1,4 @@
+  * ENH: Deprecate ``--start-idx`` / ``--stop-idx`` (#993)
   * ENH: Add SynthStrip base module (#987)
 diff --cc setup.cfg
 index 291e8b0,35e922d..206de44
