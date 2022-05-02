@@ -120,22 +120,52 @@ class StructuralQC(SimpleInterface):
         inudata = np.nan_to_num(imnii.get_fdata())
         inudata[inudata < 0] = 0
 
+        if np.all(inudata < 1e-3):
+            raise RuntimeError(
+                "Input inhomogeneity-corrected data seem empty. "
+                "MRIQC failed to process this dataset."
+            )
+
         # Load binary segmentation from FSL FAST
         segnii = nb.load(self.inputs.in_segm)
         segdata = np.asanyarray(segnii.dataobj).astype(np.uint8)
 
+        if np.sum(segdata > 0) < 1e3:
+            raise RuntimeError(
+                "Input segmentation data is likely corrupt. "
+                "MRIQC failed to process this dataset."
+            )
+
         # Load air, artifacts and head masks
         airdata = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(np.uint8)
+        if np.sum(airdata > 0) < 100:
+            raise RuntimeError(
+                "Detected less than 100 voxels belonging to the air mask. "
+                "MRIQC failed to process this dataset."
+            )
+
         artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(
             np.uint8
         )
+
         headdata = np.asanyarray(nb.load(self.inputs.head_msk).dataobj).astype(np.uint8)
+        if np.sum(headdata > 0) < 100:
+            raise RuntimeError(
+                "Detected less than 100 voxels belonging to the head mask. "
+                "MRIQC failed to process this dataset."
+            )
+
         rotdata = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(np.uint8)
 
         # Load Partial Volume Maps (pvms) from FSL FAST
         pvmdata = []
         for fname in self.inputs.in_pvms:
             pvmdata.append(nb.load(fname).get_fdata(dtype="float32"))
+            if np.sum(pvmdata[-1] > 1e-4) < 10:
+                raise RuntimeError(
+                    "Detected less than 10 voxels belonging to one tissue prob. map. "
+                    "MRIQC failed to process this dataset."
+                )
 
         # Summary stats
         stats = summary_stats(inudata, pvmdata, airdata, erode=erode)

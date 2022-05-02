@@ -105,12 +105,15 @@ class FunctionalQC(SimpleInterface):
         hmcdata = hmcdata.astype(np.float32)
         hmcdata[hmcdata < 0] = 0
 
-        # Get EPI data (with mc done) and get it ready
+        # Get brain mask data
         msknii = nb.load(self.inputs.in_mask)
-        mskdata = np.nan_to_num(msknii.get_data())
-        mskdata[mskdata < 0] = 0
-        mskdata[mskdata > 0] = 1
+        mskdata = np.asanyarray(msknii.dataobj) > 0
         mskdata = mskdata.astype(np.uint8)
+        if np.sum(mskdata) < 100:
+            raise RuntimeError(
+                "Detected less than 100 voxels belonging to the brain mask. "
+                "MRIQC failed to process this dataset."
+            )
 
         # Summary stats
         stats = summary_stats(epidata, mskdata, erode=True)
