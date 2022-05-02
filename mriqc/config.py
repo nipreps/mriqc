@@ -507,10 +507,6 @@ class workflow(_Config):
     """Run ICA on the raw data and include the components in the individual reports."""
     inputs = None
     """List of files to be processed with MRIQC."""
-    start_idx = None
-    """Initial volume in functional timeseries that should be considered for preprocessing."""
-    stop_idx = None
-    """Final volume in functional timeseries that should be considered for preprocessing."""
     species = "human"
     """Subject species to choose most appropriate template"""
     template_id = "MNI152NLin2009cAsym"

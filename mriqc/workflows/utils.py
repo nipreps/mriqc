@@ -32,27 +32,6 @@ def _tofloat(inlist):
         return float(inlist)
 
 
-def fmri_getidx(in_file, start_idx, stop_idx):
-    """Heuristics to set the start and stop indices of fMRI series"""
-    from nibabel import load
-    from nipype.interfaces.base import isdefined
-
-    nvols = load(in_file).shape[3]
-    max_idx = nvols - 1
-
-    if (
-        start_idx is None
-        or not isdefined(start_idx)
-        or start_idx < 0
-        or start_idx > max_idx
-    ):
-        start_idx = 0
-
-    if stop_idx is None or not isdefined(stop_idx) or max_idx < stop_idx < start_idx:
-        stop_idx = max_idx
-    return start_idx, stop_idx
-
-
 def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
