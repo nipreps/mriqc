@@ -1,3 +1,29 @@
+  * ENH: Add SynthStrip base module (#987)
+diff --cc setup.cfg
+index 291e8b0,35e922d..206de44
+--- a/setup.cfg
++++ b/setup.cfg
+@@@ -35,17 -35,18 +35,19 @@@ install_requires 
+      nibabel >= 3.0.1,<4.0
+      nilearn >= 0.5.1
+      nipype ~= 1.4
++     nitransforms >= 21.0.1
+      niworkflows ~= 1.5.1
+ +    nitransforms ~= 21.0.1
+      numpy >=1.20, <1.22; python_version<'3.8'
+      numpy ~=1.20; python_version>='3.8'
+      pandas >=1.0, <1.4; python_version<'3.8'
+      pandas ~=1.0; python_version>='3.8'
+      pybids >= 0.12.1
+      PyYAML
+ -    scipy ~=1.7.0; python_version<'3.8'
+ +    scipy ~=1.6.0; python_version<'3.8'
+      scipy ~=1.8; python_version>='3.8'
+      toml
++     torch == 1.10.2
+  test_requires =
+      coverage
+      mock
   * ENH: Improve building workflow message feedback (#990)
   * FIX: Plot segmentations after dropping off-diagonal (#989)
   * FIX: Replace all deprecated ``nibabel.get_data()`` in anatomical module (#988)
