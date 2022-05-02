@@ -110,14 +110,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     to_ras = pe.Node(ConformImage(check_dtype=False), name="conform")
     # 2. species specific skull-stripping
     if config.workflow.species.lower() == "human":
-        from niworkflows.anat.skullstrip import afni_wf as skullstrip_wf
-
-        skull_stripping = skullstrip_wf(
-            n4_nthreads=config.nipype.omp_nthreads, unifize=False
-        )
-        ss_in_file = "inputnode.in_file"
-        ss_bias_corrected = "outputnode.bias_corrected"
-        ss_skull_stripped = "outputnode.out_file"
+        skull_stripping = synthstrip_wf(omp_nthreads=config.nipype.omp_nthreads)
         ss_bias_field = "outputnode.bias_image"
     else:
         from nirodents.workflows.brainextraction import init_rodent_brain_extraction_wf
@@ -125,9 +118,6 @@ def anat_qc_workflow(name="anatMRIQC"):
         skull_stripping = init_rodent_brain_extraction_wf(
             template_id=config.workflow.template_id
         )
-        ss_in_file = "inputnode.in_files"
-        ss_bias_corrected = "outputnode.out_corrected"
-        ss_skull_stripped = "outputnode.out_brain"
         ss_bias_field = "final_n4.bias_image"
     # 3. Head mask
     hmsk = headmsk_wf()
@@ -207,12 +197,12 @@ def anat_qc_workflow(name="anatMRIQC"):
         (inputnode, to_ras, [("in_file", "in_file")]),
         (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
         (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
-        (to_ras, skull_stripping, [("out_file", ss_in_file)]),
-        (skull_stripping, segment, [(ss_skull_stripped, seg_in_file)]),
-        (skull_stripping, hmsk, [(ss_bias_corrected, "inputnode.in_file")]),
+        (to_ras, skull_stripping, [("out_file", "inputnode.in_files")]),
+        (skull_stripping, segment, [("outputnode.out_brain", seg_in_file)]),
+        (skull_stripping, hmsk, [("outputnode.out_corrected", "inputnode.in_file")]),
         (segment, hmsk, [(dseg_out, "inputnode.in_segm")]),
         (skull_stripping, norm, [
-            (ss_bias_corrected, "inputnode.moving_image"),
+            ("outputnode.out_corrected", "inputnode.moving_image"),
             ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
@@ -224,7 +214,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
         (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
         (to_ras, iqmswf, [("out_file", "inputnode.in_ras")]),
-        (skull_stripping, iqmswf, [(ss_bias_corrected, "inputnode.inu_corrected"),
+        (skull_stripping, iqmswf, [("outputnode.out_corrected", "inputnode.inu_corrected"),
                                    (ss_bias_field, "inputnode.in_inu"),
                                    ("outputnode.out_mask", "inputnode.brainmask")]),
         (amw, iqmswf, [("outputnode.air_mask", "inputnode.airmask"),
@@ -236,7 +226,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
         (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
         (skull_stripping, repwf, [
-            (ss_bias_corrected, "inputnode.inu_corrected"),
+            ("outputnode.out_corrected", "inputnode.inu_corrected"),
             ("outputnode.out_mask", "inputnode.brainmask")]),
         (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
         (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
@@ -254,7 +244,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         ])
     else:
         workflow.connect([
-            (skull_stripping, xfm_tpms, [(ss_skull_stripped, "reference_image")]),
+            (skull_stripping, xfm_tpms, [("outputnode.out_brain", "reference_image")]),
             (norm, xfm_tpms, [("outputnode.inverse_composite_transform", "transforms")]),
             (xfm_tpms, format_tpm_names, [('output_image', 'in_files')]),
             (format_tpm_names, segment, [(('file_format', _pop), 'prior_image')]),
@@ -405,8 +395,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     # Compute python-coded measures
     measures = pe.Node(
-        StructuralQC(human=config.workflow.species.lower() == "human"),
-        "measures"
+        StructuralQC(human=config.workflow.species.lower() == "human"), "measures"
     )
 
     # Project MNI segmentation to T1 space
@@ -848,6 +837,102 @@ def airmsk_wf(name="AirMaskWorkflow"):
     # fmt: on
 
     return workflow
+
+
+def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
+    """Create a brain-extraction workflow using SynthStrip."""
+    from nipype.interfaces.ants import N4BiasFieldCorrection
+    from niworkflows.interfaces.nibabel import IntensityClip, ApplyMask
+    from mriqc.interfaces.synthstrip import SynthStrip
+
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_files"]), name="inputnode")
+    outputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=["out_corrected", "out_brain", "bias_image", "out_mask"]
+        ),
+        name="outputnode",
+    )
+
+    # truncate target intensity for N4 correction
+    pre_clip = pe.Node(IntensityClip(p_min=10, p_max=99.9), name="pre_clip")
+
+    pre_n4 = pe.Node(
+        N4BiasFieldCorrection(
+            dimension=3,
+            num_threads=omp_nthreads,
+            rescale_intensities=True,
+            copy_header=True,
+        ),
+        name="pre_n4",
+    )
+
+    post_n4 = pe.Node(
+        N4BiasFieldCorrection(
+            dimension=3,
+            save_bias=True,
+            num_threads=omp_nthreads,
+            n_iterations=[50] * 4,
+            copy_header=True,
+        ),
+        name="post_n4",
+    )
+
+    synthstrip = pe.Node(
+        SynthStrip(),
+        name="synthstrip",
+    )
+
+    final_masked = pe.Node(ApplyMask(), name="final_masked")
+    final_inu = pe.Node(niu.Function(function=_apply_bias_correction), name="final_inu")
+
+    workflow = pe.Workflow(name=name)
+    # fmt: off
+    workflow.connect([
+        (inputnode, final_inu, [("in_files", "in_file")]),
+        (inputnode, pre_clip, [("in_files", "in_file")]),
+        (pre_clip, pre_n4, [("out_file", "input_image")]),
+        (pre_n4, synthstrip, [("output_image", "in_file")]),
+        (synthstrip, post_n4, [("out_mask", "weight_image")]),
+        (synthstrip, final_masked, [("out_mask", "in_mask")]),
+        (pre_clip, post_n4, [("out_file", "input_image")]),
+        (post_n4, final_inu, [("bias_image", "bias_image")]),
+        (post_n4, final_masked, [("output_image", "in_file")]),
+        (final_masked, outputnode, [("out_file", "out_brain")]),
+        (post_n4, outputnode, [("bias_image", "bias_image")]),
+        (synthstrip, outputnode, [("out_mask", "out_mask")]),
+        (post_n4, outputnode, [("output_image", "out_corrected")]),
+    ])
+    # fmt: on
+    return workflow
+
+
+def _apply_bias_correction(in_file, bias_image, out_file=None):
+    import os.path as op
+
+    import numpy as np
+    import nibabel as nb
+
+    img = nb.load(in_file)
+    data = np.clip(
+        img.get_fdata() * nb.load(bias_image).get_fdata(),
+        a_min=0,
+        a_max=None,
+    )
+    out_img = img.__class__(
+        data.astype(img.get_data_dtype()),
+        img.affine,
+        img.header,
+    )
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == ".gz":
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath("{}_inu{}".format(fname, ext))
+
+    out_img.to_filename(out_file)
+    return out_file
 
 
 def _binarize(in_file, threshold=0.5, out_file=None):

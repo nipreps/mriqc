@@ -114,6 +114,10 @@ ENV FSLDIR="/opt/fsl" \
 ENV MKL_NUM_THREADS=1 \
     OMP_NUM_THREADS=1
 
+COPY --from=freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569facb46e904b45fd52f1a12beb8b /freesurfer/models/synthstrip.1.pt /opt/freesurfer/models/synthstrip.1.pt
+
+ENV FREESURFER_HOME=/opt/freesurfer
+
 # Create a shared $HOME directory
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
