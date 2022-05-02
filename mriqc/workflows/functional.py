@@ -676,42 +676,20 @@ def hmc(name="fMRI_HMC"):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Calc, Despike, Refit, TShift, Volreg
+    from nipype.interfaces.afni import Despike, Refit, TShift, Volreg
 
     mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "fd_radius", "start_idx", "stop_idx"]),
+        niu.IdentityInterface(fields=["in_file", "fd_radius"]),
         name="inputnode",
     )
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode"
     )
-
-    if any(
-        (
-            config.workflow.start_idx is not None,
-            config.workflow.stop_idx is not None,
-        )
-    ):
-        drop_trs = pe.Node(Calc(expr="a", outputtype="NIFTI_GZ"), name="drop_trs")
-        # fmt: off
-        workflow.connect([
-            (inputnode, drop_trs, [("in_file", "in_file_a"),
-                                   ("start_idx", "start_idx"),
-                                   ("stop_idx", "stop_idx")]),
-        ])
-        # fmt: on
-    else:
-        drop_trs = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="drop_trs")
-        # fmt: off
-        workflow.connect([
-            (inputnode, drop_trs, [("in_file", "out_file")]),
-        ])
-        # fmt: on
 
     # calculate hmc parameters
     hmc = pe.Node(
@@ -753,7 +731,7 @@ def hmc(name="fMRI_HMC"):
 
         # fmt: off
         workflow.connect([
-            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (inputnode, st_corr, [("in_file", "in_file")]),
             (st_corr, despike_node, [("out_file", "in_file")]),
             (despike_node, deoblique_node, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
@@ -762,7 +740,7 @@ def hmc(name="fMRI_HMC"):
     elif config.workflow.correct_slice_timing and config.workflow.despike:
         # fmt: off
         workflow.connect([
-            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (inputnode, st_corr, [("in_file", "in_file")]),
             (st_corr, despike_node, [("out_file", "in_file")]),
             (despike_node, hmc, [("out_file", "in_file")]),
         ])
@@ -770,7 +748,7 @@ def hmc(name="fMRI_HMC"):
     elif config.workflow.correct_slice_timing and config.workflow.deoblique:
         # fmt: off
         workflow.connect([
-            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (inputnode, st_corr, [("in_file", "in_file")]),
             (st_corr, deoblique_node, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
@@ -778,14 +756,14 @@ def hmc(name="fMRI_HMC"):
     elif config.workflow.correct_slice_timing:
         # fmt: off
         workflow.connect([
-            (drop_trs, st_corr, [("out_file", "in_file")]),
+            (inputnode, st_corr, [("in_file", "in_file")]),
             (st_corr, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     elif config.workflow.despike and config.workflow.deoblique:
         # fmt: off
         workflow.connect([
-            (drop_trs, despike_node, [("out_file", "in_file")]),
+            (inputnode, despike_node, [("in_file", "in_file")]),
             (despike_node, deoblique_node, [("out_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
@@ -793,21 +771,21 @@ def hmc(name="fMRI_HMC"):
     elif config.workflow.despike:
         # fmt: off
         workflow.connect([
-            (drop_trs, despike_node, [("out_file", "in_file")]),
+            (inputnode, despike_node, [("in_file", "in_file")]),
             (despike_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     elif config.workflow.deoblique:
         # fmt: off
         workflow.connect([
-            (drop_trs, deoblique_node, [("out_file", "in_file")]),
+            (inputnode, deoblique_node, [("in_file", "in_file")]),
             (deoblique_node, hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     else:
         # fmt: off
         workflow.connect([
-            (drop_trs, hmc, [("out_file", "in_file")]),
+            (inputnode, hmc, [("in_file", "in_file")]),
         ])
         # fmt: on
     return workflow

@@ -29,7 +29,8 @@ from mriqc import config
 def _build_parser():
     """Build parser object."""
     import sys
-    from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+    import warnings
+    from argparse import Action, ArgumentDefaultsHelpFormatter, ArgumentParser
     from functools import partial
     from pathlib import Path
     from shutil import which
@@ -37,6 +38,11 @@ def _build_parser():
     from packaging.version import Version
 
     from .version import check_latest, is_flagged
+
+    class DeprecateAction(Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            warnings.warn(f"Argument {option_string} is deprecated and is *ignored*.")
+            delattr(namespace, self.dest)
 
     def _path_exists(path, parser):
         """Ensure a given path exists."""
@@ -379,16 +385,16 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
     )
     g_func.add_argument(
         "--start-idx",
-        action="store",
+        action=DeprecateAction,
         type=int,
-        help="Initial volume in functional timeseries that should be "
+        help="DEPRECATED Initial volume in functional timeseries that should be "
         "considered for preprocessing.",
     )
     g_func.add_argument(
         "--stop-idx",
-        action="store",
+        action=DeprecateAction,
         type=int,
-        help="Final volume in functional timeseries that should be "
+        help="DEPRECATED Final volume in functional timeseries that should be "
         "considered for preprocessing.",
     )
     g_func.add_argument(
