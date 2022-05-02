@@ -1,3 +1,4 @@
+  * FIX: Check sanity of input data before extracting IQMs (#994)
   * ENH: Deprecate ``--start-idx`` / ``--stop-idx`` (#993)
   * ENH: Add SynthStrip base module (#987)
 diff --cc setup.cfg
