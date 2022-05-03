@@ -1,4 +1,9 @@
-  * FIX: More lenient handling of skull-stripped datasets (#997)
+22.0.1 (May 3rd, 2022)
+======================
+A patch release addressing a new minor bug.
+
+* FIX: More lenient handling of skull-stripped datasets (#997)
+
 22.0.0 (May 3rd, 2022)
 ======================
 First official release after migrating the repository into the *NiPreps*' organization.
@@ -106,6 +111,8 @@ and @jAchtzehn for their contributions.
     25. Google LLC
     26. Department of Radiology, Lausanne University Hospital and University of Lausanne
 
+Series 0.16.x
+=============
 0.16.1 (January 30, 2021)
 -------------------------
 Bug-fix release in 0.16.x series.
@@ -131,6 +138,8 @@ This version removes the FSL dependency from the fMRI workflow.
 * CI: Fix up Circle builds (#876)
 * CI: Update machine images on Circle (#874)
 
+Older (unsupported) series
+==========================
 0.15.3 (September 18, 2020)
 ---------------------------
 A bugfix release to re-enable setting of ``--omp-nthreads/--ants-nthreads``.
