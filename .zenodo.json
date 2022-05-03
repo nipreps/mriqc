@@ -32,6 +32,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0003-3715-7012",
+      "affiliation": "Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK",
+      "name": "Eilidh MacNicol",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0003-4613-6643",
       "affiliation": "Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA",
       "name": "Dylan Nielson",
@@ -95,6 +101,11 @@
       "type": "Researcher"
     },
     {
+      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
+      "name": "Michael Krause",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0002-5749-6049",
       "affiliation": "Center for Brain Imaging, New York University, NY, USA",
       "name": "Pablo Velasco",
@@ -112,14 +123,15 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-9030-2202",
-      "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Joke Durnez",
+      "orcid": "0000-0002-0657-6516",
+      "affiliation": "Charit\u00e9 Berlin, Berlin, Germany",
+      "name": "Johannes Achtzehn",
       "type": "Researcher"
     },
     {
-      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
-      "name": "Michael Krause",
+      "orcid": "0000-0001-9030-2202",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Joke Durnez",
       "type": "Researcher"
     },
     {
