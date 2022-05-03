@@ -200,7 +200,7 @@ class StructuralQC(SimpleInterface):
             stats["gm"]["median"],
             stats["bg"]["stdv"],
             stats["wm"]["stdv"],
-            stats["gm"]["stdv"]
+            stats["gm"]["stdv"],
         )
 
         # FBER
