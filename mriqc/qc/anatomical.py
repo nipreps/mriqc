@@ -416,21 +416,26 @@ def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
     Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
-    corrupted by artifacts normalized by the number of voxels in the background:
+    corrupted by artifacts normalized by the number of voxels in the "*hat*"
+    mask (i.e., the background region above the nasio-occipital plane):
 
     .. math ::
 
         \text{QI}_1 = \frac{1}{N} \sum\limits_{x\in X_\text{art}} 1
 
-    Lower values are better.
+    Near-zero values are better.
+    If :math:`\text{QI}_1 = -1`, then the "*hat*" mask (background) was empty
+    and the dataset is likely a skull-stripped image or has been heavily
+    post-processed.
 
     :param numpy.ndarray airmask: input air mask, without artifacts
     :param numpy.ndarray artmask: input artifacts mask
 
     """
+    if airmask.sum() < 1:
+        return -1.0
 
-    # Count the number of voxels that remain after the opening operation.
-    # These are artifacts.
+    # Count the ratio between artifacts and the total voxels in "hat" mask
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
