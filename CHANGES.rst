@@ -1,3 +1,4 @@
+  * FIX: More lenient handling of skull-stripped datasets (#997)
 22.0.0 (May 3rd, 2022)
 ======================
 First official release after migrating the repository into the *NiPreps*' organization.
