@@ -1,60 +1,28 @@
-  * FIX: Inconsistent API in anatomical CNR computation (#995)
-  * FIX: Check sanity of input data before extracting IQMs (#994)
-  * ENH: Deprecate ``--start-idx`` / ``--stop-idx`` (#993)
-  * ENH: Add SynthStrip base module (#987)
-diff --cc setup.cfg
-index 291e8b0,35e922d..206de44
---- a/setup.cfg
-+++ b/setup.cfg
-@@@ -35,17 -35,18 +35,19 @@@ install_requires 
-      nibabel >= 3.0.1,<4.0
-      nilearn >= 0.5.1
-      nipype ~= 1.4
-+     nitransforms >= 21.0.1
-      niworkflows ~= 1.5.1
- +    nitransforms ~= 21.0.1
-      numpy >=1.20, <1.22; python_version<'3.8'
-      numpy ~=1.20; python_version>='3.8'
-      pandas >=1.0, <1.4; python_version<'3.8'
-      pandas ~=1.0; python_version>='3.8'
-      pybids >= 0.12.1
-      PyYAML
- -    scipy ~=1.7.0; python_version<'3.8'
- +    scipy ~=1.6.0; python_version<'3.8'
-      scipy ~=1.8; python_version>='3.8'
-      toml
-+     torch == 1.10.2
-  test_requires =
-      coverage
-      mock
-  * ENH: Improve building workflow message feedback (#990)
-  * FIX: Plot segmentations after dropping off-diagonal (#989)
-  * FIX: Replace all deprecated ``nibabel.get_data()`` in anatomical module (#988)
-  * DOC: Improve documentation of ``--nprocs`` and ``--omp-nthreads`` (#986)
-  * ENH: Add instrumentation to monitor resources (#984)
-  * ENH: Standalone, lightweight version of MultiProc plugin (#985)
-  * ENH: Revise plugin and workflow initialization (#983)
-  * FIX: Resource profiler was broken with config file (#981)
-  *  (#979)
-  * PIN: jinja2 < 3.1 (#978)
-  * rodentQC (#969)
 22.0.0 (TBD)
 ============
 First official release after migrating the repository into the *NiPreps*' organization.
+A major new feature is the rodent pipeline by Eilidh MacNicol (@eilidhmacnicol).
+A second major feature is the adoption of the updated carpet plots for BOLD fMRI,
+contributed by Céline Provins (@celprov).
 This release updates the Docker image with up-to-date dependencies, updates
 *MRIQC*'s codebase to the latest *NiTransforms* and includes some minor bugfixes.
-
 The code, modules and data related to the MRIQC classifier have been extracted into an
 isolated package called *MRIQC-learn*.
-
 Finally, this release also contains a major code style overhaul by Zvi Baratz.
 
 The contributor/author crediting system has been adapted to the current draft of the
 *NiPreps Community* Governance documents.
 
-With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, and @utooley
-for their contributions.
+With thanks to @ZviBaratz, @nbeliy, @octomike, @benkay86, @verdurin, @leej3, @utooley,
+and @jAchtzehn for their contributions.
 
+* FIX: Inconsistent API in anatomical CNR computation (#995)
+* FIX: Check sanity of input data before extracting IQMs (#994)
+* FIX: Plot segmentations after dropping off-diagonal (#989)
+* FIX: Replace all deprecated ``nibabel.get_data()`` in anatomical module (#988)
+* FIX: Resource profiler was broken with config file (#981)
+* FIX: preserve WM segments in rodents (#979)
+* FIX: Pin ``jinja2 < 3.1`` (#978)
 * FIX: Make toml config unique, works around #912 (#960)
 * FIX: Nipype multiproc plugin expects ``n_procs`` and not ``nprocs`` (#961)
 * FIX: Set TR when generating carpetplots (enables time for X axis) (#971)
@@ -68,10 +36,18 @@ for their contributions.
 * FIX: Update dependencies and repair BOLD workflow accordingly (#926)
 * FIX: Update dependencies and repair T1w workflow accordingly (#925)
 * FIX: Set ``matplotlib`` on ``Agg`` output mode (#892)
+* ENH: Deprecate ``--start-idx`` / ``--stop-idx`` (#993)
+* ENH: Add SynthStrip base module (#987)
+* ENH: Improve building workflow message feedback (#990)
+* ENH: Add instrumentation to monitor resources (#984)
+* ENH: Standalone, lightweight version of MultiProc plugin (#985)
+* ENH: Revise plugin and workflow initialization (#983)
+* ENH: Base generalization of the pipeline for rodents (#969)
 * ENH: Update to new *NiWorkflows*' API, which adds the crown to the carpetplot (#968)
 * ENH: Optimize *PyBIDS*' layout initialization (#939)
 * ENH: Refactored long strings to a :mod:`mriqc.messages` module (#901)
 * ENH: Refactored :mod:`mriqc.interfaces.common` module (#901)
+* DOC: Improve documentation of ``--nprocs`` and ``--omp-nthreads`` (#986)
 * DOC: Add ``sbatch`` file example for SLURM execution (#963)
 * DOC: Various fixes to "Running mriqc" section (#897)
 * MAINT: Refactor ``Dockerfile`` using new miniconda image (#974)
@@ -86,6 +62,8 @@ for their contributions.
 * MAINT: Code style overhaul (#901)
 * MAINT: Update ``Dockerfile`` and catch-up with *fMRIPrep*'s (#924)
 * STY: Run ``black`` at the top of the repo (#932)
+
+**Full Changelog**: https://github.com/nipreps/mriqc/compare/0.16.1...22.0.0
 
 .. admonition:: Author list for papers based on *MRIQC* 22.0.x
 
@@ -123,7 +101,7 @@ for their contributions.
       22. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
       23. Google LLC
       24. Department of Radiology, Lausanne University Hospital and University of Lausanne
-
+      
 0.16.1 (January 30, 2021)
 =========================
 Bug-fix release in 0.16.x series.
