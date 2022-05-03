@@ -201,16 +201,16 @@ Other measures
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
 import os.path as op
-from math import pi, sqrt
-from sys import version_info
+from math import sqrt
 
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
+from mriqc import config
 
-DIETRICH_FACTOR = 1.0 / sqrt(2 / (4 - pi))
+
+DIETRICH_FACTOR = 0.6551364  # 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {"csf": 1, "gm": 2, "wm": 3, "bg": 0}
-PY3 = version_info[0] > 2
 
 
 def snr(mu_fg, sigma_fg, n):
@@ -236,7 +236,7 @@ def snr(mu_fg, sigma_fg, n):
     return float(mu_fg / (sigma_fg * sqrt(n / (n - 1))))
 
 
-def snr_dietrich(mu_fg, sigma_air):
+def snr_dietrich(mu_fg, mad_air=0.0, sigma_air=1.0):
     r"""
     Calculate the :abbr:`SNR (Signal-to-Noise Ratio)`.
 
@@ -256,15 +256,14 @@ def snr_dietrich(mu_fg, sigma_air):
     :return: the computed SNR for the foreground segmentation
 
     """
-    if sigma_air < 1.0:
-        from .. import config
+    if mad_air > 1.0:
+        return float(DIETRICH_FACTOR * mu_fg / mad_air)
 
-        config.loggers.interface.warning(
-            f"SNRd - background sigma is too small ({sigma_air})"
-        )
-        sigma_air += 1.0
-
-    return float(DIETRICH_FACTOR * mu_fg / sigma_air)
+    config.loggers.interface.warning(
+        "Estimated signal variation in the background was too small "
+        f"(MAD={mad_air}, sigma={sigma_air})",
+    )
+    return float(DIETRICH_FACTOR * mu_fg / sigma_air) if sigma_air > 1e-3 else -1.0
 
 
 def cnr(mu_wm, mu_gm, sigma_air, sigma_wm, sigma_gm):
@@ -611,6 +610,16 @@ def summary_stats(img, pvms, airmask=None, erode=True):
                 int(nvox),
             )
             if k == "bg":
+                output["bg"] = {
+                    "mean": 0.0,
+                    "median": 0.0,
+                    "p95": 0.0,
+                    "p05": 0.0,
+                    "k": 0.0,
+                    "stdv": 0.0,
+                    "mad": 0.0,
+                    "n": nvox,
+                }
                 continue
 
         output[k] = {
@@ -624,24 +633,6 @@ def summary_stats(img, pvms, airmask=None, erode=True):
             "n": nvox,
         }
 
-    if "bg" not in output:
-        output["bg"] = {
-            "mean": 0.0,
-            "median": 0.0,
-            "p95": 0.0,
-            "p05": 0.0,
-            "k": 0.0,
-            "stdv": sqrt(sum(val["stdv"] ** 2 for _, val in list(output.items()))),
-            "mad": sqrt(sum(val["mad"] ** 2 for _, val in list(output.items()))),
-            "n": sum(val["n"] for _, val in list(output.items())),
-        }
-
-    if "bg" in output and output["bg"]["mad"] == 0.0 and output["bg"]["stdv"] > 1.0:
-        config.loggers.interface.warning(
-            "estimated MAD in the background was too small (MAD=%f)",
-            output["bg"]["mad"],
-        )
-        output["bg"]["mad"] = output["bg"]["stdv"] / DIETRICH_FACTOR
     return output
 
 
