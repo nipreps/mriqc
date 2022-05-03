@@ -119,7 +119,7 @@ class StructuralQC(SimpleInterface):
         inudata = np.nan_to_num(imnii.get_fdata())
         inudata[inudata < 0] = 0
 
-        if np.all(inudata < 1e-3):
+        if np.all(inudata < 1e-5):
             raise RuntimeError(
                 "Input inhomogeneity-corrected data seem empty. "
                 "MRIQC failed to process this dataset."
@@ -137,12 +137,6 @@ class StructuralQC(SimpleInterface):
 
         # Load air, artifacts and head masks
         airdata = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(np.uint8)
-        if np.sum(airdata > 0) < 100:
-            raise RuntimeError(
-                "Detected less than 100 voxels belonging to the air mask. "
-                "MRIQC failed to process this dataset."
-            )
-
         artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(
             np.uint8
         )
@@ -186,7 +180,11 @@ class StructuralQC(SimpleInterface):
 
         snrvals = []
         self._results["snrd"] = {
-            tlabel: snr_dietrich(stats[tlabel]["median"], stats["bg"]["mad"])
+            tlabel: snr_dietrich(
+                stats[tlabel]["median"],
+                mad_air=stats["bg"]["mad"],
+                sigma_air=stats["bg"]["stdv"],
+            )
             for tlabel in ["csf", "wm", "gm"]
         }
         self._results["snrd"]["total"] = float(
