@@ -23,7 +23,6 @@
 """Nipype interfaces to support anatomical workflow."""
 import os.path as op
 from builtins import zip
-from math import sqrt
 
 import nibabel as nb
 import numpy as np
