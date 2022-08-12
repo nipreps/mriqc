@@ -1,3 +1,4 @@
+  * MAINT: Fix statsmodels dependency, it is not optional (#1017)
   * MAINT: Several critical updates to CircleCI and Docker images (#1016)
 22.0.1 (May 3rd, 2022)
 ======================
