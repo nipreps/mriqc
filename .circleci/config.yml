@@ -678,27 +678,29 @@ jobs:
 
   test_package:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.9
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
+            python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                          setuptools_scm_git_archive pip twine docutils
       - run:
           name: Build and check
           command: |
-            python setup.py sdist
+            source /tmp/venv/bin/activate
+            python -m build -s -w
             python -m twine check dist/*
       - run:
           name: Validate version
           command: |
+            source /tmp/venv/bin/activate
             THISVERSION=$( python3 -m setuptools_scm )
-            python -m pip install --user dist/*.tar.gz
+            python -m pip install dist/*.tar.gz
             mkdir empty
             cd empty
             INSTALLED=$( python -c 'import mriqc; print(mriqc.__version__)' )
