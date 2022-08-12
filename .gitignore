@@ -1,3 +1,6 @@
+# setuptools-scm
+mriqc/_version.py
+
 .DS_Store
 
 # IDE configuration
