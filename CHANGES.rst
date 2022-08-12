@@ -1,3 +1,4 @@
+  * MAINT: Several critical updates to CircleCI and Docker images (#1016)
 22.0.1 (May 3rd, 2022)
 ======================
 A patch release addressing a new minor bug.
