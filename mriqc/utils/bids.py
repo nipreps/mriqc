@@ -84,7 +84,7 @@ def write_bidsignore(deriv_dir):
 
 
 def write_derivative_description(bids_dir, deriv_dir):
-    from ..__about__ import __download__, __version__
+    from mriqc import __download__, __version__
 
     bids_dir = Path(bids_dir)
     deriv_dir = Path(deriv_dir)
