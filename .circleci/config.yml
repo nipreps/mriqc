@@ -135,21 +135,22 @@ jobs:
             python3 -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
                               setuptools_scm_git_archive pip twine docutils
 
+            # Get version before making repo dirty
+            THISVERSION=$( python3 -m setuptools_scm )
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
-            # Get version, update files.
-            THISVERSION=$( python3 -m setuptools_scm )
+
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
               echo "WARNING: latest git tag could not be found"
               echo "Please, make sure you fetch all tags from upstream with"
               echo "the command ``git fetch --tags --verbose`` and push"
               echo "them to your fork with ``git push origin --tags``"
             fi
-            echo "${CIRCLE_TAG:-$THISVERSION}" > mriqc/VERSION
+
             # Build docker image
             e=1 && for i in {1..5}; do
               docker build \
@@ -239,7 +240,7 @@ jobs:
 
   test_pytest:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
@@ -617,7 +618,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: circleci/python:3.8.5
+      - image: cimg/python:3.8.5
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -645,7 +646,7 @@ jobs:
 
   update_changes:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/src/mriqc
     steps:
       - attach_workspace:
@@ -677,30 +678,29 @@ jobs:
 
   test_package:
     docker:
-      - image: circleci/python:3.8.5
+      - image: cimg/python:3.9
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
+            python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                          setuptools_scm_git_archive pip twine docutils
       - run:
           name: Build and check
           command: |
-            python setup.py sdist
+            source /tmp/venv/bin/activate
+            python -m build -s -w
             python -m twine check dist/*
       - run:
           name: Validate version
           command: |
-            if [[ "${CIRCLE_TAG}" != "" ]]; then
-              echo "${CIRCLE_TAG}" > mriqc/VERSION
-            fi
+            source /tmp/venv/bin/activate
             THISVERSION=$( python3 -m setuptools_scm )
-            python -m pip install --user dist/*.tar.gz
+            python -m pip install dist/*.tar.gz
             mkdir empty
             cd empty
             INSTALLED=$( python -c 'import mriqc; print(mriqc.__version__)' )
@@ -708,7 +708,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: circleci/python:3.8.5
+      - image: cimg/python:3.8.5
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -722,20 +722,22 @@ jobs:
       - run:
           name: Deploy to PyPi
           command: |
-            echo "${CIRCLE_TAG}" > mriqc/VERSION
+            # Set version on stone before editing the bundle
+            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m setuptools_scm )
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
-            python setup.py sdist
+            python -m build -s -w
             python -m twine check dist/*
             python -m twine upload dist/*
 
   deploy_docker:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2004:202104-01
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:

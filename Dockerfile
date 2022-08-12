@@ -137,11 +137,13 @@ RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
 # Installing MRIQC
 COPY . /src/mriqc
-ARG VERSION
 # Force static versioning within container
-RUN echo "${VERSION}" > /src/mriqc/mriqc/VERSION && \
-    echo "include mriqc/VERSION" >> /src/mriqc/MANIFEST.in && \
+ARG VERSION
+
+
+RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION && \
     pip install --no-cache-dir "/src/mriqc[all]"
+
 RUN find $HOME -type d -exec chmod go=u {} + && \
     find $HOME -type f -exec chmod go=u {} + && \
     rm -rf $HOME/.npm $HOME/.conda $HOME/.empty
