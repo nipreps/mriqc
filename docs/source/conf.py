@@ -14,7 +14,7 @@ serve to show the default.
 import os
 from packaging.version import Version
 
-from mriqc.__about__ import __version__, __copyright__
+from mriqc import __version__, __copyright__
 
 # Disable etelemetry during doc builds
 os.environ["NIPYPE_NO_ET"] = "1"

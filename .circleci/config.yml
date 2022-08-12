@@ -132,6 +132,9 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
+            python3 -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                              setuptools_scm_git_archive pip twine docutils
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
@@ -139,7 +142,7 @@ jobs:
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             # Get version, update files.
-            THISVERSION=$( python3 -c "from versioneer import get_version; print(get_version())" )
+            THISVERSION=$( python3 -m setuptools_scm )
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
               echo "WARNING: latest git tag could not be found"
               echo "Please, make sure you fetch all tags from upstream with"
@@ -677,7 +680,8 @@ jobs:
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+            sudo python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                              setuptools_scm_git_archive pip twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
       - run:
@@ -691,7 +695,7 @@ jobs:
             if [[ "${CIRCLE_TAG}" != "" ]]; then
               echo "${CIRCLE_TAG}" > mriqc/VERSION
             fi
-            THISVERSION=$( python -c "from versioneer import get_version; print(get_version())" )
+            THISVERSION=$( python3 -m setuptools_scm )
             python -m pip install --user dist/*.tar.gz
             mkdir empty
             cd empty
@@ -707,7 +711,8 @@ jobs:
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install "setuptools>=30.3.0" "pip>=10.0.1" twine docutils
+            sudo python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                              setuptools_scm_git_archive pip twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
       - run:

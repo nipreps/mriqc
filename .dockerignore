@@ -42,7 +42,6 @@ CONTRIBUTING.md
 codecov.yml
 docs
 docs/**/*
-get_version.py
 long_description.rst
 notebooks
 notebooks/**/*

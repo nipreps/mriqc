@@ -1,12 +1,14 @@
 #documentation
-recursive-include docs/build/html *
+recursive-exclude .circleci/ *
+recursive-exclude .docker/ *
+recursive-exclude .github/ *
+recursive-exclude .git/ *
+recursive-exclude .maint/ *
+recursive-exclude docs/ *
+recursive-exclude test/ *
+
+exclude .*
+exclude Dockerfile
 
 #data
 recursive-include mriqc/data *
-
-#Misc
-include CHANGES.rst
-include LICENSE
-include NOTICE
-include versioneer.py
-include mriqc/_version.py

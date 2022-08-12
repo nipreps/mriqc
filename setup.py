@@ -1,10 +1,7 @@
-"""MRIQC setup script."""
+#!/usr/bin/env python
+"""MRIQC's PEP518 setup.py shim."""
 from setuptools import setup
-import versioneer
 
 if __name__ == "__main__":
-    setup(
-        name="mriqc",
-        version=versioneer.get_version(),
-        cmdclass=versioneer.get_cmdclass(),
-    )
+    """ Install entry-point """
+    setup()

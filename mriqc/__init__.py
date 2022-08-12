@@ -25,9 +25,8 @@ The mriqc package provides a series of :abbr:`NR (no-reference)`,
 :abbr:`IQMs (image quality metrics)` to used in :abbr:`QAPs (quality
 assessment protocols)` for :abbr:`MRI (magnetic resonance imaging)`.
 """
-from mriqc.__about__ import __copyright__, __version__
+from mriqc._version import __version__
 
-__all__ = [
-    "__copyright__",
-    "__version__",
-]
+__copyright__ = "Copyright 2022, The NiPreps Developers"
+__download__ = f"https://github.com/nipreps/mriqc/archive/{__version__}.tar.gz"
+__all__ = ["__version__", "__copyright__", "__download__"]
