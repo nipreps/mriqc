@@ -12,49 +12,64 @@ on:
 
 jobs:
   build:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: "!startsWith(github.ref, 'refs/tags/') && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.7, 3.8, 3.9]
+        pip: ["pip==21.2", "pip~=22.0"]
 
     steps:
+    - uses: actions/checkout@v2
+    - name: Fetch all tags (for setuptools_scm to work)
+      run: |
+        /usr/bin/git -c protocol.version=2 fetch --tags --prune --unshallow origin
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/checkout@v2
+    - uses: actions/cache@v1
       with:
-        ssh-key: "${{ secrets.NIPREPS_DEPLOY }}"
-        fetch-depth: 0
-    - name: Build in confined, updated environment and interpolate version
+        path: $HOME/.cache/pip
+        key: pip-cache-v1
+        restore-keys: |
+          pip-cache-
+    - name: Build in confined environment and interpolate version
       run: |
         python -m venv /tmp/buildenv
         source /tmp/buildenv/bin/activate
-        python -m pip install -U "setuptools~=58.0" "setuptools_scm>=6.2" pip wheel twine docutils
-
+        python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                              setuptools_scm_git_archive pip twine docutils
+        
+        python -m build -s -w
+        python -m twine check dist/mriqc-*
+        mv dist /tmp/package
+        rm -rf mriqc.egg-info/
         # Interpolate version
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
           TAG=${GITHUB_REF##*/}
         fi
-        THISVERSION=$( python setup.py --version )
+        THISVERSION=$( python -m setuptools_scm )
         THISVERSION=${TAG:-$THISVERSION}
         echo "Expected VERSION: \"${THISVERSION}\""
-        echo "THISVERSION=${THISVERSION}" >> ${GITHUB_ENV}
-
-        python setup.py sdist
-        python -m twine check dist/mriqc-${THISVERSION}.tar.gz
-
-        python setup.py bdist_wheel
-        python -m twine check dist/mriqc-${THISVERSION}-py3-none-any.whl
-
+        echo "THISVERSION=${THISVERSION}" >> $GITHUB_ENV
+    - name: Install in confined environment [pip]
+      run: |
+        python -m venv /tmp/pip
+        source /tmp/pip/bin/activate
+        python -m pip install -U "setuptools >= 45" "setuptools_scm >= 6.2" "${{ matrix.pip }}"
+        python -m pip install .
+        INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
+        echo "VERSION: \"${THISVERSION}\""
+        echo "INSTALLED: \"${INSTALLED_VERSION}\""
+        test "${INSTALLED_VERSION}" = "${THISVERSION}"
     - name: Install in confined environment [sdist]
       run: |
         python -m venv /tmp/install_sdist
         source /tmp/install_sdist/bin/activate
-        python -m pip install --upgrade pip wheel
-        python -m pip install dist/mriqc-${THISVERSION}.tar.gz
-        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        python -m pip install -U "setuptools >= 45" "${{ matrix.pip }}"
+        python -m pip install /tmp/package/mriqc*.tar.gz
+        INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "VERSION: \"${THISVERSION}\""
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
@@ -62,30 +77,12 @@ jobs:
       run: |
         python -m venv /tmp/install_wheel
         source /tmp/install_wheel/bin/activate
-        python -m pip install --upgrade pip wheel
-        python -m pip install dist/mriqc-${THISVERSION}-py3-none-any.whl
-        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
+        python -m pip install -U "setuptools >= 45" "${{ matrix.pip }}"
+        python -m pip install /tmp/package/mriqc*.whl
+        INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
-    - name: Install in confined environment [pip install .]
-      run: |
-        python -m venv /tmp/setup_install
-        source /tmp/setup_install/bin/activate
-        python -m pip install --upgrade pip wheel
-        python -m pip install .
-        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
-        echo "INSTALLED: \"${INSTALLED_VERSION}\""
-        test "${INSTALLED_VERSION}" = "${THISVERSION}"
-    - name: Install in confined environment [pip install -e .]
-      run: |
-        python -m venv /tmp/setup_develop
-        source /tmp/setup_develop/bin/activate
-        python -m pip install pip
-        python -m pip install --upgrade pip wheel
-        python -m pip install -e .
-        INSTALLED_VERSION=$(python -c 'import mriqc; print(mriqc.__version__, end="")')
-        echo "INSTALLED: \"${INSTALLED_VERSION}\""
-        test "${INSTALLED_VERSION}" = "${THISVERSION}"
+
   flake8:
     runs-on: ubuntu-latest
     steps:
