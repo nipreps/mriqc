@@ -1,9 +1,9 @@
 #documentation
 recursive-exclude .circleci/ *
-recursive-exclude .docker/ *
 recursive-exclude .github/ *
 recursive-exclude .git/ *
 recursive-exclude .maint/ *
+recursive-exclude docker/ *
 recursive-exclude docs/ *
 recursive-exclude test/ *
 

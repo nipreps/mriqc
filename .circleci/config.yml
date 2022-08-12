@@ -697,9 +697,6 @@ jobs:
       - run:
           name: Validate version
           command: |
-            if [[ "${CIRCLE_TAG}" != "" ]]; then
-              echo "${CIRCLE_TAG}" > mriqc/VERSION
-            fi
             THISVERSION=$( python3 -m setuptools_scm )
             python -m pip install --user dist/*.tar.gz
             mkdir empty
@@ -723,14 +720,16 @@ jobs:
       - run:
           name: Deploy to PyPi
           command: |
-            echo "${CIRCLE_TAG}" > mriqc/VERSION
+            # Set version on stone before editing the bundle
+            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m setuptools_scm )
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
-            python setup.py sdist
+            python -m build -s -w
             python -m twine check dist/*
             python -m twine upload dist/*
 
