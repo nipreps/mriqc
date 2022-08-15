@@ -1,7 +1,7 @@
 mriqc: image quality metrics for quality assessment of MRI
 ==========================================================
 
-|DOI| |Zenodo| |Package| |Pythons| |DevStatus| |License| |Documentation| |CircleCI| |Codacy|
+|DOI| |Zenodo| |Package| |Pythons| |DevStatus| |License| |Documentation| |CircleCI|
 
 MRIQC extracts no-reference IQMs (image quality metrics) from
 structural (T1w and T2w) and functional MRI (magnetic resonance imaging)
@@ -111,5 +111,3 @@ brain connectivity using MRI*” (grant number
    :target: http://mriqc.readthedocs.io/en/latest/?badge=latest
 .. |CircleCI| image:: https://circleci.com/gh/nipreps/mriqc/tree/master.svg?style=shield
    :target: https://circleci.com/gh/nipreps/mriqc/tree/master
-.. |Codacy| image:: https://api.codacy.com/project/badge/grade/fbb12f660141411a89ba1ae5bf873717
-   :target: https://www.codacy.com/app/code_3/mriqc
