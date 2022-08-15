@@ -34,7 +34,6 @@ write_graph = false
 [workflow]
 analysis_level = [ "participant",]
 biggest_file_gb = 0.03619009628891945
-correct_slice_timing = false
 deoblique = false
 despike = false
 fd_thres = 0.2

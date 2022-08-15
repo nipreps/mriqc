@@ -676,7 +676,7 @@ def hmc(name="fMRI_HMC"):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Despike, Refit, TShift, Volreg
+    from nipype.interfaces.afni import Despike, Refit, Volreg
 
     mem_gb = config.workflow.biggest_file_gb
 
@@ -713,54 +713,13 @@ def hmc(name="fMRI_HMC"):
     ])
     # fmt: on
 
-    # Slice timing correction, despiking, and deoblique
-
-    st_corr = pe.Node(TShift(outputtype="NIFTI_GZ"), name="TimeShifts")
+    # despiking, and deoblique
 
     deoblique_node = pe.Node(Refit(deoblique=True), name="deoblique")
 
     despike_node = pe.Node(Despike(outputtype="NIFTI_GZ"), name="despike")
 
-    if all(
-        (
-            config.workflow.correct_slice_timing,
-            config.workflow.despike,
-            config.workflow.deoblique,
-        )
-    ):
-
-        # fmt: off
-        workflow.connect([
-            (inputnode, st_corr, [("in_file", "in_file")]),
-            (st_corr, despike_node, [("out_file", "in_file")]),
-            (despike_node, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.correct_slice_timing and config.workflow.despike:
-        # fmt: off
-        workflow.connect([
-            (inputnode, st_corr, [("in_file", "in_file")]),
-            (st_corr, despike_node, [("out_file", "in_file")]),
-            (despike_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.correct_slice_timing and config.workflow.deoblique:
-        # fmt: off
-        workflow.connect([
-            (inputnode, st_corr, [("in_file", "in_file")]),
-            (st_corr, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.correct_slice_timing:
-        # fmt: off
-        workflow.connect([
-            (inputnode, st_corr, [("in_file", "in_file")]),
-            (st_corr, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.despike and config.workflow.deoblique:
+    if config.workflow.despike and config.workflow.deoblique:
         # fmt: off
         workflow.connect([
             (inputnode, despike_node, [("in_file", "in_file")]),
