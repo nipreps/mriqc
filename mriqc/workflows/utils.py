@@ -22,7 +22,6 @@
 #
 """Helper functions for the workflows."""
 from builtins import range
-from distutils.version import StrictVersion
 
 
 def _tofloat(inlist):
@@ -178,10 +177,8 @@ def get_fwhmx():
     fwhm_args = {"combine": True, "detrend": True}
     afni_version = Info.version()
 
-    if (
-        afni_version
-        and StrictVersion(".".join(afni_version)) >= StrictVersion("2017.2.3")
-    ):
+    if afni_version and afni_version >= (2017, 2, 3):
         fwhm_args["args"] = "-ShowMeClassicFWHM"
+
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface
