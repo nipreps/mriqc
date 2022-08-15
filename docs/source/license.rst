@@ -1,5 +1,5 @@
 About the *NiPreps* framework licensing
----------------------------------------
+=======================================
 Please check https://www.nipreps.org/community/licensing/ for detailed
 information on the criteria we use to license *MRIQC* and other
 projects of the framework.
