@@ -631,12 +631,11 @@ jobs:
           command: |
             pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
                                  setuptools_scm_git_archive pip twine docutils
-            pip install --no-cache-dir -r docs/requirements.txt
+            pip install .[docs]
       - run:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            python -m setuptools_scm
             make -C docs html
             # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
             # cat $PWD/builddocs.log
