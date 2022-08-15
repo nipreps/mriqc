@@ -1,6 +1,14 @@
-  * DOC: Move readthedocs to use the config v2 file (YAML) (#1018)
-  * MAINT: Fix statsmodels dependency, it is not optional (#1017)
-  * MAINT: Several critical updates to CircleCI and Docker images (#1016)
+22.0.2 (August 15, 2022)
+========================
+A patch release including the new ratings widget.
+
+* ENH: New version of the rating widget (#1012)
+* DOC: Move readthedocs to use the config v2 file (YAML) (#1018)
+* MAINT: Fix ``statsmodels`` dependency, it is not optional (#1017)
+* MAINT: Several critical updates to CircleCI and Docker images (#1016)
+* MAINT: Update the T1w IQMs to the new reference after #997 (#1014)
+* MAINT: Fix failing tests as ``python setup.py`` is deprecated (#1013)
+
 22.0.1 (May 3rd, 2022)
 ======================
 A patch release addressing a new minor bug.
