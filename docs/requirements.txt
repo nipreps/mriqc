@@ -1,9 +1,0 @@
-jinja2<3.1
-nipype
-packaging
-pydot>=1.2.3
-pydotplus
-sphinx-argparse
-sphinx_rtd_theme
-sphinx~=4.0
-toml

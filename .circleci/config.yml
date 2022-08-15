@@ -631,16 +631,14 @@ jobs:
           command: |
             pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
                                  setuptools_scm_git_archive pip twine docutils
-            pip install --no-cache-dir -r docs/requirements.txt
+            pip install .[docs]
       - run:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            python -m setuptools_scm
-            make -C docs html
-            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
-            # cat $PWD/builddocs.log
-            # grep -qv "ERROR" $PWD/builddocs.log
+            make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
+            cat $PWD/builddocs.log
+            grep -qv "ERROR" $PWD/builddocs.log
       - store_artifacts:
           path: ./docs/_build/html
 
@@ -670,7 +668,7 @@ jobs:
           name: Update CHANGES if this is a merge commit
           command: |
             if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
-              bash update_changes.sh
+              bash .maint/update_changes.sh
               git add CHANGES.rst
               git commit -m "auto: Update CHANGES [skip ci]"
               git push origin HEAD:master

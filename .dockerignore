@@ -17,6 +17,7 @@ src/**/*
 src/
 notebooks/
 .maint/
+.maint/**/*
 
 # releasing
 Makefile
@@ -35,7 +36,7 @@ Makefile
 .coveragerc
 .pep8speaks.yml
 .pylintrc
-.readthedocs.yml
+.readthedocs.yaml
 .travis.yml
 .zenodo.json
 CONTRIBUTING.md
@@ -47,6 +48,5 @@ notebooks
 notebooks/**/*
 requirements-dev.txt
 requirements.txt
-update_changes.py
 venv/
 venv/**/*
