@@ -713,13 +713,15 @@ jobs:
       - run:
           name: Start virtual environment
           command: |
-            sudo python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
+            python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
+                          setuptools_scm_git_archive pip twine docutils
       - run:
           name: Deploy to PyPi
           command: |
+            source /tmp/venv/bin/activate
+
             # Set version on stone before editing the bundle
             export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m setuptools_scm )
 
