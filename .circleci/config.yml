@@ -670,7 +670,7 @@ jobs:
           name: Update CHANGES if this is a merge commit
           command: |
             if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
-              bash update_changes.sh
+              bash .maint/update_changes.sh
               git add CHANGES.rst
               git commit -m "auto: Update CHANGES [skip ci]"
               git push origin HEAD:master
