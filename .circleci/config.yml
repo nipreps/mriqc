@@ -642,38 +642,6 @@ jobs:
       - store_artifacts:
           path: ./docs/_build/html
 
-  update_changes:
-    machine:
-      image: ubuntu-2004:202104-01
-    working_directory: /tmp/src/mriqc
-    steps:
-      - attach_workspace:
-          at: /tmp
-
-      - checkout:
-          path: /tmp/src/mriqc
-
-      - add_ssh_keys:
-          fingerprints:
-            - "80:ec:ae:e8:92:1f:88:83:2a:e0:ee:35:39:79:85:88"
-
-      - run:
-          name: Checkout origin/master
-          command: |
-            git config user.email "nipreps@gmail.com"
-            git config user.name "NiPreps Bot"
-            git fetch origin
-            git checkout -f origin/master
-      - run:
-          name: Update CHANGES if this is a merge commit
-          command: |
-            if (( $( git cat-file -p HEAD | sed -n '/^parent [0-9a-f]*$/p' | wc -l ) > 1 )); then
-              bash .maint/update_changes.sh
-              git add CHANGES.rst
-              git commit -m "auto: Update CHANGES [skip ci]"
-              git push origin HEAD:master
-            fi
-
   test_package:
     docker:
       - image: cimg/python:3.9
@@ -836,13 +804,6 @@ workflows:
               ignore: /docs?\/.*/
             tags:
               only: /.*/
-
-      - update_changes:
-          filters:
-            branches:
-              only: /master/
-            tags:
-              ignore: /.*/
 
       - deploy_docker:
           requires:
