@@ -176,8 +176,12 @@ def get_fwhmx():
     from nipype.interfaces.afni import FWHMx, Info
 
     fwhm_args = {"combine": True, "detrend": True}
-    afni_version = StrictVersion("%s.%s.%s" % Info.version())
-    if afni_version >= StrictVersion("2017.2.3"):
+    afni_version = Info.version()
+
+    if (
+        afni_version
+        and StrictVersion(".".join(afni_version)) >= StrictVersion("2017.2.3")
+    ):
         fwhm_args["args"] = "-ShowMeClassicFWHM"
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface

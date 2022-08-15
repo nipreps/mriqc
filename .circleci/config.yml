@@ -636,10 +636,9 @@ jobs:
           name: Build MRIQC documentation
           no_output_timeout: 2h
           command: |
-            make -C docs html
-            # make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
-            # cat $PWD/builddocs.log
-            # grep -qv "ERROR" $PWD/builddocs.log
+            make -C docs SPHINXOPTS="-W" html | tee $PWD/builddocs.log
+            cat $PWD/builddocs.log
+            grep -qv "ERROR" $PWD/builddocs.log
       - store_artifacts:
           path: ./docs/_build/html
 
