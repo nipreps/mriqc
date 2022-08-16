@@ -42,6 +42,7 @@ def main():
         from mriqc.utils.debug import setup_exceptionhook
 
         setup_exceptionhook()
+        config.nipype.plugin = "Linear"
 
     # CRITICAL Save the config to a file. This is necessary because the execution graph
     # is built as a separate process to keep the memory footprint low. The most
