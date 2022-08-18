@@ -60,6 +60,7 @@ from mriqc.interfaces import (
     StructuralQC,
 )
 from mriqc.interfaces.reports import AddProvenance
+from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.messages import BUILDING_WORKFLOW
 from mriqc.workflows.utils import get_fwhmx
 from nipype.interfaces import ants, fsl
@@ -103,6 +104,11 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 0. Get data
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
+
+    datalad_get = pe.Node(DataladIdentityInterface(
+        fields=["in_file"],
+        dataset_path=config.execution.bids_dir
+    ), name="datalad_get")
 
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_json"]), name="outputnode")
 
@@ -194,9 +200,10 @@ def anat_qc_workflow(name="anatMRIQC"):
     # Connect all nodes
     # fmt: off
     workflow.connect([
-        (inputnode, to_ras, [("in_file", "in_file")]),
-        (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
-        (inputnode, norm, [(("in_file", _get_mod), "inputnode.modality")]),
+        (inputnode, datalad_get, [("in_file", "in_file")]),
+        (datalad_get, to_ras, [("in_file", "in_file")]),
+        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
+        (datalad_get, norm, [(("in_file", _get_mod), "inputnode.modality")]),
         (to_ras, skull_stripping, [("out_file", "inputnode.in_files")]),
         (skull_stripping, segment, [("outputnode.out_brain", seg_in_file)]),
         (skull_stripping, hmsk, [("outputnode.out_corrected", "inputnode.in_file")]),
@@ -240,7 +247,7 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     if config.workflow.species.lower() == 'human':
         workflow.connect([
-            (inputnode, segment, [(("in_file", _get_imgtype), "img_type")]),
+            (datalad_get, segment, [(("in_file", _get_imgtype), "img_type")]),
         ])
     else:
         workflow.connect([

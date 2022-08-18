@@ -430,6 +430,7 @@ discourage its usage.""",
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
     from logging import DEBUG
+    from contextlib import suppress
 
     from ..utils.bids import collect_bids_data
 
@@ -548,10 +549,11 @@ Please, check out your currently set filters:
             f'{", ".join(unknown_mods)}.'
         )
 
-    # Estimate the biggest file size
-    config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
-        [i for sublist in config.workflow.inputs.values() for i in sublist]
-    )
+    # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)
+    with suppress(FileNotFoundError):
+        config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
+            [i for sublist in config.workflow.inputs.values() for i in sublist]
+        )
 
     # set specifics for alternative populations
     if opts.species.lower() != "human":
