@@ -559,6 +559,10 @@ Please, check out your currently set filters:
         # TODO: add other species once rats are working
         if opts.species.lower() == "rat":
             config.workflow.template_id = "Fischer344"
+            # mean distance from the lateral edge to the center of the brain is
+            # ~ PA:10 mm, LR:7.5 mm, and IS:5 mm (see DOI: 10.1089/089771503770802853)
+            # roll movement is most likely to occur, so set to 7.5 mm
+            config.workflow.fd_radius = 7.5
             config.workflow.headmask = "NoBET"
             # block uploads for the moment; can be reversed before wider release
             config.execution.no_sub = True
