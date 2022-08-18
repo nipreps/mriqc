@@ -397,12 +397,6 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help="DEPRECATED Final volume in functional timeseries that should be "
         "considered for preprocessing.",
     )
-    g_func.add_argument(
-        "--correct-slice-timing",
-        action="store_true",
-        default=False,
-        help="Perform slice timing correction.",
-    )
 
     latest = check_latest()
     if latest is not None and currentv < latest:

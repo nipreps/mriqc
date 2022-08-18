@@ -489,8 +489,6 @@ class workflow(_Config):
     """Level of analysis."""
     biggest_file_gb = 1
     """Size of largest file in GB."""
-    correct_slice_timing = False
-    """Perform slice timing correction."""
     deoblique = False
     """Deoblique the functional scans during head motion correction preprocessing."""
     despike = False
