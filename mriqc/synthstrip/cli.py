@@ -211,6 +211,9 @@ def conform(input_nii):
         np.ceil(np.array(target_shape) / 64).astype(int) * 64, 192, 320
     )
 
+    # Ensure shape ordering is LIA too
+    target_shape[2], target_shape[1] = target_shape[1:3]
+
     # Coordinates of center voxel do not change
     input_c = affine @ np.hstack((0.5 * (shape - 1), 1.0))
     target_c = target_affine @ np.hstack((0.5 * (target_shape - 1), 1.0))
