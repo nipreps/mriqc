@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 # Use Ubuntu 20.04 LTS
-FROM nipreps/miniconda:py38_1.4.2
+FROM nipreps/miniconda:py39_2205.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${CONDA_PATH}/lib"
@@ -41,11 +41,11 @@ ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
 # Install AFNI's dependencies
-RUN ${CONDA_PATH}/bin/conda install -c conda-forge -c anaconda \
+RUN ${CONDA_PATH}/bin/mamba install -c conda-forge -c anaconda \
                             gsl                                \
                             xorg-libxp                         \
                             scipy=1.8                          \
-    && ${CONDA_PATH}/bin/conda install -c sssdgc png \
+    && ${CONDA_PATH}/bin/mamba install -c sssdgc png \
     && sync \
     && ${CONDA_PATH}/bin/conda clean -afy; sync \
     && rm -rf ~/.conda ~/.cache/pip/*; sync \
