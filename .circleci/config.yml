@@ -63,20 +63,20 @@ jobs:
           name: Pull images
           command: |
             set +e
-            docker pull localhost:5000/ubuntu
+            docker pull localhost:5000/miniconda
             success=$?
             set -e
             if [[ "$success" = "0" ]]; then
                 echo "Pulling from local registry"
-                docker tag localhost:5000/ubuntu ubuntu:focal-20210416
+                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2205.0
                 docker pull localhost:5000/mriqc
                 docker tag localhost:5000/mriqc nipreps/mriqc:latest
                 docker tag localhost:5000/mriqc nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
-                docker pull ubuntu:focal-20210416
-                docker tag ubuntu:focal-20210416 localhost:5000/ubuntu
-                docker push localhost:5000/ubuntu
+                docker pull nipreps/miniconda:py39_2205.0
+                docker tag nipreps/miniconda:py39_2205.0 localhost:5000/miniconda
+                docker push localhost:5000/miniconda
                 docker pull nipreps/mriqc:latest
             fi
 
