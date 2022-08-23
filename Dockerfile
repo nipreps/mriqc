@@ -135,6 +135,9 @@ RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
                          label=['CSF', 'GM', 'WM']);\
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
+
+RUN git config --global user.name "NiPrep MRIQC" \
+    && git config --global user.email "nipreps@gmail.com"
 # Installing MRIQC
 COPY . /src/mriqc
 # Force static versioning within container
