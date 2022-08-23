@@ -1,3 +1,10 @@
+22.0.4 (August 23, 2022)
+========================
+A hotfix release to ensure smooth operation of datalad within Docker.
+
+  * FIX: Major improvements to new datalad-based interface & perform within containers (#1024)
+  * ENH: Bump Docker base to latest release (#1022)
+
 22.0.3 (August 19, 2022)
 ========================
 A patch release containing a bugfix to the SynthStrip preprocessing.
