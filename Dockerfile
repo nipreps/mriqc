@@ -67,6 +67,7 @@ RUN apt-get update \
                     libudunits2-dev                   \
                     libxm4                            \
                     libxml2-dev                       \
+                    netbase                           \
                     netpbm                            \
                     tcsh                              \
                     xfonts-base                       \
@@ -118,6 +119,9 @@ COPY --from=freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569fa
 
 ENV FREESURFER_HOME=/opt/freesurfer
 
+# Container Sentinel
+ENV IS_DOCKER_8395080871=1
+
 # Create a shared $HOME directory
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
@@ -168,4 +172,3 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-url="https://github.com/nipreps/mriqc" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
-
