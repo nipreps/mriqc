@@ -80,7 +80,6 @@ class DataladIdentityInterface(BaseInterface):
             return runtime
 
         _dl_found = False
-        _dl_required = False
         try:
             from datalad.api import get
 
@@ -99,21 +98,33 @@ class DataladIdentityInterface(BaseInterface):
                 _pth = dataset_path / _pth
 
             _datalad_candidate = _pth.is_symlink() and not _pth.exists()
+            if not _dl_found and _datalad_candidate:
+                config.loggers.interface.warning("datalad was required but not found")
+                return runtime
+
             if _datalad_candidate:
-                _dl_required = True
                 try:
                     result = get(
                         _pth,
                         dataset=dataset_path
                     )
-                except Exception:
+                except Exception as exc:
                     config.loggers.interface.warning(f"datalad get on {_pth} failed.")
-
-                if result[0]["status"] == "error":
-                    config.loggers.interface.warning(f"datalad get failed: {result}")
-
-        if not _dl_found and _dl_required:
-            config.loggers.interface.warning("datalad was required but not found")
+                    if (
+                        config.environment.exec_env == "docker"
+                        and ("This repository is not initialized for use by git-annex, "
+                             "but .git/annex/objects/ exists") in f"{exc}"
+                    ):
+                        config.loggers.interface.warning(
+                            "Execution seems containerirzed with Docker, please make sure "
+                            "you are not running as root. To do so, please add the argument "
+                            "``-u $(id -u):$(id -g)`` to your command line."
+                        )
+                    else:
+                        config.loggers.interface.warning(str(exc))
+                else:
+                    if result[0]["status"] == "error":
+                        config.loggers.interface.warning(f"datalad get failed: {result}")
 
         return runtime
 
