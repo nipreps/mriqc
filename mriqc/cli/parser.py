@@ -26,6 +26,28 @@ import re
 from mriqc import config
 
 
+def _parse_participant_labels(value):
+    """
+    Drop ``sub-`` prefix of participant labels.
+
+    >>> _parse_participant_labels("s060")
+    ['s060']
+    >>> _parse_participant_labels("sub-s060")
+    ['s060']
+    >>> _parse_participant_labels("s060 sub-s050")
+    ['s050', 's060']
+    >>> _parse_participant_labels("s060 sub-s060")
+    ['s060']
+    >>> _parse_participant_labels("s060\tsub-s060")
+    ['s060']
+
+    """
+    return sorted(set(
+        re.sub(r"^sub-", "", item.strip())
+        for item in re.split(r"\s+", str(value))
+    ))
+
+
 def _build_parser():
     """Build parser object."""
     import sys
@@ -63,18 +85,6 @@ def _build_parser():
         n_digits = len(digits)
         units = value[n_digits:] or "G"
         return int(digits) * scale[units[0]]
-
-    def _drop_sub(value):
-        """
-        Drop ``sub-`` prefix of participant labels.
-
-        >>> _drop_sub("s060")
-        's060'
-        >>> _drop_sub("sub-s060")
-        's060'
-
-        """
-        return re.sub(r"^sub-", "", str(value))
 
     def _bids_filter(value):
         from json import loads
@@ -151,9 +161,12 @@ Automated Quality Control and visual reports for Quality Assesment of structural
     g_bids.add_argument(
         "--participant-label",
         "--participant_label",
+        "--participant-labels",
+        "--participant_labels",
+        dest="participant_label",
         action="store",
         nargs="+",
-        type=_drop_sub,
+        type=_parse_participant_labels,
         help="A space delimited list of participant identifiers or a single "
         "identifier (the sub- prefix can be removed).",
     )
@@ -491,17 +504,15 @@ def parse_args(args=None, namespace=None):
     config.execution.init()
     all_subjects = config.execution.layout.get_subjects()
     if config.execution.participant_label is None:
-        config.execution.participant_label = all_subjects
-
-    participant_label = set(config.execution.participant_label)
-    missing_subjects = participant_label - set(all_subjects)
-    if missing_subjects:
-        parser.error(
-            "One or more participant labels were not found in the BIDS directory: "
-            f"{', '.join(missing_subjects)}."
-        )
-
-    config.execution.participant_label = sorted(participant_label)
+        config.execution.participant_label = sorted(all_subjects)
+    else:
+        participant_label = set(config.execution.participant_label)
+        missing_subjects = participant_label - set(all_subjects)
+        if missing_subjects:
+            parser.error(
+                "One or more participant labels were not found in the BIDS directory: "
+                f"{', '.join(missing_subjects)}."
+            )
 
     # Handle analysis_level
     analysis_level = set(config.workflow.analysis_level)
