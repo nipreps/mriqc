@@ -1,3 +1,10 @@
+22.0.6 (August 24, 2022)
+========================
+A hotfix release partially rolling-back the previous fix #1025.
+Thanks everyone for your patience with the excessively rushed release of 22.0.5.
+
+* FIX: Better fix to the multi-argument ``--participant-label`` issue (#1026)
+
 22.0.5 (August 24, 2022)
 ========================
 A hotfix release addressing a problem with the argument parser.
