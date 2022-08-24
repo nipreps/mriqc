@@ -1,24 +1,30 @@
+22.0.5 (August 24, 2022)
+========================
+A hotfix release addressing a problem with the argument parser.
+
+* FIX: Multiple valued ``--participant-label`` wrongly parsed (#1025)
+
 22.0.4 (August 23, 2022)
 ========================
 A hotfix release to ensure smooth operation of datalad within Docker.
 
-  * FIX: Major improvements to new datalad-based interface & perform within containers (#1024)
-  * ENH: Bump Docker base to latest release (#1022)
+* FIX: Major improvements to new datalad-based interface & perform within containers (#1024)
+* ENH: Bump Docker base to latest release (#1022)
 
 22.0.3 (August 19, 2022)
 ========================
 A patch release containing a bugfix to the SynthStrip preprocessing.
 
-  * FIX: SynthStrip preprocessing miscalculating new shape after reorientation (#1021)
-  * ENH: Remove slice-timing correction (#1019)
-  * ENH: Add a new ``DataladIdentityInterface`` (#1020)
-  * ENH: Set rat-specific defaults for FD calculations (#1005)
-  * ENH: New version of the rating widget (#1012)
-  * DOC: Move readthedocs to use the config v2 file (YAML) (#1018)
-  * MAINT: Fix statsmodels dependency, it is not optional (#1017)
-  * MAINT: Several critical updates to CircleCI and Docker images (#1016)
-  * MAINT: Update the T1w IQMs to the new reference after #997 (#1014)
-  * MAINT: Fix failing tests as ``python setup.py`` is deprecated (#1013)
+* FIX: SynthStrip preprocessing miscalculating new shape after reorientation (#1021)
+* ENH: Remove slice-timing correction (#1019)
+* ENH: Add a new ``DataladIdentityInterface`` (#1020)
+* ENH: Set rat-specific defaults for FD calculations (#1005)
+* ENH: New version of the rating widget (#1012)
+* DOC: Move readthedocs to use the config v2 file (YAML) (#1018)
+* MAINT: Fix statsmodels dependency, it is not optional (#1017)
+* MAINT: Several critical updates to CircleCI and Docker images (#1016)
+* MAINT: Update the T1w IQMs to the new reference after #997 (#1014)
+* MAINT: Fix failing tests as ``python setup.py`` is deprecated (#1013)
 
 22.0.2 (August 15, 2022)
 ========================
