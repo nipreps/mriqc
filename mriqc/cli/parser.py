@@ -44,7 +44,7 @@ def _parse_participant_labels(value):
     """
     return sorted(set(
         re.sub(r"^sub-", "", item.strip())
-        for item in re.split(r"\s+", str(value))
+        for item in re.split(r"\s+", f"{value}".strip())
     ))
 
 
@@ -65,6 +65,10 @@ def _build_parser():
         def __call__(self, parser, namespace, values, option_string=None):
             warnings.warn(f"Argument {option_string} is deprecated and is *ignored*.")
             delattr(namespace, self.dest)
+
+    class ParticipantLabelAction(Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            setattr(namespace, self.dest, _parse_participant_labels(" ".join(values)))
 
     def _path_exists(path, parser):
         """Ensure a given path exists."""
@@ -164,9 +168,8 @@ Automated Quality Control and visual reports for Quality Assesment of structural
         "--participant-labels",
         "--participant_labels",
         dest="participant_label",
-        action="store",
+        action=ParticipantLabelAction,
         nargs="+",
-        type=_parse_participant_labels,
         help="A space delimited list of participant identifiers or a single "
         "identifier (the sub- prefix can be removed).",
     )
@@ -202,7 +205,6 @@ Automated Quality Control and visual reports for Quality Assesment of structural
     g_bids.add_argument(
         "--bids-database-dir",
         metavar="PATH",
-        type=PathExists,
         help="Path to an existing PyBIDS database folder, for faster indexing "
         "(especially useful for large datasets).",
     )
@@ -481,18 +483,6 @@ def parse_args(args=None, namespace=None):
             "Please modify the output path."
         )
 
-    # Validate inputs
-    # if not opts.skip_bids_validation:
-    #     from ..utils.bids import validate_input_dir
-
-    #     build_log.info(
-    #         "Making sure the input data is BIDS compliant (warnings can be ignored in most "
-    #         "cases)."
-    #     )
-    #     validate_input_dir(
-    #         config.environment.exec_env, opts.bids_dir, opts.participant_label
-    #     )
-
     # Setup directories
     config.execution.log_dir = output_dir / "logs"
     # Check and create output and working directories
@@ -502,17 +492,19 @@ def parse_args(args=None, namespace=None):
 
     # Force initialization of the BIDSLayout
     config.execution.init()
-    all_subjects = config.execution.layout.get_subjects()
-    if config.execution.participant_label is None:
-        config.execution.participant_label = sorted(all_subjects)
-    else:
-        participant_label = set(config.execution.participant_label)
-        missing_subjects = participant_label - set(all_subjects)
+
+    participant_label = config.execution.layout.get_subjects()
+    if config.execution.participant_label is not None:
+        selected_label = set(config.execution.participant_label)
+        missing_subjects = selected_label - set(participant_label)
         if missing_subjects:
             parser.error(
                 "One or more participant labels were not found in the BIDS directory: "
                 f"{', '.join(missing_subjects)}."
             )
+        participant_label = selected_label
+
+    config.execution.participant_label = sorted(participant_label)
 
     # Handle analysis_level
     analysis_level = set(config.workflow.analysis_level)
