@@ -529,12 +529,20 @@ def individual_reports(name="ReportsWorkflow"):
     # fmt: on
 
     mosaic_mean = pe.Node(
-        PlotMosaic(out_file="plot_func_mean_mosaic1.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_func_mean_mosaic1.svg",
+            cmap="Greys_r",
+            species=config.workflow.species.lower(),
+        ),
         name="PlotMosaicMean",
     )
 
     mosaic_stddev = pe.Node(
-        PlotMosaic(out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"),
+        PlotMosaic(
+            out_file="plot_func_stddev_mosaic2_stddev.svg",
+            cmap="viridis",
+            species=config.workflow.species.lower(),
+        ),
         name="PlotMosaicSD",
     )
 
@@ -603,7 +611,11 @@ def individual_reports(name="ReportsWorkflow"):
         return workflow
 
     mosaic_zoom = pe.Node(
-        PlotMosaic(out_file="plot_anat_mosaic1_zoomed.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_anat_mosaic1_zoomed.svg",
+            cmap="Greys_r",
+            species=config.workflow.species.lower(),
+        ),
         name="PlotMosaicZoomed",
     )
 
@@ -612,6 +624,7 @@ def individual_reports(name="ReportsWorkflow"):
             out_file="plot_anat_mosaic2_noise.svg",
             only_noise=True,
             cmap="viridis_r",
+            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicNoise",
     )
@@ -621,7 +634,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "z",
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
