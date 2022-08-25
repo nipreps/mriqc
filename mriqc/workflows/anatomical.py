@@ -533,7 +533,11 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     mosaic_zoom = pe.Node(
-        PlotMosaic(out_file="plot_anat_mosaic1_zoomed.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_anat_mosaic1_zoomed.svg",
+            cmap="Greys_r",
+            species=config.workflow.species.lower()
+        ),
         name="PlotMosaicZoomed",
     )
 
@@ -542,6 +546,7 @@ def individual_reports(name="ReportsWorkflow"):
             out_file="plot_anat_mosaic2_noise.svg",
             only_noise=True,
             cmap="viridis_r",
+            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicNoise",
     )
