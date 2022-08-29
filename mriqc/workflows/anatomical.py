@@ -584,7 +584,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     plot_segm = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "z",
             levels=[0.5, 1.5, 2.5],
             cut_coords=10,
             colors=["r", "g", "b"],
@@ -594,7 +594,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "z",
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
@@ -604,7 +604,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
     plot_airmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "x",
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
@@ -614,7 +614,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
     plot_headmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "x",
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
@@ -624,7 +624,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
     plot_artmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode="y" if config.workflow.species.lower() == "rat" else "z",
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
