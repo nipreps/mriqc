@@ -200,6 +200,11 @@ try:
 except Exception:
     pass
 
+file_path: Path = None
+"""
+Path to configuration file.
+"""
+
 
 class _Config:
     """An abstract class forbidding instantiation."""
@@ -634,7 +639,7 @@ def to_filename(filename):
     filename.write_text(dumps())
 
 
-def _process_initializer(config_file):
+def _process_initializer(config_file: Path):
     """Initialize the environment of the child process."""
     from mriqc import config
 

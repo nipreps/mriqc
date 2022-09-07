@@ -53,6 +53,7 @@ def main():
         dir=config.execution.work_dir, prefix=".mriqc.", suffix=".toml"
     )
     config.to_filename(config_file)
+    config.file_path = config_file
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
@@ -72,7 +73,7 @@ def main():
             _pool = ProcessPoolExecutor(
                 max_workers=config.nipype.nprocs,
                 initializer=config._process_initializer,
-                initargs=(config.execution.cwd,),
+                initargs=(config.file_path,),
             )
 
         _resmon = None
