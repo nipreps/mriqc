@@ -634,11 +634,28 @@ def to_filename(filename):
     filename.write_text(dumps())
 
 
-def _process_initializer(cwd, omp_nthreads):
+def _process_initializer(config_file):
     """Initialize the environment of the child process."""
-    os.chdir(cwd)
+    from mriqc import config
+
+    # Disable eTelemetry
     os.environ["NIPYPE_NO_ET"] = "1"
-    os.environ["OMP_NUM_THREADS"] = f"{omp_nthreads}"
+    os.environ["NO_ET"] = "1"
+
+    # Load config
+    config.load(config_file)
+
+    # Initalize nipype config
+    config.nipype.init()
+
+    # Make sure loggers are started
+    config.loggers.init()
+
+    # Change working directory according to the config
+    os.chdir(config.execution.cwd)
+
+    # Set the maximal number of threads per process
+    os.environ["OMP_NUM_THREADS"] = f"{config.nipype.omp_nthreads}"
 
 
 def restore_env():
