@@ -72,7 +72,7 @@ def main():
             _pool = ProcessPoolExecutor(
                 max_workers=config.nipype.nprocs,
                 initializer=config._process_initializer,
-                initargs=(config.execution.cwd, config.nipype.omp_nthreads),
+                initargs=(config.execution.cwd,),
             )
 
         _resmon = None
