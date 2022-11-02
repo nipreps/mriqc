@@ -346,6 +346,13 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         default=False,
         help="Upload will fail if upload is strict.",
     )
+    g_outputs.add_argument(
+        "--notrack",
+        action="store_true",
+        help="Opt-out of sending tracking information of this run to the NiPreps developers. This"
+        " information helps to improve MRIQC and provides an indicator of real world usage "
+        " crucial for obtaining funding.",
+    )
 
     # ANTs options
     g_ants = parser.add_argument_group("Specific settings for ANTs")

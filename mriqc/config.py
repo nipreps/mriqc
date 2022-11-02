@@ -374,6 +374,8 @@ class execution(_Config):
     """Filter input dataset by MRI type."""
     no_sub = False
     """Turn off submission of anonymized quality metrics to Web API."""
+    notrack = False
+    """Disable the sharing of usage information with developers."""
     output_dir = None
     """Folder where derivatives will be stored."""
     participant_label = None
