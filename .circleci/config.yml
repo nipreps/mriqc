@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  docker: circleci/docker@1.6.0
+  docker: circleci/docker@2.1.4
 
 jobs:
   build:
