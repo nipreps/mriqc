@@ -31,7 +31,7 @@ from .. import config
 from ..utils.misc import BIDS_COMP
 
 
-def gen_html(csv_file, mod, csv_failed=None, out_file=None):
+def gen_html(csv_file, mod, task_id=None, csv_failed=None, out_file=None):
     import datetime
     import os.path as op
 
@@ -263,6 +263,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     tpl.generate_conf(
         {
             "modality": mod,
+            "task_id": task_id,
             "timestamp": datetime.datetime.now().strftime("%Y-%m-%d, %H:%M"),
             "version": ver,
             "csv_groups": csv_groups,

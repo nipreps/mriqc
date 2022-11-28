@@ -189,7 +189,9 @@ def main():
         mod_group_reports = []
         for mod in config.execution.modalities or DEFAULT_TYPES:
             output_dir = config.execution.output_dir
-            dataframe, out_tsv = generate_tsv(output_dir, mod)
+            task_id = config.execution.task_id
+            task_id = task_id[0] if task_id else None
+            dataframe, out_tsv = generate_tsv(output_dir, mod, task_id)
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
                 continue
@@ -202,10 +204,12 @@ def main():
             #     log.info('Predicted QA CSV table for the %s data generated (%s)',
             #                    mod, out_pred)
 
-            out_html = output_dir / f"group_{mod}.html"
+            task = f'_task-{task_id}' if task_id else ''
+            out_html = output_dir / f"group_{mod}{task}.html"
             group_html(
                 out_tsv,
                 mod,
+                task_id,
                 csv_failed=output_dir / f"group_variant-failed_{mod}.csv",
                 out_file=out_html,
             )
