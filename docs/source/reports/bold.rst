@@ -41,7 +41,12 @@ The section with visual reports contains:
    signal intensity at the extremes for the identification
    of spikes, the outliers metric, the DVARS and the
    :abbr:`FD (framewise displacement)`. Finally the
-   so-called carpetplot [Power2016]_
+   so-called carpetplot [Power2016]_. 
+   The carpet plot rows, corresponding to voxel timeseries,
+   are separated into regions : cortical gray-matter, deep 
+   gray-matter, white-matter and cerebrospinal fluid, cerebellum 
+   and crown [Provins2022]_. The crown corresponds to the voxels located on a 
+   closed band around the brain [Patriat2015]_.
 
    .. figure:: ../resources/reports-bold_summary.png
      :alt: fMRI summary plot
@@ -87,6 +92,15 @@ reported here.
 
 .. topic:: References
 
+  .. [Patriat2015] Patriat, R., EK Molloy, RM Birn, T. Guitchev, and A. Popov. “Using Edge Voxel Information to 
+     Improve Motion Regression for Rs-FMRI Connectivity Studies.” Brain Connectivity 5, no. 9 (28 2015): 582–95. 
+     doi: `10.1089/brain.2014.0321 <https://doi.org/10.1089/brain.2014.0321>`_.
+
   .. [Power2016] Power JD, A simple but useful way to assess fMRI scan qualities.
      NeuroImage. 2016. doi: `10.1016/j.neuroimage.2016.08.009 <http://doi.org/10.1016/j.neuroimage.2016.08.009>`_
+
+  .. [Provins2022] Provins, Céline, Christopher J. Markiewicz, Rastko Ciric, Mathias Goncalves, César Caballero-Gaudes, 
+     Russell Poldrack, Patric Hagmann, and Oscar Esteban. “Quality Control and Nuisance Regression of FMRI, Looking out 
+     Where Signal Should Not Be Found.” OSF Preprints, January 21, 2022. doi: `10.31219/osf.io/hz52v <https://doi.org/10.31219/osf.io/hz52v>`_
+
 
