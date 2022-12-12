@@ -43,8 +43,8 @@ The section with visual reports contains:
    :abbr:`FD (framewise displacement)`. Finally the
    so-called carpetplot [Power2016]_. 
    The carpet plot rows correspond to voxelwise time series,
-   and are separated into regions: cortical gray-matter, deep 
-   gray-matter, white matter and cerebrospinal fluid, cerebellum 
+   and are separated into regions: cortical gray matter, deep 
+   gray matter, white matter and cerebrospinal fluid, cerebellum 
    and the brain-edge or “crown” [Provins2022]_.
    The crown corresponds to the voxels located on a 
    closed band around the brain [Patriat2015]_.
