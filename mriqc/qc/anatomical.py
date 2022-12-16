@@ -150,9 +150,9 @@ Other measures
 .. _iqms_summary:
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
-  Mean, standard deviation, 5% percentile and 95% percentile of the distribution
-  of background, :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and
-  :abbr:`WM (white-matter)`.
+  Mean, median, median absolute deviation (mad), standard deviation, kurtosis,
+  5% percentile, 95% percentile and number of voxels of the distribution of background,
+  :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`.
 
 .. _iqms_tpm:
 
@@ -559,8 +559,10 @@ def rpve(pvms, seg):
 
 def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
-    Estimates the mean, the standard deviation, the 95\%
-    and the 5\% percentiles of each tissue distribution.
+    Estimates the mean, the median, the standard deviation,
+    the kurtosis,the median absolute deviation (mad), the 95\%
+    and the 5\% percentiles and the number of voxels (summary\_\*\_n)
+    of each tissue distribution.
 
     .. warning ::
 
