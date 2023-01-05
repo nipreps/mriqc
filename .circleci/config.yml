@@ -758,6 +758,8 @@ workflows:
               only: /.*/
 
       - build:
+          context:
+            - nipreps-common
           filters:
             branches:
               ignore: /docs?\/.*/
@@ -772,6 +774,8 @@ workflows:
               only: /.*/
 
       - test_package:
+          context:
+            - nipreps-common
           filters:
             branches:
               ignore: /docs?\/.*/
@@ -779,6 +783,8 @@ workflows:
               only: /.*/
 
       - test_pytest:
+          context:
+            - nipreps-common
           requires:
             - build
           filters:
@@ -808,6 +814,8 @@ workflows:
               only: /.*/
 
       - deploy_docker:
+          context:
+            - nipreps-common
           requires:
             - build
             - test_pytest
@@ -822,6 +830,8 @@ workflows:
               only: /.*/
 
       - deploy_pypi:
+          context:
+            - nipreps-common
           requires:
             - deploy_docker
           filters:
