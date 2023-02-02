@@ -24,7 +24,7 @@
 from time import time_ns, sleep
 from datetime import datetime
 from pathlib import Path
-from multiprocessing import Process, Event, active_children
+from multiprocessing import Process, Event
 from contextlib import suppress
 import signal
 import psutil
