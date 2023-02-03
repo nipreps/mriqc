@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--name", type=str, required=True)
-    parser.add_argument("-p", "--path_report", type=str, default=".")
+    parser.add_argument("-p", "--logfile-path", type=str, default=".")
     args = parser.parse_args()
 
     if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
