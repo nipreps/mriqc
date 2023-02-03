@@ -29,4 +29,4 @@ if __name__ == "__main__":
     # `python -m <module>` typically displays the command as __main__.py
     if "__main__.py" in sys.argv[0]:
         sys.argv[0] = "%s -m %s" % (sys.executable, module)
-    ResourceRecorder(pid=sys.argv[1]).start()
+    ResourceRecorder(pid=int(sys.argv[1])).start()
