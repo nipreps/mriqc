@@ -26,8 +26,10 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import Process, Event
 from contextlib import suppress
+from tempfile import mkstemp
 import signal
 import psutil
+
 
 
 _MB = 1024.0**2
@@ -50,11 +52,9 @@ def FindProcess(process_name):
      ----------
      process_name : :obj:`str`
          The name of the process that must be found.
-
     Return
      ----------
      PID of the process if found, False if the process is not found
-
     """
 
     for proc in psutil.process_iter():
