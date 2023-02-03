@@ -23,7 +23,6 @@
 """Instrumentation to profile resource utilization."""
 from time import time_ns, sleep
 from datetime import datetime
-from tempfile import mkstemp
 from pathlib import Path
 from multiprocessing import Process, Event
 from contextlib import suppress
@@ -130,7 +129,9 @@ class ResourceRecorder(Process):
 
         self._pid = pid
         """The process to be sampled."""
-        self._logfile = log_file
+        self._logfile = str(
+            Path(log_file if log_file is not None else f".prof-{pid}.tsv").absolute()
+        )
         """An open file descriptor where results are dumped."""
         self._exclude = exclude_probe or tuple()
         """A list/tuple containing PIDs that should not be monitored."""
@@ -146,15 +147,8 @@ class ResourceRecorder(Process):
         """Core monitoring function, called by start()"""
 
         # Open file now, because it cannot be pickled.
-        _logfile = (
-            Path(self._logfile)
-            if self._logfile
-            else Path(mkstemp(prefix="prof-", suffix=".tsv")[1])
-        )
-        _logfile.parent.mkdir(parents=True, exist_ok=True)
-        self._logfile = str(_logfile.absolute())
-
-        _logfile = _logfile.open("w")
+        Path(self._logfile).parent.mkdir(parents=True, exist_ok=True)
+        _logfile = Path(self._logfile).open("w")
 
         # Write headers (comment trace + header row)
         _header = [
@@ -169,6 +163,9 @@ class ResourceRecorder(Process):
         # Add self to exclude list if pertinent
         if self._exclude is True:
             self._exclude = (psutil.Process().pid,)
+
+        # Ensure done is not marked set
+        self._done.clear()
 
         # Initiate periodic sampling
         start_time = time_ns()
