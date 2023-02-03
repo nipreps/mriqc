@@ -178,8 +178,7 @@ class ResourceRecorder(Process):
         Path(self._logfile).parent.mkdir(parents=True, exist_ok=True)
         _logfile = Path(self._logfile).open("w")
 
-
-        # Write headers (comment trace + header row)
+# Write headers (comment trace + header row)
         _header = [
             f"# MRIQC Resource recorder started tracking PID {self._pid} "
             f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
