@@ -173,7 +173,6 @@ class ResourceRecorder(Process):
 
     def run(self, *args, **kwargs):
         """Core monitoring function, called by start()"""
-        print("run")
         # Open file now, because it cannot be pickled.
 
         Path(self._logfile).parent.mkdir(parents=True, exist_ok=True)
