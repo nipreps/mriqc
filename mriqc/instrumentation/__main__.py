@@ -42,4 +42,3 @@ if __name__ == "__main__":
         pid = FindProcess(args.name)
 
     ResourceRecorder(pid, log_file=args.path_report + str(pid) + ".tsv").run()
-
