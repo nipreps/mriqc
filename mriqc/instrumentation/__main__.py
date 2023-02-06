@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-n", "--name", type=str, required=True)
-    parser.add_argument("-p", "--logfile-path", type=str, default=".")
+    parser.add_argument("-p", "--logfile_path", type=str, default=".")
     args = parser.parse_args()
 
     if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
@@ -41,4 +41,4 @@ if __name__ == "__main__":
     else:
         pid = FindProcess(args.name)
 
-    ResourceRecorder(pid, log_file=args.path_report + str(pid) + ".tsv").run()
+    ResourceRecorder(pid, log_file=args.logfile_path + str(pid) + ".tsv").run()
