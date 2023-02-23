@@ -112,7 +112,7 @@ def main():
         if retcode != 0:
             sys.exit(retcode)
 
-        # Initalize nipype config
+        # Initialize nipype config
         config.nipype.init()
         # Make sure loggers are started
         config.loggers.init()

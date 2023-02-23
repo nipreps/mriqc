@@ -111,7 +111,7 @@ function makeDistroChart(settings) {
     }
 
     /**
-     * Takes a percentage as returns the values that correspond to that percentage of the group range witdh
+     * Takes a percentage as returns the values that correspond to that percentage of the group range width
      * @param objWidth Percentage of range band
      * @param gName The bin name to use to get the x shift
      * @returns {{left: null, right: null, middle: null}}
@@ -561,7 +561,7 @@ function makeDistroChart(settings) {
                     }), function (d) {
                         return d.x;
                     });
-                    // If clamp is -1 we need to extend the axises so that the violins come to a point
+                    // If clamp is -1 we need to extend the axes so that the violins come to a point
                     if (vOpts.clamp == -1) {
                         kdeTester = eKernelTest(eKernel(vOpts.bandwidth), chart.groupObjs[cName].values);
                         if (!interpolateMax) {

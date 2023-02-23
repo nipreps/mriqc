@@ -120,7 +120,7 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     path = Str(desc="MRIQCWebAPI endpoint root path")
     email = Str(desc="set sender email")
     strict = traits.Bool(
-        False, usedefault=True, desc="crash if upload was not succesfull"
+        False, usedefault=True, desc="crash if upload was not successful"
     )
 
 

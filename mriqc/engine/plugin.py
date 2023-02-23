@@ -126,7 +126,7 @@ class DistributedPluginBase(PluginBase):
         a boolean numpy array (N,) signifying whether a
         process is currently running.
     depidx : :obj:`numpy.matrix`
-        a boolean matrix (NxN) storing the dependency structure accross
+        a boolean matrix (NxN) storing the dependency structure across
         processes. Process dependencies are derived from each column.
 
     """
@@ -388,7 +388,7 @@ class DistributedPluginBase(PluginBase):
 
 class MultiProcPlugin(DistributedPluginBase):
     """
-    A lightweigh re-implementation of NiPype's MultiProc plugin.
+    A lightweight re-implementation of NiPype's MultiProc plugin.
 
     Execute workflow with multiprocessing, not sending more jobs at once
     than the system can support.
@@ -470,7 +470,7 @@ class MultiProcPlugin(DistributedPluginBase):
         return self._taskid
 
     def _prerun_check(self, graph):
-        """Check if any node exeeds the available resources."""
+        """Check if any node exceeds the available resources."""
         import numpy as np
 
         tasks_mem_gb = []
