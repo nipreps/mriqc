@@ -225,7 +225,7 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
     # Extract metadata and provenance
     meta = in_data.pop("bids_meta")
 
-    # For compatibility with WebAPI. Shold be rolled back to int
+    # For compatibility with WebAPI. Should be rolled back to int
     if meta.get("run_id", None) is not None:
         meta["run_id"] = "%d" % meta.get("run_id")
 
