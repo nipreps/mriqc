@@ -124,10 +124,10 @@ jobs:
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
             /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
-
             docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
             docker push localhost:5000/dockereve-master_eve:latest
+
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -360,8 +360,17 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker system prune -f
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml up -d
           background: true
+      - run:
+          name: Stop if MRIQC WebAPI is not running
+          command: |
+            e=1 && for i in {1..10}; do
+              curl -i -H "Content-Type: application/json" http://localhost/api/v1/T1w \
+              && e=0 && break || sleep 5
+            done && [ "$e" -eq "0" ]      
+
       - restore_cache:
           keys:
             - data-v2-{{ epoch }}
@@ -519,8 +528,16 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker system prune -f
+            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml up -d
           background: true
+      - run:
+          name: Stop if MRIQC WebAPI is not running
+          command: |
+            e=1 && for i in {1..10}; do
+              curl -i -H "Content-Type: application/json" http://localhost/api/v1/bold \
+              && e=0 && break || sleep 5
+            done && [ "$e" -eq "0" ]     
 
       - restore_cache:
           keys:
