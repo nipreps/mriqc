@@ -10,5 +10,6 @@ If you are participating because of your affiliation with another organization (
 | **Lastname** | **Name** | **Handle** | **ORCID** | **Affiliation** |
 | --- | --- | --- | --- | --- |
 | Provins | Céline | @celprov | 0000-0002-1668-9629 | Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland |
+| Hagen | McKenzie P. | @mckenziephagen | 0000-0002-7454-8189 | Psychology Department and eScience Institute, University of Washington, Seattle, WA, USA |
 | Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland |
 | Markiewicz | Christopher J. | @effigies | 0000-0002-6533-164X | Department of Psychology, Stanford University, CA, USA |
