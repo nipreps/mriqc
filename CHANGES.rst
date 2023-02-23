@@ -106,7 +106,7 @@ and @jAchtzehn for their contributions.
 * MAINT: Refactor ``Dockerfile`` using new miniconda image (#974)
 * MAINT: Outsource the classifier into nipreps/mriqc-learn (#973)
 * MAINT: Update ``CONTRIBUTORS.md`` (#953)
-* MAINT: Update contributer location (#952)
+* MAINT: Update contributor location (#952)
 * MAINT: Updates to ``CONTRIBUTORS.md`` file
 * MAINT: Revise Docker image settings & CircleCI (#937)
 * MAINT: Finalize transfer to ``nipreps`` organization (#936)

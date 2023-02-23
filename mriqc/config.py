@@ -28,7 +28,7 @@ Settings are passed across processes via filesystem, and a copy of the settings 
 each run and subject is left under
 ``<output_dir>/sub-<participant_id>/log/<run_unique_id>/mriqc.toml``.
 Settings are stored using :abbr:`ToML (Tom's Markup Language)`.
-The module has a :py:func:`~mriqc.config.to_filename` function to allow writting out
+The module has a :py:func:`~mriqc.config.to_filename` function to allow writing out
 the settings to hard disk in *ToML* format, which looks like:
 
 .. literalinclude:: ../mriqc/data/config-example.toml
@@ -363,7 +363,7 @@ class execution(_Config):
     echo_id = None
     """Select a particular echo for multi-echo EPI datasets."""
     float32 = True
-    """Cast the input data to float32 if it's represented whith higher precision."""
+    """Cast the input data to float32 if it's represented with higher precision."""
     layout = None
     """A :py:class:`~bids.layout.BIDSLayout` object, see :py:func:`init`."""
     log_dir = None

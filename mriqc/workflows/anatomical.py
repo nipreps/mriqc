@@ -1052,7 +1052,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     from scipy import ndimage as sim
 
     if not aniso:
-        struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+        struct = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
     else:
         # Generate an anisotropic binary structure, taking into account slice thickness
         img = nb.load(in_file)
@@ -1063,7 +1063,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
         x = np.ones((5) * np.ones(dim, dtype=np.int8))
         np.put(x, x.size // 2, 0)
         dist_matrix = np.round(sim.distance_transform_edt(x, sampling=zooms), 5)
-        struc = dist_matrix <= dist
+        struct = dist_matrix <= dist
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -1084,11 +1084,11 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(
+    segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(
         np.uint8
     )
     mask[segdata > 0] = 1
-    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)
+    mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
     artmsk = np.zeros_like(mask)
@@ -1099,7 +1099,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
 
-    mask = sim.binary_fill_holes(mask, struc).astype(
+    mask = sim.binary_fill_holes(mask, struct).astype(
         np.uint8
     )  # pylint: disable=no-member
 
