@@ -7,11 +7,11 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.0.6
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
       docker_layer_caching: true
     working_directory: /tmp/src/mriqc
     steps:
@@ -37,7 +37,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -101,13 +100,6 @@ jobs:
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-
-            if [[ ! -f /tmp/docker-compose/docker-compose ]]; then
-              mkdir -p /tmp/docker-compose/
-              curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose/docker-compose
-              chmod a+rx /tmp/docker-compose/docker-compose
-            fi
-
             set +e
             docker pull localhost:5000/dockereve-master_eve:latest
             success=$?
@@ -123,8 +115,8 @@ jobs:
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
 
             docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
             docker push localhost:5000/dockereve-master_eve:latest
@@ -182,7 +174,6 @@ jobs:
          paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -191,7 +182,7 @@ jobs:
 
   get_data:
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -240,7 +231,7 @@ jobs:
 
   test_pytest:
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
@@ -304,12 +295,12 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     resource_class: large
     working_directory: /tmp/t1w
     steps:
@@ -333,7 +324,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -360,7 +350,7 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
       - restore_cache:
           keys:
@@ -469,7 +459,7 @@ jobs:
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     working_directory: /tmp/bold
     steps:
       - attach_workspace:
@@ -492,7 +482,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -519,7 +508,7 @@ jobs:
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
       - restore_cache:
@@ -716,7 +705,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
