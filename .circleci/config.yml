@@ -334,18 +334,19 @@ jobs:
               echo "Pulling registry image from DockerHub"
               docker pull registry:2
             fi
-            docker run -d -p 5000:5000 --restart=always --name=registry \
+            docker run -d --restart=always --name=registry \
+                -e REGISTRY_HTTP_ADDR=0.0.0.0:5001 -p 5001:5001 \
                 -v /tmp/docker:/var/lib/registry registry:2
       - run:
           name: Pull images from local registry
           command: |
-            docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+            docker pull localhost:5001/mriqc
+            docker tag localhost:5001/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
             for image in ${webapi_images[@]}; do
-                docker pull localhost:5000/${image}
-                docker tag localhost:5000/${image} ${image}
+                docker pull localhost:5001/${image}
+                docker tag localhost:5001/${image} ${image}
             done;
       - run:
           name: Start MRIQC WebAPI endpoint
@@ -492,18 +493,19 @@ jobs:
               echo "Pulling registry image from DockerHub"
               docker pull registry:2
             fi
-            docker run -d -p 5000:5000 --restart=always --name=registry \
+            docker run -d --restart=always --name=registry \
+                -e REGISTRY_HTTP_ADDR=0.0.0.0:5001 -p 5001:5001 \
                 -v /tmp/docker:/var/lib/registry registry:2
       - run:
           name: Pull images from local registry
           command: |
-            docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+            docker pull localhost:5001/mriqc
+            docker tag localhost:5001/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
             for image in ${webapi_images[@]}; do
-                docker pull localhost:5000/${image}
-                docker tag localhost:5000/${image} ${image}
+                docker pull localhost:5001/${image}
+                docker tag localhost:5001/${image} ${image}
             done;
       - run:
           name: Start MRIQC WebAPI endpoint
