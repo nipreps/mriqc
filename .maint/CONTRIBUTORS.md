@@ -21,6 +21,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
 | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
 | Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
+| Halchenko | Yaroslav O. | @yarikoptic | 0000-0003-3456-2493 | Psychological and Brain Sciences Department, Dartmouth College, NH, USA |
 | Huffman | Adam | @verdurin | | Department of Physics, Imperial College London, London, UK |
 | Kay | Benjamin | @benkay86 | | Washington University School of Medicine, St.Louis, MO, USA |
 | Kent | James D. | @jdkent | 0000-0002-4892-2659 | Department of Psychology, University of Texas at Austin, TX, USA |
