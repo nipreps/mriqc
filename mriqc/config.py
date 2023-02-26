@@ -433,15 +433,18 @@ class execution(_Config):
             from bids.layout import BIDSLayout
 
             ignore_paths = [
+                # Ignore folders at the top if they don't start with /sub-<label>/
                 re.compile(r"^(?!/sub-[a-zA-Z0-9]+)"),
-                # Exclude modalities and contrasts ignored by MRIQC (doesn't know how to QC)
+                # Ignore all modality subfolders, except for func/ or anat/
                 re.compile(
-                    r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
+                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(?!func|anat)"
                 ),
+                # Ignore all files, except for the supported modalities
                 re.compile(r"^.+(?<!(_T1w|_T2w|bold))\.(json|nii|nii\.gz)$"),
             ]
 
             if cls.participant_label:
+                # If we know participant labels, ignore all other
                 ignore_paths[0] = re.compile(
                     r"^(?!/sub-("
                     + "|".join(cls.participant_label)
