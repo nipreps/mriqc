@@ -432,6 +432,25 @@ class execution(_Config):
             from bids.layout.index import BIDSLayoutIndexer
             from bids.layout import BIDSLayout
 
+            ignore_paths = [
+                # Ignore folders at the top if they don't start with /sub-<label>/
+                re.compile(r"^(?!/sub-[a-zA-Z0-9]+)"),
+                # Ignore all modality subfolders, except for func/ or anat/
+                re.compile(
+                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(?!func|anat)"
+                ),
+                # Ignore all files, except for the supported modalities
+                re.compile(r"^.+(?<!(_T1w|_T2w|bold))\.(json|nii|nii\.gz)$"),
+            ]
+
+            if cls.participant_label:
+                # If we know participant labels, ignore all other
+                ignore_paths[0] = re.compile(
+                    r"^(?!/sub-("
+                    + "|".join(cls.participant_label)
+                    + r"))"
+                )
+
             _db_path = cls.bids_database_dir or (
                 cls.work_dir / cls.run_uuid / "bids_db"
             )
@@ -440,30 +459,7 @@ class execution(_Config):
             # Recommended after PyBIDS 12.1
             _indexer = BIDSLayoutIndexer(
                 validate=False,
-                ignore=(
-                    "code",
-                    "stimuli",
-                    "sourcedata",
-                    "models",
-                    "derivatives",
-                    "scripts",
-                    re.compile(r"^\."),
-                    # Exclude modalities and contrasts ignored by MRIQC (doesn't know how to QC)
-                    re.compile(
-                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(dwi|fmap|perf)/"
-                    ),
-                    re.compile(
-                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/anat/.*_"
-                        r"(PDw|T2starw|FLAIR|inplaneT1|inplaneT2|PDT2|angio|T2star"
-                        r"|FLASH|PD|T1map|T2map|T2starmap|R1map|R2map|R2starmap|PDmap"
-                        r"|MTRmap|MTsat|UNIT1|T1rho|MWFmap|MTVmap|PDT2map|Chimap"
-                        r"|S0map|M0map|defacemask|MESE|MEGRE|VFA|IRT1|MP2RAGE|MPM|MTS|MTR)\."
-                    ),
-                    re.compile(
-                        r"sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/func/.*"
-                        r"_(cbv|sbref|phase|events|physio|stim)\."
-                    ),
-                ),
+                ignore=ignore_paths,
             )
             cls._layout = BIDSLayout(
                 str(cls.bids_dir),
