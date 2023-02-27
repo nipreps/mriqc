@@ -31,6 +31,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
 | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
 | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
+| Savary | Elodie | @esavary | 0000-0002-3896-6906 | Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland |
 | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
 | Triplett | William | @wtriplett | 0000-0002-9546-1306 | University of Florida: Gainesville, Florida, US |
 | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
