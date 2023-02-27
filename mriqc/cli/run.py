@@ -23,6 +23,7 @@
 """Definition of the command line interface's (CLI) entry point."""
 EXITCODE: int = -1
 
+
 def main():
     """Entry point for MRIQC's CLI."""
     import gc
@@ -233,6 +234,7 @@ def main():
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
     config.loggers.cli.info(messages.RUN_FINISHED)
+
 
 def migas_exit() -> None:
     """
