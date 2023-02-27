@@ -6,7 +6,7 @@ jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      - MRIQC_API_TAG: 1.0.6
+      - MRIQC_API_TAG: 1.1.0
       - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -101,16 +101,17 @@ jobs:
           name: Prepare MRIQCWebAPI
           command: |
             set +e
-            docker pull localhost:5000/dockereve-master_eve:latest
+            docker pull localhost:5000/dockereve-master-endpoints:latest
             success=$?
             set -e
             if [[ "$success" = 0 ]]; then
-                docker tag localhost:5000/dockereve-master_eve:latest dockereve-master_eve:latest
+                docker tag localhost:5000/dockereve-master-endpoints:latest dockereve-master-endpoints:latest
             fi
 
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/nipreps/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
+            git checkout ${MRIQC_API_TAG}
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
@@ -118,8 +119,8 @@ jobs:
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
 
-            docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
-            docker push localhost:5000/dockereve-master_eve:latest
+            docker tag dockereve-master-endpoints:latest localhost:5000/dockereve-master-endpoints:latest
+            docker push localhost:5000/dockereve-master-endpoints:latest
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -295,7 +296,7 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -455,7 +456,7 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
