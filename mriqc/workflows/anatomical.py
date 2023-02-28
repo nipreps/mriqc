@@ -503,7 +503,7 @@ def individual_reports(name="ReportsWorkflow"):
             wf = individual_reports()
 
     """
-    from ..interfaces import PlotMosaic
+    from nireports.interfaces.viz import PlotMosaic
     from ..interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -574,7 +574,7 @@ def individual_reports(name="ReportsWorkflow"):
     if not verbose:
         return workflow
 
-    from ..interfaces.viz import PlotContours
+    from nireports.interfaces.viz import PlotContours
 
     plot_segm = pe.Node(
         PlotContours(
