@@ -459,7 +459,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
-    from nireports.reportlets.mriqc.utils import plot_qi2
+    from nireports.reportlets.nuisance import plot_qi2
     from scipy.stats import chi2
     from sklearn.neighbors import KernelDensity
 
