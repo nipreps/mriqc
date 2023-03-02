@@ -1,3 +1,28 @@
+23.0.0 (TBD)
+============
+A new series, mostly involving maintenance housekeeping, and including some relevant bugfixes.
+Probably, the most relevant is **the optimization of the indexing** of the input BIDS folder,
+which was taking large times with sizeable datasets.
+Another relevant addition is inclusion of telemetry with *migas*.
+
+* FIX: Move telemetry atexit into entrypoint func (#1067)
+* FIX: Preempt PyBIDS to spend time indexing non-BIDS folders (#1050)
+* FIX: Update T1w metrics (#1063)
+* FIX: Resource monitor would not ever start tracking (#1051)
+* ENH: Add migas telemetry (#1036)
+* ENH: Add codespell automation: config, action, and typos fixed (#1057)
+* MAINT: Conclude porting of reportlets into NiReports (#1068)
+* MAINT: Migrate to hatchling (#1070)
+* MAINT: Pin PyBIDS 0.15.6 (culminating #1050) (#1069)
+* MAINT: Update niworkflows pin to support newer ANTs releases (#1047)
+* MAINT: Fix minor aspects of WebAPI deployment on CircleCI (#1064)
+* MAINT: Add McKenzie to the maintainers table (#1059)
+* MAINT: Update CircleCI executor and use built-in docker-compose (#1061)
+* MAINT: Rotate CircleCI secrets and setup up org-level context (#1046)
+* DOC: Update documentation with the new carpet plot (#1045)
+* DOC: Complete the documentation of ``summary_stats()`` (#1044)
+* DOC: Fixes a couple of broken links to the *nipype* documentation (#1040)
+
 22.0.6 (August 24, 2022)
 ========================
 A hotfix release partially rolling-back the previous fix #1025.
