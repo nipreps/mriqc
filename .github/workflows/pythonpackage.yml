@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
-        pip: ["pip==21.2", "pip~=22.0"]
+        python-version: ['3.8', '3.9', '3.11']
+        pip: ["pip==21.2", "pip~=23.0"]
 
     steps:
     - uses: actions/checkout@v2
@@ -87,9 +87,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
-    - run: pip install flake8
+        python-version: 3.9
+    - run: pip install flake8-pyproject 
     - run: flake8 mriqc/
