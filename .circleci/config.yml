@@ -676,14 +676,14 @@ jobs:
           command: |
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
-            python -m pip -U hatch hatchling pip twine docutils
+            python -m pip install -U hatch hatchling pip build twine docutils
       - run:
           name: Deploy to PyPi
           command: |
             source /tmp/venv/bin/activate
 
             # Set version on stone before editing the bundle
-            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python3 -m hatch version | tail -n1 | xargs )
+            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m hatch version | tail -n1 | xargs )
 
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
