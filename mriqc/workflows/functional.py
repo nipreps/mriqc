@@ -64,16 +64,22 @@ def fmri_qc_workflow(name="funcMRIQC"):
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from nipype.interfaces.afni import TStat
     from niworkflows.interfaces.header import SanitizeImage
+    from mriqc.messages import BUILDING_WORKFLOW
 
     workflow = pe.Workflow(name=name)
 
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get("bold", [])
-    config.loggers.workflow.info(
-        f"""\
-Building functional MRIQC workflow for files: {", ".join(dataset)}."""
+
+    message = BUILDING_WORKFLOW.format(
+        modality="functional",
+        detail=(
+            f"for {len(dataset)} NIfTI files." if len(dataset) > 2
+            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+        ),
     )
+    config.loggers.workflow.info(message)
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
