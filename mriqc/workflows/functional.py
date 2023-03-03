@@ -45,6 +45,7 @@ from mriqc import config
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+from mriqc.interfaces.datalad import DataladIdentityInterface
 
 
 def fmri_qc_workflow(name="funcMRIQC"):
@@ -78,6 +79,11 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
+
+    datalad_get = pe.Node(DataladIdentityInterface(
+        fields=["in_file"],
+        dataset_path=config.execution.bids_dir
+    ), name="datalad_get")
 
     outputnode = pe.Node(
         niu.IdentityInterface(
@@ -122,9 +128,10 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
     # fmt: off
 
     workflow.connect([
-        (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
-        (inputnode, sanitize, [("in_file", "in_file")]),
-        (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
+        (inputnode, datalad_get, [("in_file", "in_file")]),
+        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
+        (datalad_get, sanitize, [("in_file", "in_file")]),
+        (datalad_get, non_steady_state_detector, [("in_file", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
