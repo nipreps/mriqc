@@ -11,8 +11,5 @@ If you are participating because of your affiliation with another organization (
 | **Lastname** | **Name** | **Handle** | **ORCID** | **Affiliation** |
 | --- | --- | --- | --- | --- |
 | Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | Department of Radiology, Lausanne University Hospital and University of Lausanne |
-| Gorgolewski | Krzysztof J. | @chrisgorgo | 0000-0003-3321-7583 | Google LLC |
 | Poldrack | Russell A. | @poldrack | 0000-0001-6755-0259 | Department of Psychology, Stanford University, CA, USA |
 | Thomas | Adam G. | | 0000-0002-2850-1419 | Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA |
-| Marret | Sean | | 0000-0001-8179-6511 | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
-
