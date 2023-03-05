@@ -603,44 +603,42 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     output = {}
     for k, lid in labels:
-        mask = np.zeros_like(img, dtype=np.uint8)
-        mask[stats_pvms[lid] > 0.85] = 1
+        mask = np.where(stats_pvms[lid] > 0.85)
+        nvox = mask.sum()
 
-        if erode:
+        if erode and nvox > 2e3:
             struct = nd.generate_binary_structure(3, 2)
-            mask = nd.binary_erosion(mask, structure=struct).astype(np.uint8)
+            mask = nd.binary_erosion(mask, structure=struct)
+            nvox = mask.sum()
 
-        nvox = float(mask.sum())
-        if nvox < 1e3:
-            config.loggers.interface.warning(
-                'calculating summary stats of label "%s" in a very small '
-                "mask (%d voxels)",
-                k,
-                int(nvox),
-            )
-            if k == "bg":
-                output["bg"] = {
-                    "mean": 0.0,
-                    "median": 0.0,
-                    "p95": 0.0,
-                    "p05": 0.0,
-                    "k": 0.0,
-                    "stdv": 0.0,
-                    "mad": 0.0,
-                    "n": nvox,
-                }
-                continue
-
+        # Initialize with zeros.
         output[k] = {
-            "mean": float(img[mask == 1].mean()),
-            "stdv": float(img[mask == 1].std()),
-            "median": float(np.median(img[mask == 1])),
-            "mad": float(mad(img[mask == 1])),
-            "p95": float(np.percentile(img[mask == 1], 95)),
-            "p05": float(np.percentile(img[mask == 1], 5)),
-            "k": float(kurtosis(img[mask == 1])),
-            "n": nvox,
+            "mean": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "p05": 0.0,
+            "k": 0.0,
+            "stdv": 0.0,
+            "mad": 0.0,
+            "n": float(nvox),
         }
+        if nvox > 100:
+            data = img[mask]
+            output[k] = {
+                "mean": float(data.mean()),
+                "stdv": float(data.std()),
+                "median": float(np.median(data)),
+                "mad": float(mad(data)),
+                "p95": float(np.percentile(data, 95)),
+                "p05": float(np.percentile(data, 5)),
+                "k": float(kurtosis(data)),
+                "n": float(nvox),
+            }
+        else:
+            config.loggers.interface.warning(
+                f'calculating summary stats of label "{k}" in a very small '
+                f"mask ({nvox} voxels)",
+            )
 
     return output
 
