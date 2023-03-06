@@ -162,7 +162,7 @@ AFNI's quality index (``aqi``)
 .. _iqms_dummy:
 
 Number of *dummy* scans** (``dummy``)
-  A number of volumes in the begining of the
+  A number of volumes in the beginning of the
   fMRI timeseries identified as non-steady state.
 
 .. topic:: References

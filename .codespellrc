@@ -1,0 +1,5 @@
+[codespell]
+skip = .git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE
+# nd - import scipy.ndimage as nd
+# mapp, reson -- Mapp. and Reson. abbreviations in citation
+ignore-words-list = nd,mapp,reson

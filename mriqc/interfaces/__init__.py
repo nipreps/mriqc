@@ -32,7 +32,6 @@ from mriqc.interfaces.anatomical import (
 from mriqc.interfaces.bids import IQMFileSink
 from mriqc.interfaces.common import ConformImage, EnsureSize
 from mriqc.interfaces.functional import FunctionalQC, Spikes
-from mriqc.interfaces.viz import PlotContours, PlotMosaic, PlotSpikes
 from mriqc.interfaces.webapi import UploadIQMs
 
 __all__ = [
@@ -43,9 +42,6 @@ __all__ = [
     "FunctionalQC",
     "Harmonize",
     "IQMFileSink",
-    "PlotContours",
-    "PlotMosaic",
-    "PlotSpikes",
     "RotationMask",
     "Spikes",
     "StructuralQC",

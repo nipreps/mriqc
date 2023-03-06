@@ -420,9 +420,9 @@ class Harmonize(SimpleInterface):
 
         if self.inputs.erodemsk:
             # Create a structural element to be used in an opening operation.
-            struc = nd.generate_binary_structure(3, 2)
+            struct = nd.generate_binary_structure(3, 2)
             # Perform an opening operation on the background data.
-            wm_mask = nd.binary_erosion(wm_mask, structure=struc).astype(np.uint8)
+            wm_mask = nd.binary_erosion(wm_mask, structure=struct).astype(np.uint8)
 
         data = in_file.get_fdata()
         data *= 1000.0 / np.median(data[wm_mask > 0])
@@ -462,8 +462,8 @@ class RotationMask(SimpleInterface):
         mask = np.pad(mask, pad_width=(1,), mode="constant", constant_values=1)
 
         # Remove noise
-        struc = nd.generate_binary_structure(3, 2)
-        mask = nd.binary_opening(mask, structure=struc).astype(np.uint8)
+        struct = nd.generate_binary_structure(3, 2)
+        mask = nd.binary_opening(mask, structure=struct).astype(np.uint8)
 
         # Remove small objects
         label_im, nb_labels = nd.label(mask)
@@ -515,8 +515,8 @@ def artifact_mask(imdata, airdata, distance, zscore=10.0):
     qi1_img[distance < 0.10] = 0
 
     # Create a structural element to be used in an opening operation.
-    struc = nd.generate_binary_structure(3, 1)
-    qi1_img = nd.binary_opening(qi1_img, struc).astype(np.uint8)
+    struct = nd.generate_binary_structure(3, 1)
+    qi1_img = nd.binary_opening(qi1_img, struct).astype(np.uint8)
     qi1_img[airdata <= 0] = 0
 
     return qi1_img

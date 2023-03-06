@@ -30,8 +30,6 @@ dictionary (``retval``) to allow isolation using a
 a hard-limited memory-scope.
 """
 
-EXITCODE: int = 1
-
 
 def build_workflow(config_file, retval):
     """Create the Nipype Workflow that supports the whole execution graph."""
@@ -44,7 +42,7 @@ def build_workflow(config_file, retval):
     # We do not need OMP > 1 for workflow creation
 
     config.load(config_file)
-    # Initalize nipype config
+    # Initialize nipype config
     config.nipype.init()
     # Make sure loggers are started
     config.loggers.init()
@@ -56,43 +54,10 @@ def build_workflow(config_file, retval):
         analysis_level=config.workflow.analysis_level,
     )
     config.loggers.cli.log(25, start_message)
-    if not config.execution.notrack:
-        import atexit
-        from ..utils.telemetry import setup_migas
-
-        atexit.register(migas_exit)
-        setup_migas(init=True)
 
     retval["return_code"] = 1
     retval["workflow"] = None
 
     retval["workflow"] = init_mriqc_wf()
     retval["return_code"] = int(retval["workflow"] is None)
-
-    global EXITCODE
-    EXITCODE = retval["return_code"]
-
     return retval
-
-
-def migas_exit() -> None:
-    """
-    Send a final crumb to the migas server signaling if the run successfully completed
-    This function should be registered with `atexit` to run at termination.
-    """
-    import sys
-    from ..utils.telemetry import send_breadcrumb
-
-    global EXITCODE
-    migas_kwargs = {'status': 'completed'}
-    # `sys` will not have these attributes unless an error has been handled
-    if hasattr(sys, 'last_type'):
-        migas_kwargs = {
-            'status_desc': 'Finished with error(s)',
-            'error_type': sys.last_type,
-            'error_desc': sys.last_value,
-        }
-    elif EXITCODE == 0:
-        migas_kwargs.update({'status': 'completed', 'status_desc': 'Finished without error'})
-
-    send_breadcrumb(**migas_kwargs)

@@ -16,6 +16,11 @@
       "orcid": "0000-0002-1668-9629",
       "affiliation": "Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland",
       "name": "C\u00e9line Provins"
+    },
+    {
+      "orcid": "0000-0002-7454-8189",
+      "affiliation": "Psychology Department, University of Washington, Seattle, WA, USA",
+      "name": "McKenzie P. Hagen"
     }
   ],
   "contributors": [
@@ -61,6 +66,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0002-7252-7771",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Mathias Goncalves",
+      "type": "Researcher"
+    },
+    {
       "affiliation": "CRC ULiege, Liege, Belgium",
       "name": "Nikita Beliy",
       "type": "Researcher"
@@ -84,6 +95,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0003-3456-2493",
+      "affiliation": "Psychological and Brain Sciences Department, Dartmouth College, NH, USA",
+      "name": "Yaroslav O. Halchenko",
+      "type": "Researcher"
+    },
+    {
       "affiliation": "University of Michigan, Ann Arbor, USA",
       "name": "Bennet Fauber",
       "type": "Researcher"
@@ -92,12 +109,6 @@
       "orcid": "0000-0001-9813-3167",
       "affiliation": "Department of Psychology, Florida International University, FL, USA",
       "name": "Taylor Salo",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-7252-7771",
-      "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Mathias Goncalves",
       "type": "Researcher"
     },
     {
@@ -155,6 +166,12 @@
       "orcid": "0000-0003-3748-6289",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Daniel Birman",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-3896-6906",
+      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
+      "name": "Elodie Savary",
       "type": "Researcher"
     },
     {

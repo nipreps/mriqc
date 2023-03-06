@@ -417,7 +417,7 @@ def wm2max(img, mu_wm):
 def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
+    Calculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
     corrupted by artifacts normalized by the number of voxels in the "*hat*"
     mask (i.e., the background region above the nasio-occipital plane):
 
@@ -459,7 +459,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
-    from mriqc.viz.utils import plot_qi2
+    from nireports.reportlets.nuisance import plot_qi2
     from scipy.stats import chi2
     from sklearn.neighbors import KernelDensity
 
@@ -607,8 +607,8 @@ def summary_stats(img, pvms, airmask=None, erode=True):
         mask[stats_pvms[lid] > 0.85] = 1
 
         if erode:
-            struc = nd.generate_binary_structure(3, 2)
-            mask = nd.binary_erosion(mask, structure=struc).astype(np.uint8)
+            struct = nd.generate_binary_structure(3, 2)
+            mask = nd.binary_erosion(mask, structure=struct).astype(np.uint8)
 
         nvox = float(mask.sum())
         if nvox < 1e3:
@@ -660,8 +660,8 @@ def _prepare_mask(mask, label, erode=True):
 
     if erode:
         # Create a structural element to be used in an opening operation.
-        struc = nd.generate_binary_structure(3, 2)
+        struct = nd.generate_binary_structure(3, 2)
         # Perform an opening operation on the background data.
-        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+        fgmask = nd.binary_opening(fgmask, structure=struct).astype(np.uint8)
 
     return fgmask

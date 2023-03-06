@@ -159,8 +159,8 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
             sl[sl > 0] = 1
 
             # Erode peaks and see how many survive
-            struc = generate_binary_structure(2, 2)
-            sl = binary_erosion(sl.astype(np.uint8), structure=struc).astype(np.uint8)
+            struct = generate_binary_structure(2, 2)
+            sl = binary_erosion(sl.astype(np.uint8), structure=struct).astype(np.uint8)
 
             if sl.sum() > 10:
                 spikes_list.append((t, z))

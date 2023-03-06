@@ -45,6 +45,7 @@ from mriqc import config
 from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+from mriqc.interfaces.datalad import DataladIdentityInterface
 
 
 def fmri_qc_workflow(name="funcMRIQC"):
@@ -63,21 +64,32 @@ def fmri_qc_workflow(name="funcMRIQC"):
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from nipype.interfaces.afni import TStat
     from niworkflows.interfaces.header import SanitizeImage
+    from mriqc.messages import BUILDING_WORKFLOW
 
     workflow = pe.Workflow(name=name)
 
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get("bold", [])
-    config.loggers.workflow.info(
-        f"""\
-Building functional MRIQC workflow for files: {", ".join(dataset)}."""
+
+    message = BUILDING_WORKFLOW.format(
+        modality="functional",
+        detail=(
+            f"for {len(dataset)} NIfTI files." if len(dataset) > 2
+            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+        ),
     )
+    config.loggers.workflow.info(message)
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
+
+    datalad_get = pe.Node(DataladIdentityInterface(
+        fields=["in_file"],
+        dataset_path=config.execution.bids_dir
+    ), name="datalad_get")
 
     outputnode = pe.Node(
         niu.IdentityInterface(
@@ -122,9 +134,10 @@ Building functional MRIQC workflow for files: {", ".join(dataset)}."""
     # fmt: off
 
     workflow.connect([
-        (inputnode, iqmswf, [("in_file", "inputnode.in_file")]),
-        (inputnode, sanitize, [("in_file", "in_file")]),
-        (inputnode, non_steady_state_detector, [("in_file", "in_file")]),
+        (inputnode, datalad_get, [("in_file", "in_file")]),
+        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
+        (datalad_get, sanitize, [("in_file", "in_file")]),
+        (datalad_get, non_steady_state_detector, [("in_file", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
@@ -432,7 +445,8 @@ def individual_reports(name="ReportsWorkflow"):
     from niworkflows.interfaces.plotting import FMRISummary
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
-    from mriqc.interfaces import PlotMosaic, PlotSpikes, Spikes
+    from nireports.interfaces.viz import PlotMosaic, PlotSpikes
+    from mriqc.interfaces.functional import Spikes
     from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -603,7 +617,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     # Verbose-reporting goes here
-    from ..interfaces.viz import PlotContours
+    from nireports.interfaces.viz import PlotContours
 
     plot_bmask = pe.Node(
         PlotContours(

@@ -48,7 +48,7 @@ SetOrientation 0
 # 20    Focus Frame
 # 21    Undoable Voxels
 # 22    Axes
-# 23    Maximum Intensity Porjection
+# 23    Maximum Intensity Projection
 # 24    Head Points
 # 25    Verbose GCA DumpSetDisplayFlag 
 
