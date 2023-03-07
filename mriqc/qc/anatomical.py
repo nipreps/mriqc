@@ -603,7 +603,7 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     output = {}
     for k, lid in labels:
-        mask = np.where(stats_pvms[lid] > 0.85)
+        mask = stats_pvms[lid] > 0.85
         nvox = mask.sum()
 
         if erode and nvox > 2e3:
