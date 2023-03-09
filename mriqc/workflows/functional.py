@@ -445,7 +445,7 @@ def individual_reports(name="ReportsWorkflow"):
     from niworkflows.interfaces.plotting import FMRISummary
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
-    from nireports.interfaces.viz import PlotMosaic, PlotSpikes
+    from nireports.interfaces import PlotMosaic, PlotSpikes
     from mriqc.interfaces.functional import Spikes
     from mriqc.interfaces.reports import IndividualReport
 
@@ -617,7 +617,7 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     # Verbose-reporting goes here
-    from nireports.interfaces.viz import PlotContours
+    from nireports.interfaces import PlotContours
 
     plot_bmask = pe.Node(
         PlotContours(

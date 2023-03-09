@@ -29,7 +29,7 @@ dependencies = [
     "nibabel >= 3.0.1,<4.0",
     "nilearn >= 0.5.1",
     "nipype ~= 1.4",
-    "nireports >= 0.2.0",
+    "nireports @ git+https://github.com/nipreps/nireports.git@main",
     "nitransforms >= 21.0.1",
     "niworkflows ~= 1.7.1",
     "numpy ~=1.20",
