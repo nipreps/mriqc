@@ -5,10 +5,12 @@ Probably, the most relevant is **the optimization of the indexing** of the input
 which was taking large times with sizeable datasets.
 Another relevant addition is inclusion of telemetry with *migas*.
 
+* FIX: Uniformize building workflow message (anat vs. func) (#1072)
 * FIX: Move telemetry atexit into entrypoint func (#1067)
 * FIX: Preempt PyBIDS to spend time indexing non-BIDS folders (#1050)
 * FIX: Update T1w metrics (#1063)
 * FIX: Resource monitor would not ever start tracking (#1051)
+* ENH: Add DataLad getter to inputs of functional workflows (#1071)
 * ENH: Add migas telemetry (#1036)
 * ENH: Add codespell automation: config, action, and typos fixed (#1057)
 * MAINT: Conclude porting of reportlets into NiReports (#1068)
