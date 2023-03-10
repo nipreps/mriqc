@@ -364,7 +364,8 @@ def compute_iqms(name="ComputeIQMs"):
     # fmt: on
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(), name="metadata", run_without_submitting=True)
+    meta = pe.Node(ReadSidecarJSON(), name="metadata")
+
     addprov = pe.Node(
         AddProvenance(modality="bold"),
         name="provenance",
