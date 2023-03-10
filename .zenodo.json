@@ -8,9 +8,19 @@
       "name": "Oscar Esteban"
     },
     {
+      "orcid": "0000-0001-7159-1387",
+      "affiliation": "Sagol School of Neuroscience, Tel Aviv University, Tel Aviv, Israel",
+      "name": "Zvi Baratz"
+    },
+    {
       "orcid": "0000-0002-6533-164X",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Christopher J. Markiewicz"
+    },
+    {
+      "orcid": "0000-0003-3715-7012",
+      "affiliation": "Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK",
+      "name": "Eilidh MacNicol"
     },
     {
       "orcid": "0000-0002-1668-9629",
@@ -24,24 +34,6 @@
     }
   ],
   "contributors": [
-    {
-      "orcid": "0000-0003-3321-7583",
-      "affiliation": "Google LLC",
-      "name": "Krzysztof J. Gorgolewski",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0001-7159-1387",
-      "affiliation": "Sagol School of Neuroscience, Tel-Aviv University",
-      "name": "Zvi Baratz",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0003-3715-7012",
-      "affiliation": "Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK",
-      "name": "Eilidh MacNicol",
-      "type": "Researcher"
-    },
     {
       "orcid": "0000-0003-4613-6643",
       "affiliation": "Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA",
@@ -152,6 +144,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0003-0679-1985",
+      "affiliation": "The University of Washington eScience Institute, WA, USA",
+      "name": "Ariel Rokem",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0002-9402-2184",
       "affiliation": "Computational Neuroimaging Lab, BioCruces Health Research Institute",
       "name": "Asier Erramuzpe",
@@ -180,15 +178,15 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-9332-1580",
-      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
-      "name": "Rafael Garcia-Dias",
+      "orcid": "0000-0003-4141-1343",
+      "affiliation": "Johns Hopkins Bloomberg School of Public Health, MD, USA",
+      "name": "Patrick Sadil",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-8179-6511",
-      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
-      "name": "Sean Marret",
+      "orcid": "0000-0001-9332-1580",
+      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
+      "name": "Rafael Garcia-Dias",
       "type": "Researcher"
     },
     {
