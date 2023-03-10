@@ -532,7 +532,6 @@ def individual_reports(name="ReportsWorkflow"):
         PlotMosaic(
             out_file="plot_func_mean_mosaic1.svg",
             cmap="Greys_r",
-            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicMean",
     )
@@ -541,7 +540,6 @@ def individual_reports(name="ReportsWorkflow"):
         PlotMosaic(
             out_file="plot_func_stddev_mosaic2_stddev.svg",
             cmap="viridis",
-            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicSD",
     )
@@ -614,7 +612,6 @@ def individual_reports(name="ReportsWorkflow"):
         PlotMosaic(
             out_file="plot_anat_mosaic1_zoomed.svg",
             cmap="Greys_r",
-            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicZoomed",
     )
@@ -624,17 +621,22 @@ def individual_reports(name="ReportsWorkflow"):
             out_file="plot_anat_mosaic2_noise.svg",
             only_noise=True,
             cmap="viridis_r",
-            species=config.workflow.species.lower(),
         ),
         name="PlotMosaicNoise",
     )
+
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_mean.inputs.view = ("coronal", "axial")
+        mosaic_stddev.inputs.view = ("coronal", "axial")
+        mosaic_zoom.inputs.view = ("coronal", "axial")
+        mosaic_noise.inputs.view = ("coronal", "axial")
 
     # Verbose-reporting goes here
     from nireports.interfaces import PlotContours
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="y" if config.workflow.species.lower() == "rat" else "z",
+            display_mode="y" if config.workflow.species.lower() in ("rat", "mouse") else "z",
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
