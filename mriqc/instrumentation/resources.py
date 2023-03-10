@@ -120,7 +120,7 @@ def sample2file(
 
 
 class ResourceRecorder(Process):
-    """Attach a ``Thread`` to sample a specific PID with a certain frequence."""
+    """Attach a ``Thread`` to sample a specific PID with a certain frequency."""
 
     def __init__(
         self, pid, frequency=0.2, log_file=None, exclude_probe=True, **process_kwargs
