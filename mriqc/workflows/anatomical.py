@@ -533,7 +533,10 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     mosaic_zoom = pe.Node(
-        PlotMosaic(out_file="plot_anat_mosaic1_zoomed.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_anat_mosaic1_zoomed.svg",
+            cmap="Greys_r",
+        ),
         name="PlotMosaicZoomed",
     )
 
@@ -545,6 +548,9 @@ def individual_reports(name="ReportsWorkflow"):
         ),
         name="PlotMosaicNoise",
     )
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_zoom.inputs.view = ("coronal", "axial")
+        mosaic_noise.inputs.view = ("coronal", "axial")
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name="MergePlots")
     rnode = pe.Node(IndividualReport(), name="GenerateReport")
@@ -577,9 +583,10 @@ def individual_reports(name="ReportsWorkflow"):
 
     from nireports.interfaces import PlotContours
 
+    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "z"
     plot_segm = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode=display_mode,
             levels=[0.5, 1.5, 2.5],
             cut_coords=10,
             colors=["r", "g", "b"],
@@ -589,7 +596,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
@@ -597,9 +604,24 @@ def individual_reports(name="ReportsWorkflow"):
         ),
         name="PlotBrainmask",
     )
+
+    plot_artmask = pe.Node(
+        PlotContours(
+            display_mode=display_mode,
+            levels=[0.5],
+            colors=["r"],
+            cut_coords=10,
+            out_file="artmask",
+            saturate=True,
+        ),
+        name="PlotArtmask",
+    )
+
+    # NOTE: humans switch on these two to coronal view.
+    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "x"
     plot_airmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
@@ -609,24 +631,13 @@ def individual_reports(name="ReportsWorkflow"):
     )
     plot_headmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
             out_file="headmask",
         ),
         name="PlotHeadmask",
-    )
-    plot_artmask = pe.Node(
-        PlotContours(
-            display_mode="z",
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=10,
-            out_file="artmask",
-            saturate=True,
-        ),
-        name="PlotArtmask",
     )
 
     # fmt: off
