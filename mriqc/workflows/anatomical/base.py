@@ -351,8 +351,8 @@ def compute_iqms(name="ComputeIQMs"):
     """
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from ..interfaces.anatomical import Harmonize
-    from .utils import _tofloat
+    from mriqc.interfaces.anatomical import Harmonize
+    from mriqc.workflows.utils import _tofloat
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
@@ -507,7 +507,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     """
     from nireports.interfaces import PlotMosaic
-    from ..interfaces.reports import IndividualReport
+    from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
     pages = 2
