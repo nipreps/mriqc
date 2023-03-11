@@ -76,7 +76,8 @@ def fmri_qc_workflow(name="funcMRIQC"):
     message = BUILDING_WORKFLOW.format(
         modality="functional",
         detail=(
-            f"for {len(dataset)} NIfTI files." if len(dataset) > 2
+            f"for {len(dataset)} NIfTI files."
+            if len(dataset) > 2
             else f"({' and '.join(('<%s>' % v for v in dataset))})."
         ),
     )
@@ -87,21 +88,17 @@ def fmri_qc_workflow(name="funcMRIQC"):
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
-    datalad_get = pe.Node(DataladIdentityInterface(
-        fields=["in_file"],
-        dataset_path=config.execution.bids_dir
-    ), name="datalad_get")
+    datalad_get = pe.Node(
+        DataladIdentityInterface(fields=["in_file"], dataset_path=config.execution.bids_dir),
+        name="datalad_get",
+    )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]
-        ),
+        niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
         name="outputnode",
     )
 
-    non_steady_state_detector = pe.Node(
-        NonSteadyStateDetector(), name="non_steady_state_detector"
-    )
+    non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
 
     sanitize = pe.Node(SanitizeImage(), name="sanitize", mem_gb=mem_gb * 4.0)
     sanitize.inputs.max_32bit = config.execution.float32
@@ -217,9 +214,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         ])
         # fmt: on
         if config.workflow.ica:
-            workflow.connect(
-                [(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])]
-            )
+            workflow.connect([(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])])
 
     else:
         from mriqc.workflows.anatomical.base import _binarize
@@ -242,9 +237,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         # fmt: on
 
         if config.workflow.ica:
-            workflow.connect(
-                [(binarise_labels, melodic, [("out_file", "report_mask")])]
-            )
+            workflow.connect([(binarise_labels, melodic, [("out_file", "report_mask")])])
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -499,9 +492,7 @@ def hmc(name="fMRI_HMC"):
         name="inputnode",
     )
 
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode"
-    )
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     # calculate hmc parameters
     hmc = pe.Node(
@@ -600,9 +591,7 @@ def epi_mni_align(name="SpatialNormalization"):
         name="outputnode",
     )
 
-    n4itk = pe.Node(
-        N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI"
-    )
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI")
 
     norm = pe.Node(
         RobustMNINormalization(
@@ -638,9 +627,7 @@ def epi_mni_align(name="SpatialNormalization"):
 
         n4itk.inputs.shrink_factor = 1
         n4itk.inputs.n_iterations = [50] * 4
-        norm.inputs.reference_image = str(
-            get_template(config.workflow.template_id, suffix="T2w")
-        )
+        norm.inputs.reference_image = str(get_template(config.workflow.template_id, suffix="T2w"))
         norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
@@ -649,9 +636,7 @@ def epi_mni_align(name="SpatialNormalization"):
             )[0]
         )
 
-        bspline_grid = pe.Node(
-            niu.Function(function=_bspline_grid), name="bspline_grid"
-        )
+        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name="bspline_grid")
 
         # fmt: off
         workflow.connect([

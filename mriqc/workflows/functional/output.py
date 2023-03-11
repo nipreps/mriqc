@@ -45,6 +45,7 @@ def init_func_report_wf(name="func_report_wf"):
 
     from nireports.interfaces import PlotMosaic, PlotSpikes
     from mriqc.interfaces.functional import Spikes
+
     # from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -363,9 +364,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         longest_axis = np.argmax(bbox)
 
         # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(
-            mask_data, iterations=int(mask_data.shape[longest_axis] / 9)
-        )
+        dil_mask = nd.binary_dilation(mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
 
         rep = list(mask_data.shape)
         rep[longest_axis] = -1
@@ -384,9 +383,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         new_mask_3d[:, 0:2, :] = True
         new_mask_3d[:, -3:-1, :] = True
 
-    mask_nii = nb.Nifti1Image(
-        new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header
-    )
+    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header)
     mask_nii.to_filename(out_file)
 
     plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
