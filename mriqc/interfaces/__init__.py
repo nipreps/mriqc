@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """mriqc nipype interfaces """
+from niworkflows.interfaces.bids import DerivativesDataSink as _DDSink
 
 from mriqc.interfaces.anatomical import (
     ArtifactMask,
@@ -34,10 +35,16 @@ from mriqc.interfaces.common import ConformImage, EnsureSize
 from mriqc.interfaces.functional import FunctionalQC, Spikes
 from mriqc.interfaces.webapi import UploadIQMs
 
+
+class DerivativesDataSink(_DDSink):
+    out_path_base = ""
+
+
 __all__ = [
     "ArtifactMask",
     "ComputeQI2",
     "ConformImage",
+    "DerivativesDataSink",
     "EnsureSize",
     "FunctionalQC",
     "Harmonize",

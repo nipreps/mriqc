@@ -36,7 +36,8 @@ The anatomical workflow follows the following steps:
 #. Calculate air mask above the nasial-cerebelum plane -- :py:func:`airmsk_wf`.
 #. Brain tissue segmentation (FAST).
 #. Extraction of IQMs -- :py:func:`compute_iqms`.
-#. Individual-reports generation -- :py:func:`individual_reports`.
+#. Individual-reports generation --
+   :py:func:`~mriqc.workflows.anatomical.output.init_anat_report_wf`.
 
 This workflow is orchestrated by :py:func:`anat_qc_workflow`.
 
@@ -63,8 +64,8 @@ from mriqc.interfaces.reports import AddProvenance
 from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.messages import BUILDING_WORKFLOW
 from mriqc.workflows.utils import get_fwhmx
+from mriqc.workflows.anatomical.output import init_anat_report_wf
 from nipype.interfaces import ants, fsl
-from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from templateflow.api import get as get_template
@@ -78,7 +79,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     .. workflow::
 
         import os.path as op
-        from mriqc.workflows.anatomical import anat_qc_workflow
+        from mriqc.workflows.anatomical.base import anat_qc_workflow
         from mriqc.testing import mock_config
         with mock_config():
             wf = anat_qc_workflow()
@@ -196,12 +197,15 @@ def anat_qc_workflow(name="anatMRIQC"):
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
-    repwf = individual_reports()
+    anat_report_wf = init_anat_report_wf()
 
     # Connect all nodes
     # fmt: off
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
+        (inputnode, anat_report_wf, [
+            ("in_file", "inputnode.name_source"),
+        ]),
         (datalad_get, to_ras, [("in_file", "in_file")]),
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, norm, [(("in_file", _get_mod), "inputnode.modality")]),
@@ -216,7 +220,7 @@ def anat_qc_workflow(name="anatMRIQC"):
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, iqmswf, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
-        (norm, repwf, ([
+        (norm, anat_report_wf, ([
             ("outputnode.out_report", "inputnode.mni_report")])),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
         (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
@@ -232,17 +236,19 @@ def anat_qc_workflow(name="anatMRIQC"):
         (segment, iqmswf, [(dseg_out, "inputnode.segmentation"),
                            (pve_out, "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
-        (to_ras, repwf, [("out_file", "inputnode.in_ras")]),
-        (skull_stripping, repwf, [
+        (to_ras, anat_report_wf, [("out_file", "inputnode.in_ras")]),
+        (skull_stripping, anat_report_wf, [
             ("outputnode.out_corrected", "inputnode.inu_corrected"),
             ("outputnode.out_mask", "inputnode.brainmask")]),
-        (hmsk, repwf, [("outputnode.out_file", "inputnode.headmask")]),
-        (amw, repwf, [("outputnode.air_mask", "inputnode.airmask"),
-                      ("outputnode.art_mask", "inputnode.artmask"),
-                      ("outputnode.rot_mask", "inputnode.rotmask")]),
-        (segment, repwf, [(dseg_out, "inputnode.segmentation")]),
-        (iqmswf, repwf, [("outputnode.noisefit", "inputnode.noisefit")]),
-        (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms")]),
+        (hmsk, anat_report_wf, [("outputnode.out_file", "inputnode.headmask")]),
+        (amw, anat_report_wf, [
+            ("outputnode.air_mask", "inputnode.airmask"),
+            ("outputnode.art_mask", "inputnode.artmask"),
+            ("outputnode.rot_mask", "inputnode.rotmask"),
+        ]),
+        (segment, anat_report_wf, [(dseg_out, "inputnode.segmentation")]),
+        (iqmswf, anat_report_wf, [("outputnode.noisefit", "inputnode.noisefit")]),
+        (iqmswf, anat_report_wf, [("outputnode.out_file", "inputnode.in_iqms")]),
         (iqmswf, outputnode, [("outputnode.out_file", "out_json")]),
     ])
 
@@ -262,7 +268,7 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     # Upload metrics
     if not config.execution.no_sub:
-        from ..interfaces.webapi import UploadIQMs
+        from mriqc.interfaces.webapi import UploadIQMs
 
         upldwf = pe.Node(UploadIQMs(), name="UploadMetrics")
         upldwf.inputs.url = config.execution.webapi_url
@@ -273,7 +279,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         # fmt: off
         workflow.connect([
             (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
-            (upldwf, repwf, [("api_id", "inputnode.api_id")]),
+            (upldwf, anat_report_wf, [("api_id", "inputnode.api_id")]),
         ])
         # fmt: on
 
@@ -343,7 +349,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     .. workflow::
 
-        from mriqc.workflows.anatomical import compute_iqms
+        from mriqc.workflows.anatomical.base import compute_iqms
         from mriqc.testing import mock_config
         with mock_config():
             wf = compute_iqms()
@@ -494,179 +500,6 @@ def compute_iqms(name="ComputeIQMs"):
     return workflow
 
 
-def individual_reports(name="ReportsWorkflow"):
-    """
-    Generate the components of the individual report.
-
-    .. workflow::
-
-        from mriqc.workflows.anatomical import individual_reports
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = individual_reports()
-
-    """
-    from nireports.interfaces import PlotMosaic
-    from mriqc.interfaces.reports import IndividualReport
-
-    verbose = config.execution.verbose_reports
-    pages = 2
-    extra_pages = int(verbose) * 7
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=[
-                "in_ras",
-                "brainmask",
-                "headmask",
-                "airmask",
-                "artmask",
-                "rotmask",
-                "segmentation",
-                "inu_corrected",
-                "noisefit",
-                "in_iqms",
-                "mni_report",
-                "api_id",
-            ]
-        ),
-        name="inputnode",
-    )
-
-    mosaic_zoom = pe.Node(
-        PlotMosaic(
-            out_file="plot_anat_mosaic1_zoomed.svg",
-            cmap="Greys_r",
-        ),
-        name="PlotMosaicZoomed",
-    )
-
-    mosaic_noise = pe.Node(
-        PlotMosaic(
-            out_file="plot_anat_mosaic2_noise.svg",
-            only_noise=True,
-            cmap="viridis_r",
-        ),
-        name="PlotMosaicNoise",
-    )
-    if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_zoom.inputs.view = ("coronal", "axial")
-        mosaic_noise.inputs.view = ("coronal", "axial")
-
-    mplots = pe.Node(niu.Merge(pages + extra_pages), name="MergePlots")
-    rnode = pe.Node(IndividualReport(), name="GenerateReport")
-
-    # Link images that should be reported
-    dsplots = pe.Node(
-        nio.DataSink(
-            base_directory=str(config.execution.output_dir),
-            parameterization=False,
-        ),
-        name="dsplots",
-        run_without_submitting=True,
-    )
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, rnode, [("in_iqms", "in_iqms")]),
-        (inputnode, mosaic_zoom, [("in_ras", "in_file"),
-                                  ("brainmask", "bbox_mask_file")]),
-        (inputnode, mosaic_noise, [("in_ras", "in_file")]),
-        (mosaic_zoom, mplots, [("out_file", "in1")]),
-        (mosaic_noise, mplots, [("out_file", "in2")]),
-        (mplots, rnode, [("out", "in_plots")]),
-        (rnode, dsplots, [("out_file", "@html_report")]),
-    ])
-    # fmt: on
-
-    if not verbose:
-        return workflow
-
-    from nireports.interfaces import PlotContours
-
-    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "z"
-    plot_segm = pe.Node(
-        PlotContours(
-            display_mode=display_mode,
-            levels=[0.5, 1.5, 2.5],
-            cut_coords=10,
-            colors=["r", "g", "b"],
-        ),
-        name="PlotSegmentation",
-    )
-
-    plot_bmask = pe.Node(
-        PlotContours(
-            display_mode=display_mode,
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=10,
-            out_file="bmask",
-        ),
-        name="PlotBrainmask",
-    )
-
-    plot_artmask = pe.Node(
-        PlotContours(
-            display_mode=display_mode,
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=10,
-            out_file="artmask",
-            saturate=True,
-        ),
-        name="PlotArtmask",
-    )
-
-    # NOTE: humans switch on these two to coronal view.
-    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "x"
-    plot_airmask = pe.Node(
-        PlotContours(
-            display_mode=display_mode,
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=6,
-            out_file="airmask",
-        ),
-        name="PlotAirmask",
-    )
-    plot_headmask = pe.Node(
-        PlotContours(
-            display_mode=display_mode,
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=6,
-            out_file="headmask",
-        ),
-        name="PlotHeadmask",
-    )
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, plot_segm, [("in_ras", "in_file"),
-                                ("segmentation", "in_contours")]),
-        (inputnode, plot_bmask, [("in_ras", "in_file"),
-                                 ("brainmask", "in_contours")]),
-        (inputnode, plot_headmask, [("in_ras", "in_file"),
-                                    ("headmask", "in_contours")]),
-        (inputnode, plot_airmask, [("in_ras", "in_file"),
-                                   ("airmask", "in_contours")]),
-        (inputnode, plot_artmask, [("in_ras", "in_file"),
-                                   ("artmask", "in_contours")]),
-        (inputnode, mplots, [("mni_report", f"in{pages + 1}")]),
-        (plot_bmask, mplots, [("out_file", f"in{pages + 2}")]),
-        (plot_segm, mplots, [("out_file", f"in{pages + 3}")]),
-        (plot_artmask, mplots, [("out_file", f"in{pages + 4}")]),
-        (plot_headmask, mplots, [("out_file", f"in{pages + 5}")]),
-        (plot_airmask, mplots, [("out_file", f"in{pages + 6}")]),
-        (inputnode, mplots, [("noisefit", f"in{pages + 7}")]),
-    ])
-    # fmt: on
-
-    return workflow
-
-
 def headmsk_wf(name="HeadMaskWorkflow"):
     """
     Computes a head mask as in [Mortamet2009]_.
@@ -674,7 +507,7 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     .. workflow::
 
         from mriqc.testing import mock_config
-        from mriqc.workflows.anatomical import headmsk_wf
+        from mriqc.workflows.anatomical.base import headmsk_wf
         with mock_config():
             wf = headmsk_wf()
 
@@ -793,7 +626,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
     .. workflow::
 
         from mriqc.testing import mock_config
-        from mriqc.workflows.anatomical import airmsk_wf
+        from mriqc.workflows.anatomical.base import airmsk_wf
         with mock_config():
             wf = airmsk_wf()
 
@@ -1003,7 +836,7 @@ def _enhance(in_file, out_file=None):
         out_file = op.abspath(f"{fname}_enhanced{ext}")
 
     imnii = nb.load(in_file)
-    data = imnii.get_fdata(dtype=np.float32)  # pylint: disable=no-member
+    data = imnii.get_fdata(dtype=np.float32)
     range_max = np.percentile(data[data > 0], 99.98)
     range_min = np.median(data[data > 0])
 
@@ -1042,7 +875,7 @@ def image_gradient(in_file, snr, sigma=3.0, out_file=None):
         out_file = op.abspath(f"{fname}_grad{ext}")
 
     imnii = nb.load(in_file)
-    data = imnii.get_fdata(dtype=np.float32)  # pylint: disable=no-member
+    data = imnii.get_fdata(dtype=np.float32)
     datamax = np.percentile(data.reshape(-1), 99.5)
     data *= 100 / datamax
     grad = gradient(data, sigma)

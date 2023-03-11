@@ -37,15 +37,16 @@ The functional workflow follows the following steps:
 #. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
 #. Spatial Normalization to MNI (ANTs) -- :py:func:`epi_mni_align`
 #. Extraction of IQMs -- :py:func:`compute_iqms`.
-#. Individual-reports generation -- :py:func:`individual_reports`.
+#. Individual-reports generation --
+   :py:func:`~mriqc.workflows.functional.output.init_func_report_wf`.
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 from mriqc import config
-from nipype.interfaces import io as nio
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from mriqc.interfaces.datalad import DataladIdentityInterface
+from mriqc.workflows.functional.output import init_func_report_wf
 
 
 def fmri_qc_workflow(name="funcMRIQC"):
@@ -55,7 +56,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     .. workflow::
 
         import os.path as op
-        from mriqc.workflows.functional import fmri_qc_workflow
+        from mriqc.workflows.functional.base import fmri_qc_workflow
         from mriqc.testing import mock_config
         with mock_config():
             wf = fmri_qc_workflow()
@@ -129,12 +130,15 @@ def fmri_qc_workflow(name="funcMRIQC"):
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
-    repwf = individual_reports()
+    func_report_wf = init_func_report_wf()
 
     # fmt: off
 
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
+        (inputnode, func_report_wf, [
+            ("in_file", "inputnode.name_source"),
+        ]),
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
         (datalad_get, non_steady_state_detector, [("in_file", "in_file")]),
@@ -148,18 +152,24 @@ def fmri_qc_workflow(name="funcMRIQC"):
         (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
                          ("outputnode.out_fd", "inputnode.hmc_fd")]),
         (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
-        (sanitize, repwf, [("out_file", "inputnode.in_ras")]),
-        (mean, repwf, [("out_file", "inputnode.epi_mean")]),
-        (tsnr, repwf, [("stddev_file", "inputnode.in_stddev")]),
-        (hmcwf, repwf, [("outputnode.out_fd", "inputnode.hmc_fd"),
-                        ("outputnode.out_file", "inputnode.hmc_epi")]),
-        (ema, repwf, [("outputnode.epi_parc", "inputnode.epi_parc"),
-                      ("outputnode.report", "inputnode.mni_report")]),
+        (sanitize, func_report_wf, [("out_file", "inputnode.in_ras")]),
+        (mean, func_report_wf, [("out_file", "inputnode.epi_mean")]),
+        (tsnr, func_report_wf, [("stddev_file", "inputnode.in_stddev")]),
+        (hmcwf, func_report_wf, [
+            ("outputnode.out_fd", "inputnode.hmc_fd"),
+            ("outputnode.out_file", "inputnode.hmc_epi"),
+        ]),
+        (ema, func_report_wf, [
+            ("outputnode.epi_parc", "inputnode.epi_parc"),
+            ("outputnode.report", "inputnode.mni_report"),
+        ]),
         (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
-        (iqmswf, repwf, [("outputnode.out_file", "inputnode.in_iqms"),
-                         ("outputnode.out_dvars", "inputnode.in_dvars"),
-                         ("outputnode.outliers", "inputnode.outliers"),
-                         ("outputnode.meta_sidecar", "inputnode.meta_sidecar")]),
+        (iqmswf, func_report_wf, [
+            ("outputnode.out_file", "inputnode.in_iqms"),
+            ("outputnode.out_dvars", "inputnode.in_dvars"),
+            ("outputnode.outliers", "inputnode.outliers"),
+            ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
+        ]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
     ])
     # fmt: on
@@ -167,8 +177,10 @@ def fmri_qc_workflow(name="funcMRIQC"):
     if config.workflow.fft_spikes_detector:
         # fmt: off
         workflow.connect([
-            (iqmswf, repwf, [("outputnode.out_spikes", "inputnode.in_spikes"),
-                             ("outputnode.out_fft", "inputnode.in_fft")]),
+            (iqmswf, func_report_wf, [
+                ("outputnode.out_spikes", "inputnode.in_spikes"),
+                ("outputnode.out_fft", "inputnode.in_fft"),
+            ]),
         ])
         # fmt: on
 
@@ -189,7 +201,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         # fmt: off
         workflow.connect([
             (sanitize, melodic, [("out_file", "in_files")]),
-            (melodic, repwf, [("out_report", "inputnode.ica_report")])
+            (melodic, func_report_wf, [("out_report", "inputnode.ica_report")])
         ])
         # fmt: on
 
@@ -201,7 +213,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
             (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
             (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
             (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
-            (skullstrip_epi, repwf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (skullstrip_epi, func_report_wf, [("outputnode.out_file", "inputnode.brainmask")]),
         ])
         # fmt: on
         if config.workflow.ica:
@@ -210,7 +222,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
             )
 
     else:
-        from .anatomical import _binarize
+        from mriqc.workflows.anatomical.base import _binarize
 
         binarise_labels = pe.Node(
             niu.Function(
@@ -225,7 +237,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         workflow.connect([
             (ema, binarise_labels, [("outputnode.epi_parc", "in_file")]),
             (binarise_labels, iqmswf, [("out_file", "inputnode.brainmask")]),
-            (binarise_labels, repwf, [("out_file", "inputnode.brainmask")])
+            (binarise_labels, func_report_wf, [("out_file", "inputnode.brainmask")])
         ])
         # fmt: on
 
@@ -259,7 +271,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     .. workflow::
 
-        from mriqc.workflows.functional import compute_iqms
+        from mriqc.workflows.functional.base import compute_iqms
         from mriqc.testing import mock_config
         with mock_config():
             wf = compute_iqms()
@@ -410,7 +422,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     # FFT spikes finder
     if config.workflow.fft_spikes_detector:
-        from .utils import slice_wise_fft
+        from mriqc.workflows.utils import slice_wise_fft
 
         spikes_fft = pe.Node(
             niu.Function(
@@ -433,245 +445,13 @@ def compute_iqms(name="ComputeIQMs"):
     return workflow
 
 
-def individual_reports(name="ReportsWorkflow"):
-    """
-    Write out individual reportlets.
-
-    .. workflow::
-
-        from mriqc.workflows.functional import individual_reports
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = individual_reports()
-
-    """
-    from niworkflows.interfaces.plotting import FMRISummary
-    from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
-
-    from nireports.interfaces import PlotMosaic, PlotSpikes
-    from mriqc.interfaces.functional import Spikes
-    from mriqc.interfaces.reports import IndividualReport
-
-    verbose = config.execution.verbose_reports
-    mem_gb = config.workflow.biggest_file_gb
-
-    pages = 5
-    extra_pages = int(verbose) * 4
-
-    workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=[
-                "in_iqms",
-                "in_ras",
-                "hmc_epi",
-                "epi_mean",
-                "brainmask",
-                "hmc_fd",
-                "fd_thres",
-                "epi_parc",
-                "in_dvars",
-                "in_stddev",
-                "outliers",
-                "in_spikes",
-                "in_fft",
-                "mni_report",
-                "ica_report",
-                "meta_sidecar",
-            ]
-        ),
-        name="inputnode",
-    )
-
-    # Set FD threshold
-    inputnode.inputs.fd_thres = config.workflow.fd_thres
-
-    spmask = pe.Node(
-        niu.Function(
-            input_names=["in_file", "in_mask"],
-            output_names=["out_file", "out_plot"],
-            function=spikes_mask,
-        ),
-        name="SpikesMask",
-        mem_gb=mem_gb * 3.5,
-    )
-
-    spikes_bg = pe.Node(
-        Spikes(no_zscore=True, detrend=False),
-        name="SpikesFinderBgMask",
-        mem_gb=mem_gb * 2.5,
-    )
-
-    # Generate crown mask
-    # Create the crown mask
-    dilated_mask = pe.Node(BinaryDilation(), name="dilated_mask")
-    subtract_mask = pe.Node(BinarySubtraction(), name="subtract_mask")
-    parcels = pe.Node(niu.Function(function=_carpet_parcellation), name="parcels")
-
-    bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, spikes_bg, [("in_ras", "in_file")]),
-        (inputnode, spmask, [("in_ras", "in_file")]),
-        (inputnode, bigplot, [("hmc_epi", "in_func"),
-                              ("hmc_fd", "fd"),
-                              ("fd_thres", "fd_thres"),
-                              ("in_dvars", "dvars"),
-                              ("outliers", "outliers"),
-                              (("meta_sidecar", _get_tr), "tr")]),
-        (inputnode, parcels, [("epi_parc", "segmentation")]),
-        (inputnode, dilated_mask, [("brainmask", "in_mask")]),
-        (inputnode, subtract_mask, [("brainmask", "in_subtract")]),
-        (dilated_mask, subtract_mask, [("out_mask", "in_base")]),
-        (subtract_mask, parcels, [("out_mask", "crown_mask")]),
-        (parcels, bigplot, [("out", "in_segm")]),
-        (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
-        (spmask, spikes_bg, [("out_file", "in_mask")]),
-    ])
-    # fmt: on
-
-    mosaic_mean = pe.Node(
-        PlotMosaic(
-            out_file="plot_func_mean_mosaic1.svg",
-            cmap="Greys_r",
-        ),
-        name="PlotMosaicMean",
-    )
-
-    mosaic_stddev = pe.Node(
-        PlotMosaic(
-            out_file="plot_func_stddev_mosaic2_stddev.svg",
-            cmap="viridis",
-        ),
-        name="PlotMosaicSD",
-    )
-
-    mplots = pe.Node(
-        niu.Merge(
-            pages
-            + extra_pages
-            + int(config.workflow.fft_spikes_detector)
-            + int(config.workflow.ica)
-        ),
-        name="MergePlots",
-    )
-    rnode = pe.Node(IndividualReport(), name="GenerateReport")
-
-    # Link images that should be reported
-    dsplots = pe.Node(
-        nio.DataSink(
-            base_directory=str(config.execution.output_dir),
-            parameterization=False,
-        ),
-        name="dsplots",
-        run_without_submitting=True,
-    )
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, rnode, [("in_iqms", "in_iqms")]),
-        (inputnode, mosaic_mean, [("epi_mean", "in_file")]),
-        (inputnode, mosaic_stddev, [("in_stddev", "in_file")]),
-        (mosaic_mean, mplots, [("out_file", "in1")]),
-        (mosaic_stddev, mplots, [("out_file", "in2")]),
-        (bigplot, mplots, [("out_file", "in3")]),
-        (mplots, rnode, [("out", "in_plots")]),
-        (rnode, dsplots, [("out_file", "@html_report")]),
-    ])
-    # fmt: on
-
-    if config.workflow.fft_spikes_detector:
-        mosaic_spikes = pe.Node(
-            PlotSpikes(
-                out_file="plot_spikes.svg",
-                cmap="viridis",
-                title="High-Frequency spikes",
-            ),
-            name="PlotSpikes",
-        )
-
-        # fmt: off
-        workflow.connect([
-            (inputnode, mosaic_spikes, [("in_ras", "in_file"),
-                                        ("in_spikes", "in_spikes"),
-                                        ("in_fft", "in_fft")]),
-            (mosaic_spikes, mplots, [("out_file", "in4")])
-        ])
-        # fmt: on
-
-    if config.workflow.ica:
-        page_number = 4 + config.workflow.fft_spikes_detector
-        # fmt: off
-        workflow.connect([
-            (inputnode, mplots, [("ica_report", "in%d" % page_number)])
-        ])
-        # fmt: on
-
-    if not verbose:
-        return workflow
-
-    mosaic_zoom = pe.Node(
-        PlotMosaic(
-            out_file="plot_anat_mosaic1_zoomed.svg",
-            cmap="Greys_r",
-        ),
-        name="PlotMosaicZoomed",
-    )
-
-    mosaic_noise = pe.Node(
-        PlotMosaic(
-            out_file="plot_anat_mosaic2_noise.svg",
-            only_noise=True,
-            cmap="viridis_r",
-        ),
-        name="PlotMosaicNoise",
-    )
-
-    if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_mean.inputs.view = ("coronal", "axial")
-        mosaic_stddev.inputs.view = ("coronal", "axial")
-        mosaic_zoom.inputs.view = ("coronal", "axial")
-        mosaic_noise.inputs.view = ("coronal", "axial")
-
-    # Verbose-reporting goes here
-    from nireports.interfaces import PlotContours
-
-    plot_bmask = pe.Node(
-        PlotContours(
-            display_mode="y" if config.workflow.species.lower() in ("rat", "mouse") else "z",
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=10,
-            out_file="bmask",
-        ),
-        name="PlotBrainmask",
-    )
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, plot_bmask, [("epi_mean", "in_file"),
-                                 ("brainmask", "in_contours")]),
-        (inputnode, mosaic_zoom, [("epi_mean", "in_file"),
-                                  ("brainmask", "bbox_mask_file")]),
-        (inputnode, mosaic_noise, [("epi_mean", "in_file")]),
-        (mosaic_zoom, mplots, [("out_file", "in%d" % (pages + 1))]),
-        (mosaic_noise, mplots, [("out_file", "in%d" % (pages + 2))]),
-        (plot_bmask, mplots, [("out_file", "in%d" % (pages + 3))]),
-        (inputnode, mplots, [("mni_report", "in%d" % (pages + 4))]),
-    ])
-    # fmt: on
-
-    return workflow
-
-
 def fmri_bmsk_workflow(name="fMRIBrainMask"):
     """
     Compute a brain mask for the input :abbr:`fMRI (functional MRI)` dataset.
 
     .. workflow::
 
-        from mriqc.workflows.functional import fmri_bmsk_workflow
+        from mriqc.workflows.functional.base import fmri_bmsk_workflow
         from mriqc.testing import mock_config
         with mock_config():
             wf = fmri_bmsk_workflow()
@@ -701,7 +481,7 @@ def hmc(name="fMRI_HMC"):
 
     .. workflow::
 
-        from mriqc.workflows.functional import hmc
+        from mriqc.workflows.functional.base import hmc
         from mriqc.testing import mock_config
         with mock_config():
             wf = hmc()
@@ -793,7 +573,7 @@ def epi_mni_align(name="SpatialNormalization"):
 
     .. workflow::
 
-        from mriqc.workflows.functional import epi_mni_align
+        from mriqc.workflows.functional.base import epi_mni_align
         from mriqc.testing import mock_config
         with mock_config():
             wf = epi_mni_align()
@@ -927,68 +707,6 @@ def epi_mni_align(name="SpatialNormalization"):
     return workflow
 
 
-def spikes_mask(in_file, in_mask=None, out_file=None):
-    """Calculate a mask in which check for :abbr:`EM (electromagnetic)` spikes."""
-    import os.path as op
-
-    import nibabel as nb
-    import numpy as np
-    from nilearn.image import mean_img
-    from nilearn.plotting import plot_roi
-    from scipy import ndimage as nd
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath("{}_spmask{}".format(fname, ext))
-        out_plot = op.abspath("{}_spmask.pdf".format(fname))
-
-    in_4d_nii = nb.load(in_file)
-    orientation = nb.aff2axcodes(in_4d_nii.affine)
-
-    if in_mask:
-        mask_data = np.asanyarray(nb.load(in_mask).dataobj)
-        a = np.where(mask_data != 0)
-        bbox = (
-            np.max(a[0]) - np.min(a[0]),
-            np.max(a[1]) - np.min(a[1]),
-            np.max(a[2]) - np.min(a[2]),
-        )
-        longest_axis = np.argmax(bbox)
-
-        # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(
-            mask_data, iterations=int(mask_data.shape[longest_axis] / 9)
-        )
-
-        rep = list(mask_data.shape)
-        rep[longest_axis] = -1
-        new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
-
-        rep = [1, 1, 1]
-        rep[longest_axis] = mask_data.shape[longest_axis]
-        new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
-    else:
-        new_mask_3d = np.zeros(in_4d_nii.shape[:3]) == 1
-
-    if orientation[0] in ["L", "R"]:
-        new_mask_3d[0:2, :, :] = True
-        new_mask_3d[-3:-1, :, :] = True
-    else:
-        new_mask_3d[:, 0:2, :] = True
-        new_mask_3d[:, -3:-1, :] = True
-
-    mask_nii = nb.Nifti1Image(
-        new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header
-    )
-    mask_nii.to_filename(out_file)
-
-    plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
-    return out_file, out_plot
-
-
 def _mean(inlist):
     import numpy as np
 
@@ -1008,31 +726,3 @@ def _parse_tout(in_file):
 
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
-
-
-def _carpet_parcellation(segmentation, crown_mask):
-    """Generate the union of two masks."""
-    from pathlib import Path
-    import numpy as np
-    import nibabel as nb
-
-    img = nb.load(segmentation)
-
-    lut = np.zeros((256,), dtype="uint8")
-    lut[100:201] = 1  # Ctx GM
-    lut[30:99] = 2  # dGM
-    lut[1:11] = 3  # WM+CSF
-    lut[255] = 4  # Cerebellum
-    # Apply lookup table
-    seg = lut[np.asanyarray(img.dataobj, dtype="uint16")]
-    seg[np.asanyarray(nb.load(crown_mask).dataobj, dtype=int) > 0] = 5
-
-    outimg = img.__class__(seg.astype("uint8"), img.affine, img.header)
-    outimg.set_data_dtype("uint8")
-    out_file = Path("segments.nii.gz").absolute()
-    outimg.to_filename(out_file)
-    return str(out_file)
-
-
-def _get_tr(meta_dict):
-    return meta_dict.get("RepetitionTime", None)
