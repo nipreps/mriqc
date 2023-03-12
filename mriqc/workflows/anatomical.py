@@ -382,7 +382,9 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     # Extract metadata
-    meta = pe.Node(ReadSidecarJSON(), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(
+        index_db=config.execution.bids_database_dir
+    ), name="metadata")
 
     # Add provenance
     addprov = pe.Node(AddProvenance(), name="provenance", run_without_submitting=True)
