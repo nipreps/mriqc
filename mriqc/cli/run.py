@@ -148,7 +148,7 @@ def main():
         if mriqc_wf and config.execution.write_graph:
             mriqc_wf.write_graph(graph2use="colored", format="svg", simple_form=True)
 
-        if not config.execution.dry_run:
+        if not config.execution.dry_run or not config.execution.reports_only:
             # Warn about submitting measures BEFORE
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
@@ -170,6 +170,18 @@ def main():
             # Warn about submitting measures AFTER
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
+
+        if not config.execution.dry_run:
+            from pkg_resources import resource_filename as pkgrf
+            from nireports.assembler.tools import generate_reports
+
+            EXITCODE += generate_reports(
+                config.execution.participant_label,
+                config.execution.output_dir,
+                config.execution.run_uuid,
+                config=pkgrf("mriqc", "data/report-anatomical.yml"),
+                packagename=None,
+            )
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
 
         if _resmon is not None:
@@ -235,6 +247,7 @@ def main():
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
     config.loggers.cli.info(messages.RUN_FINISHED)
+    sys.exit(EXITCODE)
 
 
 def migas_exit() -> None:

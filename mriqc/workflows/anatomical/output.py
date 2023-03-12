@@ -268,11 +268,11 @@ def init_anat_report_wf(name: str = "anat_report_wf"):
                                    ("airmask", "in_contours")]),
         (inputnode, plot_artmask, [("in_ras", "in_file"),
                                    ("artmask", "in_contours")]),
-        (plot_bmask, ds_report_segm, [("out_file", "in_file")]),
-        (plot_segm, ds_report_bmask, [("out_file", "in_file")]),
+        (plot_bmask, ds_report_bmask, [("out_file", "in_file")]),
+        (plot_segm, ds_report_segm, [("out_file", "in_file")]),
         (plot_artmask, ds_report_artmask, [("out_file", "in_file")]),
-        (plot_headmask, ds_report_airmask, [("out_file", "in_file")]),
-        (plot_airmask, ds_report_headmask, [("out_file", "in_file")]),
+        (plot_headmask, ds_report_headmask, [("out_file", "in_file")]),
+        (plot_airmask, ds_report_airmask, [("out_file", "in_file")]),
     ])
     # fmt: on
 
