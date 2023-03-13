@@ -364,7 +364,10 @@ def compute_iqms(name="ComputeIQMs"):
     # fmt: on
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(), name="metadata", run_without_submitting=True)
+    meta = pe.Node(ReadSidecarJSON(
+        index_db=config.execution.bids_database_dir
+    ), name="metadata")
+
     addprov = pe.Node(
         AddProvenance(modality="bold"),
         name="provenance",
@@ -445,7 +448,7 @@ def individual_reports(name="ReportsWorkflow"):
     from niworkflows.interfaces.plotting import FMRISummary
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
-    from nireports.interfaces.viz import PlotMosaic, PlotSpikes
+    from nireports.interfaces import PlotMosaic, PlotSpikes
     from mriqc.interfaces.functional import Spikes
     from mriqc.interfaces.reports import IndividualReport
 
@@ -529,12 +532,18 @@ def individual_reports(name="ReportsWorkflow"):
     # fmt: on
 
     mosaic_mean = pe.Node(
-        PlotMosaic(out_file="plot_func_mean_mosaic1.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_func_mean_mosaic1.svg",
+            cmap="Greys_r",
+        ),
         name="PlotMosaicMean",
     )
 
     mosaic_stddev = pe.Node(
-        PlotMosaic(out_file="plot_func_stddev_mosaic2_stddev.svg", cmap="viridis"),
+        PlotMosaic(
+            out_file="plot_func_stddev_mosaic2_stddev.svg",
+            cmap="viridis",
+        ),
         name="PlotMosaicSD",
     )
 
@@ -603,7 +612,10 @@ def individual_reports(name="ReportsWorkflow"):
         return workflow
 
     mosaic_zoom = pe.Node(
-        PlotMosaic(out_file="plot_anat_mosaic1_zoomed.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_anat_mosaic1_zoomed.svg",
+            cmap="Greys_r",
+        ),
         name="PlotMosaicZoomed",
     )
 
@@ -616,12 +628,18 @@ def individual_reports(name="ReportsWorkflow"):
         name="PlotMosaicNoise",
     )
 
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_mean.inputs.view = ("coronal", "axial")
+        mosaic_stddev.inputs.view = ("coronal", "axial")
+        mosaic_zoom.inputs.view = ("coronal", "axial")
+        mosaic_noise.inputs.view = ("coronal", "axial")
+
     # Verbose-reporting goes here
-    from nireports.interfaces.viz import PlotContours
+    from nireports.interfaces import PlotContours
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode="y" if config.workflow.species.lower() in ("rat", "mouse") else "z",
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
