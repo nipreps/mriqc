@@ -449,7 +449,7 @@ $( '#btn-post' ).click( function() {
         'comment': JSON.stringify(payload['artifacts'])
     };
 
-    // disable developement releases
+    // disable development releases
     var authorization = $(this).val();
     var ratingReq = new XMLHttpRequest();
     ratingReq.open("POST", "{{ webapi_url }}/rating");

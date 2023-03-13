@@ -90,6 +90,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     )
 
     message = BUILDING_WORKFLOW.format(
+        modality="anatomical",
         detail=(
             f"for {len(dataset)} NIfTI files." if len(dataset) > 2
             else f"({' and '.join(('<%s>' % v for v in dataset))})."
@@ -381,7 +382,9 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     # Extract metadata
-    meta = pe.Node(ReadSidecarJSON(), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(
+        index_db=config.execution.bids_database_dir
+    ), name="metadata")
 
     # Add provenance
     addprov = pe.Node(AddProvenance(), name="provenance", run_without_submitting=True)
@@ -503,7 +506,7 @@ def individual_reports(name="ReportsWorkflow"):
             wf = individual_reports()
 
     """
-    from ..interfaces import PlotMosaic
+    from nireports.interfaces import PlotMosaic
     from ..interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
@@ -532,7 +535,10 @@ def individual_reports(name="ReportsWorkflow"):
     )
 
     mosaic_zoom = pe.Node(
-        PlotMosaic(out_file="plot_anat_mosaic1_zoomed.svg", cmap="Greys_r"),
+        PlotMosaic(
+            out_file="plot_anat_mosaic1_zoomed.svg",
+            cmap="Greys_r",
+        ),
         name="PlotMosaicZoomed",
     )
 
@@ -544,6 +550,9 @@ def individual_reports(name="ReportsWorkflow"):
         ),
         name="PlotMosaicNoise",
     )
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_zoom.inputs.view = ("coronal", "axial")
+        mosaic_noise.inputs.view = ("coronal", "axial")
 
     mplots = pe.Node(niu.Merge(pages + extra_pages), name="MergePlots")
     rnode = pe.Node(IndividualReport(), name="GenerateReport")
@@ -574,11 +583,12 @@ def individual_reports(name="ReportsWorkflow"):
     if not verbose:
         return workflow
 
-    from ..interfaces.viz import PlotContours
+    from nireports.interfaces import PlotContours
 
+    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "z"
     plot_segm = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode=display_mode,
             levels=[0.5, 1.5, 2.5],
             cut_coords=10,
             colors=["r", "g", "b"],
@@ -588,7 +598,7 @@ def individual_reports(name="ReportsWorkflow"):
 
     plot_bmask = pe.Node(
         PlotContours(
-            display_mode="z",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=10,
@@ -596,9 +606,24 @@ def individual_reports(name="ReportsWorkflow"):
         ),
         name="PlotBrainmask",
     )
+
+    plot_artmask = pe.Node(
+        PlotContours(
+            display_mode=display_mode,
+            levels=[0.5],
+            colors=["r"],
+            cut_coords=10,
+            out_file="artmask",
+            saturate=True,
+        ),
+        name="PlotArtmask",
+    )
+
+    # NOTE: humans switch on these two to coronal view.
+    display_mode = "y" if config.workflow.species.lower() in ("rat", "mouse") else "x"
     plot_airmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
@@ -608,24 +633,13 @@ def individual_reports(name="ReportsWorkflow"):
     )
     plot_headmask = pe.Node(
         PlotContours(
-            display_mode="x",
+            display_mode=display_mode,
             levels=[0.5],
             colors=["r"],
             cut_coords=6,
             out_file="headmask",
         ),
         name="PlotHeadmask",
-    )
-    plot_artmask = pe.Node(
-        PlotContours(
-            display_mode="z",
-            levels=[0.5],
-            colors=["r"],
-            cut_coords=10,
-            out_file="artmask",
-            saturate=True,
-        ),
-        name="PlotArtmask",
     )
 
     # fmt: off
@@ -1052,7 +1066,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     from scipy import ndimage as sim
 
     if not aniso:
-        struc = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
+        struct = sim.iterate_structure(sim.generate_binary_structure(3, 2), 2)
     else:
         # Generate an anisotropic binary structure, taking into account slice thickness
         img = nb.load(in_file)
@@ -1063,7 +1077,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
         x = np.ones((5) * np.ones(dim, dtype=np.int8))
         np.put(x, x.size // 2, 0)
         dist_matrix = np.round(sim.distance_transform_edt(x, sampling=zooms), 5)
-        struc = dist_matrix <= dist
+        struct = dist_matrix <= dist
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
@@ -1084,11 +1098,11 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
 
     segdata = nb.load(in_segm).get_data().astype(np.uint8)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(segdata, struc, iterations=2, border_value=1).astype(
+    segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(
         np.uint8
     )
     mask[segdata > 0] = 1
-    mask = sim.binary_closing(mask, struc, iterations=2).astype(np.uint8)
+    mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
     artmsk = np.zeros_like(mask)
@@ -1099,7 +1113,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
 
-    mask = sim.binary_fill_holes(mask, struc).astype(
+    mask = sim.binary_fill_holes(mask, struct).astype(
         np.uint8
     )  # pylint: disable=no-member
 

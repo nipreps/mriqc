@@ -102,7 +102,7 @@ def _build_parser():
     parser = ArgumentParser(
         description=f"""\
 MRIQC {config.environment.version}
-Automated Quality Control and visual reports for Quality Assesment of structural \
+Automated Quality Control and visual reports for Quality Assessment of structural \
 (T1w, T2w) and functional MRI of the brain.
 
 {config.DSA_MESSAGE}""",
@@ -264,7 +264,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         action="store_true",
         default=True,
         help="Cast the input data to float32 if it's represented in higher precision "
-        "(saves space and improves perfomance).",
+        "(saves space and improves performance).",
     )
     g_perfm.add_argument(
         "--pdb",
@@ -345,6 +345,13 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         action="store_true",
         default=False,
         help="Upload will fail if upload is strict.",
+    )
+    g_outputs.add_argument(
+        "--notrack",
+        action="store_true",
+        help="Opt-out of sending tracking information of this run to the NiPreps developers. This"
+        " information helps to improve MRIQC and provides an indicator of real world usage "
+        " crucial for obtaining funding.",
     )
 
     # ANTs options

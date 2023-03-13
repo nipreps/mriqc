@@ -63,9 +63,9 @@ def main():
     random.shuffle(order)
     # pick a random row
     for row in order:
-        # check how many entires it has
-        curEnt = num_rows(file[row])
-        if curEnt <= 1:
+        # check how many entries it has
+        current = num_rows(file[row])
+        if current <= 1:
             # if less than 1, run the row
             print("Check participant #" + file[row][0])
             fname = os.getcwd() + "/abide/" + file[row][0]
@@ -82,7 +82,7 @@ def main():
                     quality = input("Quality? [-1/0/1/e] ")
                 if quality == "e":
                     break
-                file[row][curEnt] = quality
+                file[row][current] = quality
             else:
                 print("File does not exist")
 

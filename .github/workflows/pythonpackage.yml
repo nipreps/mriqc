@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
-        pip: ["pip==21.2", "pip~=22.0"]
+        python-version: ['3.8', '3.9', '3.11']
+        pip: ["pip==21.2", "pip~=23.0"]
 
     steps:
     - uses: actions/checkout@v2
@@ -38,8 +38,7 @@ jobs:
       run: |
         python -m venv /tmp/buildenv
         source /tmp/buildenv/bin/activate
-        python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
+        python -m pip install -U build hatch hatchling pip twine docutils
         
         python -m build -s -w
         python -m twine check dist/mriqc-*
@@ -49,7 +48,7 @@ jobs:
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
           TAG=${GITHUB_REF##*/}
         fi
-        THISVERSION=$( python -m setuptools_scm )
+        THISVERSION=$( python -m hatch version | tail -n1 | xargs )
         THISVERSION=${TAG:-$THISVERSION}
         echo "Expected VERSION: \"${THISVERSION}\""
         echo "THISVERSION=${THISVERSION}" >> $GITHUB_ENV
@@ -57,7 +56,7 @@ jobs:
       run: |
         python -m venv /tmp/pip
         source /tmp/pip/bin/activate
-        python -m pip install -U "setuptools >= 45" "setuptools_scm >= 6.2" "${{ matrix.pip }}"
+        python -m pip install -U hatch hatchling "${{ matrix.pip }}"
         python -m pip install .
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "VERSION: \"${THISVERSION}\""
@@ -67,7 +66,7 @@ jobs:
       run: |
         python -m venv /tmp/install_sdist
         source /tmp/install_sdist/bin/activate
-        python -m pip install -U "setuptools >= 45" "${{ matrix.pip }}"
+        python -m pip install -U hatch hatchling "${{ matrix.pip }}"
         python -m pip install /tmp/package/mriqc*.tar.gz
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "VERSION: \"${THISVERSION}\""
@@ -87,9 +86,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
-    - run: pip install flake8
+        python-version: 3.9
+    - run: pip install flake8-pyproject 
     - run: flake8 mriqc/

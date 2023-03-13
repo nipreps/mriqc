@@ -1,17 +1,17 @@
 version: 2.1
 orbs:
-  docker: circleci/docker@1.6.0
+  docker: circleci/docker@2.1.4
 
 jobs:
   build:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      - MRIQC_API_TAG: 1.0.6
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild"
+      - MRIQC_API_TAG: 1.1.0
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
       docker_layer_caching: true
     working_directory: /tmp/src/mriqc
     steps:
@@ -37,7 +37,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -101,33 +100,27 @@ jobs:
       - run:
           name: Prepare MRIQCWebAPI
           command: |
-
-            if [[ ! -f /tmp/docker-compose/docker-compose ]]; then
-              mkdir -p /tmp/docker-compose/
-              curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /tmp/docker-compose/docker-compose
-              chmod a+rx /tmp/docker-compose/docker-compose
-            fi
-
             set +e
-            docker pull localhost:5000/dockereve-master_eve:latest
+            docker pull localhost:5000/dockereve-master-endpoints:latest
             success=$?
             set -e
             if [[ "$success" = 0 ]]; then
-                docker tag localhost:5000/dockereve-master_eve:latest dockereve-master_eve:latest
+                docker tag localhost:5000/dockereve-master-endpoints:latest dockereve-master-endpoints:latest
             fi
 
             rm -rf /tmp/src/mriqcwebapi
             git clone https://github.com/nipreps/mriqcwebapi.git /tmp/src/mriqcwebapi
             cd /tmp/src/mriqcwebapi
+            git checkout ${MRIQC_API_TAG}
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
 
-            docker tag dockereve-master_eve:latest localhost:5000/dockereve-master_eve:latest
-            docker push localhost:5000/dockereve-master_eve:latest
+            docker tag dockereve-master-endpoints:latest localhost:5000/dockereve-master-endpoints:latest
+            docker push localhost:5000/dockereve-master-endpoints:latest
       - run:
           name: Build Docker image
           no_output_timeout: 60m
@@ -182,7 +175,6 @@ jobs:
          paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - persist_to_workspace:
           root: /tmp
           paths:
@@ -191,7 +183,7 @@ jobs:
 
   get_data:
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
@@ -240,7 +232,7 @@ jobs:
 
   test_pytest:
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     working_directory: /home/circleci/out/tests
     steps:
       - attach_workspace:
@@ -304,11 +296,12 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     resource_class: large
     working_directory: /tmp/t1w
     steps:
@@ -332,7 +325,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -343,23 +335,24 @@ jobs:
               echo "Pulling registry image from DockerHub"
               docker pull registry:2
             fi
-            docker run -d -p 5000:5000 --restart=always --name=registry \
+            docker run -d --restart=always --name=registry \
+                -e REGISTRY_HTTP_ADDR=0.0.0.0:5001 -p 5001:5001 \
                 -v /tmp/docker:/var/lib/registry registry:2
       - run:
           name: Pull images from local registry
           command: |
-            docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+            docker pull localhost:5001/mriqc
+            docker tag localhost:5001/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
             for image in ${webapi_images[@]}; do
-                docker pull localhost:5000/${image}
-                docker tag localhost:5000/${image} ${image}
+                docker pull localhost:5001/${image}
+                docker tag localhost:5001/${image} ${image}
             done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
       - restore_cache:
           keys:
@@ -367,8 +360,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - t1w-v3-{{ epoch }}
-            - t1w-v3-
+            - t1w-v5-{{ epoch }}
+            - t1w-v5-
 
       - run:
           name: Remove old, cached configs
@@ -405,7 +398,7 @@ jobs:
           path: /tmp/t1w/misc
 
       - save_cache:
-          key: t1w-v3-{{ epoch }}
+          key: t1w-v5-{{ epoch }}
           paths:
             - /tmp/t1w/work
 
@@ -463,11 +456,12 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx swaggerapi/swagger-ui:latest mongo python:3.6-onbuild dockereve-master_eve:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2023.02.1
     working_directory: /tmp/bold
     steps:
       - attach_workspace:
@@ -490,7 +484,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - run:
           name: Set-up a Docker registry
           command: |
@@ -501,23 +494,24 @@ jobs:
               echo "Pulling registry image from DockerHub"
               docker pull registry:2
             fi
-            docker run -d -p 5000:5000 --restart=always --name=registry \
+            docker run -d --restart=always --name=registry \
+                -e REGISTRY_HTTP_ADDR=0.0.0.0:5001 -p 5001:5001 \
                 -v /tmp/docker:/var/lib/registry registry:2
       - run:
           name: Pull images from local registry
           command: |
-            docker pull localhost:5000/mriqc
-            docker tag localhost:5000/mriqc nipreps/mriqc:latest
+            docker pull localhost:5001/mriqc
+            docker tag localhost:5001/mriqc nipreps/mriqc:latest
 
             webapi_images=($MRIQC_API_DOCKER_IMAGES)
             for image in ${webapi_images[@]}; do
-                docker pull localhost:5000/${image}
-                docker tag localhost:5000/${image} ${image}
+                docker pull localhost:5001/${image}
+                docker tag localhost:5001/${image} ${image}
             done;
       - run:
           name: Start MRIQC WebAPI endpoint
           command: |
-            /tmp/docker-compose/docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
+            docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml --verbose up -d
           background: true
 
       - restore_cache:
@@ -526,8 +520,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v2-{{ epoch }}
-            - bold-v2-
+            - bold-v4-{{ epoch }}
+            - bold-v4-
 
       - run:
           name: Remove old, cached configs
@@ -563,7 +557,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v2-{{ epoch }}
+          key: bold-v4-{{ epoch }}
           paths:
             - /tmp/bold/work
 
@@ -653,8 +647,7 @@ jobs:
           command: |
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
-            python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                          setuptools_scm_git_archive pip twine docutils
+            python -m pip install -U build hatch hatchling pip twine docutils
       - run:
           name: Build and check
           command: |
@@ -665,7 +658,7 @@ jobs:
           name: Validate version
           command: |
             source /tmp/venv/bin/activate
-            THISVERSION=$( python3 -m setuptools_scm )
+            THISVERSION=$( python3 -m hatch version | tail -n1 | xargs )
             python -m pip install dist/*.tar.gz
             mkdir empty
             cd empty
@@ -683,15 +676,14 @@ jobs:
           command: |
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
-            python -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                          setuptools_scm_git_archive pip twine docutils
+            python -m pip install -U hatch hatchling pip build twine docutils
       - run:
           name: Deploy to PyPi
           command: |
             source /tmp/venv/bin/activate
 
             # Set version on stone before editing the bundle
-            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m setuptools_scm )
+            export SETUPTOOLS_SCM_PRETEND_VERSION=$( python -m hatch version | tail -n1 | xargs )
 
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
@@ -714,7 +706,6 @@ jobs:
           paths:
             - /tmp/docker
             - /tmp/images
-            - /tmp/docker-compose
       - docker/install-docker-credential-helper
       - run:
           name: Docker authentication
@@ -758,6 +749,8 @@ workflows:
               only: /.*/
 
       - build:
+          context:
+            - nipreps-common
           filters:
             branches:
               ignore: /docs?\/.*/
@@ -772,6 +765,8 @@ workflows:
               only: /.*/
 
       - test_package:
+          context:
+            - nipreps-common
           filters:
             branches:
               ignore: /docs?\/.*/
@@ -779,6 +774,8 @@ workflows:
               only: /.*/
 
       - test_pytest:
+          context:
+            - nipreps-common
           requires:
             - build
           filters:
@@ -808,6 +805,8 @@ workflows:
               only: /.*/
 
       - deploy_docker:
+          context:
+            - nipreps-common
           requires:
             - build
             - test_pytest
@@ -822,6 +821,8 @@ workflows:
               only: /.*/
 
       - deploy_pypi:
+          context:
+            - nipreps-common
           requires:
             - deploy_docker
           filters:

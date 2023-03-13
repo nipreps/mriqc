@@ -150,9 +150,9 @@ Other measures
 .. _iqms_summary:
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
-  Mean, standard deviation, 5% percentile and 95% percentile of the distribution
-  of background, :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and
-  :abbr:`WM (white-matter)`.
+  Mean, median, median absolute deviation (mad), standard deviation, kurtosis,
+  5% percentile, 95% percentile and number of voxels of the distribution of background,
+  :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`.
 
 .. _iqms_tpm:
 
@@ -417,7 +417,7 @@ def wm2max(img, mu_wm):
 def art_qi1(airmask, artmask):
     r"""
     Detect artifacts in the image using the method described in [Mortamet2009]_.
-    Caculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
+    Calculates :math:`\text{QI}_1`, as the proportion of voxels with intensity
     corrupted by artifacts normalized by the number of voxels in the "*hat*"
     mask (i.e., the background region above the nasio-occipital plane):
 
@@ -459,7 +459,7 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
 
     """
 
-    from mriqc.viz.utils import plot_qi2
+    from nireports.reportlets.nuisance import plot_qi2
     from scipy.stats import chi2
     from sklearn.neighbors import KernelDensity
 
@@ -559,8 +559,10 @@ def rpve(pvms, seg):
 
 def summary_stats(img, pvms, airmask=None, erode=True):
     r"""
-    Estimates the mean, the standard deviation, the 95\%
-    and the 5\% percentiles of each tissue distribution.
+    Estimates the mean, the median, the standard deviation,
+    the kurtosis,the median absolute deviation (mad), the 95\%
+    and the 5\% percentiles and the number of voxels (summary\_\*\_n)
+    of each tissue distribution.
 
     .. warning ::
 
@@ -601,44 +603,42 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
     output = {}
     for k, lid in labels:
-        mask = np.zeros_like(img, dtype=np.uint8)
-        mask[stats_pvms[lid] > 0.85] = 1
+        mask = stats_pvms[lid] > 0.85
+        nvox = mask.sum()
 
-        if erode:
-            struc = nd.generate_binary_structure(3, 2)
-            mask = nd.binary_erosion(mask, structure=struc).astype(np.uint8)
+        if erode and nvox > 2e3:
+            struct = nd.generate_binary_structure(3, 2)
+            mask = nd.binary_erosion(mask, structure=struct)
+            nvox = mask.sum()
 
-        nvox = float(mask.sum())
-        if nvox < 1e3:
-            config.loggers.interface.warning(
-                'calculating summary stats of label "%s" in a very small '
-                "mask (%d voxels)",
-                k,
-                int(nvox),
-            )
-            if k == "bg":
-                output["bg"] = {
-                    "mean": 0.0,
-                    "median": 0.0,
-                    "p95": 0.0,
-                    "p05": 0.0,
-                    "k": 0.0,
-                    "stdv": 0.0,
-                    "mad": 0.0,
-                    "n": nvox,
-                }
-                continue
-
+        # Initialize with zeros.
         output[k] = {
-            "mean": float(img[mask == 1].mean()),
-            "stdv": float(img[mask == 1].std()),
-            "median": float(np.median(img[mask == 1])),
-            "mad": float(mad(img[mask == 1])),
-            "p95": float(np.percentile(img[mask == 1], 95)),
-            "p05": float(np.percentile(img[mask == 1], 5)),
-            "k": float(kurtosis(img[mask == 1])),
-            "n": nvox,
+            "mean": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "p05": 0.0,
+            "k": 0.0,
+            "stdv": 0.0,
+            "mad": 0.0,
+            "n": float(nvox),
         }
+        if nvox > 100:
+            data = img[mask]
+            output[k] = {
+                "mean": float(data.mean()),
+                "stdv": float(data.std()),
+                "median": float(np.median(data)),
+                "mad": float(mad(data)),
+                "p95": float(np.percentile(data, 95)),
+                "p05": float(np.percentile(data, 5)),
+                "k": float(kurtosis(data)),
+                "n": float(nvox),
+            }
+        else:
+            config.loggers.interface.warning(
+                f'calculating summary stats of label "{k}" in a very small '
+                f"mask ({nvox} voxels)",
+            )
 
     return output
 
@@ -658,8 +658,8 @@ def _prepare_mask(mask, label, erode=True):
 
     if erode:
         # Create a structural element to be used in an opening operation.
-        struc = nd.generate_binary_structure(3, 2)
+        struct = nd.generate_binary_structure(3, 2)
         # Perform an opening operation on the background data.
-        fgmask = nd.binary_opening(fgmask, structure=struc).astype(np.uint8)
+        fgmask = nd.binary_opening(fgmask, structure=struct).astype(np.uint8)
 
     return fgmask

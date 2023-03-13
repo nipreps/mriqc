@@ -58,7 +58,7 @@ DVARS
   RMS variance over voxels ([Power2012]_ ``dvars_nstd``) indexes the rate of change of
   BOLD signal across the entire brain at each frame of data. DVARS is calculated
   `with nipype
-  <http://nipype.readthedocs.io/en/latest/interfaces/generated/nipype.algorithms.confounds.html#computedvars>`_
+  <https://nipype.readthedocs.io/en/latest/api/generated/nipype.algorithms.confounds.html#computedvars>`_
   after motion correction:
 
   .. math ::
@@ -99,7 +99,7 @@ Temporal SNR (:abbr:`tSNR (temporal SNR)`, ``tsnr``)
   is a simplified interpretation of the tSNR definition [Kruger2001]_.
   We report the median value
   of the `tSNR map
-  <http://nipype.readthedocs.io/en/latest/interfaces/generated/nipype.algorithms.confounds.html#tsnr>`_
+  <https://nipype.readthedocs.io/en/latest/api/generated/nipype.algorithms.confounds.html#tsnr>`_
   calculated like:
 
   .. math ::
@@ -162,7 +162,7 @@ AFNI's quality index (``aqi``)
 .. _iqms_dummy:
 
 Number of *dummy* scans** (``dummy``)
-  A number of volumes in the begining of the
+  A number of volumes in the beginning of the
   fMRI timeseries identified as non-steady state.
 
 .. topic:: References

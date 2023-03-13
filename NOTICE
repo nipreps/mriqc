@@ -13,5 +13,5 @@ http://preprocessed-connectomes-project.github.io/quality-assessment-protocol)
 by C. Craddock, S. Giavasis, D. Clark, Z. Shezhad, and J. Pellman.
 
 This software is also distributed as a Docker container image.
-The bootstraping file for the image ("Dockerfile") is licensed
+The bootstrapping file for the image ("Dockerfile") is licensed
 under the MIT License.

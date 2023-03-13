@@ -42,7 +42,7 @@ def build_workflow(config_file, retval):
     # We do not need OMP > 1 for workflow creation
 
     config.load(config_file)
-    # Initalize nipype config
+    # Initialize nipype config
     config.nipype.init()
     # Make sure loggers are started
     config.loggers.init()
