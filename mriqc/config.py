@@ -648,7 +648,7 @@ def _process_initializer(config_file: Path):
     # Load config
     config.load(config_file)
 
-    # Initalize nipype config
+    # Initialize nipype config
     config.nipype.init()
 
     # Make sure loggers are started
