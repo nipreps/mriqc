@@ -36,9 +36,6 @@ if __name__ == "__main__":
     if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
         argparse._sys.argv[0] = "%s -m %s" % (argparse._sys.executable, module)
 
-    if args.name.isnumeric():
-        pid = args.name
-    else:
-        pid = FindProcess(args.name)
+    pid = args.name if args.name.isnumeric() else FindProcess(args.name)
 
     ResourceRecorder(pid, log_file=args.logfile_path + str(pid) + ".tsv").run()
