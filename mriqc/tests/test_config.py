@@ -34,7 +34,7 @@ def _expand_bids(tmp_path, testdata_path, testcase):
 
     for path in reversed(text[1:]):
         relpath = Path(path).relative_to(root)
-        if "." in relpath.name:
+        if "." in relpath.name or relpath in ("CHANGES", "README", "LICENSE"):
             (out_path / relpath.parent).mkdir(parents=True, exist_ok=True)
             if not (out_path / relpath).exists():
                 contents = "{}" if relpath.name.endswith(".json") else ""
@@ -51,17 +51,6 @@ def _expand_bids(tmp_path, testdata_path, testcase):
         )
 
     return out_path
-
-
-# def test_bids_indexing(testdata_path):
-#     """Check ``BIDSLayout`` is indexing what it should."""
-
-#     from mriqc import config
-
-#     config.execution.bids_dir = testdata_path / "thc2-gh921"
-#     config.execution.init()
-
-#     assert len(config.execution.layout.get()) == 13
 
 
 @pytest.mark.parametrize("testcase", (
@@ -83,8 +72,6 @@ def test_bids_indexing_manifest(tmp_path, testdata_path, testcase):
         testcase,
     )
     config.execution.init()
-
-    import pdb; pdb.set_trace()
     assert len(config.execution.layout.get()) == int(
         (testdata_path / f"{testcase}.oracle").read_text().strip()
     )
