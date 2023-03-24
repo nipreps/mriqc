@@ -34,9 +34,7 @@ import tempfile
 os.environ['NO_ET'] = '1'
 
 _datadir = (Path(__file__).parent.parent / "data" / "tests").resolve(strict=True)
-niprepsdev_path = os.getenv(
-    "TEST_DATA_HOME", str(Path.home() / ".cache" / "mriqc")
-)
+niprepsdev_path = os.getenv("TEST_DATA_HOME", str(Path.home() / ".cache" / "mriqc"))
 test_output_dir = os.getenv("TEST_OUTPUT_DIR")
 test_workdir = os.getenv("TEST_WORK_DIR")
 
@@ -60,8 +58,7 @@ def expand_namespace(doctest_namespace):
     doctest_namespace["tmpdir"] = tmpdir.name
 
     doctest_namespace["output_dir"] = (
-        Path(test_output_dir) if test_output_dir is not None
-        else Path(tmpdir.name)
+        Path(test_output_dir) if test_output_dir is not None else Path(tmpdir.name)
     )
 
     cwd = os.getcwd()
