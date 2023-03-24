@@ -16,6 +16,9 @@
 /data/ds004134/sub-s8178/ses-01/anat
 /data/ds004134/sub-s8178/ses-01/anat/sub-s8178_ses-01_T1w.json
 /data/ds004134/sub-s8178/ses-01/anat/sub-s8178_ses-01_T1w.nii.gz
+/data/ds004134/sub-s8178/ses-01/dwi
+/data/ds004134/sub-s8178/ses-01/dwi/sub-s8178_ses-01_dwi.json
+/data/ds004134/sub-s8178/ses-01/dwi/sub-s8178_ses-01_dwi.nii.gz
 /data/ds004134/sub-s8178/ses-01/func
 /data/ds004134/sub-s8178/ses-01/func/sub-s8178_ses-01_task-ExpSamp_acq-01_run-01_bold.json
 /data/ds004134/sub-s8178/ses-01/func/sub-s8178_ses-01_task-ExpSamp_acq-01_run-01_bold.nii.gz
