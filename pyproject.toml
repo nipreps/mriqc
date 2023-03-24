@@ -107,7 +107,6 @@ all = ["mriqc[doc,full,test,notebook,other]"]
 [project.scripts]
 mriqc = "mriqc.cli.run:main"
 synthstrip = "mriqc.synthstrip.cli:main"
-mriqc_plot = "mriqc.bin.mriqc_plot:main"
 abide2bids = "mriqc.bin.abide2bids:main"
 fs2gif = "mriqc.bin.fs2gif:main"
 dfcheck = "mriqc.bin.dfcheck:main"
