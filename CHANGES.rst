@@ -2,7 +2,7 @@
 =======================
 A hotfix release resolving a reggression introduced with the new optimized indexing.
 
-* FIX: Underspecified regex sets ``BIDSLayout`` to ignore data with sesions (#1094)
+* FIX: Underspecified regex sets ``BIDSLayout`` to ignore data with sessions (#1094)
 * FIX: Input data has incompatible dimensionality (plotting ICA) (#1082)
 * ENH: Optimize metadata gathering reusing ``BIDSLayout`` db (#1084)
 * DOC : update anatomical example report in documentation (#1088)
