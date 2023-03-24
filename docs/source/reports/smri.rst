@@ -5,7 +5,7 @@ T1 and T2 -weighed images
 One individual report per input structural volume will be generated
 in the path ``<output_dir>/reports/sub-IDxxx_T1w.html```.
 An example report is given
-`here <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-51296_T1w.html>`_.
+`here <../_static/example_anatreport.html>`_.
 
 The individual report for the structural images is
 structured as follows:
