@@ -437,7 +437,8 @@ class execution(_Config):
                 re.compile(r"^(?!/sub-[a-zA-Z0-9]+)"),
                 # Ignore all modality subfolders, except for func/ or anat/
                 re.compile(
-                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(?!func|anat)"
+                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/"
+                    r"(beh|dwi|fmap|pet|perf|meg|eeg|ieeg|micr|nirs)"
                 ),
                 # Ignore all files, except for the supported modalities
                 re.compile(r"^.+(?<!(_T1w|_T2w|bold))\.(json|nii|nii\.gz)$"),
