@@ -44,7 +44,7 @@ def init_anat_report_wf(name: str = "anat_report_wf"):
     # from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
-    reportlets_dir = config.execution.output_dir
+    reportlets_dir = config.execution.work_dir
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(

@@ -172,16 +172,10 @@ def main():
                 config.loggers.cli.warning(config.DSA_MESSAGE)
 
         if not config.execution.dry_run:
-            from pkg_resources import resource_filename as pkgrf
-            from nireports.assembler.tools import generate_reports
+            from mriqc.reports.individual import generate_reports
 
-            EXITCODE += generate_reports(
-                config.execution.participant_label,
-                config.execution.output_dir,
-                config.execution.run_uuid,
-                config=pkgrf("mriqc", "data/report-anatomical.yml"),
-                packagename=None,
-            )
+            generate_reports()
+
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
 
         if _resmon is not None:
@@ -200,7 +194,7 @@ def main():
 
     # Set up group level
     if "group" in config.workflow.analysis_level:
-        from ..reports import group_html
+        from mriqc.reports.group import gen_html as group_html
         from ..utils.bids import DEFAULT_TYPES
         from ..utils.misc import generate_tsv  # , generate_pred
 

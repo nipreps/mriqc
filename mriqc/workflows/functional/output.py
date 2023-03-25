@@ -50,7 +50,7 @@ def init_func_report_wf(name="func_report_wf"):
 
     verbose = config.execution.verbose_reports
     mem_gb = config.workflow.biggest_file_gb
-    reportlets_dir = config.execution.output_dir
+    reportlets_dir = config.execution.work_dir
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(

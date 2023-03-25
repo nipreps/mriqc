@@ -133,7 +133,7 @@ jobs:
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
+              # sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
 
@@ -688,7 +688,7 @@ jobs:
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
+              # sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
               grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
             fi
             python -m build -s -w
