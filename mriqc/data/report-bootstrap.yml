@@ -43,8 +43,18 @@ sections:
       Artifacts usually unveil themselves in the air surrounding the head, where no signal
       sources are present.
     subtitle: View of the background of the image
+  - bids: {datatype: figures, desc: carpet}
+    subtitle: Carpetplot and nuisance signals
+    caption: The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion
+      derived artifacts and respiation effects.
 - name: Extended visual report
   reportlets:
+  - bids: {datatype: figures, desc: mean}
+    subtitle: Average signal through time
+    caption: The average signal calculated across the last axis (time).
+  - bids: {datatype: figures, desc: stdev}
+    subtitle: Standard deviation of signal through time
+    caption: The voxel-wise standard deviation of the signal (variability along time).
   - bids: {datatype: figures, desc: airmask}
     caption: The <em>hat</em>-mask calculated internally by MRIQC. Some metrics will use this
       mask, for instance, to find out artifacts and estimate the spread of gaussian noise
@@ -76,6 +86,7 @@ sections:
       <a href="https://templateflow.org/browse" target="_blank"><em>TemplateFlow</em></a>.
     subtitle: Spatial normalization of the anatomical image
     static: false
+
 
 - name: About
   nested: true
