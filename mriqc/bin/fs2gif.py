@@ -108,7 +108,7 @@ set i 0
         sp.call(
             ["mri_convert", op.join(sub_path, "mri", "norm.mgz"), niifile], cwd=tmp_sub
         )
-        data = nb.load(niifile).get_data()
+        data = nb.load(niifile).get_fdata()
         data[data > 0] = 1
 
         # Compute brain bounding box
@@ -121,7 +121,7 @@ set i 0
             modnii = op.join(tmp_sub, "%s.nii.gz" % subid)
             ref_file = op.join(tmp_sub, "%s.mgz" % subid)
             img = nb.load(niifile)
-            data = exposure.equalize_adapthist(img.get_data(), clip_limit=0.03)
+            data = exposure.equalize_adapthist(img.get_fdata(), clip_limit=0.03)
             nb.Nifti1Image(data, img.affine, img.header).to_filename(modnii)
             sp.call(["mri_convert", modnii, ref_file], cwd=tmp_sub)
 

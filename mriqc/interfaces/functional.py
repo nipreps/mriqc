@@ -95,13 +95,13 @@ class FunctionalQC(SimpleInterface):
     def _run_interface(self, runtime):
         # Get the mean EPI data and get it ready
         epinii = nb.load(self.inputs.in_epi)
-        epidata = np.nan_to_num(epinii.get_data())
+        epidata = np.nan_to_num(epinii.get_fdata())
         epidata = epidata.astype(np.float32)
         epidata[epidata < 0] = 0
 
         # Get EPI data (with mc done) and get it ready
         hmcnii = nb.load(self.inputs.in_hmc)
-        hmcdata = np.nan_to_num(hmcnii.get_data())
+        hmcdata = np.nan_to_num(hmcnii.get_fdata())
         hmcdata = hmcdata.astype(np.float32)
         hmcdata[hmcdata < 0] = 0
 
@@ -147,7 +147,7 @@ class FunctionalQC(SimpleInterface):
         }
 
         # tSNR
-        tsnr_data = nb.load(self.inputs.in_tsnr).get_data()
+        tsnr_data = nb.load(self.inputs.in_tsnr).get_fdata()
         self._results["tsnr"] = float(np.median(tsnr_data[mskdata > 0]))
 
         # FD
@@ -233,7 +233,7 @@ class Spikes(SimpleInterface):
 
     def _run_interface(self, runtime):
         func_nii = nb.load(self.inputs.in_file)
-        func_data = func_nii.get_data()
+        func_data = func_nii.get_fdata()
         func_shape = func_data.shape
         ntsteps = func_shape[-1]
         tr = func_nii.header.get_zooms()[-1]
@@ -256,7 +256,7 @@ class Spikes(SimpleInterface):
         if not isdefined(self.inputs.in_mask):
             _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
         else:
-            mask_data = nb.load(self.inputs.in_mask).get_data()
+            mask_data = nb.load(self.inputs.in_mask).get_fdata()
             mask_data[..., :nskip] = 0
             mask_data = np.stack([mask_data] * ntsteps, axis=-1)
 
