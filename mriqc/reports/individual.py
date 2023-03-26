@@ -77,12 +77,11 @@ def _single_report(in_file):
     prov["Versions_NiPype"] = config.environment.nipype_version
     prov["Versions_TemplateFlow"] = config.environment.templateflow_version
 
-    bids_meta = config.execution.layout.get_file(in_file).metadata
-
+    bids_meta = config.execution.layout.get_file(in_file).get_metadata()
     robj = Report(
         config.execution.output_dir,
         config.execution.run_uuid,
-        reportlets_dir=config.execution.work_dir,
+        reportlets_dir=config.execution.work_dir / "reportlets",
         bootstrap_file=pkgrf("mriqc", "data/report-bootstrap.yml"),
         metadata={
             "dataset": config.execution.dsname,

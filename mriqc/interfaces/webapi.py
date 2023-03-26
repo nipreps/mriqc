@@ -143,7 +143,7 @@ class UploadIQMs(SimpleInterface):
 
         response = upload_qc_metrics(
             self.inputs.in_iqms,
-            endpoint=self.inputs.url,
+            endpoint=self.inputs.endpoint,
             auth_token=self.inputs.auth_token,
             email=email,
         )
