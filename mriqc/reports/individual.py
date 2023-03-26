@@ -69,12 +69,12 @@ def _single_report(in_file):
     prov.pop("settings")
     prov.pop("software")
     prov.update({
-        f"warnings_{kk}": vv for kk, vv in prov.pop("warnings").items()
+        f"warnings_{kk}": vv for kk, vv in prov.pop("warnings", {}).items()
     })
     prov["Input filename"] = f"<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}"
     prov["MRIQC version"] = prov.pop("version")
 
-    bids_meta = config.execution.layout.get_file(in_file).get_metadata()
+    bids_meta = config.execution.layout.get_file(in_file).metadata
 
     robj = Report(
         config.execution.output_dir,
