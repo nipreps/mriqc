@@ -95,7 +95,8 @@ def _single_report(in_file):
         plugin_meta={
             "filename": in_file.name,
             "dataset": config.execution.dsname,
-            "auth": config.execution.webapi_token,
+            "access_token": config.execution.webapi_token,
+            "endpoint": f"{config.execution.webapi_url}/rating",
         },
         **entities,
     )

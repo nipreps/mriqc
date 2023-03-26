@@ -132,9 +132,8 @@ jobs:
             THISVERSION=$( python3 -m setuptools_scm )
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
-              # sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
-              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/config.py
             fi
 
             if [[ ${THISVERSION:0:1} == "0" ]] ; then
@@ -687,9 +686,8 @@ jobs:
 
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
-              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/interfaces/webapi.py
-              # sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/data/reports/individual.html
-              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/interfaces/webapi.py
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/config.py
             fi
             python -m build -s -w
             python -m twine check dist/*
