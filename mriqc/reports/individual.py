@@ -32,38 +32,53 @@ def generate_reports():
 
     from mriqc import config
 
-    input_files = [
-        Path(ff) for mod in config.workflow.inputs.values() for ff in mod
+    config.loggers.workflow.info("Generating reports...")
+    output_files = [
+        _single_report(ff) for mod in config.workflow.inputs.values() for ff in mod
     ]
+    config.loggers.workflow.info(
+        f"Report generation finished ({len(output_files)} reports)."
+    )
+    return output_files
 
-    for in_file in input_files:
-        # Extract BIDS entities
-        entities = config.execution.layout.get_file(in_file).entities
-        entities.pop("extension")
 
-        # Read output file:
-        mriqc_json = loads((
-            Path(config.execution.output_dir)
-            / in_file.parent.relative_to(config.execution.bids_dir)
-            / in_file.name.replace("".join(in_file.suffixes), ".json")
-        ).read_text())
+def _single_report(in_file):
+    """Generate a single report."""
+    from mriqc import config
 
-        Report(
-            config.execution.output_dir,
-            config.execution.run_uuid,
-            reportlets_dir=config.execution.work_dir,
-            bootstrap_file=pkgrf("mriqc", "data/report-bootstrap.yml"),
-            metadata={
-                "dataset": config.execution.dsname,
-                "about-metadata": {
-                    "Provenance Information": mriqc_json.pop("provenance"),
-                    "Dataset Information": mriqc_json.pop("bids_meta"),
-                    "Extracted Image quality metrics (IQMs)": mriqc_json,
-                }
-            },
-            plugin_meta={
-                "filename": in_file.name,
-                "dataset": config.execution.dsname,
-            },
-            **entities,
-        )
+    # Ensure it's a Path
+    in_file = Path(in_file)
+
+    # Extract BIDS entities
+    entities = config.execution.layout.get_file(in_file).get_entities()
+    entities.pop("extension")
+    entities.pop("datatype")
+
+    # Read output file:
+    mriqc_json = loads((
+        Path(config.execution.output_dir)
+        / in_file.parent.relative_to(config.execution.bids_dir)
+        / in_file.name.replace("".join(in_file.suffixes), ".json")
+    ).read_text())
+
+    robj = Report(
+        config.execution.output_dir,
+        config.execution.run_uuid,
+        reportlets_dir=config.execution.work_dir,
+        bootstrap_file=pkgrf("mriqc", "data/report-bootstrap.yml"),
+        metadata={
+            "dataset": config.execution.dsname,
+            "about-metadata": {
+                "Provenance Information": mriqc_json.pop("provenance"),
+                "Dataset Information": mriqc_json.pop("bids_meta"),
+                "Extracted Image quality metrics (IQMs)": mriqc_json,
+            }
+        },
+        plugin_meta={
+            "filename": in_file.name,
+            "dataset": config.execution.dsname,
+        },
+        **entities,
+    )
+    robj.generate_report()
+    return robj.out_filename.absolute()

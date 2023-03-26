@@ -26,7 +26,7 @@ dependencies = [
     "matplotlib",
     "migas",
     "mriqc-learn",
-    "nibabel >= 3.0.1,<4.0",
+    "nibabel >= 3.0.1",
     "nilearn >= 0.5.1",
     "nipype ~= 1.4",
     "nireports @ git+https://github.com/nipreps/nireports.git@main",
