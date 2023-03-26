@@ -243,11 +243,11 @@ def fmri_qc_workflow(name="funcMRIQC"):
     if not config.execution.no_sub:
         from mriqc.interfaces.webapi import UploadIQMs
 
-        upldwf = pe.Node(UploadIQMs(), name="UploadMetrics")
-        upldwf.inputs.url = config.execution.webapi_url
-        upldwf.inputs.strict = config.execution.upload_strict
-        if config.execution.webapi_port:
-            upldwf.inputs.port = config.execution.webapi_port
+        upldwf = pe.Node(UploadIQMs(
+            endpoint=config.execution.webapi_url,
+            auth_token=config.execution.webapi_token,
+            strict=config.execution.upload_strict,
+        ), name="UploadMetrics")
 
         # fmt: off
         workflow.connect([

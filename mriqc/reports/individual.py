@@ -51,8 +51,8 @@ def _single_report(in_file):
 
     # Extract BIDS entities
     entities = config.execution.layout.get_file(in_file).get_entities()
-    entities.pop("extension")
-    entities.pop("datatype")
+    entities.pop("extension", None)
+    entities.pop("datatype", None)
 
     # Read output file:
     mriqc_json = loads((
@@ -63,16 +63,19 @@ def _single_report(in_file):
     mriqc_json.pop("bids_meta")
 
     # Clean-up provenance dictionary
-    prov = mriqc_json.pop("provenance")
-    prov.pop("webapi_url")
-    prov.pop("webapi_port")
-    prov.pop("settings")
-    prov.pop("software")
+    prov = mriqc_json.pop("provenance", None)
+    prov.pop("webapi_url", None)
+    prov.pop("webapi_port", None)
+    prov.pop("settings", None)
+    prov.pop("software", None)
     prov.update({
         f"warnings_{kk}": vv for kk, vv in prov.pop("warnings", {}).items()
     })
     prov["Input filename"] = f"<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}"
-    prov["MRIQC version"] = prov.pop("version")
+    prov["Versions_MRIQC"] = prov.pop("version", config.environment.version)
+    prov["Execution environment"] = config.environment.exec_env
+    prov["Versions_NiPype"] = config.environment.nipype_version
+    prov["Versions_TemplateFlow"] = config.environment.templateflow_version
 
     bids_meta = config.execution.layout.get_file(in_file).metadata
 
@@ -92,6 +95,7 @@ def _single_report(in_file):
         plugin_meta={
             "filename": in_file.name,
             "dataset": config.execution.dsname,
+            "auth": config.execution.webapi_token,
         },
         **entities,
     )

@@ -57,8 +57,6 @@ class AddProvenance(SimpleInterface):
             "md5sum": hash_infile(self.inputs.in_file),
             "version": config.environment.version,
             "software": "mriqc",
-            "webapi_url": config.execution.webapi_url,
-            "webapi_port": config.execution.webapi_port,
             "settings": {
                 "testing": config.execution.debug,
             },

@@ -405,10 +405,10 @@ class execution(_Config):
     """Workflow will crash if upload is not successful."""
     verbose_reports = False
     """Generate extended reports."""
-    webapi_url = "https://mriqc.nimh.nih.gov/api/v1"
+    webapi_token = "<secret_token>"
+    """Authorization token for the WebAPI service."""
+    webapi_url = "https://mriqc.nimh.nih.gov:443/api/v1"
     """IP address where the MRIQC WebAPI is listening."""
-    webapi_port = None
-    """port where the MRIQC WebAPI is listening."""
     work_dir = Path("work").absolute()
     """Path to a working directory where intermediate results will be available."""
     write_graph = False
