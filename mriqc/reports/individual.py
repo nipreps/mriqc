@@ -60,6 +60,21 @@ def _single_report(in_file):
         / in_file.parent.relative_to(config.execution.bids_dir)
         / in_file.name.replace("".join(in_file.suffixes), ".json")
     ).read_text())
+    mriqc_json.pop("bids_meta")
+
+    # Clean-up provenance dictionary
+    prov = mriqc_json.pop("provenance")
+    prov.pop("webapi_url")
+    prov.pop("webapi_port")
+    prov.pop("settings")
+    prov.pop("software")
+    prov.update({
+        f"warnings_{kk}": vv for kk, vv in prov.pop("warnings").items()
+    })
+    prov["Input filename"] = f"<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}"
+    prov["MRIQC version"] = prov.pop("version")
+
+    bids_meta = config.execution.layout.get_file(in_file).get_metadata()
 
     robj = Report(
         config.execution.output_dir,
@@ -69,8 +84,8 @@ def _single_report(in_file):
         metadata={
             "dataset": config.execution.dsname,
             "about-metadata": {
-                "Provenance Information": mriqc_json.pop("provenance"),
-                "Dataset Information": mriqc_json.pop("bids_meta"),
+                "Provenance Information": prov,
+                "Dataset Information": bids_meta,
                 "Extracted Image quality metrics (IQMs)": mriqc_json,
             }
         },
