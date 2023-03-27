@@ -233,6 +233,7 @@ def main():
         if not mod_group_reports:
             raise Exception(messages.GROUP_NO_DATA)
 
+        EXITCODE = 0 if EXITCODE == -1 else EXITCODE
         config.loggers.cli.info(messages.GROUP_FINISHED)
 
     from mriqc.utils.bids import write_bidsignore, write_derivative_description
