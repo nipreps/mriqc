@@ -970,10 +970,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
         out_file = op.abspath("{}_bin{}".format(fname, ext))
 
     nii = nb.load(in_file)
-    data = nii.get_data()
-
-    data[data <= threshold] = 0
-    data[data > 0] = 1
+    data = nii.get_fdata() > threshold
 
     hdr = nii.header.copy()
     hdr.set_data_dtype(np.uint8)
@@ -986,8 +983,8 @@ def _estimate_snr(in_file, seg_file):
     import numpy as np
     from mriqc.qc.anatomical import snr
 
-    data = nb.load(in_file).get_data()
-    mask = nb.load(seg_file).get_data() == 2  # WM label
+    data = nb.load(in_file).get_fdata()
+    mask = np.asanyarray(nb.load(seg_file).dataobj) == 2  # WM label
     out_snr = snr(np.mean(data[mask]), data[mask].std(), mask.sum())
     return out_snr
 
@@ -1006,7 +1003,7 @@ def _enhance(in_file, out_file=None):
         out_file = op.abspath(f"{fname}_enhanced{ext}")
 
     imnii = nb.load(in_file)
-    data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
+    data = imnii.get_fdata(dtype=np.float32)  # pylint: disable=no-member
     range_max = np.percentile(data[data > 0], 99.98)
     range_min = np.median(data[data > 0])
 
@@ -1045,7 +1042,7 @@ def image_gradient(in_file, snr, sigma=3.0, out_file=None):
         out_file = op.abspath(f"{fname}_grad{ext}")
 
     imnii = nb.load(in_file)
-    data = imnii.get_data().astype(np.float32)  # pylint: disable=no-member
+    data = imnii.get_fdata(dtype=np.float32)  # pylint: disable=no-member
     datamax = np.percentile(data.reshape(-1), 99.5)
     data *= 100 / datamax
     grad = gradient(data, sigma)
@@ -1091,12 +1088,12 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     hdr = imnii.header.copy()
     hdr.set_data_dtype(np.uint8)  # pylint: disable=no-member
 
-    data = imnii.get_data().astype(np.float32)
+    data = imnii.get_fdata(dtype=np.float32)
 
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
     mask[data > thresh] = 1
 
-    segdata = nb.load(in_segm).get_data().astype(np.uint8)
+    segdata = np.uint8(nb.load(in_segm).dataobj)
     segdata[segdata > 0] = 1
     segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(
         np.uint8

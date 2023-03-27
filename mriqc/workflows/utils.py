@@ -45,7 +45,7 @@ def fwhm_dict(fwhm):
 def thresh_image(in_file, thres=0.5, out_file=None):
     """Thresholds an image"""
     import os.path as op
-
+    import numpy as np
     import nibabel as nb
 
     if out_file is None:
@@ -56,7 +56,7 @@ def thresh_image(in_file, thres=0.5, out_file=None):
         out_file = op.abspath("{}_thresh{}".format(fname, ext))
 
     im = nb.load(in_file)
-    data = im.get_data()
+    data = np.asanyarray(im.dataobj)
     data[data < thres] = 0
     data[data > 0] = 1
     nb.Nifti1Image(data, im.affine, im.header).to_filename(out_file)
@@ -107,7 +107,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
             fname, _ = op.splitext(fname)
         out_prefix = op.abspath(fname)
 
-    func_data = nb.load(in_file).get_data()
+    func_data = nb.load(in_file).get_fdata()
 
     if ftmask is None:
         ftmask = spectrum_mask(tuple(func_data.shape[:2]))

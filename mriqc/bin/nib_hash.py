@@ -62,9 +62,8 @@ def get_hash(nii_file: str) -> str:
     str
         SHA1 hash
     """
-    data = nb.load(nii_file).get_data()
-    data.flags.writeable = False
-    return sha1(data.data.tobytes()).hexdigest()
+    with nb.openers.ImageOpener(nii_file) as fobj:
+        return sha1(fobj.read()).hexdigest()
 
 
 def main():
