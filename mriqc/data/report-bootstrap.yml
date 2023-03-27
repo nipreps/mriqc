@@ -65,6 +65,8 @@ sections:
     caption: The noise fit internally estimated by MRIQC to calculate the QI<sub>1</sub> index
       proposed by <a href="https://doi.org/10.1002/mrm.21992" target="_blank">Mortamet et al. (2009)</a>.
     subtitle: Distribution of the noise within the <em>hat</em> mask
+    style:
+      max-width: 450px
   - bids: {datatype: figures, desc: artifacts}
     caption: Mask of artifactual intensities identified within the <em>hat</em>-mask.
     subtitle: Artifactual intensities on the background
