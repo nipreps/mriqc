@@ -95,14 +95,12 @@ class FunctionalQC(SimpleInterface):
     def _run_interface(self, runtime):
         # Get the mean EPI data and get it ready
         epinii = nb.load(self.inputs.in_epi)
-        epidata = np.nan_to_num(epinii.get_fdata())
-        epidata = epidata.astype(np.float32)
+        epidata = np.nan_to_num(np.float32(epinii.dataobj))
         epidata[epidata < 0] = 0
 
         # Get EPI data (with mc done) and get it ready
         hmcnii = nb.load(self.inputs.in_hmc)
-        hmcdata = np.nan_to_num(hmcnii.get_fdata())
-        hmcdata = hmcdata.astype(np.float32)
+        hmcdata = np.nan_to_num(np.float32(hmcnii.dataobj))
         hmcdata[hmcdata < 0] = 0
 
         # Get brain mask data
@@ -256,7 +254,7 @@ class Spikes(SimpleInterface):
         if not isdefined(self.inputs.in_mask):
             _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
         else:
-            mask_data = nb.load(self.inputs.in_mask).get_fdata()
+            mask_data = np.bool_(nb.load(self.inputs.in_mask).dataobj)
             mask_data[..., :nskip] = 0
             mask_data = np.stack([mask_data] * ntsteps, axis=-1)
 

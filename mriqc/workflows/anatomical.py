@@ -970,10 +970,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
         out_file = op.abspath("{}_bin{}".format(fname, ext))
 
     nii = nb.load(in_file)
-    data = nii.get_fdata()
-
-    data[data <= threshold] = 0
-    data[data > 0] = 1
+    data = nii.get_fdata() > threshold
 
     hdr = nii.header.copy()
     hdr.set_data_dtype(np.uint8)
@@ -1096,7 +1093,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
     mask[data > thresh] = 1
 
-    segdata = np.asanyarray(nb.load(in_segm).dataobj).astype(np.uint8)
+    segdata = np.uint8(nb.load(in_segm).dataobj)
     segdata[segdata > 0] = 1
     segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(
         np.uint8

@@ -134,7 +134,7 @@ class ConformImage(SimpleInterface):
             return nii
         else:
             header.set_data_dtype(dtype)
-            converted = np.asanyarray(nii.dataobj).astype(dtype)
+            converted = np.asanyarray(nii.dataobj, dtype=dtype)
             return nib.Nifti1Image(converted, nii.affine, header)
 
     def _run_interface(self, runtime):

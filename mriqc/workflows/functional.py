@@ -949,7 +949,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     orientation = nb.aff2axcodes(in_4d_nii.affine)
 
     if in_mask:
-        mask_data = np.asanyarray(nb.load(in_mask))
+        mask_data = np.asanyarray(nb.load(in_mask).dataobj)
         a = np.where(mask_data != 0)
         bbox = (
             np.max(a[0]) - np.min(a[0]),

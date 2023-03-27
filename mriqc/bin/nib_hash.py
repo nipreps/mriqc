@@ -23,7 +23,6 @@
 """
 Extracts the sha hash of the contents of a nifti file.
 """
-import numpy as np
 from argparse import ArgumentParser, RawTextHelpFormatter
 from hashlib import sha1
 
@@ -63,9 +62,8 @@ def get_hash(nii_file: str) -> str:
     str
         SHA1 hash
     """
-    data = np.asanyarray(nb.load(nii_file).dataobj)
-    data.flags.writeable = False
-    return sha1(data.data.tobytes()).hexdigest()
+    with nb.openers.ImageOpener(nii_file) as fobj:
+        return sha1(fobj.read()).hexdigest()
 
 
 def main():
