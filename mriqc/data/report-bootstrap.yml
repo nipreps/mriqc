@@ -33,28 +33,38 @@ sections:
   - bids: {datatype: figures, desc: summary, extension: [.html]}
 - name: Basic visual report
   reportlets:
-  - bids: {datatype: figures, desc: zoomed}
+  - bids: {datatype: figures, desc: zoomed, suffix: [T1w, T2w]}
     caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
       screen head-motion intensity inhomogeneities, global/local noise, signal leakage
       (for example, from the eyeballs and across the phase-encoding axis), etc.
     subtitle: Zoomed-in mosaic view of the brain
-  - bids: {datatype: figures, desc: background}
+  - bids: {datatype: figures, desc: zoomed, suffix: bold}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
+      (for example, from the eyeballs and across the phase-encoding axis), etc.
+    subtitle: Voxel-wise average of BOLD time-series, zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: stdev}
+    subtitle: Standard deviation of signal through time
+    caption: The voxel-wise standard deviation of the signal (variability along time).
+  - bids: {datatype: figures, desc: background, suffix: [T1w, T2w]}
     caption: This panel shows a mosaic enhancing the background around the head.
       Artifacts usually unveil themselves in the air surrounding the head, where no signal
       sources are present.
-    subtitle: View of the background of the image
+    subtitle: View of the background of the anatomical image
   - bids: {datatype: figures, desc: carpet}
     subtitle: Carpetplot and nuisance signals
     caption: The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion
       derived artifacts and respiation effects.
 - name: Extended visual report
   reportlets:
+  - bids: {datatype: figures, desc: background, suffix: bold}
+    caption: This panel shows a mosaic enhancing the background around the head.
+      Artifacts usually unveil themselves in the air surrounding the head, where no signal
+      sources are present.
+    subtitle: View of the background of the voxel-wise average of the BOLD timeseries
   - bids: {datatype: figures, desc: mean}
     subtitle: Average signal through time
     caption: The average signal calculated across the last axis (time).
-  - bids: {datatype: figures, desc: stdev}
-    subtitle: Standard deviation of signal through time
-    caption: The voxel-wise standard deviation of the signal (variability along time).
   - bids: {datatype: figures, desc: airmask}
     caption: The <em>hat</em>-mask calculated internally by MRIQC. Some metrics will use this
       mask, for instance, to find out artifacts and estimate the spread of gaussian noise
