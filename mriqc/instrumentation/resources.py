@@ -217,7 +217,6 @@ class ResourceRecorder(Process):
     def stop(self, *args):
         # Tear-down process
         self._done.set()
-        print("stop")
         with Path(self._logfile).open("a") as f:
             f.write(
                 f"# MRIQC Resource recorder finished "
