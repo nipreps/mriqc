@@ -21,21 +21,23 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Utilities: Jinja2 templates."""
-from io import open  # pylint: disable=W0622
+from pathlib import Path
 
 from pkg_resources import resource_filename as pkgrf
 
 
-class Template(object):
+class GroupTemplate:
+    """Specific template for the individual report"""
+
     """
     Utility class for generating a config file from a jinja template.
     https://github.com/oesteban/endofday/blob/f2e79c625d648ef45b08cc1f11fd0bd84342d604/endofday/core/template.py
     """
 
-    def __init__(self, template_str):
+    def __init__(self):
         import jinja2
 
-        self.template_str = template_str
+        self.template_str = pkgrf("mriqc", "data/reports/group.html")
         self.env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(searchpath="/"),
             trim_blocks=True,
@@ -49,22 +51,4 @@ class Template(object):
 
     def generate_conf(self, configs, path):
         """Saves the oucome after replacement on the template to file"""
-        output = self.compile(configs)
-        with open(path, "w+") as output_file:
-            output_file.write(output)
-
-
-class IndividualTemplate(Template):
-    """Specific template for the individual report"""
-
-    def __init__(self):
-        super(IndividualTemplate, self).__init__(
-            pkgrf("mriqc", "data/reports/individual.html")
-        )
-
-
-class GroupTemplate(Template):
-    """Specific template for the individual report"""
-
-    def __init__(self):
-        super(GroupTemplate, self).__init__(pkgrf("mriqc", "data/reports/group.html"))
+        Path(path).write_text(self.compile(configs))

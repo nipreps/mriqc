@@ -20,8 +20,6 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-from urllib.parse import urlparse
-
 from mriqc import config, messages
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
@@ -33,8 +31,6 @@ from nipype.interfaces.base import (
     isdefined,
     traits,
 )
-
-SECRET_KEY = "<secret_token>"
 
 # metadata whitelist
 META_WHITELIST = [
@@ -115,9 +111,8 @@ HASH_BIDS = ["subject_id", "session_id"]
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     in_iqms = File(exists=True, mandatory=True, desc="the input IQMs-JSON file")
-    url = Str(mandatory=True, desc="URL (protocol and name) listening")
-    port = traits.Int(desc="MRIQCWebAPI service port")
-    path = Str(desc="MRIQCWebAPI endpoint root path")
+    endpoint = Str(mandatory=True, desc="URL of the POST endpoint")
+    auth_token = Str(mandatory=True, desc="authentication token")
     email = Str(desc="set sender email")
     strict = traits.Bool(
         False, usedefault=True, desc="crash if upload was not successful"
@@ -144,30 +139,12 @@ class UploadIQMs(SimpleInterface):
         if isdefined(self.inputs.email):
             email = self.inputs.email
 
-        rawurl = self.inputs.url
-        if "://" not in rawurl:
-            rawurl = "http://"
-        url = urlparse(rawurl)
-
-        if not url.scheme.startswith("http"):
-            raise RuntimeError('Tried an unknown protocol "%s"' % url.scheme)
-
-        port = url.port
-        if isdefined(self.inputs.port):
-            port = self.inputs.port
-
-        path = url.path
-        if isdefined(self.inputs.path):
-            path = self.inputs.path
-
         self._results["api_id"] = None
 
         response = upload_qc_metrics(
             self.inputs.in_iqms,
-            url.netloc,
-            path=path,
-            scheme=url.scheme,
-            port=port,
+            endpoint=self.inputs.endpoint,
+            auth_token=self.inputs.auth_token,
             email=email,
         )
 
@@ -196,14 +173,19 @@ class UploadIQMs(SimpleInterface):
         return runtime
 
 
-def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=None):
+def upload_qc_metrics(
+    in_iqms,
+    endpoint=None,
+    email=None,
+    auth_token=None,
+):
     """
     Upload qc metrics to remote repository.
 
     :param str in_iqms: Path to the qc metric json file as a string
-    :param str scheme: the protocol (either http or https)
+    :param str webapi_url: the protocol (either http or https)
     :param str email: email address to be included with the metric submission
-    :param bool upload_strict: the client should fail if it's strict mode
+    :param str auth_token: authentication token
 
     :return: either the response object if a response was successfully sent
              or it returns the string "No Response"
@@ -217,8 +199,10 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
 
     import requests
 
-    if port is None:
-        port = 443 if scheme == "https" else 80
+    if not endpoint or not auth_token:
+        # If endpoint unknown, do not even report what happens to the token.
+        errmsg = "Unknown API endpoint" if not endpoint else "Authentication failed."
+        return Bunch(status_code=1, text=errmsg)
 
     in_data = loads(Path(in_iqms).read_text())
 
@@ -254,19 +238,15 @@ def upload_qc_metrics(in_iqms, loc, path="", scheme="http", port=None, email=Non
     if email:
         data["provenance"]["email"] = email
 
-    if path and not path.endswith("/"):
-        path += "/"
-        if path.startswith("/"):
-            path = path[1:]
+    headers = {"Authorization": auth_token, "Content-Type": "application/json"}
 
-    headers = {"Authorization": SECRET_KEY, "Content-Type": "application/json"}
-
-    webapi_url = f"{scheme}://{loc}:{port}/{path}{modality}"
-    start_message = messages.QC_UPLOAD_START.format(url=webapi_url)
+    start_message = messages.QC_UPLOAD_START.format(url=endpoint)
     config.loggers.interface.info(start_message)
     try:
         # if the modality is bold, call "bold" endpoint
-        response = requests.post(webapi_url, headers=headers, data=dumps(data))
+        response = requests.post(
+            f"{endpoint}/{modality}", headers=headers, data=dumps(data)
+        )
     except requests.ConnectionError as err:
         errmsg = (
             "QC metrics failed to upload due to connection error shown below:\n%s" % err
