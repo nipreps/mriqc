@@ -38,7 +38,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     from pkg_resources import resource_filename as pkgrf
 
     from .. import __version__ as ver
-    from ..data import GroupTemplate
+    from mriqc.data.config import GroupTemplate
 
     if version_info[0] > 2:
         from io import StringIO as TextIO

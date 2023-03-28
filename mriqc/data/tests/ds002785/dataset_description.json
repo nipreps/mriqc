@@ -1,0 +1,20 @@
+{
+    "Name": "MRIQC - MRI Quality Control",
+    "BIDSVersion": "1.4.0",
+    "DatasetType": "derivative",
+    "GeneratedBy": [
+        {
+            "Name": "MRIQC",
+            "Version": "23.1.0.dev9+g936aae7",
+            "CodeURL": "https://github.com/nipreps/mriqc/archive/23.1.0.dev9+g936aae7.tar.gz"
+        }
+    ],
+    "HowToAcknowledge": "Please cite our paper (https://doi.org/10.1371/journal.pone.0184661).",
+    "SourceDatasets": [
+        {
+            "URL": "https://doi.org/10.18112/openneuro.ds002785.v2.0.0",
+            "DOI": "10.18112/openneuro.ds002785.v2.0.0"
+        }
+    ],
+    "License": "CC0"
+}

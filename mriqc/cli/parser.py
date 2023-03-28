@@ -285,6 +285,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help="Path where intermediate results should be stored.",
     )
     g_outputs.add_argument("--verbose-reports", default=False, action="store_true")
+    g_outputs.add_argument("--reports-only", default=False, action="store_true")
     g_outputs.add_argument(
         "--write-graph",
         action="store_true",

@@ -103,12 +103,7 @@ set i 0
             if exc.errno != EEXIST:
                 raise exc
 
-        niifile = op.join(tmp_sub, "%s.nii.gz") % subid
-        ref_file = op.join(sub_path, "mri", "T1.mgz")
-        sp.call(
-            ["mri_convert", op.join(sub_path, "mri", "norm.mgz"), niifile], cwd=tmp_sub
-        )
-        data = nb.load(niifile).get_data()
+        data = nb.load(op.join(sub_path, "mri", "norm.mgz")).get_fdata()
         data[data > 0] = 1
 
         # Compute brain bounding box
@@ -118,12 +113,10 @@ set i 0
         center = np.average([bbox_min, bbox_max], axis=0)
 
         if opts.hist_eq:
-            modnii = op.join(tmp_sub, "%s.nii.gz" % subid)
             ref_file = op.join(tmp_sub, "%s.mgz" % subid)
-            img = nb.load(niifile)
-            data = exposure.equalize_adapthist(img.get_data(), clip_limit=0.03)
-            nb.Nifti1Image(data, img.affine, img.header).to_filename(modnii)
-            sp.call(["mri_convert", modnii, ref_file], cwd=tmp_sub)
+            img = nb.load(op.join(sub_path, "mri", "norm.mgz"))
+            data = exposure.equalize_adapthist(img.get_fdata(), clip_limit=0.03)
+            nb.MGHImage(data, img.affine, img.header).to_filename(ref_file)
 
         if not opts.zoom:
             # Export tiffs for left hemisphere

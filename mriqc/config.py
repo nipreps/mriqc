@@ -200,6 +200,11 @@ try:
 except Exception:
     pass
 
+file_path: Path = None
+"""
+Path to configuration file.
+"""
+
 
 class _Config:
     """An abstract class forbidding instantiation."""
@@ -400,10 +405,10 @@ class execution(_Config):
     """Workflow will crash if upload is not successful."""
     verbose_reports = False
     """Generate extended reports."""
-    webapi_url = "https://mriqc.nimh.nih.gov/api/v1"
+    webapi_token = "<secret_token>"
+    """Authorization token for the WebAPI service."""
+    webapi_url = "https://mriqc.nimh.nih.gov:443/api/v1"
     """IP address where the MRIQC WebAPI is listening."""
-    webapi_port = None
-    """port where the MRIQC WebAPI is listening."""
     work_dir = Path("work").absolute()
     """Path to a working directory where intermediate results will be available."""
     write_graph = False
@@ -437,7 +442,8 @@ class execution(_Config):
                 re.compile(r"^(?!/sub-[a-zA-Z0-9]+)"),
                 # Ignore all modality subfolders, except for func/ or anat/
                 re.compile(
-                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/(?!func|anat)"
+                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/"
+                    r"(beh|dwi|fmap|pet|perf|meg|eeg|ieeg|micr|nirs)"
                 ),
                 # Ignore all files, except for the supported modalities
                 re.compile(r"^.+(?<!(_T1w|_T2w|bold))\.(json|nii|nii\.gz)$"),
@@ -632,11 +638,28 @@ def to_filename(filename):
     filename.write_text(dumps())
 
 
-def _process_initializer(cwd, omp_nthreads):
+def _process_initializer(config_file: Path):
     """Initialize the environment of the child process."""
-    os.chdir(cwd)
+    from mriqc import config
+
+    # Disable eTelemetry
     os.environ["NIPYPE_NO_ET"] = "1"
-    os.environ["OMP_NUM_THREADS"] = f"{omp_nthreads}"
+    os.environ["NO_ET"] = "1"
+
+    # Load config
+    config.load(config_file)
+
+    # Initialize nipype config
+    config.nipype.init()
+
+    # Make sure loggers are started
+    config.loggers.init()
+
+    # Change working directory according to the config
+    os.chdir(config.execution.cwd)
+
+    # Set the maximal number of threads per process
+    os.environ["OMP_NUM_THREADS"] = f"{config.nipype.omp_nthreads}"
 
 
 def restore_env():

@@ -26,12 +26,12 @@ dependencies = [
     "matplotlib",
     "migas",
     "mriqc-learn",
-    "nibabel >= 3.0.1,<4.0",
+    "nibabel >= 3.0.1",
     "nilearn >= 0.5.1",
     "nipype ~= 1.4",
-    "nireports >= 23.0",
+    "nireports @ git+https://github.com/nipreps/nireports.git@main",
     "nitransforms >= 21.0.1",
-    "niworkflows @ git+https://github.com/nipreps/niworkflows.git@master",
+    "niworkflows >= 1.7.7", 
     "numpy ~=1.20",
     "pandas ~=1.0",
     "pybids >= 0.15.6",
@@ -107,7 +107,6 @@ all = ["mriqc[doc,full,test,notebook,other]"]
 [project.scripts]
 mriqc = "mriqc.cli.run:main"
 synthstrip = "mriqc.synthstrip.cli:main"
-mriqc_plot = "mriqc.bin.mriqc_plot:main"
 abide2bids = "mriqc.bin.abide2bids:main"
 fs2gif = "mriqc.bin.fs2gif:main"
 dfcheck = "mriqc.bin.dfcheck:main"

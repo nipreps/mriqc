@@ -441,7 +441,7 @@ class MultiProcPlugin(DistributedPluginBase):
         self.pool = pool or ProcessPoolExecutor(
             max_workers=self.processors,
             initializer=config._process_initializer,
-            initargs=(config.execution.cwd, config.nipype.omp_nthreads),
+            initargs=(config.file_path,),
             mp_context=mp_context,
         )
 

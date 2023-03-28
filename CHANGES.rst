@@ -1,3 +1,13 @@
+23.0.1 (March 24, 2023)
+=======================
+A hotfix release resolving a reggression introduced with the new optimized indexing.
+
+* FIX: Underspecified regex sets ``BIDSLayout`` to ignore data with sessions (#1094)
+* FIX: Input data has incompatible dimensionality (plotting ICA) (#1082)
+* ENH: Optimize metadata gathering reusing ``BIDSLayout`` db (#1084)
+* DOC : update anatomical example report in documentation (#1088)
+* MAINT: Drop old ``mriqc_plot`` script (#1091)
+
 23.0.0 (March 10, 2023)
 =======================
 The new 23.0.x series include several prominent changes.

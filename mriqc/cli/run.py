@@ -54,6 +54,7 @@ def main():
         dir=config.execution.work_dir, prefix=".mriqc.", suffix=".toml"
     )
     config.to_filename(config_file)
+    config.file_path = config_file
 
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
@@ -73,7 +74,7 @@ def main():
             _pool = ProcessPoolExecutor(
                 max_workers=config.nipype.nprocs,
                 initializer=config._process_initializer,
-                initargs=(config.execution.cwd, config.nipype.omp_nthreads),
+                initargs=(config.file_path,),
             )
 
         _resmon = None
@@ -147,7 +148,7 @@ def main():
         if mriqc_wf and config.execution.write_graph:
             mriqc_wf.write_graph(graph2use="colored", format="svg", simple_form=True)
 
-        if not config.execution.dry_run:
+        if not config.execution.dry_run or not config.execution.reports_only:
             # Warn about submitting measures BEFORE
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
@@ -169,6 +170,12 @@ def main():
             # Warn about submitting measures AFTER
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)
+
+        if not config.execution.dry_run:
+            from mriqc.reports.individual import generate_reports
+
+            generate_reports()
+
         config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
 
         if _resmon is not None:
@@ -187,7 +194,7 @@ def main():
 
     # Set up group level
     if "group" in config.workflow.analysis_level:
-        from ..reports import group_html
+        from mriqc.reports.group import gen_html as group_html
         from ..utils.bids import DEFAULT_TYPES
         from ..utils.misc import generate_tsv  # , generate_pred
 
@@ -226,6 +233,7 @@ def main():
         if not mod_group_reports:
             raise Exception(messages.GROUP_NO_DATA)
 
+        EXITCODE = 0 if EXITCODE == -1 else EXITCODE
         config.loggers.cli.info(messages.GROUP_FINISHED)
 
     from mriqc.utils.bids import write_bidsignore, write_derivative_description
@@ -234,6 +242,7 @@ def main():
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
     config.loggers.cli.info(messages.RUN_FINISHED)
+    sys.exit(EXITCODE)
 
 
 def migas_exit() -> None:

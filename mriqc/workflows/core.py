@@ -23,9 +23,9 @@
 """
 Combines the structural and functional MRI workflows.
 """
-from mriqc.workflows.anatomical import anat_qc_workflow
-from mriqc.workflows.functional import fmri_qc_workflow
 from nipype.pipeline.engine import Workflow
+from mriqc.workflows.anatomical.base import anat_qc_workflow
+from mriqc.workflows.functional.base import fmri_qc_workflow
 
 ANATOMICAL_KEYS = "T1w", "T2w"
 FMRI_KEY = "bold"
