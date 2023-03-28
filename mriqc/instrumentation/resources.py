@@ -29,6 +29,7 @@ from contextlib import suppress
 import signal
 import psutil
 
+
 _MB = 1024.0**2
 SAMPLE_ATTRS = (
     "pid",
@@ -42,6 +43,33 @@ SAMPLE_ATTRS = (
 )
 
 
+def FindProcess(process_name):
+    """
+     Find a process by its name and returns its PID. Child processes are excluded
+     Parameters
+     ----------
+     process_name : :obj:`str`
+         The name of the process that must be found.
+    Return
+     ----------
+     PID of the process if found, False if the process is not found
+    """
+
+    for proc in psutil.process_iter():
+        try:
+            if process_name == proc.name():
+
+                parent = proc.parent()
+
+                if parent.name() != process_name:
+                    return proc.pid
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    print("Process ", process_name, " not found")
+    return False
+
+
 def sample(
     pid=None,
     recursive=True,
@@ -50,7 +78,6 @@ def sample(
 ):
     """
     Probe process tree and snapshot current resource utilization.
-
     Parameters
     ----------
     pid : :obj:`int` or :obj:`None`
@@ -61,7 +88,6 @@ def sample(
     attrs : :obj:`iterable` of :obj:`str`
         A list of :obj:`psutil.Process` attribute names that will be retrieved when
         sampling.
-
     """
     proc_list = [psutil.Process(pid)]
     if proc_list and recursive:
@@ -127,7 +153,7 @@ class ResourceRecorder(Process):
     ):
         Process.__init__(self, name="nipype_resmon", daemon=True, **process_kwargs)
 
-        self._pid = pid
+        self._pid = int(pid)
         """The process to be sampled."""
         self._logfile = str(
             Path(log_file if log_file is not None else f".prof-{pid}.tsv").absolute()
@@ -145,8 +171,8 @@ class ResourceRecorder(Process):
 
     def run(self, *args, **kwargs):
         """Core monitoring function, called by start()"""
-
         # Open file now, because it cannot be pickled.
+
         Path(self._logfile).parent.mkdir(parents=True, exist_ok=True)
         _logfile = Path(self._logfile).open("w")
 

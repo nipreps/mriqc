@@ -22,11 +22,20 @@
 #
 
 if __name__ == "__main__":
-    import sys
-    from mriqc.instrumentation.resources import ResourceRecorder
+    from mriqc.instrumentation.resources import ResourceRecorder, FindProcess
     from . import __name__ as module
+    import argparse
 
     # `python -m <module>` typically displays the command as __main__.py
-    if "__main__.py" in sys.argv[0]:
-        sys.argv[0] = "%s -m %s" % (sys.executable, module)
-    ResourceRecorder(pid=int(sys.argv[1])).start()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--name", type=str, required=True)
+    parser.add_argument("-p", "--logfile_path", type=str, default=".")
+    args = parser.parse_args()
+
+    if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
+        argparse._sys.argv[0] = "%s -m %s" % (argparse._sys.executable, module)
+
+    pid = args.name if args.name.isnumeric() else FindProcess(args.name)
+
+    ResourceRecorder(pid, log_file=args.logfile_path + str(pid) + ".tsv").run()
