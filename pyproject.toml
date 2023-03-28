@@ -208,5 +208,6 @@ exclude_lines = [
 # nd - import scipy.ndimage as nd
 # mapp, reson -- Mapp. and Reson. abbreviations in citation
 ignore-words-list = 'nd,mapp,reson'
-skip = './.git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE'
-# ./docs/source/_static/example_anatreport.html
+skip = """
+./.git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE,\
+./docs/source/_static/example_anatreport.html"""
