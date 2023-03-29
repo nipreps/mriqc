@@ -68,6 +68,8 @@ from mriqc.workflows.anatomical.output import init_anat_report_wf
 from nipype.interfaces import ants, fsl
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+
+from niworkflows.interfaces.fixes import FixHeaderApplyTransforms as ApplyTransforms
 from templateflow.api import get as get_template
 
 
@@ -144,28 +146,6 @@ def anat_qc_workflow(name="anatMRIQC"):
         dseg_out = "tissue_class_map"
         pve_out = "partial_volume_files"
     else:
-        from niworkflows.interfaces.fixes import ApplyTransforms
-
-        tpms = [
-            str(tpm)
-            for tpm in get_template(
-                config.workflow.template_id, label=["CSF", "GM", "WM"], suffix="probseg"
-            )
-        ]
-
-        xfm_tpms = pe.MapNode(
-            ApplyTransforms(
-                dimension=3,
-                default_value=0,
-                float=True,
-                interpolation="Gaussian",
-                output_image="prior.nii.gz",
-            ),
-            iterfield=["input_image"],
-            name="xfm_tpms",
-        )
-        xfm_tpms.inputs.input_image = tpms
-
         format_tpm_names = pe.Node(
             niu.Function(
                 input_names=["in_files"],
@@ -219,7 +199,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         (norm, amw, [
             ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
         (norm, iqmswf, [
-            ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
+            ("outputnode.out_tpms", "inputnode.std_tpms")]),
         (norm, anat_report_wf, ([
             ("outputnode.out_report", "inputnode.mni_report")])),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
@@ -258,9 +238,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         ])
     else:
         workflow.connect([
-            (skull_stripping, xfm_tpms, [("outputnode.out_brain", "reference_image")]),
-            (norm, xfm_tpms, [("outputnode.inverse_composite_transform", "transforms")]),
-            (xfm_tpms, format_tpm_names, [('output_image', 'in_files')]),
+            (norm, format_tpm_names, [('outputnode.out_tpms', 'in_files')]),
             (format_tpm_names, segment, [(('file_format', _pop), 'prior_image')]),
             (skull_stripping, segment, [("outputnode.out_mask", "mask_image")]),
         ])
@@ -302,7 +280,8 @@ def spatial_normalization(name="SpatialNormalization"):
         name="inputnode",
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["inverse_composite_transform", "out_report"]),
+        niu.IdentityInterface(
+            fields=["out_tpms", "inverse_composite_transform", "out_report"]),
         name="outputnode",
     )
 
@@ -330,13 +309,44 @@ def spatial_normalization(name="SpatialNormalization"):
             get_template(tpl_id, desc="brain", suffix="mask")[0]
         )
 
+    # Project MNI segmentation to T1 space
+    tpms_std2t1w = pe.MapNode(
+        ApplyTransforms(
+            dimension=3,
+            default_value=0,
+            interpolation="Gaussian",
+            float=config.execution.ants_float,
+        ),
+        iterfield=["input_image"],
+        name="tpms_std2t1w",
+    )
+    tpms_std2t1w.inputs.input_image = [
+        str(p)
+        for p in get_template(
+            config.workflow.template_id,
+            suffix="probseg",
+            resolution=(
+                1 if config.workflow.species.lower() == "human"
+                else None
+            ),
+            label=["CSF", "GM", "WM"],
+        )
+    ]
+
     # fmt: off
     workflow.connect([
         (inputnode, norm, [("moving_image", "moving_image"),
                            ("moving_mask", "moving_mask"),
                            ("modality", "reference")]),
-        (norm, outputnode, [("inverse_composite_transform", "inverse_composite_transform"),
-                            ("out_report", "out_report")]),
+        (inputnode, tpms_std2t1w, [("moving_image", "reference_image")]),
+        (norm, tpms_std2t1w, [
+            ("inverse_composite_transform", "transforms"),
+        ]),
+        (norm, outputnode, [
+            ("inverse_composite_transform", "inverse_composite_transform"),
+            ("out_report", "out_report"),
+        ]),
+        (tpms_std2t1w, outputnode, [("output_image", "out_tpms")]),
     ])
     # fmt: on
 
@@ -377,7 +387,7 @@ def compute_iqms(name="ComputeIQMs"):
                 "in_inu",
                 "pvms",
                 "metadata",
-                "inverse_composite_transform",
+                "std_tpms",
             ]
         ),
         name="inputnode",
@@ -413,34 +423,6 @@ def compute_iqms(name="ComputeIQMs"):
     measures = pe.Node(
         StructuralQC(human=config.workflow.species.lower() == "human"), "measures"
     )
-
-    # Project MNI segmentation to T1 space
-    invt = pe.MapNode(
-        ants.ApplyTransforms(
-            dimension=3, default_value=0, interpolation="Linear", float=True
-        ),
-        iterfield=["input_image"],
-        name="MNItpms2t1",
-    )
-    if config.workflow.species.lower() == "human":
-        invt.inputs.input_image = [
-            str(p)
-            for p in get_template(
-                config.workflow.template_id,
-                suffix="probseg",
-                resolution=1,
-                label=["CSF", "GM", "WM"],
-            )
-        ]
-    else:
-        invt.inputs.input_image = [
-            str(p)
-            for p in get_template(
-                config.workflow.template_id,
-                suffix="probseg",
-                label=["CSF", "GM", "WM"],
-            )
-        ]
 
     datasink = pe.Node(
         IQMFileSink(
@@ -481,13 +463,11 @@ def compute_iqms(name="ComputeIQMs"):
                                ("artmask", "artifact_msk"),
                                ("rotmask", "rot_msk"),
                                ("segmentation", "in_segm"),
-                               ("pvms", "in_pvms")]),
+                               ("pvms", "in_pvms"),
+                               ("std_tpms", "mni_tpms")]),
         (inputnode, fwhm, [("in_ras", "in_file"),
                            ("brainmask", "mask")]),
-        (inputnode, invt, [("in_ras", "reference_image"),
-                           ("inverse_composite_transform", "transforms")]),
         (homog, measures, [("out_file", "in_noinu")]),
-        (invt, measures, [("output_image", "mni_tpms")]),
         (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
         (measures, datasink, [("out_qc", "root")]),
         (addprov, datasink, [("out_prov", "provenance")]),
@@ -652,7 +632,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
     rotmsk = pe.Node(RotationMask(), name="RotationMask")
 
     invt = pe.Node(
-        ants.ApplyTransforms(
+        ApplyTransforms(
             dimension=3,
             default_value=0,
             interpolation="MultiLabel",
