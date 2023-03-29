@@ -65,7 +65,6 @@ from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.messages import BUILDING_WORKFLOW
 from mriqc.workflows.utils import get_fwhmx
 from mriqc.workflows.anatomical.output import init_anat_report_wf
-from nipype.interfaces import ants, fsl
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 
@@ -137,8 +136,10 @@ def anat_qc_workflow(name="anatMRIQC"):
     amw = airmsk_wf()
     # 6. Brain tissue segmentation
     if config.workflow.species.lower() == "human":
+        from nipype.interfaces.fsl import FAST
+
         segment = pe.Node(
-            fsl.FAST(segments=True, out_basename="segment"),
+            FAST(segments=True, out_basename="segment"),
             name="segmentation",
             mem_gb=5,
         )
@@ -146,6 +147,8 @@ def anat_qc_workflow(name="anatMRIQC"):
         dseg_out = "tissue_class_map"
         pve_out = "partial_volume_files"
     else:
+        from nipype.interfaces.ants import Atropos
+
         format_tpm_names = pe.Node(
             niu.Function(
                 input_names=["in_files"],
@@ -157,7 +160,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         )
 
         segment = pe.Node(
-            ants.Atropos(
+            Atropos(
                 initialization="PriorProbabilityImages",
                 number_of_tissue_classes=3,
                 prior_weighting=0.1,
@@ -516,8 +519,9 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
 
     if use_bet:
+        from nipype.interfaces.fsl import BET
         # Alternative for when dipy is not installed
-        bet = pe.Node(fsl.BET(surfaces=True), name="fsl_bet")
+        bet = pe.Node(BET(surfaces=True), name="bet")
 
         # fmt: off
         workflow.connect([
