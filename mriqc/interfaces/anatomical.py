@@ -21,7 +21,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Nipype interfaces to support anatomical workflow."""
-import os.path as op
 from pathlib import Path
 
 import nibabel as nb
@@ -69,9 +68,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     )
     in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
     mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    in_fwhm = traits.List(
-        traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
-    )
+    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
     human = traits.Bool(True, usedefault=True, desc="human workflow")
 
 
@@ -136,9 +133,7 @@ class StructuralQC(SimpleInterface):
 
         # Load air, artifacts and head masks
         airdata = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(np.uint8)
-        artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(
-            np.uint8
-        )
+        artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(np.uint8)
 
         headdata = np.asanyarray(nb.load(self.inputs.head_msk).dataobj).astype(np.uint8)
         if np.sum(headdata > 0) < 100:
@@ -221,9 +216,7 @@ class StructuralQC(SimpleInterface):
         )
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(
-            imnii.header.get_zooms()[:3]
-        )
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.header.get_zooms()[:3])
         self._results["fwhm"] = {
             "x": float(fwhm[0]),
             "y": float(fwhm[1]),
@@ -260,9 +253,7 @@ class StructuralQC(SimpleInterface):
         # Bias
         bias = nb.load(self.inputs.in_bias).get_fdata()[segdata > 0]
         self._results["inu"] = {
-            "range": float(
-                np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))
-            ),
+            "range": float(np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))),
             "med": float(np.median(bias)),
         }  # pylint: disable=E1101
 
@@ -287,17 +278,15 @@ class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
         (0.0, 90.0, -14.0),
         types=(traits.Float, traits.Float, traits.Float),
         usedefault=True,
-        desc="position of the top of the glabella in standard coordinates"
+        desc="position of the top of the glabella in standard coordinates",
     )
     inion_xyz = traits.Tuple(
         (0.0, -120.0, -14.0),
         types=(traits.Float, traits.Float, traits.Float),
         usedefault=True,
-        desc="position of the top of the inion in standard coordinates"
+        desc="position of the top of the inion in standard coordinates",
     )
-    ind2std_xfm = File(
-        exists=True, mandatory=True, desc="individual to standard affine transform"
-    )
+    ind2std_xfm = File(exists=True, mandatory=True, desc="individual to standard affine transform")
     zscore = traits.Float(10.0, usedefault=True, desc="z-score to consider artifacts")
 
 
@@ -327,8 +316,7 @@ class ArtifactMask(SimpleInterface):
 
         ras2ijk = np.linalg.inv(imnii.affine)
         glabella_ijk, inion_ijk = apply_affine(
-            ras2ijk,
-            xfm.map([self.inputs.glabella_xyz, self.inputs.inion_xyz])
+            ras2ijk, xfm.map([self.inputs.glabella_xyz, self.inputs.inion_xyz])
         )
 
         hmdata = np.bool_(nb.load(self.inputs.head_mask).dataobj)
@@ -336,8 +324,8 @@ class ArtifactMask(SimpleInterface):
         # Calculate distance to border
         dist = nd.morphology.distance_transform_edt(~hmdata)
 
-        hmdata[:, :, :int(inion_ijk[2])] = 1
-        hmdata[:, (hmdata.shape[1] // 2):, :int(glabella_ijk[2])] = 1
+        hmdata[:, :, : int(inion_ijk[2])] = 1
+        hmdata[:, (hmdata.shape[1] // 2) :, : int(glabella_ijk[2])] = 1
 
         dist[~hmdata] = 0
         dist /= dist.max()
@@ -360,9 +348,7 @@ class ArtifactMask(SimpleInterface):
         )
 
         airdata = (~hmdata).astype(np.uint8)
-        imnii.__class__(airdata, imnii.affine, hdr).to_filename(
-            self._results["out_hat_msk"]
-        )
+        imnii.__class__(airdata, imnii.affine, hdr).to_filename(self._results["out_hat_msk"])
 
         airdata[qi1_img > 0] = 0
         imnii.__class__(airdata.astype(np.uint8), imnii.affine, hdr).to_filename(
@@ -399,9 +385,7 @@ class ComputeQI2(SimpleInterface):
 
 
 class HarmonizeInputSpec(BaseInterfaceInputSpec):
-    in_file = File(
-        exists=True, mandatory=True, desc="input data (after bias correction)"
-    )
+    in_file = File(exists=True, mandatory=True, desc="input data (after bias correction)")
     wm_mask = File(exists=True, mandatory=True, desc="white-matter mask")
     erodemsk = traits.Bool(True, usedefault=True, desc="erode mask")
     thresh = traits.Float(0.9, usedefault=True, desc="WM probability threshold")
@@ -436,9 +420,7 @@ class Harmonize(SimpleInterface):
         data = in_file.get_fdata()
         data *= 1000.0 / np.median(data[wm_mask > 0])
 
-        out_file = fname_presuffix(
-            self.inputs.in_file, suffix="_harmonized", newpath="."
-        )
+        out_file = fname_presuffix(self.inputs.in_file, suffix="_harmonized", newpath=".")
         in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)
 
         self._results["out_file"] = out_file
