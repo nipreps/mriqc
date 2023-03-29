@@ -481,21 +481,17 @@ class RotationMask(SimpleInterface):
 
 
 def artifact_mask(imdata, airdata, distance, zscore=10.0):
-    """Computes a mask of artifacts found in the air region"""
+    """Compute a mask of artifacts found in the air region."""
     from statsmodels.robust.scale import mad
 
     qi1_msk = np.zeros(imdata.shape, dtype=bool)
     bg_data = imdata[airdata]
-    if np.sum((bg_data > 0).astype(np.uint8)) < 100:
+    if (bg_data > 0).sum() < 10:
         return qi1_msk
 
-    # Find the background threshold (the most frequently occurring value
-    # excluding 0)
-    bg_location = np.median(bg_data[bg_data > 0])
+    # Standardize the distribution of the background
     bg_spread = mad(bg_data[bg_data > 0])
-    bg_data[bg_data > 0] = (bg_data[bg_data > 0] - bg_location) / bg_spread
-    # We're only interested in right-side z-scores
-    bg_data[bg_data < 0] = 0
+    bg_data[bg_data > 0] = bg_data[bg_data > 0] / bg_spread
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
