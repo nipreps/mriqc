@@ -87,14 +87,13 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     """
 
-    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get(
-        "T2w", []
-    )
+    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get("T2w", [])
 
     message = BUILDING_WORKFLOW.format(
         modality="anatomical",
         detail=(
-            f"for {len(dataset)} NIfTI files." if len(dataset) > 2
+            f"for {len(dataset)} NIfTI files."
+            if len(dataset) > 2
             else f"({' and '.join(('<%s>' % v for v in dataset))})."
         ),
     )
@@ -108,10 +107,10 @@ def anat_qc_workflow(name="anatMRIQC"):
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
-    datalad_get = pe.Node(DataladIdentityInterface(
-        fields=["in_file"],
-        dataset_path=config.execution.bids_dir
-    ), name="datalad_get")
+    datalad_get = pe.Node(
+        DataladIdentityInterface(fields=["in_file"], dataset_path=config.execution.bids_dir),
+        name="datalad_get",
+    )
 
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_json"]), name="outputnode")
 
@@ -124,9 +123,7 @@ def anat_qc_workflow(name="anatMRIQC"):
     else:
         from nirodents.workflows.brainextraction import init_rodent_brain_extraction_wf
 
-        skull_stripping = init_rodent_brain_extraction_wf(
-            template_id=config.workflow.template_id
-        )
+        skull_stripping = init_rodent_brain_extraction_wf(template_id=config.workflow.template_id)
         ss_bias_field = "final_n4.bias_image"
     # 3. Head mask
     hmsk = headmsk_wf()
@@ -251,11 +248,14 @@ def anat_qc_workflow(name="anatMRIQC"):
     if not config.execution.no_sub:
         from mriqc.interfaces.webapi import UploadIQMs
 
-        upldwf = pe.Node(UploadIQMs(
-            endpoint=config.execution.webapi_url,
-            auth_token=config.execution.webapi_token,
-            strict=config.execution.upload_strict,
-        ), name="UploadMetrics")
+        upldwf = pe.Node(
+            UploadIQMs(
+                endpoint=config.execution.webapi_url,
+                auth_token=config.execution.webapi_token,
+                strict=config.execution.upload_strict,
+            ),
+            name="UploadMetrics",
+        )
 
         # fmt: off
         workflow.connect([
@@ -283,8 +283,7 @@ def spatial_normalization(name="SpatialNormalization"):
         name="inputnode",
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["out_tpms", "out_report", "ind2std_xfm"]),
+        niu.IdentityInterface(fields=["out_tpms", "out_report", "ind2std_xfm"]),
         name="outputnode",
     )
 
@@ -308,9 +307,7 @@ def spatial_normalization(name="SpatialNormalization"):
         )
     else:
         norm.inputs.reference_image = str(get_template(tpl_id, suffix="T2w"))
-        norm.inputs.reference_mask = str(
-            get_template(tpl_id, desc="brain", suffix="mask")[0]
-        )
+        norm.inputs.reference_mask = str(get_template(tpl_id, desc="brain", suffix="mask")[0])
 
     # Project standard TPMs into T1w space
     tpms_std2t1w = pe.MapNode(
@@ -328,10 +325,7 @@ def spatial_normalization(name="SpatialNormalization"):
         for p in get_template(
             config.workflow.template_id,
             suffix="probseg",
-            resolution=(
-                1 if config.workflow.species.lower() == "human"
-                else None
-            ),
+            resolution=(1 if config.workflow.species.lower() == "human" else None),
             label=["CSF", "GM", "WM"],
         )
     ]
@@ -401,9 +395,7 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     # Extract metadata
-    meta = pe.Node(ReadSidecarJSON(
-        index_db=config.execution.bids_database_dir
-    ), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name="metadata")
 
     # Add provenance
     addprov = pe.Node(AddProvenance(), name="provenance", run_without_submitting=True)
@@ -423,9 +415,7 @@ def compute_iqms(name="ComputeIQMs"):
     getqi2 = pe.Node(ComputeQI2(), name="ComputeQI2")
 
     # Compute python-coded measures
-    measures = pe.Node(
-        StructuralQC(human=config.workflow.species.lower() == "human"), "measures"
-    )
+    measures = pe.Node(StructuralQC(human=config.workflow.species.lower() == "human"), "measures")
 
     datasink = pe.Node(
         IQMFileSink(
@@ -508,18 +498,15 @@ def headmsk_wf(name="HeadMaskWorkflow"):
             pass
 
     if not use_bet and not has_dipy:
-        raise RuntimeError(
-            "DIPY is not installed and ``config.workflow.headmask`` is not BET."
-        )
+        raise RuntimeError("DIPY is not installed and ``config.workflow.headmask`` is not BET.")
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode"
-    )
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode")
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
 
     if use_bet:
         from nipype.interfaces.fsl import BET
+
         # Alternative for when dipy is not installed
         bet = pe.Node(BET(surfaces=True), name="bet")
 
@@ -660,9 +647,7 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
 
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_files"]), name="inputnode")
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["out_corrected", "out_brain", "bias_image", "out_mask"]
-        ),
+        niu.IdentityInterface(fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
         name="outputnode",
     )
 
@@ -888,9 +873,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
 
     segdata = np.uint8(nb.load(in_segm).dataobj)
     segdata[segdata > 0] = 1
-    segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(
-        np.uint8
-    )
+    segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(np.uint8)
     mask[segdata > 0] = 1
     mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
     # Remove small objects
@@ -903,9 +886,7 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
 
-    mask = sim.binary_fill_holes(mask, struct).astype(
-        np.uint8
-    )  # pylint: disable=no-member
+    mask = sim.binary_fill_holes(mask, struct).astype(np.uint8)  # pylint: disable=no-member
 
     nb.Nifti1Image(mask, imnii.affine, hdr).to_filename(out_file)
     return out_file
@@ -940,9 +921,7 @@ def _format_tpm_names(in_files, fname_string=None):
     if fname_string is None:
         fname_string = f"priors_%02d{extension}"
 
-    out_files = [
-        str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))
-    ]
+    out_files = [str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))]
 
     # return path with c-style format string for Atropos
     file_format = str(Path(out_path, fname_string))
