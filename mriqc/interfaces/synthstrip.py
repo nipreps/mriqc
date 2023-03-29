@@ -71,6 +71,7 @@ class _SynthStripInputSpec(CommandLineInputSpec):
         argstr="-m %s",
         desc="store brainmask to file",
     )
+    num_threads = traits.Int(desc="Number of threads", argstr="-n %d", nohash=True)
 
 
 class _SynthStripOutputSpec(TraitedSpec):
