@@ -1,0 +1,115 @@
+# Copyright 2023 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+###########################################################################
+# Reports bootstrap file
+# ======================
+# This is a YAML-formatted file specifying how the NiReports assembler
+# will search for "reportlets" and compose them into a report file,
+# typically in HTML format.
+###########################################################################
+
+packagename: mriqc
+title: '{filename} :: Functional MRIQC report'
+sections:
+- name: Summary
+  reportlets:
+  - bids: {datatype: figures, desc: summary, extension: [.html]}
+- name: Basic visual report
+  reportlets:
+  - bids: {datatype: figures, desc: zoomed}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
+      (for example, from the eyeballs and across the phase-encoding axis), etc.
+    subtitle: Voxel-wise average of BOLD time-series, zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: stdev}
+    subtitle: Standard deviation of signal through time
+    caption: The voxel-wise standard deviation of the signal (variability along time).
+  - bids: {datatype: figures, desc: carpet}
+    subtitle: Carpetplot and nuisance signals
+    caption: The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion
+      derived artifacts and respiation effects.
+- name: Extended visual report
+  reportlets:
+  - bids: {datatype: figures, desc: background}
+    caption: This panel shows a mosaic enhancing the background around the head.
+      Artifacts usually unveil themselves in the air surrounding the head, where no signal
+      sources are present.
+    subtitle: View of the background of the voxel-wise average of the BOLD timeseries
+  - bids: {datatype: figures, desc: mean}
+    subtitle: Average signal through time
+    caption: The average signal calculated across the last axis (time).
+  - bids: {datatype: figures, desc: airmask}
+    caption: The <em>hat</em>-mask calculated internally by MRIQC. Some metrics will use this
+      mask, for instance, to find out artifacts and estimate the spread of gaussian noise
+      added to the signal. This mask leaves out the air around the face to avoid measuring
+      noise sourcing from the eyeballs and their movement.
+    subtitle: '&laquo;Hat&raquo;-mask'
+  - bids: {datatype: figures, desc: noisefit}
+    caption: The noise fit internally estimated by MRIQC to calculate the QI<sub>1</sub> index
+      proposed by <a href="https://doi.org/10.1002/mrm.21992" target="_blank">Mortamet et al. (2009)</a>.
+    subtitle: Distribution of the noise within the <em>hat</em> mask
+    style:
+      max-width: 450px
+  - bids: {datatype: figures, desc: artifacts}
+    caption: Mask of artifactual intensities identified within the <em>hat</em>-mask.
+    subtitle: Artifactual intensities on the background
+  - bids: {datatype: figures, desc: brainmask}
+    caption: Brain mask as internally extracted by MRIQC. Defects on the brainmask could
+      indicate problematic aspects of the image quality-wise.
+    subtitle: Brain extraction performance
+  - bids: {datatype: figures, desc: head}
+    caption: A mask of the head calculated internally by MRIQC.
+    subtitle: Head mask
+  - bids: {datatype: figures, desc: segmentation}
+    caption: Brain tissue segmentation, as internally extracted by MRIQC.
+      Defects on this segmentation, as well as noisy tissue labels could
+      indicate problematic aspects of the image quality-wise.
+    subtitle: Brain tissue segmentation
+  - bids: {datatype: figures, desc: norm}
+    caption: This panel shows a <em>quick-and-dirty</em> nonlinear registration into
+      the <code>MNI152NLin2009cAsym</code> template accessed with
+      <a href="https://templateflow.org/browse" target="_blank"><em>TemplateFlow</em></a>.
+    subtitle: Spatial normalization of the anatomical image
+    static: false
+
+
+- name: About
+  nested: true
+  reportlets:
+  - custom: errors
+    path: '{reportlets_dir}/{run_uuid}'
+    captions: <em>MRIQC</em> may have recorded failure conditions.
+    title: Errors
+  - metadata: "input"
+    settings:
+      # By default, only the first dictionary will be expanded.
+      # If folded is true, all will be folded. If false all expanded.
+      folded: true
+      # If an ID is not provided, one should be generated automatically
+      id: 'about-metadata'
+    caption: |
+      Thanks for using <em>MRIQC</em>. The following information may assist in
+      reconstructing the provenance of the corresponding derivatives.
+    title: Reproducibility and provenance information
+
+# Rating widget
+plugins:
+- module: nireports.assembler
+  path: data/rating-widget/bootstrap.yml

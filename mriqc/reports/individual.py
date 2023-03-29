@@ -52,7 +52,7 @@ def _single_report(in_file):
     # Extract BIDS entities
     entities = config.execution.layout.get_file(in_file).get_entities()
     entities.pop("extension", None)
-    entities.pop("datatype", None)
+    report_type = entities.pop("datatype", None)
 
     # Read output file:
     mriqc_json = loads((
@@ -82,7 +82,7 @@ def _single_report(in_file):
         config.execution.output_dir,
         config.execution.run_uuid,
         reportlets_dir=config.execution.work_dir / "reportlets",
-        bootstrap_file=pkgrf("mriqc", "data/report-bootstrap.yml"),
+        bootstrap_file=pkgrf("mriqc", f"data/bootstrap-{report_type}.yml"),
         metadata={
             "dataset": config.execution.dsname,
             "about-metadata": {
