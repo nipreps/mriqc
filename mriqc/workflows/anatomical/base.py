@@ -200,7 +200,7 @@ def anat_qc_workflow(name="anatMRIQC"):
             ("outputnode.out_corrected", "inputnode.moving_image"),
             ("outputnode.out_mask", "inputnode.moving_mask")]),
         (norm, amw, [
-            ("outputnode.inverse_composite_transform", "inputnode.inverse_composite_transform")]),
+            ("outputnode.ind2std_xfm", "inputnode.ind2std_xfm")]),
         (norm, iqmswf, [
             ("outputnode.out_tpms", "inputnode.std_tpms")]),
         (norm, anat_report_wf, ([
@@ -284,7 +284,7 @@ def spatial_normalization(name="SpatialNormalization"):
     )
     outputnode = pe.Node(
         niu.IdentityInterface(
-            fields=["out_tpms", "inverse_composite_transform", "out_report"]),
+            fields=["out_tpms", "out_report", "ind2std_xfm"]),
         name="outputnode",
     )
 
@@ -312,7 +312,7 @@ def spatial_normalization(name="SpatialNormalization"):
             get_template(tpl_id, desc="brain", suffix="mask")[0]
         )
 
-    # Project MNI segmentation to T1 space
+    # Project standard TPMs into T1w space
     tpms_std2t1w = pe.MapNode(
         ApplyTransforms(
             dimension=3,
@@ -346,7 +346,7 @@ def spatial_normalization(name="SpatialNormalization"):
             ("inverse_composite_transform", "transforms"),
         ]),
         (norm, outputnode, [
-            ("inverse_composite_transform", "inverse_composite_transform"),
+            ("composite_transform", "ind2std_xfm"),
             ("out_report", "out_report"),
         ]),
         (tpms_std2t1w, outputnode, [("output_image", "out_tpms")]),
@@ -623,7 +623,7 @@ def airmsk_wf(name="AirMaskWorkflow"):
                 "in_file",
                 "in_mask",
                 "head_mask",
-                "inverse_composite_transform",
+                "ind2std_xfm",
             ]
         ),
         name="inputnode",
@@ -634,39 +634,14 @@ def airmsk_wf(name="AirMaskWorkflow"):
     )
 
     rotmsk = pe.Node(RotationMask(), name="RotationMask")
-
-    invt = pe.Node(
-        ApplyTransforms(
-            dimension=3,
-            default_value=0,
-            interpolation="MultiLabel",
-            float=True,
-        ),
-        name="invert_xfm",
-    )
-    if config.workflow.species.lower() == "human":
-        invt.inputs.input_image = str(
-            get_template(
-                config.workflow.template_id, resolution=1, desc="head", suffix="mask"
-            )
-        )
-    else:
-        # TODO: provide options for other populations
-        invt.inputs.input_image = str(
-            get_template(config.workflow.template_id, desc="brain", suffix="mask")[0]
-        )
-
     qi1 = pe.Node(ArtifactMask(), name="ArtifactMask")
 
     # fmt: off
     workflow.connect([
         (inputnode, rotmsk, [("in_file", "in_file")]),
         (inputnode, qi1, [("in_file", "in_file"),
-                          ("head_mask", "head_mask")]),
-        (rotmsk, qi1, [("out_file", "rot_mask")]),
-        (inputnode, invt, [("in_mask", "reference_image"),
-                           ("inverse_composite_transform", "transforms")]),
-        (invt, qi1, [("output_image", "nasion_post_mask")]),
+                          ("head_mask", "head_mask"),
+                          ("ind2std_xfm", "ind2std_xfm")]),
         (qi1, outputnode, [("out_hat_msk", "hat_mask"),
                            ("out_air_msk", "air_mask"),
                            ("out_art_msk", "art_mask")]),
