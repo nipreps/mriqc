@@ -716,8 +716,9 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
     )
 
     synthstrip = pe.Node(
-        SynthStrip(),
+        SynthStrip(num_threads=omp_nthreads),
         name="synthstrip",
+        num_threads=omp_nthreads,
     )
 
     final_masked = pe.Node(ApplyMask(), name="final_masked")

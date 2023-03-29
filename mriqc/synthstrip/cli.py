@@ -72,6 +72,8 @@ def main():
     )
     parser.add_argument("-g", "--gpu", action="store_true", help="Use the GPU.")
     parser.add_argument(
+        "-n", "--num-threads", action="store", type=int, help="number of threads")
+    parser.add_argument(
         "-b",
         "--border",
         default=1,
@@ -98,6 +100,9 @@ def main():
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         device = torch.device("cpu")
         device_name = "CPU"
+
+        if args.num_threads and args.num_threads > 0:
+            torch.set_num_threads(args.num_threads)
 
     # configure model
     print(f"Configuring model on the {device_name}")
