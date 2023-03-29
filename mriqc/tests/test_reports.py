@@ -48,7 +48,7 @@ def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
 
     Report(
         outdir,
-        bootstrap_file=mriqc_data / "report-bootstrap.yml",
+        bootstrap_file=mriqc_data / "bootstrap-anat.yml",
         run_uuid="some-id",
         reportlets_dir=reportlets_dir,
         subject=subject,
