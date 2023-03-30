@@ -486,106 +486,78 @@ def headmsk_wf(name="HeadMaskWorkflow"):
 
     """
 
-    use_bet = config.workflow.headmask.upper() == "BET"
-    has_dipy = False
-
-    if not use_bet:
-        try:
-            from dipy.denoise import nlmeans  # noqa
-
-            has_dipy = True
-        except ImportError:
-            pass
-
-    if not use_bet and not has_dipy:
-        raise RuntimeError("DIPY is not installed and ``config.workflow.headmask`` is not BET.")
+    from nipype.interfaces.dipy import Denoise
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode")
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
 
-    if use_bet:
-        from nipype.interfaces.fsl import BET
-
-        # Alternative for when dipy is not installed
-        bet = pe.Node(BET(surfaces=True), name="bet")
-
-        # fmt: off
-        workflow.connect([
-            (inputnode, bet, [("in_file", "in_file")]),
-            (bet, outputnode, [('outskin_mask_file', "out_file")]),
-        ])
-        # fmt: on
-
-    else:
-        from nipype.interfaces.dipy import Denoise
-
-        enhance = pe.Node(
+    enhance = pe.Node(
+        niu.Function(
+            input_names=["in_file"],
+            output_names=["out_file"],
+            function=_enhance,
+        ),
+        name="Enhance",
+    )
+    estsnr = pe.Node(
+        niu.Function(
+            input_names=["in_file", "seg_file"],
+            output_names=["out_snr"],
+            function=_estimate_snr,
+        ),
+        name="EstimateSNR",
+    )
+    denoise = pe.Node(Denoise(), name="Denoise")
+    gradient = pe.Node(
+        niu.Function(
+            input_names=["in_file", "snr", "sigma"],
+            output_names=["out_file"],
+            function=image_gradient,
+        ),
+        name="Grad",
+    )
+    thresh = pe.Node(
+        niu.Function(
+            input_names=["in_file", "in_segm", "aniso", "thresh"],
+            output_names=["out_file"],
+            function=gradient_threshold,
+        ),
+        name="GradientThreshold",
+    )
+    if config.workflow.species != "human":
+        calc_sigma = pe.Node(
             niu.Function(
                 input_names=["in_file"],
-                output_names=["out_file"],
-                function=_enhance,
+                output_names=["sigma"],
+                function=sigma_calc,
             ),
-            name="Enhance",
+            name="calc_sigma",
         )
-        estsnr = pe.Node(
-            niu.Function(
-                input_names=["in_file", "seg_file"],
-                output_names=["out_snr"],
-                function=_estimate_snr,
-            ),
-            name="EstimateSNR",
-        )
-        denoise = pe.Node(Denoise(), name="Denoise")
-        gradient = pe.Node(
-            niu.Function(
-                input_names=["in_file", "snr", "sigma"],
-                output_names=["out_file"],
-                function=image_gradient,
-            ),
-            name="Grad",
-        )
-        thresh = pe.Node(
-            niu.Function(
-                input_names=["in_file", "in_segm", "aniso", "thresh"],
-                output_names=["out_file"],
-                function=gradient_threshold,
-            ),
-            name="GradientThreshold",
-        )
-        if config.workflow.species != "human":
-            calc_sigma = pe.Node(
-                niu.Function(
-                    input_names=["in_file"],
-                    output_names=["sigma"],
-                    function=sigma_calc,
-                ),
-                name="calc_sigma",
-            )
-            workflow.connect(
-                [
-                    (inputnode, calc_sigma, [("in_file", "in_file")]),
-                    (calc_sigma, gradient, [("sigma", "sigma")]),
-                ]
-            )
-
-            thresh.inputs.aniso = True
-            thresh.inputs.thresh = 4.0
-
         # fmt: off
         workflow.connect([
-            (inputnode, estsnr, [("in_file", "in_file"),
-                                 ("in_segm", "seg_file")]),
-            (estsnr, denoise, [("out_snr", "snr")]),
-            (inputnode, enhance, [("in_file", "in_file")]),
-            (enhance, denoise, [("out_file", "in_file")]),
-            (estsnr, gradient, [("out_snr", "snr")]),
-            (denoise, gradient, [("out_file", "in_file")]),
-            (inputnode, thresh, [("in_segm", "in_segm")]),
-            (gradient, thresh, [("out_file", "in_file")]),
-            (thresh, outputnode, [("out_file", "out_file")]),
+            (inputnode, calc_sigma, [("in_file", "in_file")]),
+            (calc_sigma, gradient, [("sigma", "sigma")]),
         ])
         # fmt: on
+
+        thresh.inputs.aniso = True
+        thresh.inputs.thresh = 4.0
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, estsnr, [("in_file", "in_file"),
+                             ("in_segm", "seg_file")]),
+        (estsnr, denoise, [("out_snr", "snr")]),
+        (inputnode, enhance, [("in_file", "in_file")]),
+        (enhance, denoise, [("out_file", "in_file")]),
+        (estsnr, gradient, [("out_snr", "snr")]),
+        (denoise, gradient, [("out_file", "in_file")]),
+        (inputnode, thresh, [("in_segm", "in_segm")]),
+        (gradient, thresh, [("out_file", "in_file")]),
+        (thresh, outputnode, [("out_file", "out_file")]),
+    ])
+    # fmt: on
 
     return workflow
 
