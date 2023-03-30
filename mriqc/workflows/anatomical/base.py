@@ -592,7 +592,27 @@ def headmsk_wf(name="HeadMaskWorkflow"):
 
 def airmsk_wf(name="AirMaskWorkflow"):
     """
-    Implements the Step 1 of [Mortamet2009]_.
+    Calculate air, artifacts and "hat" masks to evaluate noise in the background.
+
+    This workflow mostly addresses the implementation of Step 1 in [Mortamet2009]_.
+    This work proposes to look at the signal distribution in the background, where
+    no signals are expected, to evaluate the spread of the noise.
+    It is in the background where [Mortamet2009]_ proposed to also look at the presence
+    of ghosts and artifacts, where they are very easy to isolate.
+
+    However, [Mortamet2009]_ proposes not to look at the background around the face
+    because of the likely signal leakage through the phase-encoding axis sourcing from
+    eyeballs (and their motion).
+    To avoid that, [Mortamet2009]_ proposed atlas-based identification of two landmarks
+    (nasion and cerebellar projection on to the occipital bone).
+    MRIQC, for simplicity, used a such a mask created in MNI152NLin2009cAsym space and
+    projected it on to the individual.
+    Such a solution is inadequate because it doesn't drop full in-plane slices as there
+    will be a large rotation of the individual's tilt of the head with respect to the
+    template.
+    The new implementation (23.1.x series) follows [Mortamet2009]_ more closely,
+    projecting the two landmarks from the template space and leveraging
+    *NiTransforms* to do that.
 
     .. workflow::
 

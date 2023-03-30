@@ -271,7 +271,7 @@ class StructuralQC(SimpleInterface):
         return runtime
 
 
-class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
+class _ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
     head_mask = File(exists=True, mandatory=True, desc="head mask")
     glabella_xyz = traits.Tuple(
@@ -290,7 +290,7 @@ class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     zscore = traits.Float(10.0, usedefault=True, desc="z-score to consider artifacts")
 
 
-class ArtifactMaskOutputSpec(TraitedSpec):
+class _ArtifactMaskOutputSpec(TraitedSpec):
     out_hat_msk = File(exists=True, desc='output "hat" mask')
     out_art_msk = File(exists=True, desc="output artifacts mask")
     out_air_msk = File(exists=True, desc='output "hat" mask, without artifacts')
@@ -301,8 +301,8 @@ class ArtifactMask(SimpleInterface):
     Computes the artifact mask using the method described in [Mortamet2009]_.
     """
 
-    input_spec = ArtifactMaskInputSpec
-    output_spec = ArtifactMaskOutputSpec
+    input_spec = _ArtifactMaskInputSpec
+    output_spec = _ArtifactMaskOutputSpec
 
     def _run_interface(self, runtime):
         from nibabel.affines import apply_affine
