@@ -21,8 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Nipype interfaces to support anatomical workflow."""
-import os.path as op
-from builtins import zip
+from pathlib import Path
 
 import nibabel as nb
 import numpy as np
@@ -48,7 +47,6 @@ from nipype.interfaces.base import (
     InputMultiPath,
     SimpleInterface,
     TraitedSpec,
-    isdefined,
     traits,
 )
 from nipype.utils.filemanip import fname_presuffix
@@ -70,9 +68,7 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     )
     in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
     mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    in_fwhm = traits.List(
-        traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
-    )
+    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
     human = traits.Bool(True, usedefault=True, desc="human workflow")
 
 
@@ -137,9 +133,7 @@ class StructuralQC(SimpleInterface):
 
         # Load air, artifacts and head masks
         airdata = np.asanyarray(nb.load(self.inputs.air_msk).dataobj).astype(np.uint8)
-        artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(
-            np.uint8
-        )
+        artdata = np.asanyarray(nb.load(self.inputs.artifact_msk).dataobj).astype(np.uint8)
 
         headdata = np.asanyarray(nb.load(self.inputs.head_msk).dataobj).astype(np.uint8)
         if np.sum(headdata > 0) < 100:
@@ -222,9 +216,7 @@ class StructuralQC(SimpleInterface):
         )
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(
-            imnii.header.get_zooms()[:3]
-        )
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.header.get_zooms()[:3])
         self._results["fwhm"] = {
             "x": float(fwhm[0]),
             "y": float(fwhm[1]),
@@ -261,9 +253,7 @@ class StructuralQC(SimpleInterface):
         # Bias
         bias = nb.load(self.inputs.in_bias).get_fdata()[segdata > 0]
         self._results["inu"] = {
-            "range": float(
-                np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))
-            ),
+            "range": float(np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))),
             "med": float(np.median(bias)),
         }  # pylint: disable=E1101
 
@@ -281,18 +271,26 @@ class StructuralQC(SimpleInterface):
         return runtime
 
 
-class ArtifactMaskInputSpec(BaseInterfaceInputSpec):
+class _ArtifactMaskInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
     head_mask = File(exists=True, mandatory=True, desc="head mask")
-    rot_mask = File(exists=True, desc="a rotation mask")
-    nasion_post_mask = File(
-        exists=True,
-        mandatory=True,
-        desc="nasion to posterior of cerebellum mask",
+    glabella_xyz = traits.Tuple(
+        (0.0, 90.0, -14.0),
+        types=(traits.Float, traits.Float, traits.Float),
+        usedefault=True,
+        desc="position of the top of the glabella in standard coordinates",
     )
+    inion_xyz = traits.Tuple(
+        (0.0, -120.0, -14.0),
+        types=(traits.Float, traits.Float, traits.Float),
+        usedefault=True,
+        desc="position of the top of the inion in standard coordinates",
+    )
+    ind2std_xfm = File(exists=True, mandatory=True, desc="individual to standard affine transform")
+    zscore = traits.Float(10.0, usedefault=True, desc="z-score to consider artifacts")
 
 
-class ArtifactMaskOutputSpec(TraitedSpec):
+class _ArtifactMaskOutputSpec(TraitedSpec):
     out_hat_msk = File(exists=True, desc='output "hat" mask')
     out_art_msk = File(exists=True, desc="output artifacts mask")
     out_air_msk = File(exists=True, desc='output "hat" mask, without artifacts')
@@ -303,60 +301,57 @@ class ArtifactMask(SimpleInterface):
     Computes the artifact mask using the method described in [Mortamet2009]_.
     """
 
-    input_spec = ArtifactMaskInputSpec
-    output_spec = ArtifactMaskOutputSpec
+    input_spec = _ArtifactMaskInputSpec
+    output_spec = _ArtifactMaskOutputSpec
 
     def _run_interface(self, runtime):
-        imnii = nb.load(self.inputs.in_file)
+        from nibabel.affines import apply_affine
+        from nitransforms.linear import Affine
+
+        in_file = Path(self.inputs.in_file)
+        imnii = nb.as_closest_canonical(nb.load(in_file))
         imdata = np.nan_to_num(imnii.get_fdata().astype(np.float32))
 
-        # Remove negative values
-        imdata[imdata < 0] = 0
+        xfm = Affine.from_filename(self.inputs.ind2std_xfm, fmt="itk")
 
-        hmdata = np.asanyarray(nb.load(self.inputs.head_mask).dataobj)
-        npdata = np.asanyarray(nb.load(self.inputs.nasion_post_mask).dataobj)
+        ras2ijk = np.linalg.inv(imnii.affine)
+        glabella_ijk, inion_ijk = apply_affine(
+            ras2ijk, xfm.map([self.inputs.glabella_xyz, self.inputs.inion_xyz])
+        )
 
-        # Invert head mask
-        airdata = np.ones_like(hmdata, dtype=np.uint8)
-        airdata[hmdata == 1] = 0
+        hmdata = np.bool_(nb.load(self.inputs.head_mask).dataobj)
 
         # Calculate distance to border
-        dist = nd.morphology.distance_transform_edt(airdata)
+        dist = nd.morphology.distance_transform_edt(~hmdata)
 
-        # Apply nasion-to-posterior mask
-        airdata[npdata == 1] = 0
-        dist[npdata == 1] = 0
+        hmdata[:, :, : int(inion_ijk[2])] = 1
+        hmdata[:, (hmdata.shape[1] // 2) :, : int(glabella_ijk[2])] = 1
+
+        dist[~hmdata] = 0
         dist /= dist.max()
 
-        # Apply rotation mask (if supplied)
-        if isdefined(self.inputs.rot_mask):
-            rotmskdata = np.asanyarray(nb.load(self.inputs.rot_mask).dataobj)
-            airdata[rotmskdata == 1] = 0
-
         # Run the artifact detection
-        qi1_img = artifact_mask(imdata, airdata, dist)
+        qi1_img = artifact_mask(imdata, (~hmdata), dist, zscore=self.inputs.zscore)
 
-        fname, ext = op.splitext(op.basename(self.inputs.in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
+        fname = in_file.relative_to(in_file.parent).stem
+        ext = "".join(in_file.suffixes)
 
-        self._results["out_hat_msk"] = op.abspath("{}_hat{}".format(fname, ext))
-        self._results["out_art_msk"] = op.abspath("{}_art{}".format(fname, ext))
-        self._results["out_air_msk"] = op.abspath("{}_air{}".format(fname, ext))
+        outdir = Path(runtime.cwd).absolute()
+        self._results["out_hat_msk"] = str(outdir / f"{fname}_hat{ext}")
+        self._results["out_art_msk"] = str(outdir / f"{fname}_art{ext}")
+        self._results["out_air_msk"] = str(outdir / f"{fname}_air{ext}")
 
         hdr = imnii.header.copy()
         hdr.set_data_dtype(np.uint8)
-        nb.Nifti1Image(qi1_img, imnii.affine, hdr).to_filename(
+        imnii.__class__(qi1_img.astype(np.uint8), imnii.affine, hdr).to_filename(
             self._results["out_art_msk"]
         )
 
-        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
-            self._results["out_hat_msk"]
-        )
+        airdata = (~hmdata).astype(np.uint8)
+        imnii.__class__(airdata, imnii.affine, hdr).to_filename(self._results["out_hat_msk"])
 
         airdata[qi1_img > 0] = 0
-        nb.Nifti1Image(airdata, imnii.affine, hdr).to_filename(
+        imnii.__class__(airdata.astype(np.uint8), imnii.affine, hdr).to_filename(
             self._results["out_air_msk"]
         )
         return runtime
@@ -390,9 +385,7 @@ class ComputeQI2(SimpleInterface):
 
 
 class HarmonizeInputSpec(BaseInterfaceInputSpec):
-    in_file = File(
-        exists=True, mandatory=True, desc="input data (after bias correction)"
-    )
+    in_file = File(exists=True, mandatory=True, desc="input data (after bias correction)")
     wm_mask = File(exists=True, mandatory=True, desc="white-matter mask")
     erodemsk = traits.Bool(True, usedefault=True, desc="erode mask")
     thresh = traits.Float(0.9, usedefault=True, desc="WM probability threshold")
@@ -427,9 +420,7 @@ class Harmonize(SimpleInterface):
         data = in_file.get_fdata()
         data *= 1000.0 / np.median(data[wm_mask > 0])
 
-        out_file = fname_presuffix(
-            self.inputs.in_file, suffix="_harmonized", newpath="."
-        )
+        out_file = fname_presuffix(self.inputs.in_file, suffix="_harmonized", newpath=".")
         in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)
 
         self._results["out_file"] = out_file
@@ -490,36 +481,27 @@ class RotationMask(SimpleInterface):
 
 
 def artifact_mask(imdata, airdata, distance, zscore=10.0):
-    """Computes a mask of artifacts found in the air region"""
+    """Compute a mask of artifacts found in the air region."""
     from statsmodels.robust.scale import mad
 
-    if not np.issubdtype(airdata.dtype, np.integer):
-        airdata[airdata < 0.95] = 0
-        airdata[airdata > 0.0] = 1
+    qi1_msk = np.zeros(imdata.shape, dtype=bool)
+    bg_data = imdata[airdata]
+    if (bg_data > 0).sum() < 10:
+        return qi1_msk
 
-    bg_img = imdata * airdata
-    if np.sum((bg_img > 0).astype(np.uint8)) < 100:
-        return np.zeros_like(airdata)
-
-    # Find the background threshold (the most frequently occurring value
-    # excluding 0)
-    bg_location = np.median(bg_img[bg_img > 0])
-    bg_spread = mad(bg_img[bg_img > 0])
-    bg_img[bg_img > 0] -= bg_location
-    bg_img[bg_img > 0] /= bg_spread
+    # Standardize the distribution of the background
+    bg_spread = mad(bg_data[bg_data > 0])
+    bg_data[bg_data > 0] = bg_data[bg_data > 0] / bg_spread
 
     # Apply this threshold to the background voxels to identify voxels
     # contributing artifacts.
-    qi1_img = np.zeros_like(bg_img)
-    qi1_img[bg_img > zscore] = 1
-    qi1_img[distance < 0.10] = 0
+    qi1_msk[airdata] = bg_data > zscore
+    qi1_msk[distance < 0.10] = False
 
     # Create a structural element to be used in an opening operation.
     struct = nd.generate_binary_structure(3, 1)
-    qi1_img = nd.binary_opening(qi1_img, struct).astype(np.uint8)
-    qi1_img[airdata <= 0] = 0
-
-    return qi1_img
+    qi1_msk = nd.binary_opening(qi1_msk, struct).astype(np.uint8)
+    return qi1_msk
 
 
 def fuzzy_jaccard(in_tpms, in_mni_tpms):
