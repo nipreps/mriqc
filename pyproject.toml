@@ -21,6 +21,7 @@ license = "Apache-2.0"
 requires-python = ">=3.8"
 dependencies = [
     'importlib_resources; python_version < "3.9"',
+    "dipy <1.6,>=1.4.0",
     # jinja2 imports deprecated function removed in 2.1
     "markupsafe ~= 2.0.1",
     "matplotlib",
@@ -64,7 +65,6 @@ doc = [
 ]
 
 full = [
-    "dipy<=1.4.0", # see nipreps/mriqc#969; can be removed if nipype>1.7.0
     "nitime",
     "nirodents >= 0.2.8",
     "scikit-learn ~= 1.0",
