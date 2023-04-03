@@ -216,23 +216,6 @@ def init_func_report_wf(name="func_report_wf"):
         ])
         # fmt: on
 
-    if config.workflow.ica:
-        ds_report_ica = pe.Node(
-            DerivativesDataSink(
-                base_directory=reportlets_dir,
-                desc="ica",
-                datatype="figures",
-            ),
-            name="ds_report_ica",
-            run_without_submitting=True,
-        )
-        # fmt: off
-        workflow.connect([
-            (inputnode, ds_report_ica, [("name_source", "source_file"),
-                                        ("ica_report", "in_file")]),
-        ])
-        # fmt: on
-
     if not verbose:
         return workflow
 
