@@ -503,8 +503,6 @@ class workflow(_Config):
     """Radius in mm. of the sphere for the FD calculation."""
     fft_spikes_detector = False
     """Turn on FFT based spike detector (slow)."""
-    headmask = "BET"
-    """Use FSL BET in :py:func:`~mriqc.workflows.anatomical.headmsk_wf`."""
     inputs = None
     """List of files to be processed with MRIQC."""
     species = "human"
