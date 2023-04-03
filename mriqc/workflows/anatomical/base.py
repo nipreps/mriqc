@@ -823,6 +823,7 @@ def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=Fal
     mask = np.zeros_like(data, dtype=np.uint8)
     mask[data > thresh] = 1
     mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
+    mask = sim.binary_erosion(mask, sim.generate_binary_structure(3, 2)).astype(np.uint8)
 
     segdata = np.asanyarray(nb.load(brainmask).dataobj) > 0
     segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(np.uint8)

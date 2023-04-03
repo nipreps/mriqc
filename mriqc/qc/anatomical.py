@@ -441,7 +441,14 @@ def art_qi1(airmask, artmask):
     return float(artmask.sum() / (airmask.sum() + artmask.sum()))
 
 
-def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=True, coil_elements=32):
+def art_qi2(
+    img,
+    airmask,
+    min_voxels=int(1e3),
+    max_voxels=int(3e5),
+    save_plot=True,
+    coil_elements=32,
+):
     r"""
     Calculates :math:`\text{QI}_2`, based on the goodness-of-fit of a centered
     :math:`\chi^2` distribution onto the intensity distribution of
@@ -477,14 +484,13 @@ def art_qi2(img, airmask, min_voxels=int(1e3), max_voxels=int(3e5), save_plot=Tr
     if (data > 0).sum() < min_voxels:
         return 0.0, out_file
 
-    data *= 1000 / data.max()
-    data = data[data > 0]
+    data *= 100 / np.percentile(data, 99)
     modelx = data if len(data) < max_voxels else np.random.choice(data, size=max_voxels)
 
-    x_grid = np.linspace(0.0, 1000, 1001)
+    x_grid = np.linspace(0.0, 110, 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(kernel="gaussian").fit(modelx[:, np.newaxis])
+    kde_skl = KernelDensity(kernel="gaussian", bandwidth=4.0).fit(modelx[:, np.newaxis])
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
     # Find cutoff
