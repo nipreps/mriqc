@@ -505,8 +505,6 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     headmask = "BET"
     """Use FSL BET in :py:func:`~mriqc.workflows.anatomical.headmsk_wf`."""
-    ica = False
-    """Run ICA on the raw data and include the components in the individual reports."""
     inputs = None
     """List of files to be processed with MRIQC."""
     species = "human"

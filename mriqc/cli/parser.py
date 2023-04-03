@@ -55,7 +55,6 @@ def _build_parser():
     from argparse import Action, ArgumentDefaultsHelpFormatter, ArgumentParser
     from functools import partial
     from pathlib import Path
-    from shutil import which
 
     from packaging.version import Version
 
@@ -371,14 +370,6 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
 
     # Functional workflow settings
     g_func = parser.add_argument_group("Functional MRI workflow configuration")
-    if which("melodic") is not None:
-        g_func.add_argument(
-            "--ica",
-            action="store_true",
-            default=False,
-            help="Run ICA on the raw data and include the components "
-            "in the individual reports (slow but potentially very insightful).",
-        )
     g_func.add_argument(
         "--fft-spikes-detector",
         action="store_true",

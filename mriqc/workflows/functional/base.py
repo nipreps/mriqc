@@ -181,27 +181,6 @@ def fmri_qc_workflow(name="funcMRIQC"):
         ])
         # fmt: on
 
-    if config.workflow.ica:
-        from niworkflows.interfaces.reportlets.segmentation import MELODICRPT
-
-        melodic = pe.Node(
-            MELODICRPT(
-                no_bet=True,
-                no_mask=True,
-                no_mm=True,
-                compress_report=False,
-                generate_report=True,
-            ),
-            name="ICA",
-            mem_gb=max(mem_gb * 5, 8),
-        )
-        # fmt: off
-        workflow.connect([
-            (sanitize, melodic, [("out_file", "in_files")]),
-            (melodic, func_report_wf, [("out_report", "inputnode.ica_report")])
-        ])
-        # fmt: on
-
     # population specific changes to brain masking
     if config.workflow.species == "human":
         skullstrip_epi = fmri_bmsk_workflow()
@@ -213,9 +192,6 @@ def fmri_qc_workflow(name="funcMRIQC"):
             (skullstrip_epi, func_report_wf, [("outputnode.out_file", "inputnode.brainmask")]),
         ])
         # fmt: on
-        if config.workflow.ica:
-            workflow.connect([(skullstrip_epi, melodic, [("outputnode.out_file", "report_mask")])])
-
     else:
         from mriqc.workflows.anatomical.base import _binarize
 
@@ -235,9 +211,6 @@ def fmri_qc_workflow(name="funcMRIQC"):
             (binarise_labels, func_report_wf, [("out_file", "inputnode.brainmask")])
         ])
         # fmt: on
-
-        if config.workflow.ica:
-            workflow.connect([(binarise_labels, melodic, [("out_file", "report_mask")])])
 
     # Upload metrics
     if not config.execution.no_sub:

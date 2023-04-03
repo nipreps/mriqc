@@ -541,8 +541,7 @@ jobs:
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
-                       --resource-monitor \
-                       --testing --ica \
+                       --resource-monitor --testing \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
       - run:
           name: Move temporary but relevant artifacts
