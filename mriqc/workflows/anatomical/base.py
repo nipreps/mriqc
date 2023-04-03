@@ -126,7 +126,7 @@ def anat_qc_workflow(name="anatMRIQC"):
         skull_stripping = init_rodent_brain_extraction_wf(template_id=config.workflow.template_id)
         ss_bias_field = "final_n4.bias_image"
     # 3. Head mask
-    hmsk = headmsk_wf()
+    hmsk = headmsk_wf(omp_nthreads=config.nipype.omp_nthreads)
     # 4. Spatial Normalization, using ANTs
     norm = spatial_normalization()
     # 5. Air mask (with and without artifacts)
@@ -190,9 +190,10 @@ def anat_qc_workflow(name="anatMRIQC"):
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, norm, [(("in_file", _get_mod), "inputnode.modality")]),
         (to_ras, skull_stripping, [("out_file", "inputnode.in_files")]),
-        (skull_stripping, segment, [("outputnode.out_brain", seg_in_file)]),
-        (skull_stripping, hmsk, [("outputnode.out_corrected", "inputnode.in_file")]),
-        (segment, hmsk, [(dseg_out, "inputnode.in_segm")]),
+        (skull_stripping, hmsk, [
+            ("outputnode.out_corrected", "inputnode.in_file"),
+            ("outputnode.out_mask", "inputnode.brainmask"),
+        ]),
         (skull_stripping, norm, [
             ("outputnode.out_corrected", "inputnode.moving_image"),
             ("outputnode.out_mask", "inputnode.moving_mask")]),
@@ -202,6 +203,7 @@ def anat_qc_workflow(name="anatMRIQC"):
             ("outputnode.out_tpms", "inputnode.std_tpms")]),
         (norm, anat_report_wf, ([
             ("outputnode.out_report", "inputnode.mni_report")])),
+        (norm, hmsk, [("outputnode.out_tpms", "inputnode.in_tpms")]),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
         (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
         (hmsk, amw, [("outputnode.out_file", "inputnode.head_mask")]),
@@ -213,6 +215,7 @@ def anat_qc_workflow(name="anatMRIQC"):
                        ("outputnode.hat_mask", "inputnode.hatmask"),
                        ("outputnode.art_mask", "inputnode.artmask"),
                        ("outputnode.rot_mask", "inputnode.rotmask")]),
+        (hmsk, segment, [("outputnode.out_denoised", seg_in_file)]),
         (segment, iqmswf, [(dseg_out, "inputnode.segmentation"),
                            (pve_out, "inputnode.pvms")]),
         (hmsk, iqmswf, [("outputnode.out_file", "inputnode.headmask")]),
@@ -473,7 +476,7 @@ def compute_iqms(name="ComputeIQMs"):
     return workflow
 
 
-def headmsk_wf(name="HeadMaskWorkflow"):
+def headmsk_wf(name="HeadMaskWorkflow", omp_nthreads=1):
     """
     Computes a head mask as in [Mortamet2009]_.
 
@@ -487,14 +490,20 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     """
 
     from nipype.interfaces.dipy import Denoise
+    from niworkflows.interfaces.nibabel import ApplyMask
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "in_segm"]), name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file"]), name="outputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "brainmask", "in_tpms"]),
+                        name="inputnode")
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_denoised"]),
+                         name="outputnode")
+
+    def _select_wm(inlist):
+        return [f for f in inlist if "WM" in f][0]
 
     enhance = pe.Node(
         niu.Function(
-            input_names=["in_file"],
+            input_names=["in_file", "wm_mu", "wm_sigma"],
             output_names=["out_file"],
             function=_enhance,
         ),
@@ -502,13 +511,13 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     )
     estsnr = pe.Node(
         niu.Function(
-            input_names=["in_file", "seg_file"],
-            output_names=["out_snr"],
+            input_names=["in_file", "wm_tpm"],
+            output_names=["out_snr", "out_mu", "out_sigma"],
             function=_estimate_snr,
         ),
         name="EstimateSNR",
     )
-    denoise = pe.Node(Denoise(), name="Denoise")
+    denoise = pe.Node(Denoise(), name="Denoise", num_threads=omp_nthreads)
     gradient = pe.Node(
         niu.Function(
             input_names=["in_file", "snr", "sigma"],
@@ -519,11 +528,12 @@ def headmsk_wf(name="HeadMaskWorkflow"):
     )
     thresh = pe.Node(
         niu.Function(
-            input_names=["in_file", "in_segm", "aniso", "thresh"],
+            input_names=["in_file", "brainmask", "aniso", "thresh"],
             output_names=["out_file"],
             function=gradient_threshold,
         ),
         name="GradientThreshold",
+        num_threads=omp_nthreads,
     )
     if config.workflow.species != "human":
         calc_sigma = pe.Node(
@@ -544,18 +554,24 @@ def headmsk_wf(name="HeadMaskWorkflow"):
         thresh.inputs.aniso = True
         thresh.inputs.thresh = 4.0
 
+    apply_mask = pe.Node(ApplyMask(), name="apply_mask")
+
     # fmt: off
     workflow.connect([
         (inputnode, estsnr, [("in_file", "in_file"),
-                             ("in_segm", "seg_file")]),
+                             (("in_tpms", _select_wm), "wm_tpm")]),
+        (inputnode, thresh, [("brainmask", "brainmask")]),
+        (inputnode, apply_mask, [("brainmask", "in_mask")]),
         (estsnr, denoise, [("out_snr", "snr")]),
+        (estsnr, enhance, [("out_mu", "wm_mu"), ("out_sigma", "wm_sigma")]),
         (inputnode, enhance, [("in_file", "in_file")]),
         (enhance, denoise, [("out_file", "in_file")]),
         (estsnr, gradient, [("out_snr", "snr")]),
         (denoise, gradient, [("out_file", "in_file")]),
-        (inputnode, thresh, [("in_segm", "in_segm")]),
         (gradient, thresh, [("out_file", "in_file")]),
+        (denoise, apply_mask, [("out_file", "in_file")]),
         (thresh, outputnode, [("out_file", "out_file")]),
+        (apply_mask, outputnode, [("out_file", "out_denoised")]),
     ])
     # fmt: on
 
@@ -748,18 +764,24 @@ def _binarize(in_file, threshold=0.5, out_file=None):
     return out_file
 
 
-def _estimate_snr(in_file, seg_file):
+def _estimate_snr(in_file, wm_tpm):
     import nibabel as nb
     import numpy as np
     from mriqc.qc.anatomical import snr
 
     data = nb.load(in_file).get_fdata()
-    mask = np.asanyarray(nb.load(seg_file).dataobj) == 2  # WM label
-    out_snr = snr(np.mean(data[mask]), data[mask].std(), mask.sum())
-    return out_snr
+    wm_prob = nb.load(wm_tpm).get_fdata()
+    wm_prob[wm_prob < 0] = 0  # Ensure no negative values
+
+    # Calculate weighted mean and standard deviation
+    out_mu = np.average(data, weights=wm_prob)
+    out_sigma = np.sqrt(np.average((data - out_mu) ** 2, weights=wm_prob))
+
+    out_snr = snr(out_mu, out_sigma, wm_prob.sum())
+    return out_snr, out_mu, out_sigma
 
 
-def _enhance(in_file, out_file=None):
+def _enhance(in_file, wm_mu, wm_sigma, out_file=None):
     import os.path as op
 
     import nibabel as nb
@@ -775,12 +797,10 @@ def _enhance(in_file, out_file=None):
     imnii = nb.load(in_file)
     data = imnii.get_fdata(dtype=np.float32)
     range_max = np.percentile(data[data > 0], 99.98)
-    range_min = np.median(data[data > 0])
 
     # Resample signal excess pixels
     excess = np.where(data > range_max)
-    data[excess] = 0
-    data[excess] = np.random.choice(data[data > range_min], size=len(excess[0]))
+    data[excess] = np.random.normal(loc=wm_mu, scale=wm_sigma, size=len(excess[0]))
 
     nb.Nifti1Image(data, imnii.affine, imnii.header).to_filename(out_file)
 
@@ -824,7 +844,7 @@ def image_gradient(in_file, snr, sigma=3.0, out_file=None):
     return out_file
 
 
-def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False):
+def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=False):
     """Compute a threshold from the histogram of the magnitude gradient image"""
     import os.path as op
 
@@ -863,10 +883,9 @@ def gradient_threshold(in_file, in_segm, thresh=15.0, out_file=None, aniso=False
     mask = np.zeros_like(data, dtype=np.uint8)  # pylint: disable=no-member
     mask[data > thresh] = 1
 
-    segdata = np.uint8(nb.load(in_segm).dataobj)
-    segdata[segdata > 0] = 1
+    segdata = np.asanyarray(nb.load(brainmask).dataobj) > 0
     segdata = sim.binary_dilation(segdata, struct, iterations=2, border_value=1).astype(np.uint8)
-    mask[segdata > 0] = 1
+    mask[segdata] = 1
     mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
     # Remove small objects
     label_im, nb_labels = sim.label(mask)
