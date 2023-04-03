@@ -182,3 +182,65 @@ def get_fwhmx():
 
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface
+
+
+def generate_filename(in_file, dirname=None, suffix="", extension=None):
+    """
+    Generate a nipype-like filename.
+
+    >>> str(generate_filename("/path/to/input.nii.gz").relative_to(Path.cwd()))
+    'input.nii.gz'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path",
+    ... ))
+    '/other/path/input.nii.gz'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path", extension="tsv",
+    ... ))
+    '/other/path/input.tsv'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path", extension=".tsv",
+    ... ))
+    '/other/path/input.tsv'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path", extension="",
+    ... ))
+    '/other/path/input'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path", extension="", suffix="_mod",
+    ... ))
+    '/other/path/input_mod'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input.nii.gz", dirname="/other/path", extension="", suffix="mod",
+    ... ))
+    '/other/path/input_mod'
+
+    >>> str(generate_filename(
+    ...     "/path/to/input", dirname="/other/path", extension="tsv", suffix="mod",
+    ... ))
+    '/other/path/input_mod.tsv'
+
+    """
+    from pathlib import Path
+    in_file = Path(in_file)
+    in_ext = "".join(in_file.suffixes)
+
+    dirname = Path.cwd() if dirname is None else Path(dirname)
+
+    if extension is not None:
+        extension = extension if not extension or extension.startswith(".") else f".{extension}"
+    else:
+        extension = in_ext
+
+    stem = in_file.name[:-len(in_ext)] if in_ext else in_file.name
+
+    if suffix and not suffix.startswith("_"):
+        suffix = f"_{suffix}"
+
+    return dirname / f"{stem}{suffix}{extension}"
