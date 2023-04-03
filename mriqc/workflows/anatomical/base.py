@@ -489,7 +489,6 @@ def headmsk_wf(name="HeadMaskWorkflow", omp_nthreads=1):
 
     """
 
-    from nipype.interfaces.dipy import Denoise
     from niworkflows.interfaces.nibabel import ApplyMask
 
     workflow = pe.Workflow(name=name)
@@ -517,7 +516,19 @@ def headmsk_wf(name="HeadMaskWorkflow", omp_nthreads=1):
         ),
         name="EstimateSNR",
     )
-    denoise = pe.Node(Denoise(), name="Denoise", num_threads=omp_nthreads)
+
+    denoise = pe.Node(
+        niu.Function(
+            input_names=["in_file", "sigma", "patch_radius", "block_radius", "num_threads"],
+            output_names=["out_file"],
+            function=_dipy_nlmeans,
+        ),
+        name="denoise",
+        num_threads=omp_nthreads,
+    )
+    denoise.inputs.num_threads = omp_nthreads
+    denoise.inputs.block_radius = 3
+
     gradient = pe.Node(
         niu.Function(
             input_names=["in_file", "snr", "sigma"],
@@ -562,7 +573,7 @@ def headmsk_wf(name="HeadMaskWorkflow", omp_nthreads=1):
                              (("in_tpms", _select_wm), "wm_tpm")]),
         (inputnode, thresh, [("brainmask", "brainmask")]),
         (inputnode, apply_mask, [("brainmask", "in_mask")]),
-        (estsnr, denoise, [("out_snr", "snr")]),
+        (estsnr, denoise, [("out_sigma", "sigma")]),
         (estsnr, enhance, [("out_mu", "wm_mu"), ("out_sigma", "wm_sigma")]),
         (inputnode, enhance, [("in_file", "in_file")]),
         (enhance, denoise, [("out_file", "in_file")]),
@@ -901,6 +912,37 @@ def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=Fal
 
     nb.Nifti1Image(mask, imnii.affine, hdr).to_filename(out_file)
     return out_file
+
+
+def _dipy_nlmeans(in_file, sigma, patch_radius=1, block_radius=5, num_threads=None):
+    from pathlib import Path
+    import numpy as np
+    import nibabel as nb
+    from dipy.denoise.nlmeans import nlmeans
+
+    nii = nb.load(in_file)
+    data = np.asanyarray(nii.dataobj)
+
+    denoised = nlmeans(
+        data,
+        sigma=sigma,
+        mask=None,
+        patch_radius=patch_radius,
+        block_radius=block_radius,
+        num_threads=num_threads,
+    )
+
+    in_file = Path(in_file)
+    ext = "".join(in_file.suffixes)
+    out_name = Path.cwd() / in_file.name.replace(ext, f"_denoised{ext}")
+
+    nii.__class__(
+        denoised,
+        nii.affine,
+        nii.header,
+    ).to_filename(out_name)
+
+    return str(out_name.absolute())
 
 
 def _get_imgtype(in_file):
