@@ -299,10 +299,7 @@ def spatial_normalization(name="SpatialNormalization"):
         for p in get_template(
             config.workflow.template_id,
             suffix="probseg",
-            resolution=(
-                1 if config.workflow.species.lower() == "human"
-                else None
-            ),
+            resolution=(1 if config.workflow.species.lower() == "human" else None),
             label=["CSF", "GM", "WM"],
         )
     ]
@@ -358,9 +355,7 @@ def init_brain_tissue_segmentation(name="brain_tissue_segmentation"):
         if fname_string is None:
             fname_string = f"priors_%02d{extension}"
 
-        out_files = [
-            str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))
-        ]
+        out_files = [str(prior) for prior in glob.glob(str(Path(out_path, f"priors*{extension}")))]
 
         # return path with c-style format string for Atropos
         file_format = str(Path(out_path, fname_string))
@@ -555,10 +550,12 @@ def headmsk_wf(name="HeadMaskWorkflow", omp_nthreads=1):
     from niworkflows.interfaces.nibabel import ApplyMask
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "brainmask", "in_tpms"]),
-                        name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_denoised"]),
-                         name="outputnode")
+    inputnode = pe.Node(
+        niu.IdentityInterface(fields=["in_file", "brainmask", "in_tpms"]), name="inputnode"
+    )
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=["out_file", "out_denoised"]), name="outputnode"
+    )
 
     def _select_wm(inlist):
         return [f for f in inlist if "WM" in f][0]

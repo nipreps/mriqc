@@ -289,9 +289,7 @@ def cnr(mu_wm, mu_gm, sigma_air, sigma_wm, sigma_gm):
     :return: the computed CNR
 
     """
-    return float(
-        abs(mu_wm - mu_gm) / sqrt(sigma_air**2 + sigma_gm**2 + sigma_wm**2)
-    )
+    return float(abs(mu_wm - mu_gm) / sqrt(sigma_air**2 + sigma_gm**2 + sigma_wm**2))
 
 
 def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
@@ -392,10 +390,7 @@ def efc(img, framemask=None):
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
     return float(
         (1.0 / efc_max)
-        * np.sum(
-            (img[framemask == 0] / b_max)
-            * np.log((img[framemask == 0] + 1e-16) / b_max)
-        )
+        * np.sum((img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max))
     )
 
 
@@ -557,9 +552,7 @@ def rpve(pvms, seg):
         loth = np.percentile(pvmap[pvmap > 0], 2)
         pvmap[pvmap < loth] = 0
         pvmap[pvmap > upth] = 0
-        pvfs[k] = (
-            pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()
-        ) / totalvol
+        pvfs[k] = (pvmap[pvmap > 0.5].sum() + (1.0 - pvmap[pvmap <= 0.5]).sum()) / totalvol
     return {k: float(v) for k, v in list(pvfs.items())}
 
 

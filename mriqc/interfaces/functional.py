@@ -56,13 +56,9 @@ class FunctionalQCInputSpec(BaseInterfaceInputSpec):
         mandatory=True,
         desc="motion parameters for FD computation",
     )
-    fd_thres = traits.Float(
-        0.2, usedefault=True, desc="motion threshold for FD computation"
-    )
+    fd_thres = traits.Float(0.2, usedefault=True, desc="motion threshold for FD computation")
     in_dvars = File(exists=True, mandatory=True, desc="input file containing DVARS")
-    in_fwhm = traits.List(
-        traits.Float, mandatory=True, desc="smoothness estimated with AFNI"
-    )
+    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -112,17 +108,12 @@ class FunctionalQC(SimpleInterface):
             )
 
         # Summary stats
-        rois = {
-            "fg": mskdata.astype(np.uint8),
-            "bg": (~mskdata).astype(np.uint8)
-        }
+        rois = {"fg": mskdata.astype(np.uint8), "bg": (~mskdata).astype(np.uint8)}
         stats = summary_stats(epidata, rois)
         self._results["summary"] = stats
 
         # SNR
-        self._results["snr"] = snr(
-            stats["fg"]["median"], stats["fg"]["stdv"], stats["fg"]["n"]
-        )
+        self._results["snr"] = snr(stats["fg"]["median"], stats["fg"]["stdv"], stats["fg"]["n"])
         # FBER
         self._results["fber"] = fber(epidata, mskdata.astype(np.uint8))
         # EFC
@@ -138,13 +129,11 @@ class FunctionalQC(SimpleInterface):
             self._results["gsr"][axis] = gsr(epidata, mskdata.astype(np.uint8), direction=axis)
 
         # DVARS
-        dvars_avg = np.loadtxt(
-            self.inputs.in_dvars, skiprows=1, usecols=list(range(3))
-        ).mean(axis=0)
+        dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1, usecols=list(range(3))).mean(
+            axis=0
+        )
         dvars_col = ["std", "nstd", "vstd"]
-        self._results["dvars"] = {
-            key: float(val) for key, val in zip(dvars_col, dvars_avg)
-        }
+        self._results["dvars"] = {key: float(val) for key, val in zip(dvars_col, dvars_avg)}
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_fdata()
@@ -160,9 +149,7 @@ class FunctionalQC(SimpleInterface):
         }
 
         # FWHM
-        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(
-            hmcnii.header.get_zooms()[:3]
-        )
+        fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.header.get_zooms()[:3])
         self._results["fwhm"] = {
             "x": float(fwhm[0]),
             "y": float(fwhm[1]),
@@ -305,6 +292,4 @@ def find_spikes(data, spike_thresh):
 
 
 def _robust_zscore(data):
-    return (data - np.atleast_2d(np.median(data, axis=1)).T) / np.atleast_2d(
-        data.std(axis=1)
-    ).T
+    return (data - np.atleast_2d(np.median(data, axis=1)).T) / np.atleast_2d(data.std(axis=1)).T

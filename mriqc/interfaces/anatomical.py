@@ -105,11 +105,6 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = (
-            np.all(np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9)
-            if self.inputs.human
-            else False
-        )
 
         # Load image corrected for INU
         inudata = np.nan_to_num(imnii.get_fdata())
