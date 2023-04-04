@@ -13,7 +13,7 @@ software engineering principles:
 #. **Modularity and integrability**: MRIQC implements a
    `nipype <http://nipype.readthedocs.io>`_ workflow to integrate modular
    sub-workflows that rely upon third party software toolboxes such as
-   FSL, ANTs and AFNI.
+   ANTs and AFNI.
 
 #. **Minimal preprocessing**: the MRIQC workflows should be as minimal
    as possible to estimate the IQMs on the original data or their minimally

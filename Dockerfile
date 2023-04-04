@@ -81,35 +81,6 @@ RUN curl -sSL "https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_6
     | tar -xzC $ANTSPATH --strip-components 1
 ENV PATH="$ANTSPATH:$PATH"
 
-# Install FSL 5.0.11
-RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.11-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt \
-    --exclude='fsl/doc' \
-    --exclude='fsl/refdoc' \
-    --exclude='fsl/python/oxford_asl' \
-    --exclude='fsl/data/possum' \
-    --exclude='fsl/data/first' \
-    --exclude='fsl/data/mist' \
-    --exclude='fsl/data/atlases' \
-    --exclude='fsl/data/xtract_data' \
-    --exclude='fsl/extras/doc' \
-    --exclude='fsl/extras/man' \
-    --exclude='fsl/extras/src' \
-    --exclude='fsl/src' \
-    --exclude='fsl/tcl'
-
-ENV FSLDIR="/opt/fsl" \
-    PATH="/opt/fsl/bin:$PATH" \
-    FSLOUTPUTTYPE="NIFTI_GZ" \
-    FSLMULTIFILEQUIT="TRUE" \
-    FSLTCLSH="/opt/fsl/bin/fsltclsh" \
-    FSLWISH="/opt/fsl/bin/fslwish" \
-    FSLLOCKDIR="" \
-    FSLMACHINELIST="" \
-    FSLREMOTECALL="" \
-    FSLGECUDAQ="cuda.q" \
-    POSSUMDIR="/opt/fsl" \
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/fsl"
-
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
 ENV MKL_NUM_THREADS=1 \
