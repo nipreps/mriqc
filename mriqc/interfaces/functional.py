@@ -33,7 +33,6 @@ from nipype.interfaces.base import (
     File,
     SimpleInterface,
     TraitedSpec,
-    isdefined,
     traits,
 )
 
@@ -194,7 +193,7 @@ class FunctionalQC(SimpleInterface):
 
 class SpikesInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="input fMRI dataset")
-    in_mask = File(exists=True, desc="brain mask")
+    in_mask = File(exists=True, mandatory=True, desc="brain mask")
     invert_mask = traits.Bool(False, usedefault=True, desc="invert mask")
     no_zscore = traits.Bool(False, usedefault=True, desc="do not zscore")
     detrend = traits.Bool(True, usedefault=True, desc="do detrend")
@@ -251,12 +250,9 @@ class Spikes(SimpleInterface):
             func_data = np.zeros(func_shape)
             func_data[..., nskip:] = clean_data.reshape(new_shape)
 
-        if not isdefined(self.inputs.in_mask):
-            _, mask_data, _ = auto_mask(func_data, nskip=self.inputs.skip_frames)
-        else:
-            mask_data = np.bool_(nb.load(self.inputs.in_mask).dataobj)
-            mask_data[..., :nskip] = 0
-            mask_data = np.stack([mask_data] * ntsteps, axis=-1)
+        mask_data = np.bool_(nb.load(self.inputs.in_mask).dataobj)
+        mask_data[..., :nskip] = 0
+        mask_data = np.stack([mask_data] * ntsteps, axis=-1)
 
         if not self.inputs.invert_mask:
             brain = np.ma.array(func_data, mask=(mask_data != 1))
@@ -303,46 +299,6 @@ def find_spikes(data, spike_thresh):
     spikes = np.logical_or(spikes, np.abs(t_z) > spike_thresh)
     spike_inds = [tuple(i) for i in np.transpose(spikes.nonzero())]
     return spike_inds, t_z
-
-
-def auto_mask(data, raw_d=None, nskip=3, mask_bad_end_vols=False):
-    from dipy.segment.mask import median_otsu
-
-    mn = data[:, :, :, nskip:].mean(3)
-    _, mask = median_otsu(mn, 3, 2)  # oesteban: masked_data was not used
-    mask = np.concatenate(
-        (
-            np.tile(True, (data.shape[0], data.shape[1], data.shape[2], nskip)),
-            np.tile(np.expand_dims(mask == 0, 3), (1, 1, 1, data.shape[3] - nskip)),
-        ),
-        axis=3,
-    )
-    mask_vols = np.zeros((mask.shape[-1]), dtype=int)
-    if mask_bad_end_vols:
-        # Some runs have corrupt volumes at the end (e.g., mux scans that are stopped
-        # prematurely). Mask those too.
-        # But... motion correction might have interpolated the empty slices such that
-        # they aren't exactly zero.
-        # So use the raw data to find these bad volumes.
-        # 2015.10.29 RFD: this caused problems with some non-mux EPI scans that (inexplicably)
-        # have empty slices at the top of the brain. So we'll disable it for
-        # now.
-        if raw_d is None:
-            slice_max = data.max(0).max(0)
-        else:
-            slice_max = raw_d.max(0).max(0)
-
-        bad = np.any(slice_max == 0, axis=0)
-        # We don't want to miss a bad volume somewhere in the middle,
-        # as that could be a valid artifact.
-        # So, only mask bad vols that are contiguous to the end.
-        mask_vols = np.array([np.all(bad[i:]) for i in range(bad.shape[0])])
-    # Mask out the skip volumes at the beginning
-    mask_vols[0:nskip] = True
-    mask[..., mask_vols] = True
-    brain = np.ma.masked_array(data, mask=mask)
-    good_vols = np.logical_not(mask_vols)
-    return brain, mask, good_vols
 
 
 def _robust_zscore(data):
