@@ -457,23 +457,31 @@ class execution(_Config):
                     + r"))"
                 )
 
-            _db_path = cls.bids_database_dir or (
-                cls.work_dir / cls.run_uuid / "bids_db"
-            )
-            _db_path.mkdir(exist_ok=True, parents=True)
-
             # Recommended after PyBIDS 12.1
             _indexer = BIDSLayoutIndexer(
                 validate=False,
                 ignore=ignore_paths,
             )
+
+            # Initialize database in a multiprocessing-safe manner
+            cls.bids_database_dir = cls.output_dir / ".bids_db"
+            if not cls.bids_database_dir.exists():
+                _db_path = cls.output_dir / f".bids_db-{cls.run_uuid}"
+                _db_path.mkdir(exist_ok=True, parents=True)
+
+                BIDSLayout(
+                    str(cls.bids_dir),
+                    database_path=_db_path,
+                    indexer=_indexer,
+                )
+
+                _db_path.replace(cls.bids_database_dir.absolute())
+
             cls._layout = BIDSLayout(
                 str(cls.bids_dir),
-                database_path=_db_path,
-                reset_database=cls.bids_database_dir is None,
+                database_path=cls.bids_database_dir,
                 indexer=_indexer,
             )
-            cls.bids_database_dir = _db_path
 
         cls.layout = cls._layout
 

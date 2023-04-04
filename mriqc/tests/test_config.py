@@ -69,6 +69,7 @@ def test_bids_indexing_manifest(tmp_path, testdata_path, testcase):
 
     reload(config)
 
+    config.execution.output_dir = Path(tmp_path) / "out"
     config.execution.bids_dir = _expand_bids(
         tmp_path,
         testdata_path,
