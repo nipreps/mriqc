@@ -563,7 +563,7 @@ def rpve(pvms, seg):
     return {k: float(v) for k, v in list(pvfs.items())}
 
 
-def summary_stats(img, pvms, airmask=None, erode=True):
+def summary_stats(data, pvms, airmask=None, erode=True):
     r"""
     Estimates the mean, the median, the standard deviation,
     the kurtosis,the median absolute deviation (mad), the 95\%
@@ -584,67 +584,29 @@ def summary_stats(img, pvms, airmask=None, erode=True):
 
 
     """
+    from statsmodels.stats.weightstats import DescrStatsW
     from statsmodels.robust.scale import mad
 
-    from .. import config
-
-    # Check type of input masks
-    dims = np.squeeze(np.array(pvms)).ndim
-    if dims == 4:
-        # If pvms is from FSL FAST, create the bg mask
-        stats_pvms = [np.zeros_like(img)] + pvms
-    elif dims == 3:
-        stats_pvms = [np.ones_like(pvms) - pvms, pvms]
-    else:
-        raise RuntimeError(
-            "Incorrect image dimensions ({0:d})".format(np.array(pvms).ndim)
-        )
-
-    if airmask is not None:
-        stats_pvms[0] = airmask
-
-    labels = list(FSL_FAST_LABELS.items())
-    if len(stats_pvms) == 2:
-        labels = list(zip(["bg", "fg"], list(range(2))))
-
     output = {}
-    for k, lid in labels:
-        mask = stats_pvms[lid] > 0.85
-        nvox = mask.sum()
+    for label, probmap in pvms.items():
+        wstats = DescrStatsW(data=data.reshape(-1), weights=probmap.reshape(-1))
+        nvox = probmap.sum()
+        p05, median, p95 = wstats.quantile(
+            np.array([0.05, 0.50, 0.95]),
+            return_pandas=False,
+        )
+        thresholded = data[probmap > (0.5 * probmap.max())]
 
-        if erode and nvox > 2e3:
-            struct = nd.generate_binary_structure(3, 2)
-            mask = nd.binary_erosion(mask, structure=struct)
-            nvox = mask.sum()
-
-        # Initialize with zeros.
-        output[k] = {
-            "mean": 0.0,
-            "median": 0.0,
-            "p95": 0.0,
-            "p05": 0.0,
-            "k": 0.0,
-            "stdv": 0.0,
-            "mad": 0.0,
+        output[label] = {
+            "mean": float(wstats.mean),
+            "median": float(median),
+            "p95": float(p95),
+            "p05": float(p05),
+            "k": float(kurtosis(thresholded)),
+            "stdv": float(wstats.std),
+            "mad": float(mad(thresholded, center=median)),
             "n": float(nvox),
         }
-        if nvox > 100:
-            data = img[mask]
-            output[k] = {
-                "mean": float(data.mean()),
-                "stdv": float(data.std()),
-                "median": float(np.median(data)),
-                "mad": float(mad(data)),
-                "p95": float(np.percentile(data, 95)),
-                "p05": float(np.percentile(data, 5)),
-                "k": float(kurtosis(data)),
-                "n": float(nvox),
-            }
-        else:
-            config.loggers.interface.warning(
-                f'calculating summary stats of label "{k}" in a very small '
-                f"mask ({nvox} voxels)",
-            )
 
     return output
 

@@ -105,7 +105,6 @@ class FunctionalQC(SimpleInterface):
         # Get brain mask data
         msknii = nb.load(self.inputs.in_mask)
         mskdata = np.asanyarray(msknii.dataobj) > 0
-        mskdata = mskdata.astype(np.uint8)
         if np.sum(mskdata) < 100:
             raise RuntimeError(
                 "Detected less than 100 voxels belonging to the brain mask. "
@@ -113,7 +112,11 @@ class FunctionalQC(SimpleInterface):
             )
 
         # Summary stats
-        stats = summary_stats(epidata, mskdata, erode=True)
+        rois = {
+            "fg": mskdata.astype(np.uint8),
+            "bg": (~mskdata).astype(np.uint8)
+        }
+        stats = summary_stats(epidata, rois)
         self._results["summary"] = stats
 
         # SNR
@@ -121,7 +124,7 @@ class FunctionalQC(SimpleInterface):
             stats["fg"]["median"], stats["fg"]["stdv"], stats["fg"]["n"]
         )
         # FBER
-        self._results["fber"] = fber(epidata, mskdata)
+        self._results["fber"] = fber(epidata, mskdata.astype(np.uint8))
         # EFC
         self._results["efc"] = efc(epidata)
         # GSR
@@ -132,7 +135,7 @@ class FunctionalQC(SimpleInterface):
             epidir = [self.inputs.direction]
 
         for axis in epidir:
-            self._results["gsr"][axis] = gsr(epidata, mskdata, direction=axis)
+            self._results["gsr"][axis] = gsr(epidata, mskdata.astype(np.uint8), direction=axis)
 
         # DVARS
         dvars_avg = np.loadtxt(
@@ -145,7 +148,7 @@ class FunctionalQC(SimpleInterface):
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_fdata()
-        self._results["tsnr"] = float(np.median(tsnr_data[mskdata > 0]))
+        self._results["tsnr"] = float(np.median(tsnr_data[mskdata]))
 
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
