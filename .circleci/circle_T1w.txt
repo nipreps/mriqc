@@ -1,3 +1,5 @@
+.bids_db
+.bids_db/layout_index.sqlite
 .bidsignore
 dataset_description.json
 group_T1w.html
