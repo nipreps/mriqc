@@ -105,11 +105,6 @@ class StructuralQC(SimpleInterface):
 
     def _run_interface(self, runtime):  # pylint: disable=R0914,E1101
         imnii = nb.load(self.inputs.in_noinu)
-        erode = (
-            np.all(np.array(imnii.header.get_zooms()[:3], dtype=np.float32) < 1.9)
-            if self.inputs.human
-            else False
-        )
 
         # Load image corrected for INU
         inudata = np.nan_to_num(imnii.get_fdata())
@@ -144,18 +139,18 @@ class StructuralQC(SimpleInterface):
 
         rotdata = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(np.uint8)
 
-        # Load Partial Volume Maps (pvms) from FSL FAST
-        pvmdata = []
-        for fname in self.inputs.in_pvms:
-            pvmdata.append(nb.load(fname).get_fdata(dtype="float32"))
-            if np.sum(pvmdata[-1] > 1e-4) < 10:
-                raise RuntimeError(
-                    "Detected less than 10 voxels belonging to one tissue prob. map. "
-                    "MRIQC failed to process this dataset."
-                )
+        # Load brain tissue probability maps from GMM segmentation
+        pvms = {
+            label: nb.load(fname).get_fdata()
+            for label, fname in zip(("csf", "gm", "wm"), self.inputs.in_pvms)
+        }
+        pvmdata = list(pvms.values())
+
+        # Add probability maps
+        pvms["bg"] = airdata
 
         # Summary stats
-        stats = summary_stats(inudata, pvmdata, airdata, erode=erode)
+        stats = summary_stats(inudata, pvms)
         self._results["summary"] = stats
 
         # SNR
