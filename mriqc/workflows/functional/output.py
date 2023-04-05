@@ -238,10 +238,10 @@ def init_func_report_wf(name="func_report_wf"):
     )
 
     if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_mean.inputs.view = ("coronal", "axial")
-        mosaic_stddev.inputs.view = ("coronal", "axial")
-        mosaic_zoom.inputs.view = ("coronal", "axial")
-        mosaic_noise.inputs.view = ("coronal", "axial")
+        mosaic_mean.inputs.view = ["coronal", "axial"]
+        mosaic_stddev.inputs.view = ["coronal", "axial"]
+        mosaic_zoom.inputs.view = ["coronal", "axial"]
+        mosaic_noise.inputs.view = ["coronal", "axial"]
 
     plot_bmask = pe.Node(
         PlotContours(

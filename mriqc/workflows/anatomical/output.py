@@ -78,8 +78,8 @@ def init_anat_report_wf(name: str = "anat_report_wf"):
         name="PlotMosaicNoise",
     )
     if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_zoom.inputs.view = ("coronal", "axial")
-        mosaic_noise.inputs.view = ("coronal", "axial")
+        mosaic_zoom.inputs.view = ["coronal", "axial"]
+        mosaic_noise.inputs.view = ["coronal", "axial"]
 
     ds_report_zoomed = pe.Node(
         DerivativesDataSink(
