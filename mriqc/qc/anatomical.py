@@ -468,7 +468,7 @@ def art_qi2(
     # S. Ogawa was born
     np.random.seed(1191935)
 
-    data = img[airmask > 0]
+    data = np.nan_to_num(img[airmask > 0], posinf=0.0)
     data[data < 0] = 0
 
     # Write out figure of the fitting
