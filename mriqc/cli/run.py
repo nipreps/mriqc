@@ -195,14 +195,13 @@ def main():
     # Set up group level
     if "group" in config.workflow.analysis_level:
         from mriqc.reports.group import gen_html as group_html
-        from ..utils.bids import DEFAULT_TYPES
         from ..utils.misc import generate_tsv  # , generate_pred
 
         config.loggers.cli.info(messages.GROUP_START)
 
         # Generate reports
         mod_group_reports = []
-        for mod in config.execution.modalities or DEFAULT_TYPES:
+        for mod in config.execution.modalities or config.SUPPORTED_SUFFIXES:
             output_dir = config.execution.output_dir
             dataframe, out_tsv = generate_tsv(output_dir, mod)
             # If there are no iqm.json files, nothing to do.

@@ -197,6 +197,7 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         "-m",
         "--modalities",
         action="store",
+        choices=config.SUPPORTED_SUFFIXES,
         nargs="*",
         help="Filter input dataset by MRI type.",
     )
@@ -440,7 +441,7 @@ def parse_args(args=None, namespace=None):
     from logging import DEBUG
     from contextlib import suppress
 
-    from ..utils.bids import collect_bids_data
+    from mriqc.utils.bids import collect_bids_data
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
@@ -538,7 +539,7 @@ Please, check out your currently set filters:
         )
 
     # Check no DWI or others are sneaked into MRIQC
-    unknown_mods = set(config.workflow.inputs.keys()) - set(("T1w", "T2w", "bold"))
+    unknown_mods = set(config.workflow.inputs.keys()) - set(config.SUPPORTED_SUFFIXES)
     if unknown_mods:
         parser.error(
             "MRIQC is unable to process the following modalities: "

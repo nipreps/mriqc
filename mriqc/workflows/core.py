@@ -26,9 +26,11 @@ Combines the structural and functional MRI workflows.
 from nipype.pipeline.engine import Workflow
 from mriqc.workflows.anatomical.base import anat_qc_workflow
 from mriqc.workflows.functional.base import fmri_qc_workflow
+from mriqc.workflows.diffusion.base import dmri_qc_workflow
 
 ANATOMICAL_KEYS = "T1w", "T2w"
 FMRI_KEY = "bold"
+DMRI_KEY = "dwi"
 
 
 def init_mriqc_wf():
@@ -43,10 +45,13 @@ def init_mriqc_wf():
     if FMRI_KEY in config.workflow.inputs:
         workflow.add_nodes([fmri_qc_workflow()])
 
+    # Create dMRI QC workflow
+    if DMRI_KEY in config.workflow.inputs:
+        workflow.add_nodes([dmri_qc_workflow()])
+
     # Create sMRI QC workflow
     input_keys = config.workflow.inputs.keys()
-    anatomical_flag = any(key in input_keys for key in ANATOMICAL_KEYS)
-    if anatomical_flag:
+    if any(key in input_keys for key in ANATOMICAL_KEYS):
         workflow.add_nodes([anat_qc_workflow()])
 
     # Return non-empty workflow, else None
