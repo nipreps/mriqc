@@ -46,7 +46,7 @@ from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from mriqc.interfaces.datalad import DataladIdentityInterface
-from mriqc.workflows.diffusion.output import init_dwi_report_wf
+# from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
 
 def dmri_qc_workflow(name="dwiMRIQC"):
@@ -62,11 +62,17 @@ def dmri_qc_workflow(name="dwiMRIQC"):
             wf = dmri_qc_workflow()
 
     """
-    from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
-    from nipype.interfaces.afni import TStat
+    from nipype.interfaces.ants import N4BiasFieldCorrection
     from niworkflows.interfaces.header import SanitizeImage
+    from niworkflows.interfaces.nibabel import IntensityClip, MergeSeries, SplitSeries
     from niworkflows.workflows.epi.refmap import init_epi_reference_wf
-    from mriqc.interfaces.diffusion import ReadDWIMetadata
+    from mriqc.interfaces.diffusion import (
+        CorrectSignalDrift,
+        ExtractB0,
+        NumberOfShells,
+        ReadDWIMetadata,
+        WeightedAverage,
+    )
     from mriqc.messages import BUILDING_WORKFLOW
 
     workflow = pe.Workflow(name=name)
@@ -100,17 +106,44 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         name="outputnode",
     )
 
-    non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
-
-    sanitize = pe.Node(SanitizeImage(), name="sanitize", mem_gb=mem_gb * 4.0)
-    sanitize.inputs.max_32bit = config.execution.float32
+    sanitize = pe.Node(
+        SanitizeImage(
+            n_volumes_to_discard=0,
+            max_32bit=config.execution.float32,
+        ),
+        name="sanitize",
+        mem_gb=mem_gb * 4.0,
+    )
 
     # Workflow --------------------------------------------------------
 
-    # 1. Read metadata & bvec/bval
+    # 1. Read metadata & bvec/bval, estimate number of shells, extract and split B0s
     meta = pe.Node(ReadDWIMetadata(
         index_db=config.execution.bids_database_dir
     ), name="metadata")
+    shells = pe.Node(NumberOfShells(), name="shells")
+    get_b0s = pe.Node(ExtractB0(), name="get_b0s")
+    split_b0s = pe.Node(SplitSeries(), name="split_b0s")
+    clip_b0s = pe.MapNode(IntensityClip(), name="clip_b0s", iterfield=["in_file"])
+
+    # de-gradient the fields ("bias/illumination artifact")
+    n4_b0s = pe.MapNode(
+        N4BiasFieldCorrection(
+            dimension=3,
+            copy_header=True,
+            n_iterations=[50] * 5,
+            convergence_threshold=1e-7,
+            shrink_factor=4,
+            save_bias=True,
+            num_threads=config.nipype.omp_nthreads,
+        ),
+        n_procs=config.nipype.omp_nthreads,
+        name="n4_b0s",
+        iterfield=["input_image"],
+    )
+    merge_bias = pe.Node(MergeSeries(), name="merge_bias")
+
+    drift = pe.Node(CorrectSignalDrift(), name="drift")
 
     # 2. Generate B0 reference
     dwi_reference_wf = init_epi_reference_wf(
@@ -124,129 +157,70 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     # 4. HMC: head motion correct
     hmcwf = hmc()
 
-    # Set HMC settings
-    hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
-
     # 5. Compute mean dmri
-    mean = pe.Node(
-        TStat(options="-mean", outputtype="NIFTI_GZ"),
-        name="mean",
-        mem_gb=mem_gb * 1.5,
-    )
+    b0_average = pe.Node(WeightedAverage(), name="b0_average", mem_gb=mem_gb * 1.5)
 
-    # EPI to MNI registration
+    # 6. EPI to MNI registration
     ema = epi_mni_align()
 
-    # Compute TSNR using nipype implementation
-    tsnr = pe.Node(TSNR(), name="compute_tsnr", mem_gb=mem_gb * 2.5)
-
     # 7. Compute IQMs
-    iqmswf = compute_iqms()
+    # iqmswf = compute_iqms()
     # Reports
-    dwi_report_wf = init_dwi_report_wf()
+    # dwi_report_wf = init_dwi_report_wf()
 
     # fmt: off
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
         (inputnode, meta, [("in_file", "in_file")]),
-        (inputnode, dwi_report_wf, [
-            ("in_file", "inputnode.name_source"),
-        ]),
-        (inputnode, dwi_reference_wf, [("in_file", "inputnode.in_files")]),
-        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
+        # (inputnode, dwi_report_wf, [
+        #     ("in_file", "inputnode.name_source"),
+        # ]),
+        # (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (datalad_get, non_steady_state_detector, [("in_file", "in_file")]),
-        (meta, dwi_reference_wf, [(("out_bmatrix", _lowbmask), "inputnode.t_masks")]),
+        (sanitize, get_b0s, [("out_file", "in_file")]),
+        (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_files")]),
+        (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
+        (meta, shells, [("out_bval_file", "in_bvals")]),
+        (shells, get_b0s, [("lowb_indices", "b0_ixs")]),
+        (shells, dwi_reference_wf, [("lowb_mask", "inputnode.t_masks")]),
+        (get_b0s, split_b0s, [("out_file", "in_file")]),
+        (split_b0s, clip_b0s, [("out_files", "in_file")]),
+        (clip_b0s, n4_b0s, [("out_file", "input_image")]),
+        (n4_b0s, merge_bias, [("bias_image", "in_files")]),
+        (meta, drift, [("out_bval_file", "bval_file")]),
+        (get_b0s, drift, [("out_file", "in_file")]),
+        (shells, drift, [("lowb_indices", "b0_ixs")]),
+        (shells, b0_average, [("lowb_mask", "in_weights")]),
+        (merge_bias, drift, [("out_file", "bias_file")]),
         (dwi_reference_wf, dmri_bmsk, [("outputnode.epi_ref_file", "inputnode.in_file")]),
         (dwi_reference_wf, ema, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
-        (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
-        (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
-        (hmcwf, mean, [("outputnode.out_file", "in_file")]),
-        (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
-        (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
-        (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
-        (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
-                         ("outputnode.out_fd", "inputnode.hmc_fd")]),
-        (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
-        (sanitize, dwi_report_wf, [("out_file", "inputnode.in_ras")]),
-        (mean, dwi_report_wf, [("out_file", "inputnode.epi_mean")]),
-        (tsnr, dwi_report_wf, [("stddev_file", "inputnode.in_stddev")]),
-        (hmcwf, dwi_report_wf, [
-            ("outputnode.out_fd", "inputnode.hmc_fd"),
-            ("outputnode.out_file", "inputnode.hmc_epi"),
-        ]),
-        (ema, dwi_report_wf, [
-            ("outputnode.epi_parc", "inputnode.epi_parc"),
-            ("outputnode.report", "inputnode.mni_report"),
-        ]),
-        (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
-        (iqmswf, dwi_report_wf, [
-            ("outputnode.out_file", "inputnode.in_iqms"),
-            ("outputnode.out_dvars", "inputnode.in_dvars"),
-            ("outputnode.outliers", "inputnode.outliers"),
-            ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
-        ]),
+        (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
+        (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
+        (hmcwf, b0_average, [("outputnode.out_file", "in_file")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
+        # (dmri_bmsk, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
+        # (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
+        # (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
+        # (dwi_reference_wf, iqmswf, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
+        # (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
+        #                  ("outputnode.out_fd", "inputnode.hmc_fd")]),
+        # (sanitize, dwi_report_wf, [("out_file", "inputnode.in_ras")]),
+        # (b0_average, dwi_report_wf, [("out_file", "inputnode.epi_mean")]),
+        # (tsnr, dwi_report_wf, [("stddev_file", "inputnode.in_stddev")]),
+        # (hmcwf, dwi_report_wf, [
+        #     ("outputnode.out_fd", "inputnode.hmc_fd"),
+        #     ("outputnode.out_file", "inputnode.hmc_epi"),
+        # ]),
+        # (ema, dwi_report_wf, [
+        #     ("outputnode.epi_parc", "inputnode.epi_parc"),
+        #     ("outputnode.report", "inputnode.mni_report"),
+        # ]),
+        # (iqmswf, dwi_report_wf, [
+        #     ("outputnode.out_file", "inputnode.in_iqms"),
+        #     ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
+        # ]),
     ])
     # fmt: on
-
-    if config.workflow.fft_spikes_detector:
-        # fmt: off
-        workflow.connect([
-            (iqmswf, dwi_report_wf, [
-                ("outputnode.out_spikes", "inputnode.in_spikes"),
-                ("outputnode.out_fft", "inputnode.in_fft"),
-            ]),
-        ])
-        # fmt: on
-
-    # population specific changes to brain masking
-    if config.workflow.species == "human":
-        skullstrip_epi = dmri_bmsk_workflow()
-        # fmt: off
-        workflow.connect([
-            (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
-            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
-            (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
-            (skullstrip_epi, dwi_report_wf, [("outputnode.out_file", "inputnode.brainmask")]),
-        ])
-        # fmt: on
-    else:
-        from mriqc.workflows.anatomical.base import _binarize
-
-        binarise_labels = pe.Node(
-            niu.Function(
-                input_names=["in_file", "threshold"],
-                output_names=["out_file"],
-                function=_binarize,
-            ),
-            name="binarise_labels",
-        )
-
-        # fmt: off
-        workflow.connect([
-            (ema, binarise_labels, [("outputnode.epi_parc", "in_file")]),
-            (binarise_labels, iqmswf, [("out_file", "inputnode.brainmask")]),
-            (binarise_labels, dwi_report_wf, [("out_file", "inputnode.brainmask")])
-        ])
-        # fmt: on
-
-    # Upload metrics
-    if not config.execution.no_sub:
-        from mriqc.interfaces.webapi import UploadIQMs
-
-        upldwf = pe.Node(UploadIQMs(
-            endpoint=config.execution.webapi_url,
-            auth_token=config.execution.webapi_token,
-            strict=config.execution.upload_strict,
-        ), name="UploadMetrics")
-
-        # fmt: off
-        workflow.connect([
-            (iqmswf, upldwf, [("outputnode.out_file", "in_iqms")]),
-        ])
-        # fmt: on
-
     return workflow
 
 
@@ -262,13 +236,10 @@ def compute_iqms(name="ComputeIQMs"):
             wf = compute_iqms()
 
     """
-    from nipype.algorithms.confounds import ComputeDVARS
-    from nipype.interfaces.afni import OutlierCount, QualityIndex
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
     from mriqc.interfaces import FunctionalQC, IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
-    from mriqc.interfaces.transitional import GCOR
     from mriqc.workflows.utils import _tofloat, get_fwhmx
 
     mem_gb = config.workflow.biggest_file_gb
@@ -295,10 +266,6 @@ def compute_iqms(name="ComputeIQMs"):
         niu.IdentityInterface(
             fields=[
                 "out_file",
-                "out_dvars",
-                "outliers",
-                "out_spikes",
-                "out_fft",
                 "meta_sidecar",
             ]
         ),
@@ -312,39 +279,14 @@ def compute_iqms(name="ComputeIQMs"):
         index_db=config.execution.bids_database_dir
     ), name="metadata")
 
-
-    # Compute DVARS
-    dvnode = pe.Node(
-        ComputeDVARS(save_plot=False, save_all=True),
-        name="ComputeDVARS",
-        mem_gb=mem_gb * 3,
-    )
-
     # AFNI quality measures
     fwhm_interface = get_fwhmx()
     fwhm = pe.Node(fwhm_interface, name="smoothness")
     # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(
-        OutlierCount(fraction=True, out_file="outliers.out"),
-        name="outliers",
-        mem_gb=mem_gb * 2.5,
-    )
-
-    quality = pe.Node(
-        QualityIndex(automask=True),
-        out_file="quality.out",
-        name="quality",
-        mem_gb=mem_gb * 3,
-    )
-
-    gcor = pe.Node(GCOR(), name="gcor", mem_gb=mem_gb * 2)
-
     measures = pe.Node(FunctionalQC(), name="measures", mem_gb=mem_gb * 3)
 
     # fmt: off
     workflow.connect([
-        (inputnode, dvnode, [("hmc_epi", "in_file"),
-                             ("brainmask", "in_mask")]),
         (inputnode, measures, [("epi_mean", "in_epi"),
                                ("brainmask", "in_mask"),
                                ("hmc_epi", "in_hmc"),
@@ -353,15 +295,7 @@ def compute_iqms(name="ComputeIQMs"):
                                ("in_tsnr", "in_tsnr")]),
         (inputnode, fwhm, [("epi_mean", "in_file"),
                            ("brainmask", "mask")]),
-        (inputnode, quality, [("hmc_epi", "in_file")]),
-        (inputnode, outliers, [("hmc_epi", "in_file"),
-                               ("brainmask", "mask")]),
-        (inputnode, gcor, [("hmc_epi", "in_file"),
-                           ("brainmask", "mask")]),
-        (dvnode, measures, [("out_all", "in_dvars")]),
         (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
-        (dvnode, outputnode, [("out_all", "out_dvars")]),
-        (outliers, outputnode, [("out_file", "outliers")])
     ])
     # fmt: on
     addprov = pe.Node(
@@ -395,37 +329,11 @@ def compute_iqms(name="ComputeIQMs"):
                           ("run", "run_id"),
                           ("out_dict", "metadata")]),
         (addprov, datasink, [("out_prov", "provenance")]),
-        (outliers, datasink, [(("out_file", _parse_tout), "aor")]),
-        (gcor, datasink, [(("out", _tofloat), "gcor")]),
-        (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
         (measures, datasink, [("out_qc", "root")]),
         (datasink, outputnode, [("out_file", "out_file")]),
         (meta, outputnode, [("out_dict", "meta_sidecar")]),
     ])
     # fmt: on
-
-    # FFT spikes finder
-    if config.workflow.fft_spikes_detector:
-        from mriqc.workflows.utils import slice_wise_fft
-
-        spikes_fft = pe.Node(
-            niu.Function(
-                input_names=["in_file"],
-                output_names=["n_spikes", "out_spikes", "out_fft"],
-                function=slice_wise_fft,
-            ),
-            name="SpikesFinderFFT",
-        )
-
-        # fmt: off
-        workflow.connect([
-            (inputnode, spikes_fft, [("in_ras", "in_file")]),
-            (spikes_fft, outputnode, [("out_spikes", "out_spikes"),
-                                      ("out_fft", "out_fft")]),
-            (spikes_fft, datasink, [("n_spikes", "spikes_num")])
-        ])
-        # fmt: on
-
     return workflow
 
 
@@ -477,7 +385,7 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
     workflow = pe.Workflow(name=name)
     # fmt: off
     workflow.connect([
-        (inputnode, final_inu, [("in_files", "in_file")]),
+        (inputnode, final_inu, [("in_file", "in_file")]),
         (inputnode, synthstrip, [("in_file", "in_file")]),
         (inputnode, post_n4, [("in_file", "input_image")]),
         (synthstrip, post_n4, [("out_mask", "weight_image")]),
@@ -506,17 +414,13 @@ def hmc(name="dMRI_HMC"):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Despike, Refit, Volreg
+    from nipype.interfaces.afni import Volreg
 
     mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "fd_radius"]),
-        name="inputnode",
-    )
-
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     # calculate hmc parameters
@@ -528,53 +432,22 @@ def hmc(name="dMRI_HMC"):
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(
-        FramewiseDisplacement(normalize=False, parameter_source="AFNI"),
+        FramewiseDisplacement(
+            normalize=False,
+            parameter_source="AFNI",
+            radius=config.workflow.fd_radius,
+        ),
         name="ComputeFD",
     )
 
     # fmt: off
     workflow.connect([
-        (inputnode, fdnode, [("fd_radius", "radius")]),
+        (inputnode, hmc, [("in_file", "in_file")]),
         (hmc, outputnode, [("out_file", "out_file")]),
         (hmc, fdnode, [("oned_file", "in_file")]),
         (fdnode, outputnode, [("out_file", "out_fd")]),
     ])
     # fmt: on
-
-    # despiking, and deoblique
-
-    deoblique_node = pe.Node(Refit(deoblique=True), name="deoblique")
-
-    despike_node = pe.Node(Despike(outputtype="NIFTI_GZ"), name="despike")
-
-    if config.workflow.despike and config.workflow.deoblique:
-        # fmt: off
-        workflow.connect([
-            (inputnode, despike_node, [("in_file", "in_file")]),
-            (despike_node, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.despike:
-        # fmt: off
-        workflow.connect([
-            (inputnode, despike_node, [("in_file", "in_file")]),
-            (despike_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    elif config.workflow.deoblique:
-        # fmt: off
-        workflow.connect([
-            (inputnode, deoblique_node, [("in_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
-        ])
-        # fmt: on
-    else:
-        # fmt: off
-        workflow.connect([
-            (inputnode, hmc, [("in_file", "in_file")]),
-        ])
-        # fmt: on
     return workflow
 
 
@@ -742,8 +615,7 @@ def _tolist(value):
     return [value]
 
 
-def _lowbmask(bmatrix, lowb_thres=50):
-    import numpy as np
+def _get_bvals(bmatrix):
+    import numpy
 
-    bmatrix = np.array(bmatrix)
-    return [(bmatrix[:, -1] < lowb_thres).tolist()]
+    return numpy.squeeze(bmatrix[:, -1]).tolist()

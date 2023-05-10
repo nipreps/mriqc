@@ -25,9 +25,11 @@ import numpy as np
 import nibabel as nb
 from sklearn.cluster import KMeans
 from sklearn.model_selection import GridSearchCV
+from scipy.optimize import curve_fit
 
 from nipype.utils.filemanip import fname_presuffix
 from nipype.interfaces.base import (
+    isdefined,
     traits,
     TraitedSpec as _TraitedSpec,
     BaseInterfaceInputSpec as _BaseInterfaceInputSpec,
@@ -104,12 +106,7 @@ class WeightedAverage(SimpleInterface):
 
 
 class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
-    in_data = traits.List(
-        traits.Float,
-        mandatory=True,
-        minlen=1,
-        desc="list of weights",
-    )
+    in_bvals = File(mandatory=True, desc="bvals file")
     b0_threshold = traits.Float(50, usedefault=True, desc="a threshold for the low-b values")
 
 
@@ -141,7 +138,7 @@ class NumberOfShells(SimpleInterface):
     output_spec = _NumberOfShellsOutputSpec
 
     def _run_interface(self, runtime):
-        in_data = np.array(self.inputs.in_data)
+        in_data = np.squeeze(np.loadtxt(self.inputs.in_bvals))
         highb_mask = in_data > self.inputs.b0_threshold
         grid_search = GridSearchCV(
             KMeans(), param_grid={"n_clusters": range(1, 10)}, scoring=_rms
@@ -211,6 +208,64 @@ class ExtractB0(SimpleInterface):
         return runtime
 
 
+class _CorrectSignalDriftInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc="a 4D file with all low-b volumes")
+    bias_file = File(exists=True, desc="a 4D file with all B1 biases")
+    brainmask_file = File(exists=True, desc="a 3D file of the brain mask")
+    b0_ixs = traits.List(traits.Int, mandatory=True, desc="Index of b0s")
+    bval_file = File(exists=True, mandatory=True, desc="bvalues file")
+
+
+class _CorrectSignalDriftOutputSpec(_TraitedSpec):
+    out_file = File(desc="input file after drift correction")
+    signal_drift = traits.List(traits.Float)
+
+
+class CorrectSignalDrift(SimpleInterface):
+    """Correct DWI for signal drift."""
+
+    input_spec = _CorrectSignalDriftInputSpec
+    output_spec = _CorrectSignalDriftOutputSpec
+
+    def _run_interface(self, runtime):
+        img = nb.load(self.inputs.in_file)
+        data = np.asanyarray(img.dataobj)
+        bmask = np.ones_like(data[..., 0], dtype=bool)
+
+        # Correct for the B1 bias
+        if isdefined(self.inputs.bias_file):
+            data *= nb.load(self.inputs.bias_file).get_fdata()
+
+        if isdefined(self.inputs.brainmask_file):
+            bmask = np.asanyarray(nb.load(self.inputs.brainmask_file).dataobj) > 1e-3
+
+        global_signal = []
+
+        for n_b0 in range(img.shape[-1]):
+            frame = img[..., n_b0]
+            global_signal.append(np.median(frame[bmask]))
+
+        # Normalize and correct
+        global_signal = np.array(global_signal) / global_signal[0]
+        data *= global_signal[np.newaxis, np.newaxis, np.newaxis, :]
+
+        self._results["out_file"] = fname_presuffix(
+            self.inputs.in_file, suffix="_nodrift", newpath=runtime.cwd
+        )
+        img.__class__(
+            data, img.affine, img.header,
+        ).to_filename(self._results["out_file"])
+
+        # Fit exponential
+        params, _ = curve_fit(_exp_func, self.inputs.b0_ixs, global_signal, maxfev=1000)
+
+        len_dmri = np.loadtxt(self.inputs.bval_file).size
+        t_points = np.arange(len_dmri, dtype=int)
+        fitted = _exp_func(t_points, *params)
+        self._results["signal_drift"] = np.squeeze(fitted).tolist()
+        return runtime
+
+
 def _rms(estimator, X):
     """
     Callable to pass to GridSearchCV that will calculate a distance score.
@@ -241,3 +296,7 @@ def _extract_b0(in_file, b0_ixs, out_path=None):
     hdr.set_xyzt_units("mm")
     nb.Nifti1Image(bzeros, img.affine, hdr).to_filename(out_path)
     return out_path
+
+
+def _exp_func(t, A, K, C):
+    return A * np.exp(K * t) + C
