@@ -170,6 +170,47 @@ class NumberOfShells(SimpleInterface):
         return runtime
 
 
+class _ExtractB0InputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc="dwi file")
+    b0_ixs = traits.List(traits.Int, mandatory=True, desc="Index of b0s")
+
+
+class _ExtractB0OutputSpec(_TraitedSpec):
+    out_file = File(exists=True, desc="output b0 file")
+
+
+class ExtractB0(SimpleInterface):
+    """
+    Extract all b=0 volumes from a dwi series.
+
+    Example
+    -------
+    >>> os.chdir(tmpdir)
+    >>> extract_b0 = ExtractB0()
+    >>> extract_b0.inputs.in_file = str(data_dir / 'dwi.nii.gz')
+    >>> extract_b0.inputs.b0_ixs = [0, 1, 2]
+    >>> res = extract_b0.run()  # doctest: +SKIP
+
+    """
+
+    input_spec = _ExtractB0InputSpec
+    output_spec = _ExtractB0OutputSpec
+
+    def _run_interface(self, runtime):
+        from nipype.utils.filemanip import fname_presuffix
+
+        out_file = fname_presuffix(
+            self.inputs.in_file,
+            suffix="_b0",
+            newpath=runtime.cwd,
+        )
+
+        self._results["out_file"] = _extract_b0(
+            self.inputs.in_file, self.inputs.b0_ixs, out_path=out_file
+        )
+        return runtime
+
+
 def _rms(estimator, X):
     """
     Callable to pass to GridSearchCV that will calculate a distance score.
@@ -185,3 +226,18 @@ def _rms(estimator, X):
     distance = X - estimator.cluster_centers_[estimator.predict(X)]
     # Make negative so CV optimizes minimizes the error
     return -np.sqrt(distance**2).sum()
+
+
+def _extract_b0(in_file, b0_ixs, out_path=None):
+    """Extract the *b0* volumes from a DWI dataset."""
+    if out_path is None:
+        out_path = fname_presuffix(in_file, suffix="_b0")
+
+    img = nb.load(in_file)
+    bzeros = np.squeeze(np.asanyarray(img.dataobj)[..., b0_ixs])
+
+    hdr = img.header.copy()
+    hdr.set_data_shape(bzeros.shape)
+    hdr.set_xyzt_units("mm")
+    nb.Nifti1Image(bzeros, img.affine, hdr).to_filename(out_path)
+    return out_path
