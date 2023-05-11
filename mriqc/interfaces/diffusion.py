@@ -34,6 +34,7 @@ from nipype.interfaces.base import (
     BaseInterfaceInputSpec as _BaseInterfaceInputSpec,
     File,
     SimpleInterface,
+    OutputMultiObject,
 )
 from niworkflows.interfaces.bids import ReadSidecarJSON, _ReadSidecarJSONOutputSpec
 
@@ -143,26 +144,37 @@ class NumberOfShells(SimpleInterface):
             KMeans(), param_grid={"n_clusters": range(1, 10)}, scoring=_rms
         ).fit(in_data[highb_mask].reshape(-1, 1))
 
-        results = sorted(zip(
+        results = np.array(sorted(zip(
             grid_search.cv_results_["mean_test_score"] * -1.0,
             grid_search.cv_results_["param_n_clusters"],
-        ))
+        )))
 
         self._results["lowb_mask"] = (~highb_mask).tolist()
         self._results["lowb_indices"] = np.squeeze(np.argwhere(~highb_mask)).tolist()
-        self._results["models"] = list(list(zip(*results))[1])
-        self._results["n_shells"] = grid_search.best_params_["n_clusters"]
+        self._results["models"] = results[:, 1].astype(int).tolist()
+        self._results["n_shells"] = int(grid_search.best_params_["n_clusters"])
 
-        self._results["b_values"] = sorted(
-            np.squeeze(grid_search.best_estimator_.cluster_centers_).tolist()
-        )
+        self._results["b_values"] = sorted([
+            cc for cc in np.squeeze(grid_search.best_estimator_.cluster_centers_)
+        ])
 
         out_data = np.zeros_like(in_data)
-        predicted_shell = grid_search.best_estimator_.cluster_centers_[
-            grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
-        ]
-        out_data[highb_mask] = np.squeeze(predicted_shell)
-        self._results["out_data"] = out_data.tolist()
+        predicted_shell = np.squeeze(
+            grid_search.best_estimator_.cluster_centers_[
+                grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
+            ],
+        )
+        original_bvals = np.unique(np.rint(in_data[highb_mask]).astype(int))
+
+        # If estimated shells matches direct count, probably right -- do not change b-vals
+        if len(original_bvals) == self._results["n_shells"]:
+            self._results["b_values"] = sorted(original_bvals.tolist())
+            # Find closest b-values
+            indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
+            predicted_shell = original_bvals[indices]
+
+        out_data[highb_mask] = predicted_shell
+        self._results["out_data"] = out_data.astype(float).tolist()
         return runtime
 
 
@@ -278,6 +290,45 @@ class CorrectSignalDrift(SimpleInterface):
                 full_img.affine,
                 full_img.header,
             ).to_filename(self._results["out_full_file"])
+        return runtime
+
+
+class _SplitShellsInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc="dwi file")
+    bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
+
+
+class _SplitShellsOutputSpec(_TraitedSpec):
+    out_file = OutputMultiObject(File(exists=True), desc="output b0 file")
+
+
+class SplitShells(SimpleInterface):
+    """Split a DWI dataset into ."""
+
+    input_spec = _SplitShellsInputSpec
+    output_spec = _SplitShellsOutputSpec
+
+    def _run_interface(self, runtime):
+        from nipype.utils.filemanip import fname_presuffix
+
+        bval_list = np.rint(self.inputs.bvals).astype(int)
+        bvals = np.unique(bval_list)
+        img = nb.load(self.inputs.in_file)
+        data = np.array(img.dataobj, dtype=img.header.get_data_dtype())
+
+        self._results["out_file"] = []
+
+        for bval in bvals:
+            fname = fname_presuffix(
+                self.inputs.in_file, suffix=f"_b{bval:05d}", newpath=runtime.cwd
+            )
+            self._results["out_file"].append(fname)
+
+            img.__class__(
+                data[..., np.argwhere(bval_list == bval)],
+                img.affine,
+                img.header,
+            ).to_filename(fname)
         return runtime
 
 

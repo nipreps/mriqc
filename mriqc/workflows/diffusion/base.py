@@ -71,6 +71,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         NumberOfShells,
         ReadDWIMetadata,
         WeightedAverage,
+        SplitShells,
     )
     from mriqc.messages import BUILDING_WORKFLOW
 
@@ -141,7 +142,8 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     # 4. HMC: head motion correct
     hmcwf = hmc_workflow()
 
-    # 5. Compute mean dmri
+    # 5. Split shells and compute some stats
+    split_shells = pe.Node(SplitShells(), name="split_shells")
     b0_average = pe.Node(WeightedAverage(), name="b0_average", mem_gb=mem_gb * 1.5)
 
     # 6. EPI to MNI registration
@@ -179,6 +181,8 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
         (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
         (hmcwf, drift, [("outputnode.out_file", "full_epi")]),
+        (shells, split_shells, [("out_data", "bvals")]),
+        (hmcwf, split_shells, [("outputnode.out_file", "in_file")]),
         (drift, b0_average, [("out_full_file", "in_file")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         # (dmri_bmsk, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
