@@ -62,9 +62,8 @@ def dmri_qc_workflow(name="dwiMRIQC"):
             wf = dmri_qc_workflow()
 
     """
-    from nipype.interfaces.ants import N4BiasFieldCorrection
+    from nipype.interfaces.afni import Volreg
     from niworkflows.interfaces.header import SanitizeImage
-    from niworkflows.interfaces.nibabel import IntensityClip, MergeSeries, SplitSeries
     from niworkflows.workflows.epi.refmap import init_epi_reference_wf
     from mriqc.interfaces.diffusion import (
         CorrectSignalDrift,
@@ -123,26 +122,11 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     ), name="metadata")
     shells = pe.Node(NumberOfShells(), name="shells")
     get_b0s = pe.Node(ExtractB0(), name="get_b0s")
-    split_b0s = pe.Node(SplitSeries(), name="split_b0s")
-    clip_b0s = pe.MapNode(IntensityClip(), name="clip_b0s", iterfield=["in_file"])
-
-    # de-gradient the fields ("bias/illumination artifact")
-    n4_b0s = pe.MapNode(
-        N4BiasFieldCorrection(
-            dimension=3,
-            copy_header=True,
-            n_iterations=[50] * 5,
-            convergence_threshold=1e-7,
-            shrink_factor=4,
-            save_bias=True,
-            num_threads=config.nipype.omp_nthreads,
-        ),
-        n_procs=config.nipype.omp_nthreads,
-        name="n4_b0s",
-        iterfield=["input_image"],
+    hmc_b0s = pe.Node(
+        Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
+        name="hmc_b0s",
+        mem_gb=mem_gb * 2.5,
     )
-    merge_bias = pe.Node(MergeSeries(), name="merge_bias")
-
     drift = pe.Node(CorrectSignalDrift(), name="drift")
 
     # 2. Generate B0 reference
@@ -155,7 +139,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     dmri_bmsk = dmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
 
     # 4. HMC: head motion correct
-    hmcwf = hmc()
+    hmcwf = hmc_workflow()
 
     # 5. Compute mean dmri
     b0_average = pe.Node(WeightedAverage(), name="b0_average", mem_gb=mem_gb * 1.5)
@@ -177,26 +161,25 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         # ]),
         # (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (sanitize, get_b0s, [("out_file", "in_file")]),
         (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_files")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (meta, shells, [("out_bval_file", "in_bvals")]),
         (shells, get_b0s, [("lowb_indices", "b0_ixs")]),
         (shells, dwi_reference_wf, [("lowb_mask", "inputnode.t_masks")]),
-        (get_b0s, split_b0s, [("out_file", "in_file")]),
-        (split_b0s, clip_b0s, [("out_files", "in_file")]),
-        (clip_b0s, n4_b0s, [("out_file", "input_image")]),
-        (n4_b0s, merge_bias, [("bias_image", "in_files")]),
+        (sanitize, get_b0s, [("out_file", "in_file")]),
         (meta, drift, [("out_bval_file", "bval_file")]),
-        (get_b0s, drift, [("out_file", "in_file")]),
+        (get_b0s, hmc_b0s, [("out_file", "in_file")]),
+        (dwi_reference_wf, hmc_b0s, [("outputnode.epi_ref_file", "basefile")]),
+        (hmc_b0s, drift, [("out_file", "in_file")]),
         (shells, drift, [("lowb_indices", "b0_ixs")]),
         (shells, b0_average, [("lowb_mask", "in_weights")]),
-        (merge_bias, drift, [("out_file", "bias_file")]),
+        (dwi_reference_wf, hmcwf, [("outputnode.epi_ref_file", "inputnode.reference")]),
         (dwi_reference_wf, dmri_bmsk, [("outputnode.epi_ref_file", "inputnode.in_file")]),
         (dwi_reference_wf, ema, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
         (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
         (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
-        (hmcwf, b0_average, [("outputnode.out_file", "in_file")]),
+        (hmcwf, drift, [("outputnode.out_file", "full_epi")]),
+        (drift, b0_average, [("out_full_file", "in_file")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         # (dmri_bmsk, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
         # (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
@@ -401,7 +384,7 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
     return workflow
 
 
-def hmc(name="dMRI_HMC"):
+def hmc_workflow(name="dMRI_HMC"):
     """
     Create a :abbr:`HMC (head motion correction)` workflow for dMRI.
 
@@ -420,7 +403,7 @@ def hmc(name="dMRI_HMC"):
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "reference"]), name="inputnode")
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     # calculate hmc parameters
@@ -442,7 +425,8 @@ def hmc(name="dMRI_HMC"):
 
     # fmt: off
     workflow.connect([
-        (inputnode, hmc, [("in_file", "in_file")]),
+        (inputnode, hmc, [("in_file", "in_file"),
+                          ("reference", "basefile")]),
         (hmc, outputnode, [("out_file", "out_file")]),
         (hmc, fdnode, [("oned_file", "in_file")]),
         (fdnode, outputnode, [("out_file", "out_fd")]),

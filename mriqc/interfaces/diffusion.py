@@ -25,7 +25,6 @@ import numpy as np
 import nibabel as nb
 from sklearn.cluster import KMeans
 from sklearn.model_selection import GridSearchCV
-from scipy.optimize import curve_fit
 
 from nipype.utils.filemanip import fname_presuffix
 from nipype.interfaces.base import (
@@ -210,14 +209,17 @@ class ExtractB0(SimpleInterface):
 
 class _CorrectSignalDriftInputSpec(_BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="a 4D file with all low-b volumes")
-    bias_file = File(exists=True, desc="a 4D file with all B1 biases")
+    bias_file = File(exists=True, desc="a B1 bias field")
     brainmask_file = File(exists=True, desc="a 3D file of the brain mask")
     b0_ixs = traits.List(traits.Int, mandatory=True, desc="Index of b0s")
     bval_file = File(exists=True, mandatory=True, desc="bvalues file")
+    full_epi = File(exists=True, desc="a whole DWI dataset to be corrected for drift")
 
 
 class _CorrectSignalDriftOutputSpec(_TraitedSpec):
     out_file = File(desc="input file after drift correction")
+    out_full_file = File(desc="full DWI input after drift correction")
+    b0_drift = traits.List(traits.Float)
     signal_drift = traits.List(traits.Float)
 
 
@@ -229,40 +231,53 @@ class CorrectSignalDrift(SimpleInterface):
 
     def _run_interface(self, runtime):
         img = nb.load(self.inputs.in_file)
-        data = np.asanyarray(img.dataobj)
+        data = img.get_fdata()
         bmask = np.ones_like(data[..., 0], dtype=bool)
 
         # Correct for the B1 bias
         if isdefined(self.inputs.bias_file):
-            data *= nb.load(self.inputs.bias_file).get_fdata()
+            data *= nb.load(self.inputs.bias_file).get_fdata()[..., np.newaxis]
 
         if isdefined(self.inputs.brainmask_file):
             bmask = np.asanyarray(nb.load(self.inputs.brainmask_file).dataobj) > 1e-3
 
-        global_signal = []
-
-        for n_b0 in range(img.shape[-1]):
-            frame = img[..., n_b0]
-            global_signal.append(np.median(frame[bmask]))
+        global_signal = np.array([
+            np.median(data[..., n_b0][bmask]) for n_b0 in range(img.shape[-1])
+        ]).astype("float32")
 
         # Normalize and correct
-        global_signal = np.array(global_signal) / global_signal[0]
-        data *= global_signal[np.newaxis, np.newaxis, np.newaxis, :]
+        global_signal /= global_signal[0]
+        self._results["b0_drift"] = [float(gs) for gs in global_signal]
+
+        data *= 1.0 / global_signal[np.newaxis, np.newaxis, np.newaxis, :]
 
         self._results["out_file"] = fname_presuffix(
             self.inputs.in_file, suffix="_nodrift", newpath=runtime.cwd
         )
         img.__class__(
-            data, img.affine, img.header,
+            data.astype(img.header.get_data_dtype()), img.affine, img.header,
         ).to_filename(self._results["out_file"])
 
-        # Fit exponential
-        params, _ = curve_fit(_exp_func, self.inputs.b0_ixs, global_signal, maxfev=1000)
+        # Fit line to log-transformed drifts
+        K, A_log = np.polyfit(self.inputs.b0_ixs, np.log(global_signal), 1)
 
         len_dmri = np.loadtxt(self.inputs.bval_file).size
         t_points = np.arange(len_dmri, dtype=int)
-        fitted = _exp_func(t_points, *params)
-        self._results["signal_drift"] = np.squeeze(fitted).tolist()
+        fitted = np.squeeze(_exp_func(t_points, np.exp(A_log), K, 0))
+        self._results["signal_drift"] = fitted.astype(float).tolist()
+
+        if isdefined(self.inputs.full_epi):
+            self._results["out_full_file"] = fname_presuffix(
+                self.inputs.full_epi, suffix="_nodriftfull", newpath=runtime.cwd
+            )
+            full_img = nb.load(self.inputs.full_epi)
+            full_img.__class__(
+                (
+                    full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :]
+                ).astype(full_img.header.get_data_dtype()),
+                full_img.affine,
+                full_img.header,
+            ).to_filename(self._results["out_full_file"])
         return runtime
 
 
