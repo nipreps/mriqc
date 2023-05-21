@@ -56,22 +56,25 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
-                "in_ras",
-                "hmc_epi",
-                "epi_mean",
                 "brainmask",
-                "hmc_fd",
-                "fd_thres",
-                "epi_parc",
-                "in_dvars",
-                "in_stddev",
-                "outliers",
-                "in_spikes",
-                "in_fft",
-                "in_iqms",
-                "mni_report",
-                "ica_report",
-                "meta_sidecar",
+                "in_avgmap",
+                "in_stdmap",
+                "in_shells",
+                # "in_ras",
+                # "hmc_epi",
+                # "epi_mean",
+                # "hmc_fd",
+                # "fd_thres",
+                # "epi_parc",
+                # "in_dvars",
+                # "in_stddev",
+                # "outliers",
+                # "in_spikes",
+                # "in_fft",
+                # "in_iqms",
+                # "mni_report",
+                # "ica_report",
+                # "meta_sidecar",
                 "name_source",
             ]
         ),
@@ -79,7 +82,78 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     )
 
     # Set FD threshold
-    inputnode.inputs.fd_thres = config.workflow.fd_thres
+    # inputnode.inputs.fd_thres = config.workflow.fd_thres
+
+    mosaic_mean = pe.MapNode(
+        PlotMosaic(cmap="Greys_r"),
+        name="mosaic_mean",
+        iterfield=["in_file"],
+    )
+
+    mosaic_stddev = pe.MapNode(
+        PlotMosaic(cmap="viridis"),
+        name="mosaic_stddev",
+        iterfield=["in_file"],
+    )
+
+    mosaic_noise = pe.Node(
+        PlotMosaic(
+            only_noise=True,
+            cmap="viridis_r",
+        ),
+        name="PlotMosaicNoise",
+    )
+
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_mean.inputs.view = ["coronal", "axial"]
+        mosaic_stddev.inputs.view = ["coronal", "axial"]
+        # mosaic_zoom.inputs.view = ["coronal", "axial"]
+        mosaic_noise.inputs.view = ["coronal", "axial"]
+
+    ds_report_mean = pe.MapNode(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="zoomedavg",
+            datatype="figures",
+            allowed_entities=("bval",),
+        ),
+        name="ds_report_mean",
+        run_without_submitting=True,
+        iterfield=["in_file", "bval"],
+    )
+
+    ds_report_stdev = pe.MapNode(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="zoomedstd",
+            datatype="figures",
+            allowed_entities=("bval",),
+        ),
+        name="ds_report_stdev",
+        run_without_submitting=True,
+        iterfield=["in_file", "bval"],
+    )
+
+    def _gen_entity(inlist):
+        return ["00000"] + [f"{int(round(bval, 0)):05d}" for bval in inlist]
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, mosaic_mean, [("in_avgmap", "in_file"),
+                                  ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_stddev, [("in_stdmap", "in_file"),
+                                    ("brainmask", "bbox_mask_file")]),
+        (inputnode, ds_report_mean, [("name_source", "source_file"),
+                                     (("in_shells", _gen_entity), "bval")]),
+        (inputnode, ds_report_stdev, [("name_source", "source_file"),
+                                      (("in_shells", _gen_entity), "bval")]),
+        (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
+        (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
+    ])
+    # fmt: on
+
+    if True:
+        return workflow
 
     spmask = pe.Node(
         niu.Function(
@@ -105,8 +179,19 @@ def init_dwi_report_wf(name="dwi_report_wf"):
 
     bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
 
+    ds_report_carpet = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="carpet",
+            datatype="figures",
+        ),
+        name="ds_report_carpet",
+        run_without_submitting=True,
+    )
+
     # fmt: off
     workflow.connect([
+        # (inputnode, rnode, [("in_iqms", "in_iqms")]),
         (inputnode, spikes_bg, [("in_ras", "in_file")]),
         (inputnode, spmask, [("in_ras", "in_file")]),
         (inputnode, bigplot, [("hmc_epi", "in_func"),
@@ -123,65 +208,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (parcels, bigplot, [("out", "in_segm")]),
         (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
         (spmask, spikes_bg, [("out_file", "in_mask")]),
-    ])
-    # fmt: on
-
-    mosaic_mean = pe.Node(
-        PlotMosaic(
-            out_file="plot_dwi_mean_mosaic1.svg",
-            cmap="Greys_r",
-        ),
-        name="PlotMosaicMean",
-    )
-
-    mosaic_stddev = pe.Node(
-        PlotMosaic(
-            out_file="plot_dwi_stddev_mosaic2_stddev.svg",
-            cmap="viridis",
-        ),
-        name="PlotMosaicSD",
-    )
-
-    ds_report_mean = pe.Node(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="mean",
-            datatype="figures",
-        ),
-        name="ds_report_mean",
-        run_without_submitting=True,
-    )
-
-    ds_report_stdev = pe.Node(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="stdev",
-            datatype="figures",
-        ),
-        name="ds_report_stdev",
-        run_without_submitting=True,
-    )
-
-    ds_report_carpet = pe.Node(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="carpet",
-            datatype="figures",
-        ),
-        name="ds_report_carpet",
-        run_without_submitting=True,
-    )
-
-    # fmt: off
-    workflow.connect([
-        # (inputnode, rnode, [("in_iqms", "in_iqms")]),
-        (inputnode, mosaic_mean, [("epi_mean", "in_file")]),
-        (inputnode, mosaic_stddev, [("in_stddev", "in_file")]),
-        (inputnode, ds_report_mean, [("name_source", "source_file")]),
-        (inputnode, ds_report_stdev, [("name_source", "source_file")]),
         (inputnode, ds_report_carpet, [("name_source", "source_file")]),
-        (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
-        (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
         (bigplot, ds_report_carpet, [("out_file", "in_file")]),
     ])
     # fmt: on
@@ -229,19 +256,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         name="PlotMosaicZoomed",
     )
 
-    mosaic_noise = pe.Node(
-        PlotMosaic(
-            only_noise=True,
-            cmap="viridis_r",
-        ),
-        name="PlotMosaicNoise",
-    )
 
-    if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_mean.inputs.view = ["coronal", "axial"]
-        mosaic_stddev.inputs.view = ["coronal", "axial"]
-        mosaic_zoom.inputs.view = ["coronal", "axial"]
-        mosaic_noise.inputs.view = ["coronal", "axial"]
 
     plot_bmask = pe.Node(
         PlotContours(

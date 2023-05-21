@@ -31,20 +31,26 @@ sections:
 - name: Summary
   reportlets:
   - bids: {datatype: figures, desc: summary, extension: [.html]}
-- name: Basic visual report
+  - bids: {datatype: figures, desc: background}
+    caption: This panel shows a mosaic enhancing the background around the head.
+      Artifacts usually unveil themselves in the air surrounding the head, where no signal
+      sources are present.
+    subtitle: View of the background of the voxel-wise average of the DWI orientations
+- name: DWI shells
+  ordering: bval
   reportlets:
-  - bids: {datatype: figures, desc: zoomed}
+  - bids: {datatype: figures, desc: zoomedavg}
     caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
       screen head-motion intensity inhomogeneities, global/local noise, signal leakage
       (for example, from the eyeballs and across the phase-encoding axis), etc.
-    subtitle: Voxel-wise average of BOLD time-series, zoomed-in covering just the brain
-  - bids: {datatype: figures, desc: stdev}
-    subtitle: Standard deviation of signal through time
-    caption: The voxel-wise standard deviation of the signal (variability along time).
-  - bids: {datatype: figures, desc: carpet}
-    subtitle: Carpetplot and nuisance signals
-    caption: The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion
-      derived artifacts and respiation effects.
+    subtitle: Voxel-wise average across volumes in this <em>DWI shell</em>,
+      zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: zoomedstd}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen within-volume head-motion (e.g., missing slices) and reconstruction ghosts
+      such as those intrinsic to SMS parallelization.
+    subtitle: Voxel-wise standard deviation calculated across volumes in this <em>DWI shell</em>,
+      zoomed-in covering just the brain
 - name: Extended visual report
   reportlets:
   - bids: {datatype: figures, desc: background}

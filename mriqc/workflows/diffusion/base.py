@@ -46,7 +46,7 @@ from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from mriqc.interfaces.datalad import DataladIdentityInterface
-# from mriqc.workflows.diffusion.output import init_dwi_report_wf
+from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
 
 def dmri_qc_workflow(name="dwiMRIQC"):
@@ -70,8 +70,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         ExtractB0,
         NumberOfShells,
         ReadDWIMetadata,
-        WeightedAverage,
-        SplitShells,
+        WeightedStat,
     )
     from mriqc.messages import BUILDING_WORKFLOW
 
@@ -122,12 +121,20 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         index_db=config.execution.bids_database_dir
     ), name="metadata")
     shells = pe.Node(NumberOfShells(), name="shells")
-    get_b0s = pe.Node(ExtractB0(), name="get_b0s")
-    hmc_b0s = pe.Node(
+    get_shells = pe.MapNode(ExtractB0(), name="get_shells", iterfield=["b0_ixs"])
+    hmc_shells = pe.MapNode(
         Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
-        name="hmc_b0s",
+        name="hmc_shells",
+        mem_gb=mem_gb * 2.5,
+        iterfield=["in_file"],
+    )
+
+    hmc_b0 = pe.Node(
+        Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
+        name="hmc_b0",
         mem_gb=mem_gb * 2.5,
     )
+
     drift = pe.Node(CorrectSignalDrift(), name="drift")
 
     # 2. Generate B0 reference
@@ -143,54 +150,76 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     hmcwf = hmc_workflow()
 
     # 5. Split shells and compute some stats
-    split_shells = pe.Node(SplitShells(), name="split_shells")
-    b0_average = pe.Node(WeightedAverage(), name="b0_average", mem_gb=mem_gb * 1.5)
+    averages = pe.MapNode(
+        WeightedStat(),
+        name="averages",
+        mem_gb=mem_gb * 1.5,
+        iterfield=["in_weights"],
+    )
+    stddev = pe.MapNode(
+        WeightedStat(stat="std"),
+        name="stddev",
+        mem_gb=mem_gb * 1.5,
+        iterfield=["in_weights"],
+    )
 
     # 6. EPI to MNI registration
     ema = epi_mni_align()
 
     # 7. Compute IQMs
-    # iqmswf = compute_iqms()
-    # Reports
-    # dwi_report_wf = init_dwi_report_wf()
+    iqmswf = compute_iqms()
+
+    # 8. Generate outputs
+    dwi_report_wf = init_dwi_report_wf()
 
     # fmt: off
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
         (inputnode, meta, [("in_file", "in_file")]),
-        # (inputnode, dwi_report_wf, [
-        #     ("in_file", "inputnode.name_source"),
-        # ]),
-        # (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
+        (inputnode, dwi_report_wf, [
+            ("in_file", "inputnode.name_source"),
+        ]),
+        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
         (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_files")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (meta, shells, [("out_bval_file", "in_bvals")]),
-        (shells, get_b0s, [("lowb_indices", "b0_ixs")]),
-        (shells, dwi_reference_wf, [("lowb_mask", "inputnode.t_masks")]),
-        (sanitize, get_b0s, [("out_file", "in_file")]),
+        (sanitize, drift, [("out_file", "full_epi")]),
+        (shells, get_shells, [("b_indices", "b0_ixs")]),
+        (shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_masks")]),
+        (sanitize, get_shells, [("out_file", "in_file")]),
         (meta, drift, [("out_bval_file", "bval_file")]),
-        (get_b0s, hmc_b0s, [("out_file", "in_file")]),
-        (dwi_reference_wf, hmc_b0s, [("outputnode.epi_ref_file", "basefile")]),
-        (hmc_b0s, drift, [("out_file", "in_file")]),
-        (shells, drift, [("lowb_indices", "b0_ixs")]),
-        (shells, b0_average, [("lowb_mask", "in_weights")]),
-        (dwi_reference_wf, hmcwf, [("outputnode.epi_ref_file", "inputnode.reference")]),
+        (get_shells, hmc_shells, [(("out_file", _all_but_first), "in_file")]),
+        (get_shells, hmc_b0, [(("out_file", _first), "in_file")]),
+        (dwi_reference_wf, hmc_b0, [("outputnode.epi_ref_file", "basefile")]),
+        (hmc_b0, drift, [("out_file", "in_file")]),
+        (shells, drift, [(("b_indices", _first), "b0_ixs")]),
         (dwi_reference_wf, dmri_bmsk, [("outputnode.epi_ref_file", "inputnode.in_file")]),
         (dwi_reference_wf, ema, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
         (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
         (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
-        (hmcwf, drift, [("outputnode.out_file", "full_epi")]),
-        (shells, split_shells, [("out_data", "bvals")]),
-        (hmcwf, split_shells, [("outputnode.out_file", "in_file")]),
-        (drift, b0_average, [("out_full_file", "in_file")]),
+        (drift, hmcwf, [("out_full_file", "inputnode.reference")]),
+        (drift, averages, [("out_full_file", "in_file")]),
+        (drift, stddev, [("out_full_file", "in_file")]),
+        (shells, averages, [("b_masks", "in_weights")]),
+        (shells, stddev, [("b_masks", "in_weights")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
+        (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
+                          ("b_values", "inputnode.b_values")]),
         # (dmri_bmsk, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
-        # (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
         # (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         # (dwi_reference_wf, iqmswf, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
         # (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
         #                  ("outputnode.out_fd", "inputnode.hmc_fd")]),
+        # (iqmswf, dwi_report_wf, [
+        #     ("outputnode.out_file", "inputnode.in_iqms"),
+        #     ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
+        # ]),
+
+        (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
+        (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
+        (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
+        (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
         # (sanitize, dwi_report_wf, [("out_file", "inputnode.in_ras")]),
         # (b0_average, dwi_report_wf, [("out_file", "inputnode.epi_mean")]),
         # (tsnr, dwi_report_wf, [("stddev_file", "inputnode.in_stddev")]),
@@ -201,10 +230,6 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         # (ema, dwi_report_wf, [
         #     ("outputnode.epi_parc", "inputnode.epi_parc"),
         #     ("outputnode.report", "inputnode.mni_report"),
-        # ]),
-        # (iqmswf, dwi_report_wf, [
-        #     ("outputnode.out_file", "inputnode.in_iqms"),
-        #     ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
         # ]),
     ])
     # fmt: on
@@ -225,26 +250,18 @@ def compute_iqms(name="ComputeIQMs"):
     """
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from mriqc.interfaces import FunctionalQC, IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
-    from mriqc.workflows.utils import _tofloat, get_fwhmx
-
-    mem_gb = config.workflow.biggest_file_gb
+    from mriqc.interfaces import IQMFileSink
+    # from mriqc.workflows.utils import _tofloat, get_fwhmx
+    # mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
                 "in_file",
-                "in_ras",
-                "epi_mean",
-                "brainmask",
-                "hmc_epi",
-                "hmc_fd",
-                "fd_thres",
-                "in_tsnr",
-                "metadata",
-                "exclude_index",
+                "n_shells",
+                "b_values",
             ]
         ),
         name="inputnode",
@@ -259,34 +276,12 @@ def compute_iqms(name="ComputeIQMs"):
         name="outputnode",
     )
 
-    # Set FD threshold
-    inputnode.inputs.fd_thres = config.workflow.fd_thres
-
     meta = pe.Node(ReadSidecarJSON(
         index_db=config.execution.bids_database_dir
     ), name="metadata")
 
-    # AFNI quality measures
-    fwhm_interface = get_fwhmx()
-    fwhm = pe.Node(fwhm_interface, name="smoothness")
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
-    measures = pe.Node(FunctionalQC(), name="measures", mem_gb=mem_gb * 3)
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, measures, [("epi_mean", "in_epi"),
-                               ("brainmask", "in_mask"),
-                               ("hmc_epi", "in_hmc"),
-                               ("hmc_fd", "in_fd"),
-                               ("fd_thres", "fd_thres"),
-                               ("in_tsnr", "in_tsnr")]),
-        (inputnode, fwhm, [("epi_mean", "in_file"),
-                           ("brainmask", "mask")]),
-        (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
-    ])
-    # fmt: on
     addprov = pe.Node(
-        AddProvenance(modality="bold"),
+        AddProvenance(modality="dwi"),
         name="provenance",
         run_without_submitting=True,
     )
@@ -294,7 +289,7 @@ def compute_iqms(name="ComputeIQMs"):
     # Save to JSON file
     datasink = pe.Node(
         IQMFileSink(
-            modality="bold",
+            modality="dwi",
             out_dir=str(config.execution.output_dir),
             dataset=config.execution.dsname,
         ),
@@ -305,9 +300,11 @@ def compute_iqms(name="ComputeIQMs"):
     # fmt: off
     workflow.connect([
         (inputnode, datasink, [("in_file", "in_file"),
-                               ("exclude_index", "dummy_trs")]),
+                               ("n_shells", "NumberOfShells"),
+                               ("b_values", "b-values")]),
         (inputnode, meta, [("in_file", "in_file")]),
         (inputnode, addprov, [("in_file", "in_file")]),
+        (addprov, datasink, [("out_prov", "provenance")]),
         (meta, datasink, [("subject", "subject_id"),
                           ("session", "session_id"),
                           ("task", "task_id"),
@@ -315,12 +312,34 @@ def compute_iqms(name="ComputeIQMs"):
                           ("reconstruction", "rec_id"),
                           ("run", "run_id"),
                           ("out_dict", "metadata")]),
-        (addprov, datasink, [("out_prov", "provenance")]),
-        (measures, datasink, [("out_qc", "root")]),
         (datasink, outputnode, [("out_file", "out_file")]),
         (meta, outputnode, [("out_dict", "meta_sidecar")]),
     ])
     # fmt: on
+
+    # Set FD threshold
+    # inputnode.inputs.fd_thres = config.workflow.fd_thres
+
+    # # AFNI quality measures
+    # fwhm_interface = get_fwhmx()
+    # fwhm = pe.Node(fwhm_interface, name="smoothness")
+    # # fwhm.inputs.acf = True  # add when AFNI >= 16
+    # measures = pe.Node(FunctionalQC(), name="measures", mem_gb=mem_gb * 3)
+
+    # # fmt: off
+    # workflow.connect([
+    #     (inputnode, measures, [("epi_mean", "in_epi"),
+    #                            ("brainmask", "in_mask"),
+    #                            ("hmc_epi", "in_hmc"),
+    #                            ("hmc_fd", "in_fd"),
+    #                            ("fd_thres", "fd_thres"),
+    #                            ("in_tsnr", "in_tsnr")]),
+    #     (inputnode, fwhm, [("epi_mean", "in_file"),
+    #                        ("brainmask", "mask")]),
+    #     (fwhm, measures, [(("fwhm", _tofloat), "in_fwhm")]),
+    #     (measures, datasink, [("out_qc", "root")]),
+    # ])
+    # # fmt: on
     return workflow
 
 
@@ -607,3 +626,17 @@ def _get_bvals(bmatrix):
     import numpy
 
     return numpy.squeeze(bmatrix[:, -1]).tolist()
+
+
+def _first(inlist):
+    if isinstance(inlist, (list, tuple)):
+        return inlist[0]
+
+    return inlist
+
+
+def _all_but_first(inlist):
+    if isinstance(inlist, (list, tuple)):
+        return inlist[1:]
+
+    return inlist

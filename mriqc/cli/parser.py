@@ -198,6 +198,7 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         "--modalities",
         action="store",
         choices=config.SUPPORTED_SUFFIXES,
+        default=config.SUPPORTED_SUFFIXES,
         nargs="*",
         help="Filter input dataset by MRI type.",
     )

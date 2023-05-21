@@ -66,7 +66,7 @@ class ReadDWIMetadata(ReadSidecarJSON):
         return runtime
 
 
-class _WeightedAverageInputSpec(_BaseInterfaceInputSpec):
+class _WeightedStatInputSpec(_BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="an image")
     in_weights = traits.List(
         traits.Either(traits.Bool, traits.Float),
@@ -74,30 +74,37 @@ class _WeightedAverageInputSpec(_BaseInterfaceInputSpec):
         minlen=1,
         desc="list of weights",
     )
+    stat = traits.Enum("mean", "std", usedefault=True, desc="statistic to compute")
 
 
-class _WeightedAverageOutputSpec(_TraitedSpec):
+class _WeightedStatOutputSpec(_TraitedSpec):
     out_file = File(exists=True, desc="masked file")
 
 
-class WeightedAverage(SimpleInterface):
+class WeightedStat(SimpleInterface):
     """Weighted average of the input image across the last dimension."""
 
-    input_spec = _WeightedAverageInputSpec
-    output_spec = _WeightedAverageOutputSpec
+    input_spec = _WeightedStatInputSpec
+    output_spec = _WeightedStatOutputSpec
 
     def _run_interface(self, runtime):
         img = nb.load(self.inputs.in_file)
         weights = [float(w) for w in self.inputs.in_weights]
-        average = np.average(np.asanyarray(img.dataobj), weights=weights, axis=-1)
+        data = np.asanyarray(img.dataobj)
+        statmap = np.average(data, weights=weights, axis=-1)
 
         self._results["out_file"] = fname_presuffix(
-            self.inputs.in_file, suffix="_average", newpath=runtime.cwd
+            self.inputs.in_file, suffix=f"_{self.inputs.stat}", newpath=runtime.cwd
         )
+
+        if self.inputs.stat == "std":
+            statmap = np.sqrt(
+                np.average((data - statmap[..., np.newaxis]) ** 2, weights=weights, axis=-1)
+            )
 
         hdr = img.header.copy()
         img.__class__(
-            average.astype(hdr.get_data_dtype()),
+            statmap.astype(hdr.get_data_dtype()),
             img.affine,
             hdr,
         ).to_filename(self._results["out_file"])
@@ -113,10 +120,20 @@ class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
 class _NumberOfShellsOutputSpec(_TraitedSpec):
     models = traits.List(traits.Int, minlen=1, desc="number of shells ordered by model fit")
     n_shells = traits.Int(desc="number of shels")
+    out_data = traits.List(
+        traits.Float,
+        minlen=1,
+        desc="new b-values table (after 'shell-fying' DSI)",
+    )
     b_values = traits.List(traits.Float, minlen=1, desc="estimated values of b")
-    out_data = traits.List(traits.Float, minlen=1, desc="new b-values")
-    lowb_mask = traits.List(traits.Bool)
-    lowb_indices = traits.List(traits.Int)
+    b_masks = traits.List(
+        traits.List(traits.Bool, minlen=1),
+        minlen=1,
+        desc="b-value-wise masks")
+    b_indices = traits.List(
+        traits.List(traits.Int, minlen=1),
+        minlen=1,
+        desc="b-value-wise masks")
 
 
 class NumberOfShells(SimpleInterface):
@@ -149,21 +166,15 @@ class NumberOfShells(SimpleInterface):
             grid_search.cv_results_["param_n_clusters"],
         )))
 
-        self._results["lowb_mask"] = (~highb_mask).tolist()
-        self._results["lowb_indices"] = np.squeeze(np.argwhere(~highb_mask)).tolist()
         self._results["models"] = results[:, 1].astype(int).tolist()
         self._results["n_shells"] = int(grid_search.best_params_["n_clusters"])
 
-        self._results["b_values"] = sorted([
-            cc for cc in np.squeeze(grid_search.best_estimator_.cluster_centers_)
-        ])
-
         out_data = np.zeros_like(in_data)
-        predicted_shell = np.squeeze(
+        predicted_shell = np.rint(np.squeeze(
             grid_search.best_estimator_.cluster_centers_[
                 grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
             ],
-        )
+        )).astype(int)
         original_bvals = np.unique(np.rint(in_data[highb_mask]).astype(int))
 
         # If estimated shells matches direct count, probably right -- do not change b-vals
@@ -174,7 +185,19 @@ class NumberOfShells(SimpleInterface):
             predicted_shell = original_bvals[indices]
 
         out_data[highb_mask] = predicted_shell
-        self._results["out_data"] = out_data.astype(float).tolist()
+        self._results["out_data"] = np.round(out_data.astype(float), 2).tolist()
+        self._results["b_values"] = sorted(
+            np.unique(np.round(predicted_shell.astype(float), 2)).tolist()
+        )
+
+        self._results["b_masks"] = [(~highb_mask).tolist()] + [
+            np.isclose(self._results["out_data"], bvalue).tolist()
+            for bvalue in self._results["b_values"]
+        ]
+        self._results["b_indices"] = [
+            np.squeeze(np.argwhere(b_mask)).tolist()
+            for b_mask in self._results["b_masks"]
+        ]
         return runtime
 
 
