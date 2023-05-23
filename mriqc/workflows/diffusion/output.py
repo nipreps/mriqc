@@ -60,6 +60,8 @@ def init_dwi_report_wf(name="dwi_report_wf"):
                 "in_avgmap",
                 "in_stdmap",
                 "in_shells",
+                "in_fa",
+                "in_adc",
                 # "in_ras",
                 # "hmc_epi",
                 # "epi_mean",
@@ -83,6 +85,15 @@ def init_dwi_report_wf(name="dwi_report_wf"):
 
     # Set FD threshold
     # inputnode.inputs.fd_thres = config.workflow.fd_thres
+
+    mosaic_fa = pe.Node(
+        PlotMosaic(cmap="Greys_r"),
+        name="mosaic_fa",
+    )
+    mosaic_adc = pe.Node(
+        PlotMosaic(cmap="Greys_r"),
+        name="mosaic_adc",
+    )
 
     mosaic_mean = pe.MapNode(
         PlotMosaic(cmap="Greys_r"),
@@ -108,8 +119,9 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     if config.workflow.species.lower() in ("rat", "mouse"):
         mosaic_mean.inputs.view = ["coronal", "axial"]
         mosaic_stddev.inputs.view = ["coronal", "axial"]
-        # mosaic_zoom.inputs.view = ["coronal", "axial"]
         mosaic_noise.inputs.view = ["coronal", "axial"]
+        mosaic_fa.inputs.view = ["coronal", "axial"]
+        mosaic_adc.inputs.view = ["coronal", "axial"]
 
     ds_report_mean = pe.MapNode(
         DerivativesDataSink(
@@ -147,6 +159,26 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         iterfield=["in_file", "bval"],
     )
 
+    ds_report_fa = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="fa",
+            datatype="figures",
+        ),
+        name="ds_report_fa",
+        run_without_submitting=True,
+    )
+
+    ds_report_adc = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="fa",
+            datatype="figures",
+        ),
+        name="ds_report_adc",
+        run_without_submitting=True,
+    )
+
     def _gen_entity(inlist):
         return ["00000"] + [f"{int(round(bval, 0)):05d}" for bval in inlist]
 
@@ -157,15 +189,21 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (inputnode, mosaic_stddev, [("in_stdmap", "in_file"),
                                     ("brainmask", "bbox_mask_file")]),
         (inputnode, mosaic_noise, [("in_avgmap", "in_file")]),
+        (inputnode, mosaic_fa, [("in_fa", "in_file")]),
+        (inputnode, mosaic_adc, [("in_adc", "in_file")]),
         (inputnode, ds_report_mean, [("name_source", "source_file"),
                                      (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_stdev, [("name_source", "source_file"),
                                       (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_noise, [("name_source", "source_file"),
                                       (("in_shells", _gen_entity), "bval")]),
+        (inputnode, ds_report_fa, [("name_source", "source_file")]),
+        (inputnode, ds_report_adc, [("name_source", "source_file")]),
         (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
         (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
         (mosaic_noise, ds_report_noise, [("out_file", "in_file")]),
+        (mosaic_fa, ds_report_fa, [("out_file", "in_file")]),
+        (mosaic_adc, ds_report_adc, [("out_file", "in_file")]),
     ])
     # fmt: on
 
