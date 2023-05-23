@@ -142,11 +142,14 @@ class NumberOfShells(SimpleInterface):
 
     Examples
     --------
-    >>> NumberOfShells(in_data=[0] * 8 + [1000] * 12 + [2000] * 10).run().outputs.n_shells
+    >>> np.savetxt("test.bval", [0] * 8 + [1000] * 12 + [2000] * 10)
+    >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells
     2
-    >>> NumberOfShells(in_data=[0] * 8 + [1000] * 12).run().outputs.n_shells
+    >>> np.savetxt("test.bval", [0] * 8 + [1000] * 12)
+    >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells
     1
-    >>> NumberOfShells(in_data=np.arange(0, 9000, 120).tolist()).run().outputs.n_shells
+    >>> np.savetxt("test.bval", np.arange(0, 9001, 120))
+    >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells
     9
 
     """
@@ -179,7 +182,6 @@ class NumberOfShells(SimpleInterface):
 
         # If estimated shells matches direct count, probably right -- do not change b-vals
         if len(original_bvals) == self._results["n_shells"]:
-            self._results["b_values"] = sorted(original_bvals.tolist())
             # Find closest b-values
             indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
             predicted_shell = original_bvals[indices]
@@ -195,7 +197,7 @@ class NumberOfShells(SimpleInterface):
             for bvalue in self._results["b_values"]
         ]
         self._results["b_indices"] = [
-            np.squeeze(np.argwhere(b_mask)).tolist()
+            np.atleast_1d(np.squeeze(np.argwhere(b_mask)).astype(int)).tolist()
             for b_mask in self._results["b_masks"]
         ]
         return runtime
@@ -211,18 +213,7 @@ class _ExtractB0OutputSpec(_TraitedSpec):
 
 
 class ExtractB0(SimpleInterface):
-    """
-    Extract all b=0 volumes from a dwi series.
-
-    Example
-    -------
-    >>> os.chdir(tmpdir)
-    >>> extract_b0 = ExtractB0()
-    >>> extract_b0.inputs.in_file = str(data_dir / 'dwi.nii.gz')
-    >>> extract_b0.inputs.b0_ixs = [0, 1, 2]
-    >>> res = extract_b0.run()  # doctest: +SKIP
-
-    """
+    """Extract all b=0 volumes from a dwi series."""
 
     input_spec = _ExtractB0InputSpec
     output_spec = _ExtractB0OutputSpec
