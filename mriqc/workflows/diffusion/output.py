@@ -273,8 +273,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         name="PlotMosaicZoomed",
     )
 
-
-
     plot_bmask = pe.Node(
         PlotContours(
             display_mode="y" if config.workflow.species.lower() in ("rat", "mouse") else "z",

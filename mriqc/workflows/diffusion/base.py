@@ -117,9 +117,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     # Workflow --------------------------------------------------------
 
     # 1. Read metadata & bvec/bval, estimate number of shells, extract and split B0s
-    meta = pe.Node(ReadDWIMetadata(
-        index_db=config.execution.bids_database_dir
-    ), name="metadata")
+    meta = pe.Node(ReadDWIMetadata(index_db=config.execution.bids_database_dir), name="metadata")
     shells = pe.Node(NumberOfShells(), name="shells")
     get_shells = pe.MapNode(ExtractB0(), name="get_shells", iterfield=["b0_ixs"])
     hmc_shells = pe.MapNode(
@@ -252,6 +250,7 @@ def compute_iqms(name="ComputeIQMs"):
 
     from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces import IQMFileSink
+
     # from mriqc.workflows.utils import _tofloat, get_fwhmx
     # mem_gb = config.workflow.biggest_file_gb
 
@@ -276,9 +275,7 @@ def compute_iqms(name="ComputeIQMs"):
         name="outputnode",
     )
 
-    meta = pe.Node(ReadSidecarJSON(
-        index_db=config.execution.bids_database_dir
-    ), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name="metadata")
 
     addprov = pe.Node(
         AddProvenance(modality="dwi"),
