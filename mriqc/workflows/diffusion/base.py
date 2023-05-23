@@ -204,31 +204,10 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
                           ("b_values", "inputnode.b_values")]),
-        # (dmri_bmsk, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
-        # (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
-        # (dwi_reference_wf, iqmswf, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
-        # (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
-        #                  ("outputnode.out_fd", "inputnode.hmc_fd")]),
-        # (iqmswf, dwi_report_wf, [
-        #     ("outputnode.out_file", "inputnode.in_iqms"),
-        #     ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
-        # ]),
-
         (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
         (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
         (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
         (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
-        # (sanitize, dwi_report_wf, [("out_file", "inputnode.in_ras")]),
-        # (b0_average, dwi_report_wf, [("out_file", "inputnode.epi_mean")]),
-        # (tsnr, dwi_report_wf, [("stddev_file", "inputnode.in_stddev")]),
-        # (hmcwf, dwi_report_wf, [
-        #     ("outputnode.out_fd", "inputnode.hmc_fd"),
-        #     ("outputnode.out_file", "inputnode.hmc_epi"),
-        # ]),
-        # (ema, dwi_report_wf, [
-        #     ("outputnode.epi_parc", "inputnode.epi_parc"),
-        #     ("outputnode.report", "inputnode.mni_report"),
-        # ]),
     ])
     # fmt: on
     return workflow
