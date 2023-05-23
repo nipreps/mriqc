@@ -96,12 +96,13 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         iterfield=["in_file"],
     )
 
-    mosaic_noise = pe.Node(
+    mosaic_noise = pe.MapNode(
         PlotMosaic(
             only_noise=True,
             cmap="viridis_r",
         ),
-        name="PlotMosaicNoise",
+        name="mosaic_noise",
+        iterfield=["in_file"],
     )
 
     if config.workflow.species.lower() in ("rat", "mouse"):
@@ -134,6 +135,18 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         iterfield=["in_file", "bval"],
     )
 
+    ds_report_noise = pe.MapNode(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="background",
+            datatype="figures",
+            allowed_entities=("bval",),
+        ),
+        name="ds_report_noise",
+        run_without_submitting=True,
+        iterfield=["in_file", "bval"],
+    )
+
     def _gen_entity(inlist):
         return ["00000"] + [f"{int(round(bval, 0)):05d}" for bval in inlist]
 
@@ -143,12 +156,16 @@ def init_dwi_report_wf(name="dwi_report_wf"):
                                   ("brainmask", "bbox_mask_file")]),
         (inputnode, mosaic_stddev, [("in_stdmap", "in_file"),
                                     ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_noise, [("in_avgmap", "in_file")]),
         (inputnode, ds_report_mean, [("name_source", "source_file"),
                                      (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_stdev, [("name_source", "source_file"),
                                       (("in_shells", _gen_entity), "bval")]),
+        (inputnode, ds_report_noise, [("name_source", "source_file"),
+                                      (("in_shells", _gen_entity), "bval")]),
         (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
         (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
+        (mosaic_noise, ds_report_noise, [("out_file", "in_file")]),
     ])
     # fmt: on
 

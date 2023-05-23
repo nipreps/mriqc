@@ -31,11 +31,6 @@ sections:
 - name: Summary
   reportlets:
   - bids: {datatype: figures, desc: summary, extension: [.html]}
-  - bids: {datatype: figures, desc: background}
-    caption: This panel shows a mosaic enhancing the background around the head.
-      Artifacts usually unveil themselves in the air surrounding the head, where no signal
-      sources are present.
-    subtitle: View of the background of the voxel-wise average of the DWI orientations
 - name: DWI shells
   ordering: bval
   reportlets:
@@ -51,50 +46,11 @@ sections:
       such as those intrinsic to SMS parallelization.
     subtitle: Voxel-wise standard deviation calculated across volumes in this <em>DWI shell</em>,
       zoomed-in covering just the brain
-- name: Extended visual report
-  reportlets:
   - bids: {datatype: figures, desc: background}
     caption: This panel shows a mosaic enhancing the background around the head.
       Artifacts usually unveil themselves in the air surrounding the head, where no signal
       sources are present.
-    subtitle: View of the background of the voxel-wise average of the BOLD timeseries
-  - bids: {datatype: figures, desc: mean}
-    subtitle: Average signal through time
-    caption: The average signal calculated across the last axis (time).
-  - bids: {datatype: figures, desc: airmask}
-    caption: The <em>hat</em>-mask calculated internally by MRIQC. Some metrics will use this
-      mask, for instance, to find out artifacts and estimate the spread of gaussian noise
-      added to the signal. This mask leaves out the air around the face to avoid measuring
-      noise sourcing from the eyeballs and their movement.
-    subtitle: '&laquo;Hat&raquo;-mask'
-  - bids: {datatype: figures, desc: noisefit}
-    caption: The noise fit internally estimated by MRIQC to calculate the QI<sub>1</sub> index
-      proposed by <a href="https://doi.org/10.1002/mrm.21992" target="_blank">Mortamet et al. (2009)</a>.
-    subtitle: Distribution of the noise within the <em>hat</em> mask
-    style:
-      max-width: 450px
-  - bids: {datatype: figures, desc: artifacts}
-    caption: Mask of artifactual intensities identified within the <em>hat</em>-mask.
-    subtitle: Artifactual intensities on the background
-  - bids: {datatype: figures, desc: brainmask}
-    caption: Brain mask as internally extracted by MRIQC. Defects on the brainmask could
-      indicate problematic aspects of the image quality-wise.
-    subtitle: Brain extraction performance
-  - bids: {datatype: figures, desc: head}
-    caption: A mask of the head calculated internally by MRIQC.
-    subtitle: Head mask
-  - bids: {datatype: figures, desc: segmentation}
-    caption: Brain tissue segmentation, as internally extracted by MRIQC.
-      Defects on this segmentation, as well as noisy tissue labels could
-      indicate problematic aspects of the image quality-wise.
-    subtitle: Brain tissue segmentation
-  - bids: {datatype: figures, desc: norm}
-    caption: This panel shows a <em>quick-and-dirty</em> nonlinear registration into
-      the <code>MNI152NLin2009cAsym</code> template accessed with
-      <a href="https://templateflow.org/browse" target="_blank"><em>TemplateFlow</em></a>.
-    subtitle: Spatial normalization of the anatomical image
-    static: false
-
+    subtitle: View of the background of the voxel-wise average of this <em>DWI shell</em>
 
 - name: About
   nested: true
