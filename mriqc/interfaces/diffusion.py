@@ -351,12 +351,12 @@ class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
     brainmask = File(exists=True, desc="brain mask file")
     bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
     bvec_file = File(exists=True, mandatory=True, desc="b-vectors")
-    free_water_model = traits.Bool(True, usedefault=True, desc="use free water model")
+    free_water_model = traits.Bool(False, usedefault=True, desc="use free water model")
 
 
 class _DipyDTIOutputSpec(_TraitedSpec):
     out_fa = File(exists=True, desc="output FA file")
-    out_adc = File(exists=True, desc="output ADC file")
+    out_md = File(exists=True, desc="output MD file")
 
 
 class DipyDTI(SimpleInterface):
@@ -392,8 +392,13 @@ class DipyDTI(SimpleInterface):
             mask=brainmask,
         )
 
+        # Extract the FA
+        fa_data = np.array(fwdtifit.fa, dtype="float32")
+        fa_data[np.isnan(fa_data)] = 0
+        fa_data = np.clip(fa_data, 0, 1)
+
         fa_nii = nb.Nifti1Image(
-            fwdtifit.fa.astype("float32"),
+            fa_data,
             img.affine,
             None,
         )
@@ -411,25 +416,23 @@ class DipyDTI(SimpleInterface):
 
         fa_nii.to_filename(self._results["out_fa"])
 
-        adc_nii = nb.Nifti1Image(
-            fwdtifit.adc.astype("float32"),
-            img.affine,
-            fa_nii.header.copy(),
-        )
-
-        adc_nii.header.set_intent("estimate", name="Mean diffusivity (MD)")
-        self._results["out_adc"] = fname_presuffix(
+        # Extract the AD
+        self._results["out_md"] = fname_presuffix(
             self.inputs.in_file,
-            suffix="adc",
+            suffix="md",
             newpath=runtime.cwd,
         )
-        adc_nii.to_filename(self._results["out_adc"])
-
-        adc_nii = nb.Nifti1Image(
-            fwdtifit.adc.astype("float32"),
+        ad_data = np.array(fwdtifit.ad, dtype="float32")
+        ad_data[np.isnan(ad_data)] = 0
+        ad_data = np.clip(ad_data, 0, 1)
+        ad_hdr = fa_nii.header.copy()
+        ad_hdr.set_intent("estimate", name="Mean diffusivity (MD)")
+        nb.Nifti1Image(
+            ad_data,
             img.affine,
-            fa_nii.header.copy(),
-        )
+            ad_hdr
+        ).to_filename(self._results["out_md"])
+
         return runtime
 
 

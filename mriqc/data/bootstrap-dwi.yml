@@ -34,9 +34,9 @@ sections:
   - bids: {datatype: figures, desc: fa}
     caption: Reconstructed FA map using Dipy's free-water DTI model.
     subtitle: Fractional anisotropy (FA) map
-  - bids: {datatype: figures, desc: adc}
+  - bids: {datatype: figures, desc: ad}
     caption: Reconstructed ADC map using Dipy's free-water DTI model.
-    subtitle: Apparent diffusion coefficient (ADC) map
+    subtitle: Axial diffusivity (AD) map
 - name: DWI shells
   ordering: bval
   reportlets:

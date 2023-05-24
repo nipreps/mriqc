@@ -164,7 +164,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
 
     # 6. Fit DTI model
     dti = pe.Node(
-        DipyDTI(free_water_model=True),
+        DipyDTI(free_water_model=False),
         name="dti",
     )
 
@@ -220,7 +220,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
         (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
         (dti, dwi_report_wf, [("out_fa", "inputnode.in_fa"),
-                              ("out_adc", "inputnode.in_adc")]),
+                              ("out_md", "inputnode.in_md")]),
     ])
     # fmt: on
     return workflow

@@ -61,7 +61,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
                 "in_stdmap",
                 "in_shells",
                 "in_fa",
-                "in_adc",
+                "in_md",
                 # "in_ras",
                 # "hmc_epi",
                 # "epi_mean",
@@ -90,9 +90,9 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         PlotMosaic(cmap="Greys_r"),
         name="mosaic_fa",
     )
-    mosaic_adc = pe.Node(
+    mosaic_md = pe.Node(
         PlotMosaic(cmap="Greys_r"),
-        name="mosaic_adc",
+        name="mosaic_md",
     )
 
     mosaic_mean = pe.MapNode(
@@ -121,7 +121,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         mosaic_stddev.inputs.view = ["coronal", "axial"]
         mosaic_noise.inputs.view = ["coronal", "axial"]
         mosaic_fa.inputs.view = ["coronal", "axial"]
-        mosaic_adc.inputs.view = ["coronal", "axial"]
+        mosaic_md.inputs.view = ["coronal", "axial"]
 
     ds_report_mean = pe.MapNode(
         DerivativesDataSink(
@@ -169,13 +169,13 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         run_without_submitting=True,
     )
 
-    ds_report_adc = pe.Node(
+    ds_report_md = pe.Node(
         DerivativesDataSink(
             base_directory=reportlets_dir,
-            desc="fa",
+            desc="ad",
             datatype="figures",
         ),
-        name="ds_report_adc",
+        name="ds_report_md",
         run_without_submitting=True,
     )
 
@@ -189,8 +189,10 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (inputnode, mosaic_stddev, [("in_stdmap", "in_file"),
                                     ("brainmask", "bbox_mask_file")]),
         (inputnode, mosaic_noise, [("in_avgmap", "in_file")]),
-        (inputnode, mosaic_fa, [("in_fa", "in_file")]),
-        (inputnode, mosaic_adc, [("in_adc", "in_file")]),
+        (inputnode, mosaic_fa, [("in_fa", "in_file"),
+                                ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_md, [("in_md", "in_file"),
+                                ("brainmask", "bbox_mask_file")]),
         (inputnode, ds_report_mean, [("name_source", "source_file"),
                                      (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_stdev, [("name_source", "source_file"),
@@ -198,12 +200,12 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (inputnode, ds_report_noise, [("name_source", "source_file"),
                                       (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_fa, [("name_source", "source_file")]),
-        (inputnode, ds_report_adc, [("name_source", "source_file")]),
+        (inputnode, ds_report_md, [("name_source", "source_file")]),
         (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
         (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
         (mosaic_noise, ds_report_noise, [("out_file", "in_file")]),
         (mosaic_fa, ds_report_fa, [("out_file", "in_file")]),
-        (mosaic_adc, ds_report_adc, [("out_file", "in_file")]),
+        (mosaic_md, ds_report_md, [("out_file", "in_file")]),
     ])
     # fmt: on
 
