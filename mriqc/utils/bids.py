@@ -26,23 +26,20 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
-DEFAULT_TYPES = ["bold", "T1w", "T2w"]
+from bids.utils import listify
+
 DOI = "https://doi.org/10.1371/journal.pone.0184661"
 
 
 def collect_bids_data(
     layout,
+    bids_type,
     participant_label=None,
     session=None,
     run=None,
     task=None,
-    bids_type=None,
 ):
     """Get files in dataset"""
-
-    bids_type = bids_type or DEFAULT_TYPES
-    if not isinstance(bids_type, (list, tuple)):
-        bids_type = [bids_type]
 
     basequery = {
         "subject": participant_label,
@@ -58,26 +55,24 @@ def collect_bids_data(
 
     # Start querying
     imaging_data = defaultdict(list, {})
-    for btype in bids_type:
+    for btype in listify(bids_type):
         _entities = basequery.copy()
         _entities["suffix"] = btype
-        if btype in ("T1w", "T2w"):
-            _entities["datatype"] = "anat"
+        if btype in ("T1w", "T2w", "dwi"):
+            _entities["datatype"] = "dwi" if btype == "dwi" else "anat"
             _entities.pop("task", None)
-
         imaging_data[btype] = layout.get(**_entities)
 
     return imaging_data
 
 
 def write_bidsignore(deriv_dir):
-    bids_ignore = (
+    from mriqc.config import SUPPORTED_SUFFIXES
+    bids_ignore = [
         "*.html",
         "logs/",  # Reports
-        "*_T1w.json",
-        "*_T2w.json",
-        "*_bold.json",  # Outputs are not yet standardized
-    )
+    ] + [f"*_{suffix}.json" for suffix in SUPPORTED_SUFFIXES]
+
     ignore_file = Path(deriv_dir) / ".bidsignore"
 
     ignore_file.write_text("\n".join(bids_ignore) + "\n")

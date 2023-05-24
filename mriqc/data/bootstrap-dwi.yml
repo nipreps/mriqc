@@ -1,0 +1,77 @@
+# Copyright 2023 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+###########################################################################
+# Reports bootstrap file
+# ======================
+# This is a YAML-formatted file specifying how the NiReports assembler
+# will search for "reportlets" and compose them into a report file,
+# typically in HTML format.
+###########################################################################
+
+packagename: mriqc
+title: '{filename} :: Diffusion MRI MRIQC report'
+sections:
+- name: Summary
+  reportlets:
+  - bids: {datatype: figures, desc: summary, extension: [.html]}
+- name: DWI shells
+  ordering: bval
+  reportlets:
+  - bids: {datatype: figures, desc: zoomedavg}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
+      (for example, from the eyeballs and across the phase-encoding axis), etc.
+    subtitle: Voxel-wise average across volumes in this <em>DWI shell</em>,
+      zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: zoomedstd}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen within-volume head-motion (e.g., missing slices) and reconstruction ghosts
+      such as those intrinsic to SMS parallelization.
+    subtitle: Voxel-wise standard deviation calculated across volumes in this <em>DWI shell</em>,
+      zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: background}
+    caption: This panel shows a mosaic enhancing the background around the head.
+      Artifacts usually unveil themselves in the air surrounding the head, where no signal
+      sources are present.
+    subtitle: View of the background of the voxel-wise average of this <em>DWI shell</em>
+
+- name: About
+  nested: true
+  reportlets:
+  - custom: errors
+    path: '{reportlets_dir}/{run_uuid}'
+    captions: <em>MRIQC</em> may have recorded failure conditions.
+    title: Errors
+  - metadata: "input"
+    settings:
+      # By default, only the first dictionary will be expanded.
+      # If folded is true, all will be folded. If false all expanded.
+      folded: true
+      # If an ID is not provided, one should be generated automatically
+      id: 'about-metadata'
+    caption: |
+      Thanks for using <em>MRIQC</em>. The following information may assist in
+      reconstructing the provenance of the corresponding derivatives.
+    title: Reproducibility and provenance information
+
+# Rating widget
+plugins:
+- module: nireports.assembler
+  path: data/rating-widget/bootstrap.yml

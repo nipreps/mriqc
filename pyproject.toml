@@ -36,6 +36,7 @@ dependencies = [
     "pandas ~=1.0",
     "pybids >= 0.15.6",
     "PyYAML",
+    "scikit-learn",
     "scipy ~=1.8",
     "statsmodels",
     "toml",
@@ -66,7 +67,6 @@ doc = [
 full = [
     "nitime",
     "nirodents >= 0.2.8",
-    "scikit-learn ~= 1.0",
     "seaborn",
     "templateflow",
     "xvfbwrapper",

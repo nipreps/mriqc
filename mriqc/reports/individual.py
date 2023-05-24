@@ -78,6 +78,8 @@ def _single_report(in_file):
     prov["Versions_TemplateFlow"] = config.environment.templateflow_version
 
     bids_meta = config.execution.layout.get_file(in_file).get_metadata()
+    bids_meta.pop("global", None)
+
     robj = Report(
         config.execution.output_dir,
         config.execution.run_uuid,
