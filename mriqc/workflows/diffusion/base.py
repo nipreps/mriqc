@@ -67,6 +67,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     from niworkflows.workflows.epi.refmap import init_epi_reference_wf
     from mriqc.interfaces.diffusion import (
         CorrectSignalDrift,
+        DipyDTI,
         ExtractB0,
         NumberOfShells,
         ReadDWIMetadata,
@@ -161,13 +162,19 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         iterfield=["in_weights"],
     )
 
-    # 6. EPI to MNI registration
+    # 6. Fit DTI model
+    dti = pe.Node(
+        DipyDTI(free_water_model=False),
+        name="dti",
+    )
+
+    # 7. EPI to MNI registration
     ema = epi_mni_align()
 
-    # 7. Compute IQMs
+    # 8. Compute IQMs
     iqmswf = compute_iqms()
 
-    # 8. Generate outputs
+    # 9. Generate outputs
     dwi_report_wf = init_dwi_report_wf()
 
     # fmt: off
@@ -201,6 +208,10 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (drift, stddev, [("out_full_file", "in_file")]),
         (shells, averages, [("b_masks", "in_weights")]),
         (shells, stddev, [("b_masks", "in_weights")]),
+        (shells, dti, [("out_data", "bvals")]),
+        (meta, dti, [("out_bvec_file", "bvec_file")]),
+        (drift, dti, [("out_full_file", "in_file")]),
+        (dmri_bmsk, dti, [("outputnode.out_mask", "brainmask")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
                           ("b_values", "inputnode.b_values")]),
@@ -208,6 +219,8 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
         (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
         (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
+        (dti, dwi_report_wf, [("out_fa", "inputnode.in_fa"),
+                              ("out_md", "inputnode.in_md")]),
     ])
     # fmt: on
     return workflow

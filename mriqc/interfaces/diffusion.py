@@ -346,6 +346,96 @@ class SplitShells(SimpleInterface):
         return runtime
 
 
+class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc="dwi file")
+    brainmask = File(exists=True, desc="brain mask file")
+    bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
+    bvec_file = File(exists=True, mandatory=True, desc="b-vectors")
+    free_water_model = traits.Bool(False, usedefault=True, desc="use free water model")
+
+
+class _DipyDTIOutputSpec(_TraitedSpec):
+    out_fa = File(exists=True, desc="output FA file")
+    out_md = File(exists=True, desc="output MD file")
+
+
+class DipyDTI(SimpleInterface):
+    """Split a DWI dataset into ."""
+
+    input_spec = _DipyDTIInputSpec
+    output_spec = _DipyDTIOutputSpec
+
+    def _run_interface(self, runtime):
+        from dipy.core.gradients import gradient_table_from_bvals_bvecs
+        from dipy.reconst.dti import TensorModel
+        from dipy.reconst.fwdti import FreeWaterTensorModel
+        from nipype.utils.filemanip import fname_presuffix
+
+        gtab = gradient_table_from_bvals_bvecs(
+            bvals=self.inputs.bvals,
+            bvecs=np.loadtxt(self.inputs.bvec_file).T,
+        )
+
+        img = nb.load(self.inputs.in_file)
+        data = img.get_fdata(dtype="float32")
+
+        brainmask = np.ones_like(data[..., 0], dtype=bool)
+
+        if isdefined(self.inputs.brainmask):
+            brainmask = np.asanyarray(nb.load(self.inputs.brainmask).dataobj) > 0.5
+
+        DTIModel = FreeWaterTensorModel if self.inputs.free_water_model else TensorModel
+
+        # Fit DIT
+        fwdtifit = DTIModel(gtab).fit(
+            data,
+            mask=brainmask,
+        )
+
+        # Extract the FA
+        fa_data = np.array(fwdtifit.fa, dtype="float32")
+        fa_data[np.isnan(fa_data)] = 0
+        fa_data = np.clip(fa_data, 0, 1)
+
+        fa_nii = nb.Nifti1Image(
+            fa_data,
+            img.affine,
+            None,
+        )
+
+        fa_nii.header.set_xyzt_units("mm")
+        fa_nii.header.set_intent("estimate", name="Fractional Anisotropy (FA)")
+        fa_nii.header["cal_max"] = 1.0
+        fa_nii.header["cal_min"] = 0.0
+
+        self._results["out_fa"] = fname_presuffix(
+            self.inputs.in_file,
+            suffix="fa",
+            newpath=runtime.cwd,
+        )
+
+        fa_nii.to_filename(self._results["out_fa"])
+
+        # Extract the AD
+        self._results["out_md"] = fname_presuffix(
+            self.inputs.in_file,
+            suffix="md",
+            newpath=runtime.cwd,
+        )
+        ad_data = np.array(fwdtifit.ad, dtype="float32")
+        ad_data[np.isnan(ad_data)] = 0
+        ad_data = np.clip(ad_data, 0, 1)
+        ad_hdr = fa_nii.header.copy()
+        ad_hdr.set_intent("estimate", name="Mean diffusivity (MD)")
+        nb.Nifti1Image(
+            ad_data,
+            img.affine,
+            ad_hdr
+        ).to_filename(self._results["out_md"])
+
+        return runtime
+
+
 def _rms(estimator, X):
     """
     Callable to pass to GridSearchCV that will calculate a distance score.
