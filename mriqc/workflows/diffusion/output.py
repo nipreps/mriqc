@@ -197,22 +197,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     if True:
         return workflow
 
-    spmask = pe.Node(
-        niu.Function(
-            input_names=["in_file", "in_mask"],
-            output_names=["out_file", "out_plot"],
-            function=spikes_mask,
-        ),
-        name="SpikesMask",
-        mem_gb=mem_gb * 3.5,
-    )
-
-    spikes_bg = pe.Node(
-        Spikes(no_zscore=True, detrend=False),
-        name="SpikesFinderBgMask",
-        mem_gb=mem_gb * 2.5,
-    )
-
     # Generate crown mask
     # Create the crown mask
     dilated_mask = pe.Node(BinaryDilation(), name="dilated_mask")
@@ -234,8 +218,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     # fmt: off
     workflow.connect([
         # (inputnode, rnode, [("in_iqms", "in_iqms")]),
-        (inputnode, spikes_bg, [("in_ras", "in_file")]),
-        (inputnode, spmask, [("in_ras", "in_file")]),
         (inputnode, bigplot, [("hmc_epi", "in_func"),
                               ("hmc_fd", "fd"),
                               ("fd_thres", "fd_thres"),
@@ -248,8 +230,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (dilated_mask, subtract_mask, [("out_mask", "in_base")]),
         (subtract_mask, parcels, [("out_mask", "crown_mask")]),
         (parcels, bigplot, [("out", "in_segm")]),
-        (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
-        (spmask, spikes_bg, [("out_file", "in_mask")]),
         (inputnode, ds_report_carpet, [("name_source", "source_file")]),
         (bigplot, ds_report_carpet, [("out_file", "in_file")]),
     ])
@@ -368,64 +348,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     # fmt: on
 
     return workflow
-
-
-def spikes_mask(in_file, in_mask=None, out_file=None):
-    """Calculate a mask in which check for :abbr:`EM (electromagnetic)` spikes."""
-    import os.path as op
-
-    import nibabel as nb
-    import numpy as np
-    from nilearn.image import mean_img
-    from nilearn.plotting import plot_roi
-    from scipy import ndimage as nd
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath("{}_spmask{}".format(fname, ext))
-        out_plot = op.abspath("{}_spmask.pdf".format(fname))
-
-    in_4d_nii = nb.load(in_file)
-    orientation = nb.aff2axcodes(in_4d_nii.affine)
-
-    if in_mask:
-        mask_data = np.asanyarray(nb.load(in_mask).dataobj)
-        a = np.where(mask_data != 0)
-        bbox = (
-            np.max(a[0]) - np.min(a[0]),
-            np.max(a[1]) - np.min(a[1]),
-            np.max(a[2]) - np.min(a[2]),
-        )
-        longest_axis = np.argmax(bbox)
-
-        # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
-
-        rep = list(mask_data.shape)
-        rep[longest_axis] = -1
-        new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
-
-        rep = [1, 1, 1]
-        rep[longest_axis] = mask_data.shape[longest_axis]
-        new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
-    else:
-        new_mask_3d = np.zeros(in_4d_nii.shape[:3]) == 1
-
-    if orientation[0] in ["L", "R"]:
-        new_mask_3d[0:2, :, :] = True
-        new_mask_3d[-3:-1, :, :] = True
-    else:
-        new_mask_3d[:, 0:2, :] = True
-        new_mask_3d[:, -3:-1, :] = True
-
-    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header)
-    mask_nii.to_filename(out_file)
-
-    plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
-    return out_file, out_plot
 
 
 def _carpet_parcellation(segmentation, crown_mask):
