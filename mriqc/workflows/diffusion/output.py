@@ -26,6 +26,9 @@ from mriqc.interfaces import DerivativesDataSink
 
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
+from nireports.interfaces.reporting.base import (
+    SimpleBeforeAfterRPT as SimpleBeforeAfter,
+)
 
 
 def init_dwi_report_wf(name="dwi_report_wf"):
@@ -95,16 +98,16 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         name="mosaic_md",
     )
 
-    mosaic_mean = pe.MapNode(
-        PlotMosaic(cmap="Greys_r"),
-        name="mosaic_mean",
-        iterfield=["in_file"],
-    )
-
-    mosaic_stddev = pe.MapNode(
-        PlotMosaic(cmap="viridis"),
-        name="mosaic_stddev",
-        iterfield=["in_file"],
+    mosaic_snr = pe.MapNode(
+        SimpleBeforeAfter(
+            fixed_params={"cmap": "viridis"},
+            moving_params={"cmap": "Greys_r"},
+            before_label="Average",
+            after_label="Standard Deviation",
+            dismiss_affine=True,
+        ),
+        name="mosaic_snr",
+        iterfield=["before", "after"],
     )
 
     mosaic_noise = pe.MapNode(
@@ -117,32 +120,18 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     )
 
     if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_mean.inputs.view = ["coronal", "axial"]
-        mosaic_stddev.inputs.view = ["coronal", "axial"]
         mosaic_noise.inputs.view = ["coronal", "axial"]
         mosaic_fa.inputs.view = ["coronal", "axial"]
         mosaic_md.inputs.view = ["coronal", "axial"]
 
-    ds_report_mean = pe.MapNode(
+    ds_report_snr = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
-            desc="zoomedavg",
+            desc="avgstd",
             datatype="figures",
             allowed_entities=("bval",),
         ),
-        name="ds_report_mean",
-        run_without_submitting=True,
-        iterfield=["in_file", "bval"],
-    )
-
-    ds_report_stdev = pe.MapNode(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="zoomedstd",
-            datatype="figures",
-            allowed_entities=("bval",),
-        ),
-        name="ds_report_stdev",
+        name="ds_report_snr",
         run_without_submitting=True,
         iterfield=["in_file", "bval"],
     )
@@ -184,25 +173,21 @@ def init_dwi_report_wf(name="dwi_report_wf"):
 
     # fmt: off
     workflow.connect([
-        (inputnode, mosaic_mean, [("in_avgmap", "in_file"),
-                                  ("brainmask", "bbox_mask_file")]),
-        (inputnode, mosaic_stddev, [("in_stdmap", "in_file"),
-                                    ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_snr, [("in_avgmap", "before"),
+                                 ("in_stdmap", "after"),
+                                 ("brainmask", "wm_seg")]),
         (inputnode, mosaic_noise, [("in_avgmap", "in_file")]),
         (inputnode, mosaic_fa, [("in_fa", "in_file"),
                                 ("brainmask", "bbox_mask_file")]),
         (inputnode, mosaic_md, [("in_md", "in_file"),
                                 ("brainmask", "bbox_mask_file")]),
-        (inputnode, ds_report_mean, [("name_source", "source_file"),
-                                     (("in_shells", _gen_entity), "bval")]),
-        (inputnode, ds_report_stdev, [("name_source", "source_file"),
-                                      (("in_shells", _gen_entity), "bval")]),
+        (inputnode, ds_report_snr, [("name_source", "source_file"),
+                                    (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_noise, [("name_source", "source_file"),
                                       (("in_shells", _gen_entity), "bval")]),
         (inputnode, ds_report_fa, [("name_source", "source_file")]),
         (inputnode, ds_report_md, [("name_source", "source_file")]),
-        (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
-        (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
+        (mosaic_snr, ds_report_snr, [("out_report", "in_file")]),
         (mosaic_noise, ds_report_noise, [("out_file", "in_file")]),
         (mosaic_fa, ds_report_fa, [("out_file", "in_file")]),
         (mosaic_md, ds_report_md, [("out_file", "in_file")]),

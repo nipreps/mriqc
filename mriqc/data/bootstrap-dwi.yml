@@ -40,18 +40,11 @@ sections:
 - name: DWI shells
   ordering: bval
   reportlets:
-  - bids: {datatype: figures, desc: zoomedavg}
-    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
-      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
-      (for example, from the eyeballs and across the phase-encoding axis), etc.
-    subtitle: Voxel-wise average across volumes in this <em>DWI shell</em>,
-      zoomed-in covering just the brain
-  - bids: {datatype: figures, desc: zoomedstd}
-    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
-      screen within-volume head-motion (e.g., missing slices) and reconstruction ghosts
-      such as those intrinsic to SMS parallelization.
-    subtitle: Voxel-wise standard deviation calculated across volumes in this <em>DWI shell</em>,
-      zoomed-in covering just the brain
+  - bids: {datatype: figures, desc: avgstd}
+    caption: This panel shows mosaics flickering between the voxel-wise average and standard deviation
+      for each shell.
+    subtitle: Voxel-wise average and standard deviation across volumes in this <em>DWI shell</em>.
+    static: false
   - bids: {datatype: figures, desc: background}
     caption: This panel shows a mosaic enhancing the background around the head.
       Artifacts usually unveil themselves in the air surrounding the head, where no signal
