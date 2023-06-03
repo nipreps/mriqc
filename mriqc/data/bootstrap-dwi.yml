@@ -31,6 +31,12 @@ sections:
 - name: Summary
   reportlets:
   - bids: {datatype: figures, desc: summary, extension: [.html]}
+  - bids: {datatype: figures, desc: heatmap}
+    caption: This visualization divides the data by shells, and shows the joint distribution
+      of SNR vs. FA. At the bottom, the distributions are marginalized for SNR.
+      Please note that the figures of SNR provided are calculated with a coarse estimation of
+      the signal variability, and therefore should be interpreted with care.
+    subtitle: Shell-wise joint distribution of SNR vs. FA in every voxel
   - bids: {datatype: figures, desc: fa}
     caption: Reconstructed FA map using Dipy's free-water DTI model.
     subtitle: Fractional anisotropy (FA) map

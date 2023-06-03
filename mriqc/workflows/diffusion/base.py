@@ -215,12 +215,15 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
                           ("b_values", "inputnode.b_values")]),
+        (shells, dwi_report_wf, [("b_dict", "inputnode.in_bdict")]),
         (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
         (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
         (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
         (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
+        (drift, dwi_report_wf, [("out_full_file", "inputnode.in_epi")]),
         (dti, dwi_report_wf, [("out_fa", "inputnode.in_fa"),
                               ("out_md", "inputnode.in_md")]),
+        (ema, dwi_report_wf, [("outputnode.epi_parc", "inputnode.in_parcellation")]),
     ])
     # fmt: on
     return workflow

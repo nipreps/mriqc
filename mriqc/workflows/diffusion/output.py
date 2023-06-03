@@ -29,6 +29,7 @@ from nipype.interfaces import utility as niu
 from nireports.interfaces.reporting.base import (
     SimpleBeforeAfterRPT as SimpleBeforeAfter,
 )
+from nireports.interfaces.dmri import DWIHeatmap
 
 
 def init_dwi_report_wf(name="dwi_report_wf"):
@@ -47,7 +48,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
     from nireports.interfaces import PlotMosaic, PlotSpikes
-    from mriqc.interfaces.functional import Spikes
 
     # from mriqc.interfaces.reports import IndividualReport
 
@@ -59,27 +59,15 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
+                "in_epi",
                 "brainmask",
                 "in_avgmap",
                 "in_stdmap",
                 "in_shells",
                 "in_fa",
                 "in_md",
-                # "in_ras",
-                # "hmc_epi",
-                # "epi_mean",
-                # "hmc_fd",
-                # "fd_thres",
-                # "epi_parc",
-                # "in_dvars",
-                # "in_stddev",
-                # "outliers",
-                # "in_spikes",
-                # "in_fft",
-                # "in_iqms",
-                # "mni_report",
-                # "ica_report",
-                # "meta_sidecar",
+                "in_parcellation",
+                "in_bdict",
                 "name_source",
             ]
         ),
@@ -191,6 +179,34 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (mosaic_noise, ds_report_noise, [("out_file", "in_file")]),
         (mosaic_fa, ds_report_fa, [("out_file", "in_file")]),
         (mosaic_md, ds_report_md, [("out_file", "in_file")]),
+    ])
+    # fmt: on
+
+    get_wm = pe.Node(niu.Function(function=_get_wm), name="get_wm")
+    plot_heatmap = pe.Node(
+        DWIHeatmap(scalarmap_label="Shell-wise Fractional Anisotropy (FA)", sigma=20),
+        name="plot_heatmap",
+    )
+    ds_report_hm = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="heatmap",
+            datatype="figures",
+        ),
+        name="ds_report_hm",
+        run_without_submitting=True,
+    )
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, get_wm, [("in_parcellation", "in_file")]),
+        (inputnode, plot_heatmap, [("in_epi", "in_file"),
+                                   ("in_fa", "scalarmap"),
+                                   ("in_bdict", "b_indices")]),
+        (inputnode, ds_report_hm, [("name_source", "source_file")]),
+        (get_wm, plot_heatmap, [("out", "mask_file")]),
+        (plot_heatmap, ds_report_hm, [("out_file", "in_file")]),
+
     ])
     # fmt: on
 
@@ -376,3 +392,24 @@ def _carpet_parcellation(segmentation, crown_mask):
 
 def _get_tr(meta_dict):
     return meta_dict.get("RepetitionTime", None)
+
+
+def _get_wm(in_file):
+    from pathlib import Path
+    import numpy as np
+    import nibabel as nb
+    from nipype.utils.filemanip import fname_presuffix
+
+    parc = nb.load(in_file)
+    hdr = parc.header.copy()
+    data = np.array(parc.dataobj, dtype=hdr.get_data_dtype())
+
+    hdr.set_data_dtype(np.uint8)
+
+    out_wm = fname_presuffix(in_file, suffix="wm", newpath=str(Path.cwd()))
+    parc.__class__(
+        ((data == 1) | (data == 2)).astype(np.uint8),
+        parc.affine,
+        hdr,
+    ).to_filename(out_wm)
+    return out_wm

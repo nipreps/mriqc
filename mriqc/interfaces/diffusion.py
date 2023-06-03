@@ -134,6 +134,9 @@ class _NumberOfShellsOutputSpec(_TraitedSpec):
         traits.List(traits.Int, minlen=1),
         minlen=1,
         desc="b-value-wise masks")
+    b_dict = traits.Dict(
+        traits.Int, traits.List(traits.Int), desc="b-values dictionary"
+    )
 
 
 class NumberOfShells(SimpleInterface):
@@ -200,6 +203,11 @@ class NumberOfShells(SimpleInterface):
             np.atleast_1d(np.squeeze(np.argwhere(b_mask)).astype(int)).tolist()
             for b_mask in self._results["b_masks"]
         ]
+
+        self._results["b_dict"] = {
+            int(round(k, 0)): value
+            for k, value in zip([0] + self._results["b_values"], self._results["b_indices"])
+        }
         return runtime
 
 
