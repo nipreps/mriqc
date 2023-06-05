@@ -68,10 +68,16 @@ def init_dwi_report_wf(name="dwi_report_wf"):
                 "in_md",
                 "in_parcellation",
                 "in_bdict",
+                "in_noise",
                 "name_source",
             ]
         ),
         name="inputnode",
+    )
+
+    estimate_sigma = pe.Node(
+        niu.Function(function=_estimate_sigma),
+        name="estimate_sigma",
     )
 
     # Set FD threshold
@@ -184,7 +190,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
 
     get_wm = pe.Node(niu.Function(function=_get_wm), name="get_wm")
     plot_heatmap = pe.Node(
-        DWIHeatmap(scalarmap_label="Shell-wise Fractional Anisotropy (FA)", sigma=20),
+        DWIHeatmap(scalarmap_label="Shell-wise Fractional Anisotropy (FA)"),
         name="plot_heatmap",
     )
     ds_report_hm = pe.Node(
@@ -204,6 +210,9 @@ def init_dwi_report_wf(name="dwi_report_wf"):
                                    ("in_fa", "scalarmap"),
                                    ("in_bdict", "b_indices")]),
         (inputnode, ds_report_hm, [("name_source", "source_file")]),
+        (inputnode, estimate_sigma, [("in_noise", "in_file"),
+                                     ("brainmask", "mask")]),
+        (estimate_sigma, plot_heatmap, [("out", "sigma")]),
         (get_wm, plot_heatmap, [("out", "mask_file")]),
         (plot_heatmap, ds_report_hm, [("out_file", "in_file")]),
 
@@ -416,3 +425,13 @@ def _get_wm(in_file, radius=2):
     ).to_filename(out_wm)
     return out_wm
 
+
+def _estimate_sigma(in_file, mask):
+    import numpy as np
+    import nibabel as nb
+
+    msk = np.asanyarray(nb.load(mask).dataobj) > 0.5
+
+    return float(
+        np.median(nb.load(in_file).get_fdata()[msk])
+    )

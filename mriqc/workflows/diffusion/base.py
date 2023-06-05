@@ -63,12 +63,14 @@ def dmri_qc_workflow(name="dwiMRIQC"):
 
     """
     from nipype.interfaces.afni import Volreg
+    from nipype.interfaces.mrtrix3.preprocess import DWIDenoise
     from niworkflows.interfaces.header import SanitizeImage
     from niworkflows.workflows.epi.refmap import init_epi_reference_wf
     from mriqc.interfaces.diffusion import (
         CorrectSignalDrift,
         DipyDTI,
         ExtractB0,
+        FilterShells,
         NumberOfShells,
         ReadDWIMetadata,
         WeightedStat,
@@ -163,6 +165,15 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     )
 
     # 6. Fit DTI model
+    dti_filter = pe.Node(FilterShells(), name="dti_filter")
+    dwidenoise = pe.Node(
+        DWIDenoise(
+            noise="noisemap.nii.gz",
+            nthreads=config.nipype.omp_nthreads,
+        ),
+        name="dwidenoise",
+        nprocs=config.nipype.omp_nthreads,
+    )
     dti = pe.Node(
         DipyDTI(free_water_model=False),
         name="dti",
@@ -208,13 +219,19 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (drift, stddev, [("out_full_file", "in_file")]),
         (shells, averages, [("b_masks", "in_weights")]),
         (shells, stddev, [("b_masks", "in_weights")]),
-        (shells, dti, [("out_data", "bvals")]),
-        (meta, dti, [("out_bvec_file", "bvec_file")]),
-        (drift, dti, [("out_full_file", "in_file")]),
+        (shells, dti_filter, [("out_data", "bvals")]),
+        (meta, dti_filter, [("out_bvec_file", "bvec_file")]),
+        (drift, dti_filter, [("out_full_file", "in_file")]),
+        (dti_filter, dti, [("out_bvals", "bvals")]),
+        (dti_filter, dti, [("out_bvec_file", "bvec_file")]),
+        (dti_filter, dwidenoise, [("out_file", "in_file")]),
+        (dmri_bmsk, dwidenoise, [("outputnode.out_mask", "mask")]),
+        (dwidenoise, dti, [("out_file", "in_file")]),
         (dmri_bmsk, dti, [("outputnode.out_mask", "brainmask")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
         (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
                           ("b_values", "inputnode.b_values")]),
+        (dwidenoise, dwi_report_wf, [("noise", "inputnode.in_noise")]),
         (shells, dwi_report_wf, [("b_dict", "inputnode.in_bdict")]),
         (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
         (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
