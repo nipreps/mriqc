@@ -360,6 +360,7 @@ class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
     bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
     bvec_file = File(exists=True, mandatory=True, desc="b-vectors")
     free_water_model = traits.Bool(False, usedefault=True, desc="use free water model")
+    b_threshold = traits.Float(1100, usedefault=True, desc="use only inner shells of the data")
 
 
 class _DipyDTIOutputSpec(_TraitedSpec):
@@ -379,13 +380,16 @@ class DipyDTI(SimpleInterface):
         from dipy.reconst.fwdti import FreeWaterTensorModel
         from nipype.utils.filemanip import fname_presuffix
 
+        bvals = np.array(self.inputs.bvals)
+        bval_mask = bvals < self.inputs.b_threshold
+
         gtab = gradient_table_from_bvals_bvecs(
-            bvals=self.inputs.bvals,
-            bvecs=np.loadtxt(self.inputs.bvec_file).T,
+            bvals=bvals[bval_mask],
+            bvecs=np.loadtxt(self.inputs.bvec_file).T[bval_mask],
         )
 
         img = nb.load(self.inputs.in_file)
-        data = img.get_fdata(dtype="float32")
+        data = img.get_fdata(dtype="float32")[..., bval_mask]
 
         brainmask = np.ones_like(data[..., 0], dtype=bool)
 
