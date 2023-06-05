@@ -394,22 +394,25 @@ def _get_tr(meta_dict):
     return meta_dict.get("RepetitionTime", None)
 
 
-def _get_wm(in_file):
+def _get_wm(in_file, radius=2):
     from pathlib import Path
     import numpy as np
     import nibabel as nb
     from nipype.utils.filemanip import fname_presuffix
+    from scipy import ndimage as ndi
+    from skimage.morphology import ball
 
     parc = nb.load(in_file)
     hdr = parc.header.copy()
     data = np.array(parc.dataobj, dtype=hdr.get_data_dtype())
+    wm_mask = ndi.binary_erosion((data == 1) | (data == 2), ball(radius))
 
     hdr.set_data_dtype(np.uint8)
-
     out_wm = fname_presuffix(in_file, suffix="wm", newpath=str(Path.cwd()))
     parc.__class__(
-        ((data == 1) | (data == 2)).astype(np.uint8),
+        wm_mask.astype(np.uint8),
         parc.affine,
         hdr,
     ).to_filename(out_wm)
     return out_wm
+
