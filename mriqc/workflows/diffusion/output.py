@@ -29,6 +29,7 @@ from nipype.interfaces import utility as niu
 from nireports.interfaces.reporting.base import (
     SimpleBeforeAfterRPT as SimpleBeforeAfter,
 )
+from nireports.interfaces.dmri import DWIHeatmap
 
 
 def init_dwi_report_wf(name="dwi_report_wf"):
@@ -47,7 +48,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
     from nireports.interfaces import PlotMosaic, PlotSpikes
-    from mriqc.interfaces.functional import Spikes
 
     # from mriqc.interfaces.reports import IndividualReport
 
@@ -59,31 +59,25 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
+                "in_epi",
                 "brainmask",
                 "in_avgmap",
                 "in_stdmap",
                 "in_shells",
                 "in_fa",
                 "in_md",
-                # "in_ras",
-                # "hmc_epi",
-                # "epi_mean",
-                # "hmc_fd",
-                # "fd_thres",
-                # "epi_parc",
-                # "in_dvars",
-                # "in_stddev",
-                # "outliers",
-                # "in_spikes",
-                # "in_fft",
-                # "in_iqms",
-                # "mni_report",
-                # "ica_report",
-                # "meta_sidecar",
+                "in_parcellation",
+                "in_bdict",
+                "in_noise",
                 "name_source",
             ]
         ),
         name="inputnode",
+    )
+
+    estimate_sigma = pe.Node(
+        niu.Function(function=_estimate_sigma),
+        name="estimate_sigma",
     )
 
     # Set FD threshold
@@ -194,24 +188,39 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     ])
     # fmt: on
 
+    get_wm = pe.Node(niu.Function(function=_get_wm), name="get_wm")
+    plot_heatmap = pe.Node(
+        DWIHeatmap(scalarmap_label="Shell-wise Fractional Anisotropy (FA)"),
+        name="plot_heatmap",
+    )
+    ds_report_hm = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="heatmap",
+            datatype="figures",
+        ),
+        name="ds_report_hm",
+        run_without_submitting=True,
+    )
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, get_wm, [("in_parcellation", "in_file")]),
+        (inputnode, plot_heatmap, [("in_epi", "in_file"),
+                                   ("in_fa", "scalarmap"),
+                                   ("in_bdict", "b_indices")]),
+        (inputnode, ds_report_hm, [("name_source", "source_file")]),
+        (inputnode, estimate_sigma, [("in_noise", "in_file"),
+                                     ("brainmask", "mask")]),
+        (estimate_sigma, plot_heatmap, [("out", "sigma")]),
+        (get_wm, plot_heatmap, [("out", "mask_file")]),
+        (plot_heatmap, ds_report_hm, [("out_file", "in_file")]),
+
+    ])
+    # fmt: on
+
     if True:
         return workflow
-
-    spmask = pe.Node(
-        niu.Function(
-            input_names=["in_file", "in_mask"],
-            output_names=["out_file", "out_plot"],
-            function=spikes_mask,
-        ),
-        name="SpikesMask",
-        mem_gb=mem_gb * 3.5,
-    )
-
-    spikes_bg = pe.Node(
-        Spikes(no_zscore=True, detrend=False),
-        name="SpikesFinderBgMask",
-        mem_gb=mem_gb * 2.5,
-    )
 
     # Generate crown mask
     # Create the crown mask
@@ -234,8 +243,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     # fmt: off
     workflow.connect([
         # (inputnode, rnode, [("in_iqms", "in_iqms")]),
-        (inputnode, spikes_bg, [("in_ras", "in_file")]),
-        (inputnode, spmask, [("in_ras", "in_file")]),
         (inputnode, bigplot, [("hmc_epi", "in_func"),
                               ("hmc_fd", "fd"),
                               ("fd_thres", "fd_thres"),
@@ -248,8 +255,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
         (dilated_mask, subtract_mask, [("out_mask", "in_base")]),
         (subtract_mask, parcels, [("out_mask", "crown_mask")]),
         (parcels, bigplot, [("out", "in_segm")]),
-        (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
-        (spmask, spikes_bg, [("out_file", "in_mask")]),
         (inputnode, ds_report_carpet, [("name_source", "source_file")]),
         (bigplot, ds_report_carpet, [("out_file", "in_file")]),
     ])
@@ -370,64 +375,6 @@ def init_dwi_report_wf(name="dwi_report_wf"):
     return workflow
 
 
-def spikes_mask(in_file, in_mask=None, out_file=None):
-    """Calculate a mask in which check for :abbr:`EM (electromagnetic)` spikes."""
-    import os.path as op
-
-    import nibabel as nb
-    import numpy as np
-    from nilearn.image import mean_img
-    from nilearn.plotting import plot_roi
-    from scipy import ndimage as nd
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath("{}_spmask{}".format(fname, ext))
-        out_plot = op.abspath("{}_spmask.pdf".format(fname))
-
-    in_4d_nii = nb.load(in_file)
-    orientation = nb.aff2axcodes(in_4d_nii.affine)
-
-    if in_mask:
-        mask_data = np.asanyarray(nb.load(in_mask).dataobj)
-        a = np.where(mask_data != 0)
-        bbox = (
-            np.max(a[0]) - np.min(a[0]),
-            np.max(a[1]) - np.min(a[1]),
-            np.max(a[2]) - np.min(a[2]),
-        )
-        longest_axis = np.argmax(bbox)
-
-        # Input here is a binarized and intersected mask data from previous section
-        dil_mask = nd.binary_dilation(mask_data, iterations=int(mask_data.shape[longest_axis] / 9))
-
-        rep = list(mask_data.shape)
-        rep[longest_axis] = -1
-        new_mask_2d = dil_mask.max(axis=longest_axis).reshape(rep)
-
-        rep = [1, 1, 1]
-        rep[longest_axis] = mask_data.shape[longest_axis]
-        new_mask_3d = np.logical_not(np.tile(new_mask_2d, rep))
-    else:
-        new_mask_3d = np.zeros(in_4d_nii.shape[:3]) == 1
-
-    if orientation[0] in ["L", "R"]:
-        new_mask_3d[0:2, :, :] = True
-        new_mask_3d[-3:-1, :, :] = True
-    else:
-        new_mask_3d[:, 0:2, :] = True
-        new_mask_3d[:, -3:-1, :] = True
-
-    mask_nii = nb.Nifti1Image(new_mask_3d.astype(np.uint8), in_4d_nii.affine, in_4d_nii.header)
-    mask_nii.to_filename(out_file)
-
-    plot_roi(mask_nii, mean_img(in_4d_nii), output_file=out_plot)
-    return out_file, out_plot
-
-
 def _carpet_parcellation(segmentation, crown_mask):
     """Generate the union of two masks."""
     from pathlib import Path
@@ -454,3 +401,37 @@ def _carpet_parcellation(segmentation, crown_mask):
 
 def _get_tr(meta_dict):
     return meta_dict.get("RepetitionTime", None)
+
+
+def _get_wm(in_file, radius=2):
+    from pathlib import Path
+    import numpy as np
+    import nibabel as nb
+    from nipype.utils.filemanip import fname_presuffix
+    from scipy import ndimage as ndi
+    from skimage.morphology import ball
+
+    parc = nb.load(in_file)
+    hdr = parc.header.copy()
+    data = np.array(parc.dataobj, dtype=hdr.get_data_dtype())
+    wm_mask = ndi.binary_erosion((data == 1) | (data == 2), ball(radius))
+
+    hdr.set_data_dtype(np.uint8)
+    out_wm = fname_presuffix(in_file, suffix="wm", newpath=str(Path.cwd()))
+    parc.__class__(
+        wm_mask.astype(np.uint8),
+        parc.affine,
+        hdr,
+    ).to_filename(out_wm)
+    return out_wm
+
+
+def _estimate_sigma(in_file, mask):
+    import numpy as np
+    import nibabel as nb
+
+    msk = np.asanyarray(nb.load(mask).dataobj) > 0.5
+
+    return float(
+        np.median(nb.load(in_file).get_fdata()[msk])
+    )

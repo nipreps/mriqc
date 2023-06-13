@@ -134,6 +134,9 @@ class _NumberOfShellsOutputSpec(_TraitedSpec):
         traits.List(traits.Int, minlen=1),
         minlen=1,
         desc="b-value-wise masks")
+    b_dict = traits.Dict(
+        traits.Int, traits.List(traits.Int), desc="b-values dictionary"
+    )
 
 
 class NumberOfShells(SimpleInterface):
@@ -200,6 +203,11 @@ class NumberOfShells(SimpleInterface):
             np.atleast_1d(np.squeeze(np.argwhere(b_mask)).astype(int)).tolist()
             for b_mask in self._results["b_masks"]
         ]
+
+        self._results["b_dict"] = {
+            int(round(k, 0)): value
+            for k, value in zip([0] + self._results["b_values"], self._results["b_indices"])
+        }
         return runtime
 
 
@@ -346,12 +354,74 @@ class SplitShells(SimpleInterface):
         return runtime
 
 
-class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
+class _FilterShellsInputSpec(_BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc="dwi file")
-    brainmask = File(exists=True, desc="brain mask file")
     bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
     bvec_file = File(exists=True, mandatory=True, desc="b-vectors")
+    b_threshold = traits.Float(1100, usedefault=True, desc="b-values threshold")
+
+
+class _FilterShellsOutputSpec(_TraitedSpec):
+    out_file = File(exists=True, desc="filtered DWI file")
+    out_bvals = traits.List(traits.Float, desc="filtered bvalues")
+    out_bvec_file = File(exists=True, desc="filtered bvecs file")
+    out_bval_file = File(exists=True, desc="filtered bvals file")
+
+
+class FilterShells(SimpleInterface):
+    """Extract DWIs below a given b-value threshold."""
+
+    input_spec = _FilterShellsInputSpec
+    output_spec = _FilterShellsOutputSpec
+
+    def _run_interface(self, runtime):
+        from nipype.utils.filemanip import fname_presuffix
+
+        bvals = np.array(self.inputs.bvals)
+        bval_mask = bvals < self.inputs.b_threshold
+        bvecs = np.loadtxt(self.inputs.bvec_file)[:, bval_mask]
+
+        self._results["out_bvals"] = bvals[bval_mask].astype(float).tolist()
+        self._results["out_bvec_file"] = fname_presuffix(
+            self.inputs.in_file,
+            suffix="_dti.bvec",
+            newpath=runtime.cwd,
+            use_ext=False,
+        )
+        np.savetxt(self._results["out_bvec_file"], bvecs)
+
+        self._results["out_bval_file"] = fname_presuffix(
+            self.inputs.in_file,
+            suffix="_dti.bval",
+            newpath=runtime.cwd,
+            use_ext=False,
+        )
+        np.savetxt(self._results["out_bval_file"], bvals)
+
+        self._results["out_file"] = fname_presuffix(
+            self.inputs.in_file,
+            suffix="_dti",
+            newpath=runtime.cwd,
+        )
+
+        dwi_img = nb.load(self.inputs.in_file)
+        data = np.array(dwi_img.dataobj, dtype=dwi_img.header.get_data_dtype())[..., bval_mask]
+        dwi_img.__class__(
+            data,
+            dwi_img.affine,
+            dwi_img.header,
+        ).to_filename(self._results["out_file"])
+
+        return runtime
+
+
+class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc="dwi file")
+    bvals = traits.List(traits.Float, mandatory=True, desc="bval table")
+    bvec_file = File(exists=True, mandatory=True, desc="b-vectors")
+    brainmask = File(exists=True, desc="brain mask file")
     free_water_model = traits.Bool(False, usedefault=True, desc="use free water model")
+    b_threshold = traits.Float(1100, usedefault=True, desc="use only inner shells of the data")
 
 
 class _DipyDTIOutputSpec(_TraitedSpec):
@@ -371,13 +441,16 @@ class DipyDTI(SimpleInterface):
         from dipy.reconst.fwdti import FreeWaterTensorModel
         from nipype.utils.filemanip import fname_presuffix
 
+        bvals = np.array(self.inputs.bvals)
+        bval_mask = bvals < self.inputs.b_threshold
+
         gtab = gradient_table_from_bvals_bvecs(
-            bvals=self.inputs.bvals,
-            bvecs=np.loadtxt(self.inputs.bvec_file).T,
+            bvals=bvals[bval_mask],
+            bvecs=np.loadtxt(self.inputs.bvec_file).T[bval_mask],
         )
 
         img = nb.load(self.inputs.in_file)
-        data = img.get_fdata(dtype="float32")
+        data = img.get_fdata(dtype="float32")[..., bval_mask]
 
         brainmask = np.ones_like(data[..., 0], dtype=bool)
 
