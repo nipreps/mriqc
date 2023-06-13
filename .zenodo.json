@@ -126,6 +126,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0002-3896-6906",
+      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
+      "name": "Elodie Savary",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0002-0657-6516",
       "affiliation": "Charit\u00e9 Berlin, Berlin, Germany",
       "name": "Johannes Achtzehn",
@@ -164,12 +170,6 @@
       "orcid": "0000-0003-3748-6289",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Daniel Birman",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-3896-6906",
-      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
-      "name": "Elodie Savary",
       "type": "Researcher"
     },
     {

@@ -9,7 +9,7 @@ If you are participating because of your affiliation with another organization (
 
 | **Lastname** | **Name** | **Handle** | **ORCID** | **Affiliation** |
 | --- | --- | --- | --- | --- |
-| Provins | Céline | @celprov | 0000-0002-1668-9629 | Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland |
+| Provins | Céline | @celprov | 0000-0002-1668-9629 | Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland |
 | Hagen | McKenzie P. | @mckenziephagen | 0000-0002-7454-8189 | Psychology Department, University of Washington, Seattle, WA, USA |
 | MacNicol | Eilidh | @eilidhmacnicol | 0000-0003-3715-7012 | Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK |
 | Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland |

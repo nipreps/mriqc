@@ -2,7 +2,8 @@
 ======================
 A new minor release featuring the new individual reports built with the new
 *NiReports* VRS (visual reports system). This means *MRIQC* now uses the same
-package *fMRIPrep* uses for generating its reports.
+package *fMRIPrep* uses for generating its reports. In addition to that,
+this new release also features *Beta* support for diffusion MRI (dMRI). 
 
 CHANGES
 -------
@@ -39,7 +40,7 @@ CHANGES
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
     
-    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Eilidh MacNicol \ :sup:`3`\ ; Dylan Nielson \ :sup:`4`\ ; Jan Varada \ :sup:`5`\ ; Ross W. Blair \ :sup:`2`\ ; Céline Provins \ :sup:`6`\ ; William Triplett \ :sup:`7`\ ; Mathias Goncalves \ :sup:`2`\ ; Nikita Beliy \ :sup:`8`\ ; John A. Lee \ :sup:`9`\ ; Ursula A. Tooley \ :sup:`10`\ ; James D. Kent \ :sup:`11`\ ; Yaroslav O. Halchenko \ :sup:`12`\ ; Bennet Fauber \ :sup:`13`\ ; Taylor Salo \ :sup:`14`\ ; Michael Krause \ :sup:`15`\ ; Pablo Velasco \ :sup:`16`\ ; Thomas Nichols \ :sup:`17`\ ; Adam Huffman \ :sup:`18`\ ; Johannes Achtzehn \ :sup:`19`\ ; Joke Durnez \ :sup:`2`\ ; Satrajit S. Ghosh \ :sup:`20`\ ; Asier Erramuzpe \ :sup:`21`\ ; Benjamin Kay \ :sup:`22`\ ; Daniel Birman \ :sup:`2`\ ; Elodie Savary \ :sup:`23`\ ; McKenzie P. Hagen \ :sup:`24`\ ; Michael G. Clark \ :sup:`25`\ ; Patrick Sadil \ :sup:`26`\ ; Rafael Garcia-Dias \ :sup:`27`\ ; Adam G. Thomas \ :sup:`28`\ ; Russell A. Poldrack \ :sup:`2`\ ; Ariel Rokem \ :sup:`29`\ ; Oscar Esteban \ :sup:`30`\ .
+    Zvi Baratz \ :sup:`1`\ ; Christopher J. Markiewicz \ :sup:`2`\ ; Eilidh MacNicol \ :sup:`3`\ ; Dylan Nielson \ :sup:`4`\ ; Jan Varada \ :sup:`5`\ ; Ross W. Blair \ :sup:`2`\ ; Céline Provins \ :sup:`6`\ ; William Triplett \ :sup:`7`\ ; Mathias Goncalves \ :sup:`2`\ ; Nikita Beliy \ :sup:`8`\ ; John A. Lee \ :sup:`9`\ ; Ursula A. Tooley \ :sup:`10`\ ; James D. Kent \ :sup:`11`\ ; Yaroslav O. Halchenko \ :sup:`12`\ ; Bennet Fauber \ :sup:`13`\ ; Taylor Salo \ :sup:`14`\ ; Michael Krause \ :sup:`15`\ ; Pablo Velasco \ :sup:`16`\ ; Thomas Nichols \ :sup:`17`\ ; Adam Huffman \ :sup:`18`\ ; Elodie Savary \ :sup:`6`\ ; Johannes Achtzehn \ :sup:`19`\ ; Joke Durnez \ :sup:`2`\ ; Satrajit S. Ghosh \ :sup:`20`\ ; Asier Erramuzpe \ :sup:`21`\ ; Benjamin Kay \ :sup:`22`\ ; Daniel Birman \ :sup:`2`\ ; McKenzie P. Hagen \ :sup:`23`\ ; Michael G. Clark \ :sup:`24`\ ; Patrick Sadil \ :sup:`25`\ ; Rafael Garcia-Dias \ :sup:`26`\ ; Adam G. Thomas \ :sup:`27`\ ; Russell A. Poldrack \ :sup:`2`\ ; Ariel Rokem \ :sup:`28`\ ; Oscar Esteban \ :sup:`6`\ .
 
     Affiliations:
 
@@ -48,7 +49,7 @@ CHANGES
       3. Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK
       4. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
       5. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
-      6. Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland
+      6. Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland
       7. University of Florida: Gainesville, Florida, US
       8. CRC ULiege, Liege, Belgium
       9. Quansight, Dublin, Ireland
@@ -65,14 +66,12 @@ CHANGES
       20. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
       21. Computational Neuroimaging Lab, BioCruces Health Research Institute
       22. Washington University School of Medicine, St.Louis, MO, USA
-      23. Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland
-      24. Psychology Department, University of Washington, Seattle, WA, USA
-      25. National Institutes of Health, USA
-      26. Johns Hopkins Bloomberg School of Public Health, MD, USA
-      27. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
-      28. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
-      29. The University of Washington eScience Institute, WA, USA
-      30. Department of Radiology, Lausanne University Hospital and University of Lausanne
+      23. Psychology Department, University of Washington, Seattle, WA, USA
+      24. National Institutes of Health, USA
+      25. Johns Hopkins Bloomberg School of Public Health, MD, USA
+      26. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      27. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      28. The University of Washington eScience Institute, WA, USA
 
 23.0.1 (March 24, 2023)
 =======================
