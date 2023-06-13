@@ -1,11 +1,34 @@
-23.1.0 (TBD)
-============
+23.1.0 (June 13, 2023)
+======================
 A new minor release featuring the new individual reports built with the new
 *NiReports* VRS (visual reports system). This means *MRIQC* now uses the same
 package *fMRIPrep* uses for generating its reports.
 
+CHANGES
+-------
+
+* FIX: Add protection for NaNs and INFs when calculating QI2 (#1112)
+* FIX: ``PlotMosaic`` expects lists, not tuples (#1111)
+* FIX: BIDS database directory handling (#1110)
+* FIX: Remove unused dipy import in the functional interfaces (#1109)
+* FIX: Refine the head mask after removal of FSL BET (#1107)
+* FIX: Inform *SynthStrip* about the desired intraop threads (#1101)
+* FIX: Test broken by #1098 (#1100)
+* FIX: Separate report bootstrap files (anat vs. func) (#1098)
 * FIX: Propagate logging level to subprocesses (#1030)
+* ENH: Incorporate new NiReports' DWI heatmaps (#1119)
+* ENH: More compact of shell-wise summary statistic maps (avg/std) (#1116)
+* ENH: Add a basic DTI fitting into the diffusion workflow (#1115)
+* ENH: MRIQC for DWI (#1113)
+* ENH: Culminate dropping FSL as a dependency (#1108)
+* ENH: Replace FSL FAST with ANTs Atropos for brain tissue segmentation (#1099)
+* ENH: Drop FSL MELODIC (without alternative) (#1106)
+* ENH: Drop FSL BET to estimate the "outskin" (head) mask (#1105)
+* ENH: Drop utilization of "head" mask from template (#1104)
+* ENH: Move templates' probsegs into individual at normalization (#1103)
+* ENH: Improving the resource monitor -- infer PID from process name (#1049) (#1049)
 * ENH: Refactor reports system to use *NiReports* and the general VRS (#1085)
+* MAINT: Move codespell configuration to ``pyproject.toml`` (#1097)
 * MAINT: Update deprecated ``nibabel.spatialimage.get_data()`` calls (#1096)
 
 .. admonition:: Author list for papers based on *MRIQC* 23.0 series
