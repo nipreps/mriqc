@@ -1,4 +1,4 @@
-23.1.0 (June 13, 2023)
+23.1.0 (June 14, 2023)
 ======================
 A new minor release featuring the new individual reports built with the new
 *NiReports* VRS (visual reports system). This means *MRIQC* now uses the same
@@ -8,6 +8,8 @@ this new release also features *Beta* support for diffusion MRI (dMRI).
 CHANGES
 -------
 
+* FIX: Better handling of BIDS cached indexation (#1121)
+* FIX: Make doctest of ``NumberOfShells`` more reliable (#1122)
 * FIX: Add protection for NaNs and INFs when calculating QI2 (#1112)
 * FIX: ``PlotMosaic`` expects lists, not tuples (#1111)
 * FIX: BIDS database directory handling (#1110)
