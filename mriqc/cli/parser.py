@@ -209,6 +209,12 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         help="Path to an existing PyBIDS database folder, for faster indexing "
         "(especially useful for large datasets).",
     )
+    g_bids.add_argument(
+        "--bids-database-wipe",
+        action="store_true",
+        default=False,
+        help="Wipe out previously existing BIDS indexing caches, forcing re-indexing.",
+    )
 
     # General performance
     g_perfm = parser.add_argument_group("Options to handle performance")
