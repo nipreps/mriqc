@@ -21,7 +21,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Helper functions for the workflows."""
-from builtins import range
 
 
 def _tofloat(inlist):
@@ -53,7 +52,7 @@ def thresh_image(in_file, thres=0.5, out_file=None):
         if ext == ".gz":
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath("{}_thresh{}".format(fname, ext))
+        out_file = op.abspath(f"{fname}_thresh{ext}")
 
     im = nb.load(in_file)
     data = np.asanyarray(im.dataobj)

@@ -130,7 +130,7 @@ set i 0
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
                 tclfp.write(
-                    '    SaveTIFF [format "%s/%s-' % (tmp_sub, subid)
+                    f'    SaveTIFF [format "{tmp_sub}/{subid}-'
                     + '%03d.tif" $i]\n'
                 )
                 tclfp.write("    incr i\n")
@@ -160,8 +160,8 @@ set i 0
                     "10",
                     "-loop",
                     "0",
-                    "%s/%s-*.tif" % (tmp_sub, subid),
-                    "%s/%s.gif" % (out_dir, subid),
+                    f"{tmp_sub}/{subid}-*.tif",
+                    f"{out_dir}/{subid}.gif",
                 ]
             )
 
@@ -236,8 +236,8 @@ set i 0
                     "10",
                     "-loop",
                     "0",
-                    "%s/%s-lh-*.tif" % (tmp_sub, subid),
-                    "%s/%s-lh.gif" % (out_dir, subid),
+                    f"{tmp_sub}/{subid}-lh-*.tif",
+                    f"{out_dir}/{subid}-lh.gif",
                 ]
             )
             sp.call(
@@ -247,8 +247,8 @@ set i 0
                     "10",
                     "-loop",
                     "0",
-                    "%s/%s-rh-*.tif" % (tmp_sub, subid),
-                    "%s/%s-rh.gif" % (out_dir, subid),
+                    f"{tmp_sub}/{subid}-rh-*.tif",
+                    f"{out_dir}/{subid}-rh.gif",
                 ]
             )
 
@@ -268,10 +268,10 @@ def _xvfb_run(wait=5, server_args="-screen 0, 1600x1200x24", logs=None):
     return [
         "xvfb-run",
         "-a",  # automatically get a free server number
-        "-f {}.out".format(logs),
-        "-e {}.err".format(logs),
-        "--wait={:d}".format(wait),
-        '--server-args="{}"'.format(server_args),
+        f"-f {logs}.out",
+        f"-e {logs}.err",
+        f"--wait={wait:d}",
+        f'--server-args="{server_args}"',
     ]
 
 

@@ -21,8 +21,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
-from builtins import object  # pylint: disable=W0622
-from io import open
 from sys import version_info
 
 import pandas as pd
@@ -297,5 +295,5 @@ def _format_labels(row, id_labels):
 
     for col_id, prefix in list(BIDS_COMP.items()):
         if col_id in id_labels:
-            crow.append("%s-%s" % (prefix, row[[col_id]].values[0]))
+            crow.append(f"{prefix}-{row[[col_id]].values[0]}")
     return "_".join(crow)

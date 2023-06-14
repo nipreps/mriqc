@@ -20,7 +20,6 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-from builtins import zip
 from os import path as op
 
 import nibabel as nb

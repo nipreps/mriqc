@@ -133,7 +133,7 @@ class DistributedPluginBase(PluginBase):
 
     def __init__(self, plugin_args=None):
         """Initialize runtime attributes to none."""
-        super(DistributedPluginBase, self).__init__(plugin_args=plugin_args)
+        super().__init__(plugin_args=plugin_args)
         self.procs = None
         self.depidx = None
         self.refidx = None
@@ -419,7 +419,7 @@ class MultiProcPlugin(DistributedPluginBase):
         """Initialize the plugin."""
         from mriqc import config
 
-        super(MultiProcPlugin, self).__init__(plugin_args=plugin_args)
+        super().__init__(plugin_args=plugin_args)
         self._taskresult = {}
         self._task_obj = {}
         self._taskid = 0

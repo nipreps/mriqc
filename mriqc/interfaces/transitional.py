@@ -84,7 +84,7 @@ class GCOR(CommandLine):
     output_spec = GCOROutputSpec
 
     def _run_interface(self, runtime):
-        runtime = super(GCOR, self)._run_interface(runtime)
+        runtime = super()._run_interface(runtime)
 
         gcor_line = [
             line.strip()

@@ -330,8 +330,8 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
         if ext == ".gz":
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath("{}_spmask{}".format(fname, ext))
-        out_plot = op.abspath("{}_spmask.pdf".format(fname))
+        out_file = op.abspath(f"{fname}_spmask{ext}")
+        out_plot = op.abspath(f"{fname}_spmask.pdf")
 
     in_4d_nii = nb.load(in_file)
     orientation = nb.aff2axcodes(in_4d_nii.affine)

@@ -31,7 +31,7 @@ import pandas as pd
 try:
     from collections.abc import MutableMapping
 except ImportError:
-    from collections import MutableMapping
+    from collections.abc import MutableMapping
 
 IMTYPES = {
     "T1w": "anat",
@@ -104,9 +104,9 @@ def rotate_files(fname):
     if not op.isfile(fname):
         return
 
-    prev = glob.glob("{}.*{}".format(name, ext))
+    prev = glob.glob(f"{name}.*{ext}")
     prev.insert(0, fname)
-    prev.append("{0}.{1:d}{2}".format(name, len(prev) - 1, ext))
+    prev.append(f"{name}.{len(prev) - 1:d}{ext}")
     for i in reversed(list(range(1, len(prev)))):
         os.rename(prev[i - 1], prev[i])
 
@@ -114,15 +114,15 @@ def rotate_files(fname):
 def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext="json"):
     import os.path as op
 
-    fname = "{}".format(subid)
+    fname = f"{subid}"
     if prefix is not None:
         if not prefix.endswith("_"):
             prefix += "_"
         fname = prefix + fname
     if sesid is not None:
-        fname += "_ses-{}".format(sesid)
+        fname += f"_ses-{sesid}"
     if runid is not None:
-        fname += "_run-{}".format(runid)
+        fname += f"_run-{runid}"
 
     if out_path is not None:
         fname = op.join(out_path, fname)
@@ -139,7 +139,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
         return None
 
     # If some were found, generate the CSV file and group report
-    jsonfiles = list(output_dir.glob("sub-*/**/%s/sub-*_%s.json" % (IMTYPES[mod], mod)))
+    jsonfiles = list(output_dir.glob(f"sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json"))
     if not jsonfiles:
         return None
 
@@ -178,7 +178,7 @@ def generate_tsv(output_dir, mod):
 
     # If some were found, generate the CSV file and group report
     out_tsv = output_dir / ("group_%s.tsv" % mod)
-    jsonfiles = list(output_dir.glob("sub-*/**/%s/sub-*_%s.json" % (IMTYPES[mod], mod)))
+    jsonfiles = list(output_dir.glob(f"sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json"))
     if not jsonfiles:
         return None, out_tsv
 

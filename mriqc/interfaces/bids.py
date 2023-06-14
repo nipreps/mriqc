@@ -59,12 +59,12 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     def __setattr__(self, key, value):
         if key not in self.copyable_trait_names():
             if not isdefined(value):
-                super(IQMFileSinkInputSpec, self).__setattr__(key, value)
+                super().__setattr__(key, value)
             self._outputs[key] = value
         else:
             if key in self._outputs:
                 self._outputs[key] = value
-            super(IQMFileSinkInputSpec, self).__setattr__(key, value)
+            super().__setattr__(key, value)
 
 
 class IQMFileSinkOutputSpec(TraitedSpec):
@@ -77,7 +77,7 @@ class IQMFileSink(SimpleInterface):
     expr = re.compile("^root[0-9]+$")
 
     def __init__(self, fields=None, force_run=True, **inputs):
-        super(IQMFileSink, self).__init__(**inputs)
+        super().__init__(**inputs)
 
         if fields is None:
             fields = []
