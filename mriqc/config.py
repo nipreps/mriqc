@@ -357,6 +357,8 @@ class execution(_Config):
     """An existing path to the dataset, which must be BIDS-compliant."""
     bids_database_dir = None
     """Path to the directory containing SQLite database indices for the input BIDS dataset."""
+    bids_database_wipe = False
+    """Wipe out previously existing BIDS indexing caches, forcing re-indexing."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
     cwd = os.getcwd()
@@ -466,18 +468,27 @@ class execution(_Config):
             )
 
             # Initialize database in a multiprocessing-safe manner
-            cls.bids_database_dir = cls.output_dir / ".bids_db"
-            if not cls.bids_database_dir.exists():
-                _db_path = cls.output_dir / f".bids_db-{cls.run_uuid}"
+            _db_path = (
+                cls.work_dir if cls.participant_label else cls.output_dir
+            ) / f".bids_db-{cls.run_uuid}"
+
+            if cls.bids_database_dir is None:
+                cls.bids_database_dir = (
+                    cls.output_dir / ".bids_db"
+                    if not cls.participant_label else _db_path
+                )
+
+            if cls.bids_database_wipe or not cls.bids_database_dir.exists():
                 _db_path.mkdir(exist_ok=True, parents=True)
 
-                BIDSLayout(
+                cls._layout = BIDSLayout(
                     str(cls.bids_dir),
                     database_path=_db_path,
                     indexer=_indexer,
                 )
 
-                _db_path.replace(cls.bids_database_dir.absolute())
+                if _db_path != cls.bids_database_dir:
+                    _db_path.replace(cls.bids_database_dir.absolute())
 
             cls._layout = BIDSLayout(
                 str(cls.bids_dir),
