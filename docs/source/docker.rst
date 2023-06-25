@@ -7,11 +7,11 @@ Preliminaries
 -------------
 #. Get the Docker Engine (https://docs.docker.com/engine/installation/)
 #. Have your data organized in BIDS
-   (`get BIDS specification <http://bids.neuroimaging.io/>`_,
-   `see BIDS paper <http://dx.doi.org/10.1038/sdata.2016.44>`_).
-#. Validate your data (http://incf.github.io/bids-validator/). You can
-   safely use the BIDS-validator since no data is uploaded to the server,
-   works locally in your browser.
+   (`get BIDS specification <https://bids.neuroimaging.io/>`_,
+   `see BIDS paper <https://doi.org/10.1038/sdata.2016.44>`_).
+#. Validate your data (https://bids-standard.github.io/bids-validator/).
+   You can safely use the BIDS-validator since no data is uploaded to the
+   server, it works locally in your browser.
 
 .. warning ::
 
