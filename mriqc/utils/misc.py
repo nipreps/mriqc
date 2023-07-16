@@ -171,14 +171,18 @@ def generate_pred(derivatives_dir, output_dir, mod):
     return out_csv
 
 
-def generate_tsv(output_dir, mod):
+def generate_tsv(output_dir, mod, task_id=None):
     """
     Generates a tsv file from all json files in the derivatives directory
     """
 
     # If some were found, generate the CSV file and group report
-    out_tsv = output_dir / ("group_%s.tsv" % mod)
+    out_tsv = f"group_{mod}"
     jsonfiles = list(output_dir.glob("sub-*/**/%s/sub-*_%s.json" % (IMTYPES[mod], mod)))
+    if task_id:
+        jsonfiles = [j for j in jsonfiles if f'task-{task_id}' in str(j)]
+        out_tsv += f"_task-{task_id}"
+    out_tsv = output_dir / f"{out_tsv}.tsv"
     if not jsonfiles:
         return None, out_tsv
 

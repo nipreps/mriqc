@@ -23,6 +23,9 @@ report</h1>
 <ul class="simple">
 <li>Date and time: {{ timestamp }}.</li>
 <li>MRIQC version: {{ version }}.</li>
+{% if task_id %}
+<li>Task ID: {{ task_id }}</li>
+{% endif %}
 {% if failed %}
 <li><span class="text-warning">Some individual reports failed</span>:
 {% for f in failed %}
