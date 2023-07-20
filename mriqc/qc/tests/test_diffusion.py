@@ -20,9 +20,6 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-import numpy as np
-from mriqc.mriqc.qc import get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
-
 import pytest
 import os.path as op
 import numpy as np
@@ -35,7 +32,6 @@ from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, 
 from ..diffusion import noise_b0, noise_piesno
 
 import numpy as np
-from mriqc.mriqc.qc import get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
 
 
 class DiffusionData(object):
