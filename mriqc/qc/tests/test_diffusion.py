@@ -65,7 +65,6 @@ class DiffusionData(object):
             out_data.append(this)
         return out_data, gtab
 
-
 @pytest.fixture
 def ddata():
     return DiffusionData()
