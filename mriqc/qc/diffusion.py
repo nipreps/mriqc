@@ -65,7 +65,7 @@ def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
 
     Returns
     ---------
-    float
+    array
     """
     spike_mask = get_spike_mask(data, z_threshold)
 
