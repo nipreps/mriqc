@@ -31,24 +31,28 @@ import numpy as np
 z_threshold = 2
 slice_threshold = .2
 
-def test_get_spike_mask():
-    spike_mask = get_spike_mask(test_data, z_threshold)
+
+def test_get_spike_mask(ddata):
+    img, gtab = ddata.get_fdata()
+    spike_mask = get_spike_mask(img, 2)
 
     assert np.min(np.ravel(spike_mask)) == 0
     assert np.max(np.ravel(spike_mask)) == 1
-    assert spike_mask.shape == test_data.shape
+    assert spike_mask.shape == img.shape
 
 
-def test_get_slice_spike_percentage():
-    slice_spike_percentage = get_slice_spike_percentage(test_data, z_threshold, slice_threshold)
+def test_get_slice_spike_percentage(ddata):
+    img, gtab = ddata.get_fdata()
+    slice_spike_percentage = get_slice_spike_percentage(img, 2, .2)
 
     assert np.min(np.ravel(slice_spike_percentage)) >= 0
     assert np.max(np.ravel(slice_spike_percentage)) <= 1
-    assert len(slice_spike_percentage) == test_data.ndim
+    assert len(slice_spike_percentage) == img.ndim
 
 
-def test_get_global_spike_percentage():
-    global_spike_percentage = get_global_spike_percentage(test_data, z_threshold)
+def test_get_global_spike_percentage(ddata):
+    img, gtab = ddata.get_fdata()
+    global_spike_percentage = get_global_spike_percentage(img, 2)
 
     assert np.min(np.ravel(global_spike_percentage)) >= 0
     assert np.max(np.ravel(global_spike_percentage)) <= 1
