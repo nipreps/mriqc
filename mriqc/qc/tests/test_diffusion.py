@@ -20,6 +20,31 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+import pytest
+import nibabel as nib
+from dipy.core.gradients import gradient_table
+from dipy.data.fetcher import fetch_sherbrooke_3shell
+import os.path as op
+from ..diffusion import noise_func
 
-def test_noise_function():
-    pass
+class DiffusionData(object):
+    def get_data(self):
+        """
+        Generate test data
+        """
+        _, path = fetch_sherbrooke_3shell()
+        fnifti = op.join(path, 'HARDI193.nii.gz')
+        fnifti, bval, bvec = [op.join(path, f'HARDI193.{ext}') for
+                              ext in ["nii.gz", "bval", "bvec"]]
+        img = nib.load(fnifti)
+        gtab = gradient_table(bval, bvec)
+        return img, gtab
+
+
+@pytest.fixture
+def ddata():
+    return DiffusionData()
+
+def test_noise_function(ddata):
+    img, gtab = ddata.get_fdata()
+    noise_func(img, gtab)

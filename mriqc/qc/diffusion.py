@@ -25,7 +25,7 @@
 Image quality metrics for diffusion MRI data
 ============================================
 """
-# XXX It's ok to require a mask (brain, wm, cc_mask)
 
-def noise_func():
+
+def noise_func(img, gtab):
     pass
