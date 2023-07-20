@@ -22,6 +22,9 @@
 #     https://www.nipreps.org/community/licensing/
 #
 
+import numpy as np
+
+
 """
 Image quality metrics for diffusion MRI data
 ============================================
