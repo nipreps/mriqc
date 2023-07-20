@@ -29,9 +29,6 @@ Image quality metrics for diffusion MRI data
 ============================================
 """
 
-def noise_func(img, gtab):
-    pass
-
 def get_spike_mask(data, z_threshold=3):
     """
     Return binary mask of spike/no spike
@@ -68,7 +65,7 @@ def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
 
     Returns
     ---------
-    array
+    float
     """
     spike_mask = get_spike_mask(data, z_threshold)
 
