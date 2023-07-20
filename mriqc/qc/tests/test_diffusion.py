@@ -20,42 +20,18 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-
-import pytest
-import nibabel as nib
-from dipy.core.gradients import gradient_table
-from dipy.data.fetcher import fetch_sherbrooke_3shell
-import os.path as op
-from ..diffusion import noise_func
-
 import numpy as np
 from mriqc.mriqc.qc import get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
 
 
-class DiffusionData(object):
-    def get_data(self):
-        """
-        Generate test data
-        """
-        _, path = fetch_sherbrooke_3shell()
-        fnifti = op.join(path, 'HARDI193.nii.gz')
-        fnifti, bval, bvec = [op.join(path, f'HARDI193.{ext}') for
-                              ext in ["nii.gz", "bval", "bvec"]]
-        img = nib.load(fnifti)
-        gtab = gradient_table(bval, bvec)
-        return img, gtab
+slice = np.array([[1, 1, 10, 1], [1, 10, 1, 1], [1, 10, 1, 1], [1, 1, 1, 1]])
+test_data = np.array([slice, slice, slice, slice, slice])
 
-
-@pytest.fixture
-def ddata():
-    return DiffusionData()
-
-def test_noise_function(ddata):
-    img, gtab = ddata.get_fdata()
-    noise_func(img, gtab)
+z_threshold = 2
+slice_threshold = .2
 
 def test_get_spike_mask():
-    spike_mask = get_spike_mask(ddata(), 2)
+    spike_mask = get_spike_mask(test_data, z_threshold)
 
     assert np.min(np.ravel(spike_mask)) == 0
     assert np.max(np.ravel(spike_mask)) == 1
@@ -63,15 +39,15 @@ def test_get_spike_mask():
 
 
 def test_get_slice_spike_percentage():
-    slice_spike_percentage = get_slice_spike_percentage(ddata(), 2, .2)
+    slice_spike_percentage = get_slice_spike_percentage(test_data, z_threshold, slice_threshold)
 
     assert np.min(np.ravel(slice_spike_percentage)) >= 0
     assert np.max(np.ravel(slice_spike_percentage)) <= 1
-    assert len(slice_spike_percentage) == ddata().ndim
+    assert len(slice_spike_percentage) == test_data.ndim
 
 
 def test_get_global_spike_percentage():
-    global_spike_percentage = get_global_spike_percentage(ddata(), 2)
+    global_spike_percentage = get_global_spike_percentage(test_data, z_threshold)
 
     assert np.min(np.ravel(global_spike_percentage)) >= 0
     assert np.max(np.ravel(global_spike_percentage)) <= 1
