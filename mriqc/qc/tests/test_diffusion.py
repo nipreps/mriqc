@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 import pytest
+import os.path as op
 import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
@@ -28,6 +29,7 @@ from dipy.data.fetcher import fetch_sherbrooke_3shell
 from dipy.core.gradients import unique_bvals_magnitude, round_bvals
 import os.path as op
 from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
+from ..diffusion import noise_b0, noise_piesno
 
 class DiffusionData(object):
     def get_data(self):
@@ -54,16 +56,9 @@ class DiffusionData(object):
             out_data.append(this)
         return out_data, gtab
 
-
 @pytest.fixture
 def ddata():
     return DiffusionData()
-
-
-def test_noise_function(ddata):
-    img, gtab = ddata.get_fdata()
-    noise_func(img, gtab)
-
 
 def test_get_spike_mask(ddata):
     img, gtab = ddata.get_fdata()
@@ -94,3 +89,13 @@ def test_get_global_spike_percentage(ddata):
 def test_with_shelled_data(ddata):
     shelled_data, gtab = ddata.shelled_data()
     noise_func_for_shelled_data(shelled_data, gtab)
+
+
+def test_noise_b0(ddata):
+    data, gtab = ddata.get_data()
+    noise_b0(data, gtab)
+
+
+def test_noise_piesno(ddata):
+    data, gtab = ddata.get_data()
+    noise_piesno(data)
