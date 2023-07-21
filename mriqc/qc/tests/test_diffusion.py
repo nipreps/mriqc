@@ -80,8 +80,34 @@ def test_get_spike_mask(ddata):
 
 
 def test_noise_function(ddata):
-    data, gtab = ddata.get_data()
-    noise_func(data, gtab)
+    img, gtab = ddata.get_fdata()
+    noise_func(img, gtab)
+
+
+def test_get_spike_mask(ddata):
+    img, gtab = ddata.get_fdata()
+    spike_mask = get_spike_mask(img, 2)
+
+    assert np.min(np.ravel(spike_mask)) == 0
+    assert np.max(np.ravel(spike_mask)) == 1
+    assert spike_mask.shape == img.shape
+
+
+def test_get_slice_spike_percentage(ddata):
+    img, gtab = ddata.get_fdata()
+    slice_spike_percentage = get_slice_spike_percentage(img, 2, .2)
+
+    assert np.min(slice_spike_percentage) >= 0
+    assert np.max(slice_spike_percentage) <= 1
+    assert len(slice_spike_percentage) == img.ndim
+
+
+def test_get_global_spike_percentage(ddata):
+    img, gtab = ddata.get_fdata()
+    global_spike_percentage = get_global_spike_percentage(img, 2)
+
+    assert global_spike_percentage >= 0
+    assert global_spike_percentage <= 1
 
 
 def test_get_global_spike_percentage(ddata):
