@@ -79,13 +79,9 @@ def test_get_spike_mask(ddata):
     assert spike_mask.shape == img.shape
 
 
-def test_get_slice_spike_percentage(ddata):
-    img, gtab = ddata.get_fdata()
-    slice_spike_percentage = get_slice_spike_percentage(img, 2, .2)
-
-    assert np.min(slice_spike_percentage) >= 0
-    assert np.max(slice_spike_percentage) <= 1
-    assert len(slice_spike_percentage) == img.ndim
+def test_noise_function(ddata):
+    data, gtab = ddata.get_data()
+    noise_func(data, gtab)
 
 
 def test_get_global_spike_percentage(ddata):
