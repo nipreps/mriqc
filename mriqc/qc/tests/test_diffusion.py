@@ -34,6 +34,7 @@ from ..diffusion import noise_b0, noise_piesno
 import numpy as np
 
 
+
 class DiffusionData(object):
     def get_data(self):
         """
