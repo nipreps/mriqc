@@ -28,8 +28,6 @@ from dipy.data.fetcher import fetch_sherbrooke_3shell
 from dipy.core.gradients import unique_bvals_magnitude, round_bvals
 import os.path as op
 from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
-import numpy as np
-
 
 class DiffusionData(object):
     def get_data(self):
