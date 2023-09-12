@@ -40,8 +40,9 @@ jobs:
     - uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: pip-cache-${{ hashFiles('**/requirements.txt') }}
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
+          pip-cache-${{ matrix.python-version }}
           pip-cache-
     - name: Interpolate version
       run: |
