@@ -55,6 +55,7 @@ jobs:
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/pip
     - name: Install in confined environment [sdist]
       run: |
         python -m venv /tmp/install_sdist
@@ -63,6 +64,7 @@ jobs:
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/install_sdist
     - name: Install in confined environment [wheel]
       run: |
         python -m venv /tmp/install_wheel
@@ -71,6 +73,7 @@ jobs:
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/install_wheel
 
   flake8:
     runs-on: ubuntu-latest
