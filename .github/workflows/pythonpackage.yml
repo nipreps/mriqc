@@ -67,7 +67,7 @@ jobs:
       run: |
         python -m venv /tmp/install_wheel
         source /tmp/install_wheel/bin/activate
-        python -m pip install /dist/mriqc*.whl
+        python -m pip install dist/mriqc*.whl
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
