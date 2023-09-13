@@ -359,7 +359,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - t1w-v6-{{ epoch }}
+            - t1w-v6-{{ .Branch }}
+            - t1w-v6-master
             - t1w-v6-
 
       - run:
@@ -397,7 +398,7 @@ jobs:
           path: /tmp/t1w/misc
 
       - save_cache:
-          key: t1w-v6-{{ epoch }}
+          key: t1w-v6-{{ .Branch }}
           paths:
             - /tmp/t1w/work
 
@@ -519,7 +520,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v5-{{ epoch }}
+            - bold-v5-{{ .Branch }}
+            - bold-v5-master
             - bold-v5-
 
       - run:
@@ -555,7 +557,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v5-{{ epoch }}
+          key: bold-v5-{{ .Branch }}
           paths:
             - /tmp/bold/work
 
