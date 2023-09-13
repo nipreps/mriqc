@@ -244,7 +244,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
     direction = direction.lower()
     if direction[-1] not in ["x", "y", "all"]:
         raise Exception(
-            "Unknown direction {}, should be one of x, -x, y, -y, all".format(direction)
+            f"Unknown direction {direction}, should be one of x, -x, y, -y, all"
         )
 
     if direction == "all":
@@ -256,7 +256,7 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
                 if ext == ".gz":
                     fname, ext2 = op.splitext(fname)
                     ext = ext2 + ext
-                ofile = "{0}_{1}{2}".format(fname, newdir, ext)
+                ofile = f"{fname}_{newdir}{ext}"
             result += [gsr(epi_data, mask, newdir, ref_file=ref_file, out_file=ofile)]
         return result
 

@@ -23,7 +23,6 @@
 """
 Anatomical tests
 """
-from builtins import object
 from shutil import rmtree
 from tempfile import mkdtemp
 
@@ -35,7 +34,7 @@ from scipy.stats import rice
 from ..anatomical import art_qi2
 
 
-class GroundTruth(object):
+class GroundTruth:
     def get_data(self, sigma, noise="normal"):
         """Generates noisy 3d data"""
         size = (50, 50, 50)

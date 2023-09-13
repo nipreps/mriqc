@@ -24,7 +24,6 @@
 import glob
 import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter
-from builtins import range  # pylint: disable=W0622
 from random import shuffle
 from textwrap import dedent
 

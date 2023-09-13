@@ -771,7 +771,7 @@ def _apply_bias_correction(in_file, bias_image, out_file=None):
         if ext == ".gz":
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath("{}_inu{}".format(fname, ext))
+        out_file = op.abspath(f"{fname}_inu{ext}")
 
     out_img.to_filename(out_file)
     return out_file
@@ -788,7 +788,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
         if ext == ".gz":
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath("{}_bin{}".format(fname, ext))
+        out_file = op.abspath(f"{fname}_bin{ext}")
 
     nii = nb.load(in_file)
     data = nii.get_fdata() > threshold

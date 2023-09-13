@@ -127,7 +127,7 @@ def fetch(args: Tuple[str, str, str, str]) -> Tuple[str, str]:
     pkg_id = [u[9:] for u in url.split("/") if u.startswith("NITRC_IR_")][0]
     sub_file = op.join(tmpdir, "%s.zip" % pkg_id)
 
-    cmd = ["curl", "-s", "-u", "%s:%s" % (user, password), "-o", sub_file, url]
+    cmd = ["curl", "-s", "-u", f"{user}:{password}", "-o", sub_file, url]
     sp.check_call(cmd)
     sp.check_call(["unzip", "-qq", "-d", tmpdir, "-u", sub_file])
 

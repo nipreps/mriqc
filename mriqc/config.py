@@ -397,7 +397,7 @@ class execution(_Config):
     """Enable resource monitor."""
     run_id = None
     """Filter input dataset by run identifier."""
-    run_uuid = "%s_%s" % (strftime("%Y%m%d-%H%M%S"), uuid4())
+    run_uuid = "{}_{}".format(strftime("%Y%m%d-%H%M%S"), uuid4())
     """Unique identifier of this particular run."""
     session_id = None
     """Filter input dataset by session identifier."""
