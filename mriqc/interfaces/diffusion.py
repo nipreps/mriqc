@@ -514,7 +514,7 @@ def _rms(estimator, X):
     Callable to pass to GridSearchCV that will calculate a distance score.
 
     To consider: using `MDL
-    <http://erikerlandson.github.io/blog/2016/08/03/x-medoids-using-minimum-description-length-to-identify-the-k-in-k-medoids/>`__
+    <https://erikerlandson.github.io/blog/2016/08/03/x-medoids-using-minimum-description-length-to-identify-the-k-in-k-medoids/>`__
 
     """
     if len(np.unique(estimator.cluster_centers_)) < estimator.n_clusters:

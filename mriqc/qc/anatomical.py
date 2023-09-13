@@ -171,7 +171,7 @@ Other measures
 
   .. [Dietrich2007] Dietrich et al., *Measurement of SNRs in MR images: influence
     of multichannel coils, parallel imaging and reconstruction filters*, JMRI 26(2):375--385.
-    2007. doi:`10.1002/jmri.20969 <http://dx.doi.org/10.1002/jmri.20969>`_.
+    2007. doi:`10.1002/jmri.20969 <https://doi.org/10.1002/jmri.20969>`_.
 
   .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
     a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
@@ -180,15 +180,15 @@ Other measures
   .. [Magnota2006] Magnotta, VA., & Friedman, L., *Measurement of signal-to-noise
     and contrast-to-noise in the fBIRN multicenter imaging study*.
     J Dig Imag 19(2):140-147, 2006. doi:`10.1007/s10278-006-0264-x
-    <http://dx.doi.org/10.1007/s10278-006-0264-x>`_.
+    <https://doi.org/10.1007/s10278-006-0264-x>`_.
 
   .. [Mortamet2009] Mortamet B et al., *Automatic quality assessment in
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
-    2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
+    2009. doi:`10.1002/mrm.21992 <https://doi.org/10.1002/mrm.21992>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*,
     IEEE Trans Med Imag, 29(6):1310-20,
-    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
+    2010. doi:`10.1109/TMI.2010.2046908 <https://doi.org/10.1109/TMI.2010.2046908>`_.
 
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
