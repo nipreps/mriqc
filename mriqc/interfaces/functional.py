@@ -141,7 +141,7 @@ class FunctionalQC(SimpleInterface):
 
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
-        num_fd = np.float((fd_data > self.inputs.fd_thres).sum())
+        num_fd = (fd_data > self.inputs.fd_thres).sum()
         self._results["fd"] = {
             "mean": float(fd_data.mean()),
             "num": int(num_fd),
