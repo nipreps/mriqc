@@ -359,8 +359,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - t1w-v5-{{ epoch }}
-            - t1w-v5-
+            - t1w-v6-{{ epoch }}
+            - t1w-v6-
 
       - run:
           name: Remove old, cached configs
@@ -397,7 +397,7 @@ jobs:
           path: /tmp/t1w/misc
 
       - save_cache:
-          key: t1w-v5-{{ epoch }}
+          key: t1w-v6-{{ epoch }}
           paths:
             - /tmp/t1w/work
 
@@ -519,8 +519,8 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v4-{{ epoch }}
-            - bold-v4-
+            - bold-v5-{{ epoch }}
+            - bold-v5-
 
       - run:
           name: Remove old, cached configs
@@ -555,7 +555,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v4-{{ epoch }}
+          key: bold-v5-{{ epoch }}
           paths:
             - /tmp/bold/work
 
