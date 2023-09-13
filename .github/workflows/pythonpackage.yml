@@ -10,45 +10,40 @@ on:
   pull_request:
     branches: [ master, 'maint/*' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build:
     if: "!startsWith(github.ref, 'refs/tags/') && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.11']
-        pip: ["pip==21.2", "pip~=23.0"]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Fetch all tags (for setuptools_scm to work)
-      run: |
-        /usr/bin/git -c protocol.version=2 fetch --tags --prune --unshallow origin
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1
-      with:
-        path: $HOME/.cache/pip
-        key: pip-cache-v1
-        restore-keys: |
-          pip-cache-
-    - name: Build in confined environment and interpolate version
+    - name: Build and check package
       run: |
-        python -m venv /tmp/buildenv
-        source /tmp/buildenv/bin/activate
-        python -m pip install -U build hatch hatchling pip twine docutils wheel
-        
-        python -m build -s -w
-        python -m twine check dist/mriqc-*
-        mv dist /tmp/package
-        rm -rf mriqc.egg-info/
+        pipx run build
+        pipx run twine check dist/mriqc-*
+    - name: Interpolate version
+      run: |
         # Interpolate version
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
           TAG=${GITHUB_REF##*/}
         fi
-        THISVERSION=$( python -m hatch version | tail -n1 | xargs )
+        THISVERSION=$( pipx run hatch version | tail -n1 | xargs )
         THISVERSION=${TAG:-$THISVERSION}
         echo "Expected VERSION: \"${THISVERSION}\""
         echo "THISVERSION=${THISVERSION}" >> $GITHUB_ENV
@@ -56,50 +51,40 @@ jobs:
       run: |
         python -m venv /tmp/pip
         source /tmp/pip/bin/activate
-        python -m pip install -U hatch hatchling "${{ matrix.pip }}" wheel "cython==3.0.0b2" "numpy ~=1.20" scipy
         python -m pip install .
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
-        echo "VERSION: \"${THISVERSION}\""
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/pip
     - name: Install in confined environment [sdist]
       run: |
         python -m venv /tmp/install_sdist
         source /tmp/install_sdist/bin/activate
-        python -m pip install -U hatch hatchling "${{ matrix.pip }}" wheel "cython==3.0.0b2" "numpy ~=1.20" scipy
-        python -m pip install /tmp/package/mriqc*.tar.gz
+        python -m pip install dist/mriqc*.tar.gz
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
-        echo "VERSION: \"${THISVERSION}\""
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/install_sdist
     - name: Install in confined environment [wheel]
       run: |
         python -m venv /tmp/install_wheel
         source /tmp/install_wheel/bin/activate
-        python -m pip install -U hatch hatchling "${{ matrix.pip }}" wheel "cython==3.0.0b2" "numpy ~=1.20" scipy
-        python -m pip install /tmp/package/mriqc*.whl
+        python -m pip install dist/mriqc*.whl
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
+        rm -r /tmp/install_wheel
 
   flake8:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
-    - run: pip install flake8-pyproject 
-    - run: flake8 mriqc/
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+    - run: pipx run flake8-pyproject mriqc/
 
   codespell:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
-    - run: pip install codespell tomli
-    - run: codespell
+    - uses: actions/checkout@v4
+    - uses: codespell-project/actions-codespell@v2
