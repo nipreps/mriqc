@@ -34,7 +34,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
-        argparse._sys.argv[0] = "%s -m %s" % (argparse._sys.executable, module)
+        argparse._sys.argv[0] = f"{argparse._sys.executable} -m {module}"
 
     pid = args.name if args.name.isnumeric() else FindProcess(args.name)
 

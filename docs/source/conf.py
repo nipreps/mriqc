@@ -322,7 +322,7 @@ intersphinx_mapping = {
     "nibabel": ("https://nipy.org/nibabel/", None),
     "nipype": ("https://nipype.readthedocs.io/en/latest/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/dev", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/dev/", None),
     "python": ("https://docs.python.org/3/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
 }

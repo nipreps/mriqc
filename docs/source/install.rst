@@ -68,6 +68,16 @@ installation should be as easy as::
 After installation, make sure that all the necessary binaries are added to the ``$PATH`` environment
 variable, for the user that will run ``mriqc``.
 
+Please note that MRIQC requires Freesurfer's Synthstrip tool. If you already have Freesurfer installed,
+you can get the requirements with: ::
+
+  wget https://github.com/freesurfer/freesurfer/blob/dev/mri_synthstrip/synthstrip.1.pt -P <path_to_your_freesurfer_dir>/models/
+
+.. warning::
+
+        You will get the error `The 'model' trait of a _SynthStripInputSpec instance must be a pathlike object or string representing an existing file, but a value of '<undefined>' <class 'str'> was specified.`
+        if you do not install the previous Freesurfer requirement.
+
 Otherwise, you can follow each software installation guide:
 `FSL <http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation>`_,
 `AFNI <https://afni.nimh.nih.gov/afni/doc/howto/0>`_,

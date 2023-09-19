@@ -33,7 +33,7 @@ a group report is generated. The group report shows a scatter plot for each of t
 :abbr:`IQMs (image quality metrics)`, so it is particularly easy to identify the cases that
 are outliers for each metric. The plots are interactive, such that clicking on any particular
 sample opens the corresponding individual report of that case. Examples of group and individual
-reports for the ABIDE dataset are available online at `mriqc.org <http://mriqc.org>`_.
+reports for the ABIDE dataset are available online at `mriqc.org <https://mriqc.readthedocs.io/>`_.
 
 .. toctree::
     :maxdepth: 3

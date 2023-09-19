@@ -11,7 +11,7 @@ MRIQC is an open-source project, developed under the following
 software engineering principles:
 
 #. **Modularity and integrability**: MRIQC implements a
-   `nipype <http://nipype.readthedocs.io>`_ workflow to integrate modular
+   `nipype <https://nipype.readthedocs.io>`_ workflow to integrate modular
    sub-workflows that rely upon third party software toolboxes such as
    ANTs and AFNI.
 
@@ -20,8 +20,8 @@ software engineering principles:
    processed derivatives.
 
 #. **Interoperability and standards**: MRIQC follows the the `brain imaging data structure
-   (BIDS) <http://bids.neuroimaging.io>`_, and it adopts the `BIDS-App
-   <http://bids-apps.neuroimaging.io>`_ standard.
+   (BIDS) <https://bids.neuroimaging.io>`_, and it adopts the `BIDS-App
+   <https://bids-apps.neuroimaging.io>`_ standard.
 
 #. **Reliability and robustness**: the software undergoes frequent vetting sprints
    by testing its robustness against data variability (acquisition parameters,
@@ -39,7 +39,7 @@ Citation
 
 Support and communication
 -------------------------
-The documentation of this project is found here: http://mriqc.readthedocs.io/.
+The documentation of this project is found here: https://mriqc.readthedocs.io/.
 
 Users can get help using the `mriqc-users google group <https://groups.google.com/forum/#!forum/mriqc-users>`_.
 
@@ -54,7 +54,7 @@ of the *NiPreps framework*.
 
 *MRIQC* originally derives from, and hence is heavily influenced by, the
 `PCP Quality Assessment Protocol
-<http://preprocessed-connectomes-project.github.io/quality-assessment-protocol>`__.
+<http://preprocessed-connectomes-project.org/quality-assessment-protocol/>`__.
 Please check the ``NOTICE`` file for further information.
 
 License

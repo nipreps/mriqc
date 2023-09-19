@@ -9,7 +9,7 @@ Psychology at Stanford University, Stanford, CA, US.
 
 This software contains code ultimately derived from the
 PCP Quality Assessment Protocol (QAP;
-http://preprocessed-connectomes-project.github.io/quality-assessment-protocol)
+http://preprocessed-connectomes-project.org/quality-assessment-protocol)
 by C. Craddock, S. Giavasis, D. Clark, Z. Shezhad, and J. Pellman.
 
 This software is also distributed as a Docker container image.
