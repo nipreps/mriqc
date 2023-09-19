@@ -337,17 +337,15 @@ class DistributedPluginBase(PluginBase):
     def _generate_dependency_list(self, graph):
         """Generate a dependency list for a list of graphs."""
         import numpy as np
-        import networkx as nx
         from nipype.pipeline.engine.utils import topological_sort
 
+        try:
+            from networkx import to_scipy_sparse_array
+        except ImportError:  # NetworkX < 2.7
+            from networkx import to_scipy_sparse_matrix as to_scipy_sparse_array
+
         self.procs, _ = topological_sort(graph)
-
-        # In different versions of networkx, the function is called differently
-        to_sparse = getattr(nx, 'to_scipy_sparse_array', None) or getattr(
-            nx, 'to_scipy_sparse_matrix'
-        )
-        self.depidx = to_sparse(graph, nodelist=self.procs, format="lil")
-
+        self.depidx = to_scipy_sparse_array(graph, nodelist=self.procs, format="lil")
         self.refidx = self.depidx.astype(int)
         self.proc_done = np.zeros(len(self.procs), dtype=bool)
         self.proc_pending = np.zeros(len(self.procs), dtype=bool)
