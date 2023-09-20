@@ -48,6 +48,7 @@ from nipype.pipeline import engine as pe
 from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
+DEFAULT_MEMORY_MIN_GB = 0.01
 
 def dmri_qc_workflow(name="dwiMRIQC"):
     """
@@ -465,8 +466,9 @@ def init_dmriref_wf(
     """
     from niworkflows.interfaces.bold import NonsteadyStatesDetector
     from niworkflows.interfaces.images import RobustAverage
+    from niworkflows.interfaces.header import ValidateImage
 
-    workflow = Workflow(name=name)
+    workflow = pe.Workflow(name=name)
     workflow.__desc__ = f"""\
         First, a reference volume was generated{' from the shortest echo of the BOLD run' * multiecho},
         using a custom methodology of *fMRIPrep*, for use in head motion correction.
