@@ -95,8 +95,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=["in_file"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
     datalad_get = pe.Node(
@@ -144,7 +143,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     drift = pe.Node(CorrectSignalDrift(), name="drift")
 
     # 2. Generate B0 reference
-    dwi_reference_wf = init_dmriref_wf()
+    dwi_reference_wf = init_dmriref_wf(name="dwi_reference_wf")
 
     # 3. Calculate brainmask
     dmri_bmsk = dmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
@@ -447,12 +446,6 @@ def init_dmriref_wf(
     ----------
     in_file : :obj:`str`
         dMRI series NIfTI file
-    multiecho : :obj:`bool`
-        If multiecho data was supplied, data from the first echo will be selected
-    name : :obj:`str`
-        Name of workflow (default: ``init_dmriref_wf``)
-
-    Inputs
     ------
     in_file : str
         series NIfTI file
@@ -469,17 +462,8 @@ def init_dmriref_wf(
     from niworkflows.interfaces.header import ValidateImage
 
     workflow = pe.Workflow(name=name)
-    workflow.__desc__ = f"""\
-        First, a reference volume was generated{' from the shortest echo of the BOLD run' * multiecho},
-        using a custom methodology of *fMRIPrep*, for use in head motion correction.
-        """
-
     inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "dummy_scans"]),
-        name="inputnode",
-    )
-    outputnode = pe.Node(
-        niu.IdentityInterface(
+        niu.IdentityInterface(fields=["in_file"]),
             fields=[
                 "in_file",
                 "ref_file",
@@ -491,7 +475,7 @@ def init_dmriref_wf(
 
     # Simplify manually setting input image
     if in_file is not None:
-        inputnode.inputs.bold_file = in_file
+        niu.IdentityInterface(fields=["in_file"]),
 
     val_bold = pe.Node(
         ValidateImage(),
