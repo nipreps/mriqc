@@ -99,14 +99,12 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     inputnode.iterables = [("in_file", dataset)]
 
     datalad_get = pe.Node(
-        DataladIdentityInterface(
-            fields=["in_file"], dataset_path=config.execution.bids_dir),
+        DataladIdentityInterface(fields=["in_file"], dataset_path=config.execution.bids_dir),
         name="datalad_get",
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
+        niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
         name="outputnode",
     )
 
@@ -122,11 +120,9 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     # Workflow --------------------------------------------------------
 
     # 1. Read metadata & bvec/bval, estimate number of shells, extract and split B0s
-    meta = pe.Node(ReadDWIMetadata(
-        index_db=config.execution.bids_database_dir), name="metadata")
+    meta = pe.Node(ReadDWIMetadata(index_db=config.execution.bids_database_dir), name="metadata")
     shells = pe.Node(NumberOfShells(), name="shells")
-    get_shells = pe.MapNode(
-        ExtractB0(), name="get_shells", iterfield=["b0_ixs"])
+    get_shells = pe.MapNode(ExtractB0(), name="get_shells", iterfield=["b0_ixs"])
     hmc_shells = pe.MapNode(
         Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
         name="hmc_shells",
@@ -287,8 +283,7 @@ def compute_iqms(name="ComputeIQMs"):
         name="outputnode",
     )
 
-    meta = pe.Node(ReadSidecarJSON(
-        index_db=config.execution.bids_database_dir), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name="metadata")
 
     addprov = pe.Node(
         AddProvenance(modality="dwi"),
@@ -372,11 +367,9 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
     from mriqc.interfaces.synthstrip import SynthStrip
     from mriqc.workflows.anatomical.base import _apply_bias_correction
 
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=["in_file"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     outputnode = pe.Node(
-        niu.IdentityInterface(
-            fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
+        niu.IdentityInterface(fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
         name="outputnode",
     )
 
@@ -398,8 +391,7 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
     )
 
     final_masked = pe.Node(ApplyMask(), name="final_masked")
-    final_inu = pe.Node(niu.Function(
-        function=_apply_bias_correction), name="final_inu")
+    final_inu = pe.Node(niu.Function(function=_apply_bias_correction), name="final_inu")
 
     workflow = pe.Workflow(name=name)
     # fmt: off
@@ -462,14 +454,8 @@ def init_dmriref_wf(
     from niworkflows.interfaces.header import ValidateImage
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file"]),
-            fields=[
-                "in_file",
-                "ref_file",
-                "validation_report",
-            ]
-        ),
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]),name="inputnode")
+    outputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
         name="outputnode",
     )
 
@@ -520,10 +506,8 @@ def hmc_workflow(name="dMRI_HMC"):
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=["in_file", "reference"]), name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(
-        fields=["out_file", "out_fd"]), name="outputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "reference"]), name="inputnode")
+    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     # calculate hmc parameters
     hmc = pe.Node(
@@ -592,8 +576,7 @@ def epi_mni_align(name="SpatialNormalization"):
         name="outputnode",
     )
 
-    n4itk = pe.Node(N4BiasFieldCorrection(
-        dimension=3, copy_header=True), name="SharpenEPI")
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI")
 
     norm = pe.Node(
         RobustMNINormalization(
@@ -613,8 +596,7 @@ def epi_mni_align(name="SpatialNormalization"):
 
     if config.workflow.species.lower() == "human":
         norm.inputs.reference_image = str(
-            get_template(config.workflow.template_id,
-                         resolution=2, suffix="boldref")
+            get_template(config.workflow.template_id, resolution=2, suffix="boldref")
         )
         norm.inputs.reference_mask = str(
             get_template(
@@ -630,8 +612,7 @@ def epi_mni_align(name="SpatialNormalization"):
 
         n4itk.inputs.shrink_factor = 1
         n4itk.inputs.n_iterations = [50] * 4
-        norm.inputs.reference_image = str(get_template(
-            config.workflow.template_id, suffix="T2w"))
+        norm.inputs.reference_image = str(get_template(config.workflow.template_id, suffix="T2w"))
         norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
@@ -640,8 +621,7 @@ def epi_mni_align(name="SpatialNormalization"):
             )[0]
         )
 
-        bspline_grid = pe.Node(niu.Function(
-            function=_bspline_grid), name="bspline_grid")
+        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name="bspline_grid")
 
         # fmt: off
         workflow.connect([
