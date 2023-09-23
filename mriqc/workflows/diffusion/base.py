@@ -50,6 +50,7 @@ from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
 DEFAULT_MEMORY_MIN_GB = 0.01
 
+
 def dmri_qc_workflow(name="dwiMRIQC"):
     """
     Initialize the dMRI-QC workflow.
@@ -449,13 +450,13 @@ def init_dmriref_wf(
     ref_file : str
         Reference image to which DWI series is motion corrected
     """
-    from niworkflows.interfaces.bold import NonsteadyStatesDetector
     from niworkflows.interfaces.images import RobustAverage
     from niworkflows.interfaces.header import ValidateImage
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]),name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
         name="outputnode",
     )
 
@@ -470,7 +471,6 @@ def init_dmriref_wf(
     )
 
     gen_avg = pe.Node(RobustAverage(), name="gen_avg", mem_gb=1)
-
 
     # fmt: off
     workflow.connect([
