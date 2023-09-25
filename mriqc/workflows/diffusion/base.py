@@ -196,7 +196,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
         (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_file")]),
-        (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
+        (get_shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_mask")]),
         (meta, shells, [("out_bval_file", "in_bvals")]),
         (sanitize, drift, [("out_file", "full_epi")]),
         (shells, get_shells, [("b_indices", "b0_ixs")]),
@@ -415,7 +415,6 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
 
 def init_dmriref_wf(
     in_file=None,
-    multiecho=False,
     name="init_dmriref_wf",
 ):
     """
@@ -454,7 +453,7 @@ def init_dmriref_wf(
     from niworkflows.interfaces.header import ValidateImage
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "t_mask"]), name="inputnode")
     outputnode = pe.Node(
         niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
         name="outputnode",
@@ -462,7 +461,7 @@ def init_dmriref_wf(
 
     # Simplify manually setting input image
     if in_file is not None:
-        niu.IdentityInterface(fields=["in_file"]),
+        inputnode.inputs.in_file = in_file
 
     val_bold = pe.Node(
         ValidateImage(),
@@ -470,16 +469,13 @@ def init_dmriref_wf(
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
 
-    gen_avg = pe.Node(RobustAverage(), name="gen_avg", mem_gb=1)
-
+    gen_avg = pe.Node(RobustAverage(mc_method=None), name="gen_avg", mem_gb=1)
     # fmt: off
     workflow.connect([
         (inputnode, val_bold, [("in_file", "in_file")]),
         (val_bold, gen_avg, [("out_file", "in_file")]),
-        (val_bold, outputnode, [
-            ("out_file", "in_file"),
-            ("out_report", "validation_report"),
-        ]),
+        (inputnode, gen_avg, [("t_mask", "t_mask")]),
+        (val_bold, gen_avg, [("out_file", "in_file")]),
         (gen_avg, outputnode, [("out_file", "ref_file")]),
     ])
     # fmt: on
