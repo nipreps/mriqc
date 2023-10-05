@@ -221,7 +221,7 @@ def anat_qc_workflow(name="anatMRIQC"):
 
 
 def spatial_normalization(name="SpatialNormalization"):
-    """Create a simplied workflow to perform fast spatial normalization."""
+    """Create a simplified workflow to perform fast spatial normalization."""
     from niworkflows.interfaces.reportlets.registration import (
         SpatialNormalizationRPT as RobustMNINormalization,
     )
