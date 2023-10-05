@@ -48,6 +48,8 @@ from nipype.pipeline import engine as pe
 from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
+DEFAULT_MEMORY_MIN_GB = 0.01
+
 
 def dmri_qc_workflow(name="dwiMRIQC"):
     """
@@ -65,7 +67,6 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     from nipype.interfaces.afni import Volreg
     from nipype.interfaces.mrtrix3.preprocess import DWIDenoise
     from niworkflows.interfaces.header import SanitizeImage
-    from niworkflows.workflows.epi.refmap import init_epi_reference_wf
     from mriqc.interfaces.diffusion import (
         CorrectSignalDrift,
         DipyDTI,
@@ -139,10 +140,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     drift = pe.Node(CorrectSignalDrift(), name="drift")
 
     # 2. Generate B0 reference
-    dwi_reference_wf = init_epi_reference_wf(
-        omp_nthreads=config.nipype.omp_nthreads,
-        name="dwi_reference_wf",
-    )
+    dwi_reference_wf = init_dmriref_wf(name="dwi_reference_wf")
 
     # 3. Calculate brainmask
     dmri_bmsk = dmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
@@ -197,21 +195,20 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         ]),
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_files")]),
-        (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
+        (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_file")]),
+        (get_shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_mask")]),
         (meta, shells, [("out_bval_file", "in_bvals")]),
         (sanitize, drift, [("out_file", "full_epi")]),
         (shells, get_shells, [("b_indices", "b0_ixs")]),
-        (shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_masks")]),
         (sanitize, get_shells, [("out_file", "in_file")]),
         (meta, drift, [("out_bval_file", "bval_file")]),
         (get_shells, hmc_shells, [(("out_file", _all_but_first), "in_file")]),
         (get_shells, hmc_b0, [(("out_file", _first), "in_file")]),
-        (dwi_reference_wf, hmc_b0, [("outputnode.epi_ref_file", "basefile")]),
+        (dwi_reference_wf, hmc_b0, [("outputnode.ref_file", "basefile")]),
         (hmc_b0, drift, [("out_file", "in_file")]),
         (shells, drift, [(("b_indices", _first), "b0_ixs")]),
-        (dwi_reference_wf, dmri_bmsk, [("outputnode.epi_ref_file", "inputnode.in_file")]),
-        (dwi_reference_wf, ema, [("outputnode.epi_ref_file", "inputnode.epi_mean")]),
+        (dwi_reference_wf, dmri_bmsk, [("outputnode.ref_file", "inputnode.in_file")]),
+        (dwi_reference_wf, ema, [("outputnode.ref_file", "inputnode.epi_mean")]),
         (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
         (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
         (drift, hmcwf, [("out_full_file", "inputnode.reference")]),
@@ -413,6 +410,76 @@ def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
         (post_n4, outputnode, [("output_image", "out_corrected")]),
     ])
     # fmt: on
+    return workflow
+
+
+def init_dmriref_wf(
+    in_file=None,
+    name="init_dmriref_wf",
+):
+    """
+    Build a workflow that generates reference images for a dMRI series.
+
+    The raw reference image is the target of :abbr:`HMC (head motion correction)`, and a
+    contrast-enhanced reference is the subject of distortion correction, as well as
+    boundary-based registration to T1w and template spaces.
+
+    This workflow assumes only one dMRI file has been passed.
+
+    Workflow Graph
+        .. workflow::
+            :graph2use: orig
+            :simple_form: yes
+
+            from mriqc.workflows.diffusion.base import init_dmriref_wf
+            wf = init_dmriref_wf()
+
+    Parameters
+    ----------
+    in_file : :obj:`str`
+        dMRI series NIfTI file
+    ------
+    in_file : str
+        series NIfTI file
+
+    Outputs
+    -------
+    in_file : str
+        Validated DWI series NIfTI file
+    ref_file : str
+        Reference image to which DWI series is motion corrected
+    """
+    from niworkflows.interfaces.images import RobustAverage
+    from niworkflows.interfaces.header import ValidateImage
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "t_mask"]), name="inputnode")
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
+        name="outputnode",
+    )
+
+    # Simplify manually setting input image
+    if in_file is not None:
+        inputnode.inputs.in_file = in_file
+
+    val_bold = pe.Node(
+        ValidateImage(),
+        name="val_bold",
+        mem_gb=DEFAULT_MEMORY_MIN_GB,
+    )
+
+    gen_avg = pe.Node(RobustAverage(mc_method=None), name="gen_avg", mem_gb=1)
+    # fmt: off
+    workflow.connect([
+        (inputnode, val_bold, [("in_file", "in_file")]),
+        (val_bold, gen_avg, [("out_file", "in_file")]),
+        (inputnode, gen_avg, [("t_mask", "t_mask")]),
+        (val_bold, gen_avg, [("out_file", "in_file")]),
+        (gen_avg, outputnode, [("out_file", "ref_file")]),
+    ])
+    # fmt: on
+
     return workflow
 
 
