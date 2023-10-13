@@ -196,7 +196,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
         (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_file")]),
-        (get_shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_mask")]),
+        (shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_mask")]),
         (meta, shells, [("out_bval_file", "in_bvals")]),
         (sanitize, drift, [("out_file", "full_epi")]),
         (shells, get_shells, [("b_indices", "b0_ixs")]),
@@ -473,7 +473,6 @@ def init_dmriref_wf(
     # fmt: off
     workflow.connect([
         (inputnode, val_bold, [("in_file", "in_file")]),
-        (val_bold, gen_avg, [("out_file", "in_file")]),
         (inputnode, gen_avg, [("t_mask", "t_mask")]),
         (val_bold, gen_avg, [("out_file", "in_file")]),
         (gen_avg, outputnode, [("out_file", "ref_file")]),
