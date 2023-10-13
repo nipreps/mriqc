@@ -37,6 +37,7 @@ IMTYPES = {
     "T1w": "anat",
     "T2w": "anat",
     "bold": "func",
+    "dwi": "dwi",
 }
 
 BIDS_COMP = OrderedDict(
