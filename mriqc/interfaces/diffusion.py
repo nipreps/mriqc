@@ -274,7 +274,6 @@ class CorrectSignalDrift(SimpleInterface):
 
         if isdefined(self.inputs.brainmask_file):
             bmask = np.asanyarray(nb.load(self.inputs.brainmask_file).dataobj) > 1e-3
-
         global_signal = np.array([
             np.median(data[..., n_b0][bmask]) for n_b0 in range(img.shape[-1])
         ]).astype("float32")
