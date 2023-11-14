@@ -533,7 +533,7 @@ def parse_args(args=None, namespace=None):
         config.execution.participant_label,
         session_id=config.execution.session_id,
         task=config.execution.task_id,
-        group_me=False,  # for backward compatibility
+        group_echos=False,
         bids_filters=bids_filters,
         queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
     )
