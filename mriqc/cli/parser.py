@@ -448,7 +448,7 @@ def parse_args(args=None, namespace=None):
     from logging import DEBUG
     from contextlib import suppress
 
-    from mriqc.utils.bids import collect_bids_data
+    from niworkflows.utils.bids import collect_data, DEFAULT_BIDS_QUERIES
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
@@ -520,20 +520,29 @@ def parse_args(args=None, namespace=None):
     config.workflow.analysis_level = list(analysis_level)
 
     # List of files to be run
-    bids_filters = {
-        "participant_label": config.execution.participant_label,
-        "session": config.execution.session_id,
-        "run": config.execution.run_id,
-        "task": config.execution.task_id,
-        "bids_type": config.execution.modalities,
+    lc_modalities = [mod.lower() for mod in config.execution.modalities]
+
+    bids_filters = (
+        {mod: {"run": config.execution.run_id} for mod in lc_modalities}
+        if config.execution.run_id
+        else {}
+    )
+
+    bids_dataset, _ = collect_data(
+        config.execution.layout,
+        config.execution.participant_label,
+        session_id=config.execution.session_id,
+        task=config.execution.task_id,
+        group_me=False,  # for backward compatibility
+        bids_filters=bids_filters,
+        queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
+    )
+
+    # Drop empty queries
+    bids_dataset = {
+        mod: files for mod, files in bids_dataset.items() if files
     }
-    config.workflow.inputs = {
-        mod: files
-        for mod, files in collect_bids_data(
-            config.execution.layout, **bids_filters
-        ).items()
-        if files
-    }
+    config.workflow.inputs = bids_dataset
 
     # Check the query is not empty
     if not list(config.workflow.inputs.values()):
@@ -546,7 +555,9 @@ Please, check out your currently set filters:
         )
 
     # Check no DWI or others are sneaked into MRIQC
-    unknown_mods = set(config.workflow.inputs.keys()) - set(config.SUPPORTED_SUFFIXES)
+    unknown_mods = set(config.workflow.inputs.keys()) - set(
+        suffix.lower() for suffix in config.SUPPORTED_SUFFIXES
+    )
     if unknown_mods:
         parser.error(
             "MRIQC is unable to process the following modalities: "

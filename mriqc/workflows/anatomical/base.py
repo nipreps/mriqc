@@ -87,7 +87,7 @@ def anat_qc_workflow(name="anatMRIQC"):
 
     """
 
-    dataset = config.workflow.inputs.get("T1w", []) + config.workflow.inputs.get("T2w", [])
+    dataset = config.workflow.inputs.get("t1w", []) + config.workflow.inputs.get("t2w", [])
 
     message = BUILDING_WORKFLOW.format(
         modality="anatomical",

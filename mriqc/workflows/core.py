@@ -28,7 +28,7 @@ from mriqc.workflows.anatomical.base import anat_qc_workflow
 from mriqc.workflows.functional.base import fmri_qc_workflow
 from mriqc.workflows.diffusion.base import dmri_qc_workflow
 
-ANATOMICAL_KEYS = "T1w", "T2w"
+ANATOMICAL_KEYS = "t1w", "t2w"
 FMRI_KEY = "bold"
 DMRI_KEY = "dwi"
 
