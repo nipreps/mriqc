@@ -361,6 +361,8 @@ class execution(_Config):
     """Wipe out previously existing BIDS indexing caches, forcing re-indexing."""
     bids_description_hash = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
+    bids_filters = None
+    """A dictionary describing custom BIDS input filter using PyBIDS."""
     cwd = os.getcwd()
     """Current working directory."""
     debug = False
@@ -436,6 +438,15 @@ class execution(_Config):
     @classmethod
     def init(cls):
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
+
+        if cls.bids_filters is None:
+            cls.bids_filters = {}
+
+        # Process --run-id if the argument was provided
+        if cls.run_id:
+            for mod in cls.modalities:
+                cls.bids_filters.setdefault(mod.lower(), {})["run"] = cls.run_id
+
         if cls._layout is None:
             import re
             from bids.layout.index import BIDSLayoutIndexer

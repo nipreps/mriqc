@@ -173,6 +173,12 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         "identifier (the sub- prefix can be removed).",
     )
     g_bids.add_argument(
+        '--bids-filter-file', action='store', type=Path, metavar='PATH',
+        help='a JSON file describing custom BIDS input filter using pybids '
+             '{<suffix>:{<entity>:<filter>,...},...} '
+             '(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)'
+    )
+    g_bids.add_argument(
         "--session-id",
         action="store",
         nargs="*",
@@ -184,7 +190,7 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         action="store",
         type=int,
         nargs="*",
-        help="Filter input dataset by run ID (only integer run IDs are valid).",
+        help="DEPRECATED - This argument will be disabled. Use ``--bids-filter-file`` instead.",
     )
     g_bids.add_argument(
         "--task-id",
@@ -447,6 +453,8 @@ def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
     from logging import DEBUG
     from contextlib import suppress
+    from json import loads
+    from pprint import pformat
 
     from niworkflows.utils.bids import collect_data, DEFAULT_BIDS_QUERIES
 
@@ -468,6 +476,10 @@ def parse_args(args=None, namespace=None):
             config.nipype.nprocs = config.nipype.plugin_args.get(
                 "nprocs", config.nipype.nprocs
             )
+
+    # Load BIDS filters
+    if opts.bids_filter_file:
+        config.execution.bids_filters = loads(opts.bids_filter_file.read_text())
 
     bids_dir = config.execution.bids_dir
     output_dir = config.execution.output_dir
@@ -521,20 +533,13 @@ def parse_args(args=None, namespace=None):
 
     # List of files to be run
     lc_modalities = [mod.lower() for mod in config.execution.modalities]
-
-    bids_filters = (
-        {mod: {"run": config.execution.run_id} for mod in lc_modalities}
-        if config.execution.run_id
-        else {}
-    )
-
     bids_dataset, _ = collect_data(
         config.execution.layout,
         config.execution.participant_label,
         session_id=config.execution.session_id,
         task=config.execution.task_id,
         group_echos=False,
-        bids_filters=bids_filters,
+        bids_filters=config.execution.bids_filters,
         queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
     )
 
@@ -546,12 +551,15 @@ def parse_args(args=None, namespace=None):
 
     # Check the query is not empty
     if not list(config.workflow.inputs.values()):
-        _j = "\n *"
+        ffile = (
+            "(--bids-filter-file was not set)" if not opts.bids_filter_file
+            else f"(with '--bids-filter-file {opts.bids_filter_file}')"
+        )
         parser.error(
             f"""\
 Querying BIDS dataset at <{config.execution.bids_dir}> got an empty result.
-Please, check out your currently set filters:
-{_j.join([''] + [': '.join((k, str(v))) for k, v in bids_filters.items()])}"""
+Please, check out your currently set filters {ffile}:
+{pformat(config.execution.bids_filters, indent=2, width=99)}"""
         )
 
     # Check no DWI or others are sneaked into MRIQC
