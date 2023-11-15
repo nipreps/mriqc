@@ -25,7 +25,7 @@
 
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
-        return [float(el) for el in inlist]
+        return [_tofloat(el) for el in inlist]
     else:
         return float(inlist)
 

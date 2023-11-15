@@ -45,6 +45,8 @@ This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+from niworkflows.utils.connections import pop_file as _pop
+
 from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.functional.output import init_func_report_wf
 
@@ -76,7 +78,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     message = BUILDING_WORKFLOW.format(
         modality="functional",
         detail=(
-            f"for {len(dataset)} NIfTI files."
+            f"for {len(dataset)} BOLD runs."
             if len(dataset) > 2
             else f"({' and '.join(('<%s>' % v for v in dataset))})."
         ),
@@ -88,9 +90,10 @@ def fmri_qc_workflow(name="funcMRIQC"):
     inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
     inputnode.iterables = [("in_file", dataset)]
 
-    datalad_get = pe.Node(
+    datalad_get = pe.MapNode(
         DataladIdentityInterface(fields=["in_file"], dataset_path=config.execution.bids_dir),
         name="datalad_get",
+        iterfield=["in_file"],
     )
 
     outputnode = pe.Node(
@@ -100,29 +103,39 @@ def fmri_qc_workflow(name="funcMRIQC"):
 
     non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
 
-    sanitize = pe.Node(SanitizeImage(), name="sanitize", mem_gb=mem_gb * 4.0)
-    sanitize.inputs.max_32bit = config.execution.float32
+    sanitize = pe.MapNode(
+        SanitizeImage(max_32bit=config.execution.float32),
+        name="sanitize",
+        mem_gb=mem_gb * 4.0,
+        iterfield=["in_file"],
+    )
 
     # Workflow --------------------------------------------------------
 
     # 1. HMC: head motion correct
-    hmcwf = hmc()
+    hmcwf = hmc(omp_nthreads=config.nipype.omp_nthreads)
 
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
 
     # 2. Compute mean fmri
-    mean = pe.Node(
+    mean = pe.MapNode(
         TStat(options="-mean", outputtype="NIFTI_GZ"),
         name="mean",
         mem_gb=mem_gb * 1.5,
+        iterfield=["in_file"],
+    )
+
+    # Compute TSNR using nipype implementation
+    tsnr = pe.MapNode(
+        TSNR(),
+        name="compute_tsnr",
+        mem_gb=mem_gb * 2.5,
+        iterfield=["in_file"],
     )
 
     # EPI to MNI registration
     ema = epi_mni_align()
-
-    # Compute TSNR using nipype implementation
-    tsnr = pe.Node(TSNR(), name="compute_tsnr", mem_gb=mem_gb * 2.5)
 
     # 7. Compute IQMs
     iqmswf = compute_iqms()
@@ -133,22 +146,25 @@ def fmri_qc_workflow(name="funcMRIQC"):
 
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
-        (inputnode, func_report_wf, [
-            ("in_file", "inputnode.name_source"),
-        ]),
-        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (datalad_get, non_steady_state_detector, [("in_file", "in_file")]),
+        (datalad_get, non_steady_state_detector, [(("in_file", select_echo2), "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
         (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
-        (mean, ema, [("out_file", "inputnode.epi_mean")]),
+        (mean, ema, [(("out_file", select_echo2), "inputnode.epi_mean")]),
+        # Feed IQMs computation
+        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
         (hmcwf, iqmswf, [("outputnode.out_file", "inputnode.hmc_epi"),
                          ("outputnode.out_fd", "inputnode.hmc_fd")]),
         (tsnr, iqmswf, [("tsnr_file", "inputnode.in_tsnr")]),
+        (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
+        # Feed reportlet generation
+        (inputnode, func_report_wf, [
+            ("in_file", "inputnode.name_source"),
+        ]),
         (sanitize, func_report_wf, [("out_file", "inputnode.in_ras")]),
         (mean, func_report_wf, [("out_file", "inputnode.epi_mean")]),
         (tsnr, func_report_wf, [("stddev_file", "inputnode.in_stddev")]),
@@ -160,7 +176,6 @@ def fmri_qc_workflow(name="funcMRIQC"):
             ("outputnode.epi_parc", "inputnode.epi_parc"),
             ("outputnode.report", "inputnode.mni_report"),
         ]),
-        (non_steady_state_detector, iqmswf, [("n_volumes_to_discard", "inputnode.exclude_index")]),
         (iqmswf, func_report_wf, [
             ("outputnode.out_file", "inputnode.in_iqms"),
             ("outputnode.out_dvars", "inputnode.in_dvars"),
@@ -183,13 +198,15 @@ def fmri_qc_workflow(name="funcMRIQC"):
 
     # population specific changes to brain masking
     if config.workflow.species == "human":
-        skullstrip_epi = fmri_bmsk_workflow()
+        from mriqc.workflows.shared import synthstrip_wf as fmri_bmsk_workflow
+
+        skullstrip_epi = fmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
         # fmt: off
         workflow.connect([
-            (mean, skullstrip_epi, [("out_file", "inputnode.in_file")]),
-            (skullstrip_epi, ema, [("outputnode.out_file", "inputnode.epi_mask")]),
-            (skullstrip_epi, iqmswf, [("outputnode.out_file", "inputnode.brainmask")]),
-            (skullstrip_epi, func_report_wf, [("outputnode.out_file", "inputnode.brainmask")]),
+            (mean, skullstrip_epi, [(("out_file", select_echo2), "inputnode.in_files")]),
+            (skullstrip_epi, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
+            (skullstrip_epi, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
+            (skullstrip_epi, func_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
         ])
         # fmt: on
     else:
@@ -216,11 +233,11 @@ def fmri_qc_workflow(name="funcMRIQC"):
     if not config.execution.no_sub:
         from mriqc.interfaces.webapi import UploadIQMs
 
-        upldwf = pe.Node(UploadIQMs(
+        upldwf = pe.MapNode(UploadIQMs(
             endpoint=config.execution.webapi_url,
             auth_token=config.execution.webapi_token,
             strict=config.execution.upload_strict,
-        ), name="UploadMetrics")
+        ), name="UploadMetrics", iterfield=["in_iqms"])
 
         # fmt: off
         workflow.connect([
@@ -290,32 +307,40 @@ def compute_iqms(name="ComputeIQMs"):
     inputnode.inputs.fd_thres = config.workflow.fd_thres
 
     # Compute DVARS
-    dvnode = pe.Node(
+    dvnode = pe.MapNode(
         ComputeDVARS(save_plot=False, save_all=True),
         name="ComputeDVARS",
         mem_gb=mem_gb * 3,
+        iterfield=["in_file"],
     )
 
     # AFNI quality measures
-    fwhm_interface = get_fwhmx()
-    fwhm = pe.Node(fwhm_interface, name="smoothness")
-    # fwhm.inputs.acf = True  # add when AFNI >= 16
-    outliers = pe.Node(
+    fwhm = pe.MapNode(get_fwhmx(), name="smoothness", iterfield=["in_file"])
+    fwhm.inputs.acf = True  # Only AFNI >= 16
+
+    outliers = pe.MapNode(
         OutlierCount(fraction=True, out_file="outliers.out"),
         name="outliers",
         mem_gb=mem_gb * 2.5,
+        iterfield=["in_file"],
     )
 
-    quality = pe.Node(
+    quality = pe.MapNode(
         QualityIndex(automask=True),
         out_file="quality.out",
         name="quality",
         mem_gb=mem_gb * 3,
+        iterfield=["in_file"],
     )
 
-    gcor = pe.Node(GCOR(), name="gcor", mem_gb=mem_gb * 2)
+    gcor = pe.MapNode(GCOR(), name="gcor", mem_gb=mem_gb * 2, iterfield=["in_file"])
 
-    measures = pe.Node(FunctionalQC(), name="measures", mem_gb=mem_gb * 3)
+    measures = pe.MapNode(
+        FunctionalQC(),
+        name="measures",
+        mem_gb=mem_gb * 3,
+        iterfield=["in_epi", "in_hmc", "in_tsnr", "in_dvars", "in_fwhm"],
+    )
 
     # fmt: off
     workflow.connect([
@@ -342,18 +367,19 @@ def compute_iqms(name="ComputeIQMs"):
     # fmt: on
 
     # Add metadata
-    meta = pe.Node(ReadSidecarJSON(
+    meta = pe.MapNode(ReadSidecarJSON(
         index_db=config.execution.bids_database_dir
-    ), name="metadata")
+    ), name="metadata", iterfield=["in_file"])
 
-    addprov = pe.Node(
+    addprov = pe.MapNode(
         AddProvenance(modality="bold"),
         name="provenance",
         run_without_submitting=True,
+        iterfield=["in_file"],
     )
 
     # Save to JSON file
-    datasink = pe.Node(
+    datasink = pe.MapNode(
         IQMFileSink(
             modality="bold",
             out_dir=str(config.execution.output_dir),
@@ -361,6 +387,7 @@ def compute_iqms(name="ComputeIQMs"):
         ),
         name="datasink",
         run_without_submitting=True,
+        iterfield=["in_file", "root", "metadata", "provenance"],
     )
 
     # fmt: off
@@ -369,12 +396,12 @@ def compute_iqms(name="ComputeIQMs"):
                                ("exclude_index", "dummy_trs")]),
         (inputnode, meta, [("in_file", "in_file")]),
         (inputnode, addprov, [("in_file", "in_file")]),
-        (meta, datasink, [("subject", "subject_id"),
-                          ("session", "session_id"),
-                          ("task", "task_id"),
-                          ("acquisition", "acq_id"),
-                          ("reconstruction", "rec_id"),
-                          ("run", "run_id"),
+        (meta, datasink, [(("subject", _pop), "subject_id"),
+                          (("session", _pop), "session_id"),
+                          (("task", _pop), "task_id"),
+                          (("acquisition", _pop), "acq_id"),
+                          (("reconstruction", _pop), "rec_id"),
+                          (("run", _pop), "run_id"),
                           ("out_dict", "metadata")]),
         (addprov, datasink, [("out_prov", "provenance")]),
         (outliers, datasink, [(("out_file", _parse_tout), "aor")]),
@@ -390,13 +417,14 @@ def compute_iqms(name="ComputeIQMs"):
     if config.workflow.fft_spikes_detector:
         from mriqc.workflows.utils import slice_wise_fft
 
-        spikes_fft = pe.Node(
+        spikes_fft = pe.MapNode(
             niu.Function(
                 input_names=["in_file"],
                 output_names=["n_spikes", "out_spikes", "out_fft"],
                 function=slice_wise_fft,
             ),
             name="SpikesFinderFFT",
+            iterfield=["in_file"],
         )
 
         # fmt: off
@@ -441,7 +469,7 @@ def fmri_bmsk_workflow(name="fMRIBrainMask"):
     return workflow
 
 
-def hmc(name="fMRI_HMC"):
+def hmc(name="fMRI_HMC", omp_nthreads=None):
     """
     Create a :abbr:`HMC (head motion correction)` workflow for fMRI.
 
@@ -468,9 +496,9 @@ def hmc(name="fMRI_HMC"):
     outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
 
     # calculate hmc parameters
-    hmc = pe.Node(
+    estimate_hm = pe.Node(
         Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
-        name="motion_correct",
+        name="estimate_hm",
         mem_gb=mem_gb * 2.5,
     )
 
@@ -480,49 +508,73 @@ def hmc(name="fMRI_HMC"):
         name="ComputeFD",
     )
 
+    # Apply transforms to other echos
+    apply_hmc = pe.MapNode(
+        niu.Function(function=_apply_transforms, input_names=["in_file", "in_xfm"]),
+        name="apply_hmc",
+        iterfield=["in_file"],
+        # NiTransforms is a memory hog, so ensure only one process is running at a time
+        num_threads=config.environment.cpu_count,
+    )
+
     # fmt: off
     workflow.connect([
         (inputnode, fdnode, [("fd_radius", "radius")]),
-        (hmc, outputnode, [("out_file", "out_file")]),
-        (hmc, fdnode, [("oned_file", "in_file")]),
+        (estimate_hm, apply_hmc, [("oned_matrix_save", "in_xfm")]),
+        (apply_hmc, outputnode, [("out", "out_file")]),
+        (estimate_hm, fdnode, [("oned_file", "in_file")]),
         (fdnode, outputnode, [("out_file", "out_fd")]),
     ])
     # fmt: on
 
+    if not (config.workflow.despike or config.workflow.deoblique):
+        # fmt: off
+        workflow.connect([
+            (inputnode, estimate_hm, [(("in_file", _pop), "in_file")]),
+            (inputnode, apply_hmc, [("in_file", "in_file")]),
+        ])
+        # fmt: on
+        return workflow
+
     # despiking, and deoblique
-
-    deoblique_node = pe.Node(Refit(deoblique=True), name="deoblique")
-
-    despike_node = pe.Node(Despike(outputtype="NIFTI_GZ"), name="despike")
-
+    deoblique_node = pe.MapNode(
+        Refit(deoblique=True),
+        name="deoblique",
+        iterfield=["in_file"],
+    )
+    despike_node = pe.MapNode(
+        Despike(outputtype="NIFTI_GZ"),
+        name="despike",
+        iterfield=["in_file"],
+    )
     if config.workflow.despike and config.workflow.deoblique:
         # fmt: off
         workflow.connect([
             (inputnode, despike_node, [("in_file", "in_file")]),
             (despike_node, deoblique_node, [("out_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
+            (deoblique_node, estimate_hm, [(("out_file", _pop), "in_file")]),
+            (deoblique_node, apply_hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     elif config.workflow.despike:
         # fmt: off
         workflow.connect([
             (inputnode, despike_node, [("in_file", "in_file")]),
-            (despike_node, hmc, [("out_file", "in_file")]),
+            (despike_node, estimate_hm, [(("out_file", _pop), "in_file")]),
+            (despike_node, apply_hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     elif config.workflow.deoblique:
         # fmt: off
         workflow.connect([
             (inputnode, deoblique_node, [("in_file", "in_file")]),
-            (deoblique_node, hmc, [("out_file", "in_file")]),
+            (deoblique_node, estimate_hm, [(("out_file", _pop), "in_file")]),
+            (deoblique_node, apply_hmc, [("out_file", "in_file")]),
         ])
         # fmt: on
     else:
-        # fmt: off
-        workflow.connect([
-            (inputnode, hmc, [("in_file", "in_file")]),
-        ])
-        # fmt: on
+        raise NotImplementedError
+
     return workflow
 
 
@@ -665,13 +717,10 @@ def epi_mni_align(name="SpatialNormalization"):
     return workflow
 
 
-def _mean(inlist):
-    import numpy as np
-
-    return np.mean(inlist)
-
-
 def _parse_tqual(in_file):
+    if isinstance(in_file, (list, tuple)):
+        return [_parse_tqual(f) for f in in_file]
+
     import numpy as np
 
     with open(in_file, "r") as fin:
@@ -680,7 +729,48 @@ def _parse_tqual(in_file):
 
 
 def _parse_tout(in_file):
+    if isinstance(in_file, (list, tuple)):
+        return [_parse_tout(f) for f in in_file]
+
     import numpy as np
 
     data = np.loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
+
+
+def _apply_transforms(in_file, in_xfm):
+    from pathlib import Path
+    from nitransforms.linear import load
+    from mriqc.utils.bids import derive_bids_fname
+
+    realigned = load(in_xfm, fmt="afni", reference=in_file, moving=in_file).apply(in_file)
+    out_file = derive_bids_fname(
+        in_file,
+        entity="desc-realigned",
+        newpath=Path.cwd(),
+        absolute=True,
+    )
+
+    realigned.to_filename(out_file)
+    return str(out_file)
+
+
+def select_echo2(in_files):
+    """
+    Select the first file from a list of filenames.
+
+    Used to grab the first echo's file when processing
+    multi-echo data through workflows that only accept
+    a single file.
+
+    Examples
+    --------
+    >>> select_file('some/file.nii.gz')
+    'some/file.nii.gz'
+    >>> select_file(['some/file1.nii.gz', 'some/file2.nii.gz'])
+    'some/file1.nii.gz'
+
+    """
+    if isinstance(in_files, (list, tuple)):
+        return in_files[min(1, len(in_files) - 1)]
+    return in_files
