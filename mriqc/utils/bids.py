@@ -23,47 +23,9 @@
 """PyBIDS tooling."""
 import json
 import os
-from collections import defaultdict
 from pathlib import Path
 
-from bids.utils import listify
-
 DOI = "https://doi.org/10.1371/journal.pone.0184661"
-
-
-def collect_bids_data(
-    layout,
-    bids_type,
-    participant_label=None,
-    session=None,
-    run=None,
-    task=None,
-):
-    """Get files in dataset"""
-
-    basequery = {
-        "subject": participant_label,
-        "session": session,
-        "task": task,
-        "run": run,
-        "datatype": "func",
-        "return_type": "file",
-        "extension": ["nii", "nii.gz"],
-    }
-    # Filter empty lists, strings, zero runs, and Nones
-    basequery = {k: v for k, v in basequery.items() if v}
-
-    # Start querying
-    imaging_data = defaultdict(list, {})
-    for btype in listify(bids_type):
-        _entities = basequery.copy()
-        _entities["suffix"] = btype
-        if btype in ("T1w", "T2w", "dwi"):
-            _entities["datatype"] = "dwi" if btype == "dwi" else "anat"
-            _entities.pop("task", None)
-        imaging_data[btype] = layout.get(**_entities)
-
-    return imaging_data
 
 
 def write_bidsignore(deriv_dir):
