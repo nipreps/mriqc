@@ -7,7 +7,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.1.0
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
@@ -170,8 +171,8 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-         key: built-v3-{{ .Branch }}-{{ .Revision }}
-         paths:
+          key: built-v3-{{ .Branch }}-{{ .Revision }}
+          paths:
             - /tmp/docker
             - /tmp/images
       - persist_to_workspace:
@@ -186,7 +187,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b6c9950fed49e001a7885b6"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b\
+          6c9950fed49e001a7885b6"
     working_directory: /home/circleci/data
     steps:
       - checkout:
@@ -295,7 +297,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -456,7 +459,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -609,6 +613,8 @@ jobs:
 
       - store_artifacts:
           path: /tmp/bold/test
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
 
   build_docs:
     docker:
