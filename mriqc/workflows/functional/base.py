@@ -66,6 +66,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     """
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from nipype.interfaces.afni import TStat
+    from niworkflows.interfaces.bids import ReadSidecarJSON
     from niworkflows.interfaces.header import SanitizeImage
     from mriqc.messages import BUILDING_WORKFLOW
 
@@ -100,6 +101,13 @@ def fmri_qc_workflow(name="funcMRIQC"):
         niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
         name="outputnode",
     )
+
+    # Get metadata
+    meta = pe.MapNode(ReadSidecarJSON(
+        index_db=config.execution.bids_database_dir
+    ), name="metadata", iterfield=["in_file"])
+
+    pick_echo = pe.Node(niu.Function(function=select_echo), name="pick_echo")
 
     non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
 
@@ -146,14 +154,24 @@ def fmri_qc_workflow(name="funcMRIQC"):
 
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
+        (datalad_get, meta, [("in_file", "in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (datalad_get, non_steady_state_detector, [(("in_file", select_echo2), "in_file")]),
+        (sanitize, pick_echo, [("out_file", "in_files")]),
+        (meta, pick_echo, [("EchoTime", "te_echos")]),
+        (pick_echo, non_steady_state_detector, [("out", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
         (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
-        (mean, ema, [(("out_file", select_echo2), "inputnode.epi_mean")]),
+        (sanitize, ema, [(("out_file", _pop), "inputnode.epi_mean")]),
         # Feed IQMs computation
+        (meta, iqmswf, [("out_dict", "inputnode.metadata"),
+                        ("subject", "subject"),
+                        ("session", "session"),
+                        ("task", "task"),
+                        ("acquisition", "acquisition"),
+                        ("reconstruction", "reconstruction"),
+                        ("run", "run")]),
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
@@ -180,8 +198,8 @@ def fmri_qc_workflow(name="funcMRIQC"):
             ("outputnode.out_file", "inputnode.in_iqms"),
             ("outputnode.out_dvars", "inputnode.in_dvars"),
             ("outputnode.outliers", "inputnode.outliers"),
-            ("outputnode.meta_sidecar", "inputnode.meta_sidecar"),
         ]),
+        (meta, func_report_wf, [("out_dict", "inputnode.meta_sidecar")]),
         (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
     ])
     # fmt: on
@@ -203,7 +221,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         skullstrip_epi = fmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
         # fmt: off
         workflow.connect([
-            (mean, skullstrip_epi, [(("out_file", select_echo2), "inputnode.in_files")]),
+            (mean, skullstrip_epi, [(("out_file", _pop), "inputnode.in_files")]),
             (skullstrip_epi, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
             (skullstrip_epi, iqmswf, [("outputnode.out_mask", "inputnode.brainmask")]),
             (skullstrip_epi, func_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
@@ -262,7 +280,6 @@ def compute_iqms(name="ComputeIQMs"):
     """
     from nipype.algorithms.confounds import ComputeDVARS
     from nipype.interfaces.afni import OutlierCount, QualityIndex
-    from niworkflows.interfaces.bids import ReadSidecarJSON
 
     from mriqc.interfaces import FunctionalQC, IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
@@ -285,6 +302,12 @@ def compute_iqms(name="ComputeIQMs"):
                 "in_tsnr",
                 "metadata",
                 "exclude_index",
+                "subject",
+                "session",
+                "task",
+                "acquisition",
+                "reconstruction",
+                "run",
             ]
         ),
         name="inputnode",
@@ -297,7 +320,6 @@ def compute_iqms(name="ComputeIQMs"):
                 "outliers",
                 "out_spikes",
                 "out_fft",
-                "meta_sidecar",
             ]
         ),
         name="outputnode",
@@ -366,11 +388,6 @@ def compute_iqms(name="ComputeIQMs"):
     ])
     # fmt: on
 
-    # Add metadata
-    meta = pe.MapNode(ReadSidecarJSON(
-        index_db=config.execution.bids_database_dir
-    ), name="metadata", iterfield=["in_file"])
-
     addprov = pe.MapNode(
         AddProvenance(modality="bold"),
         name="provenance",
@@ -392,24 +409,22 @@ def compute_iqms(name="ComputeIQMs"):
 
     # fmt: off
     workflow.connect([
-        (inputnode, datasink, [("in_file", "in_file"),
-                               ("exclude_index", "dummy_trs")]),
-        (inputnode, meta, [("in_file", "in_file")]),
         (inputnode, addprov, [("in_file", "in_file")]),
-        (meta, datasink, [(("subject", _pop), "subject_id"),
-                          (("session", _pop), "session_id"),
-                          (("task", _pop), "task_id"),
-                          (("acquisition", _pop), "acq_id"),
-                          (("reconstruction", _pop), "rec_id"),
-                          (("run", _pop), "run_id"),
-                          ("out_dict", "metadata")]),
+        (inputnode, datasink, [("in_file", "in_file"),
+                               ("exclude_index", "dummy_trs"),
+                               (("subject", _pop), "subject_id"),
+                               (("session", _pop), "session_id"),
+                               (("task", _pop), "task_id"),
+                               (("acquisition", _pop), "acq_id"),
+                               (("reconstruction", _pop), "rec_id"),
+                               (("run", _pop), "run_id"),
+                               ("metadata", "metadata")]),
         (addprov, datasink, [("out_prov", "provenance")]),
         (outliers, datasink, [(("out_file", _parse_tout), "aor")]),
         (gcor, datasink, [(("out", _tofloat), "gcor")]),
         (quality, datasink, [(("out_file", _parse_tqual), "aqi")]),
         (measures, datasink, [("out_qc", "root")]),
         (datasink, outputnode, [("out_file", "out_file")]),
-        (meta, outputnode, [("out_dict", "meta_sidecar")]),
     ])
     # fmt: on
 
@@ -761,7 +776,7 @@ def _apply_transforms(in_file, in_xfm):
     return str(out_file)
 
 
-def select_echo2(in_files):
+def select_echo(in_files, te_echos=None, te_reference=0.030):
     """
     Select the first file from a list of filenames.
 
@@ -771,12 +786,52 @@ def select_echo2(in_files):
 
     Examples
     --------
-    >>> select_file('some/file.nii.gz')
-    'some/file.nii.gz'
-    >>> select_file(['some/file1.nii.gz', 'some/file2.nii.gz'])
-    'some/file1.nii.gz'
+    >>> select_echo("single-echo.nii.gz")
+    'single-echo.nii.gz'
+
+    >>> select_echo(["single-echo.nii.gz"])
+    'single-echo.nii.gz'
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ... )
+    'echo2.nii.gz'
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, 68.4],
+    ...     te_reference=33.1,
+    ... )
+    'echo3.nii.gz'
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1],
+    ...     te_reference=33.1,
+    ... )
+    'echo2.nii.gz'
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, None],
+    ...     te_reference=33.1,
+    ... )
+    'echo2.nii.gz'
 
     """
-    if isinstance(in_files, (list, tuple)):
-        return in_files[min(1, len(in_files) - 1)]
-    return in_files
+    if not isinstance(in_files, (list, tuple)):
+        return in_files
+
+    if len(in_files) == 1:
+        return in_files[0]
+
+    import numpy as np
+
+    n_echos = len(in_files)
+    if te_echos is not None and len(te_echos) == n_echos:
+        try:
+            return in_files[np.argmin(np.abs(np.array(te_echos) - te_reference))]
+        except TypeError:
+            pass
+
+    return in_files[1]
