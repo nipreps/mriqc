@@ -719,7 +719,10 @@ def epi_mni_align(name="SpatialNormalization"):
 
 def _parse_tqual(in_file):
     if isinstance(in_file, (list, tuple)):
-        return [_parse_tqual(f) for f in in_file]
+        return (
+            [_parse_tqual(f) for f in in_file] if len(in_file) > 1
+            else _parse_tqual(in_file[0])
+        )
 
     import numpy as np
 
@@ -730,7 +733,10 @@ def _parse_tqual(in_file):
 
 def _parse_tout(in_file):
     if isinstance(in_file, (list, tuple)):
-        return [_parse_tout(f) for f in in_file]
+        return (
+            [_parse_tout(f) for f in in_file] if len(in_file) > 1
+            else _parse_tout(in_file[0])
+        )
 
     import numpy as np
 

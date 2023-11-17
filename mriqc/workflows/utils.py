@@ -25,9 +25,11 @@
 
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
-        return [_tofloat(el) for el in inlist]
-    else:
-        return float(inlist)
+        return (
+            [_tofloat(el) for el in inlist] if len(inlist) > 1
+            else _tofloat(inlist[0])
+        )
+    return float(inlist)
 
 
 def fwhm_dict(fwhm):
