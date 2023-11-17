@@ -42,8 +42,10 @@ The functional workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
+from __future__ import annotations
 from mriqc import config
 from nipype.interfaces import utility as niu
+from nipype.interfaces.base import Undefined
 from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
 
@@ -157,7 +159,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         (datalad_get, meta, [("in_file", "in_file")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
         (sanitize, pick_echo, [("out_file", "in_files")]),
-        (meta, pick_echo, [("EchoTime", "te_echos")]),
+        (meta, pick_echo, [(("out_dict", _get_echotime), "te_echos")]),
         (pick_echo, non_steady_state_detector, [("out", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
@@ -166,12 +168,12 @@ def fmri_qc_workflow(name="funcMRIQC"):
         (sanitize, ema, [(("out_file", _pop), "inputnode.epi_mean")]),
         # Feed IQMs computation
         (meta, iqmswf, [("out_dict", "inputnode.metadata"),
-                        ("subject", "subject"),
-                        ("session", "session"),
-                        ("task", "task"),
-                        ("acquisition", "acquisition"),
-                        ("reconstruction", "reconstruction"),
-                        ("run", "run")]),
+                        ("subject", "inputnode.subject"),
+                        ("session", "inputnode.session"),
+                        ("task", "inputnode.task"),
+                        ("acquisition", "inputnode.acquisition"),
+                        ("reconstruction", "inputnode.reconstruction"),
+                        ("run", "inputnode.run")]),
         (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
         (sanitize, iqmswf, [("out_file", "inputnode.in_ras")]),
         (mean, iqmswf, [("out_file", "inputnode.epi_mean")]),
@@ -776,13 +778,43 @@ def _apply_transforms(in_file, in_xfm):
     return str(out_file)
 
 
-def select_echo(in_files, te_echos=None, te_reference=0.030):
-    """
-    Select the first file from a list of filenames.
+def _get_echotime(inlist):
+    if isinstance(inlist, list):
+        retval = [_get_echotime(el) for el in inlist]
+        return retval[0] if len(retval) == 1 else retval
 
-    Used to grab the first echo's file when processing
-    multi-echo data through workflows that only accept
-    a single file.
+    echo_time = inlist.get("EchoTime", None)
+
+    if echo_time:
+        return float(echo_time)
+
+
+def select_echo(
+    in_files: str | list[str],
+    te_echos: list[float | Undefined | None] | None = None,
+    te_reference: float = 0.030,
+) -> str:
+    """
+    Select the echo file with the closest echo time to the reference echo time.
+
+    Used to grab the echo file when processing multi-echo data through workflows
+    that only accept a single file.
+
+    Parameters
+    ----------
+    in_files : :obj:`str` or :obj:`list`
+        A single filename or a list of filenames.
+    te_echos : :obj:`list` of :obj:`float`
+        List of echo times corresponding to each file.
+        If not a number (typically, a :obj:`~nipype.interfaces.base.Undefined`),
+        the function selects the second echo.
+    te_reference : float, optional
+        Reference echo time used to find the closest echo time.
+
+    Returns
+    -------
+    str
+        The selected echo file.
 
     Examples
     --------
