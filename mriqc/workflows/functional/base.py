@@ -157,8 +157,8 @@ def fmri_qc_workflow(name="funcMRIQC"):
     workflow.connect([
         (inputnode, datalad_get, [("in_file", "in_file")]),
         (datalad_get, meta, [("in_file", "in_file")]),
+        (datalad_get, pick_echo, [("in_file", "in_files")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (sanitize, pick_echo, [("out_file", "in_files")]),
         (meta, pick_echo, [(("out_dict", _get_echotime), "te_echos")]),
         (pick_echo, non_steady_state_detector, [("out", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
