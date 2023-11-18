@@ -42,10 +42,8 @@ The functional workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
-from __future__ import annotations
 from mriqc import config
 from nipype.interfaces import utility as niu
-from nipype.interfaces.base import Undefined
 from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
 
@@ -71,6 +69,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
     from niworkflows.interfaces.bids import ReadSidecarJSON
     from niworkflows.interfaces.header import SanitizeImage
     from mriqc.messages import BUILDING_WORKFLOW
+    from mriqc.interfaces.functional import SelectEcho
 
     workflow = pe.Workflow(name=name)
 
@@ -109,7 +108,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         index_db=config.execution.bids_database_dir
     ), name="metadata", iterfield=["in_file"])
 
-    pick_echo = pe.Node(niu.Function(function=select_echo), name="pick_echo")
+    pick_echo = pe.Node(SelectEcho(), name="pick_echo")
 
     non_steady_state_detector = pe.Node(NonSteadyStateDetector(), name="non_steady_state_detector")
 
@@ -159,13 +158,13 @@ def fmri_qc_workflow(name="funcMRIQC"):
         (datalad_get, meta, [("in_file", "in_file")]),
         (datalad_get, pick_echo, [("in_file", "in_files")]),
         (datalad_get, sanitize, [("in_file", "in_file")]),
-        (meta, pick_echo, [(("out_dict", _get_echotime), "te_echos")]),
-        (pick_echo, non_steady_state_detector, [("out", "in_file")]),
+        (meta, pick_echo, [("out_dict", "metadata")]),
+        (pick_echo, non_steady_state_detector, [("out_file", "in_file")]),
         (non_steady_state_detector, sanitize, [("n_volumes_to_discard", "n_volumes_to_discard")]),
         (sanitize, hmcwf, [("out_file", "inputnode.in_file")]),
         (hmcwf, mean, [("outputnode.out_file", "in_file")]),
         (hmcwf, tsnr, [("outputnode.out_file", "in_file")]),
-        (sanitize, ema, [(("out_file", _pop), "inputnode.epi_mean")]),
+        (mean, ema, [(("out_file", _pop), "inputnode.epi_mean")]),
         # Feed IQMs computation
         (meta, iqmswf, [("out_dict", "inputnode.metadata"),
                         ("subject", "inputnode.subject"),
@@ -776,94 +775,3 @@ def _apply_transforms(in_file, in_xfm):
 
     realigned.to_filename(out_file)
     return str(out_file)
-
-
-def _get_echotime(inlist):
-    if isinstance(inlist, list):
-        retval = [_get_echotime(el) for el in inlist]
-        return retval[0] if len(retval) == 1 else retval
-
-    echo_time = inlist.get("EchoTime", None)
-
-    if echo_time:
-        return float(echo_time)
-
-
-def select_echo(
-    in_files: str | list[str],
-    te_echos: list[float | Undefined | None] | None = None,
-    te_reference: float = 0.030,
-) -> str:
-    """
-    Select the echo file with the closest echo time to the reference echo time.
-
-    Used to grab the echo file when processing multi-echo data through workflows
-    that only accept a single file.
-
-    Parameters
-    ----------
-    in_files : :obj:`str` or :obj:`list`
-        A single filename or a list of filenames.
-    te_echos : :obj:`list` of :obj:`float`
-        List of echo times corresponding to each file.
-        If not a number (typically, a :obj:`~nipype.interfaces.base.Undefined`),
-        the function selects the second echo.
-    te_reference : float, optional
-        Reference echo time used to find the closest echo time.
-
-    Returns
-    -------
-    str
-        The selected echo file.
-
-    Examples
-    --------
-    >>> select_echo("single-echo.nii.gz")
-    'single-echo.nii.gz'
-
-    >>> select_echo(["single-echo.nii.gz"])
-    'single-echo.nii.gz'
-
-    >>> select_echo(
-    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
-    ... )
-    'echo2.nii.gz'
-
-    >>> select_echo(
-    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
-    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, 68.4],
-    ...     te_reference=33.1,
-    ... )
-    'echo3.nii.gz'
-
-    >>> select_echo(
-    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
-    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1],
-    ...     te_reference=33.1,
-    ... )
-    'echo2.nii.gz'
-
-    >>> select_echo(
-    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
-    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, None],
-    ...     te_reference=33.1,
-    ... )
-    'echo2.nii.gz'
-
-    """
-    if not isinstance(in_files, (list, tuple)):
-        return in_files
-
-    if len(in_files) == 1:
-        return in_files[0]
-
-    import numpy as np
-
-    n_echos = len(in_files)
-    if te_echos is not None and len(te_echos) == n_echos:
-        try:
-            return in_files[np.argmin(np.abs(np.array(te_echos) - te_reference))]
-        except TypeError:
-            pass
-
-    return in_files[1]

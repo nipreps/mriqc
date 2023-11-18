@@ -20,6 +20,7 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+from __future__ import annotations
 from os import path as op
 
 import nibabel as nb
@@ -30,9 +31,12 @@ from mriqc.utils.misc import _flatten_dict
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     File,
+    InputMultiObject,
+    isdefined,
     SimpleInterface,
     TraitedSpec,
     traits,
+    Undefined,
 )
 
 
@@ -267,6 +271,44 @@ class Spikes(SimpleInterface):
         return runtime
 
 
+class _SelectEchoInputSpec(BaseInterfaceInputSpec):
+    in_files = InputMultiObject(File(exists=True), mandatory=True, desc="input EPI file(s)")
+    metadata = InputMultiObject(traits.Dict(), desc="sidecar JSON files corresponding to in_files")
+    te_reference = traits.Float(0.030, usedefault=True, desc="reference SE-EPI echo time")
+
+
+class _SelectEchoOutputSpec(TraitedSpec):
+    out_file = File(desc="selected echo")
+    echo_index = traits.Int(desc="index of the selected echo")
+    is_multiecho = traits.Bool(desc="whether it is a multiecho dataset")
+
+
+class SelectEcho(SimpleInterface):
+    """
+    Computes anatomical :abbr:`QC (Quality Control)` measures on the
+    structural image given as input
+
+    """
+
+    input_spec = _SelectEchoInputSpec
+    output_spec = _SelectEchoOutputSpec
+
+    def _run_interface(self, runtime):
+        (
+            self._results["out_file"],
+            self._results["echo_index"],
+        ) = select_echo(
+            self.inputs.in_files,
+            te_echos=(
+                _get_echotime(self.inputs.metadata) if isdefined(self.inputs.metadata)
+                else None
+            ),
+            te_reference=self.inputs.te_reference,
+        )
+        self._results["is_multiecho"] = self._results["echo_index"] != -1
+        return runtime
+
+
 def find_peaks(data):
     t_z = [data[:, :, i, :].mean(axis=0).mean(axis=0) for i in range(data.shape[2])]
     return t_z
@@ -292,3 +334,95 @@ def find_spikes(data, spike_thresh):
 
 def _robust_zscore(data):
     return (data - np.atleast_2d(np.median(data, axis=1)).T) / np.atleast_2d(data.std(axis=1)).T
+
+
+def select_echo(
+    in_files: str | list[str],
+    te_echos: list[float | Undefined | None] | None = None,
+    te_reference: float = 0.030,
+) -> str:
+    """
+    Select the echo file with the closest echo time to the reference echo time.
+
+    Used to grab the echo file when processing multi-echo data through workflows
+    that only accept a single file.
+
+    Parameters
+    ----------
+    in_files : :obj:`str` or :obj:`list`
+        A single filename or a list of filenames.
+    te_echos : :obj:`list` of :obj:`float`
+        List of echo times corresponding to each file.
+        If not a number (typically, a :obj:`~nipype.interfaces.base.Undefined`),
+        the function selects the second echo.
+    te_reference : float, optional
+        Reference echo time used to find the closest echo time.
+
+    Returns
+    -------
+    str
+        The selected echo file.
+
+    Examples
+    --------
+    >>> select_echo("single-echo.nii.gz")
+    ('single-echo.nii.gz', -1)
+
+    >>> select_echo(["single-echo.nii.gz"])
+    ('single-echo.nii.gz', -1)
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ... )
+    ('echo2.nii.gz', 1)
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, 68.4],
+    ...     te_reference=33.1,
+    ... )
+    ('echo3.nii.gz', 2)
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1],
+    ...     te_reference=33.1,
+    ... )
+    ('echo2.nii.gz', 1)
+
+    >>> select_echo(
+    ...     [f"echo{n}.nii.gz" for n in range(1,7)],
+    ...     te_echos=[12.5, 28.5, 34.2, 45.0, 56.1, None],
+    ...     te_reference=33.1,
+    ... )
+    ('echo2.nii.gz', 1)
+
+    """
+    if not isinstance(in_files, (list, tuple)):
+        return in_files, -1
+
+    if len(in_files) == 1:
+        return in_files[0], -1
+
+    import numpy as np
+
+    n_echos = len(in_files)
+    if te_echos is not None and len(te_echos) == n_echos:
+        try:
+            index = np.argmin(np.abs(np.array(te_echos) - te_reference))
+            return in_files[index], index
+        except TypeError:
+            pass
+
+    return in_files[1], 1
+
+
+def _get_echotime(inlist):
+    if isinstance(inlist, list):
+        retval = [_get_echotime(el) for el in inlist]
+        return retval[0] if len(retval) == 1 else retval
+
+    echo_time = inlist.get("EchoTime", None) if inlist else None
+
+    if echo_time:
+        return float(echo_time)
