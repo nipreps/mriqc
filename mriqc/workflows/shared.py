@@ -68,19 +68,16 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
     )
 
     final_masked = pe.Node(ApplyMask(), name="final_masked")
-    final_inu = pe.Node(niu.Function(function=_apply_bias_correction), name="final_inu")
 
     workflow = pe.Workflow(name=name)
     # fmt: off
     workflow.connect([
-        (inputnode, final_inu, [("in_files", "in_file")]),
         (inputnode, pre_clip, [("in_files", "in_file")]),
         (pre_clip, pre_n4, [("out_file", "input_image")]),
         (pre_n4, synthstrip, [("output_image", "in_file")]),
         (synthstrip, post_n4, [("out_mask", "weight_image")]),
         (synthstrip, final_masked, [("out_mask", "in_mask")]),
         (pre_clip, post_n4, [("out_file", "input_image")]),
-        (post_n4, final_inu, [("bias_image", "bias_image")]),
         (post_n4, final_masked, [("output_image", "in_file")]),
         (final_masked, outputnode, [("out_file", "out_brain")]),
         (post_n4, outputnode, [("bias_image", "bias_image")]),
@@ -89,32 +86,3 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
     ])
     # fmt: on
     return workflow
-
-
-def _apply_bias_correction(in_file, bias_image, out_file=None):
-    import os.path as op
-
-    import numpy as np
-    import nibabel as nb
-
-    img = nb.load(in_file)
-    data = np.clip(
-        img.get_fdata() * nb.load(bias_image).get_fdata(),
-        a_min=0,
-        a_max=None,
-    )
-    out_img = img.__class__(
-        data.astype(img.get_data_dtype()),
-        img.affine,
-        img.header,
-    )
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath(f"{fname}_inu{ext}")
-
-    out_img.to_filename(out_file)
-    return out_file
