@@ -76,6 +76,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         ReadDWIMetadata,
         WeightedStat,
     )
+    from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
     from mriqc.messages import BUILDING_WORKFLOW
 
     workflow = pe.Workflow(name=name)
@@ -346,70 +347,6 @@ def compute_iqms(name="ComputeIQMs"):
     #     (measures, datasink, [("out_qc", "root")]),
     # ])
     # # fmt: on
-    return workflow
-
-
-def dmri_bmsk_workflow(name="dmri_brainmask", omp_nthreads=None):
-    """
-    Compute a brain mask for the input :abbr:`dMRI (diffusion MRI)` dataset.
-
-    .. workflow::
-
-        from mriqc.workflows.diffusion.base import dmri_bmsk_workflow
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = dmri_bmsk_workflow()
-
-
-    """
-
-    from nipype.interfaces.ants import N4BiasFieldCorrection
-    from niworkflows.interfaces.nibabel import ApplyMask
-    from mriqc.interfaces.synthstrip import SynthStrip
-    from mriqc.workflows.anatomical.base import _apply_bias_correction
-
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
-        name="outputnode",
-    )
-
-    post_n4 = pe.Node(
-        N4BiasFieldCorrection(
-            dimension=3,
-            save_bias=True,
-            num_threads=omp_nthreads,
-            n_iterations=[50] * 4,
-            copy_header=True,
-        ),
-        name="post_n4",
-    )
-
-    synthstrip = pe.Node(
-        SynthStrip(num_threads=omp_nthreads),
-        name="synthstrip",
-        num_threads=omp_nthreads,
-    )
-
-    final_masked = pe.Node(ApplyMask(), name="final_masked")
-    final_inu = pe.Node(niu.Function(function=_apply_bias_correction), name="final_inu")
-
-    workflow = pe.Workflow(name=name)
-    # fmt: off
-    workflow.connect([
-        (inputnode, final_inu, [("in_file", "in_file")]),
-        (inputnode, synthstrip, [("in_file", "in_file")]),
-        (inputnode, post_n4, [("in_file", "input_image")]),
-        (synthstrip, post_n4, [("out_mask", "weight_image")]),
-        (synthstrip, final_masked, [("out_mask", "in_mask")]),
-        (post_n4, final_inu, [("bias_image", "bias_image")]),
-        (post_n4, final_masked, [("output_image", "in_file")]),
-        (final_masked, outputnode, [("out_file", "out_brain")]),
-        (post_n4, outputnode, [("bias_image", "bias_image")]),
-        (synthstrip, outputnode, [("out_mask", "out_mask")]),
-        (post_n4, outputnode, [("output_image", "out_corrected")]),
-    ])
-    # fmt: on
     return workflow
 
 

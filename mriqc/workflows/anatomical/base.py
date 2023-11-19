@@ -86,6 +86,7 @@ def anat_qc_workflow(name="anatMRIQC"):
             wf = anat_qc_workflow()
 
     """
+    from mriqc.workflows.shared import synthstrip_wf
 
     dataset = config.workflow.inputs.get("t1w", []) + config.workflow.inputs.get("t2w", [])
 
@@ -680,101 +681,6 @@ def airmsk_wf(name="AirMaskWorkflow"):
     # fmt: on
 
     return workflow
-
-
-def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
-    """Create a brain-extraction workflow using SynthStrip."""
-    from nipype.interfaces.ants import N4BiasFieldCorrection
-    from niworkflows.interfaces.nibabel import IntensityClip, ApplyMask
-    from mriqc.interfaces.synthstrip import SynthStrip
-
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_files"]), name="inputnode")
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
-        name="outputnode",
-    )
-
-    # truncate target intensity for N4 correction
-    pre_clip = pe.Node(IntensityClip(p_min=10, p_max=99.9), name="pre_clip")
-
-    pre_n4 = pe.Node(
-        N4BiasFieldCorrection(
-            dimension=3,
-            num_threads=omp_nthreads,
-            rescale_intensities=True,
-            copy_header=True,
-        ),
-        name="pre_n4",
-    )
-
-    post_n4 = pe.Node(
-        N4BiasFieldCorrection(
-            dimension=3,
-            save_bias=True,
-            num_threads=omp_nthreads,
-            n_iterations=[50] * 4,
-            copy_header=True,
-        ),
-        name="post_n4",
-    )
-
-    synthstrip = pe.Node(
-        SynthStrip(num_threads=omp_nthreads),
-        name="synthstrip",
-        num_threads=omp_nthreads,
-    )
-
-    final_masked = pe.Node(ApplyMask(), name="final_masked")
-    final_inu = pe.Node(niu.Function(function=_apply_bias_correction), name="final_inu")
-
-    workflow = pe.Workflow(name=name)
-    # fmt: off
-    workflow.connect([
-        (inputnode, final_inu, [("in_files", "in_file")]),
-        (inputnode, pre_clip, [("in_files", "in_file")]),
-        (pre_clip, pre_n4, [("out_file", "input_image")]),
-        (pre_n4, synthstrip, [("output_image", "in_file")]),
-        (synthstrip, post_n4, [("out_mask", "weight_image")]),
-        (synthstrip, final_masked, [("out_mask", "in_mask")]),
-        (pre_clip, post_n4, [("out_file", "input_image")]),
-        (post_n4, final_inu, [("bias_image", "bias_image")]),
-        (post_n4, final_masked, [("output_image", "in_file")]),
-        (final_masked, outputnode, [("out_file", "out_brain")]),
-        (post_n4, outputnode, [("bias_image", "bias_image")]),
-        (synthstrip, outputnode, [("out_mask", "out_mask")]),
-        (post_n4, outputnode, [("output_image", "out_corrected")]),
-    ])
-    # fmt: on
-    return workflow
-
-
-def _apply_bias_correction(in_file, bias_image, out_file=None):
-    import os.path as op
-
-    import numpy as np
-    import nibabel as nb
-
-    img = nb.load(in_file)
-    data = np.clip(
-        img.get_fdata() * nb.load(bias_image).get_fdata(),
-        a_min=0,
-        a_max=None,
-    )
-    out_img = img.__class__(
-        data.astype(img.get_data_dtype()),
-        img.affine,
-        img.header,
-    )
-
-    if out_file is None:
-        fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
-            fname, ext2 = op.splitext(fname)
-            ext = ext2 + ext
-        out_file = op.abspath(f"{fname}_inu{ext}")
-
-    out_img.to_filename(out_file)
-    return out_file
 
 
 def _binarize(in_file, threshold=0.5, out_file=None):

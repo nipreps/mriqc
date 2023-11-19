@@ -47,11 +47,13 @@ def _single_report(in_file):
     from mriqc import config
 
     # Ensure it's a Path
-    in_file = Path(in_file)
+    in_file = Path(in_file if not isinstance(in_file, list) else in_file[0])
 
     # Extract BIDS entities
     entities = config.execution.layout.get_file(in_file).get_entities()
     entities.pop("extension", None)
+    entities.pop("echo", None)
+    entities.pop("part", None)
     report_type = entities.pop("datatype", None)
 
     # Read output file:

@@ -538,7 +538,7 @@ def parse_args(args=None, namespace=None):
         config.execution.participant_label,
         session_id=config.execution.session_id,
         task=config.execution.task_id,
-        group_echos=False,
+        group_echos=True,
         bids_filters=config.execution.bids_filters,
         queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
     )
@@ -575,7 +575,7 @@ Please, check out your currently set filters {ffile}:
     # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)
     with suppress(FileNotFoundError):
         config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
-            [i for sublist in config.workflow.inputs.values() for i in sublist]
+            config.workflow.inputs.values()
         )
 
     # set specifics for alternative populations
@@ -593,11 +593,14 @@ Please, check out your currently set filters {ffile}:
 
 
 def _get_biggest_file_size_gb(files):
+    """Identify the largest file size (allows multi-echo groups)."""
+
     import os
 
-    max_size = 0
+    sizes = []
     for file in files:
-        size = os.path.getsize(file) / (1024**3)
-        if size > max_size:
-            max_size = size
-    return max_size
+        if isinstance(file, (list, tuple)):
+            sizes.append(_get_biggest_file_size_gb(file))
+        else:
+            sizes.append(os.path.getsize(file))
+    return max(sizes) / (1024**3)

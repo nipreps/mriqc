@@ -49,6 +49,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, traits.Int, usedefault=True)
     dataset = Str(desc="dataset identifier")
+    dismiss_entities = traits.List(["part"], usedefault=True)
     metadata = traits.Dict()
     provenance = traits.Dict()
 
@@ -110,6 +111,17 @@ class IQMFileSink(SimpleInterface):
                 bids_root = path.parents[i + 1]
                 break
         in_file = str(path.relative_to(bids_root))
+
+        if (
+            isdefined(self.inputs.dismiss_entities)
+            and (dismiss := self.inputs.dismiss_entities)
+        ):
+            for entity in dismiss:
+                bids_chunks = [
+                    chunk for chunk in path.name.split("_")
+                    if not chunk.startswith(f"{entity}-")
+                ]
+                path = path.parent / "_".join(bids_chunks)
 
         # Build path and ensure directory exists
         bids_path = out_dir / in_file.replace("".join(Path(in_file).suffixes), ".json")

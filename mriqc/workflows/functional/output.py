@@ -81,7 +81,7 @@ def init_func_report_wf(name="func_report_wf"):
     # Set FD threshold
     inputnode.inputs.fd_thres = config.workflow.fd_thres
 
-    spmask = pe.Node(
+    spmask = pe.MapNode(
         niu.Function(
             input_names=["in_file", "in_mask"],
             output_names=["out_file", "out_plot"],
@@ -89,12 +89,14 @@ def init_func_report_wf(name="func_report_wf"):
         ),
         name="SpikesMask",
         mem_gb=mem_gb * 3.5,
+        iterfield=["in_file"],
     )
 
-    spikes_bg = pe.Node(
+    spikes_bg = pe.MapNode(
         Spikes(no_zscore=True, detrend=False),
         name="SpikesFinderBgMask",
         mem_gb=mem_gb * 2.5,
+        iterfield=["in_file", "in_mask"],
     )
 
     # Generate crown mask
@@ -103,7 +105,12 @@ def init_func_report_wf(name="func_report_wf"):
     subtract_mask = pe.Node(BinarySubtraction(), name="subtract_mask")
     parcels = pe.Node(niu.Function(function=_carpet_parcellation), name="parcels")
 
-    bigplot = pe.Node(FMRISummary(), name="BigPlot", mem_gb=mem_gb * 3.5)
+    bigplot = pe.MapNode(
+        FMRISummary(),
+        name="BigPlot",
+        mem_gb=mem_gb * 3.5,
+        iterfield=["in_func", "dvars", "outliers", "in_spikes_bg"],
+    )
 
     # fmt: off
     workflow.connect([
@@ -118,58 +125,66 @@ def init_func_report_wf(name="func_report_wf"):
         (inputnode, parcels, [("epi_parc", "segmentation")]),
         (inputnode, dilated_mask, [("brainmask", "in_mask")]),
         (inputnode, subtract_mask, [("brainmask", "in_subtract")]),
+        (spmask, spikes_bg, [("out_file", "in_mask")]),
         (dilated_mask, subtract_mask, [("out_mask", "in_base")]),
         (subtract_mask, parcels, [("out_mask", "crown_mask")]),
         (parcels, bigplot, [("out", "in_segm")]),
         (spikes_bg, bigplot, [("out_tsz", "in_spikes_bg")]),
-        (spmask, spikes_bg, [("out_file", "in_mask")]),
     ])
     # fmt: on
 
-    mosaic_mean = pe.Node(
+    mosaic_mean = pe.MapNode(
         PlotMosaic(
             out_file="plot_func_mean_mosaic1.svg",
             cmap="Greys_r",
         ),
         name="PlotMosaicMean",
+        iterfield=["in_file"],
     )
 
-    mosaic_stddev = pe.Node(
+    mosaic_stddev = pe.MapNode(
         PlotMosaic(
             out_file="plot_func_stddev_mosaic2_stddev.svg",
             cmap="viridis",
         ),
         name="PlotMosaicSD",
+        iterfield=["in_file"],
     )
 
-    ds_report_mean = pe.Node(
+    ds_report_mean = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
             desc="mean",
             datatype="figures",
+            dismiss_entities=("part",)
         ),
         name="ds_report_mean",
         run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
-    ds_report_stdev = pe.Node(
+    ds_report_stdev = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
             desc="stdev",
             datatype="figures",
+            dismiss_entities=("part",)
         ),
         name="ds_report_stdev",
         run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
-    ds_report_carpet = pe.Node(
+    ds_report_carpet = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
             desc="carpet",
             datatype="figures",
+            dismiss_entities=("part",)
         ),
         name="ds_report_carpet",
         run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
     # fmt: off
@@ -201,6 +216,7 @@ def init_func_report_wf(name="func_report_wf"):
                 base_directory=reportlets_dir,
                 desc="spikes",
                 datatype="figures",
+                dismiss_entities=("part",)
             ),
             name="ds_report_spikes",
             run_without_submitting=True,
@@ -220,21 +236,24 @@ def init_func_report_wf(name="func_report_wf"):
         return workflow
 
     # Verbose-reporting goes here
+    from niworkflows.utils.connections import pop_file as _pop
     from nireports.interfaces import PlotContours
 
-    mosaic_zoom = pe.Node(
+    mosaic_zoom = pe.MapNode(
         PlotMosaic(
             cmap="Greys_r",
         ),
         name="PlotMosaicZoomed",
+        iterfield=["in_file"],
     )
 
-    mosaic_noise = pe.Node(
+    mosaic_noise = pe.MapNode(
         PlotMosaic(
             only_noise=True,
             cmap="viridis_r",
         ),
         name="PlotMosaicNoise",
+        iterfield=["in_file"]
     )
 
     if config.workflow.species.lower() in ("rat", "mouse"):
@@ -254,24 +273,28 @@ def init_func_report_wf(name="func_report_wf"):
         name="PlotBrainmask",
     )
 
-    ds_report_zoomed = pe.Node(
+    ds_report_zoomed = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
             desc="zoomed",
             datatype="figures",
+            dismiss_entities=("part",)
         ),
         name="ds_report_zoomed",
         run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
-    ds_report_background = pe.Node(
+    ds_report_background = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
             desc="background",
             datatype="figures",
+            dismiss_entities=("part",)
         ),
         name="ds_report_background",
         run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
     ds_report_bmask = pe.Node(
@@ -279,6 +302,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="brainmask",
             datatype="figures",
+            dismiss_entities=("part", "echo"),
         ),
         name="ds_report_bmask",
         run_without_submitting=True,
@@ -289,6 +313,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="norm",
             datatype="figures",
+            dismiss_entities=("part", "echo"),
         ),
         name="ds_report_norm",
         run_without_submitting=True,
@@ -298,7 +323,7 @@ def init_func_report_wf(name="func_report_wf"):
     workflow.connect([
         (inputnode, ds_report_norm, [("mni_report", "in_file"),
                                      ("name_source", "source_file")]),
-        (inputnode, plot_bmask, [("epi_mean", "in_file"),
+        (inputnode, plot_bmask, [(("epi_mean", _pop), "in_file"),
                                  ("brainmask", "in_contours")]),
         (inputnode, mosaic_zoom, [("epi_mean", "in_file"),
                                   ("brainmask", "bbox_mask_file")]),
@@ -308,7 +333,7 @@ def init_func_report_wf(name="func_report_wf"):
         (inputnode, ds_report_bmask, [("name_source", "source_file")]),
         (mosaic_zoom, ds_report_zoomed, [("out_file", "in_file")]),
         (mosaic_noise, ds_report_background, [("out_file", "in_file")]),
-        (plot_bmask, ds_report_bmask, [("out_file", "in_file")]),
+        (plot_bmask, ds_report_bmask, [(("out_file", _pop), "in_file")]),
     ])
     # fmt: on
 
@@ -398,4 +423,7 @@ def _carpet_parcellation(segmentation, crown_mask):
 
 
 def _get_tr(meta_dict):
+    if isinstance(meta_dict, (list, tuple)):
+        meta_dict = meta_dict[0]
+
     return meta_dict.get("RepetitionTime", None)
