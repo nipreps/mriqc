@@ -76,7 +76,7 @@ SetDisplayFlag 22 1
 # SetDisplayConfig 2 2 1
 
 # Use the RedrawScreen command to force a redraw after you have a view
-# set up, beofre taking a picture.
+# set up, before taking a picture.
 # RedrawScreen
 
 # This command will save the actual screenshot.
