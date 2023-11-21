@@ -144,7 +144,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
     if not jsonfiles:
         return None
 
-    headers = list(BIDS_COMP.keys()) + ["mriqc_pred"]
+    headers = list(BIDS_COMP) + ["mriqc_pred"]
     predictions = {k: [] for k in headers}
 
     for jsonfile in jsonfiles:
@@ -157,12 +157,12 @@ def generate_pred(derivatives_dir, output_dir, mod):
         for k in headers:
             predictions[k].append(data.pop(k, None))
 
-    dataframe = pd.DataFrame(predictions).sort_values(by=list(BIDS_COMP.keys()))
+    dataframe = pd.DataFrame(predictions).sort_values(by=list(BIDS_COMP))
 
     # Drop empty columns
     dataframe.dropna(axis="columns", how="all", inplace=True)
 
-    bdits_cols = list(set(BIDS_COMP.keys()) & set(dataframe.columns.ravel()))
+    bdits_cols = list(set(BIDS_COMP) & set(dataframe.columns.ravel()))
 
     # Drop duplicates
     dataframe.drop_duplicates(bdits_cols, keep="last", inplace=True)
