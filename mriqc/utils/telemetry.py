@@ -3,7 +3,7 @@ import migas
 from .. import __version__, config
 
 
-def setup_migas(init: bool = True) -> None:
+def setup_migas(init_ping: bool = True, exit_ping: bool = True) -> None:
     """
     Prepare the migas python client to communicate with a migas server.
     If ``init`` is ``True``, send an initial breadcrumb.
@@ -14,14 +14,21 @@ def setup_migas(init: bool = True) -> None:
         session_id = config.execution.run_uuid.split('_', 1)[-1]
 
     migas.setup(session_id=session_id)
-    if init:
+    if init_ping:
         # send initial status ping
-        send_breadcrumb(status='R', status_desc='workflow start')
+        send_crumb(status='R', status_desc='workflow start')
+    if exit_ping:
+        from migas.error.nipype import node_execution_error
+
+        migas.track_exit(
+            'nipreps/mriqc',
+            __version__,
+            {'NodeExecutionError': node_execution_error},
+        )
 
 
-def send_breadcrumb(**kwargs) -> dict:
+def send_crumb(**kwargs) -> dict:
     """
     Communicate with the migas telemetry server. This requires `migas.setup()` to be called.
     """
-    res = migas.add_project("nipreps/mriqc", __version__, **kwargs)
-    return res
+    return migas.add_breadcrumb("nipreps/mriqc", __version__, **kwargs)
