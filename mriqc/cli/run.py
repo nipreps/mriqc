@@ -22,6 +22,7 @@
 #
 """Definition of the command line interface's (CLI) entry point."""
 
+
 def main():
     """Entry point for MRIQC's CLI."""
     import gc
