@@ -83,7 +83,7 @@ def reorder_csv(csv_file, out_file=None):
         # The column does not exist
         pass
 
-    for col in ["scan", "session", "subject"]:
+    for col in ("scan", "session", "subject"):
         cols.remove(col)
         cols.insert(0, col)
 
@@ -208,8 +208,7 @@ def generate_tsv(output_dir, mod):
 
 
 def _read_and_save(in_file):
-    data = json.loads(Path(in_file).read_text())
-    return data if data else None
+    return json.loads(Path(in_file).read_text()) or None
 
 
 def _flatten(in_dict, parent_key="", sep="_"):

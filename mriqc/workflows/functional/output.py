@@ -384,7 +384,7 @@ def spikes_mask(in_file, in_mask=None, out_file=None):
     else:
         new_mask_3d = np.zeros(in_4d_nii.shape[:3]) == 1
 
-    if orientation[0] in ["L", "R"]:
+    if orientation[0] in ("L", "R"):
         new_mask_3d[0:2, :, :] = True
         new_mask_3d[-3:-1, :, :] = True
     else:

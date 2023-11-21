@@ -166,7 +166,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (["efc"], None),
             (["fber"], None),
             (["fwhm", "fwhm_x", "fwhm_y", "fwhm_z"], "mm"),
-            (["gsr_%s" % a for a in ["x", "y"]], None),
+            (["gsr_%s" % a for a in ("x", "y")], None),
             (["snr"], None),
             (["dvars_std", "dvars_vstd"], None),
             (["dvars_nstd"], None),
@@ -291,9 +291,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
 def _format_labels(row, id_labels):
     """format participant labels"""
-    crow = []
-
-    for col_id, prefix in list(BIDS_COMP.items()):
-        if col_id in id_labels:
-            crow.append(f"{prefix}-{row[[col_id]].values[0]}")
+    crow = (
+        f"{prefix}-{row[[col_id]].values[0]}"
+        for col_id, prefix in list(BIDS_COMP.items())
+        if col_id in id_labels
+    )
     return "_".join(crow)
