@@ -21,7 +21,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Definition of the command line interface's (CLI) entry point."""
-EXITCODE: int = -1
 
 
 def main():
@@ -55,7 +54,7 @@ def main():
     )
     config.to_filename(config_file)
     config.file_path = config_file
-
+    exitcode = 0
     # Set up participant level
     if "participant" in config.workflow.analysis_level:
         _pool = None
@@ -92,15 +91,13 @@ def main():
         if not config.execution.notrack:
             from ..utils.telemetry import setup_migas
 
-            setup_migas(init=True)
-            atexit.register(migas_exit)
+            setup_migas()
 
         # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
         # Because Python on Linux does not ever free virtual memory (VM), running the
         # workflow construction jailed within a process preempts excessive VM buildup.
         from multiprocessing import Manager, Process
 
-        global EXITCODE
         with Manager() as mgr:
             from .workflow import build_workflow
 
@@ -110,16 +107,16 @@ def main():
             p.join()
 
             mriqc_wf = retval.get("workflow", None)
-            EXITCODE = p.exitcode or retval.get("return_code", 0)
+            exitcode = p.exitcode or retval.get("return_code", 0)
 
         # CRITICAL Load the config from the file. This is necessary because the ``build_workflow``
         # function executed constrained in a process may change the config (and thus the global
         # state of MRIQC).
         config.load(config_file)
 
-        EXITCODE = EXITCODE or (mriqc_wf is None) * os.EX_SOFTWARE
-        if EXITCODE != 0:
-            sys.exit(EXITCODE)
+        exitcode = exitcode or (mriqc_wf is None) * os.EX_SOFTWARE
+        if exitcode != 0:
+            sys.exit(exitcode)
 
         # Initialize nipype config
         config.nipype.init()
@@ -232,7 +229,6 @@ def main():
         if not mod_group_reports:
             raise Exception(messages.GROUP_NO_DATA)
 
-        EXITCODE = 0 if EXITCODE == -1 else EXITCODE
         config.loggers.cli.info(messages.GROUP_FINISHED)
 
     from mriqc.utils.bids import write_bidsignore, write_derivative_description
@@ -241,31 +237,7 @@ def main():
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
     config.loggers.cli.info(messages.RUN_FINISHED)
-    sys.exit(EXITCODE)
-
-
-def migas_exit() -> None:
-    """
-    Send a final crumb to the migas server signaling if the run successfully completed
-    This function should be registered with `atexit` to run at termination.
-    """
-    import sys
-    from ..utils.telemetry import send_breadcrumb
-
-    global EXITCODE
-    migas_kwargs = {'status': 'C', 'status_desc': 'Success'}
-    # `sys` will not have these attributes unless an error has been handled
-    if hasattr(sys, 'last_type'):
-        migas_kwargs = {
-            'status': 'F',
-            'status_desc': 'Finished with error(s)',
-            'error_type': sys.last_type,
-            'error_desc': sys.last_value,
-        }
-    elif EXITCODE != 0:
-        migas_kwargs.update({'status': 'F', 'status_desc': f'Completed with exitcode {EXITCODE}'})
-
-    send_breadcrumb(**migas_kwargs)
+    sys.exit(exitcode)
 
 
 if __name__ == "__main__":
