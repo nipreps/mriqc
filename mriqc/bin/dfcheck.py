@@ -38,20 +38,19 @@ def read_iqms(feat_file):
     feat_file = Path(feat_file)
 
     if feat_file.suffix == ".csv":
-        bids_comps = list(BIDS_COMP.keys())
         x_df = pd.read_csv(
-            feat_file, index_col=False, dtype={col: str for col in bids_comps}
+            feat_file, index_col=False, dtype={col: str for col in BIDS_COMP}
         )
         # Find present bids bits and sort by them
-        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
-        bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(BIDS_COMP))
+        bids_comps_present = [bit for bit in BIDS_COMP if bit in bids_comps_present]
         x_df = x_df.sort_values(by=bids_comps_present)
         # Remove sub- prefix in subject_id
         x_df.subject_id = x_df.subject_id.str.lstrip("sub-")
 
         # Remove columns that are not IQMs
         feat_names = list(x_df._get_numeric_data().columns.ravel())
-        for col in bids_comps:
+        for col in BIDS_COMP:
             try:
                 feat_names.remove(col)
             except ValueError:

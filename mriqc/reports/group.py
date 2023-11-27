@@ -166,7 +166,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (["efc"], None),
             (["fber"], None),
             (["fwhm", "fwhm_x", "fwhm_y", "fwhm_z"], "mm"),
-            (["gsr_%s" % a for a in ["x", "y"]], None),
+            (["gsr_%s" % a for a in ("x", "y")], None),
             (["snr"], None),
             (["dvars_std", "dvars_vstd"], None),
             (["dvars_nstd"], None),
@@ -203,12 +203,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     }
 
     if csv_file.suffix == ".csv":
-        def_comps = list(BIDS_COMP.keys())
         dataframe = pd.read_csv(
-            csv_file, index_col=False, dtype={comp: object for comp in def_comps}
+            csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
         )
 
-        id_labels = list(set(def_comps) & set(dataframe.columns.ravel().tolist()))
+        id_labels = list(set(BIDS_COMP) & set(dataframe.columns.ravel().tolist()))
         dataframe["label"] = dataframe[id_labels].apply(
             _format_labels, args=(id_labels,), axis=1
         )
@@ -291,9 +290,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
 def _format_labels(row, id_labels):
     """format participant labels"""
-    crow = []
-
-    for col_id, prefix in list(BIDS_COMP.items()):
-        if col_id in id_labels:
-            crow.append(f"{prefix}-{row[[col_id]].values[0]}")
+    crow = (
+        f"{prefix}-{row[[col_id]].values[0]}"
+        for col_id, prefix in list(BIDS_COMP.items())
+        if col_id in id_labels
+    )
     return "_".join(crow)

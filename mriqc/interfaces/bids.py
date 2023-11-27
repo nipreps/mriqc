@@ -161,7 +161,7 @@ class IQMFileSink(SimpleInterface):
 
         # Fill in the "bids_meta" key
         id_dict = {}
-        for comp in list(BIDS_COMP.keys()):
+        for comp in BIDS_COMP:
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val

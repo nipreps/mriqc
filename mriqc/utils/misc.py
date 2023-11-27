@@ -83,7 +83,7 @@ def reorder_csv(csv_file, out_file=None):
         # The column does not exist
         pass
 
-    for col in ["scan", "session", "subject"]:
+    for col in ("scan", "session", "subject"):
         cols.remove(col)
         cols.insert(0, col)
 
@@ -144,7 +144,7 @@ def generate_pred(derivatives_dir, output_dir, mod):
     if not jsonfiles:
         return None
 
-    headers = list(BIDS_COMP.keys()) + ["mriqc_pred"]
+    headers = list(BIDS_COMP) + ["mriqc_pred"]
     predictions = {k: [] for k in headers}
 
     for jsonfile in jsonfiles:
@@ -157,12 +157,12 @@ def generate_pred(derivatives_dir, output_dir, mod):
         for k in headers:
             predictions[k].append(data.pop(k, None))
 
-    dataframe = pd.DataFrame(predictions).sort_values(by=list(BIDS_COMP.keys()))
+    dataframe = pd.DataFrame(predictions).sort_values(by=list(BIDS_COMP))
 
     # Drop empty columns
     dataframe.dropna(axis="columns", how="all", inplace=True)
 
-    bdits_cols = list(set(BIDS_COMP.keys()) & set(dataframe.columns.ravel()))
+    bdits_cols = list(set(BIDS_COMP) & set(dataframe.columns.ravel()))
 
     # Drop duplicates
     dataframe.drop_duplicates(bdits_cols, keep="last", inplace=True)
@@ -208,8 +208,7 @@ def generate_tsv(output_dir, mod):
 
 
 def _read_and_save(in_file):
-    data = json.loads(Path(in_file).read_text())
-    return data if data else None
+    return json.loads(Path(in_file).read_text()) or None
 
 
 def _flatten(in_dict, parent_key="", sep="_"):

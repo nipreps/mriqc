@@ -156,7 +156,7 @@ class StructuralQC(SimpleInterface):
         # SNR
         snrvals = []
         self._results["snr"] = {}
-        for tlabel in ["csf", "wm", "gm"]:
+        for tlabel in ("csf", "wm", "gm"):
             snrvals.append(
                 snr(
                     stats[tlabel]["median"],

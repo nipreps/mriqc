@@ -242,14 +242,14 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     """
     direction = direction.lower()
-    if direction[-1] not in ["x", "y", "all"]:
+    if direction[-1] not in ("x", "y", "all"):
         raise Exception(
             f"Unknown direction {direction}, should be one of x, -x, y, -y, all"
         )
 
     if direction == "all":
         result = []
-        for newdir in ["x", "y"]:
+        for newdir in ("x", "y"):
             ofile = None
             if out_file is not None:
                 fname, ext = op.splitext(ofile)
