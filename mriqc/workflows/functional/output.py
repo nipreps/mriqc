@@ -151,6 +151,29 @@ def init_func_report_wf(name="func_report_wf"):
         iterfield=["in_file"],
     )
 
+    mosaic_zoom = pe.MapNode(
+        PlotMosaic(
+            cmap="Greys_r",
+        ),
+        name="PlotMosaicZoomed",
+        iterfield=["in_file"],
+    )
+
+    mosaic_noise = pe.MapNode(
+        PlotMosaic(
+            only_noise=True,
+            cmap="viridis_r",
+        ),
+        name="PlotMosaicNoise",
+        iterfield=["in_file"]
+    )
+
+    if config.workflow.species.lower() in ("rat", "mouse"):
+        mosaic_mean.inputs.view = ["coronal", "axial"]
+        mosaic_stddev.inputs.view = ["coronal", "axial"]
+        mosaic_zoom.inputs.view = ["coronal", "axial"]
+        mosaic_noise.inputs.view = ["coronal", "axial"]
+
     ds_report_mean = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
@@ -175,6 +198,30 @@ def init_func_report_wf(name="func_report_wf"):
         iterfield=["in_file", "source_file"],
     )
 
+    ds_report_background = pe.MapNode(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="background",
+            datatype="figures",
+            dismiss_entities=("part",)
+        ),
+        name="ds_report_background",
+        run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
+    )
+
+    ds_report_zoomed = pe.MapNode(
+            DerivativesDataSink(
+                base_directory=reportlets_dir,
+                desc="zoomed",
+                datatype="figures",
+                dismiss_entities=("part",)
+            ),
+            name="ds_report_zoomed",
+            run_without_submitting=True,
+            iterfield=["in_file", "source_file"],
+    )
+
     ds_report_carpet = pe.MapNode(
         DerivativesDataSink(
             base_directory=reportlets_dir,
@@ -194,9 +241,16 @@ def init_func_report_wf(name="func_report_wf"):
         (inputnode, mosaic_stddev, [("in_stddev", "in_file")]),
         (inputnode, ds_report_mean, [("name_source", "source_file")]),
         (inputnode, ds_report_stdev, [("name_source", "source_file")]),
+        (inputnode, ds_report_background, [("name_source", "source_file")]),
+        (inputnode, ds_report_zoomed, [("name_source", "source_file")]),
         (inputnode, ds_report_carpet, [("name_source", "source_file")]),
+        (inputnode, mosaic_zoom, [("epi_mean", "in_file"),
+                                  ("brainmask", "bbox_mask_file")]),
+        (inputnode, mosaic_noise, [("epi_mean", "in_file")]),
         (mosaic_mean, ds_report_mean, [("out_file", "in_file")]),
         (mosaic_stddev, ds_report_stdev, [("out_file", "in_file")]),
+        (mosaic_noise, ds_report_background, [("out_file", "in_file")]),
+        (mosaic_zoom, ds_report_zoomed, [("out_file", "in_file")]),
         (bigplot, ds_report_carpet, [("out_file", "in_file")]),
     ])
     # fmt: on
@@ -239,29 +293,6 @@ def init_func_report_wf(name="func_report_wf"):
     from niworkflows.utils.connections import pop_file as _pop
     from nireports.interfaces import PlotContours
 
-    mosaic_zoom = pe.MapNode(
-        PlotMosaic(
-            cmap="Greys_r",
-        ),
-        name="PlotMosaicZoomed",
-        iterfield=["in_file"],
-    )
-
-    mosaic_noise = pe.MapNode(
-        PlotMosaic(
-            only_noise=True,
-            cmap="viridis_r",
-        ),
-        name="PlotMosaicNoise",
-        iterfield=["in_file"]
-    )
-
-    if config.workflow.species.lower() in ("rat", "mouse"):
-        mosaic_mean.inputs.view = ["coronal", "axial"]
-        mosaic_stddev.inputs.view = ["coronal", "axial"]
-        mosaic_zoom.inputs.view = ["coronal", "axial"]
-        mosaic_noise.inputs.view = ["coronal", "axial"]
-
     plot_bmask = pe.Node(
         PlotContours(
             display_mode="y" if config.workflow.species.lower() in ("rat", "mouse") else "z",
@@ -271,30 +302,6 @@ def init_func_report_wf(name="func_report_wf"):
             out_file="bmask",
         ),
         name="PlotBrainmask",
-    )
-
-    ds_report_zoomed = pe.MapNode(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="zoomed",
-            datatype="figures",
-            dismiss_entities=("part",)
-        ),
-        name="ds_report_zoomed",
-        run_without_submitting=True,
-        iterfield=["in_file", "source_file"],
-    )
-
-    ds_report_background = pe.MapNode(
-        DerivativesDataSink(
-            base_directory=reportlets_dir,
-            desc="background",
-            datatype="figures",
-            dismiss_entities=("part",)
-        ),
-        name="ds_report_background",
-        run_without_submitting=True,
-        iterfield=["in_file", "source_file"],
     )
 
     ds_report_bmask = pe.Node(
@@ -325,14 +332,7 @@ def init_func_report_wf(name="func_report_wf"):
                                      ("name_source", "source_file")]),
         (inputnode, plot_bmask, [(("epi_mean", _pop), "in_file"),
                                  ("brainmask", "in_contours")]),
-        (inputnode, mosaic_zoom, [("epi_mean", "in_file"),
-                                  ("brainmask", "bbox_mask_file")]),
-        (inputnode, mosaic_noise, [("epi_mean", "in_file")]),
-        (inputnode, ds_report_zoomed, [("name_source", "source_file")]),
-        (inputnode, ds_report_background, [("name_source", "source_file")]),
         (inputnode, ds_report_bmask, [("name_source", "source_file")]),
-        (mosaic_zoom, ds_report_zoomed, [("out_file", "in_file")]),
-        (mosaic_noise, ds_report_background, [("out_file", "in_file")]),
         (plot_bmask, ds_report_bmask, [(("out_file", _pop), "in_file")]),
     ])
     # fmt: on

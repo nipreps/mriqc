@@ -37,10 +37,28 @@ sections:
   - bids: {datatype: figures, desc: stdev}
     subtitle: Standard deviation of signal through time
     caption: The voxel-wise standard deviation of the signal (variability along time).
+  - bids: {datatype: figures, desc: background}
+    caption: This panel shows a mosaic enhancing the background around the head.
+      Artifacts usually unveil themselves in the air surrounding the head, where no signal
+      sources are present.
+    subtitle: View of the background of the voxel-wise average of the BOLD timeseries
+  - bids: {datatype: figures, desc: zoomed}
+    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
+      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
+      (for example, from the eyeballs and across the phase-encoding axis), etc.
+    subtitle: Voxel-wise average of BOLD time-series, zoomed-in covering just the brain
   - bids: {datatype: figures, desc: carpet}
     subtitle: Carpetplot and nuisance signals
     caption: The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion
       derived artifacts and respiation effects.
+
+- name: Extended echo-wise reports
+  ordering: echo
+  reportlets:
+  - bids: {datatype: figures, desc: mean}
+    subtitle: Voxel-wise average of BOLD time-series
+    caption: The average signal calculated across the last axis (time).
+
 - name: Extended reports shared across echos
   reportlets:
   - bids: {datatype: figures, desc: brainmask}
@@ -53,23 +71,6 @@ sections:
       <a href="https://templateflow.org/browse" target="_blank"><em>TemplateFlow</em></a>.
     subtitle: Spatial normalization of the anatomical image
     static: false
-
-- name: Extended echo-wise reports
-  ordering: echo
-  reportlets:
-  - bids: {datatype: figures, desc: background}
-    caption: This panel shows a mosaic enhancing the background around the head.
-      Artifacts usually unveil themselves in the air surrounding the head, where no signal
-      sources are present.
-    subtitle: View of the background of the voxel-wise average of the BOLD timeseries
-  - bids: {datatype: figures, desc: mean}
-    subtitle: Average signal through time
-    caption: The average signal calculated across the last axis (time).
-  - bids: {datatype: figures, desc: zoomed}
-    caption: This panel shows a mosaic of the brain. This mosaic is the most suitable to
-      screen head-motion intensity inhomogeneities, global/local noise, signal leakage
-      (for example, from the eyeballs and across the phase-encoding axis), etc.
-    subtitle: Voxel-wise average of BOLD time-series, zoomed-in covering just the brain
 
 - name: About
   nested: true
