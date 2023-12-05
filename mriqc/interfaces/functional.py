@@ -404,7 +404,7 @@ class GatherTimeseries(SimpleInterface):
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
 
-        timeseries_file = "timeseries.tsv"
+        timeseries_file = op.join(runtime.cwd, "timeseries.tsv")
 
         timeseries.to_csv(timeseries_file, sep='\t', index=False, na_rep='n/a')
 
