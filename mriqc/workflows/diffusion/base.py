@@ -208,7 +208,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         (dwi_reference_wf, hmc_b0, [("outputnode.ref_file", "basefile")]),
         (hmc_b0, drift, [("out_file", "in_file")]),
         (shells, drift, [(("b_indices", _first), "b0_ixs")]),
-        (dwi_reference_wf, dmri_bmsk, [("outputnode.ref_file", "inputnode.in_file")]),
+        (dwi_reference_wf, dmri_bmsk, [("outputnode.ref_file", "inputnode.in_files")]),
         (dwi_reference_wf, ema, [("outputnode.ref_file", "inputnode.epi_mean")]),
         (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
         (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
