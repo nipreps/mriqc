@@ -286,7 +286,7 @@ def compute_iqms(name="ComputeIQMs"):
     from mriqc.interfaces import (
         DerivativesDataSink,
         FunctionalQC,
-        IQMFileSink, 
+        IQMFileSink,
         GatherTimeseries
     )
     from mriqc.interfaces.reports import AddProvenance
@@ -373,7 +373,7 @@ def compute_iqms(name="ComputeIQMs"):
     )
 
     timeseries = pe.MapNode(
-        GatherTimeseries(mpars_source = "AFNI"),
+        GatherTimeseries(mpars_source="AFNI"),
         name="timeseries",
         mem_gb=mem_gb * 3,
         iterfield=["dvars", "outliers", "quality", "fd"]
@@ -542,7 +542,7 @@ def hmc(name="fMRI_HMC", omp_nthreads=None):
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_file", "out_fd", "mpars"]), 
+        niu.IdentityInterface(fields=["out_file", "out_fd", "mpars"]),
         name="outputnode",
     )
 

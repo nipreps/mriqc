@@ -41,6 +41,7 @@ from nipype.interfaces.base import (
 from nipype.utils.misc import normalize_mc_params
 import pandas as pd
 
+
 class FunctionalQCInputSpec(BaseInterfaceInputSpec):
     in_epi = File(exists=True, mandatory=True, desc="input EPI file")
     in_hmc = File(exists=True, mandatory=True, desc="input motion corrected file")
@@ -323,12 +324,22 @@ class GatherTimeseriesInputSpec(BaseInterfaceInputSpec):
         desc="Source of movement parameters",
         mandatory=True,
     )
-    outliers = File(exists=True, mandatory=True, desc="input file containing timeseries of AFNI's outlier count")
-    quality = File(exists=True, mandatory=True, desc="input file containing AFNI's Quality Index")
+    outliers = File(
+        exists=True,
+        mandatory=True,
+        desc="input file containing timeseries of AFNI's outlier count")
+    quality = File(
+        exists=True,
+        mandatory=True,
+        desc="input file containing AFNI's Quality Index")
 
 
 class GatherTimeseriesOutputSpec(TraitedSpec):
-    timeseries_file = File(exists=True, desc='output confounds file', resolve=True, extensions="tsv")
+    timeseries_file = File(
+        exists=True,
+        desc='output confounds file',
+        resolve=True,
+        extensions="tsv")
     timeseries_metadata = traits.Dict
 
 
@@ -350,42 +361,49 @@ class GatherTimeseries(SimpleInterface):
             source=self.inputs.mpars_source,
         )
         timeseries = pd.DataFrame(
-            mpars, 
-            columns=["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"])
-        
+            mpars,
+            columns=[
+                "trans_x",
+                "trans_y",
+                "trans_z",
+                "rot_x",
+                "rot_y",
+                "rot_z"
+            ])
+
         # DVARS
         dvars = pd.read_csv(
-            self.inputs.dvars, 
+            self.inputs.dvars,
             delim_whitespace=True,
-            skiprows=1, # column names have spaces
+            skiprows=1,  # column names have spaces
             header=None,
             names=["dvars_std", "dvars_nstd", "dvars_vstd"])
         dvars.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # FD
         fd = pd.read_csv(
-            self.inputs.fd, 
+            self.inputs.fd,
             delim_whitespace=True,
             header=0,
             names=["framewise_displacement"])
         fd.index = pd.RangeIndex(1, timeseries.index.max() + 1)
-        
+
         # AQI
         aqi = pd.read_csv(
-            self.inputs.quality, 
+            self.inputs.quality,
             delim_whitespace=True,
             header=None,
             names=["aqi"])
 
         # Outliers
         aor = pd.read_csv(
-            self.inputs.outliers, 
+            self.inputs.outliers,
             delim_whitespace=True,
             header=None,
             names=["aor"])
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
-        
+
         timeseries_file = "timeseries.tsv"
 
         timeseries.to_csv(timeseries_file, sep='\t', index=False, na_rep='n/a')
@@ -406,7 +424,7 @@ def _build_timeseries_metadata():
             "LongName": "Translation Along Y Axis",
             "Description": "Estimated Motion Parameter",
             "Units": "mm"
-            },
+        },
         "trans_z": {
             "LongName": "Translation Along Z Axis",
             "Description": "Estimated Motion Parameter",
@@ -415,12 +433,12 @@ def _build_timeseries_metadata():
         "rot_x": {
             "LongName": "Rotation Around X Axis",
             "Description": "Estimated Motion Parameter",
-            "Units": "rad"        
+            "Units": "rad"
         },
         "rot_y": {
             "LongName": "Rotation Around X Axis",
             "Description": "Estimated Motion Parameter",
-            "Units": "rad"        
+            "Units": "rad"
         },
         "rot_z": {
             "LongName": "Rotation Around X Axis",
@@ -429,30 +447,52 @@ def _build_timeseries_metadata():
         },
         "dvars_std": {
             "LongName": "Derivative of RMS Variance over Voxels, Standardized",
-            "Description": "Indexes the rate of change of BOLD signal across the entire brain at each frame of data, normalized with the standard deviation of the temporal difference time series"
+            "Description": (
+                "Indexes the rate of change of BOLD signal across"
+                "the entire brain at each frame of data, normalized with the"
+                "standard deviation of the temporal difference time series"
+            )
         },
         "dvars_nstd": {
-            "LongName": "Derivative of RMS Variance over Voxels, Non-Standardized",
-            "Description": "Indexes the rate of change of BOLD signal across the entire brain at each frame of data, not normalized."
+            "LongName": (
+                "Derivative of RMS Variance over Voxels,"
+                "Non-Standardized"
+            ),
+            "Description": (
+                "Indexes the rate of change of BOLD signal across"
+                "the entire brain at each frame of data, not normalized."
+            )
         },
         "dvars_vstd": {
             "LongName": "Derivative of RMS Variance over Voxels, Standardized",
-            "Description": "Indexes the rate of change of BOLD signal across the entire brain at each frame of data, normalized across time by that voxel standard deviation across time, before computing the RMS of the temporal difference"
+            "Description": (
+                "Indexes the rate of change of BOLD signal across"
+                "the entire brain at each frame of data, normalized across"
+                "time by that voxel standard deviation across time,"
+                "before computing the RMS of the temporal difference"
+            )
         },
         "framewise_displacement": {
             "LongName": "Framewise Displacement",
-            "Description": "A quantification of the estimated bulk-head motion calculated using formula proposed by Power (2012)",
+            "Description": (
+                "A quantification of the estimated bulk-head"
+                "motion calculated using formula proposed by Power (2012)"
+            ),
             "Units": "mm"
         },
-        "aqi" : {
+        "aqi": {
             "LongName": "AFNI's Quality Index",
             "Description": "Mean quality index as computed by AFNI's 3dTqual"
         },
-        "aor" : {
+        "aor": {
             "LongName": "AFNI's Fraction of Outliers per Volume",
-            "Description": "Mean fraction of outliers per fMRI volume as given by AFNI's 3dToutcount"
+            "Description": (
+                "Mean fraction of outliers per fMRI volume as"
+                "given by AFNI's 3dToutcount"
+            )
         }
     }
+
 
 def find_peaks(data):
     t_z = [data[:, :, i, :].mean(axis=0).mean(axis=0) for i in range(data.shape[2])]
