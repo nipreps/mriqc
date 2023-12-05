@@ -165,7 +165,7 @@ def init_func_report_wf(name="func_report_wf"):
             cmap="viridis_r",
         ),
         name="PlotMosaicNoise",
-        iterfield=["in_file"]
+        iterfield=["in_file"],
     )
 
     if config.workflow.species.lower() in ("rat", "mouse"):
@@ -179,7 +179,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="mean",
             datatype="figures",
-            dismiss_entities=("part",)
+            dismiss_entities=("part",),
         ),
         name="ds_report_mean",
         run_without_submitting=True,
@@ -191,7 +191,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="stdev",
             datatype="figures",
-            dismiss_entities=("part",)
+            dismiss_entities=("part",),
         ),
         name="ds_report_stdev",
         run_without_submitting=True,
@@ -203,7 +203,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="background",
             datatype="figures",
-            dismiss_entities=("part",)
+            dismiss_entities=("part",),
         ),
         name="ds_report_background",
         run_without_submitting=True,
@@ -211,15 +211,15 @@ def init_func_report_wf(name="func_report_wf"):
     )
 
     ds_report_zoomed = pe.MapNode(
-            DerivativesDataSink(
-                base_directory=reportlets_dir,
-                desc="zoomed",
-                datatype="figures",
-                dismiss_entities=("part",)
-            ),
-            name="ds_report_zoomed",
-            run_without_submitting=True,
-            iterfield=["in_file", "source_file"],
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc="zoomed",
+            datatype="figures",
+            dismiss_entities=("part",),
+        ),
+        name="ds_report_zoomed",
+        run_without_submitting=True,
+        iterfield=["in_file", "source_file"],
     )
 
     ds_report_carpet = pe.MapNode(
@@ -227,7 +227,7 @@ def init_func_report_wf(name="func_report_wf"):
             base_directory=reportlets_dir,
             desc="carpet",
             datatype="figures",
-            dismiss_entities=("part",)
+            dismiss_entities=("part",),
         ),
         name="ds_report_carpet",
         run_without_submitting=True,
@@ -270,7 +270,7 @@ def init_func_report_wf(name="func_report_wf"):
                 base_directory=reportlets_dir,
                 desc="spikes",
                 datatype="figures",
-                dismiss_entities=("part",)
+                dismiss_entities=("part",),
             ),
             name="ds_report_spikes",
             run_without_submitting=True,
