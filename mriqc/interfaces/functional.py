@@ -311,7 +311,7 @@ class SelectEcho(SimpleInterface):
         return runtime
 
 
-class GatherTimeseriesInputSpec(BaseInterfaceInputSpec):
+class GatherTimeseriesInputSpec(TraitedSpec):
     dvars = File(exists=True, mandatory=True, desc='file containing DVARS')
     fd = File(exists=True, mandatory=True, desc='input framewise displacement')
     mpars = File(exists=True, mandatory=True, desc='input motion parameters')
