@@ -335,12 +335,8 @@ class GatherTimeseriesInputSpec(TraitedSpec):
 
 
 class GatherTimeseriesOutputSpec(TraitedSpec):
-    timeseries_file = File(
-        exists=True,
-        desc='output confounds file',
-        resolve=True,
-        extensions="tsv")
-    timeseries_metadata = traits.Dict
+    timeseries_file = File(desc='output confounds file')
+    timeseries_metadata = traits.Dict(desc='Metadata dictionary describing columns')
 
 
 class GatherTimeseries(SimpleInterface):
