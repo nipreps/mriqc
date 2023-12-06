@@ -32,7 +32,7 @@ from mriqc.interfaces.anatomical import (
 )
 from mriqc.interfaces.bids import IQMFileSink
 from mriqc.interfaces.common import ConformImage, EnsureSize
-from mriqc.interfaces.functional import FunctionalQC, Spikes
+from mriqc.interfaces.functional import FunctionalQC, GatherTimeseries, Spikes
 from mriqc.interfaces.webapi import UploadIQMs
 
 
@@ -47,6 +47,7 @@ __all__ = [
     "DerivativesDataSink",
     "EnsureSize",
     "FunctionalQC",
+    "GatherTimeseries",
     "Harmonize",
     "IQMFileSink",
     "RotationMask",
