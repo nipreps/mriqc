@@ -44,7 +44,7 @@ def init_dwi_report_wf(name="dwi_report_wf"):
             wf = init_dwi_report_wf()
 
     """
-    from niworkflows.interfaces.plotting import FMRISummary
+    from nireports.interfaces import FMRISummary
     from niworkflows.interfaces.morphology import BinaryDilation, BinarySubtraction
 
     from nireports.interfaces import PlotMosaic, PlotSpikes
