@@ -200,6 +200,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                 None,
             ),
         ],
+        "dwi": [],
     }
 
     if csv_file.suffix == ".csv":
