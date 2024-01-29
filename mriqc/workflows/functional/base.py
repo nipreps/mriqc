@@ -376,7 +376,7 @@ def compute_iqms(name="ComputeIQMs"):
         GatherTimeseries(mpars_source="AFNI"),
         name="timeseries",
         mem_gb=mem_gb * 3,
-        iterfield=["dvars", "outliers", "quality", "fd"]
+        iterfield=["dvars", "outliers", "quality"]
     )
 
     # fmt: off
