@@ -35,7 +35,7 @@ from dipy.core.gradients import GradientTable
 from dipy.reconst.dti import TensorModel
 from dipy.denoise.noise_estimate import piesno
 
-def get_spike_mask(data, z_threshold=3):
+def get_spike_mask(data, grouping_vals, z_threshold=3):
     """
     Return binary mask of spike/no spike
 
