@@ -34,6 +34,8 @@ from dipy.reconst.dti import TensorModel
 from dipy.denoise.noise_estimate import piesno
 from dipy.core.gradients import unique_bvals_magnitude
 from dipy.core.gradients import round_bvals
+from dipy.segment.mask import segment_from_cfa
+from dipy.segment.mask import bounding_box
 
 def noise_func(img, gtab):
     pass
@@ -74,7 +76,7 @@ def noise_piesno(data, n_channels=4):
     return sigma, mask
 
 
-def cc_snr(data, gtab):
+def cc_snr(data, gtab, bmag=None, mask=None):
     """
     Calculate worse-/best-case signal-to-noise ratio in the corpus callosum
 
@@ -84,21 +86,31 @@ def cc_snr(data, gtab):
 
     gtab : GradientTable class instance or tuple
 
+    bmag : int
+        From dipy.core.gradients: 
+        The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. B-values are also rounded up to
+        this order of magnitude. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+
+    mask : numpy array
+        Boolean brain mask
+
+
     """
     if isinstance(gtab, GradientTable):
         pass
 
-    # XXX Per-shell calculation
+    if mask is None:
+        mask = np.ones(data.shape[:3])
+
     tenmodel = TensorModel(gtab)
     tensorfit = tenmodel.fit(data, mask=mask)
-
-    from dipy.segment.mask import segment_from_cfa
-    from dipy.segment.mask import bounding_box
 
     threshold = (0.6, 1, 0, 0.1, 0, 0.1)
     CC_box = np.zeros_like(data[..., 0])
 
-    mins, maxs = bounding_box(mask)
+    mins, maxs = bounding_box(mask) #mask needs to be volume
     mins = np.array(mins)
     maxs = np.array(maxs)
     diff = (maxs - mins) // 4
@@ -112,7 +124,42 @@ def cc_snr(data, gtab):
     mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
                                         return_cfa=True)
 
-    mean_signal = np.mean(data[mask_cc_part], axis=0)
+    b0_data = data[..., gtab.b0s_mask]
+    std_signal = np.std(b0_data[mask_cc_part], axis=-1)
+    
+    # Per-shell calculation
+    rounded_bvals = round_bvals(gtab.bvals, bmag)
+    bvals = unique_bvals_magnitude(gtab.bvals, bmag)
+
+    cc_snr_best = np.zeros(gtab.bvals.shape)
+    cc_snr_worst = np.zeros(gtab.bvals.shape)
+
+    for ind, bval in enumerate(bvals):
+        if bval == 0:
+            mean_signal = np.mean(data[..., rounded_bvals == 0], axis=-1)
+            cc_snr_worst[ind] = np.mean(mean_signal/std_signal)
+            cc_snr_best[ind] = np.mean(mean_signal/std_signal)
+            continue
+
+        bval_data = data[..., rounded_bvals == bval]
+        bval_bvecs = gtab.bvecs[rounded_bvals == bval]
+                
+        axis_X = np.argmin(np.sum((bval_bvecs-np.array([1, 0, 0]))**2, axis=-1))
+        axis_Y = np.argmin(np.sum((bval_bvecs-np.array([0, 1, 0]))**2, axis=-1))
+        axis_Z = np.argmin(np.sum((bval_bvecs-np.array([0, 0, 1]))**2, axis=-1))
+
+        data_X = bval_data[..., axis_X]
+        data_Y = bval_data[..., axis_Y]
+        data_Z = bval_data[..., axis_Z]
+
+        mean_signal_X = np.mean(data_X[mask_cc_part])
+        mean_signal_Y = np.mean(data_Y[mask_cc_part])
+        mean_signal_Z = np.mean(data_Z[mask_cc_part])
+
+        cc_snr_worst[ind] = np.mean(mean_signal_X/std_signal)
+        cc_snr_best[ind] = np.mean(np.mean(mean_signal_Y, mean_signal_Z)/std_signal)
+
+    return cc_snr_worst, cc_snr_best
 
 
 def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
