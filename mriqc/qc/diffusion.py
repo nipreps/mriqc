@@ -22,9 +22,6 @@
 #     https://www.nipreps.org/community/licensing/
 #
 
-import numpy as np
-
-
 """
 Image quality metrics for diffusion MRI data
 ============================================
@@ -35,6 +32,13 @@ from dipy.core.gradients import gradient_table
 from dipy.core.gradients import GradientTable
 from dipy.reconst.dti import TensorModel
 from dipy.denoise.noise_estimate import piesno
+from dipy.core.gradients import unique_bvals_magnitude
+from dipy.core.gradients import round_bvals
+from dipy.segment.mask import segment_from_cfa
+from dipy.segment.mask import bounding_box
+
+def noise_func(img, gtab):
+    pass
 
 def noise_b0(data, gtab, mask=None):
     """
@@ -83,7 +87,7 @@ def cc_snr(data, gtab, bmag=None, mask=None):
     gtab : GradientTable class instance or tuple
 
     bmag : int
-        From dipy.core.gradients: 
+        From dipy.core.gradients:
         The order of magnitude that the bvalues have to differ to be
         considered an unique b-value. B-values are also rounded up to
         this order of magnitude. Default: derive this value from the
@@ -122,7 +126,7 @@ def cc_snr(data, gtab, bmag=None, mask=None):
 
     b0_data = data[..., gtab.b0s_mask]
     std_signal = np.std(b0_data[mask_cc_part], axis=-1)
-    
+
     # Per-shell calculation
     rounded_bvals = round_bvals(gtab.bvals, bmag)
     bvals = unique_bvals_magnitude(gtab.bvals, bmag)
@@ -139,7 +143,7 @@ def cc_snr(data, gtab, bmag=None, mask=None):
 
         bval_data = data[..., rounded_bvals == bval]
         bval_bvecs = gtab.bvecs[rounded_bvals == bval]
-                
+
         axis_X = np.argmin(np.sum((bval_bvecs-np.array([1, 0, 0]))**2, axis=-1))
         axis_Y = np.argmin(np.sum((bval_bvecs-np.array([0, 1, 0]))**2, axis=-1))
         axis_Z = np.argmin(np.sum((bval_bvecs-np.array([0, 0, 1]))**2, axis=-1))
@@ -162,83 +166,99 @@ def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
     """
     Return binary mask of spike/no spike
 
-def noise_func(img, gtab):
-    pass
-
-
-
-def noise_b0(data, gtab, mask=None):
-    """
-    Estimate noise in raw dMRI based on b0 variance.
-
     Parameters
     ----------
-    """
-    if mask is None:
-        mask = np.ones(data.shape[:3], dtype=bool)
-    b0 = data[..., ~gtab.b0s_mask]
-    return np.percentile(np.var(b0[mask], -1), (25, 50, 75))
-
-
-def noise_piesno(data, n_channels=4):
-    """
-    Estimate noise in raw dMRI data using the PIESNO [1]_ algorithm.
-
-
-    Parameters
-    ----------
+    data : numpy array
+        Data to be thresholded
+    z_threshold : :obj:`float`
+        Number of standard deviations above the mean to use as spike threshold
+    grouping_vals : numpy array
+        Values by which to group data for thresholding (bvals or full mask)
+    bmag : int
+        From dipy.core.gradients:
+        The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. B-values are also rounded up to
+        this order of magnitude. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
     Returns
-    -------
-
-
-    Notes
-    -----
-
-    .. [1] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
-           and Estimation of Noise (PIESNO): A self-consistent approach and
-           its applications in MRI. JMR, 199(1):94-103, 2009.
+    ---------
+    numpy array
     """
-    sigma, mask = piesno(data, N=n_channels, return_mask=True)
-    return sigma, mask
+
+    if grouping_vals is None:
+        threshold = (z_threshold*np.std(data)) + np.mean(data)
+        spike_mask = data > threshold
+        return spike_mask
+
+    threshold_mask = np.zeros(data.shape)
+
+    rounded_grouping_vals = round_bvals(grouping_vals, bmag)
+    gvals = unique_bvals_magnitude(grouping_vals, bmag)
+
+    if grouping_vals.shape == data.shape:
+        for gval in gvals:
+            gval_data = data[rounded_grouping_vals == gval]
+            gval_threshold = (z_threshold*np.std(gval_data)) + np.mean(gval_data)
+            threshold_mask[rounded_grouping_vals == gval] = gval_threshold*np.ones(gval_data.shape)
+    else:
+        for gval in gvals:
+            gval_data = data[..., rounded_grouping_vals == gval]
+            gval_threshold = (z_threshold*np.std(gval_data)) + np.mean(gval_data)
+            threshold_mask[..., rounded_grouping_vals == gval] = gval_threshold*np.ones(gval_data.shape)
+
+    spike_mask = data > threshold_mask
+
+    return spike_mask
 
 
-def cc_snr(data, gtab):
+def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
     """
-    Calculate worse-/best-case signal-to-noise ratio in the corpus callosum
+    Return percentage of slices spiking along each dimension
 
     Parameters
     ----------
-    data : ndarray
+    data : numpy array
+        Data to be thresholded
+    z_threshold : :obj:`float`
+        Number of standard deviations above the mean to use as spike threshold
+    slice_threshold : :obj:`float`
+        Percentage of slice elements that need to be above spike threshold for slice to be considered spiking
 
-    gtab : GradientTable class instance or tuple
-
+    Returns
+    ---------
+    array
     """
-    if isinstance(gtab, GradientTable):
-        pass
+    spike_mask = get_spike_mask(data, z_threshold)
 
-    # XXX Per-shell calculation
-    tenmodel = TensorModel(gtab)
-    tensorfit = tenmodel.fit(data, mask=mask)
+    ndim = data.ndim
+    slice_spike_percentage = np.zeros(ndim)
 
-    from dipy.segment.mask import segment_from_cfa
-    from dipy.segment.mask import bounding_box
+    for ii in range(ndim):
+        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii) > slice_threshold)
 
-    threshold = (0.6, 1, 0, 0.1, 0, 0.1)
-    CC_box = np.zeros_like(data[..., 0])
+    return slice_spike_percentage
 
-    mins, maxs = bounding_box(mask)
-    mins = np.array(mins)
-    maxs = np.array(maxs)
-    diff = (maxs - mins) // 4
-    bounds_min = mins + diff
-    bounds_max = maxs - diff
 
-    CC_box[bounds_min[0]:bounds_max[0],
-        bounds_min[1]:bounds_max[1],
-        bounds_min[2]:bounds_max[2]] = 1
+def get_global_spike_percentage(data, z_threshold=3):
+    """
+    Return percentage of array elements spiking
 
-    mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
-                                        return_cfa=True)
+    Parameters
+    ----------
+    data : numpy array
+        Data to be thresholded
+    z_threshold : :obj:`float`
+        Number of standard deviations above the mean to use as spike threshold
 
-    mean_signal = np.mean(data[mask_cc_part], axis=0)
+    Returns
+    ---------
+    float
+    """
+    spike_mask = get_spike_mask(data, z_threshold)
+    global_spike_percentage = np.mean(np.ravel(spike_mask))
+
+    return global_spike_percentage
+
+def noise_func_for_shelled_data(shelled_data, gtab):
+    pass
