@@ -27,7 +27,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data.fetcher import fetch_sherbrooke_3shell
 from dipy.core.gradients import unique_bvals_magnitude, round_bvals
 import os.path as op
-from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage
+from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage, cc_snr
 
 
 class DiffusionData(object):
@@ -95,3 +95,12 @@ def test_get_global_spike_percentage(ddata):
 def test_with_shelled_data(ddata):
     shelled_data, gtab = ddata.shelled_data()
     noise_func_for_shelled_data(shelled_data, gtab)
+
+
+def test_cc_snr(ddata):
+    img, gtab = ddata.get_fdata()
+    cc_snr_worst, cc_snr_best = cc_snr(img, gtab)
+
+    assert cc_snr_best.shape == gtab.bvals.shape
+    assert cc_snr_worst.shape == gtab.bvals.shape
+    assert np.min(cc_snr_best - cc_snr_worst) >= 0
