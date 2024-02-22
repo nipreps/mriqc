@@ -136,19 +136,19 @@ def cc_snr(data, gtab, bmag=None, mask=None):
     for ind, bval in enumerate(bvals):
         if bval == 0:
             mean_signal = np.mean(data[..., rounded_bvals == 0], axis=-1)
-            cc_snr_worst[ind] = np.mean(mean_signal/std_signal)
-            cc_snr_best[ind] = np.mean(mean_signal/std_signal)
+            cc_snr_worst[ind] = np.mean(mean_signal / std_signal)
+            cc_snr_best[ind] = np.mean(mean_signal / std_signal)
             continue
 
         bval_data = data[..., rounded_bvals == bval]
         bval_bvecs = gtab.bvecs[rounded_bvals == bval]
 
         axis_X = np.argmin(np.sum(
-            (bval_bvecs-np.array([1, 0, 0]))**2, axis=-1))
+            (bval_bvecs-np.array([1, 0, 0])) ** 2, axis=-1))
         axis_Y = np.argmin(np.sum(
-            (bval_bvecs-np.array([0, 1, 0]))**2, axis=-1))
+            (bval_bvecs-np.array([0, 1, 0])) ** 2, axis=-1))
         axis_Z = np.argmin(np.sum(
-            (bval_bvecs-np.array([0, 0, 1]))**2, axis=-1))
+            (bval_bvecs-np.array([0, 0, 1])) ** 2, axis=-1))
 
         data_X = bval_data[..., axis_X]
         data_Y = bval_data[..., axis_Y]
@@ -158,9 +158,9 @@ def cc_snr(data, gtab, bmag=None, mask=None):
         mean_signal_Y = np.mean(data_Y[mask_cc_part])
         mean_signal_Z = np.mean(data_Z[mask_cc_part])
 
-        cc_snr_worst[ind] = np.mean(mean_signal_X/std_signal)
+        cc_snr_worst[ind] = np.mean(mean_signal_X / std_signal)
         cc_snr_best[ind] = np.mean(np.mean(mean_signal_Y,
-                                           mean_signal_Z)/std_signal)
+                                           mean_signal_Z) / std_signal)
 
     return cc_snr_worst, cc_snr_best
 
@@ -189,7 +189,7 @@ def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
     numpy array
     """
     if grouping_vals is None:
-        threshold = (z_threshold*np.std(data)) + np.mean(data)
+        threshold = (z_threshold * np.std(data)) + np.mean(data)
         spike_mask = data > threshold
         return spike_mask
 
@@ -201,15 +201,15 @@ def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
     if grouping_vals.shape == data.shape:
         for gval in gvals:
             gval_data = data[rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data)) +
-                              np.mean(gval_data))
+            gval_threshold = ((z_threshold * np.std(gval_data))
+                              + np.mean(gval_data))
             threshold_mask[rounded_grouping_vals == gval] = (
                 gval_threshold * np.ones(gval_data.shape))
     else:
         for gval in gvals:
             gval_data = data[..., rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data)) +
-                              np.mean(gval_data))
+            gval_threshold = ((z_threshold * np.std(gval_data))
+                              + np.mean(gval_data))
             threshold_mask[..., rounded_grouping_vals == gval] = (
                 gval_threshold * np.ones(gval_data.shape))
 
@@ -242,8 +242,8 @@ def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
     slice_spike_percentage = np.zeros(ndim)
 
     for ii in range(ndim):
-        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii) >
-                                             slice_threshold)
+        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii)
+                                             > slice_threshold)
 
     return slice_spike_percentage
 
