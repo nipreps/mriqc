@@ -144,11 +144,11 @@ def cc_snr(data, gtab, bmag=None, mask=None):
         bval_bvecs = gtab.bvecs[rounded_bvals == bval]
 
         axis_X = np.argmin(np.sum(
-            (bval_bvecs-np.array([1, 0, 0])) ** 2, axis=-1))
+            (bval_bvecs - np.array([1, 0, 0])) ** 2, axis=-1))
         axis_Y = np.argmin(np.sum(
-            (bval_bvecs-np.array([0, 1, 0])) ** 2, axis=-1))
+            (bval_bvecs - np.array([0, 1, 0])) ** 2, axis=-1))
         axis_Z = np.argmin(np.sum(
-            (bval_bvecs-np.array([0, 0, 1])) ** 2, axis=-1))
+            (bval_bvecs - np.array([0, 0, 1])) ** 2, axis=-1))
 
         data_X = bval_data[..., axis_X]
         data_Y = bval_data[..., axis_Y]
