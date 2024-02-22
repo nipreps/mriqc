@@ -28,7 +28,6 @@ Image quality metrics for diffusion MRI data
 """
 
 import numpy as np
-from dipy.core.gradients import gradient_table
 from dipy.core.gradients import GradientTable
 from dipy.reconst.dti import TensorModel
 from dipy.denoise.noise_estimate import piesno
@@ -37,8 +36,10 @@ from dipy.core.gradients import round_bvals
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
+
 def noise_func(img, gtab):
     pass
+
 
 def noise_b0(data, gtab, mask=None):
     """
@@ -95,8 +96,6 @@ def cc_snr(data, gtab, bmag=None, mask=None):
 
     mask : numpy array
         Boolean brain mask
-
-
     """
     if isinstance(gtab, GradientTable):
         pass
@@ -110,7 +109,7 @@ def cc_snr(data, gtab, bmag=None, mask=None):
     threshold = (0.6, 1, 0, 0.1, 0, 0.1)
     CC_box = np.zeros_like(data[..., 0])
 
-    mins, maxs = bounding_box(mask) #mask needs to be volume
+    mins, maxs = bounding_box(mask)  # mask needs to be volume
     mins = np.array(mins)
     maxs = np.array(maxs)
     diff = (maxs - mins) // 4
@@ -118,11 +117,11 @@ def cc_snr(data, gtab, bmag=None, mask=None):
     bounds_max = maxs - diff
 
     CC_box[bounds_min[0]:bounds_max[0],
-        bounds_min[1]:bounds_max[1],
-        bounds_min[2]:bounds_max[2]] = 1
+           bounds_min[1]:bounds_max[1],
+           bounds_min[2]:bounds_max[2]] = 1
 
     mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
-                                        return_cfa=True)
+                                         return_cfa=True)
 
     b0_data = data[..., gtab.b0s_mask]
     std_signal = np.std(b0_data[mask_cc_part], axis=-1)
@@ -144,9 +143,12 @@ def cc_snr(data, gtab, bmag=None, mask=None):
         bval_data = data[..., rounded_bvals == bval]
         bval_bvecs = gtab.bvecs[rounded_bvals == bval]
 
-        axis_X = np.argmin(np.sum((bval_bvecs-np.array([1, 0, 0]))**2, axis=-1))
-        axis_Y = np.argmin(np.sum((bval_bvecs-np.array([0, 1, 0]))**2, axis=-1))
-        axis_Z = np.argmin(np.sum((bval_bvecs-np.array([0, 0, 1]))**2, axis=-1))
+        axis_X = np.argmin(np.sum(
+            (bval_bvecs-np.array([1, 0, 0]))**2, axis=-1))
+        axis_Y = np.argmin(np.sum(
+            (bval_bvecs-np.array([0, 1, 0]))**2, axis=-1))
+        axis_Z = np.argmin(np.sum(
+            (bval_bvecs-np.array([0, 0, 1]))**2, axis=-1))
 
         data_X = bval_data[..., axis_X]
         data_Y = bval_data[..., axis_Y]
@@ -157,7 +159,8 @@ def cc_snr(data, gtab, bmag=None, mask=None):
         mean_signal_Z = np.mean(data_Z[mask_cc_part])
 
         cc_snr_worst[ind] = np.mean(mean_signal_X/std_signal)
-        cc_snr_best[ind] = np.mean(np.mean(mean_signal_Y, mean_signal_Z)/std_signal)
+        cc_snr_best[ind] = np.mean(np.mean(mean_signal_Y,
+                                           mean_signal_Z)/std_signal)
 
     return cc_snr_worst, cc_snr_best
 
@@ -185,7 +188,6 @@ def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
     ---------
     numpy array
     """
-
     if grouping_vals is None:
         threshold = (z_threshold*np.std(data)) + np.mean(data)
         spike_mask = data > threshold
@@ -199,13 +201,17 @@ def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
     if grouping_vals.shape == data.shape:
         for gval in gvals:
             gval_data = data[rounded_grouping_vals == gval]
-            gval_threshold = (z_threshold*np.std(gval_data)) + np.mean(gval_data)
-            threshold_mask[rounded_grouping_vals == gval] = gval_threshold*np.ones(gval_data.shape)
+            gval_threshold = ((z_threshold * np.std(gval_data)) +
+                              np.mean(gval_data))
+            threshold_mask[rounded_grouping_vals == gval] = (
+                gval_threshold * np.ones(gval_data.shape))
     else:
         for gval in gvals:
             gval_data = data[..., rounded_grouping_vals == gval]
-            gval_threshold = (z_threshold*np.std(gval_data)) + np.mean(gval_data)
-            threshold_mask[..., rounded_grouping_vals == gval] = gval_threshold*np.ones(gval_data.shape)
+            gval_threshold = ((z_threshold * np.std(gval_data)) +
+                              np.mean(gval_data))
+            threshold_mask[..., rounded_grouping_vals == gval] = (
+                gval_threshold * np.ones(gval_data.shape))
 
     spike_mask = data > threshold_mask
 
@@ -221,9 +227,10 @@ def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
     data : numpy array
         Data to be thresholded
     z_threshold : :obj:`float`
-        Number of standard deviations above the mean to use as spike threshold
+        Number of standard deviations above the mean to use as spike threshold.
     slice_threshold : :obj:`float`
-        Percentage of slice elements that need to be above spike threshold for slice to be considered spiking
+        Percentage of slice elements that need to be above spike threshold
+        for slice to be considered spiking.
 
     Returns
     ---------
@@ -235,7 +242,8 @@ def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
     slice_spike_percentage = np.zeros(ndim)
 
     for ii in range(ndim):
-        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii) > slice_threshold)
+        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii) >
+                                             slice_threshold)
 
     return slice_spike_percentage
 
@@ -259,6 +267,7 @@ def get_global_spike_percentage(data, z_threshold=3):
     global_spike_percentage = np.mean(np.ravel(spike_mask))
 
     return global_spike_percentage
+
 
 def noise_func_for_shelled_data(shelled_data, gtab):
     pass

@@ -20,14 +20,20 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+
 import pytest
 import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.data.fetcher import fetch_sherbrooke_3shell
-from dipy.core.gradients import unique_bvals_magnitude, round_bvals
+from dipy.core.gradients import round_bvals
 import os.path as op
-from ..diffusion import noise_func, get_spike_mask, get_slice_spike_percentage, get_global_spike_percentage, cc_snr
+from ..diffusion import (noise_func,
+                         noise_func_for_shelled_data,
+                         get_spike_mask,
+                         get_slice_spike_percentage,
+                         get_global_spike_percentage,
+                         cc_snr)
 
 
 class DiffusionData(object):
