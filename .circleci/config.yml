@@ -283,8 +283,8 @@ jobs:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
-            docker run --rm -ti \
-              -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
+            docker run --rm -ti -v $PWD:/scratch --entrypoint="pytest" \
+              -v /tmp/src/mriqc:/src/mriqc -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \

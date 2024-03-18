@@ -69,6 +69,7 @@ RUN mkdir -p /opt/afni-latest \
     && find /opt/afni-latest -type f -not \( \
         -name "afni" -or \
         -name "3dAutomask" -or \
+        -name "3dFWHMx" -or \
         -name "3dcalc" -or \
         -name "3dSkullStrip" -or \
         -name "3dToutcount" -or \
