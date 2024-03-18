@@ -85,6 +85,40 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${CONDA_PATH}/lib"
 ENV CONDA_PATH="/opt/conda"
 
+# Configure PPAs for libpng12 and libxp6
+RUN GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/linuxuprising.gpg --recv 0xEA8CACC073C3DB2A \
+    && GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/zeehio.gpg --recv 0xA1301338A3A48C4A \
+    && echo "deb [signed-by=/usr/share/keyrings/linuxuprising.gpg] https://ppa.launchpadcontent.net/linuxuprising/libpng12/ubuntu jammy main" > /etc/apt/sources.list.d/linuxuprising.list \
+    && echo "deb [signed-by=/usr/share/keyrings/zeehio.gpg] https://ppa.launchpadcontent.net/zeehio/libxp/ubuntu jammy main" > /etc/apt/sources.list.d/zeehio.list
+
+# Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+           ed \
+           gsl-bin \
+           libglib2.0-0 \
+           libglu1-mesa-dev \
+           libglw1-mesa \
+           libgomp1 \
+           libjpeg62 \
+           libpng12-0 \
+           libxm4 \
+           libxp6 \
+           netpbm \
+           tcsh \
+           xfonts-base \
+           xvfb \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && apt-get install -f \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+         ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig
+
 # Install AFNI
 ENV AFNI_DIR="/opt/afni"
 COPY --from=afni /opt/afni-latest ${AFNI_DIR}
@@ -94,39 +128,11 @@ ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_TTATLAS_DATASET="${AFNI_DIR}/atlases" \
     AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
-RUN apt-get update \
-	 && DEBIAN_FRONTEND=noninteractive \
-	    apt-get install -y -q --no-install-recommends     \
-			    libcurl4-openssl-dev              \
-			    libgdal-dev                       \
-			    libgfortran-12-dev                \
-			    libgfortran5                      \
-			    libglw1-mesa                      \
-			    libgomp1                          \
-			    libjpeg62                         \
-			    libnode-dev                       \
-			    libssl-dev                        \
-			    libudunits2-dev                   \
-			    libxm4                            \
-			    libxml2-dev                       \
-			    netbase                           \
-			    netpbm                            \
-			    tcsh                              \
-			    xfonts-base                       \
-	 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-	 && ldconfig
-
 # Install AFNI's dependencies
-RUN micromamba install -n base -c conda-forge -c anaconda \
-                       gsl                                \
-                       xorg-libxp                         \
-	    && micromamba install -n base -c conda-forge "ants=2.5" \
+RUN micromamba install -n base -c conda-forge "ants=2.5" \
             && sync \
 	    && micromamba clean -afy; sync \
-	    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
-	    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.0 \
 	    && ldconfig
-
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -144,6 +150,12 @@ ENV IS_DOCKER_8395080871=1
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
 ENV HOME="/home/mriqc"
+
+RUN micromamba shell init -s bash
+ENV PATH="${CONDA_PATH}/bin:$PATH" \
+    CPATH="${CONDA_PATH}/include:$CPATH" \
+    LD_LIBRARY_PATH="${CONDA_PATH}/lib:$LD_LIBRARY_PATH"
+
 # Refresh linked libraries
 RUN ldconfig
 # Installing dev requirements (packages that are not in pypi)
