@@ -79,10 +79,11 @@ RUN mkdir -p /opt/afni-latest \
         -name "3dvolreg" \) -delete
 
 # Use Ubuntu 20.04 LTS
-FROM nipreps/miniconda:py39_2205.0
+FROM nipreps/miniconda:py39_2403.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${CONDA_PATH}/lib"
+ENV CONDA_PATH="/opt/conda"
 
 # Install AFNI
 ENV AFNI_DIR="/opt/afni"
@@ -93,47 +94,39 @@ ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_TTATLAS_DATASET="${AFNI_DIR}/atlases" \
     AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
-# Install AFNI's dependencies
-RUN ${CONDA_PATH}/bin/mamba install -c conda-forge -c anaconda \
-                            gsl                                \
-                            xorg-libxp                         \
-                            scipy=1.8                          \
-    && ${CONDA_PATH}/bin/mamba install -c sssdgc png \
-    && sync \
-    && ${CONDA_PATH}/bin/conda clean -afy; sync \
-    && rm -rf ~/.conda ~/.cache/pip/*; sync \
-    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
-    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.0 \
-    && ldconfig
-
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y -q --no-install-recommends     \
-                    libcurl4-openssl-dev              \
-                    libgdal-dev                       \
-                    libgfortran-8-dev                 \
-                    libgfortran4                      \
-                    libglw1-mesa                      \
-                    libgomp1                          \
-                    libjpeg62                         \
-                    libnode-dev                       \
-                    libssl-dev                        \
-                    libudunits2-dev                   \
-                    libxm4                            \
-                    libxml2-dev                       \
-                    netbase                           \
-                    netpbm                            \
-                    tcsh                              \
-                    xfonts-base                       \
- && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
- && ldconfig
+	 && DEBIAN_FRONTEND=noninteractive \
+	    apt-get install -y -q --no-install-recommends     \
+			    libcurl4-openssl-dev              \
+			    libgdal-dev                       \
+			    libgfortran-12-dev                \
+			    libgfortran5                      \
+			    libglw1-mesa                      \
+			    libgomp1                          \
+			    libjpeg62                         \
+			    libnode-dev                       \
+			    libssl-dev                        \
+			    libudunits2-dev                   \
+			    libxm4                            \
+			    libxml2-dev                       \
+			    netbase                           \
+			    netpbm                            \
+			    tcsh                              \
+			    xfonts-base                       \
+	 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+	 && ldconfig
 
-# Installing ANTs 2.5 (conda-forge)
-RUN ${CONDA_PATH}/bin/mamba install -c conda-forge ants=2.5 \
-    && sync \
-    && ${CONDA_PATH}/bin/conda clean -afy; sync \
-    && rm -rf ~/.conda ~/.cache/pip/*; sync \
-    && ldconfig
+# Install AFNI's dependencies
+RUN micromamba install -n base -c conda-forge -c anaconda \
+                       gsl                                \
+                       xorg-libxp                         \
+	    && micromamba install -n base -c conda-forge "ants=2.5" \
+            && sync \
+	    && micromamba clean -afy; sync \
+	    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
+	    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.0 \
+	    && ldconfig
+
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -157,13 +150,13 @@ RUN ldconfig
 WORKDIR /src/
 # Precaching atlases
 RUN python -c "from templateflow import api as tfapi; \
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
-                         desc=['brain', 'head']); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
-                         label=['CSF', 'GM', 'WM']);\
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
+			 desc=['brain', 'head']); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
+			 label=['CSF', 'GM', 'WM']);\
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
 
 # Installing MRIQC
 COPY --from=src /src/dist/*.whl .
