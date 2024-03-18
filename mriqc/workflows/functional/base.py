@@ -82,7 +82,7 @@ def fmri_qc_workflow(name="funcMRIQC"):
         detail=(
             f"for {len(dataset)} BOLD runs."
             if len(dataset) > 2
-            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+            else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
     )
     config.loggers.workflow.info(message)
