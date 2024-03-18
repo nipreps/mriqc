@@ -40,6 +40,7 @@ dependencies = [
     "scikit-learn",
     "scipy ~=1.8",
     "statsmodels",
+    "templateflow",
     "toml",
     "torch >= 1.10.2",
 ]
@@ -65,12 +66,14 @@ doc = [
     "sphinx~=5.0",
 ]
 
-full = [
-    "nitime",
+container = [
+    # templateflow extras
+    "datalad",
+    "datalad-osf",
+]
+
+rodents = [
     "nirodents >= 0.2.8",
-    "seaborn",
-    "templateflow",
-    "xvfbwrapper",
 ]
 
 notebook = [
@@ -95,14 +98,17 @@ test = [
 ]
 
 other = [
+    "nitime",
     "scikit-image",
+    "seaborn",
+    "xvfbwrapper",
 ]
 
 # Aliases
 docs = ["mriqc[doc]"]
 tests = ["mriqc[test]"]
 others = ["mriqc[other]"]
-all = ["mriqc[doc,full,test,notebook,other]"]
+all = ["mriqc[doc,container,test,notebook,other,rodents]"]
 
 [project.scripts]
 mriqc = "mriqc.cli.run:main"
