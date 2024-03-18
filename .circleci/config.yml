@@ -126,11 +126,10 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
-            python3 -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
+            python3 -m pip install hatch
 
             # Get version before making repo dirty
-            THISVERSION=$( python3 -m setuptools_scm )
+            THISVERSION=$( python3 -m hatch version )
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
@@ -618,7 +617,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -629,9 +628,9 @@ jobs:
       - run:
           name: Install deps
           command: |
-            pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                                 setuptools_scm_git_archive pip twine docutils
-            pip install .[docs]
+            python -m pip install -U hatch docutils
+            python -m hatch version
+            python -m pip install .[docs]
       - run:
           name: Build MRIQC documentation
           no_output_timeout: 2h
