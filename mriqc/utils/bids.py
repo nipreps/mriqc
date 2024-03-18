@@ -48,7 +48,6 @@ def write_derivative_description(bids_dir, deriv_dir):
     bids_dir = Path(bids_dir)
     deriv_dir = Path(deriv_dir)
     desc = {
-        "Name": "MRIQC - MRI Quality Control",
         "BIDSVersion": "1.4.0",
         "DatasetType": "derivative",
         "GeneratedBy": [
@@ -80,6 +79,11 @@ def write_derivative_description(bids_dir, deriv_dir):
     fname = bids_dir / "dataset_description.json"
     if fname.exists():
         orig_desc = json.loads(fname.read_text())
+
+    if "Name" in orig_desc:
+        desc["Name"] = f"MRIQC - {orig_desc['Name']}"
+    else:
+        desc["Name"] = "MRIQC - MRI Quality Control"
 
     if "DatasetDOI" in orig_desc:
         desc["SourceDatasets"] = [
