@@ -154,7 +154,7 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = (
                 "QC metrics upload failed to create an ID for the record "
-                "uplOADED. rEsponse from server follows: {}".format(response.text)
+                f"uplOADED. rEsponse from server follows: {response.text}"
             )
             config.loggers.interface.warning(errmsg)
 

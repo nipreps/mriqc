@@ -182,9 +182,7 @@ set i 0
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
                 tclfp.write(
-                    '    SaveTIFF [format "{}/{}-lh-%03d.tif" $i]\n'.format(
-                        tmp_sub, subid
-                    )
+                    f'    SaveTIFF [format "{tmp_sub}/{subid}-lh-%03d.tif" $i]\n'
                 )
                 tclfp.write("    incr i\n")
                 tclfp.write("}\n")
@@ -214,9 +212,7 @@ set i 0
                 tclfp.write("    SetSlice $slice\n")
                 tclfp.write("    RedrawScreen\n")
                 tclfp.write(
-                    '    SaveTIFF [format "{}/{}-rh-%03d.tif" $slice]\n'.format(
-                        tmp_sub, subid
-                    )
+                    f'    SaveTIFF [format "{tmp_sub}/{subid}-rh-%03d.tif" $slice]\n'
                 )
                 tclfp.write("    incr i\n")
                 tclfp.write("}\n")
