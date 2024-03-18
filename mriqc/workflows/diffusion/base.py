@@ -90,7 +90,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         detail=(
             f"for {len(dataset)} NIfTI files."
             if len(dataset) > 2
-            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+            else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
     )
     config.loggers.workflow.info(message)
