@@ -81,7 +81,7 @@ def write_derivative_description(bids_dir, deriv_dir):
         orig_desc = json.loads(fname.read_text())
 
     if "Name" in orig_desc:
-        desc["Name"] = f"MRIQC - {orig_desc["Name"]}"
+        desc["Name"] = f"MRIQC - {orig_desc['Name']}"
     else:
         desc["Name"] = "MRIQC - MRI Quality Control"
 
