@@ -62,7 +62,7 @@ doc = [
     "pydotplus",
     "sphinx-argparse",
     "sphinx_rtd_theme",
-    "sphinx~=4.0",
+    "sphinx~=5.0",
 ]
 
 full = [
