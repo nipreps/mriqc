@@ -455,12 +455,35 @@ def parse_args(args=None, namespace=None):
     from contextlib import suppress
     from json import loads
     from pprint import pformat
+    from mriqc import __version__
+    from mriqc.messages import PARTICIPANT_START
 
     from niworkflows.utils.bids import collect_data, DEFAULT_BIDS_QUERIES
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
     config.execution.log_level = int(max(25 - 5 * opts.verbose_count, DEBUG))
+
+    config.loggers.init()
+
+    extra_messages = [" " * 9 + "-" * 66]
+
+    if opts.bids_filter_file:
+        extra_messages.insert(
+            0,
+            f"           * BIDS filters-file: {opts.bids_filter_file.absolute()}.",
+        )
+
+    config.loggers.cli.log(
+        25,
+        PARTICIPANT_START.format(
+            version=__version__,
+            bids_dir=opts.bids_dir,
+            output_dir=opts.output_dir,
+            analysis_level=opts.analysis_level,
+            extra_messages='\n'.join(extra_messages),
+        )
+    )
     config.from_dict(vars(opts))
 
     # Load base plugin_settings from file if --use-plugin
@@ -512,11 +535,14 @@ def parse_args(args=None, namespace=None):
     # Force initialization of the BIDSLayout
     config.execution.init()
 
-    participant_label = config.execution.layout.get_subjects()
+    participant_labels = [
+        d.name[4:] for d in config.execution.bids_dir.glob("sub-*")
+        if d.is_dir() and d.exists()
+    ]
+
     if config.execution.participant_label is not None:
         selected_label = set(config.execution.participant_label)
-        missing_subjects = selected_label - set(participant_label)
-        if missing_subjects:
+        if (missing_subjects := selected_label - set(participant_labels)):
             parser.error(
                 "One or more participant labels were not found in the BIDS directory: "
                 f"{', '.join(missing_subjects)}."
