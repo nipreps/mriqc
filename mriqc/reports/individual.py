@@ -23,8 +23,10 @@
 """Encapsulates report generation functions."""
 from pathlib import Path
 from json import loads
-from pkg_resources import resource_filename as pkgrf
 from nireports.assembler.report import Report
+from niworkflows.data import Loader
+
+_load_data = Loader(__package__)
 
 
 def generate_reports():
@@ -86,7 +88,7 @@ def _single_report(in_file):
         config.execution.output_dir,
         config.execution.run_uuid,
         reportlets_dir=config.execution.work_dir / "reportlets",
-        bootstrap_file=pkgrf("mriqc", f"data/bootstrap-{report_type}.yml"),
+        bootstrap_file=_load_data(f"data/bootstrap-{report_type}.yml"),
         metadata={
             "dataset": config.execution.dsname,
             "about-metadata": {

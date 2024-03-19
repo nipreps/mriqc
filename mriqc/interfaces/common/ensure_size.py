@@ -37,12 +37,13 @@ from nipype.interfaces.base import (
     isdefined,
     traits,
 )
-from pkg_resources import resource_filename as pkgrf
+from niworkflows.data import Loader
 
 OUT_FILE_NAME = "{prefix}_resampled{ext}"
 OUT_MASK_NAME = "{prefix}_resmask{ext}"
 REF_FILE_NAME = "resample_ref.nii.gz"
 REF_MASK_NAME = "mask_ref.nii.gz"
+load_data = Loader(__package__)
 
 
 class EnsureSizeInputSpec(BaseInterfaceInputSpec):
@@ -146,7 +147,7 @@ class EnsureSize(SimpleInterface):
                 input_image=self.inputs.in_file,
                 reference_image=REF_FILE_NAME,
                 interpolation="LanczosWindowedSinc",
-                transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
+                transforms=[load_data("data/itk_identity.tfm")],
                 output_image=out_file,
             ).run()
 
@@ -167,7 +168,7 @@ class EnsureSize(SimpleInterface):
                     input_image=self.inputs.in_mask,
                     reference_image=REF_MASK_NAME,
                     interpolation="NearestNeighbor",
-                    transforms=[pkgrf("mriqc", "data/itk_identity.tfm")],
+                    transforms=[load_data("data/itk_identity.tfm")],
                     output_image=out_mask,
                 ).run()
 
