@@ -147,7 +147,7 @@ class EnsureSize(SimpleInterface):
                 input_image=self.inputs.in_file,
                 reference_image=REF_FILE_NAME,
                 interpolation="LanczosWindowedSinc",
-                transforms=[load_data("data/itk_identity.tfm")],
+                transforms=[str(load_data("data/itk_identity.tfm").absolute())],
                 output_image=out_file,
             ).run()
 
@@ -168,7 +168,7 @@ class EnsureSize(SimpleInterface):
                     input_image=self.inputs.in_mask,
                     reference_image=REF_MASK_NAME,
                     interpolation="NearestNeighbor",
-                    transforms=[load_data("data/itk_identity.tfm")],
+                    transforms=[str(load_data("data/itk_identity.tfm").absolute())],
                     output_image=out_mask,
                 ).run()
 
