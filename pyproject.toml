@@ -21,6 +21,7 @@ classifiers = [
 license = "Apache-2.0"
 requires-python = ">=3.8"
 dependencies = [
+    "dipy",
     'importlib_resources; python_version < "3.9"',
     # jinja2 imports deprecated function removed in 2.1
     "markupsafe ~= 2.0.1",
