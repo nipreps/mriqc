@@ -37,21 +37,21 @@ from mriqc.interfaces.webapi import UploadIQMs
 
 
 class DerivativesDataSink(_DDSink):
-    out_path_base = ""
+    out_path_base = ''
 
 
 __all__ = [
-    "ArtifactMask",
-    "ComputeQI2",
-    "ConformImage",
-    "DerivativesDataSink",
-    "EnsureSize",
-    "FunctionalQC",
-    "GatherTimeseries",
-    "Harmonize",
-    "IQMFileSink",
-    "RotationMask",
-    "Spikes",
-    "StructuralQC",
-    "UploadIQMs",
+    'ArtifactMask',
+    'ComputeQI2',
+    'ConformImage',
+    'DerivativesDataSink',
+    'EnsureSize',
+    'FunctionalQC',
+    'GatherTimeseries',
+    'Harmonize',
+    'IQMFileSink',
+    'RotationMask',
+    'Spikes',
+    'StructuralQC',
+    'UploadIQMs',
 ]

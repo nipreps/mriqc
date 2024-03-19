@@ -23,14 +23,14 @@
 """A lightweight NiPype MultiProc execution plugin."""
 
 # Import packages
+import gc
+import multiprocessing as mp
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
 from time import sleep, time
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 from traceback import format_exception
-import gc
 
 
 # Run node
@@ -53,14 +53,14 @@ def run_node(node, updatehash, taskid):
 
     """
     # Init variables
-    result = dict(result=None, traceback=None, taskid=taskid)
+    result = {'result': None, 'traceback': None, 'taskid': taskid}
 
     # Try and execute the node via node.run()
     try:
-        result["result"] = node.run(updatehash=updatehash)
+        result['result'] = node.run(updatehash=updatehash)
     except:  # noqa: E722, intendedly catch all here
-        result["traceback"] = format_exception(*sys.exc_info())
-        result["result"] = node.result
+        result['traceback'] = format_exception(*sys.exc_info())
+        result['result'] = node.result
 
     # Return the result dictionary
     return result
@@ -75,7 +75,7 @@ class PluginBase:
             plugin_args = {}
         self.plugin_args = plugin_args
         self._config = None
-        self._status_callback = plugin_args.get("status_callback")
+        self._status_callback = plugin_args.get('status_callback')
 
     def run(self, graph, config, updatehash=False):
         """
@@ -142,7 +142,7 @@ class DistributedPluginBase(PluginBase):
         self.proc_done = None
         self.proc_pending = None
         self.pending_tasks = []
-        self.max_jobs = self.plugin_args.get("max_jobs", None)
+        self.max_jobs = self.plugin_args.get('max_jobs', None)
 
     def _prerun_check(self, graph):
         """Stub method to validate/massage graph and nodes before running."""
@@ -155,7 +155,7 @@ class DistributedPluginBase(PluginBase):
         import numpy as np
 
         self._config = config
-        poll_sleep_secs = float(config["execution"]["poll_sleep_duration"])
+        poll_sleep_secs = float(config['execution']['poll_sleep_duration'])
 
         self._prerun_check(graph)
         # Generate appropriate structures for worker-manager model
@@ -174,20 +174,22 @@ class DistributedPluginBase(PluginBase):
                 taskid, jobid = self.pending_tasks.pop()
                 try:
                     result = self._get_result(taskid)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     notrun.append(self._clean_queue(jobid, graph))
                     errors.append(exc)
                 else:
                     if result:
-                        if result["traceback"]:
+                        if result['traceback']:
                             notrun.append(self._clean_queue(jobid, graph, result=result))
-                            errors.append("".join(result["traceback"]))
+                            errors.append(''.join(result['traceback']))
                         else:
                             self._task_finished_cb(jobid)
                             self._remove_node_dirs()
                         self._clear_task(taskid)
                     else:
-                        assert self.proc_done[jobid] and self.proc_pending[jobid]
+                        if not (self.proc_done[jobid] and self.proc_pending[jobid]):
+                            raise RuntimeError(
+                                f'Plugin error while appending task <{taskid}> with ID {jobid}.')
                         toappend.insert(0, (taskid, jobid))
 
             if toappend:
@@ -213,7 +215,7 @@ class DistributedPluginBase(PluginBase):
 
             if len(errors) > 1:
                 error, cause = (
-                    RuntimeError(f"{len(errors)} raised. Re-raising first."),
+                    RuntimeError(f'{len(errors)} raised. Re-raising first.'),
                     error,
                 )
 
@@ -230,8 +232,8 @@ class DistributedPluginBase(PluginBase):
 
         tb = None
         if result is not None:
-            node._result = result["result"]
-            tb = result["traceback"]
+            node._result = result['result']
+            tb = result['traceback']
             node._traceback = tb
         return report_crash(node, traceback=tb)
 
@@ -242,16 +244,16 @@ class DistributedPluginBase(PluginBase):
         from mriqc import config
 
         if self._status_callback:
-            self._status_callback(self.procs[jobid], "exception")
+            self._status_callback(self.procs[jobid], 'exception')
         if result is None:
             result = {
-                "result": None,
-                "traceback": "\n".join(format_exception(*sys.exc_info())),
+                'result': None,
+                'traceback': '\n'.join(format_exception(*sys.exc_info())),
             }
 
         crashfile = self._report_crash(self.procs[jobid], result=result)
         if config.nipype.stop_on_first_crash:
-            raise RuntimeError("".join(result["traceback"]))
+            raise RuntimeError(''.join(result['traceback']))
         if jobid in self.mapnodesubids:
             # remove current jobid
             self.proc_pending[jobid] = False
@@ -280,11 +282,11 @@ class DistributedPluginBase(PluginBase):
         self.procs.extend(mapnodesubids)
         self.depidx = ssp.vstack(
             (self.depidx, ssp.lil_matrix(np.zeros((numnodes, self.depidx.shape[1])))),
-            "lil",
+            'lil',
         )
         self.depidx = ssp.hstack(
             (self.depidx, ssp.lil_matrix(np.zeros((self.depidx.shape[0], numnodes)))),
-            "lil",
+            'lil',
         )
         self.depidx[-numnodes:, jobid] = 1
         self.proc_done = np.concatenate((self.proc_done, np.zeros(numnodes, dtype=bool)))
@@ -322,7 +324,7 @@ class DistributedPluginBase(PluginBase):
         This is called when a job is completed.
         """
         if self._status_callback:
-            self._status_callback(self.procs[jobid], "end")
+            self._status_callback(self.procs[jobid], 'end')
         # Update job and worker queues
         self.proc_pending[jobid] = False
         # update the job dependency structure
@@ -345,7 +347,7 @@ class DistributedPluginBase(PluginBase):
             from networkx import to_scipy_sparse_matrix as to_scipy_sparse_array
 
         self.procs, _ = topological_sort(graph)
-        self.depidx = to_scipy_sparse_array(graph, nodelist=self.procs, format="lil")
+        self.depidx = to_scipy_sparse_array(graph, nodelist=self.procs, format='lil')
         self.refidx = self.depidx.astype(int)
         self.proc_done = np.zeros(len(self.procs), dtype=bool)
         self.proc_pending = np.zeros(len(self.procs), dtype=bool)
@@ -357,17 +359,23 @@ class DistributedPluginBase(PluginBase):
             dfs_preorder = nx.dfs_preorder
         except AttributeError:
             dfs_preorder = nx.dfs_preorder_nodes
-        subnodes = [s for s in dfs_preorder(graph, self.procs[jobid])]
+        subnodes = list(dfs_preorder(graph, self.procs[jobid]))
         for node in subnodes:
             idx = self.procs.index(node)
             self.proc_done[idx] = True
             self.proc_pending[idx] = False
-        return dict(node=self.procs[jobid], dependents=subnodes, crashfile=crashfile)
+        return {
+            'node': self.procs[jobid],
+            'dependents': subnodes,
+            'crashfile': crashfile,
+        }
 
     def _remove_node_dirs(self):
         """Remove directories whose outputs have already been used up."""
-        import numpy as np
         from shutil import rmtree
+
+        import numpy as np
+
         from mriqc import config
 
         if config.nipype.remove_node_directories:
@@ -424,15 +432,15 @@ class MultiProcPlugin(DistributedPluginBase):
         self._cwd = os.getcwd()
 
         # Read in options or set defaults.
-        self.processors = self.plugin_args.get("n_procs", mp.cpu_count())
+        self.processors = self.plugin_args.get('n_procs', mp.cpu_count())
         self.memory_gb = self.plugin_args.get(
-            "memory_gb",  # Allocate 90% of system memory
+            'memory_gb',  # Allocate 90% of system memory
             config.environment.total_memory * 0.9,
         )
-        self.raise_insufficient = self.plugin_args.get("raise_insufficient", False)
+        self.raise_insufficient = self.plugin_args.get('raise_insufficient', False)
 
         # Instantiate different thread pools for non-daemon processes
-        mp_context = mp.get_context(self.plugin_args.get("mp_context"))
+        mp_context = mp.get_context(self.plugin_args.get('mp_context'))
         self.pool = pool or ProcessPoolExecutor(
             max_workers=self.processors,
             initializer=config._process_initializer,
@@ -444,7 +452,7 @@ class MultiProcPlugin(DistributedPluginBase):
 
     def _async_callback(self, args):
         result = args.result()
-        self._taskresult[result["taskid"]] = result
+        self._taskresult[result['taskid']] = result
 
     def _get_result(self, taskid):
         return self._taskresult.get(taskid)
@@ -456,8 +464,8 @@ class MultiProcPlugin(DistributedPluginBase):
         self._taskid += 1
 
         # Don't allow streaming outputs
-        if getattr(node.interface, "terminal_output", "") == "stream":
-            node.interface.terminal_output = "allatonce"
+        if getattr(node.interface, 'terminal_output', '') == 'stream':
+            node.interface.terminal_output = 'allatonce'
 
         result_future = self.pool.submit(run_node, node, updatehash, self._taskid)
         result_future.add_done_callback(self._async_callback)
@@ -478,7 +486,7 @@ class MultiProcPlugin(DistributedPluginBase):
             np.any(np.array(tasks_mem_gb) > self.memory_gb)
             or np.any(np.array(tasks_num_th) > self.processors)
         ):
-            raise RuntimeError("Insufficient resources available for job")
+            raise RuntimeError('Insufficient resources available for job')
 
     def _postrun_check(self):
         self.pool.shutdown()
@@ -522,7 +530,7 @@ class MultiProcPlugin(DistributedPluginBase):
         if len(jobids) + len(self.pending_tasks) == 0:
             return
 
-        jobids = self._sort_jobs(jobids, scheduler=self.plugin_args.get("scheduler"))
+        jobids = self._sort_jobs(jobids, scheduler=self.plugin_args.get('scheduler'))
 
         # Run garbage collector before potentially submitting jobs
         gc.collect()
@@ -530,13 +538,13 @@ class MultiProcPlugin(DistributedPluginBase):
         # Submit jobs
         for jobid in jobids:
             # First expand mapnodes
-            if self.procs[jobid].__class__.__name__ == "MapNode":
+            if self.procs[jobid].__class__.__name__ == 'MapNode':
                 try:
                     num_subnodes = self.procs[jobid].num_subnodes()
                 except Exception:
                     traceback = format_exception(*sys.exc_info())
                     self._clean_queue(
-                        jobid, graph, result={"result": None, "traceback": traceback}
+                        jobid, graph, result={'result': None, 'traceback': traceback}
                     )
                     self.proc_pending[jobid] = False
                     continue
@@ -570,7 +578,7 @@ class MultiProcPlugin(DistributedPluginBase):
                 except Exception:
                     traceback = format_exception(*sys.exc_info())
                     self._clean_queue(
-                        jobid, graph, result={"result": None, "traceback": traceback}
+                        jobid, graph, result={'result': None, 'traceback': traceback}
                     )
 
                 # Release resources
@@ -588,7 +596,7 @@ class MultiProcPlugin(DistributedPluginBase):
             # Task should be submitted to workers
             # Send job to task manager and add to pending tasks
             if self._status_callback:
-                self._status_callback(self.procs[jobid], "start")
+                self._status_callback(self.procs[jobid], 'start')
             tid = self._submit_job(deepcopy(self.procs[jobid]), updatehash=updatehash)
             if tid is None:
                 self.proc_done[jobid] = False
@@ -598,8 +606,8 @@ class MultiProcPlugin(DistributedPluginBase):
             # Display stats next loop
             self._stats = None
 
-    def _sort_jobs(self, jobids, scheduler="tsort"):
-        if scheduler == "mem_thread":
+    def _sort_jobs(self, jobids, scheduler='tsort'):
+        if scheduler == 'mem_thread':
             return sorted(
                 jobids,
                 key=lambda item: (self.procs[item].mem_gb, self.procs[item].n_procs),

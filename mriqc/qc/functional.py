@@ -210,10 +210,10 @@ import os.path as op
 
 import numpy as np
 
-RAS_AXIS_ORDER = {"x": 0, "y": 1, "z": 2}
+RAS_AXIS_ORDER = {'x': 0, 'y': 1, 'z': 2}
 
 
-def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
+def gsr(epi_data, mask, direction='y', ref_file=None, out_file=None):
     """
     Compute the :abbr:`GSR (ghost to signal ratio)` [Giannelli2010]_.
 
@@ -242,21 +242,21 @@ def gsr(epi_data, mask, direction="y", ref_file=None, out_file=None):
 
     """
     direction = direction.lower()
-    if direction[-1] not in ("x", "y", "all"):
+    if direction[-1] not in ('x', 'y', 'all'):
         raise Exception(
-            f"Unknown direction {direction}, should be one of x, -x, y, -y, all"
+            f'Unknown direction {direction}, should be one of x, -x, y, -y, all'
         )
 
-    if direction == "all":
+    if direction == 'all':
         result = []
-        for newdir in ("x", "y"):
+        for newdir in ('x', 'y'):
             ofile = None
             if out_file is not None:
                 fname, ext = op.splitext(ofile)
-                if ext == ".gz":
+                if ext == '.gz':
                     fname, ext2 = op.splitext(fname)
                     ext = ext2 + ext
-                ofile = f"{fname}_{newdir}{ext}"
+                ofile = f'{fname}_{newdir}{ext}'
             result += [gsr(epi_data, mask, newdir, ref_file=ref_file, out_file=ofile)]
         return result
 

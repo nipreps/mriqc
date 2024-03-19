@@ -217,3 +217,51 @@ ignore-words-list = 'nd,mapp,reson'
 skip = """
 ./.git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE,\
 ./docs/source/_static/example_anatreport.html"""
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+extend-select = [
+  "F",
+  "E",
+  "W",
+  "I",
+  "UP",
+  "YTT",
+  "S",
+  "BLE",
+  "B",
+  "A",
+  # "CPY",
+  "C4",
+  "DTZ",
+  "T10",
+  # "EM",
+  "EXE",
+  "FA",
+  "ISC",
+  "ICN",
+  "PT",
+  "Q",
+]
+extend-ignore = [
+  "S311",  # We are not using random for cryptographic purposes
+  "ISC001",
+  "S603",
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"*/test_*.py" = ["S101"]
+"docs/source/conf.py" = ["A001"]
+"mriqc/bin/nib_hash.py" = ["S324"]
+"mriqc/config.py" = ["S105"]
+"mriqc/conftest.py" = ["PT004"]
+"mriqc/engine/plugin.py" = ["BLE001"]
+"mriqc/utils/debug.py" = ["A002", "T100"]
+
+[tool.ruff.format]
+quote-style = "single"

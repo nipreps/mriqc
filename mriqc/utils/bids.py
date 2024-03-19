@@ -27,19 +27,19 @@ import json
 import os
 from pathlib import Path
 
-DOI = "https://doi.org/10.1371/journal.pone.0184661"
+DOI = 'https://doi.org/10.1371/journal.pone.0184661'
 
 
 def write_bidsignore(deriv_dir):
     from mriqc.config import SUPPORTED_SUFFIXES
     bids_ignore = [
-        "*.html",
-        "logs/",  # Reports
-    ] + [f"*_{suffix}.json" for suffix in SUPPORTED_SUFFIXES]
+        '*.html',
+        'logs/',  # Reports
+    ] + [f'*_{suffix}.json' for suffix in SUPPORTED_SUFFIXES]
 
-    ignore_file = Path(deriv_dir) / ".bidsignore"
+    ignore_file = Path(deriv_dir) / '.bidsignore'
 
-    ignore_file.write_text("\n".join(bids_ignore) + "\n")
+    ignore_file.write_text('\n'.join(bids_ignore) + '\n')
 
 
 def write_derivative_description(bids_dir, deriv_dir):
@@ -48,54 +48,54 @@ def write_derivative_description(bids_dir, deriv_dir):
     bids_dir = Path(bids_dir)
     deriv_dir = Path(deriv_dir)
     desc = {
-        "BIDSVersion": "1.4.0",
-        "DatasetType": "derivative",
-        "GeneratedBy": [
+        'BIDSVersion': '1.4.0',
+        'DatasetType': 'derivative',
+        'GeneratedBy': [
             {
-                "Name": "MRIQC",
-                "Version": __version__,
-                "CodeURL": __download__,
+                'Name': 'MRIQC',
+                'Version': __version__,
+                'CodeURL': __download__,
             }
         ],
-        "HowToAcknowledge": f"Please cite our paper ({DOI}).",
+        'HowToAcknowledge': f'Please cite our paper ({DOI}).',
     }
 
     # Keys that can only be set by environment
     # XXX: This currently has no effect, but is a stand-in to remind us to figure out
     # how to detect the container
-    if "MRIQC_DOCKER_TAG" in os.environ:
-        desc["GeneratedBy"][0]["Container"] = {
-            "Type": "docker",
-            "Tag": f"nipreps/mriqc:{os.environ['MRIQC_DOCKER_TAG']}",
+    if 'MRIQC_DOCKER_TAG' in os.environ:
+        desc['GeneratedBy'][0]['Container'] = {
+            'Type': 'docker',
+            'Tag': f"nipreps/mriqc:{os.environ['MRIQC_DOCKER_TAG']}",
         }
-    if "MRIQC_SINGULARITY_URL" in os.environ:
-        desc["GeneratedBy"][0]["Container"] = {
-            "Type": "singularity",
-            "URI": os.getenv("MRIQC_SINGULARITY_URL"),
+    if 'MRIQC_SINGULARITY_URL' in os.environ:
+        desc['GeneratedBy'][0]['Container'] = {
+            'Type': 'singularity',
+            'URI': os.getenv('MRIQC_SINGULARITY_URL'),
         }
 
     # Keys deriving from source dataset
     orig_desc = {}
-    fname = bids_dir / "dataset_description.json"
+    fname = bids_dir / 'dataset_description.json'
     if fname.exists():
         orig_desc = json.loads(fname.read_text())
 
-    if "Name" in orig_desc:
-        desc["Name"] = f"MRIQC - {orig_desc['Name']}"
+    if 'Name' in orig_desc:
+        desc['Name'] = f"MRIQC - {orig_desc['Name']}"
     else:
-        desc["Name"] = "MRIQC - MRI Quality Control"
+        desc['Name'] = 'MRIQC - MRI Quality Control'
 
-    if "DatasetDOI" in orig_desc:
-        desc["SourceDatasets"] = [
+    if 'DatasetDOI' in orig_desc:
+        desc['SourceDatasets'] = [
             {
-                "URL": f'https://doi.org/{orig_desc["DatasetDOI"]}',
-                "DOI": orig_desc["DatasetDOI"],
+                'URL': f'https://doi.org/{orig_desc["DatasetDOI"]}',
+                'DOI': orig_desc['DatasetDOI'],
             }
         ]
-    if "License" in orig_desc:
-        desc["License"] = orig_desc["License"]
+    if 'License' in orig_desc:
+        desc['License'] = orig_desc['License']
 
-    Path.write_text(deriv_dir / "dataset_description.json", json.dumps(desc, indent=4))
+    Path.write_text(deriv_dir / 'dataset_description.json', json.dumps(desc, indent=4))
 
 
 def derive_bids_fname(
@@ -174,20 +174,20 @@ def derive_bids_fname(
     orig_path = Path(orig_path)
     newpath = orig_path.parent if newpath is None else Path(newpath)
 
-    ext = "".join(orig_path.suffixes)
+    ext = ''.join(orig_path.suffixes)
     newext = newext if newext is not None else ext
-    orig_stem = orig_path.name.replace(ext, "")
+    orig_stem = orig_path.name.replace(ext, '')
 
-    suffix = orig_stem.rsplit("_", maxsplit=1)[-1].strip("_")
-    newsuffix = newsuffix.strip("_") if newsuffix is not None else suffix
+    suffix = orig_stem.rsplit('_', maxsplit=1)[-1].strip('_')
+    newsuffix = newsuffix.strip('_') if newsuffix is not None else suffix
 
-    orig_stem = orig_stem.replace(suffix, "").strip("_")
-    bidts = [bit for bit in orig_stem.split("_") if bit]
+    orig_stem = orig_stem.replace(suffix, '').strip('_')
+    bidts = [bit for bit in orig_stem.split('_') if bit]
     if entity:
         if position == -1:
             bidts.append(entity)
         else:
-            bidts.insert(position, entity.strip("_"))
+            bidts.insert(position, entity.strip('_'))
 
     retval = (newpath / f"{'_'.join(bidts)}_{newsuffix}.{newext.strip('.')}")
 

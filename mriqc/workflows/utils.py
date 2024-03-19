@@ -36,25 +36,26 @@ def fwhm_dict(fwhm):
     """Convert a list of FWHM into a dictionary"""
     fwhm = [float(f) for f in fwhm]
     return {
-        "fwhm_x": fwhm[0],
-        "fwhm_y": fwhm[1],
-        "fwhm_z": fwhm[2],
-        "fwhm_avg": fwhm[3],
+        'fwhm_x': fwhm[0],
+        'fwhm_y': fwhm[1],
+        'fwhm_z': fwhm[2],
+        'fwhm_avg': fwhm[3],
     }
 
 
 def thresh_image(in_file, thres=0.5, out_file=None):
     """Thresholds an image"""
     import os.path as op
-    import numpy as np
+
     import nibabel as nb
+    import numpy as np
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             fname, ext2 = op.splitext(fname)
             ext = ext2 + ext
-        out_file = op.abspath(f"{fname}_thresh{ext}")
+        out_file = op.abspath(f'{fname}_thresh{ext}')
 
     im = nb.load(in_file)
     data = np.asanyarray(im.dataobj)
@@ -97,14 +98,15 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
 
     import nibabel as nb
     import numpy as np
-    from mriqc.workflows.utils import spectrum_mask
     from scipy.ndimage import binary_erosion, generate_binary_structure
     from scipy.ndimage.filters import median_filter
     from statsmodels.robust.scale import mad
 
+    from mriqc.workflows.utils import spectrum_mask
+
     if out_prefix is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             fname, _ = op.splitext(fname)
         out_prefix = op.abspath(fname)
 
@@ -123,7 +125,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
                 median_filter(
                     np.real(np.fft.fft2(sl)).astype(np.float32),
                     size=(5, 5),
-                    mode="constant",
+                    mode='constant',
                 )
                 * ftmask
             )
@@ -141,7 +143,7 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
     fft_zscored[idxs] /= sigma[idxs]
 
     # save fft z-scored
-    out_fft = op.abspath(out_prefix + "_zsfft.nii.gz")
+    out_fft = op.abspath(out_prefix + '_zsfft.nii.gz')
     nii = nb.Nifti1Image(fft_zscored.astype(np.float32), np.eye(4), None)
     nii.to_filename(out_fft)
 
@@ -166,8 +168,8 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
             if sl.sum() > 10:
                 spikes_list.append((t, z))
 
-    out_spikes = op.abspath(out_prefix + "_spikes.tsv")
-    np.savetxt(out_spikes, spikes_list, fmt=b"%d", delimiter=b"\t", header="TR\tZ")
+    out_spikes = op.abspath(out_prefix + '_spikes.tsv')
+    np.savetxt(out_spikes, spikes_list, fmt=b'%d', delimiter=b'\t', header='TR\tZ')
 
     return len(spikes_list), out_spikes, out_fft
 
@@ -175,17 +177,17 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
 def get_fwhmx():
     from nipype.interfaces.afni import FWHMx, Info
 
-    fwhm_args = {"combine": True, "detrend": True}
+    fwhm_args = {'combine': True, 'detrend': True}
     afni_version = Info.version()
 
     if afni_version and afni_version >= (2017, 2, 3):
-        fwhm_args["args"] = "-ShowMeClassicFWHM"
+        fwhm_args['args'] = '-ShowMeClassicFWHM'
 
     fwhm_interface = FWHMx(**fwhm_args)
     return fwhm_interface
 
 
-def generate_filename(in_file, dirname=None, suffix="", extension=None):
+def generate_filename(in_file, dirname=None, suffix='', extension=None):
     """
     Generate a nipype-like filename.
 
@@ -230,18 +232,18 @@ def generate_filename(in_file, dirname=None, suffix="", extension=None):
     """
     from pathlib import Path
     in_file = Path(in_file)
-    in_ext = "".join(in_file.suffixes)
+    in_ext = ''.join(in_file.suffixes)
 
     dirname = Path.cwd() if dirname is None else Path(dirname)
 
     if extension is not None:
-        extension = extension if not extension or extension.startswith(".") else f".{extension}"
+        extension = extension if not extension or extension.startswith('.') else f'.{extension}'
     else:
         extension = in_ext
 
     stem = in_file.name[:-len(in_ext)] if in_ext else in_file.name
 
-    if suffix and not suffix.startswith("_"):
-        suffix = f"_{suffix}"
+    if suffix and not suffix.startswith('_'):
+        suffix = f'_{suffix}'
 
-    return dirname / f"{stem}{suffix}{extension}"
+    return dirname / f'{stem}{suffix}{extension}'

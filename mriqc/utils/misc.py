@@ -34,20 +34,20 @@ except ImportError:
     from collections.abc import MutableMapping
 
 IMTYPES = {
-    "T1w": "anat",
-    "T2w": "anat",
-    "bold": "func",
-    "dwi": "dwi",
+    'T1w': 'anat',
+    'T2w': 'anat',
+    'bold': 'func',
+    'dwi': 'dwi',
 }
 
 BIDS_COMP = OrderedDict(
     [
-        ("subject_id", "sub"),
-        ("session_id", "ses"),
-        ("task_id", "task"),
-        ("acq_id", "acq"),
-        ("rec_id", "rec"),
-        ("run_id", "run"),
+        ('subject_id', 'sub'),
+        ('session_id', 'ses'),
+        ('task_id', 'task'),
+        ('acq_id', 'acq'),
+        ('rec_id', 'rec'),
+        ('run_id', 'run'),
     ]
 )
 
@@ -78,12 +78,12 @@ def reorder_csv(csv_file, out_file=None):
     dataframe = pd.read_csv(csv_file)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
     try:
-        cols.remove("Unnamed: 0")
+        cols.remove('Unnamed: 0')
     except ValueError:
         # The column does not exist
         pass
 
-    for col in ("scan", "session", "subject"):
+    for col in ('scan', 'session', 'subject'):
         cols.remove(col)
         cols.insert(0, col)
 
@@ -98,36 +98,36 @@ def rotate_files(fname):
     import os.path as op
 
     name, ext = op.splitext(fname)
-    if ext == ".gz":
+    if ext == '.gz':
         name, ext2 = op.splitext(fname)
         ext = ext2 + ext
 
     if not op.isfile(fname):
         return
 
-    prev = glob.glob(f"{name}.*{ext}")
+    prev = glob.glob(f'{name}.*{ext}')
     prev.insert(0, fname)
-    prev.append(f"{name}.{len(prev) - 1:d}{ext}")
+    prev.append(f'{name}.{len(prev) - 1:d}{ext}')
     for i in reversed(list(range(1, len(prev)))):
         os.rename(prev[i - 1], prev[i])
 
 
-def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext="json"):
+def bids_path(subid, sesid=None, runid=None, prefix=None, out_path=None, ext='json'):
     import os.path as op
 
-    fname = f"{subid}"
+    fname = f'{subid}'
     if prefix is not None:
-        if not prefix.endswith("_"):
-            prefix += "_"
+        if not prefix.endswith('_'):
+            prefix += '_'
         fname = prefix + fname
     if sesid is not None:
-        fname += f"_ses-{sesid}"
+        fname += f'_ses-{sesid}'
     if runid is not None:
-        fname += f"_run-{runid}"
+        fname += f'_run-{runid}'
 
     if out_path is not None:
         fname = op.join(out_path, fname)
-    return op.abspath(fname + "." + ext)
+    return op.abspath(fname + '.' + ext)
 
 
 def generate_pred(derivatives_dir, output_dir, mod):
@@ -136,20 +136,20 @@ def generate_pred(derivatives_dir, output_dir, mod):
     generates a corresponding prediction CSV table
     """
 
-    if mod != "T1w":
+    if mod != 'T1w':
         return None
 
     # If some were found, generate the CSV file and group report
-    jsonfiles = list(output_dir.glob(f"sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json"))
+    jsonfiles = list(output_dir.glob(f'sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json'))
     if not jsonfiles:
         return None
 
-    headers = list(BIDS_COMP) + ["mriqc_pred"]
+    headers = list(BIDS_COMP) + ['mriqc_pred']
     predictions = {k: [] for k in headers}
 
     for jsonfile in jsonfiles:
-        with open(jsonfile, "r") as jsondata:
-            data = json.load(jsondata).pop("bids_meta", None)
+        with open(jsonfile) as jsondata:
+            data = json.load(jsondata).pop('bids_meta', None)
 
         if data is None:
             continue
@@ -160,15 +160,15 @@ def generate_pred(derivatives_dir, output_dir, mod):
     dataframe = pd.DataFrame(predictions).sort_values(by=list(BIDS_COMP))
 
     # Drop empty columns
-    dataframe.dropna(axis="columns", how="all", inplace=True)
+    dataframe.dropna(axis='columns', how='all', inplace=True)
 
     bdits_cols = list(set(BIDS_COMP) & set(dataframe.columns.ravel()))
 
     # Drop duplicates
-    dataframe.drop_duplicates(bdits_cols, keep="last", inplace=True)
+    dataframe.drop_duplicates(bdits_cols, keep='last', inplace=True)
 
-    out_csv = Path(output_dir) / ("%s_predicted_qa_csv" % mod)
-    dataframe[bdits_cols + ["mriqc_pred"]].to_csv(str(out_csv), index=False)
+    out_csv = Path(output_dir) / ('%s_predicted_qa_csv' % mod)
+    dataframe[bdits_cols + ['mriqc_pred']].to_csv(str(out_csv), index=False)
     return out_csv
 
 
@@ -178,8 +178,8 @@ def generate_tsv(output_dir, mod):
     """
 
     # If some were found, generate the CSV file and group report
-    out_tsv = output_dir / ("group_%s.tsv" % mod)
-    jsonfiles = list(output_dir.glob(f"sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json"))
+    out_tsv = output_dir / ('group_%s.tsv' % mod)
+    jsonfiles = list(output_dir.glob(f'sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json'))
     if not jsonfiles:
         return None, out_tsv
 
@@ -189,21 +189,21 @@ def generate_tsv(output_dir, mod):
 
         if dfentry is not None:
             bids_name = str(Path(jsonfile.name).stem)
-            dfentry.pop("bids_meta", None)
-            dfentry.pop("provenance", None)
-            dfentry["bids_name"] = bids_name
+            dfentry.pop('bids_meta', None)
+            dfentry.pop('provenance', None)
+            dfentry['bids_name'] = bids_name
             datalist.append(dfentry)
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member
-    dataframe = dataframe.sort_values(by=["bids_name"])
+    dataframe = dataframe.sort_values(by=['bids_name'])
 
     # Drop duplicates
-    dataframe.drop_duplicates(["bids_name"], keep="last", inplace=True)
+    dataframe.drop_duplicates(['bids_name'], keep='last', inplace=True)
 
     # Set filename at front
-    cols.insert(0, cols.pop(cols.index("bids_name")))
-    dataframe[cols].to_csv(str(out_tsv), index=False, sep="\t")
+    cols.insert(0, cols.pop(cols.index('bids_name')))
+    dataframe[cols].to_csv(str(out_tsv), index=False, sep='\t')
     return dataframe, out_tsv
 
 
@@ -211,7 +211,7 @@ def _read_and_save(in_file):
     return json.loads(Path(in_file).read_text()) or None
 
 
-def _flatten(in_dict, parent_key="", sep="_"):
+def _flatten(in_dict, parent_key='', sep='_'):
     items = []
     for k, val in list(in_dict.items()):
         new_key = parent_key + sep + k if parent_key else k
@@ -230,8 +230,8 @@ def _flatten_dict(indict):
         else:
             for subk, subval in list(value.items()):
                 if not isinstance(subval, dict):
-                    out_qc["_".join([k, subk])] = subval
+                    out_qc['_'.join([k, subk])] = subval
                 else:
                     for ssubk, ssubval in list(subval.items()):
-                        out_qc["_".join([k, subk, ssubk])] = ssubval
+                        out_qc['_'.join([k, subk, ssubk])] = ssubval
     return out_qc

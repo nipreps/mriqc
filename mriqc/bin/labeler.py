@@ -38,8 +38,8 @@ def num_rows(data):
 
 def main():
     """read the input file"""
-    print("Reading file sinfo.csv")
-    csvfile = open("sinfo.csv", "rb")
+    print('Reading file sinfo.csv')
+    csvfile = open('sinfo.csv', 'rb')
     csvreader = csv.reader(csvfile)
     file = list(csvreader)
 
@@ -55,8 +55,8 @@ def main():
                 hold[j - 1, i - 1] = int(file[i][j])
     finished = np.divide(np.round(np.divide(finished, total) * 1000), 10)
     print(f"Completed: {' '.join(['%g%%' % f for f in finished])}")
-    print(f"Total: {np.round(np.divide(np.sum(finished), 3))}%")
-    input("Waiting: [enter]")
+    print(f'Total: {np.round(np.divide(np.sum(finished), 3))}%')
+    input('Waiting: [enter]')
 
     # file[1:] are all the rows
     order = range(1, len(file))
@@ -67,32 +67,32 @@ def main():
         current = num_rows(file[row])
         if current <= 1:
             # if less than 1, run the row
-            print("Check participant #" + file[row][0])
-            fname = os.getcwd() + "/abide/" + file[row][0]
+            print('Check participant #' + file[row][0])
+            fname = os.getcwd() + '/abide/' + file[row][0]
             if os.path.isfile(fname):
-                webbrowser.open("file://" + fname)
-                quality = input("Quality? [-1/0/1/e/c] ")
-                if quality == "e":
+                webbrowser.open('file://' + fname)
+                quality = input('Quality? [-1/0/1/e/c] ')
+                if quality == 'e':
                     break
-                if quality == "c":
-                    print("Current comment: " + file[row][4])
-                    comment = input("Comment: ")
+                if quality == 'c':
+                    print('Current comment: ' + file[row][4])
+                    comment = input('Comment: ')
                     if len(comment) > 0:
                         file[row][4] = comment
-                    quality = input("Quality? [-1/0/1/e] ")
-                if quality == "e":
+                    quality = input('Quality? [-1/0/1/e] ')
+                if quality == 'e':
                     break
                 file[row][current] = quality
             else:
-                print("File does not exist")
+                print('File does not exist')
 
-    print("Writing file sinfo.csv")
-    outfile = open("sinfo.csv", "wb")
+    print('Writing file sinfo.csv')
+    outfile = open('sinfo.csv', 'wb')
     csvwriter = csv.writer(outfile)
     csvwriter.writerows(file)
-    print("Ending")
+    print('Ending')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
     sys.exit(0)
