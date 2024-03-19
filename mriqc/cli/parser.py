@@ -535,14 +535,14 @@ def parse_args(args=None, namespace=None):
     # Force initialization of the BIDSLayout
     config.execution.init()
 
-    participant_labels = [
+    participant_label = [
         d.name[4:] for d in config.execution.bids_dir.glob("sub-*")
         if d.is_dir() and d.exists()
     ]
 
     if config.execution.participant_label is not None:
         selected_label = set(config.execution.participant_label)
-        if (missing_subjects := selected_label - set(participant_labels)):
+        if (missing_subjects := selected_label - set(participant_label)):
             parser.error(
                 "One or more participant labels were not found in the BIDS directory: "
                 f"{', '.join(missing_subjects)}."
