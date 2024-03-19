@@ -120,7 +120,7 @@ def main():
         for i, subj in enumerate(subject_list):
             subject_list[i] = subj[4:] if subj.startswith('sub-') else subj
 
-        subject_list = sorted(list(set(subject_list)))
+        subject_list = sorted(set(subject_list))
 
         if list(set(subject_list) - set(all_subjects)):
             non_exist = list(set(subject_list) - set(all_subjects))

@@ -23,13 +23,14 @@
 """Instrumentation to profile resource utilization."""
 import signal
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, timezone
 from multiprocessing import Event, Process
 from pathlib import Path
 from time import sleep, time_ns
 
 import psutil
 
+UTC = timezone.utc
 _MB = 1024.0**2
 SAMPLE_ATTRS = (
     'pid',
@@ -74,7 +75,7 @@ def sample(
     pid=None,
     recursive=True,
     attrs=SAMPLE_ATTRS,
-    exclude=tuple(),
+    exclude=(),
 ):
     """
     Probe process tree and snapshot current resource utilization.
@@ -127,7 +128,7 @@ def parse_sample(datapoint, timestamp=None, attrs=SAMPLE_ATTRS):
 
 
 def sample2file(
-    pid=None, recursive=True, timestamp=None, fd=None, flush=True, exclude=tuple()
+    pid=None, recursive=True, timestamp=None, fd=None, flush=True, exclude=()
 ):
     if fd is None:
         return
@@ -159,7 +160,7 @@ class ResourceRecorder(Process):
             Path(log_file if log_file is not None else f'.prof-{pid}.tsv').absolute()
         )
         """An open file descriptor where results are dumped."""
-        self._exclude = exclude_probe or tuple()
+        self._exclude = exclude_probe or ()
         """A list/tuple containing PIDs that should not be monitored."""
         self._freq_ns = int(max(frequency, 0.02) * 1e9)
         """Sampling frequency (stored in ns)."""
@@ -179,7 +180,7 @@ class ResourceRecorder(Process):
         # Write headers (comment trace + header row)
         _header = [
             f"# MRIQC Resource recorder started tracking PID {self._pid} "
-            f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
+            f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
             '\t'.join(('timestamp', *SAMPLE_ATTRS)).replace(
                 'memory_info', 'mem_rss_mb\tmem_vsm_mb'
             ),
@@ -202,7 +203,7 @@ class ResourceRecorder(Process):
             except psutil.NoSuchProcess:
                 print(
                     f"# MRIQC Resource recorder killed "
-                    f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
+                    f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
                     file=_logfile,
                 )
                 _logfile.flush()
@@ -220,5 +221,5 @@ class ResourceRecorder(Process):
         with Path(self._logfile).open('a') as f:
             f.write(
                 f"# MRIQC Resource recorder finished "
-                f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
+                f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
             )

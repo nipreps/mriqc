@@ -56,11 +56,11 @@ def _expand_bids(tmp_path, testdata_path, testcase):
 
 @pytest.mark.parametrize(
     'testcase',
-    (
+    [
         'gh921-dmd-20220428-0',
         'gh921-dmd-20230319-0',
         'gh1086-ds004134',
-    ),
+    ],
 )
 def test_bids_indexing_manifest(tmp_path, testdata_path, testcase):
     """Check ``BIDSLayout`` is indexing what it should."""

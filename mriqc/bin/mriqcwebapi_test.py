@@ -65,11 +65,12 @@ def main():
     opts = get_parser().parse_args()
     get_log_message = messages.WEBAPI_GET.format(address=opts.webapi_url)
     MRIQC_LOG.info(get_log_message)
-    response = get(opts.webapi_url).json()
+    response = get(opts.webapi_url, timeout=5).json()
     n_records = response['_meta']['total']
     response_log_message = messages.WEBAPI_REPORT.format(n_records=n_records)
     MRIQC_LOG.info(response_log_message)
-    assert opts.expected == n_records
+    if opts.expected != n_records:
+        raise AssertionError
 
 
 if __name__ == '__main__':

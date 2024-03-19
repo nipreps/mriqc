@@ -28,7 +28,7 @@ import os.path as op
 import subprocess as sp
 from argparse import ArgumentParser, RawTextHelpFormatter
 from errno import EEXIST
-from shutil import rmtree
+from shutil import rmtree, which
 from tempfile import mkdtemp
 
 import nibabel as nb
@@ -131,7 +131,7 @@ set i 0
                 tclfp.write('    RedrawScreen\n')
                 tclfp.write(
                     f'    SaveTIFF [format "{tmp_sub}/{subid}-'
-                    + '%03d.tif" $i]\n'
+                    '%03d.tif" $i]\n'
                 )
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
@@ -155,7 +155,7 @@ set i 0
             print('Stacking coronal slices')
             sp.call(
                 [
-                    'convert',
+                    which('convert'),
                     '-delay',
                     '10',
                     '-loop',
@@ -227,7 +227,7 @@ set i 0
             print('Stacking coronal slices')
             sp.call(
                 [
-                    'convert',
+                    which('convert'),
                     '-delay',
                     '10',
                     '-loop',
@@ -238,7 +238,7 @@ set i 0
             )
             sp.call(
                 [
-                    'convert',
+                    which('convert'),
                     '-delay',
                     '10',
                     '-loop',

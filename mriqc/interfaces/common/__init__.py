@@ -20,13 +20,10 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-from mriqc.interfaces.common.conform_image import (
-    ConformImage,
-    ConformImageInputSpec,
-    ConformImageOutputSpec,
-)
-from mriqc.interfaces.common.ensure_size import (
-    EnsureSize,
-    EnsureSizeInputSpec,
-    EnsureSizeOutputSpec,
+from mriqc.interfaces.common.conform_image import ConformImage
+from mriqc.interfaces.common.ensure_size import EnsureSize
+
+__all__ = (
+    'ConformImage',
+    'EnsureSize',
 )

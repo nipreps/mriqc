@@ -42,10 +42,10 @@ def _parse_participant_labels(value):
     ['s060']
 
     """
-    return sorted(set(
+    return sorted({
         re.sub(r'^sub-', '', item.strip())
         for item in re.split(r'\s+', f'{value}'.strip())
-    ))
+    })
 
 
 def _build_parser():
@@ -62,7 +62,10 @@ def _build_parser():
 
     class DeprecateAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            warnings.warn(f'Argument {option_string} is deprecated and is *ignored*.')
+            warnings.warn(
+                f'Argument {option_string} is deprecated and is *ignored*.',
+                stacklevel=2,
+            )
             delattr(namespace, self.dest)
 
     class ParticipantLabelAction(Action):
@@ -489,7 +492,7 @@ def parse_args(args=None, namespace=None):
 
     # Load base plugin_settings from file if --use-plugin
     if opts.use_plugin is not None:
-        from yaml import load as loadyml
+        from yaml import safe_load as loadyml
 
         with open(opts.use_plugin) as f:
             plugin_settings = loadyml(f)
@@ -590,9 +593,9 @@ Please, check out your currently set filters {ffile}:
         )
 
     # Check no DWI or others are sneaked into MRIQC
-    unknown_mods = set(config.workflow.inputs.keys()) - set(
+    unknown_mods = set(config.workflow.inputs.keys()) - {
         suffix.lower() for suffix in config.SUPPORTED_SUFFIXES
-    )
+    }
     if unknown_mods:
         parser.error(
             'MRIQC is unable to process the following modalities: '

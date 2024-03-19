@@ -53,7 +53,7 @@ def run_node(node, updatehash, taskid):
 
     """
     # Init variables
-    result = dict(result=None, traceback=None, taskid=taskid)
+    result = {'result': None, 'traceback': None, 'taskid': taskid}
 
     # Try and execute the node via node.run()
     try:
@@ -174,7 +174,7 @@ class DistributedPluginBase(PluginBase):
                 taskid, jobid = self.pending_tasks.pop()
                 try:
                     result = self._get_result(taskid)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     notrun.append(self._clean_queue(jobid, graph))
                     errors.append(exc)
                 else:
@@ -187,7 +187,9 @@ class DistributedPluginBase(PluginBase):
                             self._remove_node_dirs()
                         self._clear_task(taskid)
                     else:
-                        assert self.proc_done[jobid] and self.proc_pending[jobid]
+                        if not (self.proc_done[jobid] and self.proc_pending[jobid]):
+                            raise RuntimeError(
+                                f'Plugin error while appending task <{taskid}> with ID {jobid}.')
                         toappend.insert(0, (taskid, jobid))
 
             if toappend:
@@ -357,12 +359,16 @@ class DistributedPluginBase(PluginBase):
             dfs_preorder = nx.dfs_preorder
         except AttributeError:
             dfs_preorder = nx.dfs_preorder_nodes
-        subnodes = [s for s in dfs_preorder(graph, self.procs[jobid])]
+        subnodes = list(dfs_preorder(graph, self.procs[jobid]))
         for node in subnodes:
             idx = self.procs.index(node)
             self.proc_done[idx] = True
             self.proc_pending[idx] = False
-        return dict(node=self.procs[jobid], dependents=subnodes, crashfile=crashfile)
+        return {
+            'node': self.procs[jobid],
+            'dependents': subnodes,
+            'crashfile': crashfile,
+        }
 
     def _remove_node_dirs(self):
         """Remove directories whose outputs have already been used up."""

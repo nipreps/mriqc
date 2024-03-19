@@ -21,6 +21,8 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """ABIDE2BIDS download tool."""
+from __future__ import annotations
+
 import errno
 import json
 import os
@@ -30,12 +32,14 @@ import subprocess as sp
 import tempfile
 from argparse import ArgumentParser, RawTextHelpFormatter
 from multiprocessing import Pool
-from typing import Tuple
-from xml.etree import ElementTree as et
 
 import numpy as np
+from defusedxml import ElementTree as et
 
 from mriqc.bin import messages
+
+_curl_cmd = shutil.which('curl')
+_unzip_cmd = shutil.which('unzip')
 
 
 def main():
@@ -99,7 +103,7 @@ def main():
     )
 
 
-def fetch(args: Tuple[str, str, str, str]) -> Tuple[str, str]:
+def fetch(args: (str, str, str, str)) -> (str, str):
     """
     Downloads a subject and formats it into BIDS.
 
@@ -128,9 +132,9 @@ def fetch(args: Tuple[str, str, str, str]) -> Tuple[str, str]:
     pkg_id = [u[9:] for u in url.split('/') if u.startswith('NITRC_IR_')][0]
     sub_file = op.join(tmpdir, '%s.zip' % pkg_id)
 
-    cmd = ['curl', '-s', '-u', f'{user}:{password}', '-o', sub_file, url]
+    cmd = [_curl_cmd, '-s', '-u', f'{user}:{password}', '-o', sub_file, url]
     sp.check_call(cmd)
-    sp.check_call(['unzip', '-qq', '-d', tmpdir, '-u', sub_file])
+    sp.check_call([_unzip_cmd, '-qq', '-d', tmpdir, '-u', sub_file])
 
     abide_root = op.join(tmpdir, 'ABIDE')
     files = []

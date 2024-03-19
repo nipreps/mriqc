@@ -29,7 +29,7 @@ def main():
     import gc
     import os
     import sys
-    from tempfile import mktemp
+    from tempfile import mkstemp
 
     from mriqc import config, messages
     from mriqc.cli.parser import parse_args
@@ -50,9 +50,9 @@ def main():
     # straightforward way to communicate with the child process is via the filesystem.
     # The config file name needs to be unique, otherwise multiple mriqc instances
     # will create write conflicts.
-    config_file = mktemp(
+    config_file = mkstemp(
         dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml'
-    )
+    )[1]
     config.to_filename(config_file)
     config.file_path = config_file
     exitcode = 0
@@ -83,9 +83,9 @@ def main():
 
             _resmon = ResourceRecorder(
                 pid=os.getpid(),
-                log_file=mktemp(
+                log_file=mkstemp(
                     dir=config.execution.work_dir, prefix='.resources.', suffix='.tsv'
-                ),
+                )[1],
             )
             _resmon.start()
 

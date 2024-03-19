@@ -256,9 +256,12 @@ inline-quotes = "single"
 
 [tool.ruff.lint.extend-per-file-ignores]
 "*/test_*.py" = ["S101"]
-"fmriprep/utils/debug.py" = ["A002", "T100"]
-"docs/conf.py" = ["A001"]
-"docs/sphinxext/github_link.py" = ["BLE001"]
+"docs/source/conf.py" = ["A001"]
+"mriqc/bin/nib_hash.py" = ["S324"]
+"mriqc/config.py" = ["S105"]
+"mriqc/conftest.py" = ["PT004"]
+"mriqc/engine/plugin.py" = ["BLE001"]
+"mriqc/utils/debug.py" = ["A002", "T100"]
 
 [tool.ruff.format]
 quote-style = "single"

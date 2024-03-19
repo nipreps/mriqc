@@ -91,7 +91,7 @@ class DataladIdentityInterface(BaseInterface):
                 """Mock datalad get."""
 
         dataset_path = Path(dataset_path)
-        for field, value in inputs.items():
+        for value in inputs.values():
             if not isdefined(value):
                 continue
 
@@ -110,7 +110,7 @@ class DataladIdentityInterface(BaseInterface):
                         _pth,
                         dataset=dataset_path
                     )
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     config.loggers.interface.warning(f'datalad get on {_pth} failed.')
                     if (
                         config.environment.exec_env == 'docker'

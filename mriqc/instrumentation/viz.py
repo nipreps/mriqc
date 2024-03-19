@@ -28,7 +28,7 @@ from matplotlib import pyplot as plt
 _TIME_LABEL = 'runtime'
 
 
-def plot(filename, param='mem_vsm_mb', mask_processes=tuple(), out_file=None):
+def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
     """Plot a recording file."""
     data = pd.read_csv(filename, sep=r'\s+', comment='#')
 

@@ -637,9 +637,9 @@ def _tolist(value):
 
 
 def _get_bvals(bmatrix):
-    import numpy
+    import numpy as np
 
-    return numpy.squeeze(bmatrix[:, -1]).tolist()
+    return np.squeeze(bmatrix[:, -1]).tolist()
 
 
 def _first(inlist):

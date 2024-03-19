@@ -21,7 +21,8 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Version CLI helpers."""
-from datetime import datetime
+from contextlib import suppress
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -30,6 +31,7 @@ from mriqc import __version__
 
 RELEASE_EXPIRY_DAYS = 14
 DATE_FMT = '%Y%m%d'
+UTC = timezone.utc
 
 
 def check_latest():
@@ -46,25 +48,24 @@ def check_latest():
         cachefile = None
 
     if cachefile and cachefile.exists():
-        try:
+        with suppress(Exception):
             latest, date = cachefile.read_text().split('|')
-        except Exception:
-            pass
-        else:
+
+        if latest and date:
             try:
                 latest = Version(latest)
-                date = datetime.strptime(date, DATE_FMT)
+                date = datetime.strptime(date, DATE_FMT).astimezone(UTC)
             except (InvalidVersion, ValueError):
                 latest = None
             else:
-                if abs((datetime.now() - date).days) > RELEASE_EXPIRY_DAYS:
+                if abs((datetime.now(tz=UTC) - date).days) > RELEASE_EXPIRY_DAYS:
                     outdated = True
 
     if latest is None or outdated is True:
-        try:
+        response = None
+
+        with suppress(Exception):
             response = requests.get(url='https://pypi.org/pypi/mriqc/json', timeout=1.0)
-        except Exception:
-            response = None
 
         if response and response.status_code == 200:
             versions = [Version(rel) for rel in response.json()['releases'].keys()]
@@ -75,12 +76,10 @@ def check_latest():
             latest = None
 
     if cachefile is not None and latest is not None:
-        try:
+        with suppress(Exception):
             cachefile.write_text(
-                '|'.join(('%s' % latest, datetime.now().strftime(DATE_FMT)))
+                '|'.join(('%s' % latest, datetime.now(tz=UTC).strftime(DATE_FMT)))
             )
-        except Exception:
-            pass
 
     return latest
 
@@ -88,15 +87,14 @@ def check_latest():
 def is_flagged():
     """Check whether current version is flagged."""
     # https://raw.githubusercontent.com/nipreps/mriqc/master/.versions.json
-    flagged = tuple()
-    try:
+    flagged = ()
+    response = None
+    with suppress(Exception):
         response = requests.get(
             url="""\
 https://raw.githubusercontent.com/nipreps/mriqc/master/.versions.json""",
             timeout=1.0,
         )
-    except Exception:
-        response = None
 
     if response and response.status_code == 200:
         flagged = response.json().get('flagged', {}) or {}

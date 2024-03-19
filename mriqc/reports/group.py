@@ -30,8 +30,8 @@ from ..utils.misc import BIDS_COMP
 
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
-    import datetime
     import os.path as op
+    from datetime import datetime, timezone
 
     from niworkflows.data import Loader
 
@@ -44,6 +44,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     else:
         from io import BytesIO as TextIO
 
+    UTC = timezone.utc
     load_data = Loader('mriqc')
 
     QCGROUPS = {
@@ -264,7 +265,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     tpl.generate_conf(
         {
             'modality': mod,
-            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d, %H:%M'),
+            'timestamp': datetime.now(tz=UTC).strftime('%Y-%m-%d, %H:%M'),
             'version': ver,
             'csv_groups': csv_groups,
             'failed': failed,

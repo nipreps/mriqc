@@ -246,7 +246,10 @@ def upload_qc_metrics(
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(
-            f'{endpoint}/{modality}', headers=headers, data=dumps(data)
+            f'{endpoint}/{modality}',
+            headers=headers,
+            data=dumps(data),
+            timeout=15,
         )
     except requests.ConnectionError as err:
         errmsg = (

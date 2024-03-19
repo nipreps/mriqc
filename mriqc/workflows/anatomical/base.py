@@ -804,7 +804,7 @@ def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=Fal
     artmsk = np.zeros_like(mask)
     if nb_labels > 2:
         sizes = sim.sum(mask, label_im, list(range(nb_labels + 1)))
-        ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+        ordered = sorted(zip(sizes, list(range(nb_labels + 1))), reversed=True)
         for _, label in ordered[2:]:
             mask[label_im == label] = 0
             artmsk[label_im == label] = 1
@@ -817,15 +817,17 @@ def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=Fal
 
 
 def _get_imgtype(in_file):
-    from pathlib import Path
+    from mriqc.workflows.anatomical.base import _get_mod
 
-    return int(Path(in_file).name.rstrip('.gz').rstrip('.nii').split('_')[-1][1])
+    return int(_get_mod(in_file)[1])
 
 
 def _get_mod(in_file):
     from pathlib import Path
 
-    return Path(in_file).name.rstrip('.gz').rstrip('.nii').split('_')[-1]
+    in_file = Path(in_file)
+    extension = ''.join(in_file.suffixes)
+    return in_file.name.replace(extension, '').split('_')[-1]
 
 
 def _pop(inlist):

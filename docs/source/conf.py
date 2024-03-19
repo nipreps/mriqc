@@ -12,12 +12,13 @@ All configuration values have a default; values that are commented out
 serve to show the default.
 """
 import os
+
 from packaging.version import Version
 
-from mriqc import __version__, __copyright__
+from mriqc import __copyright__, __version__
 
 # Disable etelemetry during doc builds
-os.environ["NIPYPE_NO_ET"] = "1"
+os.environ['NIPYPE_NO_ET'] = '1'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -29,51 +30,51 @@ os.environ["NIPYPE_NO_ET"] = "1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.doctest",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.todo",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.ifconfig",
-    "sphinx.ext.viewcode",
-    "nipype.sphinxext.plot_workflow",
-    "sphinxarg.ext",  # argparse extension
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'nipype.sphinxext.plot_workflow',
+    'sphinxarg.ext',  # argparse extension
     # 'sphinx.ext.autosectionlabel',
 ]
 
 # Mock modules in autodoc:
 autodoc_mock_imports = [
-    "dipy",
-    "matplotlib",
-    "nilearn",
-    "numpy",
-    "pandas",
-    "scipy",
-    "seaborn",
-    "sklearn",
-    "statsmodels",
-    "xgboost",
+    'dipy',
+    'matplotlib',
+    'nilearn',
+    'numpy',
+    'pandas',
+    'scipy',
+    'seaborn',
+    'sklearn',
+    'statsmodels',
+    'xgboost',
 ]
 
-suppress_warnings = ["image.nonlocal_uri"]
+suppress_warnings = ['image.nonlocal_uri']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
+templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = '.rst'
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = "index"
+master_doc = 'index'
 
 # General information about the project.
-project = "mriqc"
-author = "The NiPreps Developers"
+project = 'mriqc'
+author = 'The NiPreps Developers'
 copyright = __copyright__
 
 # The version info for the project you're documenting, acts as replacement for
@@ -90,7 +91,7 @@ version = Version(__version__).public
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = "en"
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -118,7 +119,7 @@ exclude_patterns = []
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -134,7 +135,7 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -163,7 +164,7 @@ html_theme = "sphinx_rtd_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -226,7 +227,7 @@ html_use_index = True
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "mriqcdoc"
+htmlhelp_basename = 'mriqcdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -247,10 +248,10 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "mriqc.tex",
-        "mriqc Documentation",
+        'mriqc.tex',
+        'mriqc Documentation',
         author,
-        "manual",
+        'manual',
     ),
 ]
 
@@ -279,7 +280,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "mriqc", "mriqc Documentation", [author], 1)]
+man_pages = [(master_doc, 'mriqc', 'mriqc Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -293,12 +294,12 @@ man_pages = [(master_doc, "mriqc", "mriqc Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "mriqc",
-        "mriqc Documentation",
+        'mriqc',
+        'mriqc Documentation',
         author,
-        "mriqc",
-        "One line description of project.",
-        "Miscellaneous",
+        'mriqc',
+        'One line description of project.',
+        'Miscellaneous',
     ),
 ]
 
@@ -317,12 +318,12 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "bids": ("https://bids-standard.github.io/pybids/", None),
-    "matplotlib": ("https://matplotlib.org/", None),
-    "nibabel": ("https://nipy.org/nibabel/", None),
-    "nipype": ("https://nipype.readthedocs.io/en/latest/", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/dev/", None),
-    "python": ("https://docs.python.org/3/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    'bids': ('https://bids-standard.github.io/pybids/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'nibabel': ('https://nipy.org/nibabel/', None),
+    'nipype': ('https://nipype.readthedocs.io/en/latest/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/dev/', None),
+    'python': ('https://docs.python.org/3/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
 }

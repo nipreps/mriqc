@@ -89,6 +89,7 @@ The :py:mod:`config` is responsible for other conveniency actions.
 """
 import os
 import sys
+from contextlib import suppress
 from pathlib import Path
 from time import strftime
 from uuid import uuid4
@@ -158,16 +159,15 @@ _templateflow_home = Path(
     )
 )
 
-try:
+_free_mem_at_start = None
+with suppress(Exception):
     from psutil import virtual_memory
 
     _free_mem_at_start = round(virtual_memory().free / 1024**3, 1)
-except Exception:
-    _free_mem_at_start = None
 
 _oc_limit = 'n/a'
 _oc_policy = 'n/a'
-try:
+with suppress(Exception):
     # Memory policy may have a large effect on types of errors experienced
     _proc_oc_path = Path('/proc/sys/vm/overcommit_memory')
     if _proc_oc_path.exists():
@@ -185,22 +185,27 @@ try:
                 _oc_limit = '{}%'.format(
                     Path('/proc/sys/vm/overcommit_ratio').read_text().strip()
                 )
-except Exception:
-    pass
 
 _memory_gb = None
-try:
-    if 'linux' in sys.platform:
+
+if 'linux' in sys.platform:
+    with suppress(Exception):
         with open('/proc/meminfo') as f_in:
             _meminfo_lines = f_in.readlines()
             _mem_total_line = [line for line in _meminfo_lines if 'MemTotal' in line][0]
             _mem_total = float(_mem_total_line.split()[1])
             _memory_gb = _mem_total / (1024.0**2)
-    elif 'darwin' in sys.platform:
-        _mem_str = os.popen('sysctl hw.memsize').read().strip().split(' ')[-1]
-        _memory_gb = float(_mem_str) / (1024.0**3)
-except Exception:
-    pass
+elif 'darwin' in sys.platform:
+    from shutil import which
+    from subprocess import check_output
+
+    if (_cmd := which('sysctl')):
+        with suppress(Exception):
+            _mem_str = check_output(
+                [_cmd, 'hw.memsize']
+            ).decode().strip().split(' ')[-1]
+            _memory_gb = float(_mem_str) / (1024.0**3)
+
 
 file_path: Path = None
 """
@@ -211,7 +216,7 @@ Path to configuration file.
 class _Config:
     """An abstract class forbidding instantiation."""
 
-    _paths = tuple()
+    _paths = ()
 
     def __init__(self):
         """Avert instantiation."""

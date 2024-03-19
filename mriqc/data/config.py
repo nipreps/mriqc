@@ -42,6 +42,7 @@ class GroupTemplate:
             loader=jinja2.FileSystemLoader(searchpath='/'),
             trim_blocks=True,
             lstrip_blocks=True,
+            autoescape=True,
         )
 
     def compile(self, configs):

@@ -29,7 +29,7 @@ from nireports.assembler.report import Report
 
 
 @pytest.mark.parametrize(
-    'dataset,subject', [
+    ('dataset', 'subject'), [
         ('ds002785', '0017'),
         ('ds002785', '0042'),
     ]

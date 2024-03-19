@@ -128,7 +128,7 @@ class StripModel(nn.Module):
 
         # now we take care of any remaining convolutions
         self.remaining = nn.ModuleList()
-        for num, nf in enumerate(final_convs):
+        for _num, nf in enumerate(final_convs):
             self.remaining.append(ConvBlock(ndims, prev_nf, nf))
             prev_nf = nf
 

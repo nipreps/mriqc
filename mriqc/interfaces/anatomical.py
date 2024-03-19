@@ -456,7 +456,7 @@ class RotationMask(SimpleInterface):
         label_im, nb_labels = nd.label(mask)
         if nb_labels > 2:
             sizes = nd.sum(mask, label_im, list(range(nb_labels + 1)))
-            ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+            ordered = sorted(zip(sizes, list(range(nb_labels + 1))), reverse=True)
             for _, label in ordered[2:]:
                 mask[label_im == label] = 0
 
