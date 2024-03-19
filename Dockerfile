@@ -67,6 +67,7 @@ RUN mkdir -p /opt/afni-latest \
     --exclude "linux_openmp_64/meica.libs" \
     # Keep only what we use
     && find /opt/afni-latest -type f -not \( \
+        -name "@compute_gcor" -or \
         -name "afni" -or \
         -name "3dAutomask" -or \
         -name "3dFWHMx" -or \
