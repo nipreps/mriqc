@@ -26,7 +26,7 @@ from json import loads
 from nireports.assembler.report import Report
 from niworkflows.data import Loader
 
-_load_data = Loader(__package__)
+_load_data = Loader("mriqc")
 
 
 def generate_reports():

@@ -28,7 +28,7 @@ from toml import loads
 
 from niworkflows.data import Loader
 
-_load_data = Loader(__package__)
+_load_data = Loader("mriqc")
 
 
 @contextmanager

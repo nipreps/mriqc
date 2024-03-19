@@ -43,7 +43,7 @@ OUT_FILE_NAME = "{prefix}_resampled{ext}"
 OUT_MASK_NAME = "{prefix}_resmask{ext}"
 REF_FILE_NAME = "resample_ref.nii.gz"
 REF_MASK_NAME = "mask_ref.nii.gz"
-load_data = Loader(__package__)
+load_data = Loader("mriqc")
 
 
 class EnsureSizeInputSpec(BaseInterfaceInputSpec):

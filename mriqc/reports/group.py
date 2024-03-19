@@ -43,7 +43,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     else:
         from io import BytesIO as TextIO
 
-    load_data = Loader(__package__)
+    load_data = Loader("mriqc")
 
     QCGROUPS = {
         "T1w": [
