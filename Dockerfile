@@ -67,20 +67,22 @@ RUN mkdir -p /opt/afni-latest \
     --exclude "linux_openmp_64/meica.libs" \
     # Keep only what we use
     && find /opt/afni-latest -type f -not \( \
-        -name "@compute_gcor" -or \
-        -name "afni" -or \
-        -name "3dAutomask" -or \
-        -name "3dcalc" -or \
-        -name "3dFWHMx" -or \
-        -name "3dinfo" -or \
-        -name "3dTnorm" -or \
-        -name "3dSkullStrip" -or \
-        -name "3dToutcount" -or \
-        -name "3dTqual" -or \
-        -name "3dTshift" -or \
-        -name "3dTstat" -or \
-        -name "3dUnifize" -or \
-        -name "3dvolreg" \) -delete
+            -name "3dAutomask" \
+        -or -name "3dcalc" \
+        -or -name "3dFWHMx" \
+        -or -name "3dinfo" \
+        -or -name "3dmaskave" \
+        -or -name "3dSkullStrip" \
+        -or -name "3dTnorm" \
+        -or -name "3dToutcount" \
+        -or -name "3dTqual" \
+        -or -name "3dTshift" \
+        -or -name "3dTstat" \
+        -or -name "3dUnifize" \
+        -or -name "3dvolreg" \
+        -or -name "@compute_gcor" \
+        -or -name "afni" \
+       \) -delete
 
 # Use Ubuntu 20.04 LTS
 FROM nipreps/miniconda:py39_2403.0
