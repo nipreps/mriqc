@@ -280,11 +280,19 @@ jobs:
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
+          name: Generate _version.py
+          command: |
+            python3 -m pip install hatch
+
+            pushd /tmp/src/mriqc
+            python3 -m hatch version
+            popd
+      - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
             docker run --rm -ti -v $PWD:/scratch --entrypoint="pytest" \
-              -v /tmp/src/mriqc:/src/mriqc -w /src/mriqc \
+              -v /tmp/src:/src -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
@@ -437,7 +445,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
@@ -596,7 +604,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run -u $( id -u ) --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
