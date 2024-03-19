@@ -149,6 +149,11 @@ COPY --from=freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569fa
 
 ENV FREESURFER_HOME=/opt/freesurfer
 
+RUN apt update && apt install --no-install-recommends -y libtiff5 libpng16-16
+
+COPY --from=mrtrix3/mrtrix3:3.0.4 /opt/mrtrix3/bin/dwidenoise /usr/local/bin
+COPY --from=mrtrix3/mrtrix3:3.0.4 /opt/mrtrix3/lib/libmrtrix.so /usr/local/lib
+
 # Container Sentinel
 ENV IS_DOCKER_8395080871=1
 
