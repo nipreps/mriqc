@@ -157,6 +157,10 @@ RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
 ENV HOME="/home/mriqc"
 
+# Pacify datalad
+RUN git config --global user.name "NiPreps - MRIQC" \
+    && git config --global user.email "nipreps@gmail.com"
+
 RUN micromamba shell init -s bash
 ENV PATH="${CONDA_PATH}/bin:$PATH" \
     CPATH="${CONDA_PATH}/include:$CPATH" \
