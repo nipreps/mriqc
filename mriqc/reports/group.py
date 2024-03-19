@@ -267,15 +267,15 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             "version": ver,
             "csv_groups": csv_groups,
             "failed": failed,
-            "boxplots_js": open(
-                load_data("data/reports/embed_resources/boxplots.js"),
-            ).read(),
-            "d3_js": open(
-                load_data("data/reports/embed_resources/d3.min.js"),
-            ).read(),
-            "boxplots_css": open(
-                load_data("data/reports/embed_resources/boxplots.css"),
-            ).read(),
+            "boxplots_js": load_data(
+                "data/reports/embed_resources/boxplots.js"
+            ).read_text(),
+            "d3_js": load_data(
+                "data/reports/embed_resources/d3.min.js"
+            ).read_text(),
+            "boxplots_css": load_data(
+                "data/reports/embed_resources/boxplots.css"
+            ).read_text(),
         },
         out_file,
     )

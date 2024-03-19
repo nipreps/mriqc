@@ -36,7 +36,7 @@ def mock_config():
     """Create a mock config for documentation and testing purposes."""
     from . import config
 
-    filename = Path(_load_data("data/config-example.toml"))
+    filename = _load_data("data/config-example.toml")
     settings = loads(filename.read_text())
     for sectionname, configs in settings.items():
         if sectionname != "environment":
