@@ -23,7 +23,7 @@
 """Utilities: Jinja2 templates."""
 from pathlib import Path
 
-from pkg_resources import resource_filename as pkgrf
+from niworkflows.data import Loader
 
 
 class GroupTemplate:
@@ -37,7 +37,7 @@ class GroupTemplate:
     def __init__(self):
         import jinja2
 
-        self.template_str = pkgrf("mriqc", "data/reports/group.html")
+        self.template_str = Loader(__package__)("data/reports/group.html")
         self.env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(searchpath="/"),
             trim_blocks=True,
