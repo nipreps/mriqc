@@ -25,11 +25,12 @@
 
 def main():
     """Entry point for MRIQC's CLI."""
+    import atexit
     import gc
     import os
     import sys
     from tempfile import mktemp
-    import atexit
+
     from mriqc import config, messages
     from mriqc.cli.parser import parse_args
 
@@ -42,7 +43,7 @@ def main():
         from mriqc.utils.debug import setup_exceptionhook
 
         setup_exceptionhook()
-        config.nipype.plugin = "Linear"
+        config.nipype.plugin = 'Linear'
 
     # CRITICAL Save the config to a file. This is necessary because the execution graph
     # is built as a separate process to keep the memory footprint low. The most
@@ -50,24 +51,24 @@ def main():
     # The config file name needs to be unique, otherwise multiple mriqc instances
     # will create write conflicts.
     config_file = mktemp(
-        dir=config.execution.work_dir, prefix=".mriqc.", suffix=".toml"
+        dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml'
     )
     config.to_filename(config_file)
     config.file_path = config_file
     exitcode = 0
     # Set up participant level
-    if "participant" in config.workflow.analysis_level:
+    if 'participant' in config.workflow.analysis_level:
         _pool = None
-        if config.nipype.plugin in ("MultiProc", "LegacyMultiProc"):
-            from contextlib import suppress
+        if config.nipype.plugin in ('MultiProc', 'LegacyMultiProc'):
             import multiprocessing as mp
             import multiprocessing.forkserver
             from concurrent.futures import ProcessPoolExecutor
+            from contextlib import suppress
 
-            os.environ["OMP_NUM_THREADS"] = "1"
+            os.environ['OMP_NUM_THREADS'] = '1'
 
             with suppress(RuntimeError):
-                mp.set_start_method("fork")
+                mp.set_start_method('fork')
             gc.collect()
 
             _pool = ProcessPoolExecutor(
@@ -83,7 +84,7 @@ def main():
             _resmon = ResourceRecorder(
                 pid=os.getpid(),
                 log_file=mktemp(
-                    dir=config.execution.work_dir, prefix=".resources.", suffix=".tsv"
+                    dir=config.execution.work_dir, prefix='.resources.', suffix='.tsv'
                 ),
             )
             _resmon.start()
@@ -106,8 +107,8 @@ def main():
             p.start()
             p.join()
 
-            mriqc_wf = retval.get("workflow", None)
-            exitcode = p.exitcode or retval.get("return_code", 0)
+            mriqc_wf = retval.get('workflow', None)
+            exitcode = p.exitcode or retval.get('return_code', 0)
 
         # CRITICAL Load the config from the file. This is necessary because the ``build_workflow``
         # function executed constrained in a process may change the config (and thus the global
@@ -125,16 +126,16 @@ def main():
 
         if _resmon:
             config.loggers.cli.info(
-                f"Started resource recording at {_resmon._logfile}."
+                f'Started resource recording at {_resmon._logfile}.'
             )
 
         # Resource management options
-        if config.nipype.plugin in ("MultiProc", "LegacyMultiProc") and (
+        if config.nipype.plugin in ('MultiProc', 'LegacyMultiProc') and (
             1 < config.nipype.nprocs < config.nipype.omp_nthreads
         ):
             config.loggers.cli.warning(
-                "Per-process threads (--omp-nthreads=%d) exceed total "
-                "threads (--nthreads/--n_cpus=%d)",
+                'Per-process threads (--omp-nthreads=%d) exceed total '
+                'threads (--nthreads/--n_cpus=%d)',
                 config.nipype.omp_nthreads,
                 config.nipype.nprocs,
             )
@@ -143,7 +144,7 @@ def main():
             sys.exit(os.EX_SOFTWARE)
 
         if mriqc_wf and config.execution.write_graph:
-            mriqc_wf.write_graph(graph2use="colored", format="svg", simple_form=True)
+            mriqc_wf.write_graph(graph2use='colored', format='svg', simple_form=True)
 
         if not config.execution.dry_run or not config.execution.reports_only:
             # Warn about submitting measures BEFORE
@@ -158,7 +159,7 @@ def main():
                 from mriqc.engine.plugin import MultiProcPlugin
 
                 _plugin = {
-                    "plugin": MultiProcPlugin(
+                    'plugin': MultiProcPlugin(
                         pool=_pool, plugin_args=config.nipype.plugin_args
                     ),
                 }
@@ -180,18 +181,19 @@ def main():
             _resmon.stop()
             plot(
                 _resmon._logfile,
-                param="mem_rss_mb",
-                out_file=str(_resmon._logfile).replace(".tsv", ".rss.png"),
+                param='mem_rss_mb',
+                out_file=str(_resmon._logfile).replace('.tsv', '.rss.png'),
             )
             plot(
                 _resmon._logfile,
-                param="mem_vsm_mb",
-                out_file=str(_resmon._logfile).replace(".tsv", ".vsm.png"),
+                param='mem_vsm_mb',
+                out_file=str(_resmon._logfile).replace('.tsv', '.vsm.png'),
             )
 
     # Set up group level
-    if "group" in config.workflow.analysis_level:
+    if 'group' in config.workflow.analysis_level:
         from mriqc.reports.group import gen_html as group_html
+
         from ..utils.misc import generate_tsv  # , generate_pred
 
         config.loggers.cli.info(messages.GROUP_START)
@@ -213,11 +215,11 @@ def main():
             #     log.info('Predicted QA CSV table for the %s data generated (%s)',
             #                    mod, out_pred)
 
-            out_html = output_dir / f"group_{mod}.html"
+            out_html = output_dir / f'group_{mod}.html'
             group_html(
                 out_tsv,
                 mod,
-                csv_failed=output_dir / f"group_variant-failed_{mod}.csv",
+                csv_failed=output_dir / f'group_variant-failed_{mod}.csv',
                 out_file=out_html,
             )
             report_message = messages.GROUP_REPORT_GENERATED.format(
@@ -240,5 +242,5 @@ def main():
     sys.exit(exitcode)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

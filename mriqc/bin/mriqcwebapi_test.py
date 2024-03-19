@@ -30,26 +30,26 @@ def get_parser():
     from argparse import ArgumentParser, RawTextHelpFormatter
 
     parser = ArgumentParser(
-        description="MRIQCWebAPI: Check entries.", formatter_class=RawTextHelpFormatter
+        description='MRIQCWebAPI: Check entries.', formatter_class=RawTextHelpFormatter
     )
     parser.add_argument(
-        "modality",
-        action="store",
-        choices=["T1w", "bold"],
-        help="number of expected items in the database",
+        'modality',
+        action='store',
+        choices=['T1w', 'bold'],
+        help='number of expected items in the database',
     )
     parser.add_argument(
-        "expected",
-        action="store",
+        'expected',
+        action='store',
         type=int,
-        help="number of expected items in the database",
+        help='number of expected items in the database',
     )
     parser.add_argument(
-        "--webapi-url",
-        action="store",
-        default="https://mriqc.nimh.nih.gov/api/v1/T1w",
+        '--webapi-url',
+        action='store',
+        default='https://mriqc.nimh.nih.gov/api/v1/T1w',
         type=str,
-        help="IP address where the MRIQC WebAPI is listening",
+        help='IP address where the MRIQC WebAPI is listening',
     )
     return parser
 
@@ -66,11 +66,11 @@ def main():
     get_log_message = messages.WEBAPI_GET.format(address=opts.webapi_url)
     MRIQC_LOG.info(get_log_message)
     response = get(opts.webapi_url).json()
-    n_records = response["_meta"]["total"]
+    n_records = response['_meta']['total']
     response_log_message = messages.WEBAPI_REPORT.format(n_records=n_records)
     MRIQC_LOG.info(response_log_message)
     assert opts.expected == n_records
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

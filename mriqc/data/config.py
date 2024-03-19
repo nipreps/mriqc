@@ -37,9 +37,9 @@ class GroupTemplate:
     def __init__(self):
         import jinja2
 
-        self.template_str = Loader(__package__)("reports/group.html").absolute()
+        self.template_str = Loader(__package__)('reports/group.html').absolute()
         self.env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(searchpath="/"),
+            loader=jinja2.FileSystemLoader(searchpath='/'),
             trim_blocks=True,
             lstrip_blocks=True,
         )

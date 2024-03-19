@@ -27,7 +27,6 @@ from os import path as op
 
 import nibabel as nib
 import numpy as np
-from mriqc import config, messages
 from nipype.interfaces.ants import ApplyTransforms
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
@@ -39,11 +38,13 @@ from nipype.interfaces.base import (
 )
 from niworkflows.data import Loader
 
-OUT_FILE_NAME = "{prefix}_resampled{ext}"
-OUT_MASK_NAME = "{prefix}_resmask{ext}"
-REF_FILE_NAME = "resample_ref.nii.gz"
-REF_MASK_NAME = "mask_ref.nii.gz"
-load_data = Loader("mriqc")
+from mriqc import config, messages
+
+OUT_FILE_NAME = '{prefix}_resampled{ext}'
+OUT_MASK_NAME = '{prefix}_resmask{ext}'
+REF_FILE_NAME = 'resample_ref.nii.gz'
+REF_MASK_NAME = 'mask_ref.nii.gz'
+load_data = Loader('mriqc')
 
 
 class EnsureSizeInputSpec(BaseInterfaceInputSpec):
@@ -51,9 +52,9 @@ class EnsureSizeInputSpec(BaseInterfaceInputSpec):
     Input specification for the :class:`EnsureSize` interface.
     """
 
-    in_file = File(exists=True, copyfile=False, mandatory=True, desc="input image")
-    in_mask = File(exists=True, copyfile=False, desc="input mask")
-    pixel_size = traits.Float(2.0, usedefault=True, desc="desired pixel size (mm)")
+    in_file = File(exists=True, copyfile=False, mandatory=True, desc='input image')
+    in_mask = File(exists=True, copyfile=False, desc='input mask')
+    pixel_size = traits.Float(2.0, usedefault=True, desc='desired pixel size (mm)')
 
 
 class EnsureSizeOutputSpec(TraitedSpec):
@@ -61,8 +62,8 @@ class EnsureSizeOutputSpec(TraitedSpec):
     Output specification for the :class:`EnsureSize` interface.
     """
 
-    out_file = File(exists=True, desc="output image")
-    out_mask = File(exists=True, desc="output mask")
+    out_file = File(exists=True, desc='output image')
+    out_mask = File(exists=True, desc='output mask')
 
 
 class EnsureSize(SimpleInterface):
@@ -90,9 +91,9 @@ class EnsureSize(SimpleInterface):
         nii = nib.load(self.inputs.in_file)
         size_ok = self._check_size(nii)
         if size_ok:
-            self._results["out_file"] = self.inputs.in_file
+            self._results['out_file'] = self.inputs.in_file
             if isdefined(self.inputs.in_mask):
-                self._results["out_mask"] = self.inputs.in_mask
+                self._results['out_mask'] = self.inputs.in_mask
         else:
             # Figure out new matrix
             # 1) Get base affine
@@ -134,7 +135,7 @@ class EnsureSize(SimpleInterface):
             ).to_filename(REF_FILE_NAME)
 
             out_prefix, ext = op.splitext(op.basename(self.inputs.in_file))
-            if ext == ".gz":
+            if ext == '.gz':
                 out_prefix, ext2 = op.splitext(out_prefix)
                 ext = ext2 + ext
 
@@ -146,12 +147,12 @@ class EnsureSize(SimpleInterface):
                 dimension=3,
                 input_image=self.inputs.in_file,
                 reference_image=REF_FILE_NAME,
-                interpolation="LanczosWindowedSinc",
-                transforms=[str(load_data("data/itk_identity.tfm").absolute())],
+                interpolation='LanczosWindowedSinc',
+                transforms=[str(load_data('data/itk_identity.tfm').absolute())],
                 output_image=out_file,
             ).run()
 
-            self._results["out_file"] = out_file
+            self._results['out_file'] = out_file
 
             if isdefined(self.inputs.in_mask):
                 hdr = nii.header.copy()
@@ -167,11 +168,11 @@ class EnsureSize(SimpleInterface):
                     dimension=3,
                     input_image=self.inputs.in_mask,
                     reference_image=REF_MASK_NAME,
-                    interpolation="NearestNeighbor",
-                    transforms=[str(load_data("data/itk_identity.tfm").absolute())],
+                    interpolation='NearestNeighbor',
+                    transforms=[str(load_data('data/itk_identity.tfm').absolute())],
                     output_image=out_mask,
                 ).run()
 
-                self._results["out_mask"] = out_mask
+                self._results['out_mask'] = out_mask
 
         return runtime

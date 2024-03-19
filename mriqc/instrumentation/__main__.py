@@ -21,21 +21,23 @@
 #     https://www.nipreps.org/community/licensing/
 #
 
-if __name__ == "__main__":
-    from mriqc.instrumentation.resources import ResourceRecorder, FindProcess
-    from . import __name__ as module
+if __name__ == '__main__':
     import argparse
+
+    from mriqc.instrumentation.resources import FindProcess, ResourceRecorder
+
+    from . import __name__ as module
 
     # `python -m <module>` typically displays the command as __main__.py
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--name", type=str, required=True)
-    parser.add_argument("-p", "--logfile_path", type=str, default=".")
+    parser.add_argument('-n', '--name', type=str, required=True)
+    parser.add_argument('-p', '--logfile_path', type=str, default='.')
     args = parser.parse_args()
 
-    if "__main__.py" in argparse._sys.argv[0]:  # sys.argv[0]:
-        argparse._sys.argv[0] = f"{argparse._sys.executable} -m {module}"
+    if '__main__.py' in argparse._sys.argv[0]:  # sys.argv[0]:
+        argparse._sys.argv[0] = f'{argparse._sys.executable} -m {module}'
 
     pid = args.name if args.name.isnumeric() else FindProcess(args.name)
 
-    ResourceRecorder(pid, log_file=args.logfile_path + str(pid) + ".tsv").run()
+    ResourceRecorder(pid, log_file=args.logfile_path + str(pid) + '.tsv').run()

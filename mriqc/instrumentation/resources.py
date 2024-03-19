@@ -21,25 +21,25 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Instrumentation to profile resource utilization."""
-from time import time_ns, sleep
-from datetime import datetime
-from pathlib import Path
-from multiprocessing import Process, Event
-from contextlib import suppress
 import signal
-import psutil
+from contextlib import suppress
+from datetime import datetime
+from multiprocessing import Event, Process
+from pathlib import Path
+from time import sleep, time_ns
 
+import psutil
 
 _MB = 1024.0**2
 SAMPLE_ATTRS = (
-    "pid",
-    "name",
+    'pid',
+    'name',
     # "cmdline",
-    "cpu_num",
-    "cpu_percent",
-    "memory_info",
-    "num_threads",
-    "num_fds",
+    'cpu_num',
+    'cpu_percent',
+    'memory_info',
+    'num_threads',
+    'num_fds',
 )
 
 
@@ -66,7 +66,7 @@ def FindProcess(process_name):
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    print("Process ", process_name, " not found")
+    print('Process ', process_name, ' not found')
     return False
 
 
@@ -106,20 +106,20 @@ def sample(
 
 def parse_sample(datapoint, timestamp=None, attrs=SAMPLE_ATTRS):
     """Convert a sample dictionary into a list of string values."""
-    retval = [f"{timestamp or time_ns()}"]
+    retval = [f'{timestamp or time_ns()}']
 
     for attr in attrs:
         value = datapoint.get(attr, None)
         if value is None:
             continue
 
-        if attr == "cmdline":
-            value = " ".join(value).replace("'", "\\'").replace('"', '\\"')
+        if attr == 'cmdline':
+            value = ' '.join(value).replace("'", "\\'").replace('"', '\\"')
             value = [f"'{value}'"]
-        elif attr == "memory_info":
-            value = [f"{value.rss / _MB}", f"{value.vms / _MB}"]
+        elif attr == 'memory_info':
+            value = [f'{value.rss / _MB}', f'{value.vms / _MB}']
         else:
-            value = [f"{value}"]
+            value = [f'{value}']
 
         retval += value
 
@@ -133,9 +133,9 @@ def sample2file(
         return
 
     print(
-        "\n".join(
+        '\n'.join(
             [
-                "\t".join(parse_sample(s, timestamp=timestamp))
+                '\t'.join(parse_sample(s, timestamp=timestamp))
                 for s in sample(pid=pid, recursive=recursive, exclude=exclude)
             ]
         ),
@@ -151,12 +151,12 @@ class ResourceRecorder(Process):
     def __init__(
         self, pid, frequency=0.2, log_file=None, exclude_probe=True, **process_kwargs
     ):
-        Process.__init__(self, name="nipype_resmon", daemon=True, **process_kwargs)
+        Process.__init__(self, name='nipype_resmon', daemon=True, **process_kwargs)
 
         self._pid = int(pid)
         """The process to be sampled."""
         self._logfile = str(
-            Path(log_file if log_file is not None else f".prof-{pid}.tsv").absolute()
+            Path(log_file if log_file is not None else f'.prof-{pid}.tsv').absolute()
         )
         """An open file descriptor where results are dumped."""
         self._exclude = exclude_probe or tuple()
@@ -174,17 +174,17 @@ class ResourceRecorder(Process):
         # Open file now, because it cannot be pickled.
 
         Path(self._logfile).parent.mkdir(parents=True, exist_ok=True)
-        _logfile = Path(self._logfile).open("w")
+        _logfile = Path(self._logfile).open('w')
 
         # Write headers (comment trace + header row)
         _header = [
             f"# MRIQC Resource recorder started tracking PID {self._pid} "
             f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",
-            "\t".join(("timestamp", *SAMPLE_ATTRS)).replace(
-                "memory_info", "mem_rss_mb\tmem_vsm_mb"
+            '\t'.join(('timestamp', *SAMPLE_ATTRS)).replace(
+                'memory_info', 'mem_rss_mb\tmem_vsm_mb'
             ),
         ]
-        print("\n".join(_header), file=_logfile)
+        print('\n'.join(_header), file=_logfile)
 
         # Add self to exclude list if pertinent
         if self._exclude is True:
@@ -217,7 +217,7 @@ class ResourceRecorder(Process):
     def stop(self, *args):
         # Tear-down process
         self._done.set()
-        with Path(self._logfile).open("a") as f:
+        with Path(self._logfile).open('a') as f:
             f.write(
                 f"# MRIQC Resource recorder finished "
                 f"{datetime.now().strftime('(%Y/%m/%d; %H:%M:%S)')}",

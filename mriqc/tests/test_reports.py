@@ -23,46 +23,47 @@
 """Exercise report generation with *NiReports*."""
 from json import loads
 from pathlib import Path
+
 import pytest
 from nireports.assembler.report import Report
 
 
 @pytest.mark.parametrize(
-    "dataset,subject", [
-        ("ds002785", "0017"),
-        ("ds002785", "0042"),
+    'dataset,subject', [
+        ('ds002785', '0017'),
+        ('ds002785', '0042'),
     ]
 )
 def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
     """Generate anatomical reports."""
 
     outdir = outdir if outdir is not None else tmp_path
-    mriqc_data = Path(__file__).parent.parent / "data"
-    reportlets_dir = mriqc_data / "tests" / dataset
+    mriqc_data = Path(__file__).parent.parent / 'data'
+    reportlets_dir = mriqc_data / 'tests' / dataset
 
     mriqc_json = loads(
         (
-            reportlets_dir / f"sub-{subject}" / "anat" / f"sub-{subject}_T1w.json"
+            reportlets_dir / f'sub-{subject}' / 'anat' / f'sub-{subject}_T1w.json'
         ).read_text()
     )
 
     Report(
         outdir,
-        bootstrap_file=mriqc_data / "bootstrap-anat.yml",
-        run_uuid="some-id",
+        bootstrap_file=mriqc_data / 'bootstrap-anat.yml',
+        run_uuid='some-id',
         reportlets_dir=reportlets_dir,
         subject=subject,
-        suffix="T1w",
+        suffix='T1w',
         metadata={
-            "dataset": dataset,
-            "about-metadata": {
-                "Provenance Information": mriqc_json.pop("provenance"),
-                "Dataset Information": mriqc_json.pop("bids_meta"),
-                "Extracted Image quality metrics (IQMs)": mriqc_json,
+            'dataset': dataset,
+            'about-metadata': {
+                'Provenance Information': mriqc_json.pop('provenance'),
+                'Dataset Information': mriqc_json.pop('bids_meta'),
+                'Extracted Image quality metrics (IQMs)': mriqc_json,
             }
         },
         plugin_meta={
-            "filename": f"sub-{subject}_T1w.nii.gz",
-            "dataset": dataset,
+            'filename': f'sub-{subject}_T1w.nii.gz',
+            'dataset': dataset,
         }
     ).generate_report()

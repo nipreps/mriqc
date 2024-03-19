@@ -44,9 +44,9 @@ If you use SynthStrip in your analysis, please cite:
 
 """
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 
 
 class StripModel(nn.Module):
@@ -70,7 +70,7 @@ class StripModel(nn.Module):
         if isinstance(nb_features, int):
             if nb_levels is None:
                 raise ValueError(
-                    "must provide unet nb_levels if nb_features is an integer"
+                    'must provide unet nb_levels if nb_features is an integer'
                 )
             feats = np.round(nb_features * feat_mult ** np.arange(nb_levels)).astype(
                 int
@@ -81,7 +81,7 @@ class StripModel(nn.Module):
                 np.repeat(np.flip(feats), nb_conv_per_level),
             ]
         elif nb_levels is not None:
-            raise ValueError("cannot use nb_levels if nb_features is not an integer")
+            raise ValueError('cannot use nb_levels if nb_features is not an integer')
 
         # extract any surplus (full resolution) decoder convolutions
         enc_nf, dec_nf = nb_features
@@ -94,10 +94,10 @@ class StripModel(nn.Module):
             max_pool = [max_pool] * self.nb_levels
 
         # cache downsampling / upsampling operations
-        MaxPooling = getattr(nn, "MaxPool%dd" % ndims)
+        MaxPooling = getattr(nn, 'MaxPool%dd' % ndims)
         self.pooling = [MaxPooling(s) for s in max_pool]
         self.upsampling = [
-            nn.Upsample(scale_factor=s, mode="nearest") for s in max_pool
+            nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool
         ]
 
         # configure encoder (down-sampling path)
@@ -169,17 +169,17 @@ class ConvBlock(nn.Module):
     Specific convolutional block followed by leakyrelu for unet.
     """
 
-    def __init__(self, ndims, in_channels, out_channels, stride=1, activation="leaky"):
+    def __init__(self, ndims, in_channels, out_channels, stride=1, activation='leaky'):
         super().__init__()
 
-        Conv = getattr(nn, "Conv%dd" % ndims)
+        Conv = getattr(nn, 'Conv%dd' % ndims)
         self.conv = Conv(in_channels, out_channels, 3, stride, 1)
-        if activation == "leaky":
+        if activation == 'leaky':
             self.activation = nn.LeakyReLU(0.2)
         elif activation is None:
             self.activation = None
         else:
-            raise ValueError(f"Unknown activation: {activation}")
+            raise ValueError(f'Unknown activation: {activation}')
 
     def forward(self, x):
         out = self.conv(x)

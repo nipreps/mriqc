@@ -24,8 +24,6 @@ import re
 from pathlib import Path
 
 import simplejson as json
-from mriqc import config
-from mriqc.utils.misc import BIDS_COMP
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     DynamicTraitedSpec,
@@ -38,23 +36,26 @@ from nipype.interfaces.base import (
     traits,
 )
 
+from mriqc import config
+from mriqc.utils.misc import BIDS_COMP
+
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
-    in_file = Str(mandatory=True, desc="path of input file")
-    subject_id = Str(mandatory=True, desc="the subject id")
-    modality = Str(mandatory=True, desc="the qc type")
+    in_file = Str(mandatory=True, desc='path of input file')
+    subject_id = Str(mandatory=True, desc='the subject id')
+    modality = Str(mandatory=True, desc='the qc type')
     session_id = traits.Either(None, Str, usedefault=True)
     task_id = traits.Either(None, Str, usedefault=True)
     acq_id = traits.Either(None, Str, usedefault=True)
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, traits.Int, usedefault=True)
-    dataset = Str(desc="dataset identifier")
-    dismiss_entities = traits.List(["part"], usedefault=True)
+    dataset = Str(desc='dataset identifier')
+    dismiss_entities = traits.List(['part'], usedefault=True)
     metadata = traits.Dict()
     provenance = traits.Dict()
 
-    root = traits.Dict(desc="output root dictionary")
-    out_dir = File(desc="the output directory")
+    root = traits.Dict(desc='output root dictionary')
+    out_dir = File(desc='the output directory')
     _outputs = traits.Dict(value={}, usedefault=True)
 
     def __setattr__(self, key, value):
@@ -69,13 +70,13 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
 
 
 class IQMFileSinkOutputSpec(TraitedSpec):
-    out_file = File(desc="the output JSON file containing the IQMs")
+    out_file = File(desc='the output JSON file containing the IQMs')
 
 
 class IQMFileSink(SimpleInterface):
     input_spec = IQMFileSinkInputSpec
     output_spec = IQMFileSinkOutputSpec
-    expr = re.compile("^root[0-9]+$")
+    expr = re.compile('^root[0-9]+$')
 
     def __init__(self, fields=None, force_run=True, **inputs):
         super().__init__(**inputs)
@@ -107,7 +108,7 @@ class IQMFileSink(SimpleInterface):
         # Crawl back to the BIDS root
         path = Path(self.inputs.in_file)
         for i in range(1, 4):
-            if str(path.parents[i].name).startswith("sub-"):
+            if str(path.parents[i].name).startswith('sub-'):
                 bids_root = path.parents[i + 1]
                 break
         in_file = str(path.relative_to(bids_root))
@@ -118,16 +119,16 @@ class IQMFileSink(SimpleInterface):
         ):
             for entity in dismiss:
                 bids_chunks = [
-                    chunk for chunk in path.name.split("_")
-                    if not chunk.startswith(f"{entity}-")
+                    chunk for chunk in path.name.split('_')
+                    if not chunk.startswith(f'{entity}-')
                 ]
-                path = path.parent / "_".join(bids_chunks)
+                path = path.parent / '_'.join(bids_chunks)
 
         # Build path and ensure directory exists
-        bids_path = out_dir / in_file.replace("".join(Path(in_file).suffixes), ".json")
+        bids_path = out_dir / in_file.replace(''.join(Path(in_file).suffixes), '.json')
         bids_path.parent.mkdir(parents=True, exist_ok=True)
-        self._results["out_file"] = str(bids_path)
-        return self._results["out_file"]
+        self._results['out_file'] = str(bids_path)
+        return self._results['out_file']
 
     def _run_interface(self, runtime):
         out_file = self._gen_outfile()
@@ -137,10 +138,10 @@ class IQMFileSink(SimpleInterface):
 
         root_adds = []
         for key, val in list(self.inputs._outputs.items()):
-            if not isdefined(val) or key == "trait_added":
+            if not isdefined(val) or key == 'trait_added':
                 continue
 
-            if not self.expr.match(key) is None:
+            if self.expr.match(key) is not None:
                 root_adds.append(key)
                 continue
 
@@ -154,7 +155,7 @@ class IQMFileSink(SimpleInterface):
             else:
                 config.loggers.interface.warning(
                     'Output "%s" is not a dictionary (value="%s"), '
-                    "discarding output.",
+                    'discarding output.',
                     root_key,
                     str(val),
                 )
@@ -165,17 +166,17 @@ class IQMFileSink(SimpleInterface):
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
-        id_dict["modality"] = self.inputs.modality
+        id_dict['modality'] = self.inputs.modality
 
         if isdefined(self.inputs.metadata) and self.inputs.metadata:
             id_dict.update(self.inputs.metadata)
 
-        if self._out_dict.get("bids_meta") is None:
-            self._out_dict["bids_meta"] = {}
-        self._out_dict["bids_meta"].update(id_dict)
+        if self._out_dict.get('bids_meta') is None:
+            self._out_dict['bids_meta'] = {}
+        self._out_dict['bids_meta'].update(id_dict)
 
         if isdefined(self.inputs.dataset):
-            self._out_dict["bids_meta"]["dataset"] = self.inputs.dataset
+            self._out_dict['bids_meta']['dataset'] = self.inputs.dataset
 
         # Fill in the "provenance" key
         # Predict QA from IQMs and add to metadata
@@ -183,11 +184,11 @@ class IQMFileSink(SimpleInterface):
         if isdefined(self.inputs.provenance) and self.inputs.provenance:
             prov_dict.update(self.inputs.provenance)
 
-        if self._out_dict.get("provenance") is None:
-            self._out_dict["provenance"] = {}
-        self._out_dict["provenance"].update(prov_dict)
+        if self._out_dict.get('provenance') is None:
+            self._out_dict['provenance'] = {}
+        self._out_dict['provenance'].update(prov_dict)
 
-        with open(out_file, "w") as f:
+        with open(out_file, 'w') as f:
             f.write(
                 json.dumps(
                     self._out_dict,
@@ -201,8 +202,8 @@ class IQMFileSink(SimpleInterface):
 
 
 def _process_name(name, val):
-    if "." in name:
-        newkeys = name.split(".")
+    if '.' in name:
+        newkeys = name.split('.')
         name = newkeys.pop(0)
         nested_dict = {newkeys.pop(): val}
 

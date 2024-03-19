@@ -27,8 +27,6 @@ from os import path as op
 
 import nibabel as nib
 import numpy as np
-from mriqc import config, messages
-from mriqc.interfaces import data_types
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     File,
@@ -37,8 +35,11 @@ from nipype.interfaces.base import (
     traits,
 )
 
+from mriqc import config, messages
+from mriqc.interfaces import data_types
+
 #: Output file name format.
-OUT_FILE = "{prefix}_conformed{ext}"
+OUT_FILE = '{prefix}_conformed{ext}'
 
 #: NIfTI header datatype code to numpy dtype.
 NUMPY_DTYPE = {
@@ -59,9 +60,9 @@ class ConformImageInputSpec(BaseInterfaceInputSpec):
     Input specification for the :class:`ConformImage` interface.
     """
 
-    in_file = File(exists=True, mandatory=True, desc="input image")
-    check_ras = traits.Bool(True, usedefault=True, desc="check that orientation is RAS")
-    check_dtype = traits.Bool(True, usedefault=True, desc="check data type")
+    in_file = File(exists=True, mandatory=True, desc='input image')
+    check_ras = traits.Bool(True, usedefault=True, desc='check that orientation is RAS')
+    check_dtype = traits.Bool(True, usedefault=True, desc='check data type')
 
 
 class ConformImageOutputSpec(TraitedSpec):
@@ -69,7 +70,7 @@ class ConformImageOutputSpec(TraitedSpec):
     Output specification for the :class:`ConformImage` interface.
     """
 
-    out_file = File(exists=True, desc="output conformed file")
+    out_file = File(exists=True, desc='output conformed file')
 
 
 class ConformImage(SimpleInterface):
@@ -126,7 +127,7 @@ class ConformImage(SimpleInterface):
             Converted input image
         """
         header = nii.header.copy()
-        datatype = int(header["datatype"])
+        datatype = int(header['datatype'])
         self._warn_suspicious_dtype(datatype)
         try:
             dtype = NUMPY_DTYPE[datatype]
@@ -165,11 +166,11 @@ class ConformImage(SimpleInterface):
 
         # Generate name
         out_file, ext = op.splitext(op.basename(self.inputs.in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             out_file, ext2 = op.splitext(out_file)
             ext = ext2 + ext
         out_file_name = OUT_FILE.format(prefix=out_file, ext=ext)
-        self._results["out_file"] = op.abspath(out_file_name)
-        nii.to_filename(self._results["out_file"])
+        self._results['out_file'] = op.abspath(out_file_name)
+        nii.to_filename(self._results['out_file'])
 
         return runtime
