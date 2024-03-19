@@ -282,10 +282,10 @@ jobs:
       - run:
           name: Generate _version.py
           command: |
-            python3 -m pip install hatch
+            python3 -m pip install build
 
             pushd /tmp/src/mriqc
-            python3 -m hatch version
+            python3 -m build
             popd
       - run:
           name: Run MRIQC tests

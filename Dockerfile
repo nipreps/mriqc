@@ -73,6 +73,7 @@ RUN mkdir -p /opt/afni-latest \
         -name "3dcalc" -or \
         -name "3dFWHMx" -or \
         -name "3dinfo" -or \
+        -name "3dTnorm" -or \
         -name "3dSkullStrip" -or \
         -name "3dToutcount" -or \
         -name "3dTqual" -or \
