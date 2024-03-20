@@ -96,6 +96,7 @@ test = [
     "mock",
     "pytest",
     "pytest-cov",
+    "pytest-env",
     "pytest-xdist",
 ]
 
