@@ -30,7 +30,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Lee | John A. | @leej3 | 0000-0001-5884-4247 | Quansight, Dublin, Ireland |
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
 | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
-| Papadopoulos | Dimitri | @DimitriPapadopoulos | 0000-0002-1242-8990 | CEA, DSV/I2BM, NeuroSpin, Gif-sur-Yvette, France |
+| Papadopoulos Orfanos | Dimitri | @DimitriPapadopoulos | 0000-0002-1242-8990 | NeuroSpin, CEA, Université Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France |
 | Rokem | Ariel | @arokem | 0000-0003-0679-1985 | The University of Washington eScience Institute, WA, USA |
 | Sadil | Patrick | @psadil | 0000-0003-4141-1343 | Johns Hopkins Bloomberg School of Public Health, MD, USA |
 | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
