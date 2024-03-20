@@ -172,10 +172,6 @@ exclude = '''
 )/
 '''
 
-[tool.isort]
-profile = 'black'
-skip_gitignore = true
-
 [tool.flake8]
 max-line-length = "99"
 doctests = "False"
@@ -187,12 +183,15 @@ per-file-ignores = [
 ]
 
 [tool.pytest.ini_options]
+minversion = "7"
+log_cli_level = "INFO"
 norecursedirs = [".git"]
-addopts = "-svx --doctest-modules"
+addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
 junit_family = "xunit2"
+xfail_strict = true
 
 
 [tool.coverage.run]
@@ -246,7 +245,7 @@ extend-select = [
   "PT",
   "Q",
 ]
-extend-ignore = [
+ignore = [
   "S311",  # We are not using random for cryptographic purposes
   "ISC001",
   "S603",
