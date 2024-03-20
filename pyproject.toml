@@ -172,10 +172,6 @@ exclude = '''
 )/
 '''
 
-[tool.isort]
-profile = 'black'
-skip_gitignore = true
-
 [tool.flake8]
 max-line-length = "99"
 doctests = "False"
