@@ -13,7 +13,9 @@ Before every release, unlisted contributors will be invited again to add their n
 | Beliy | Nikita | @nbeliy | | CRC ULiege, Liege, Belgium |
 | Birman | Daniel | @dbirman | 0000-0003-3748-6289 | Department of Psychology, Stanford University, CA, USA |
 | Blair | Ross W. | @rwblair | 0000-0003-3007-1056 | Department of Psychology, Stanford University, CA, USA |
+| Chen | Yibei | @yibeichan | | McGovern Institute for Brain Research, Cambridge, USA |
 | Clark | Michael G. | @mgclark | | National Institutes of Health, USA |
+| Dayan | Michael | @neurorepro | 0000-0002-2666-0969 | International Committee of the Red Cross - ICRC, Geneva, Switzerland |
 | Durnez | Joke | @jokedurnez | 0000-0001-9030-2202 | Department of Psychology, Stanford University, CA, USA |
 | Erramuzpe | Asier | @erramuzpe | 0000-0002-9402-2184 | Computational Neuroimaging Lab, BioCruces Health Research Institute |
 | Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
@@ -28,6 +30,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Lee | John A. | @leej3 | 0000-0001-5884-4247 | Quansight, Dublin, Ireland |
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
 | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
+| Papadopoulos | Dimitri | @DimitriPapadopoulos | 0000-0002-1242-8990 | CEA, DSV/I2BM, NeuroSpin, Gif-sur-Yvette, France |
 | Rokem | Ariel | @arokem | 0000-0003-0679-1985 | The University of Washington eScience Institute, WA, USA |
 | Sadil | Patrick | @psadil | 0000-0003-4141-1343 | Johns Hopkins Bloomberg School of Public Health, MD, USA |
 | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
