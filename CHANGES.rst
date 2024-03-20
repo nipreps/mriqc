@@ -9,7 +9,7 @@ cleanup with *Ruff*.
 CHANGES
 -------
 
-* FIX: Missing conection to head-motion estimation node in DWI workflow by `@oesteban <https://github.com/@oesteban>`__ in `#1207 <https://github.com/nipreps/mriqc/pull/1207>`__
+* FIX: Missing connection to head-motion estimation node in DWI workflow by `@oesteban <https://github.com/@oesteban>`__ in `#1207 <https://github.com/nipreps/mriqc/pull/1207>`__
 * FIX: Revise porting to ``Loader`` by `@oesteban <https://github.com/@oesteban>`__ in `#1201 <https://github.com/nipreps/mriqc/pull/1201>`__
 * FIX: Revise the last two sloppy merges by `@oesteban <https://github.com/@oesteban>`__ in `#1200 <https://github.com/nipreps/mriqc/pull/1200>`__
 * FIX: Move from ``pkg_resources`` to ``niworkflows.data.Loader`` by `@oesteban <https://github.com/@oesteban>`__ in `#1199 <https://github.com/nipreps/mriqc/pull/1199>`__
