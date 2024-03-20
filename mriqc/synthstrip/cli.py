@@ -49,43 +49,45 @@ def main():
     """Entry point to SynthStrip."""
     import os
     from argparse import ArgumentParser
+
+    import nibabel as nb
     import numpy as np
     import scipy
-    import nibabel as nb
     import torch
+
     from .model import StripModel
 
     # parse command line
     parser = ArgumentParser(description=__doc__)
     parser.add_argument(
-        "-i",
-        "--image",
-        metavar="file",
+        '-i',
+        '--image',
+        metavar='file',
         required=True,
-        help="Input image to skullstrip.",
+        help='Input image to skullstrip.',
     )
     parser.add_argument(
-        "-o", "--out", metavar="file", help="Save stripped image to path."
+        '-o', '--out', metavar='file', help='Save stripped image to path.'
     )
     parser.add_argument(
-        "-m", "--mask", metavar="file", help="Save binary brain mask to path."
+        '-m', '--mask', metavar='file', help='Save binary brain mask to path.'
     )
-    parser.add_argument("-g", "--gpu", action="store_true", help="Use the GPU.")
+    parser.add_argument('-g', '--gpu', action='store_true', help='Use the GPU.')
     parser.add_argument(
-        "-n", "--num-threads", action="store", type=int, help="number of threads")
+        '-n', '--num-threads', action='store', type=int, help='number of threads')
     parser.add_argument(
-        "-b",
-        "--border",
+        '-b',
+        '--border',
         default=1,
         type=int,
-        help="Mask border threshold in mm. Default is 1.",
+        help='Mask border threshold in mm. Default is 1.',
     )
-    parser.add_argument("--model", metavar="file", help="Alternative model weights.")
+    parser.add_argument('--model', metavar='file', help='Alternative model weights.')
     args = parser.parse_args()
 
     # sanity check on the inputs
     if not args.out and not args.mask:
-        parser.fatal("Must provide at least --out or --mask output flags.")
+        parser.fatal('Must provide at least --out or --mask output flags.')
 
     # necessary for speed gains (I think)
     torch.backends.cudnn.benchmark = True
@@ -93,19 +95,19 @@ def main():
 
     # configure GPU device
     if args.gpu:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        device = torch.device("cuda")
-        device_name = "GPU"
+        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+        device = torch.device('cuda')
+        device_name = 'GPU'
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-        device = torch.device("cpu")
-        device_name = "CPU"
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        device = torch.device('cpu')
+        device_name = 'CPU'
 
         if args.num_threads and args.num_threads > 0:
             torch.set_num_threads(args.num_threads)
 
     # configure model
-    print(f"Configuring model on the {device_name}")
+    print(f'Configuring model on the {device_name}')
 
     with torch.no_grad():
         model = StripModel()
@@ -115,20 +117,20 @@ def main():
     # load model weights
     if args.model is not None:
         modelfile = args.model
-        print("Using custom model weights")
+        print('Using custom model weights')
     else:
-        raise RuntimeError("A model must be provided.")
+        raise RuntimeError('A model must be provided.')
 
     checkpoint = torch.load(modelfile, map_location=device)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint['model_state_dict'])
 
     # load input volume
-    print(f"Input image read from: {args.image}")
+    print(f'Input image read from: {args.image}')
 
     # normalize intensities
     image = nb.load(args.image)
     conformed = conform(image)
-    in_data = conformed.get_fdata(dtype="float32")
+    in_data = conformed.get_fdata(dtype='float32')
     in_data -= in_data.min()
     in_data = np.clip(in_data / np.percentile(in_data, 99), 0, 1)
     in_data = in_data[np.newaxis, np.newaxis]
@@ -142,10 +144,10 @@ def main():
     sdt_target = resample_like(
         nb.Nifti1Image(sdt, conformed.affine, None),
         image,
-        output_dtype="int16",
+        output_dtype='int16',
         cval=100,
     )
-    sdt_data = np.asanyarray(sdt_target.dataobj).astype("int16")
+    sdt_data = np.asanyarray(sdt_target.dataobj).astype('int16')
 
     # find largest CC (just do this to be safe for now)
     components = scipy.ndimage.label(sdt_data.squeeze() < args.border)[0]
@@ -161,25 +163,25 @@ def main():
         nb.Nifti1Image(img_data, image.affine, image.header).to_filename(
             args.out,
         )
-        print(f"Masked image saved to: {args.out}")
+        print(f'Masked image saved to: {args.out}')
 
     # write the brain mask
     if args.mask:
         hdr = image.header.copy()
-        hdr.set_data_dtype("uint8")
+        hdr.set_data_dtype('uint8')
         nb.Nifti1Image(mask, image.affine, hdr).to_filename(args.mask)
-        print(f"Binary brain mask saved to: {args.mask}")
+        print(f'Binary brain mask saved to: {args.mask}')
 
-    print("If you use SynthStrip in your analysis, please cite:")
-    print("----------------------------------------------------")
-    print("SynthStrip: Skull-Stripping for Any Brain Image.")
-    print("A Hoopes, JS Mora, AV Dalca, B Fischl, M Hoffmann.")
+    print('If you use SynthStrip in your analysis, please cite:')
+    print('----------------------------------------------------')
+    print('SynthStrip: Skull-Stripping for Any Brain Image.')
+    print('A Hoopes, JS Mora, AV Dalca, B Fischl, M Hoffmann.')
 
 
 def conform(input_nii):
     """Resample image as SynthStrip likes it."""
-    import numpy as np
     import nibabel as nb
+    import numpy as np
     from nitransforms.linear import Affine
 
     shape = np.array(input_nii.shape[:3])
@@ -239,5 +241,5 @@ def resample_like(image, target, output_dtype=None, cval=0):
     return Affine(reference=target).apply(image, output_dtype=output_dtype, cval=cval)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

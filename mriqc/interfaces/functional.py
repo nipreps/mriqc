@@ -21,49 +21,51 @@
 #     https://www.nipreps.org/community/licensing/
 #
 from __future__ import annotations
+
 from os import path as op
 
 import nibabel as nb
 import numpy as np
-from mriqc.qc.anatomical import efc, fber, snr, summary_stats
-from mriqc.qc.functional import gsr
-from mriqc.utils.misc import _flatten_dict
+import pandas as pd
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     File,
     InputMultiObject,
-    isdefined,
     SimpleInterface,
     TraitedSpec,
-    traits,
     Undefined,
+    isdefined,
+    traits,
 )
 from nipype.utils.misc import normalize_mc_params
-import pandas as pd
+
+from mriqc.qc.anatomical import efc, fber, snr, summary_stats
+from mriqc.qc.functional import gsr
+from mriqc.utils.misc import _flatten_dict
 
 
 class FunctionalQCInputSpec(BaseInterfaceInputSpec):
-    in_epi = File(exists=True, mandatory=True, desc="input EPI file")
-    in_hmc = File(exists=True, mandatory=True, desc="input motion corrected file")
-    in_tsnr = File(exists=True, mandatory=True, desc="input tSNR volume")
-    in_mask = File(exists=True, mandatory=True, desc="input mask")
+    in_epi = File(exists=True, mandatory=True, desc='input EPI file')
+    in_hmc = File(exists=True, mandatory=True, desc='input motion corrected file')
+    in_tsnr = File(exists=True, mandatory=True, desc='input tSNR volume')
+    in_mask = File(exists=True, mandatory=True, desc='input mask')
     direction = traits.Enum(
-        "all",
-        "x",
-        "y",
-        "-x",
-        "-y",
+        'all',
+        'x',
+        'y',
+        '-x',
+        '-y',
         usedefault=True,
-        desc="direction for GSR computation",
+        desc='direction for GSR computation',
     )
     in_fd = File(
         exists=True,
         mandatory=True,
-        desc="motion parameters for FD computation",
+        desc='motion parameters for FD computation',
     )
-    fd_thres = traits.Float(0.2, usedefault=True, desc="motion threshold for FD computation")
-    in_dvars = File(exists=True, mandatory=True, desc="input file containing DVARS")
-    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
+    fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
+    in_dvars = File(exists=True, mandatory=True, desc='input file containing DVARS')
+    in_fwhm = traits.List(traits.Float, mandatory=True, desc='smoothness estimated with AFNI')
 
 
 class FunctionalQCOutputSpec(TraitedSpec):
@@ -74,12 +76,12 @@ class FunctionalQCOutputSpec(TraitedSpec):
     tsnr = traits.Float
     dvars = traits.Dict
     fd = traits.Dict
-    fwhm = traits.Dict(desc="full width half-maximum measure")
+    fwhm = traits.Dict(desc='full width half-maximum measure')
     size = traits.Dict
     spacing = traits.Dict
     summary = traits.Dict
 
-    out_qc = traits.Dict(desc="output flattened dictionary with all measures")
+    out_qc = traits.Dict(desc='output flattened dictionary with all measures')
 
 
 class FunctionalQC(SimpleInterface):
@@ -108,108 +110,108 @@ class FunctionalQC(SimpleInterface):
         mskdata = np.asanyarray(msknii.dataobj) > 0
         if np.sum(mskdata) < 100:
             raise RuntimeError(
-                "Detected less than 100 voxels belonging to the brain mask. "
-                "MRIQC failed to process this dataset."
+                'Detected less than 100 voxels belonging to the brain mask. '
+                'MRIQC failed to process this dataset.'
             )
 
         # Summary stats
-        rois = {"fg": mskdata.astype(np.uint8), "bg": (~mskdata).astype(np.uint8)}
+        rois = {'fg': mskdata.astype(np.uint8), 'bg': (~mskdata).astype(np.uint8)}
         stats = summary_stats(epidata, rois)
-        self._results["summary"] = stats
+        self._results['summary'] = stats
 
         # SNR
-        self._results["snr"] = snr(stats["fg"]["median"], stats["fg"]["stdv"], stats["fg"]["n"])
+        self._results['snr'] = snr(stats['fg']['median'], stats['fg']['stdv'], stats['fg']['n'])
         # FBER
-        self._results["fber"] = fber(epidata, mskdata.astype(np.uint8))
+        self._results['fber'] = fber(epidata, mskdata.astype(np.uint8))
         # EFC
-        self._results["efc"] = efc(epidata)
+        self._results['efc'] = efc(epidata)
         # GSR
-        self._results["gsr"] = {}
-        if self.inputs.direction == "all":
-            epidir = ["x", "y"]
+        self._results['gsr'] = {}
+        if self.inputs.direction == 'all':
+            epidir = ['x', 'y']
         else:
             epidir = [self.inputs.direction]
 
         for axis in epidir:
-            self._results["gsr"][axis] = gsr(epidata, mskdata.astype(np.uint8), direction=axis)
+            self._results['gsr'][axis] = gsr(epidata, mskdata.astype(np.uint8), direction=axis)
 
         # DVARS
         dvars_avg = np.loadtxt(self.inputs.in_dvars, skiprows=1, usecols=list(range(3))).mean(
             axis=0
         )
-        dvars_col = ["std", "nstd", "vstd"]
-        self._results["dvars"] = {key: float(val) for key, val in zip(dvars_col, dvars_avg)}
+        dvars_col = ['std', 'nstd', 'vstd']
+        self._results['dvars'] = {key: float(val) for key, val in zip(dvars_col, dvars_avg)}
 
         # tSNR
         tsnr_data = nb.load(self.inputs.in_tsnr).get_fdata()
-        self._results["tsnr"] = float(np.median(tsnr_data[mskdata]))
+        self._results['tsnr'] = float(np.median(tsnr_data[mskdata]))
 
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
         num_fd = (fd_data > self.inputs.fd_thres).sum()
-        self._results["fd"] = {
-            "mean": float(fd_data.mean()),
-            "num": int(num_fd),
-            "perc": float(num_fd * 100 / (len(fd_data) + 1)),
+        self._results['fd'] = {
+            'mean': float(fd_data.mean()),
+            'num': int(num_fd),
+            'perc': float(num_fd * 100 / (len(fd_data) + 1)),
         }
 
         # FWHM
         fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(hmcnii.header.get_zooms()[:3])
-        self._results["fwhm"] = {
-            "x": float(fwhm[0]),
-            "y": float(fwhm[1]),
-            "z": float(fwhm[2]),
-            "avg": float(np.average(fwhm)),
+        self._results['fwhm'] = {
+            'x': float(fwhm[0]),
+            'y': float(fwhm[1]),
+            'z': float(fwhm[2]),
+            'avg': float(np.average(fwhm)),
         }
 
         # Image specs
-        self._results["size"] = {
-            "x": int(hmcdata.shape[0]),
-            "y": int(hmcdata.shape[1]),
-            "z": int(hmcdata.shape[2]),
+        self._results['size'] = {
+            'x': int(hmcdata.shape[0]),
+            'y': int(hmcdata.shape[1]),
+            'z': int(hmcdata.shape[2]),
         }
-        self._results["spacing"] = {
-            i: float(v) for i, v in zip(["x", "y", "z"], hmcnii.header.get_zooms()[:3])
+        self._results['spacing'] = {
+            i: float(v) for i, v in zip(['x', 'y', 'z'], hmcnii.header.get_zooms()[:3])
         }
 
         try:
-            self._results["size"]["t"] = int(hmcdata.shape[3])
+            self._results['size']['t'] = int(hmcdata.shape[3])
         except IndexError:
             pass
 
         try:
-            self._results["spacing"]["tr"] = float(hmcnii.header.get_zooms()[3])
+            self._results['spacing']['tr'] = float(hmcnii.header.get_zooms()[3])
         except IndexError:
             pass
 
-        self._results["out_qc"] = _flatten_dict(self._results)
+        self._results['out_qc'] = _flatten_dict(self._results)
         return runtime
 
 
 class SpikesInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="input fMRI dataset")
-    in_mask = File(exists=True, mandatory=True, desc="brain mask")
-    invert_mask = traits.Bool(False, usedefault=True, desc="invert mask")
-    no_zscore = traits.Bool(False, usedefault=True, desc="do not zscore")
-    detrend = traits.Bool(True, usedefault=True, desc="do detrend")
+    in_file = File(exists=True, mandatory=True, desc='input fMRI dataset')
+    in_mask = File(exists=True, mandatory=True, desc='brain mask')
+    invert_mask = traits.Bool(False, usedefault=True, desc='invert mask')
+    no_zscore = traits.Bool(False, usedefault=True, desc='do not zscore')
+    detrend = traits.Bool(True, usedefault=True, desc='do detrend')
     spike_thresh = traits.Float(
         6.0,
         usedefault=True,
-        desc="z-score to call one timepoint of one axial slice a spike",
+        desc='z-score to call one timepoint of one axial slice a spike',
     )
     skip_frames = traits.Int(
         0,
         usedefault=True,
-        desc="number of frames to skip in the beginning of the time series",
+        desc='number of frames to skip in the beginning of the time series',
     )
-    out_tsz = File("spikes_tsz.txt", usedefault=True, desc="output file name")
-    out_spikes = File("spikes_idx.txt", usedefault=True, desc="output file name")
+    out_tsz = File('spikes_tsz.txt', usedefault=True, desc='output file name')
+    out_spikes = File('spikes_idx.txt', usedefault=True, desc='output file name')
 
 
 class SpikesOutputSpec(TraitedSpec):
-    out_tsz = File(desc="slice-wise z-scored timeseries (Z x N), inside brainmask")
-    out_spikes = File(desc="indices of spikes")
-    num_spikes = traits.Int(desc="number of spikes found (total)")
+    out_tsz = File(desc='slice-wise z-scored timeseries (Z x N), inside brainmask')
+    out_spikes = File(desc='indices of spikes')
+    num_spikes = traits.Int(desc='number of spikes found (total)')
 
 
 class Spikes(SimpleInterface):
@@ -263,26 +265,26 @@ class Spikes(SimpleInterface):
         total_spikes = list(set(total_spikes))
 
         out_tsz = op.abspath(self.inputs.out_tsz)
-        self._results["out_tsz"] = out_tsz
+        self._results['out_tsz'] = out_tsz
         np.savetxt(out_tsz, ts_z)
 
         out_spikes = op.abspath(self.inputs.out_spikes)
-        self._results["out_spikes"] = out_spikes
+        self._results['out_spikes'] = out_spikes
         np.savetxt(out_spikes, total_spikes)
-        self._results["num_spikes"] = len(total_spikes)
+        self._results['num_spikes'] = len(total_spikes)
         return runtime
 
 
 class _SelectEchoInputSpec(BaseInterfaceInputSpec):
-    in_files = InputMultiObject(File(exists=True), mandatory=True, desc="input EPI file(s)")
-    metadata = InputMultiObject(traits.Dict(), desc="sidecar JSON files corresponding to in_files")
-    te_reference = traits.Float(0.030, usedefault=True, desc="reference SE-EPI echo time")
+    in_files = InputMultiObject(File(exists=True), mandatory=True, desc='input EPI file(s)')
+    metadata = InputMultiObject(traits.Dict(), desc='sidecar JSON files corresponding to in_files')
+    te_reference = traits.Float(0.030, usedefault=True, desc='reference SE-EPI echo time')
 
 
 class _SelectEchoOutputSpec(TraitedSpec):
-    out_file = File(desc="selected echo")
-    echo_index = traits.Int(desc="index of the selected echo")
-    is_multiecho = traits.Bool(desc="whether it is a multiecho dataset")
+    out_file = File(desc='selected echo')
+    echo_index = traits.Int(desc='index of the selected echo')
+    is_multiecho = traits.Bool(desc='whether it is a multiecho dataset')
 
 
 class SelectEcho(SimpleInterface):
@@ -297,8 +299,8 @@ class SelectEcho(SimpleInterface):
 
     def _run_interface(self, runtime):
         (
-            self._results["out_file"],
-            self._results["echo_index"],
+            self._results['out_file'],
+            self._results['echo_index'],
         ) = select_echo(
             self.inputs.in_files,
             te_echos=(
@@ -307,7 +309,7 @@ class SelectEcho(SimpleInterface):
             ),
             te_reference=self.inputs.te_reference,
         )
-        self._results["is_multiecho"] = self._results["echo_index"] != -1
+        self._results['is_multiecho'] = self._results['echo_index'] != -1
         return runtime
 
 
@@ -316,12 +318,12 @@ class GatherTimeseriesInputSpec(TraitedSpec):
     fd = File(exists=True, mandatory=True, desc='input framewise displacement')
     mpars = File(exists=True, mandatory=True, desc='input motion parameters')
     mpars_source = traits.Enum(
-        "FSL",
-        "AFNI",
-        "SPM",
-        "FSFAST",
-        "NIPY",
-        desc="Source of movement parameters",
+        'FSL',
+        'AFNI',
+        'SPM',
+        'FSFAST',
+        'NIPY',
+        desc='Source of movement parameters',
         mandatory=True,
     )
     outliers = File(
@@ -359,12 +361,12 @@ class GatherTimeseries(SimpleInterface):
         timeseries = pd.DataFrame(
             mpars,
             columns=[
-                "trans_x",
-                "trans_y",
-                "trans_z",
-                "rot_x",
-                "rot_y",
-                "rot_z"
+                'trans_x',
+                'trans_y',
+                'trans_z',
+                'rot_x',
+                'rot_y',
+                'rot_z'
             ])
 
         # DVARS
@@ -373,7 +375,7 @@ class GatherTimeseries(SimpleInterface):
             delim_whitespace=True,
             skiprows=1,  # column names have spaces
             header=None,
-            names=["dvars_std", "dvars_nstd", "dvars_vstd"])
+            names=['dvars_std', 'dvars_nstd', 'dvars_vstd'])
         dvars.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # FD
@@ -381,7 +383,7 @@ class GatherTimeseries(SimpleInterface):
             self.inputs.fd,
             delim_whitespace=True,
             header=0,
-            names=["framewise_displacement"])
+            names=['framewise_displacement'])
         fd.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # AQI
@@ -389,18 +391,18 @@ class GatherTimeseries(SimpleInterface):
             self.inputs.quality,
             delim_whitespace=True,
             header=None,
-            names=["aqi"])
+            names=['aqi'])
 
         # Outliers
         aor = pd.read_csv(
             self.inputs.outliers,
             delim_whitespace=True,
             header=None,
-            names=["aor"])
+            names=['aor'])
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
 
-        timeseries_file = op.join(runtime.cwd, "timeseries.tsv")
+        timeseries_file = op.join(runtime.cwd, 'timeseries.tsv')
 
         timeseries.to_csv(timeseries_file, sep='\t', index=False, na_rep='n/a')
 
@@ -411,78 +413,78 @@ class GatherTimeseries(SimpleInterface):
 
 def _build_timeseries_metadata():
     return {
-        "trans_x": {
-            "LongName": "Translation Along X Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "mm"
+        'trans_x': {
+            'LongName': 'Translation Along X Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'mm'
         },
-        "trans_y": {
-            "LongName": "Translation Along Y Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "mm"
+        'trans_y': {
+            'LongName': 'Translation Along Y Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'mm'
         },
-        "trans_z": {
-            "LongName": "Translation Along Z Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "mm",
+        'trans_z': {
+            'LongName': 'Translation Along Z Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'mm',
         },
-        "rot_x": {
-            "LongName": "Rotation Around X Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "rad"
+        'rot_x': {
+            'LongName': 'Rotation Around X Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'rad'
         },
-        "rot_y": {
-            "LongName": "Rotation Around X Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "rad"
+        'rot_y': {
+            'LongName': 'Rotation Around X Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'rad'
         },
-        "rot_z": {
-            "LongName": "Rotation Around X Axis",
-            "Description": "Estimated Motion Parameter",
-            "Units": "rad"
+        'rot_z': {
+            'LongName': 'Rotation Around X Axis',
+            'Description': 'Estimated Motion Parameter',
+            'Units': 'rad'
         },
-        "dvars_std": {
-            "LongName": "Derivative of RMS Variance over Voxels, Standardized",
-            "Description": (
-                "Indexes the rate of change of BOLD signal across"
-                "the entire brain at each frame of data, normalized with the"
-                "standard deviation of the temporal difference time series"
+        'dvars_std': {
+            'LongName': 'Derivative of RMS Variance over Voxels, Standardized',
+            'Description': (
+                'Indexes the rate of change of BOLD signal across'
+                'the entire brain at each frame of data, normalized with the'
+                'standard deviation of the temporal difference time series'
             )
         },
-        "dvars_nstd": {
-            "LongName": (
-                "Derivative of RMS Variance over Voxels,"
-                "Non-Standardized"
+        'dvars_nstd': {
+            'LongName': (
+                'Derivative of RMS Variance over Voxels,'
+                'Non-Standardized'
             ),
-            "Description": (
-                "Indexes the rate of change of BOLD signal across"
-                "the entire brain at each frame of data, not normalized."
+            'Description': (
+                'Indexes the rate of change of BOLD signal across'
+                'the entire brain at each frame of data, not normalized.'
             )
         },
-        "dvars_vstd": {
-            "LongName": "Derivative of RMS Variance over Voxels, Standardized",
-            "Description": (
-                "Indexes the rate of change of BOLD signal across"
-                "the entire brain at each frame of data, normalized across"
-                "time by that voxel standard deviation across time,"
-                "before computing the RMS of the temporal difference"
+        'dvars_vstd': {
+            'LongName': 'Derivative of RMS Variance over Voxels, Standardized',
+            'Description': (
+                'Indexes the rate of change of BOLD signal across'
+                'the entire brain at each frame of data, normalized across'
+                'time by that voxel standard deviation across time,'
+                'before computing the RMS of the temporal difference'
             )
         },
-        "framewise_displacement": {
-            "LongName": "Framewise Displacement",
-            "Description": (
-                "A quantification of the estimated bulk-head"
-                "motion calculated using formula proposed by Power (2012)"
+        'framewise_displacement': {
+            'LongName': 'Framewise Displacement',
+            'Description': (
+                'A quantification of the estimated bulk-head'
+                'motion calculated using formula proposed by Power (2012)'
             ),
-            "Units": "mm"
+            'Units': 'mm'
         },
-        "aqi": {
-            "LongName": "AFNI's Quality Index",
-            "Description": "Mean quality index as computed by AFNI's 3dTqual"
+        'aqi': {
+            'LongName': "AFNI's Quality Index",
+            'Description': "Mean quality index as computed by AFNI's 3dTqual"
         },
-        "aor": {
-            "LongName": "AFNI's Fraction of Outliers per Volume",
-            "Description": (
+        'aor': {
+            'LongName': "AFNI's Fraction of Outliers per Volume",
+            'Description': (
                 "Mean fraction of outliers per fMRI volume as"
                 "given by AFNI's 3dToutcount"
             )
@@ -603,7 +605,7 @@ def _get_echotime(inlist):
         retval = [_get_echotime(el) for el in inlist]
         return retval[0] if len(retval) == 1 else retval
 
-    echo_time = inlist.get("EchoTime", None) if inlist else None
+    echo_time = inlist.get('EchoTime', None) if inlist else None
 
     if echo_time:
         return float(echo_time)

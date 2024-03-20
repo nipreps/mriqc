@@ -26,6 +26,16 @@ from pathlib import Path
 import nibabel as nb
 import numpy as np
 import scipy.ndimage as nd
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    InputMultiPath,
+    SimpleInterface,
+    TraitedSpec,
+    traits,
+)
+from nipype.utils.filemanip import fname_presuffix
+
 from mriqc.qc.anatomical import (
     art_qi1,
     art_qi2,
@@ -41,45 +51,36 @@ from mriqc.qc.anatomical import (
     wm2max,
 )
 from mriqc.utils.misc import _flatten_dict
-from nipype.interfaces.base import (
-    BaseInterfaceInputSpec,
-    File,
-    InputMultiPath,
-    SimpleInterface,
-    TraitedSpec,
-    traits,
-)
-from nipype.utils.filemanip import fname_presuffix
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="file to be plotted")
-    in_noinu = File(exists=True, mandatory=True, desc="image after INU correction")
-    in_segm = File(exists=True, mandatory=True, desc="segmentation file from FSL FAST")
-    in_bias = File(exists=True, mandatory=True, desc="bias file")
-    head_msk = File(exists=True, mandatory=True, desc="head mask")
-    air_msk = File(exists=True, mandatory=True, desc="air mask")
-    rot_msk = File(exists=True, mandatory=True, desc="rotation mask")
-    artifact_msk = File(exists=True, mandatory=True, desc="air mask")
+    in_file = File(exists=True, mandatory=True, desc='file to be plotted')
+    in_noinu = File(exists=True, mandatory=True, desc='image after INU correction')
+    in_segm = File(exists=True, mandatory=True, desc='segmentation file from FSL FAST')
+    in_bias = File(exists=True, mandatory=True, desc='bias file')
+    head_msk = File(exists=True, mandatory=True, desc='head mask')
+    air_msk = File(exists=True, mandatory=True, desc='air mask')
+    rot_msk = File(exists=True, mandatory=True, desc='rotation mask')
+    artifact_msk = File(exists=True, mandatory=True, desc='air mask')
     in_pvms = InputMultiPath(
         File(exists=True),
         mandatory=True,
-        desc="partial volume maps from FSL FAST",
+        desc='partial volume maps from FSL FAST',
     )
-    in_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    mni_tpms = InputMultiPath(File(), desc="tissue probability maps from FSL FAST")
-    in_fwhm = traits.List(traits.Float, mandatory=True, desc="smoothness estimated with AFNI")
-    human = traits.Bool(True, usedefault=True, desc="human workflow")
+    in_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
+    in_fwhm = traits.List(traits.Float, mandatory=True, desc='smoothness estimated with AFNI')
+    human = traits.Bool(True, usedefault=True, desc='human workflow')
 
 
 class StructuralQCOutputSpec(TraitedSpec):
-    summary = traits.Dict(desc="summary statistics per tissue")
-    icvs = traits.Dict(desc="intracranial volume (ICV) fractions")
-    rpve = traits.Dict(desc="partial volume fractions")
-    size = traits.Dict(desc="image sizes")
-    spacing = traits.Dict(desc="image sizes")
-    fwhm = traits.Dict(desc="full width half-maximum measure")
-    inu = traits.Dict(desc="summary statistics of the bias field")
+    summary = traits.Dict(desc='summary statistics per tissue')
+    icvs = traits.Dict(desc='intracranial volume (ICV) fractions')
+    rpve = traits.Dict(desc='partial volume fractions')
+    size = traits.Dict(desc='image sizes')
+    spacing = traits.Dict(desc='image sizes')
+    fwhm = traits.Dict(desc='full width half-maximum measure')
+    inu = traits.Dict(desc='summary statistics of the bias field')
     snr = traits.Dict
     snrd = traits.Dict
     cnr = traits.Float
@@ -88,8 +89,8 @@ class StructuralQCOutputSpec(TraitedSpec):
     qi_1 = traits.Float
     wm2max = traits.Float
     cjv = traits.Float
-    out_qc = traits.Dict(desc="output flattened dictionary with all measures")
-    out_noisefit = File(exists=True, desc="plot of background noise and chi fitting")
+    out_qc = traits.Dict(desc='output flattened dictionary with all measures')
+    out_noisefit = File(exists=True, desc='plot of background noise and chi fitting')
     tpm_overlap = traits.Dict
 
 
@@ -112,8 +113,8 @@ class StructuralQC(SimpleInterface):
 
         if np.all(inudata < 1e-5):
             raise RuntimeError(
-                "Input inhomogeneity-corrected data seem empty. "
-                "MRIQC failed to process this dataset."
+                'Input inhomogeneity-corrected data seem empty. '
+                'MRIQC failed to process this dataset.'
             )
 
         # Load binary segmentation from FSL FAST
@@ -122,8 +123,8 @@ class StructuralQC(SimpleInterface):
 
         if np.sum(segdata > 0) < 1e3:
             raise RuntimeError(
-                "Input segmentation data is likely corrupt. "
-                "MRIQC failed to process this dataset."
+                'Input segmentation data is likely corrupt. '
+                'MRIQC failed to process this dataset.'
             )
 
         # Load air, artifacts and head masks
@@ -133,8 +134,8 @@ class StructuralQC(SimpleInterface):
         headdata = np.asanyarray(nb.load(self.inputs.head_msk).dataobj).astype(np.uint8)
         if np.sum(headdata > 0) < 100:
             raise RuntimeError(
-                "Detected less than 100 voxels belonging to the head mask. "
-                "MRIQC failed to process this dataset."
+                'Detected less than 100 voxels belonging to the head mask. '
+                'MRIQC failed to process this dataset.'
             )
 
         rotdata = np.asanyarray(nb.load(self.inputs.rot_msk).dataobj).astype(np.uint8)
@@ -142,152 +143,152 @@ class StructuralQC(SimpleInterface):
         # Load brain tissue probability maps from GMM segmentation
         pvms = {
             label: nb.load(fname).get_fdata()
-            for label, fname in zip(("csf", "gm", "wm"), self.inputs.in_pvms)
+            for label, fname in zip(('csf', 'gm', 'wm'), self.inputs.in_pvms)
         }
         pvmdata = list(pvms.values())
 
         # Add probability maps
-        pvms["bg"] = airdata
+        pvms['bg'] = airdata
 
         # Summary stats
         stats = summary_stats(inudata, pvms)
-        self._results["summary"] = stats
+        self._results['summary'] = stats
 
         # SNR
         snrvals = []
-        self._results["snr"] = {}
-        for tlabel in ("csf", "wm", "gm"):
+        self._results['snr'] = {}
+        for tlabel in ('csf', 'wm', 'gm'):
             snrvals.append(
                 snr(
-                    stats[tlabel]["median"],
-                    stats[tlabel]["stdv"],
-                    stats[tlabel]["n"],
+                    stats[tlabel]['median'],
+                    stats[tlabel]['stdv'],
+                    stats[tlabel]['n'],
                 )
             )
-            self._results["snr"][tlabel] = snrvals[-1]
-        self._results["snr"]["total"] = float(np.mean(snrvals))
+            self._results['snr'][tlabel] = snrvals[-1]
+        self._results['snr']['total'] = float(np.mean(snrvals))
 
         snrvals = []
-        self._results["snrd"] = {
+        self._results['snrd'] = {
             tlabel: snr_dietrich(
-                stats[tlabel]["median"],
-                mad_air=stats["bg"]["mad"],
-                sigma_air=stats["bg"]["stdv"],
+                stats[tlabel]['median'],
+                mad_air=stats['bg']['mad'],
+                sigma_air=stats['bg']['stdv'],
             )
-            for tlabel in ["csf", "wm", "gm"]
+            for tlabel in ['csf', 'wm', 'gm']
         }
-        self._results["snrd"]["total"] = float(
-            np.mean([val for _, val in list(self._results["snrd"].items())])
+        self._results['snrd']['total'] = float(
+            np.mean([val for _, val in list(self._results['snrd'].items())])
         )
 
         # CNR
-        self._results["cnr"] = cnr(
-            stats["wm"]["median"],
-            stats["gm"]["median"],
-            stats["bg"]["stdv"],
-            stats["wm"]["stdv"],
-            stats["gm"]["stdv"],
+        self._results['cnr'] = cnr(
+            stats['wm']['median'],
+            stats['gm']['median'],
+            stats['bg']['stdv'],
+            stats['wm']['stdv'],
+            stats['gm']['stdv'],
         )
 
         # FBER
-        self._results["fber"] = fber(inudata, headdata, rotdata)
+        self._results['fber'] = fber(inudata, headdata, rotdata)
 
         # EFC
-        self._results["efc"] = efc(inudata, rotdata)
+        self._results['efc'] = efc(inudata, rotdata)
 
         # M2WM
-        self._results["wm2max"] = wm2max(inudata, stats["wm"]["median"])
+        self._results['wm2max'] = wm2max(inudata, stats['wm']['median'])
 
         # Artifacts
-        self._results["qi_1"] = art_qi1(airdata, artdata)
+        self._results['qi_1'] = art_qi1(airdata, artdata)
 
         # CJV
-        self._results["cjv"] = cjv(
+        self._results['cjv'] = cjv(
             # mu_wm, mu_gm, sigma_wm, sigma_gm
-            stats["wm"]["median"],
-            stats["gm"]["median"],
-            stats["wm"]["mad"],
-            stats["gm"]["mad"],
+            stats['wm']['median'],
+            stats['gm']['median'],
+            stats['wm']['mad'],
+            stats['gm']['mad'],
         )
 
         # FWHM
         fwhm = np.array(self.inputs.in_fwhm[:3]) / np.array(imnii.header.get_zooms()[:3])
-        self._results["fwhm"] = {
-            "x": float(fwhm[0]),
-            "y": float(fwhm[1]),
-            "z": float(fwhm[2]),
-            "avg": float(np.average(fwhm)),
+        self._results['fwhm'] = {
+            'x': float(fwhm[0]),
+            'y': float(fwhm[1]),
+            'z': float(fwhm[2]),
+            'avg': float(np.average(fwhm)),
         }
 
         # ICVs
-        self._results["icvs"] = volume_fraction(pvmdata)
+        self._results['icvs'] = volume_fraction(pvmdata)
 
         # RPVE
-        self._results["rpve"] = rpve(pvmdata, segdata)
+        self._results['rpve'] = rpve(pvmdata, segdata)
 
         # Image specs
-        self._results["size"] = {
-            "x": int(inudata.shape[0]),
-            "y": int(inudata.shape[1]),
-            "z": int(inudata.shape[2]),
+        self._results['size'] = {
+            'x': int(inudata.shape[0]),
+            'y': int(inudata.shape[1]),
+            'z': int(inudata.shape[2]),
         }
-        self._results["spacing"] = {
-            i: float(v) for i, v in zip(["x", "y", "z"], imnii.header.get_zooms()[:3])
+        self._results['spacing'] = {
+            i: float(v) for i, v in zip(['x', 'y', 'z'], imnii.header.get_zooms()[:3])
         }
 
         try:
-            self._results["size"]["t"] = int(inudata.shape[3])
+            self._results['size']['t'] = int(inudata.shape[3])
         except IndexError:
             pass
 
         try:
-            self._results["spacing"]["tr"] = float(imnii.header.get_zooms()[3])
+            self._results['spacing']['tr'] = float(imnii.header.get_zooms()[3])
         except IndexError:
             pass
 
         # Bias
         bias = nb.load(self.inputs.in_bias).get_fdata()[segdata > 0]
-        self._results["inu"] = {
-            "range": float(np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))),
-            "med": float(np.median(bias)),
+        self._results['inu'] = {
+            'range': float(np.abs(np.percentile(bias, 95.0) - np.percentile(bias, 5.0))),
+            'med': float(np.median(bias)),
         }  # pylint: disable=E1101
 
         mni_tpms = [nb.load(tpm).get_fdata() for tpm in self.inputs.mni_tpms]
         in_tpms = [nb.load(tpm).get_fdata() for tpm in self.inputs.in_pvms]
         overlap = fuzzy_jaccard(in_tpms, mni_tpms)
-        self._results["tpm_overlap"] = {
-            "csf": overlap[0],
-            "gm": overlap[1],
-            "wm": overlap[2],
+        self._results['tpm_overlap'] = {
+            'csf': overlap[0],
+            'gm': overlap[1],
+            'wm': overlap[2],
         }
 
         # Flatten the dictionary
-        self._results["out_qc"] = _flatten_dict(self._results)
+        self._results['out_qc'] = _flatten_dict(self._results)
         return runtime
 
 
 class _ArtifactMaskInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="File to be plotted")
-    head_mask = File(exists=True, mandatory=True, desc="head mask")
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
+    head_mask = File(exists=True, mandatory=True, desc='head mask')
     glabella_xyz = traits.Tuple(
         (0.0, 90.0, -14.0),
         types=(traits.Float, traits.Float, traits.Float),
         usedefault=True,
-        desc="position of the top of the glabella in standard coordinates",
+        desc='position of the top of the glabella in standard coordinates',
     )
     inion_xyz = traits.Tuple(
         (0.0, -120.0, -14.0),
         types=(traits.Float, traits.Float, traits.Float),
         usedefault=True,
-        desc="position of the top of the inion in standard coordinates",
+        desc='position of the top of the inion in standard coordinates',
     )
-    ind2std_xfm = File(exists=True, mandatory=True, desc="individual to standard affine transform")
-    zscore = traits.Float(10.0, usedefault=True, desc="z-score to consider artifacts")
+    ind2std_xfm = File(exists=True, mandatory=True, desc='individual to standard affine transform')
+    zscore = traits.Float(10.0, usedefault=True, desc='z-score to consider artifacts')
 
 
 class _ArtifactMaskOutputSpec(TraitedSpec):
     out_hat_msk = File(exists=True, desc='output "hat" mask')
-    out_art_msk = File(exists=True, desc="output artifacts mask")
+    out_art_msk = File(exists=True, desc='output artifacts mask')
     out_air_msk = File(exists=True, desc='output "hat" mask, without artifacts')
 
 
@@ -307,7 +308,7 @@ class ArtifactMask(SimpleInterface):
         imnii = nb.as_closest_canonical(nb.load(in_file))
         imdata = np.nan_to_num(imnii.get_fdata().astype(np.float32))
 
-        xfm = Affine.from_filename(self.inputs.ind2std_xfm, fmt="itk")
+        xfm = Affine.from_filename(self.inputs.ind2std_xfm, fmt='itk')
 
         ras2ijk = np.linalg.inv(imnii.affine)
         glabella_ijk, inion_ijk = apply_affine(
@@ -329,37 +330,37 @@ class ArtifactMask(SimpleInterface):
         qi1_img = artifact_mask(imdata, (~hmdata), dist, zscore=self.inputs.zscore)
 
         fname = in_file.relative_to(in_file.parent).stem
-        ext = "".join(in_file.suffixes)
+        ext = ''.join(in_file.suffixes)
 
         outdir = Path(runtime.cwd).absolute()
-        self._results["out_hat_msk"] = str(outdir / f"{fname}_hat{ext}")
-        self._results["out_art_msk"] = str(outdir / f"{fname}_art{ext}")
-        self._results["out_air_msk"] = str(outdir / f"{fname}_air{ext}")
+        self._results['out_hat_msk'] = str(outdir / f'{fname}_hat{ext}')
+        self._results['out_art_msk'] = str(outdir / f'{fname}_art{ext}')
+        self._results['out_air_msk'] = str(outdir / f'{fname}_air{ext}')
 
         hdr = imnii.header.copy()
         hdr.set_data_dtype(np.uint8)
         imnii.__class__(qi1_img.astype(np.uint8), imnii.affine, hdr).to_filename(
-            self._results["out_art_msk"]
+            self._results['out_art_msk']
         )
 
         airdata = (~hmdata).astype(np.uint8)
-        imnii.__class__(airdata, imnii.affine, hdr).to_filename(self._results["out_hat_msk"])
+        imnii.__class__(airdata, imnii.affine, hdr).to_filename(self._results['out_hat_msk'])
 
         airdata[qi1_img > 0] = 0
         imnii.__class__(airdata.astype(np.uint8), imnii.affine, hdr).to_filename(
-            self._results["out_air_msk"]
+            self._results['out_air_msk']
         )
         return runtime
 
 
 class ComputeQI2InputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="File to be plotted")
-    air_msk = File(exists=True, mandatory=True, desc="air (without artifacts) mask")
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
+    air_msk = File(exists=True, mandatory=True, desc='air (without artifacts) mask')
 
 
 class ComputeQI2OutputSpec(TraitedSpec):
-    qi2 = traits.Float(desc="computed QI2 value")
-    out_file = File(desc="output plot: noise fit")
+    qi2 = traits.Float(desc='computed QI2 value')
+    out_file = File(desc='output plot: noise fit')
 
 
 class ComputeQI2(SimpleInterface):
@@ -374,20 +375,20 @@ class ComputeQI2(SimpleInterface):
         imdata = nb.load(self.inputs.in_file).get_fdata()
         airdata = nb.load(self.inputs.air_msk).get_fdata()
         qi2, out_file = art_qi2(imdata, airdata)
-        self._results["qi2"] = qi2
-        self._results["out_file"] = out_file
+        self._results['qi2'] = qi2
+        self._results['out_file'] = out_file
         return runtime
 
 
 class HarmonizeInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="input data (after bias correction)")
-    wm_mask = File(exists=True, mandatory=True, desc="white-matter mask")
-    erodemsk = traits.Bool(True, usedefault=True, desc="erode mask")
-    thresh = traits.Float(0.9, usedefault=True, desc="WM probability threshold")
+    in_file = File(exists=True, mandatory=True, desc='input data (after bias correction)')
+    wm_mask = File(exists=True, mandatory=True, desc='white-matter mask')
+    erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
+    thresh = traits.Float(0.9, usedefault=True, desc='WM probability threshold')
 
 
 class HarmonizeOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc="input data (after intensity harmonization)")
+    out_file = File(exists=True, desc='input data (after intensity harmonization)')
 
 
 class Harmonize(SimpleInterface):
@@ -415,20 +416,20 @@ class Harmonize(SimpleInterface):
         data = in_file.get_fdata()
         data *= 1000.0 / np.median(data[wm_mask > 0])
 
-        out_file = fname_presuffix(self.inputs.in_file, suffix="_harmonized", newpath=".")
+        out_file = fname_presuffix(self.inputs.in_file, suffix='_harmonized', newpath='.')
         in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)
 
-        self._results["out_file"] = out_file
+        self._results['out_file'] = out_file
 
         return runtime
 
 
 class RotationMaskInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="input data")
+    in_file = File(exists=True, mandatory=True, desc='input data')
 
 
 class RotationMaskOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc="rotation mask (if any)")
+    out_file = File(exists=True, desc='rotation mask (if any)')
 
 
 class RotationMask(SimpleInterface):
@@ -445,7 +446,7 @@ class RotationMask(SimpleInterface):
         mask = data <= 0
 
         # Pad one pixel to control behavior on borders of binary_opening
-        mask = np.pad(mask, pad_width=(1,), mode="constant", constant_values=1)
+        mask = np.pad(mask, pad_width=(1,), mode='constant', constant_values=1)
 
         # Remove noise
         struct = nd.generate_binary_structure(3, 2)
@@ -455,7 +456,7 @@ class RotationMask(SimpleInterface):
         label_im, nb_labels = nd.label(mask)
         if nb_labels > 2:
             sizes = nd.sum(mask, label_im, list(range(nb_labels + 1)))
-            ordered = list(reversed(sorted(zip(sizes, list(range(nb_labels + 1))))))
+            ordered = sorted(zip(sizes, list(range(nb_labels + 1))), reverse=True)
             for _, label in ordered[2:]:
                 mask[label_im == label] = 0
 
@@ -469,9 +470,9 @@ class RotationMask(SimpleInterface):
         out_img = in_file.__class__(mask, in_file.affine, in_file.header)
         out_img.header.set_data_dtype(np.uint8)
 
-        out_file = fname_presuffix(self.inputs.in_file, suffix="_rotmask", newpath=".")
+        out_file = fname_presuffix(self.inputs.in_file, suffix='_rotmask', newpath='.')
         out_img.to_filename(out_file)
-        self._results["out_file"] = out_file
+        self._results['out_file'] = out_file
         return runtime
 
 

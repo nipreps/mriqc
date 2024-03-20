@@ -206,11 +206,11 @@ from math import sqrt
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
+
 from mriqc import config
 
-
 DIETRICH_FACTOR = 0.6551364  # 1.0 / sqrt(2 / (4 - pi))
-FSL_FAST_LABELS = {"csf": 1, "gm": 2, "wm": 3, "bg": 0}
+FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
 
 def snr(mu_fg, sigma_fg, n):
@@ -260,8 +260,8 @@ def snr_dietrich(mu_fg, mad_air=0.0, sigma_air=1.0):
         return float(DIETRICH_FACTOR * mu_fg / mad_air)
 
     config.loggers.interface.warning(
-        "Estimated signal variation in the background was too small "
-        f"(MAD={mad_air}, sigma={sigma_air})",
+        'Estimated signal variation in the background was too small '
+        f'(MAD={mad_air}, sigma={sigma_air})',
     )
     return float(DIETRICH_FACTOR * mu_fg / sigma_air) if sigma_air > 1e-3 else -1.0
 
@@ -472,9 +472,9 @@ def art_qi2(
     data[data < 0] = 0
 
     # Write out figure of the fitting
-    out_file = op.abspath("error.svg")
-    with open(out_file, "w") as ofh:
-        ofh.write("<p>Background noise fitting could not be plotted.</p>")
+    out_file = op.abspath('error.svg')
+    with open(out_file, 'w') as ofh:
+        ofh.write('<p>Background noise fitting could not be plotted.</p>')
 
     if (data > 0).sum() < min_voxels:
         return 0.0, out_file
@@ -485,7 +485,7 @@ def art_qi2(
     x_grid = np.linspace(0.0, 110, 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(kernel="gaussian", bandwidth=4.0).fit(modelx[:, np.newaxis])
+    kde_skl = KernelDensity(kernel='gaussian', bandwidth=4.0).fit(modelx[:, np.newaxis])
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
     # Find cutoff
@@ -577,8 +577,8 @@ def summary_stats(data, pvms, airmask=None, erode=True):
 
 
     """
-    from statsmodels.stats.weightstats import DescrStatsW
     from statsmodels.robust.scale import mad
+    from statsmodels.stats.weightstats import DescrStatsW
 
     output = {}
     for label, probmap in pvms.items():
@@ -591,14 +591,14 @@ def summary_stats(data, pvms, airmask=None, erode=True):
         thresholded = data[probmap > (0.5 * probmap.max())]
 
         output[label] = {
-            "mean": float(wstats.mean),
-            "median": float(median),
-            "p95": float(p95),
-            "p05": float(p05),
-            "k": float(kurtosis(thresholded)),
-            "stdv": float(wstats.std),
-            "mad": float(mad(thresholded, center=median)),
-            "n": float(nvox),
+            'mean': float(wstats.mean),
+            'median': float(median),
+            'p95': float(p95),
+            'p05': float(p05),
+            'k': float(kurtosis(thresholded)),
+            'stdv': float(wstats.std),
+            'mad': float(mad(thresholded, center=median)),
+            'n': float(nvox),
         }
 
     return output

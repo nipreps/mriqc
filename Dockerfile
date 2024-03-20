@@ -22,18 +22,112 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Ubuntu 22.04 LTS - Jammy
+ARG BASE_IMAGE=ubuntu:jammy-20240125
+
+#
+# Build wheel
+#
+FROM python:slim AS src
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends git
+RUN python -m pip install -U pip build
+COPY . /src
+RUN python -m build /src
+
+# Utilities for downloading packages
+FROM ${BASE_IMAGE} as downloader
+# Bump the date to current to refresh curl/certificates/etc
+RUN echo "2024.03.18"
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+                    binutils \
+                    bzip2 \
+                    ca-certificates \
+                    curl \
+                    unzip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+# AFNI
+FROM downloader as afni
+# Bump the date to current to update AFNI
+RUN echo "2024.03.18"
+RUN mkdir -p /opt/afni-latest \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C /opt/afni-latest --strip-components 1 \
+    --exclude "linux_openmp_64/*.gz" \
+    --exclude "linux_openmp_64/funstuff" \
+    --exclude "linux_openmp_64/shiny" \
+    --exclude "linux_openmp_64/afnipy" \
+    --exclude "linux_openmp_64/lib/RetroTS" \
+    --exclude "linux_openmp_64/lib_RetroTS" \
+    --exclude "linux_openmp_64/meica.libs" \
+    # Keep only what we use
+    && find /opt/afni-latest -type f -not \( \
+            -name "3dAutomask" \
+        -or -name "3dcalc" \
+        -or -name "3dFWHMx" \
+        -or -name "3dinfo" \
+        -or -name "3dmaskave" \
+        -or -name "3dSkullStrip" \
+        -or -name "3dTnorm" \
+        -or -name "3dToutcount" \
+        -or -name "3dTqual" \
+        -or -name "3dTshift" \
+        -or -name "3dTstat" \
+        -or -name "3dUnifize" \
+        -or -name "3dvolreg" \
+        -or -name "@compute_gcor" \
+        -or -name "afni" \
+       \) -delete
+
 # Use Ubuntu 20.04 LTS
-FROM nipreps/miniconda:py39_2205.0
+FROM nipreps/miniconda:py39_2403.0
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:${CONDA_PATH}/lib"
+ENV CONDA_PATH="/opt/conda"
 
-# Install AFNI latest (neurodocker build)
+# Configure PPAs for libpng12 and libxp6
+RUN GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/linuxuprising.gpg --recv 0xEA8CACC073C3DB2A \
+    && GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/zeehio.gpg --recv 0xA1301338A3A48C4A \
+    && echo "deb [signed-by=/usr/share/keyrings/linuxuprising.gpg] https://ppa.launchpadcontent.net/linuxuprising/libpng12/ubuntu jammy main" > /etc/apt/sources.list.d/linuxuprising.list \
+    && echo "deb [signed-by=/usr/share/keyrings/zeehio.gpg] https://ppa.launchpadcontent.net/zeehio/libxp/ubuntu jammy main" > /etc/apt/sources.list.d/zeehio.list
+
+# Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+           ed \
+           gsl-bin \
+           libglib2.0-0 \
+           libglu1-mesa-dev \
+           libglw1-mesa \
+           libgomp1 \
+           libjpeg62 \
+           libpng12-0 \
+           libxm4 \
+           libxp6 \
+           netpbm \
+           tcsh \
+           xfonts-base \
+           xvfb \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && apt-get install -f \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+         ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig
+
+# Install AFNI
 ENV AFNI_DIR="/opt/afni"
-RUN echo "Downloading AFNI ..." \
-    && mkdir -p ${AFNI_DIR} \
-    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
-    | tar -xz -C ${AFNI_DIR} --strip-components 1
+COPY --from=afni /opt/afni-latest ${AFNI_DIR}
 ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_IMSAVE_WARNINGS="NO" \
     AFNI_MODELPATH="${AFNI_DIR}/models" \
@@ -41,45 +135,10 @@ ENV PATH="${AFNI_DIR}:$PATH" \
     AFNI_PLUGINPATH="${AFNI_DIR}/plugins"
 
 # Install AFNI's dependencies
-RUN ${CONDA_PATH}/bin/mamba install -c conda-forge -c anaconda \
-                            gsl                                \
-                            xorg-libxp                         \
-                            scipy=1.8                          \
-    && ${CONDA_PATH}/bin/mamba install -c sssdgc png \
-    && sync \
-    && ${CONDA_PATH}/bin/conda clean -afy; sync \
-    && rm -rf ~/.conda ~/.cache/pip/*; sync \
-    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.19 \
-    && ln -s ${CONDA_PATH}/lib/libgsl.so.25 /usr/lib/x86_64-linux-gnu/libgsl.so.0 \
-    && ldconfig
-
-RUN apt-get update \
- && apt-get install -y -q --no-install-recommends     \
-                    libcurl4-openssl-dev              \
-                    libgdal-dev                       \
-                    libgfortran-8-dev                 \
-                    libgfortran4                      \
-                    libglw1-mesa                      \
-                    libgomp1                          \
-                    libjpeg62                         \
-                    libnode-dev                       \
-                    libssl-dev                        \
-                    libudunits2-dev                   \
-                    libxm4                            \
-                    libxml2-dev                       \
-                    netbase                           \
-                    netpbm                            \
-                    tcsh                              \
-                    xfonts-base                       \
- && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
- && ldconfig
-
-# Installing ANTs 2.3.4 (NeuroDocker build)
-ENV ANTSPATH="/opt/ants"
-WORKDIR $ANTSPATH
-RUN curl -sSL "https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_64-v2.3.4.tar.gz" \
-    | tar -xzC $ANTSPATH --strip-components 1
-ENV PATH="$ANTSPATH:$PATH"
+RUN micromamba install -n base -c conda-forge "ants=2.5" \
+            && sync \
+	    && micromamba clean -afy; sync \
+	    && ldconfig
 
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
@@ -90,6 +149,11 @@ COPY --from=freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569fa
 
 ENV FREESURFER_HOME=/opt/freesurfer
 
+RUN apt update && apt install --no-install-recommends -y libtiff5 libpng16-16
+
+COPY --from=mrtrix3/mrtrix3:3.0.4 /opt/mrtrix3/bin/dwidenoise /usr/local/bin
+COPY --from=mrtrix3/mrtrix3:3.0.4 /opt/mrtrix3/lib/libmrtrix.so /usr/local/lib
+
 # Container Sentinel
 ENV IS_DOCKER_8395080871=1
 
@@ -97,30 +161,33 @@ ENV IS_DOCKER_8395080871=1
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
 ENV HOME="/home/mriqc"
+
+# Pacify datalad
+RUN git config --global user.name "NiPreps - MRIQC" \
+    && git config --global user.email "nipreps@gmail.com"
+
+RUN micromamba shell init -s bash
+ENV PATH="${CONDA_PATH}/bin:$PATH" \
+    CPATH="${CONDA_PATH}/include:$CPATH" \
+    LD_LIBRARY_PATH="${CONDA_PATH}/lib:$LD_LIBRARY_PATH"
+
 # Refresh linked libraries
 RUN ldconfig
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
 # Precaching atlases
 RUN python -c "from templateflow import api as tfapi; \
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
-                         desc=['brain', 'head']); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
-               tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
-                         label=['CSF', 'GM', 'WM']);\
-               tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
+			 desc=['brain', 'head']); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
+	       tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
+			 label=['CSF', 'GM', 'WM']);\
+	       tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='boldref')"
 
-RUN git config --global user.name "NiPrep MRIQC" \
-    && git config --global user.email "nipreps@gmail.com"
 # Installing MRIQC
-COPY . /src/mriqc
-# Force static versioning within container
-ARG VERSION
-
-
-RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION && \
-    pip install --no-cache-dir "/src/mriqc[all]"
+COPY --from=src /src/dist/*.whl .
+RUN pip install --no-cache-dir $( ls *.whl )[container,rodents,test]
 
 RUN find $HOME -type d -exec chmod go=u {} + && \
     find $HOME -type f -exec chmod go=u {} + && \

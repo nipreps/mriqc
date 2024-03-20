@@ -31,8 +31,8 @@ from nipype.interfaces.base import (
 
 class GCORInputSpec(CommandLineInputSpec):
     in_file = File(
-        desc="input dataset to compute the GCOR over",
-        argstr="-input %s",
+        desc='input dataset to compute the GCOR over',
+        argstr='-input %s',
         position=-1,
         mandatory=True,
         exists=True,
@@ -40,24 +40,24 @@ class GCORInputSpec(CommandLineInputSpec):
     )
 
     mask = File(
-        desc="mask dataset, for restricting the computation",
-        argstr="-mask %s",
+        desc='mask dataset, for restricting the computation',
+        argstr='-mask %s',
         exists=True,
         copyfile=False,
     )
 
     nfirst = traits.Int(
-        0, argstr="-nfirst %d", desc="specify number of initial TRs to ignore"
+        0, argstr='-nfirst %d', desc='specify number of initial TRs to ignore'
     )
     no_demean = traits.Bool(
         False,
-        argstr="-no_demean",
-        desc="do not (need to) demean as first step",
+        argstr='-no_demean',
+        desc='do not (need to) demean as first step',
     )
 
 
 class GCOROutputSpec(TraitedSpec):
-    out = traits.Float(desc="global correlation value")
+    out = traits.Float(desc='global correlation value')
 
 
 class GCOR(CommandLine):
@@ -79,7 +79,7 @@ class GCOR(CommandLine):
 
     """
 
-    _cmd = "@compute_gcor"
+    _cmd = '@compute_gcor'
     input_spec = GCORInputSpec
     output_spec = GCOROutputSpec
 
@@ -88,12 +88,12 @@ class GCOR(CommandLine):
 
         gcor_line = [
             line.strip()
-            for line in runtime.stdout.split("\n")
-            if line.strip().startswith("GCOR = ")
+            for line in runtime.stdout.split('\n')
+            if line.strip().startswith('GCOR = ')
         ][-1]
-        str_len = len("GCOR = ")
-        setattr(self, "_gcor", float(gcor_line[str_len:]))
+        str_len = len('GCOR = ')
+        self._gcor = float(gcor_line[str_len:])
         return runtime
 
     def _list_outputs(self):
-        return {"out": getattr(self, "_gcor")}
+        return {'out': self._gcor}

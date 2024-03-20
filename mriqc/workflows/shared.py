@@ -25,20 +25,21 @@ from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 
 
-def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
+def synthstrip_wf(name='synthstrip_wf', omp_nthreads=None):
     """Create a brain-extraction workflow using SynthStrip."""
     from nipype.interfaces.ants import N4BiasFieldCorrection
-    from niworkflows.interfaces.nibabel import IntensityClip, ApplyMask
+    from niworkflows.interfaces.nibabel import ApplyMask, IntensityClip
+
     from mriqc.interfaces.synthstrip import SynthStrip
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_files"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_files']), name='inputnode')
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_corrected", "out_brain", "bias_image", "out_mask"]),
-        name="outputnode",
+        niu.IdentityInterface(fields=['out_corrected', 'out_brain', 'bias_image', 'out_mask']),
+        name='outputnode',
     )
 
     # truncate target intensity for N4 correction
-    pre_clip = pe.Node(IntensityClip(p_min=10, p_max=99.9), name="pre_clip")
+    pre_clip = pe.Node(IntensityClip(p_min=10, p_max=99.9), name='pre_clip')
 
     pre_n4 = pe.Node(
         N4BiasFieldCorrection(
@@ -47,7 +48,7 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
             rescale_intensities=True,
             copy_header=True,
         ),
-        name="pre_n4",
+        name='pre_n4',
     )
 
     post_n4 = pe.Node(
@@ -58,31 +59,31 @@ def synthstrip_wf(name="synthstrip_wf", omp_nthreads=None):
             n_iterations=[50] * 4,
             copy_header=True,
         ),
-        name="post_n4",
+        name='post_n4',
     )
 
     synthstrip = pe.Node(
         SynthStrip(num_threads=omp_nthreads),
-        name="synthstrip",
+        name='synthstrip',
         num_threads=omp_nthreads,
     )
 
-    final_masked = pe.Node(ApplyMask(), name="final_masked")
+    final_masked = pe.Node(ApplyMask(), name='final_masked')
 
     workflow = pe.Workflow(name=name)
     # fmt: off
     workflow.connect([
-        (inputnode, pre_clip, [("in_files", "in_file")]),
-        (pre_clip, pre_n4, [("out_file", "input_image")]),
-        (pre_n4, synthstrip, [("output_image", "in_file")]),
-        (synthstrip, post_n4, [("out_mask", "weight_image")]),
-        (synthstrip, final_masked, [("out_mask", "in_mask")]),
-        (pre_clip, post_n4, [("out_file", "input_image")]),
-        (post_n4, final_masked, [("output_image", "in_file")]),
-        (final_masked, outputnode, [("out_file", "out_brain")]),
-        (post_n4, outputnode, [("bias_image", "bias_image")]),
-        (synthstrip, outputnode, [("out_mask", "out_mask")]),
-        (post_n4, outputnode, [("output_image", "out_corrected")]),
+        (inputnode, pre_clip, [('in_files', 'in_file')]),
+        (pre_clip, pre_n4, [('out_file', 'input_image')]),
+        (pre_n4, synthstrip, [('output_image', 'in_file')]),
+        (synthstrip, post_n4, [('out_mask', 'weight_image')]),
+        (synthstrip, final_masked, [('out_mask', 'in_mask')]),
+        (pre_clip, post_n4, [('out_file', 'input_image')]),
+        (post_n4, final_masked, [('output_image', 'in_file')]),
+        (final_masked, outputnode, [('out_file', 'out_brain')]),
+        (post_n4, outputnode, [('bias_image', 'bias_image')]),
+        (synthstrip, outputnode, [('out_mask', 'out_mask')]),
+        (post_n4, outputnode, [('output_image', 'out_corrected')]),
     ])
     # fmt: on
     return workflow

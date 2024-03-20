@@ -42,16 +42,17 @@ The diffusion workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`dmri_qc_workflow`.
 """
-from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+
+from mriqc import config
 from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
 DEFAULT_MEMORY_MIN_GB = 0.01
 
 
-def dmri_qc_workflow(name="dwiMRIQC"):
+def dmri_qc_workflow(name='dwiMRIQC'):
     """
     Initialize the dMRI-QC workflow.
 
@@ -67,6 +68,7 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     from nipype.interfaces.afni import Volreg
     from nipype.interfaces.mrtrix3.preprocess import DWIDenoise
     from niworkflows.interfaces.header import SanitizeImage
+
     from mriqc.interfaces.diffusion import (
         CorrectSignalDrift,
         DipyDTI,
@@ -76,19 +78,19 @@ def dmri_qc_workflow(name="dwiMRIQC"):
         ReadDWIMetadata,
         WeightedStat,
     )
-    from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
     from mriqc.messages import BUILDING_WORKFLOW
+    from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
 
     workflow = pe.Workflow(name=name)
 
     mem_gb = config.workflow.biggest_file_gb
 
-    dataset = config.workflow.inputs.get("dwi", [])
+    dataset = config.workflow.inputs.get('dwi', [])
 
     message = BUILDING_WORKFLOW.format(
-        modality="diffusion",
+        modality='diffusion',
         detail=(
-            f"for {len(dataset)} NIfTI files."
+            f'for {len(dataset)} NIfTI files.'
             if len(dataset) > 2
             else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
@@ -97,17 +99,17 @@ def dmri_qc_workflow(name="dwiMRIQC"):
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file"]), name="inputnode")
-    inputnode.iterables = [("in_file", dataset)]
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
+    inputnode.iterables = [('in_file', dataset)]
 
     datalad_get = pe.Node(
-        DataladIdentityInterface(fields=["in_file"], dataset_path=config.execution.bids_dir),
-        name="datalad_get",
+        DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),
+        name='datalad_get',
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["qc", "mosaic", "out_group", "out_dvars", "out_fd"]),
-        name="outputnode",
+        niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
+        name='outputnode',
     )
 
     sanitize = pe.Node(
@@ -115,33 +117,33 @@ def dmri_qc_workflow(name="dwiMRIQC"):
             n_volumes_to_discard=0,
             max_32bit=config.execution.float32,
         ),
-        name="sanitize",
+        name='sanitize',
         mem_gb=mem_gb * 4.0,
     )
 
     # Workflow --------------------------------------------------------
 
     # 1. Read metadata & bvec/bval, estimate number of shells, extract and split B0s
-    meta = pe.Node(ReadDWIMetadata(index_db=config.execution.bids_database_dir), name="metadata")
-    shells = pe.Node(NumberOfShells(), name="shells")
-    get_shells = pe.MapNode(ExtractB0(), name="get_shells", iterfield=["b0_ixs"])
+    meta = pe.Node(ReadDWIMetadata(index_db=config.execution.bids_database_dir), name='metadata')
+    shells = pe.Node(NumberOfShells(), name='shells')
+    get_shells = pe.MapNode(ExtractB0(), name='get_shells', iterfield=['b0_ixs'])
     hmc_shells = pe.MapNode(
-        Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
-        name="hmc_shells",
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        name='hmc_shells',
         mem_gb=mem_gb * 2.5,
-        iterfield=["in_file"],
+        iterfield=['in_file'],
     )
 
     hmc_b0 = pe.Node(
-        Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
-        name="hmc_b0",
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        name='hmc_b0',
         mem_gb=mem_gb * 2.5,
     )
 
-    drift = pe.Node(CorrectSignalDrift(), name="drift")
+    drift = pe.Node(CorrectSignalDrift(), name='drift')
 
     # 2. Generate B0 reference
-    dwi_reference_wf = init_dmriref_wf(name="dwi_reference_wf")
+    dwi_reference_wf = init_dmriref_wf(name='dwi_reference_wf')
 
     # 3. Calculate brainmask
     dmri_bmsk = dmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
@@ -152,30 +154,30 @@ def dmri_qc_workflow(name="dwiMRIQC"):
     # 5. Split shells and compute some stats
     averages = pe.MapNode(
         WeightedStat(),
-        name="averages",
+        name='averages',
         mem_gb=mem_gb * 1.5,
-        iterfield=["in_weights"],
+        iterfield=['in_weights'],
     )
     stddev = pe.MapNode(
-        WeightedStat(stat="std"),
-        name="stddev",
+        WeightedStat(stat='std'),
+        name='stddev',
         mem_gb=mem_gb * 1.5,
-        iterfield=["in_weights"],
+        iterfield=['in_weights'],
     )
 
     # 6. Fit DTI model
-    dti_filter = pe.Node(FilterShells(), name="dti_filter")
+    dti_filter = pe.Node(FilterShells(), name='dti_filter')
     dwidenoise = pe.Node(
         DWIDenoise(
-            noise="noisemap.nii.gz",
+            noise='noisemap.nii.gz',
             nthreads=config.nipype.omp_nthreads,
         ),
-        name="dwidenoise",
+        name='dwidenoise',
         nprocs=config.nipype.omp_nthreads,
     )
     dti = pe.Node(
         DipyDTI(free_water_model=False),
-        name="dti",
+        name='dti',
     )
 
     # 7. EPI to MNI registration
@@ -189,62 +191,62 @@ def dmri_qc_workflow(name="dwiMRIQC"):
 
     # fmt: off
     workflow.connect([
-        (inputnode, datalad_get, [("in_file", "in_file")]),
-        (inputnode, meta, [("in_file", "in_file")]),
+        (inputnode, datalad_get, [('in_file', 'in_file')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, dwi_report_wf, [
-            ("in_file", "inputnode.name_source"),
+            ('in_file', 'inputnode.name_source'),
         ]),
-        (datalad_get, iqmswf, [("in_file", "inputnode.in_file")]),
-        (datalad_get, sanitize, [("in_file", "in_file")]),
-        (sanitize, dwi_reference_wf, [("out_file", "inputnode.in_file")]),
-        (shells, dwi_reference_wf, [(("b_masks", _first), "inputnode.t_mask")]),
-        (meta, shells, [("out_bval_file", "in_bvals")]),
-        (sanitize, drift, [("out_file", "full_epi")]),
-        (shells, get_shells, [("b_indices", "b0_ixs")]),
-        (sanitize, get_shells, [("out_file", "in_file")]),
-        (meta, drift, [("out_bval_file", "bval_file")]),
-        (get_shells, hmc_shells, [(("out_file", _all_but_first), "in_file")]),
-        (get_shells, hmc_b0, [(("out_file", _first), "in_file")]),
-        (dwi_reference_wf, hmc_b0, [("outputnode.ref_file", "basefile")]),
-        (hmc_b0, drift, [("out_file", "in_file")]),
-        (shells, drift, [(("b_indices", _first), "b0_ixs")]),
-        (dwi_reference_wf, dmri_bmsk, [("outputnode.ref_file", "inputnode.in_files")]),
-        (dwi_reference_wf, ema, [("outputnode.ref_file", "inputnode.epi_mean")]),
-        (dmri_bmsk, drift, [("outputnode.out_mask", "brainmask_file")]),
-        (dmri_bmsk, ema, [("outputnode.out_mask", "inputnode.epi_mask")]),
-        (drift, hmcwf, [("out_full_file", "inputnode.reference")]),
-        (drift, averages, [("out_full_file", "in_file")]),
-        (drift, stddev, [("out_full_file", "in_file")]),
-        (shells, averages, [("b_masks", "in_weights")]),
-        (shells, stddev, [("b_masks", "in_weights")]),
-        (shells, dti_filter, [("out_data", "bvals")]),
-        (meta, dti_filter, [("out_bvec_file", "bvec_file")]),
-        (drift, dti_filter, [("out_full_file", "in_file")]),
-        (dti_filter, dti, [("out_bvals", "bvals")]),
-        (dti_filter, dti, [("out_bvec_file", "bvec_file")]),
-        (dti_filter, dwidenoise, [("out_file", "in_file")]),
-        (dmri_bmsk, dwidenoise, [("outputnode.out_mask", "mask")]),
-        (dwidenoise, dti, [("out_file", "in_file")]),
-        (dmri_bmsk, dti, [("outputnode.out_mask", "brainmask")]),
-        (hmcwf, outputnode, [("outputnode.out_fd", "out_fd")]),
-        (shells, iqmswf, [("n_shells", "inputnode.n_shells"),
-                          ("b_values", "inputnode.b_values")]),
-        (dwidenoise, dwi_report_wf, [("noise", "inputnode.in_noise")]),
-        (shells, dwi_report_wf, [("b_dict", "inputnode.in_bdict")]),
-        (dmri_bmsk, dwi_report_wf, [("outputnode.out_mask", "inputnode.brainmask")]),
-        (shells, dwi_report_wf, [("b_values", "inputnode.in_shells")]),
-        (averages, dwi_report_wf, [("out_file", "inputnode.in_avgmap")]),
-        (stddev, dwi_report_wf, [("out_file", "inputnode.in_stdmap")]),
-        (drift, dwi_report_wf, [("out_full_file", "inputnode.in_epi")]),
-        (dti, dwi_report_wf, [("out_fa", "inputnode.in_fa"),
-                              ("out_md", "inputnode.in_md")]),
-        (ema, dwi_report_wf, [("outputnode.epi_parc", "inputnode.in_parcellation")]),
+        (datalad_get, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (datalad_get, sanitize, [('in_file', 'in_file')]),
+        (sanitize, dwi_reference_wf, [('out_file', 'inputnode.in_file')]),
+        (shells, dwi_reference_wf, [(('b_masks', _first), 'inputnode.t_mask')]),
+        (meta, shells, [('out_bval_file', 'in_bvals')]),
+        (sanitize, drift, [('out_file', 'full_epi')]),
+        (shells, get_shells, [('b_indices', 'b0_ixs')]),
+        (sanitize, get_shells, [('out_file', 'in_file')]),
+        (meta, drift, [('out_bval_file', 'bval_file')]),
+        (get_shells, hmc_shells, [(('out_file', _all_but_first), 'in_file')]),
+        (get_shells, hmc_b0, [(('out_file', _first), 'in_file')]),
+        (dwi_reference_wf, hmc_b0, [('outputnode.ref_file', 'basefile')]),
+        (hmc_b0, drift, [('out_file', 'in_file')]),
+        (shells, drift, [(('b_indices', _first), 'b0_ixs')]),
+        (dwi_reference_wf, dmri_bmsk, [('outputnode.ref_file', 'inputnode.in_files')]),
+        (dwi_reference_wf, ema, [('outputnode.ref_file', 'inputnode.epi_mean')]),
+        (dmri_bmsk, drift, [('outputnode.out_mask', 'brainmask_file')]),
+        (dmri_bmsk, ema, [('outputnode.out_mask', 'inputnode.epi_mask')]),
+        (drift, hmcwf, [('out_full_file', 'inputnode.reference')]),
+        (drift, averages, [('out_full_file', 'in_file')]),
+        (drift, stddev, [('out_full_file', 'in_file')]),
+        (shells, averages, [('b_masks', 'in_weights')]),
+        (shells, stddev, [('b_masks', 'in_weights')]),
+        (shells, dti_filter, [('out_data', 'bvals')]),
+        (meta, dti_filter, [('out_bvec_file', 'bvec_file')]),
+        (drift, dti_filter, [('out_full_file', 'in_file')]),
+        (dti_filter, dti, [('out_bvals', 'bvals')]),
+        (dti_filter, dti, [('out_bvec_file', 'bvec_file')]),
+        (dti_filter, dwidenoise, [('out_file', 'in_file')]),
+        (dmri_bmsk, dwidenoise, [('outputnode.out_mask', 'mask')]),
+        (dwidenoise, dti, [('out_file', 'in_file')]),
+        (dmri_bmsk, dti, [('outputnode.out_mask', 'brainmask')]),
+        (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
+        (shells, iqmswf, [('n_shells', 'inputnode.n_shells'),
+                          ('b_values', 'inputnode.b_values')]),
+        (dwidenoise, dwi_report_wf, [('noise', 'inputnode.in_noise')]),
+        (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict')]),
+        (dmri_bmsk, dwi_report_wf, [('outputnode.out_mask', 'inputnode.brainmask')]),
+        (shells, dwi_report_wf, [('b_values', 'inputnode.in_shells')]),
+        (averages, dwi_report_wf, [('out_file', 'inputnode.in_avgmap')]),
+        (stddev, dwi_report_wf, [('out_file', 'inputnode.in_stdmap')]),
+        (drift, dwi_report_wf, [('out_full_file', 'inputnode.in_epi')]),
+        (dti, dwi_report_wf, [('out_fa', 'inputnode.in_fa'),
+                              ('out_md', 'inputnode.in_md')]),
+        (ema, dwi_report_wf, [('outputnode.epi_parc', 'inputnode.in_parcellation')]),
     ])
     # fmt: on
     return workflow
 
 
-def compute_iqms(name="ComputeIQMs"):
+def compute_iqms(name='ComputeIQMs'):
     """
     Initialize the workflow that actually computes the IQMs.
 
@@ -258,8 +260,8 @@ def compute_iqms(name="ComputeIQMs"):
     """
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
-    from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces import IQMFileSink
+    from mriqc.interfaces.reports import AddProvenance
 
     # from mriqc.workflows.utils import _tofloat, get_fwhmx
     # mem_gb = config.workflow.biggest_file_gb
@@ -268,59 +270,59 @@ def compute_iqms(name="ComputeIQMs"):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
-                "in_file",
-                "n_shells",
-                "b_values",
+                'in_file',
+                'n_shells',
+                'b_values',
             ]
         ),
-        name="inputnode",
+        name='inputnode',
     )
     outputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
-                "out_file",
-                "meta_sidecar",
+                'out_file',
+                'meta_sidecar',
             ]
         ),
-        name="outputnode",
+        name='outputnode',
     )
 
-    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name="metadata")
+    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name='metadata')
 
     addprov = pe.Node(
-        AddProvenance(modality="dwi"),
-        name="provenance",
+        AddProvenance(modality='dwi'),
+        name='provenance',
         run_without_submitting=True,
     )
 
     # Save to JSON file
     datasink = pe.Node(
         IQMFileSink(
-            modality="dwi",
+            modality='dwi',
             out_dir=str(config.execution.output_dir),
             dataset=config.execution.dsname,
         ),
-        name="datasink",
+        name='datasink',
         run_without_submitting=True,
     )
 
     # fmt: off
     workflow.connect([
-        (inputnode, datasink, [("in_file", "in_file"),
-                               ("n_shells", "NumberOfShells"),
-                               ("b_values", "b-values")]),
-        (inputnode, meta, [("in_file", "in_file")]),
-        (inputnode, addprov, [("in_file", "in_file")]),
-        (addprov, datasink, [("out_prov", "provenance")]),
-        (meta, datasink, [("subject", "subject_id"),
-                          ("session", "session_id"),
-                          ("task", "task_id"),
-                          ("acquisition", "acq_id"),
-                          ("reconstruction", "rec_id"),
-                          ("run", "run_id"),
-                          ("out_dict", "metadata")]),
-        (datasink, outputnode, [("out_file", "out_file")]),
-        (meta, outputnode, [("out_dict", "meta_sidecar")]),
+        (inputnode, datasink, [('in_file', 'in_file'),
+                               ('n_shells', 'NumberOfShells'),
+                               ('b_values', 'b-values')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
+        (inputnode, addprov, [('in_file', 'in_file')]),
+        (addprov, datasink, [('out_prov', 'provenance')]),
+        (meta, datasink, [('subject', 'subject_id'),
+                          ('session', 'session_id'),
+                          ('task', 'task_id'),
+                          ('acquisition', 'acq_id'),
+                          ('reconstruction', 'rec_id'),
+                          ('run', 'run_id'),
+                          ('out_dict', 'metadata')]),
+        (datasink, outputnode, [('out_file', 'out_file')]),
+        (meta, outputnode, [('out_dict', 'meta_sidecar')]),
     ])
     # fmt: on
 
@@ -352,7 +354,7 @@ def compute_iqms(name="ComputeIQMs"):
 
 def init_dmriref_wf(
     in_file=None,
-    name="init_dmriref_wf",
+    name='init_dmriref_wf',
 ):
     """
     Build a workflow that generates reference images for a dMRI series.
@@ -386,14 +388,14 @@ def init_dmriref_wf(
     ref_file : str
         Reference image to which DWI series is motion corrected
     """
-    from niworkflows.interfaces.images import RobustAverage
     from niworkflows.interfaces.header import ValidateImage
+    from niworkflows.interfaces.images import RobustAverage
 
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "t_mask"]), name="inputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 't_mask']), name='inputnode')
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["in_file", "ref_file", "validation_report"]),
-        name="outputnode",
+        niu.IdentityInterface(fields=['in_file', 'ref_file', 'validation_report']),
+        name='outputnode',
     )
 
     # Simplify manually setting input image
@@ -402,24 +404,24 @@ def init_dmriref_wf(
 
     val_bold = pe.Node(
         ValidateImage(),
-        name="val_bold",
+        name='val_bold',
         mem_gb=DEFAULT_MEMORY_MIN_GB,
     )
 
-    gen_avg = pe.Node(RobustAverage(mc_method=None), name="gen_avg", mem_gb=1)
+    gen_avg = pe.Node(RobustAverage(mc_method=None), name='gen_avg', mem_gb=1)
     # fmt: off
     workflow.connect([
-        (inputnode, val_bold, [("in_file", "in_file")]),
-        (inputnode, gen_avg, [("t_mask", "t_mask")]),
-        (val_bold, gen_avg, [("out_file", "in_file")]),
-        (gen_avg, outputnode, [("out_file", "ref_file")]),
+        (inputnode, val_bold, [('in_file', 'in_file')]),
+        (inputnode, gen_avg, [('t_mask', 't_mask')]),
+        (val_bold, gen_avg, [('out_file', 'in_file')]),
+        (gen_avg, outputnode, [('out_file', 'ref_file')]),
     ])
     # fmt: on
 
     return workflow
 
 
-def hmc_workflow(name="dMRI_HMC"):
+def hmc_workflow(name='dMRI_HMC'):
     """
     Create a :abbr:`HMC (head motion correction)` workflow for dMRI.
 
@@ -438,13 +440,13 @@ def hmc_workflow(name="dMRI_HMC"):
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=["in_file", "reference"]), name="inputnode")
-    outputnode = pe.Node(niu.IdentityInterface(fields=["out_file", "out_fd"]), name="outputnode")
+    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'reference']), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_fd']), name='outputnode')
 
     # calculate hmc parameters
     hmc = pe.Node(
-        Volreg(args="-Fourier -twopass", zpad=4, outputtype="NIFTI_GZ"),
-        name="motion_correct",
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        name='motion_correct',
         mem_gb=mem_gb * 2.5,
     )
 
@@ -452,25 +454,25 @@ def hmc_workflow(name="dMRI_HMC"):
     fdnode = pe.Node(
         FramewiseDisplacement(
             normalize=False,
-            parameter_source="AFNI",
+            parameter_source='AFNI',
             radius=config.workflow.fd_radius,
         ),
-        name="ComputeFD",
+        name='ComputeFD',
     )
 
     # fmt: off
     workflow.connect([
-        (inputnode, hmc, [("in_file", "in_file"),
-                          ("reference", "basefile")]),
-        (hmc, outputnode, [("out_file", "out_file")]),
-        (hmc, fdnode, [("oned_file", "in_file")]),
-        (fdnode, outputnode, [("out_file", "out_fd")]),
+        (inputnode, hmc, [('in_file', 'in_file'),
+                          ('reference', 'basefile')]),
+        (hmc, outputnode, [('out_file', 'out_file')]),
+        (hmc, fdnode, [('oned_file', 'in_file')]),
+        (fdnode, outputnode, [('out_file', 'out_fd')]),
     ])
     # fmt: on
     return workflow
 
 
-def epi_mni_align(name="SpatialNormalization"):
+def epi_mni_align(name='SpatialNormalization'):
     """
     Estimate the transform that maps the EPI space into MNI152NLin2009cAsym.
 
@@ -500,42 +502,42 @@ def epi_mni_align(name="SpatialNormalization"):
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
-        niu.IdentityInterface(fields=["epi_mean", "epi_mask"]),
-        name="inputnode",
+        niu.IdentityInterface(fields=['epi_mean', 'epi_mask']),
+        name='inputnode',
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["epi_mni", "epi_parc", "report"]),
-        name="outputnode",
+        niu.IdentityInterface(fields=['epi_mni', 'epi_parc', 'report']),
+        name='outputnode',
     )
 
-    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name="SharpenEPI")
+    n4itk = pe.Node(N4BiasFieldCorrection(dimension=3, copy_header=True), name='SharpenEPI')
 
     norm = pe.Node(
         RobustMNINormalization(
             explicit_masking=False,
-            flavor="testing" if testing else "precise",
+            flavor='testing' if testing else 'precise',
             float=config.execution.ants_float,
             generate_report=True,
-            moving="boldref",
+            moving='boldref',
             num_threads=ants_nthreads,
-            reference="boldref",
+            reference='boldref',
             template=config.workflow.template_id,
         ),
-        name="EPI2MNI",
+        name='EPI2MNI',
         num_threads=n_procs,
         mem_gb=3,
     )
 
-    if config.workflow.species.lower() == "human":
+    if config.workflow.species.lower() == 'human':
         norm.inputs.reference_image = str(
-            get_template(config.workflow.template_id, resolution=2, suffix="boldref")
+            get_template(config.workflow.template_id, resolution=2, suffix='boldref')
         )
         norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
                 resolution=2,
-                desc="brain",
-                suffix="mask",
+                desc='brain',
+                suffix='mask',
             )
         )
     # adapt some population-specific settings
@@ -544,16 +546,16 @@ def epi_mni_align(name="SpatialNormalization"):
 
         n4itk.inputs.shrink_factor = 1
         n4itk.inputs.n_iterations = [50] * 4
-        norm.inputs.reference_image = str(get_template(config.workflow.template_id, suffix="T2w"))
+        norm.inputs.reference_image = str(get_template(config.workflow.template_id, suffix='T2w'))
         norm.inputs.reference_mask = str(
             get_template(
                 config.workflow.template_id,
-                desc="brain",
-                suffix="mask",
+                desc='brain',
+                suffix='mask',
             )[0]
         )
 
-        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name="bspline_grid")
+        bspline_grid = pe.Node(niu.Function(function=_bspline_grid), name='bspline_grid')
 
         # fmt: off
         workflow.connect([
@@ -568,43 +570,43 @@ def epi_mni_align(name="SpatialNormalization"):
             float=True,
             dimension=3,
             default_value=0,
-            interpolation="MultiLabel",
+            interpolation='MultiLabel',
         ),
-        name="ResampleSegmentation",
+        name='ResampleSegmentation',
     )
 
-    if config.workflow.species.lower() == "human":
+    if config.workflow.species.lower() == 'human':
         invt.inputs.input_image = str(
             get_template(
                 config.workflow.template_id,
                 resolution=1,
-                desc="carpet",
-                suffix="dseg",
+                desc='carpet',
+                suffix='dseg',
             )
         )
     else:
         invt.inputs.input_image = str(
             get_template(
                 config.workflow.template_id,
-                suffix="dseg",
+                suffix='dseg',
             )[-1]
         )
 
     # fmt: off
     workflow.connect([
-        (inputnode, invt, [("epi_mean", "reference_image")]),
-        (inputnode, n4itk, [("epi_mean", "input_image")]),
-        (n4itk, norm, [("output_image", "moving_image")]),
+        (inputnode, invt, [('epi_mean', 'reference_image')]),
+        (inputnode, n4itk, [('epi_mean', 'input_image')]),
+        (n4itk, norm, [('output_image', 'moving_image')]),
         (norm, invt, [
-            ("inverse_composite_transform", "transforms")]),
-        (invt, outputnode, [("output_image", "epi_parc")]),
-        (norm, outputnode, [("warped_image", "epi_mni"),
-                            ("out_report", "report")]),
+            ('inverse_composite_transform', 'transforms')]),
+        (invt, outputnode, [('output_image', 'epi_parc')]),
+        (norm, outputnode, [('warped_image', 'epi_mni'),
+                            ('out_report', 'report')]),
     ])
     # fmt: on
 
-    if config.workflow.species.lower() == "human":
-        workflow.connect([(inputnode, norm, [("epi_mask", "moving_mask")])])
+    if config.workflow.species.lower() == 'human':
+        workflow.connect([(inputnode, norm, [('epi_mask', 'moving_mask')])])
 
     return workflow
 
@@ -618,9 +620,9 @@ def _mean(inlist):
 def _parse_tqual(in_file):
     import numpy as np
 
-    with open(in_file, "r") as fin:
+    with open(in_file) as fin:
         lines = fin.readlines()
-    return np.mean([float(line.strip()) for line in lines if not line.startswith("++")])
+    return np.mean([float(line.strip()) for line in lines if not line.startswith('++')])
 
 
 def _parse_tout(in_file):
@@ -635,9 +637,9 @@ def _tolist(value):
 
 
 def _get_bvals(bmatrix):
-    import numpy
+    import numpy as np
 
-    return numpy.squeeze(bmatrix[:, -1]).tolist()
+    return np.squeeze(bmatrix[:, -1]).tolist()
 
 
 def _first(inlist):

@@ -23,17 +23,18 @@
 """SynthStrip interface."""
 import os
 from pathlib import Path
+
 from nipype.interfaces.base import (
     CommandLine,
     CommandLineInputSpec,
     File,
     TraitedSpec,
-    traits,
     Undefined,
+    traits,
 )
 
-_fs_home = os.getenv("FREESURFER_HOME", None)
-_default_model_path = Path(_fs_home) / "models" / "synthstrip.1.pt" if _fs_home else Undefined
+_fs_home = os.getenv('FREESURFER_HOME', None)
+_default_model_path = Path(_fs_home) / 'models' / 'synthstrip.1.pt' if _fs_home else Undefined
 
 if _fs_home and not _default_model_path.exists():
     _default_model_path = Undefined
@@ -43,43 +44,43 @@ class _SynthStripInputSpec(CommandLineInputSpec):
     in_file = File(
         exists=True,
         mandatory=True,
-        argstr="-i %s",
-        desc="Input image to be brain extracted",
+        argstr='-i %s',
+        desc='Input image to be brain extracted',
     )
     use_gpu = traits.Bool(
-        False, usedefault=True, argstr="-g", desc="Use GPU", nohash=True
+        False, usedefault=True, argstr='-g', desc='Use GPU', nohash=True
     )
     model = File(
         str(_default_model_path),
         usedefault=True,
         exists=True,
-        argstr="--model %s",
+        argstr='--model %s',
         desc="file containing model's weights",
     )
     border_mm = traits.Int(
-        1, usedefault=True, argstr="-b %d", desc="Mask border threshold in mm"
+        1, usedefault=True, argstr='-b %d', desc='Mask border threshold in mm'
     )
     out_file = File(
-        name_source=["in_file"],
-        name_template="%s_desc-brain.nii.gz",
-        argstr="-o %s",
-        desc="store brain-extracted input to file",
+        name_source=['in_file'],
+        name_template='%s_desc-brain.nii.gz',
+        argstr='-o %s',
+        desc='store brain-extracted input to file',
     )
     out_mask = File(
-        name_source=["in_file"],
-        name_template="%s_desc-brain_mask.nii.gz",
-        argstr="-m %s",
-        desc="store brainmask to file",
+        name_source=['in_file'],
+        name_template='%s_desc-brain_mask.nii.gz',
+        argstr='-m %s',
+        desc='store brainmask to file',
     )
-    num_threads = traits.Int(desc="Number of threads", argstr="-n %d", nohash=True)
+    num_threads = traits.Int(desc='Number of threads', argstr='-n %d', nohash=True)
 
 
 class _SynthStripOutputSpec(TraitedSpec):
-    out_file = File(desc="brain-extracted image")
-    out_mask = File(desc="brain mask")
+    out_file = File(desc='brain-extracted image')
+    out_mask = File(desc='brain mask')
 
 
 class SynthStrip(CommandLine):
-    _cmd = "synthstrip"
+    _cmd = 'synthstrip'
     input_spec = _SynthStripInputSpec
     output_spec = _SynthStripOutputSpec
