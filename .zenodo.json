@@ -52,6 +52,12 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0002-1242-8990",
+      "affiliation": "NeuroSpin, CEA, Universit\u00e9 Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France",
+      "name": "Dimitri Papadopoulos Orfanos",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0002-9546-1306",
       "affiliation": "University of Florida: Gainesville, Florida, US",
       "name": "William Triplett",
@@ -66,12 +72,6 @@
     {
       "affiliation": "CRC ULiege, Liege, Belgium",
       "name": "Nikita Beliy",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-1242-8990",
-      "affiliation": "CEA, DSV/I2BM, NeuroSpin, Gif-sur-Yvette, France",
-      "name": "Dimitri Papadopoulos",
       "type": "Researcher"
     },
     {

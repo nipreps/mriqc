@@ -7,6 +7,7 @@ Should you desire to be considered back as a contributor or maintainer, please r
 | **Lastname** | **Name** | **Handle** |
 | --- | --- | --- |
 | Bot | NiPreps | @nipreps-bot |
+| dependabot[bot] | | @dependabot |
 | Ma | Conrad | @394822740 |
 | Piccirilli | Aaron | @apiccirilli |
 | Gorgolewski | Krzysztof J. | @chrisgorgo |
