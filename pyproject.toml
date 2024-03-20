@@ -22,6 +22,7 @@ classifiers = [
 license = "Apache-2.0"
 requires-python = ">=3.8"
 dependencies = [
+    "dipy",
     'importlib_resources; python_version < "3.9"',
     # jinja2 imports deprecated function removed in 2.1
     "markupsafe ~= 2.0.1",
@@ -41,6 +42,7 @@ dependencies = [
     "scikit-learn",
     "scipy ~=1.8",
     "statsmodels",
+    "templateflow",
     "toml",
     "torch >= 1.10.2",
 ]
@@ -63,15 +65,17 @@ doc = [
     "pydotplus",
     "sphinx-argparse",
     "sphinx_rtd_theme",
-    "sphinx~=4.0",
+    "sphinx~=5.0",
 ]
 
-full = [
-    "nitime",
+container = [
+    # templateflow extras
+    "datalad",
+    "datalad-osf",
+]
+
+rodents = [
     "nirodents >= 0.2.8",
-    "seaborn",
-    "templateflow",
-    "xvfbwrapper",
 ]
 
 notebook = [
@@ -96,14 +100,17 @@ test = [
 ]
 
 other = [
+    "nitime",
     "scikit-image",
+    "seaborn",
+    "xvfbwrapper",
 ]
 
 # Aliases
 docs = ["mriqc[doc]"]
 tests = ["mriqc[test]"]
 others = ["mriqc[other]"]
-all = ["mriqc[doc,full,test,notebook,other]"]
+all = ["mriqc[doc,container,test,notebook,other,rodents]"]
 
 [project.scripts]
 mriqc = "mriqc.cli.run:main"
@@ -135,7 +142,6 @@ packages = ["mriqc"]
 ##  The following two sections configure setuptools_scm in the hatch way
 
 [tool.hatch.version]
-validate-bump = true
 source = "vcs"
 raw-options = { version_scheme = "nipreps-calver" }
 
@@ -212,3 +218,51 @@ ignore-words-list = 'nd,mapp,reson'
 skip = """
 ./.git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE,\
 ./docs/source/_static/example_anatreport.html"""
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+extend-select = [
+  "F",
+  "E",
+  "W",
+  "I",
+  "UP",
+  "YTT",
+  "S",
+  "BLE",
+  "B",
+  "A",
+  # "CPY",
+  "C4",
+  "DTZ",
+  "T10",
+  # "EM",
+  "EXE",
+  "FA",
+  "ISC",
+  "ICN",
+  "PT",
+  "Q",
+]
+extend-ignore = [
+  "S311",  # We are not using random for cryptographic purposes
+  "ISC001",
+  "S603",
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"*/test_*.py" = ["S101"]
+"docs/source/conf.py" = ["A001"]
+"mriqc/bin/nib_hash.py" = ["S324"]
+"mriqc/config.py" = ["S105"]
+"mriqc/conftest.py" = ["PT004"]
+"mriqc/engine/plugin.py" = ["BLE001"]
+"mriqc/utils/debug.py" = ["A002", "T100"]
+
+[tool.ruff.format]
+quote-style = "single"

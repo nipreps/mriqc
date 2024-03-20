@@ -22,12 +22,18 @@ notebooks/
 # releasing
 Makefile
 
-# git
-.github/
-.gitignore
-.gitattributes
-.git/**/*
-.git
+###
+### git MUST NOT be ignored after moving to multi-staged builds
+###
+### with the multi-staged build, the strategy is to create a wheel
+### in a stage image. To create such a wheel, the git repo is necessary
+### for hatch-vcs to interpolate the version and initialize _version.py
+###
+# .github/
+# .gitignore
+# .gitattributes
+# .git/**/*
+# .git
 
 # Maintenance
 .circleci/

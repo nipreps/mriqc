@@ -23,7 +23,7 @@
 """Utilities: Jinja2 templates."""
 from pathlib import Path
 
-from pkg_resources import resource_filename as pkgrf
+from niworkflows.data import Loader
 
 
 class GroupTemplate:
@@ -37,16 +37,17 @@ class GroupTemplate:
     def __init__(self):
         import jinja2
 
-        self.template_str = pkgrf("mriqc", "data/reports/group.html")
+        self.template_str = Loader(__package__)('reports/group.html').absolute()
         self.env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(searchpath="/"),
+            loader=jinja2.FileSystemLoader(searchpath='/'),
             trim_blocks=True,
             lstrip_blocks=True,
+            autoescape=True,
         )
 
     def compile(self, configs):
         """Generates a string with the replacements"""
-        template = self.env.get_template(self.template_str)
+        template = self.env.get_template(str(self.template_str))
         return template.render(configs)
 
     def generate_conf(self, configs, path):

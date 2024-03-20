@@ -31,4 +31,4 @@ def send_crumb(**kwargs) -> dict:
     """
     Communicate with the migas telemetry server. This requires `migas.setup()` to be called.
     """
-    return migas.add_breadcrumb("nipreps/mriqc", __version__, **kwargs)
+    return migas.add_breadcrumb('nipreps/mriqc', __version__, **kwargs)

@@ -21,10 +21,13 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
-from pathlib import Path
 from json import loads
-from pkg_resources import resource_filename as pkgrf
+from pathlib import Path
+
 from nireports.assembler.report import Report
+from niworkflows.data import Loader
+
+_load_data = Loader('mriqc')
 
 
 def generate_reports():
@@ -32,12 +35,12 @@ def generate_reports():
 
     from mriqc import config
 
-    config.loggers.workflow.info("Generating reports...")
+    config.loggers.workflow.info('Generating reports...')
     output_files = [
         _single_report(ff) for mod in config.workflow.inputs.values() for ff in mod
     ]
     config.loggers.workflow.info(
-        f"Report generation finished ({len(output_files)} reports)."
+        f'Report generation finished ({len(output_files)} reports).'
     )
     return output_files
 
@@ -51,56 +54,56 @@ def _single_report(in_file):
 
     # Extract BIDS entities
     entities = config.execution.layout.get_file(in_file).get_entities()
-    entities.pop("extension", None)
-    entities.pop("echo", None)
-    entities.pop("part", None)
-    report_type = entities.pop("datatype", None)
+    entities.pop('extension', None)
+    entities.pop('echo', None)
+    entities.pop('part', None)
+    report_type = entities.pop('datatype', None)
 
     # Read output file:
     mriqc_json = loads((
         Path(config.execution.output_dir)
         / in_file.parent.relative_to(config.execution.bids_dir)
-        / in_file.name.replace("".join(in_file.suffixes), ".json")
+        / in_file.name.replace(''.join(in_file.suffixes), '.json')
     ).read_text())
-    mriqc_json.pop("bids_meta")
+    mriqc_json.pop('bids_meta')
 
     # Clean-up provenance dictionary
-    prov = mriqc_json.pop("provenance", None)
-    prov.pop("webapi_url", None)
-    prov.pop("webapi_port", None)
-    prov.pop("settings", None)
-    prov.pop("software", None)
+    prov = mriqc_json.pop('provenance', None)
+    prov.pop('webapi_url', None)
+    prov.pop('webapi_port', None)
+    prov.pop('settings', None)
+    prov.pop('software', None)
     prov.update({
-        f"warnings_{kk}": vv for kk, vv in prov.pop("warnings", {}).items()
+        f'warnings_{kk}': vv for kk, vv in prov.pop('warnings', {}).items()
     })
-    prov["Input filename"] = f"<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}"
-    prov["Versions_MRIQC"] = prov.pop("version", config.environment.version)
-    prov["Execution environment"] = config.environment.exec_env
-    prov["Versions_NiPype"] = config.environment.nipype_version
-    prov["Versions_TemplateFlow"] = config.environment.templateflow_version
+    prov['Input filename'] = f'<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}'
+    prov['Versions_MRIQC'] = prov.pop('version', config.environment.version)
+    prov['Execution environment'] = config.environment.exec_env
+    prov['Versions_NiPype'] = config.environment.nipype_version
+    prov['Versions_TemplateFlow'] = config.environment.templateflow_version
 
     bids_meta = config.execution.layout.get_file(in_file).get_metadata()
-    bids_meta.pop("global", None)
+    bids_meta.pop('global', None)
 
     robj = Report(
         config.execution.output_dir,
         config.execution.run_uuid,
-        reportlets_dir=config.execution.work_dir / "reportlets",
-        bootstrap_file=pkgrf("mriqc", f"data/bootstrap-{report_type}.yml"),
+        reportlets_dir=config.execution.work_dir / 'reportlets',
+        bootstrap_file=_load_data(f'data/bootstrap-{report_type}.yml'),
         metadata={
-            "dataset": config.execution.dsname,
-            "about-metadata": {
-                "Provenance Information": prov,
-                "Dataset Information": bids_meta,
-                "Extracted Image quality metrics (IQMs)": mriqc_json,
+            'dataset': config.execution.dsname,
+            'about-metadata': {
+                'Provenance Information': prov,
+                'Dataset Information': bids_meta,
+                'Extracted Image quality metrics (IQMs)': mriqc_json,
             }
         },
         plugin_meta={
-            "rating-widget": {
-                "filename": in_file.name,
-                "dataset": config.execution.dsname,
-                "access_token": config.execution.webapi_token,
-                "endpoint": f"{config.execution.webapi_url}/rating",
+            'rating-widget': {
+                'filename': in_file.name,
+                'dataset': config.execution.dsname,
+                'access_token': config.execution.webapi_token,
+                'endpoint': f'{config.execution.webapi_url}/rating',
             },
         },
         **entities,

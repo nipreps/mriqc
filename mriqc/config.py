@@ -89,6 +89,7 @@ The :py:mod:`config` is responsible for other conveniency actions.
 """
 import os
 import sys
+from contextlib import suppress
 from pathlib import Path
 from time import strftime
 from uuid import uuid4
@@ -102,35 +103,35 @@ except ImportError:
 # Ignore annoying warnings
 from mriqc._warnings import logging
 
-__version__ = get_version("mriqc")
+__version__ = get_version('mriqc')
 _pre_exec_env = dict(os.environ)
 
 # Reduce numpy's vms by limiting OMP_NUM_THREADS
-_default_omp_threads = int(os.getenv("OMP_NUM_THREADS", os.cpu_count()))
+_default_omp_threads = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
 
 # Disable NiPype etelemetry always
 _disable_et = bool(
-    os.getenv("NO_ET") is not None or os.getenv("NIPYPE_NO_ET") is not None
+    os.getenv('NO_ET') is not None or os.getenv('NIPYPE_NO_ET') is not None
 )
-os.environ["NIPYPE_NO_ET"] = "1"
-os.environ["NO_ET"] = "1"
+os.environ['NIPYPE_NO_ET'] = '1'
+os.environ['NO_ET'] = '1'
 
-if not hasattr(sys, "_is_pytest_session"):
+if not hasattr(sys, '_is_pytest_session'):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
 # Disable all warnings in main and children processes only on production versions
 if not any(
     (
-        "+" in __version__,
-        __version__.endswith(".dirty"),
-        os.getenv("MRIQC_DEV", "0").lower() in ("1", "on", "true", "y", "yes"),
+        '+' in __version__,
+        __version__.endswith('.dirty'),
+        os.getenv('MRIQC_DEV', '0').lower() in ('1', 'on', 'true', 'y', 'yes'),
     )
 ):
-    os.environ["PYTHONWARNINGS"] = "ignore"
+    os.environ['PYTHONWARNINGS'] = 'ignore'
 
-logging.addLevelName(25, "IMPORTANT")  # Add a new level between INFO and WARNING
-logging.addLevelName(15, "VERBOSE")  # Add a new level between INFO and DEBUG
+logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
+logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 
-SUPPORTED_SUFFIXES = ("T1w", "T2w", "bold", "dwi")
+SUPPORTED_SUFFIXES = ('T1w', 'T2w', 'bold', 'dwi')
 
 DEFAULT_MEMORY_MIN_GB = 0.01
 DSA_MESSAGE = """\
@@ -143,64 +144,68 @@ Data Sharing Agreement."""
 _exec_env = os.name
 _docker_ver = None
 # special variable set in the container
-if os.getenv("IS_DOCKER_8395080871"):
-    _exec_env = "singularity"
-    _cgroup = Path("/proc/1/cgroup")
-    if _cgroup.exists() and "docker" in _cgroup.read_text():
-        _docker_ver = os.getenv("DOCKER_VERSION_8395080871")
-        _exec_env = "docker"
+if os.getenv('IS_DOCKER_8395080871'):
+    _exec_env = 'singularity'
+    _cgroup = Path('/proc/1/cgroup')
+    if _cgroup.exists() and 'docker' in _cgroup.read_text():
+        _docker_ver = os.getenv('DOCKER_VERSION_8395080871')
+        _exec_env = 'docker'
     del _cgroup
 
 _templateflow_home = Path(
     os.getenv(
-        "TEMPLATEFLOW_HOME",
-        os.path.join(os.getenv("HOME"), ".cache", "templateflow"),
+        'TEMPLATEFLOW_HOME',
+        os.path.join(os.getenv('HOME'), '.cache', 'templateflow'),
     )
 )
 
-try:
+_free_mem_at_start = None
+with suppress(Exception):
     from psutil import virtual_memory
 
     _free_mem_at_start = round(virtual_memory().free / 1024**3, 1)
-except Exception:
-    _free_mem_at_start = None
 
-_oc_limit = "n/a"
-_oc_policy = "n/a"
-try:
+_oc_limit = 'n/a'
+_oc_policy = 'n/a'
+with suppress(Exception):
     # Memory policy may have a large effect on types of errors experienced
-    _proc_oc_path = Path("/proc/sys/vm/overcommit_memory")
+    _proc_oc_path = Path('/proc/sys/vm/overcommit_memory')
     if _proc_oc_path.exists():
-        _oc_policy = {"0": "heuristic", "1": "always", "2": "never"}.get(
-            _proc_oc_path.read_text().strip(), "unknown"
+        _oc_policy = {'0': 'heuristic', '1': 'always', '2': 'never'}.get(
+            _proc_oc_path.read_text().strip(), 'unknown'
         )
-        if _oc_policy != "never":
-            _proc_oc_kbytes = Path("/proc/sys/vm/overcommit_kbytes")
+        if _oc_policy != 'never':
+            _proc_oc_kbytes = Path('/proc/sys/vm/overcommit_kbytes')
             if _proc_oc_kbytes.exists():
                 _oc_limit = _proc_oc_kbytes.read_text().strip()
             if (
-                _oc_limit in ("0", "n/a")
-                and Path("/proc/sys/vm/overcommit_ratio").exists()
+                _oc_limit in ('0', 'n/a')
+                and Path('/proc/sys/vm/overcommit_ratio').exists()
             ):
-                _oc_limit = "{}%".format(
-                    Path("/proc/sys/vm/overcommit_ratio").read_text().strip()
+                _oc_limit = '{}%'.format(
+                    Path('/proc/sys/vm/overcommit_ratio').read_text().strip()
                 )
-except Exception:
-    pass
 
 _memory_gb = None
-try:
-    if "linux" in sys.platform:
-        with open("/proc/meminfo", "r") as f_in:
+
+if 'linux' in sys.platform:
+    with suppress(Exception):
+        with open('/proc/meminfo') as f_in:
             _meminfo_lines = f_in.readlines()
-            _mem_total_line = [line for line in _meminfo_lines if "MemTotal" in line][0]
+            _mem_total_line = [line for line in _meminfo_lines if 'MemTotal' in line][0]
             _mem_total = float(_mem_total_line.split()[1])
             _memory_gb = _mem_total / (1024.0**2)
-    elif "darwin" in sys.platform:
-        _mem_str = os.popen("sysctl hw.memsize").read().strip().split(" ")[-1]
-        _memory_gb = float(_mem_str) / (1024.0**3)
-except Exception:
-    pass
+elif 'darwin' in sys.platform:
+    from shutil import which
+    from subprocess import check_output
+
+    if (_cmd := which('sysctl')):
+        with suppress(Exception):
+            _mem_str = check_output(
+                [_cmd, 'hw.memsize']
+            ).decode().strip().split(' ')[-1]
+            _memory_gb = float(_mem_str) / (1024.0**3)
+
 
 file_path: Path = None
 """
@@ -211,11 +216,11 @@ Path to configuration file.
 class _Config:
     """An abstract class forbidding instantiation."""
 
-    _paths = tuple()
+    _paths = ()
 
     def __init__(self):
         """Avert instantiation."""
-        raise RuntimeError("Configuration type is not instantiable.")
+        raise RuntimeError('Configuration type is not instantiable.')
 
     @classmethod
     def load(cls, settings, init=True):
@@ -240,7 +245,7 @@ class _Config:
         """Return defined settings."""
         out = {}
         for k, v in cls.__dict__.items():
-            if k.startswith("_") or v is None:
+            if k.startswith('_') or v is None:
                 continue
             if callable(getattr(cls, k)):
                 continue
@@ -276,9 +281,9 @@ class environment(_Config):
     """Linux's kernel virtual memory overcommit policy."""
     overcommit_limit = _oc_limit
     """Linux's kernel virtual memory overcommit limits."""
-    nipype_version = get_version("nipype")
+    nipype_version = get_version('nipype')
     """Nipype's current version."""
-    templateflow_version = get_version("templateflow")
+    templateflow_version = get_version('templateflow')
     """The TemplateFlow client version installed."""
     total_memory = _memory_gb
     """Total memory available, in GB."""
@@ -291,7 +296,7 @@ class environment(_Config):
 class nipype(_Config):
     """Nipype settings."""
 
-    crashfile_format = "txt"
+    crashfile_format = 'txt'
     """The file format for crashfiles, either text or pickle."""
     get_linked_libs = False
     """Run NiPype's tool to enlist linked libraries for every interface."""
@@ -303,11 +308,11 @@ class nipype(_Config):
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
     omp_nthreads = _default_omp_threads
     """Number of CPUs a single process can access for multithreaded execution."""
-    plugin = "MultiProc"
+    plugin = 'MultiProc'
     """NiPype's execution plugin."""
     plugin_args = {
-        "maxtasksperchild": 1,
-        "raise_insufficient": False,
+        'maxtasksperchild': 1,
+        'raise_insufficient': False,
     }
     """Settings for NiPype's execution plugin."""
     remove_node_directories = False
@@ -321,13 +326,13 @@ class nipype(_Config):
     def get_plugin(cls):
         """Format a dictionary for Nipype consumption."""
         out = {
-            "plugin": cls.plugin,
-            "plugin_args": cls.plugin_args,
+            'plugin': cls.plugin,
+            'plugin_args': cls.plugin_args,
         }
-        if cls.plugin in ("MultiProc", "LegacyMultiProc"):
-            out["plugin_args"]["n_procs"] = int(cls.nprocs)
+        if cls.plugin in ('MultiProc', 'LegacyMultiProc'):
+            out['plugin_args']['n_procs'] = int(cls.nprocs)
             if cls.memory_gb:
-                out["plugin_args"]["memory_gb"] = float(cls.memory_gb)
+                out['plugin_args']['memory_gb'] = float(cls.memory_gb)
         return out
 
     @classmethod
@@ -338,11 +343,11 @@ class nipype(_Config):
         # Nipype config (logs and execution)
         ncfg.update_config(
             {
-                "execution": {
-                    "crashdump_dir": str(execution.log_dir),
-                    "crashfile_format": cls.crashfile_format,
-                    "get_linked_libs": cls.get_linked_libs,
-                    "stop_on_first_crash": cls.stop_on_first_crash,
+                'execution': {
+                    'crashdump_dir': str(execution.log_dir),
+                    'crashfile_format': cls.crashfile_format,
+                    'get_linked_libs': cls.get_linked_libs,
+                    'stop_on_first_crash': cls.stop_on_first_crash,
                 }
             }
         )
@@ -369,7 +374,7 @@ class execution(_Config):
     """Run in sloppy mode (meaning, suboptimal parameters that minimize run-time)."""
     dry_run = False
     """Just test, do not run."""
-    dsname = "<unset>"
+    dsname = '<unset>'
     """A dataset name used when generating files from the rating widget."""
     echo_id = None
     """Select a particular echo for multi-echo EPI datasets."""
@@ -399,7 +404,7 @@ class execution(_Config):
     """Enable resource monitor."""
     run_id = None
     """Filter input dataset by run identifier."""
-    run_uuid = "{}_{}".format(strftime("%Y%m%d-%H%M%S"), uuid4())
+    run_uuid = '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4())
     """Unique identifier of this particular run."""
     session_id = None
     """Filter input dataset by session identifier."""
@@ -411,11 +416,11 @@ class execution(_Config):
     """Workflow will crash if upload is not successful."""
     verbose_reports = False
     """Generate extended reports."""
-    webapi_token = "<secret_token>"
+    webapi_token = '<secret_token>'
     """Authorization token for the WebAPI service."""
-    webapi_url = "https://mriqc.nimh.nih.gov:443/api/v1"
+    webapi_url = 'https://mriqc.nimh.nih.gov:443/api/v1'
     """IP address where the MRIQC WebAPI is listening."""
-    work_dir = Path("work").absolute()
+    work_dir = Path('work').absolute()
     """Path to a working directory where intermediate results will be available."""
     write_graph = False
     """Write out the computational graph corresponding to the planned preprocessing."""
@@ -423,16 +428,16 @@ class execution(_Config):
     _layout = None
 
     _paths = (
-        "anat_derivatives",
-        "bids_dir",
-        "bids_database_dir",
-        "fs_license_file",
-        "fs_subjects_dir",
-        "layout",
-        "log_dir",
-        "output_dir",
-        "templateflow_home",
-        "work_dir",
+        'anat_derivatives',
+        'bids_dir',
+        'bids_database_dir',
+        'fs_license_file',
+        'fs_subjects_dir',
+        'layout',
+        'log_dir',
+        'output_dir',
+        'templateflow_home',
+        'work_dir',
     )
 
     @classmethod
@@ -445,31 +450,32 @@ class execution(_Config):
         # Process --run-id if the argument was provided
         if cls.run_id:
             for mod in cls.modalities:
-                cls.bids_filters.setdefault(mod.lower(), {})["run"] = cls.run_id
+                cls.bids_filters.setdefault(mod.lower(), {})['run'] = cls.run_id
 
         if cls._layout is None:
             import re
-            from bids.layout.index import BIDSLayoutIndexer
+
             from bids.layout import BIDSLayout
+            from bids.layout.index import BIDSLayoutIndexer
 
             ignore_paths = [
                 # Ignore folders at the top if they don't start with /sub-<label>/
-                re.compile(r"^(?!/sub-[a-zA-Z0-9]+)"),
+                re.compile(r'^(?!/sub-[a-zA-Z0-9]+)'),
                 # Ignore all modality subfolders, except for func/ or anat/
                 re.compile(
-                    r"^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/"
-                    r"(beh|fmap|pet|perf|meg|eeg|ieeg|micr|nirs)"
+                    r'^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/'
+                    r'(beh|fmap|pet|perf|meg|eeg|ieeg|micr|nirs)'
                 ),
                 # Ignore all files, except for the supported modalities
-                re.compile(r"^.+(?<!(_T1w|_T2w|bold|_dwi))\.(json|nii|nii\.gz)$"),
+                re.compile(r'^.+(?<!(_T1w|_T2w|bold|_dwi))\.(json|nii|nii\.gz)$'),
             ]
 
             if cls.participant_label:
                 # If we know participant labels, ignore all other
                 ignore_paths[0] = re.compile(
-                    r"^(?!/sub-("
-                    + "|".join(cls.participant_label)
-                    + r"))"
+                    r'^(?!/sub-('
+                    + '|'.join(cls.participant_label)
+                    + r'))'
                 )
 
             # Recommended after PyBIDS 12.1
@@ -481,11 +487,11 @@ class execution(_Config):
             # Initialize database in a multiprocessing-safe manner
             _db_path = (
                 cls.work_dir if cls.participant_label else cls.output_dir
-            ) / f".bids_db-{cls.run_uuid}"
+            ) / f'.bids_db-{cls.run_uuid}'
 
             if cls.bids_database_dir is None:
                 cls.bids_database_dir = (
-                    cls.output_dir / ".bids_db"
+                    cls.output_dir / '.bids_db'
                     if not cls.participant_label else _db_path
                 )
 
@@ -521,7 +527,7 @@ del _oc_policy
 class workflow(_Config):
     """Configure the particular execution graph of this workflow."""
 
-    analysis_level = ["participant"]
+    analysis_level = ['participant']
     """Level of analysis."""
     biggest_file_gb = 1
     """Size of largest file in GB."""
@@ -537,22 +543,22 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     inputs = None
     """List of files to be processed with MRIQC."""
-    species = "human"
+    species = 'human'
     """Subject species to choose most appropriate template"""
-    template_id = "MNI152NLin2009cAsym"
+    template_id = 'MNI152NLin2009cAsym'
     """TemplateFlow ID of template used for the anatomical processing."""
 
 
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
-    _fmt = "%(asctime)s,%(msecs)d %(name)-2s " "%(levelname)-2s:\n\t %(message)s"
-    _datefmt = "%y%m%d-%H:%M:%S"
+    _fmt = '%(asctime)s,%(msecs)d %(name)-2s ' '%(levelname)-2s:\n\t %(message)s'
+    _datefmt = '%y%m%d-%H:%M:%S'
     _init = False
 
     default = logging.getLogger()
     """The root logger."""
-    cli = logging.getLogger("cli")
+    cli = logging.getLogger('cli')
     """Command-line interface logging."""
     workflow = None
     """NiPype's workflow logger."""
@@ -572,12 +578,12 @@ class loggers:
 
         """
         if not cls._init:
-            from nipype import logging as nlogging
             from nipype import config as ncfg
+            from nipype import logging as nlogging
 
-            cls.workflow = nlogging.getLogger("nipype.workflow")
-            cls.interface = nlogging.getLogger("nipype.interface")
-            cls.utils = nlogging.getLogger("nipype.utils")
+            cls.workflow = nlogging.getLogger('nipype.workflow')
+            cls.interface = nlogging.getLogger('nipype.interface')
+            cls.utils = nlogging.getLogger('nipype.utils')
 
             if not len(cls.cli.handlers):
                 _handler = logging.StreamHandler(stream=sys.stdout)
@@ -588,9 +594,9 @@ class loggers:
 
             ncfg.update_config(
                 {
-                    "logging": {
-                        "log_directory": str(execution.log_dir),
-                        "log_to_file": True,
+                    'logging': {
+                        'log_directory': str(execution.log_dir),
+                        'log_to_file': True,
                     },
                 }
             )
@@ -629,7 +635,7 @@ def load(filename):
     filename = Path(filename)
     settings = loads(filename.read_text())
     for sectionname, configs in settings.items():
-        if sectionname != "environment":
+        if sectionname != 'environment':
             section = getattr(sys.modules[__name__], sectionname)
             section.load(configs)
 
@@ -637,16 +643,16 @@ def load(filename):
 def get(flat=False):
     """Get config as a dict."""
     settings = {
-        "environment": environment.get(),
-        "execution": execution.get(),
-        "workflow": workflow.get(),
-        "nipype": nipype.get(),
+        'environment': environment.get(),
+        'execution': execution.get(),
+        'workflow': workflow.get(),
+        'nipype': nipype.get(),
     }
     if not flat:
         return settings
 
     return {
-        ".".join((section, k)): v
+        '.'.join((section, k)): v
         for section, configs in settings.items()
         for k, v in configs.items()
     }
@@ -671,8 +677,8 @@ def _process_initializer(config_file: Path):
     from mriqc import config
 
     # Disable eTelemetry
-    os.environ["NIPYPE_NO_ET"] = "1"
-    os.environ["NO_ET"] = "1"
+    os.environ['NIPYPE_NO_ET'] = '1'
+    os.environ['NO_ET'] = '1'
 
     # Load config
     config.load(config_file)
@@ -687,7 +693,7 @@ def _process_initializer(config_file: Path):
     os.chdir(config.execution.cwd)
 
     # Set the maximal number of threads per process
-    os.environ["OMP_NUM_THREADS"] = f"{config.nipype.omp_nthreads}"
+    os.environ['OMP_NUM_THREADS'] = f'{config.nipype.omp_nthreads}'
 
 
 def restore_env():

@@ -22,42 +22,43 @@
 #
 """py.test configuration"""
 import os
-from sys import version_info
+import tempfile
 from pathlib import Path
-import numpy as np
+from sys import version_info
+
 import nibabel as nb
+import numpy as np
 import pandas as pd
 import pytest
-import tempfile
 
 # disable ET
 os.environ['NO_ET'] = '1'
 
-_datadir = (Path(__file__).parent / "data" / "tests").resolve(strict=True)
-niprepsdev_path = os.getenv("TEST_DATA_HOME", str(Path.home() / ".cache" / "mriqc"))
-test_output_dir = os.getenv("TEST_OUTPUT_DIR")
-test_workdir = os.getenv("TEST_WORK_DIR")
+_datadir = (Path(__file__).parent / 'data' / 'tests').resolve(strict=True)
+niprepsdev_path = os.getenv('TEST_DATA_HOME', str(Path.home() / '.cache' / 'mriqc'))
+test_output_dir = os.getenv('TEST_OUTPUT_DIR')
+test_workdir = os.getenv('TEST_WORK_DIR')
 
 
 @pytest.fixture(autouse=True)
 def expand_namespace(doctest_namespace):
-    doctest_namespace["PY_VERSION"] = version_info
-    doctest_namespace["np"] = np
-    doctest_namespace["nb"] = nb
-    doctest_namespace["pd"] = pd
-    doctest_namespace["os"] = os
-    doctest_namespace["pytest"] = pytest
-    doctest_namespace["Path"] = Path
-    doctest_namespace["testdata_path"] = _datadir
-    doctest_namespace["niprepsdev_path"] = niprepsdev_path
+    doctest_namespace['PY_VERSION'] = version_info
+    doctest_namespace['np'] = np
+    doctest_namespace['nb'] = nb
+    doctest_namespace['pd'] = pd
+    doctest_namespace['os'] = os
+    doctest_namespace['pytest'] = pytest
+    doctest_namespace['Path'] = Path
+    doctest_namespace['testdata_path'] = _datadir
+    doctest_namespace['niprepsdev_path'] = niprepsdev_path
 
-    doctest_namespace["os"] = os
-    doctest_namespace["Path"] = Path
+    doctest_namespace['os'] = os
+    doctest_namespace['Path'] = Path
 
     tmpdir = tempfile.TemporaryDirectory()
-    doctest_namespace["tmpdir"] = tmpdir.name
+    doctest_namespace['tmpdir'] = tmpdir.name
 
-    doctest_namespace["output_dir"] = (
+    doctest_namespace['output_dir'] = (
         Path(test_output_dir) if test_output_dir is not None else Path(tmpdir.name)
     )
 
@@ -68,16 +69,16 @@ def expand_namespace(doctest_namespace):
     tmpdir.cleanup()
 
 
-@pytest.fixture
+@pytest.fixture()
 def testdata_path():
     return _datadir
 
 
-@pytest.fixture
+@pytest.fixture()
 def workdir():
     return None if test_workdir is None else Path(test_workdir)
 
 
-@pytest.fixture
+@pytest.fixture()
 def outdir():
     return None if test_output_dir is None else Path(test_output_dir)

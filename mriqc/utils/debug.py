@@ -57,13 +57,13 @@ def setup_exceptionhook(ipython=False):
     pdb.post_mortem; if not interactive, then invokes default handler.
     """
 
-    def _pdb_excepthook(type, value, tb):
+    def _pdb_excepthook(exc_type, value, tb):
         import traceback
 
-        traceback.print_exception(type, value, tb)
+        traceback.print_exception(exc_type, value, tb)
         print()
         if is_interactive():
-            import pdb
+            import pdb  # noqa: T100
 
             pdb.post_mortem(tb)
 
@@ -71,7 +71,7 @@ def setup_exceptionhook(ipython=False):
         from IPython.core import ultratb
 
         sys.excepthook = ultratb.FormattedTB(
-            mode="Verbose",
+            mode='Verbose',
             # color_scheme='Linux',
             call_pdb=is_interactive(),
         )

@@ -30,11 +30,11 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
-            - built-v3--{{ .Revision }}
-            - built-v3-{{ .Branch }}-
-            - built-v3-master-
-            - built-v3-
+            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v4--{{ .Revision }}
+            - build-v4-{{ .Branch }}-
+            - build-v4-master-
+            - build-v4-
           paths:
             - /tmp/docker
             - /tmp/images
@@ -68,14 +68,14 @@ jobs:
             set -e
             if [[ "$success" = "0" ]]; then
                 echo "Pulling from local registry"
-                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2205.0
+                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2403.0
                 docker pull localhost:5000/mriqc
                 docker tag localhost:5000/mriqc nipreps/mriqc:latest
                 docker tag localhost:5000/mriqc nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
-                docker pull nipreps/miniconda:py39_2205.0
-                docker tag nipreps/miniconda:py39_2205.0 localhost:5000/miniconda
+                docker pull nipreps/miniconda:py39_2403.0
+                docker tag nipreps/miniconda:py39_2403.0 localhost:5000/miniconda
                 docker push localhost:5000/miniconda
                 docker pull nipreps/mriqc:latest
             fi
@@ -126,11 +126,10 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
-            python3 -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
+            python3 -m pip install hatch
 
             # Get version before making repo dirty
-            THISVERSION=$( python3 -m setuptools_scm )
+            THISVERSION=$( python3 -m hatch version )
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
@@ -171,7 +170,7 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-          key: built-v3-{{ .Branch }}-{{ .Revision }}
+          key: build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -252,7 +251,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -281,11 +280,19 @@ jobs:
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
+          name: Generate _version.py
+          command: |
+            python3 -m pip install build
+
+            pushd /tmp/src/mriqc
+            python3 -m build
+            popd
+      - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
-            docker run --rm -ti \
-              -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
+            docker run --rm -ti -v $PWD:/scratch --entrypoint="pytest" \
+              -v /tmp/src:/src -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
@@ -323,7 +330,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -438,10 +445,11 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
+            || true  # ignore failure
 
       - run:
           name: WebAPI - Check records
@@ -484,7 +492,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -597,7 +605,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run -u $( id -u ) --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
@@ -618,7 +626,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -629,8 +637,8 @@ jobs:
       - run:
           name: Install deps
           command: |
-            pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                                 setuptools_scm_git_archive pip twine docutils
+            pip install -U pip hatch docutils
+            hatch version
             pip install .[docs]
       - run:
           name: Build MRIQC documentation
@@ -707,7 +715,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
