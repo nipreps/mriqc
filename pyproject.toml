@@ -187,12 +187,15 @@ per-file-ignores = [
 ]
 
 [tool.pytest.ini_options]
+minversion = "7"
+log_cli_level = "INFO"
 norecursedirs = [".git"]
-addopts = "-svx --doctest-modules"
+addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
 junit_family = "xunit2"
+xfail_strict = true
 
 
 [tool.coverage.run]
