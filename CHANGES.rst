@@ -1,3 +1,56 @@
+23.1.1 (March 20, 2024)
+=======================
+A long-overdue hotfix release addressing many bugs generated during the development
+of the new dMRI workflows, and some relating to improvements of the handling of
+multi-echo fMRI.
+The release also include one year-worth of maintenance actions and a general code
+cleanup with *Ruff*.
+
+CHANGES
+-------
+
+* FIX: Revise porting to ``Loader`` (#1201)
+* FIX: Revise the last two sloppy merges (#1200)
+* FIX: Move from ``pkg_resources`` to ``niworkflows.data.Loader`` (#1199)
+* FIX: DIPY not listed as a dependency (#1197)
+* FIX: Include ``dwidenoise`` within docker image (#1196)
+* FIX: Copy name attribute of ``dataset_description.json`` from input dataset  (#1187)
+* FIX: Remove FD as an ``iterfield`` in ``MapNode`` causing crash with ME-BOLD (#1179)
+* FIX: Incorrect plugin metadata passed to *Report Assembler* (#1188)
+* FIX: Temporary fix of the missing ``"dwi"`` key (#1174)
+* FIX: Rearrange multi-echo report (#1164)
+* FIX: Typo in ``inputnode`` field in dMRI masking workflow (#1165)
+* FIX: Finalize DWI workflow (#1148)
+* FIX: Bugs in DWI workflow (#1147)
+* FIX: Bug in group level workflow (#1148)
+* FIX: Use simpler DWI reference workflow (#1145)
+* FIX: Drop deprecated *Networkx*'s API (#1137)
+* FIX: replace ``np.float`` by ``np.float64`` (#1140)
+* ENH: Improved logging and optimize early checkpoint on subjects (#1198)
+* ENH: store confound timeseries data (#1166)
+* ENH: Large overhaul of the functional workflow w/focus on ME-EPI (#1155)
+* ENH: Implement BIDS filters file and drop legacy BIDS querying (#1154)
+* ENH: Swap background and zoomed-in visualizations in anatomical reports (#1151)
+* MAINT: Test on *Python* 3.12 (#1156)
+* MAINT: Disable flaky T1w test on CircleCI (#1202)
+* MAINT: Overhaul of the ``Dockerfile`` (#1195)
+* MAINT: Revise package's extra dependencies (#1194)
+* MAINT: Clean up some ``setuptools_scm`` remnants (#1193)
+* MAINT: load ``FMRISummary`` from *NiReports* rather than *NiWorkflows* (#1167)
+* MAINT: Update to latest *migas*' API (#1160)
+* MAINT: Update bold to large resource class in ``config.yml`` (#1158)
+* MAINT: Refresh cached intermediate results (#1143)
+* MAINT: Simplify GitHub actions checks and update action versions (#1141)
+* MAINT: Python 3.11 is supported (#1123)
+* MAINT: Apply suggestions from pyupgrade (#1124)
+* DOC: Update *Sphinx* pinned version to 5 (#1192)
+* DOC: http:// → https:// (#1126)
+* DOC: Add info on the *FreeSurfer* requirement for bare install to address #1034 (#1130)
+* STY: Add *Ruff* config and fix all warnings and errors (#1203)
+* STY: Remove extraneous parentheses (#1186)
+* STY: Apply a few refurb suggestions (#1162)
+* STY: Fix typo found by codespell (#1161)
+
 23.1.0 (June 14, 2023)
 ======================
 A new minor release featuring the new individual reports built with the new
