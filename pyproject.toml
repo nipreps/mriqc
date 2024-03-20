@@ -34,7 +34,7 @@ dependencies = [
     "nipype ~= 1.4",
     "nireports ~= 23.1",
     "nitransforms ~= 23.0",
-    "niworkflows @ git+https://github.com/nipreps/niworkflows.git@master", 
+    "niworkflows ~=1.10.1", 
     "numpy ~=1.20",
     "pandas ~=1.0",
     "pybids >= 0.15.6",
