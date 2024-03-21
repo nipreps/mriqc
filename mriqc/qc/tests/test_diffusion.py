@@ -21,30 +21,33 @@
 #     https://www.nipreps.org/community/licensing/
 #
 
-import pytest
-import numpy as np
-import nibabel as nib
-from dipy.core.gradients import gradient_table
-from dipy.data.fetcher import fetch_sherbrooke_3shell
-from dipy.core.gradients import round_bvals
 import os.path as op
-from ..diffusion import (noise_func,
-                         noise_func_for_shelled_data,
-                         get_spike_mask,
-                         get_slice_spike_percentage,
-                         get_global_spike_percentage,
-                         cc_snr)
+
+import nibabel as nib
+import numpy as np
+import pytest
+from dipy.core.gradients import gradient_table, round_bvals
+from dipy.data.fetcher import fetch_sherbrooke_3shell
+
+from ..diffusion import (
+    cc_snr,
+    get_global_spike_percentage,
+    get_slice_spike_percentage,
+    get_spike_mask,
+    noise_func,
+    noise_func_for_shelled_data,
+)
 
 
-class DiffusionData(object):
+class DiffusionData:
     def get_data(self):
         """
         Generate test data
         """
         _, path = fetch_sherbrooke_3shell()
         fnifti = op.join(path, 'HARDI193.nii.gz')
-        fnifti, bval, bvec = [op.join(path, f'HARDI193.{ext}') for
-                              ext in ["nii.gz", "bval", "bvec"]]
+        fnifti, bval, bvec = (op.join(path, f'HARDI193.{ext}') for
+                              ext in ['nii.gz', 'bval', 'bvec'])
         img = nib.load(fnifti)
         data = img.get_fdata()
         gtab = gradient_table(bval, bvec)
@@ -62,7 +65,7 @@ class DiffusionData(object):
         return out_data, gtab
 
 
-@pytest.fixture
+@pytest.fixture()
 def ddata():
     return DiffusionData()
 

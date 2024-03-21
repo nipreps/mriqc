@@ -25,46 +25,139 @@
 """
 Image quality metrics for diffusion MRI data
 ============================================
+
+IQMs relating to spatial information
+------------------------------------
+Definitions are given in the :ref:`summary of structural IQMs <iqms_t1w>`.
+
+.. _iqms_efc:
+
+- **Entropy-focus criterion** (:py:func:`~mriqc.qc.anatomical.efc`).
+
+.. _iqms_fber:
+
+- **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
+
+.. _iqms_fwhm:
+
+- **Full-width half maximum smoothness** (``fwhm_*``, see [Friedman2008]_).
+
+.. _iqms_snr:
+
+- **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
+
+.. _iqms_summary:
+
+- **Summary statistics** (:py:func:`~mriqc.qc.anatomical.summary_stats`).
+
+IQMs relating to diffusion weighting
+------------------------------------
+IQMs specific to diffusion weighted imaging.
+
+.. _iqms_piesno:
+
+Noise in raw dMRI estimated with PIESNO (``piesno_sigma``)
+    Employs PIESNO (Probabilistic Identification and Estimation
+    of Noise) algorithm [1]_ to estimate the standard deviation (sigma) of the
+    noise in each voxel of a 4D dMRI data array.
+
+.. _iqms_cc_snr:
+
+SNR estimated in the Corpus Callosum (``cc_snr``)
+    Worst-case and best-case signal-to-noise ratio (SNR) within the corpus callosum.
+
+IQMs relating artifacts and other
+---------------------------------
+IQMs targeting artifacts that are specific of DWI images.
+
+.. _iqms_spike_percentage:
+
+Global and slice-wise spike percentages (``spike_perc``)
+    Voxels classified as spikes. The spikes mask is calculated by identifing
+    voxels with signal intensities exceeding a threshold based on standard
+    deviations above the mean.
+
 """
+from __future__ import annotations
 
 import numpy as np
-from dipy.core.gradients import GradientTable
-from dipy.reconst.dti import TensorModel
-from dipy.denoise.noise_estimate import piesno
-from dipy.core.gradients import unique_bvals_magnitude
-from dipy.core.gradients import round_bvals
-from dipy.segment.mask import segment_from_cfa
-from dipy.segment.mask import bounding_box
 
 
-def noise_func(img, gtab):
-    pass
-
-
-def noise_b0(data, gtab, mask=None):
+def noise_b0(
+    in_b0: np.ndarray,
+    percentiles: tuple[float, float, float] = (25., 50., 75.),
+    mask: np.ndarray | None = None
+) -> dict[str, float]:
     """
-    Estimate noise in raw dMRI based on b0 variance.
+    Estimates noise levels in raw dMRI data using the variance of the $b$=0 volumes.
+
+    This function calculates the variance of the $b$=0 volumes in a 4D dMRI array
+    within a provided mask. It then computes the noise estimates at specified
+    percentiles of the variance distribution. This approach assumes that noise primarily
+    contributes to the lower end of the variance distribution.
+
+    Parameters:
+    ----------
+    in_b0 : :obj:`~numpy.ndarray`
+        The 3D or 4D dMRI data array. If 4D, the first volume (assumed to be
+        the $b$=0 image) is used for noise estimation.
+    percentiles : :obj:`tuple`(float, float, float), optional (default=(25, 50, 75))
+        A tuple of three integers specifying the percentiles of the variance
+        distribution to use for noise estimation. These percentiles represent
+        different noise levels within the data.
+    mask : :obj:`~numpy.ndarray`, optional (default=``None``)
+        A boolean mask used to restrict the noise estimation to specific brain regions.
+        If ``None``, a mask of ones with the same shape as the first 3 dimensions of
+        ``in_b0`` is used.
+
+    Returns:
+    -------
+    noise_estimates : :obj:`dict`
+        A dictionary containing the noise estimates at the specified percentiles:
+            * keys: :obj:`str` - Percentile values (e.g., '25', '50', '75').
+            * values: :obj:`float` - Noise level estimates at the corresponding percentiles.
+    """
+
+    if in_b0.ndim != 4:
+        return None
+
+    data = in_b0[
+        np.ones(in_b0.shape[:3], dtype=bool) if mask is None else mask
+    ]
+    variance = np.var(data, -1)
+    noise_estimates = dict(zip(
+        (f'{p}' for p in percentiles),
+        np.percentile(variance, percentiles),
+    ))
+
+    return noise_estimates
+
+
+def noise_piesno(data: np.ndarray, n_channels: int = 4) -> (np.ndarray, np.ndarray):
+    """
+    Estimates noise in raw diffusion MRI (dMRI) data using the PIESNO algorithm.
+
+    This function implements the PIESNO (Probabilistic Identification and Estimation
+    of Noise) algorithm [1]_ to estimate the standard deviation (sigma) of the
+    noise in each voxel of a 4D dMRI data array. The PIESNO algorithm assumes Rician
+    distributed signal and exploits the statistical properties of the noise to
+    separate it from the underlying signal.
 
     Parameters
     ----------
-    """
-    if mask is None:
-        mask = np.ones(data.shape[:3], dtype=bool)
-    b0 = data[..., ~gtab.b0s_mask]
-    return np.percentile(np.var(b0[mask], -1), (25, 50, 75))
-
-
-def noise_piesno(data, n_channels=4):
-    """
-    Estimate noise in raw dMRI data using the PIESNO [1]_ algorithm.
-
-
-    Parameters
-    ----------
+    data : :obj:`~numpy.ndarray`
+        The 4D raw dMRI data array.
+    n_channels : :obj:`int`, optional (default=4)
+        The number of diffusion-encoding channels in the data. This value is used
+        internally by the PIESNO algorithm.
 
     Returns
     -------
-
+    sigma : :obj:`~numpy.ndarray`
+        The estimated noise standard deviation for each voxel in the data array.
+    mask : :obj:`~numpy.ndarray`
+        A brain mask estimated by PIESNO. This mask identifies voxels containing
+        mostly noise and can be used for further processing.
 
     Notes
     -----
@@ -73,201 +166,128 @@ def noise_piesno(data, n_channels=4):
            and Estimation of Noise (PIESNO): A self-consistent approach and
            its applications in MRI. JMR, 199(1):94-103, 2009.
     """
+    from dipy.denoise.noise_estimate import piesno
+
     sigma, mask = piesno(data, N=n_channels, return_mask=True)
     return sigma, mask
 
 
-def cc_snr(data, gtab, bmag=None, mask=None):
+def cc_snr(
+    in_b0: np.ndarray,
+    dwi_shells: list[np.ndarray],
+    cc_mask: np.ndarray,
+    b_values: np.ndarray,
+    b_vectors: np.ndarray,
+) -> dict[int, (float, float)]:
     """
-    Calculate worse-/best-case signal-to-noise ratio in the corpus callosum
+    Calculates the worst-case and best-case signal-to-noise ratio (SNR) within the corpus callosum.
+
+    This function estimates the SNR in the corpus callosum (CC) by comparing the
+    mean signal intensity within the CC mask to the standard deviation of the background
+    signal (extracted from the b0 image). It performs separate calculations for
+    each diffusion-weighted imaging (DWI) shell.
+
+    **Worst-case SNR:** The mean signal intensity along the diffusion direction with the
+    lowest signal is considered the worst-case scenario.
+
+    **Best-case SNR:** The mean signal intensity averaged across the two diffusion
+    directions with the highest signal is considered the best-case scenario.
 
     Parameters
     ----------
-    data : ndarray
+    in_b0 : :obj:`~numpy.ndarray` (float, 3D)
+        T1-weighted or b0 image used for background signal estimation.
+    dwi_shells : list[:obj:`~numpy.ndarray` (float, 4D)]
+        List of DWI data for each diffusion shell.
+    cc_mask : :obj:`~numpy.ndarray` (bool, 3D)
+        Boolean mask of the corpus callosum.
+    b_values : :obj:`~numpy.ndarray` (int)
+        Array of b-values for each DWI volume in ``dwi_shells``.
+    b_vectors : :obj:`~numpy.ndarray` (float)
+        Array of diffusion-encoding vectors for each DWI volume in ``dwi_shells``.
 
-    gtab : GradientTable class instance or tuple
-
-    bmag : int
-        From dipy.core.gradients:
-        The order of magnitude that the bvalues have to differ to be
-        considered an unique b-value. B-values are also rounded up to
-        this order of magnitude. Default: derive this value from the
-        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
-
-    mask : numpy array
-        Boolean brain mask
+    Returns
+    -------
+    cc_snr_estimates : :obj:`dict`
+        Dictionary containing SNR estimates for each b-value. Keys are the b-values
+        (integers), and values are tuples containing two elements:
+            * The first element is the worst-case SNR (float).
+            * The second element is the best-case SNR (float).
     """
-    if isinstance(gtab, GradientTable):
-        pass
 
-    if mask is None:
-        mask = np.ones(data.shape[:3])
+    std_signal = in_b0[cc_mask].std()
 
-    tenmodel = TensorModel(gtab)
-    tensorfit = tenmodel.fit(data, mask=mask)
+    cc_snr_estimates = {}
 
-    threshold = (0.6, 1, 0, 0.1, 0, 0.1)
-    CC_box = np.zeros_like(data[..., 0])
-
-    mins, maxs = bounding_box(mask)  # mask needs to be volume
-    mins = np.array(mins)
-    maxs = np.array(maxs)
-    diff = (maxs - mins) // 4
-    bounds_min = mins + diff
-    bounds_max = maxs - diff
-
-    CC_box[bounds_min[0]:bounds_max[0],
-           bounds_min[1]:bounds_max[1],
-           bounds_min[2]:bounds_max[2]] = 1
-
-    mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
-                                         return_cfa=True)
-
-    b0_data = data[..., gtab.b0s_mask]
-    std_signal = np.std(b0_data[mask_cc_part], axis=-1)
-
-    # Per-shell calculation
-    rounded_bvals = round_bvals(gtab.bvals, bmag)
-    bvals = unique_bvals_magnitude(gtab.bvals, bmag)
-
-    cc_snr_best = np.zeros(gtab.bvals.shape)
-    cc_snr_worst = np.zeros(gtab.bvals.shape)
-
-    for ind, bval in enumerate(bvals):
+    # Shell-wise calculation
+    for bval, bvecs, shell_data in zip(b_values, b_vectors, dwi_shells):
         if bval == 0:
-            mean_signal = np.mean(data[..., rounded_bvals == 0], axis=-1)
-            cc_snr_worst[ind] = np.mean(mean_signal / std_signal)
-            cc_snr_best[ind] = np.mean(mean_signal / std_signal)
+            cc_snr_estimates[int(bval)] = in_b0[cc_mask].mean() / std_signal
             continue
 
-        bval_data = data[..., rounded_bvals == bval]
-        bval_bvecs = gtab.bvecs[rounded_bvals == bval]
-
+        # Find main directions of diffusion
         axis_X = np.argmin(np.sum(
-            (bval_bvecs - np.array([1, 0, 0])) ** 2, axis=-1))
+            (bvecs - np.array([1, 0, 0])) ** 2, axis=-1))
         axis_Y = np.argmin(np.sum(
-            (bval_bvecs - np.array([0, 1, 0])) ** 2, axis=-1))
+            (bvecs - np.array([0, 1, 0])) ** 2, axis=-1))
         axis_Z = np.argmin(np.sum(
-            (bval_bvecs - np.array([0, 0, 1])) ** 2, axis=-1))
+            (bvecs - np.array([0, 0, 1])) ** 2, axis=-1))
 
-        data_X = bval_data[..., axis_X]
-        data_Y = bval_data[..., axis_Y]
-        data_Z = bval_data[..., axis_Z]
+        data_X = shell_data[..., axis_X]
+        data_Y = shell_data[..., axis_Y]
+        data_Z = shell_data[..., axis_Z]
 
-        mean_signal_X = np.mean(data_X[mask_cc_part])
-        mean_signal_Y = np.mean(data_Y[mask_cc_part])
-        mean_signal_Z = np.mean(data_Z[mask_cc_part])
+        mean_signal_X = np.mean(data_X[cc_mask])
+        mean_signal_Y = np.mean(data_Y[cc_mask])
+        mean_signal_Z = np.mean(data_Z[cc_mask])
 
-        cc_snr_worst[ind] = np.mean(mean_signal_X / std_signal)
-        cc_snr_best[ind] = np.mean(np.mean(mean_signal_Y,
-                                           mean_signal_Z) / std_signal)
+        cc_snr_estimates[int(bval)] = (
+            np.mean(mean_signal_X / std_signal),  # worst
+            np.mean(np.mean(mean_signal_Y, mean_signal_Z) / std_signal),  # best
+        )
 
-    return cc_snr_worst, cc_snr_best
+    return cc_snr_estimates
 
 
-def get_spike_mask(data, z_threshold=3, grouping_vals=None, bmag=None):
+def spike_percentage(
+    data: np.ndarray,
+    spike_mask: np.ndarray,
+    slice_threshold: float = 0.05,
+) -> dict[str, float | np.ndarray]:
     """
-    Return binary mask of spike/no spike
+    Calculates the percentage of voxels classified as spikes (global and slice-wise).
 
-    Parameters
+    This function computes two metrics:
+
+    * Global spike percentage: The average fraction of voxels exceeding the spike
+      threshold across the entire data array.
+    * Slice-wise spiking percentage: The fraction of slices along each dimension of
+      the data array where the average fraction of spiking voxels within the slice
+      exceeds a user-defined threshold (``slice_threshold``).
+
+    Parameters:
     ----------
-    data : numpy array
-        Data to be thresholded
-    z_threshold : :obj:`float`
-        Number of standard deviations above the mean to use as spike threshold
-    grouping_vals : numpy array
-        Values by which to group data for thresholding (bvals or full mask)
-    bmag : int
-        From dipy.core.gradients:
-        The order of magnitude that the bvalues have to differ to be
-        considered an unique b-value. B-values are also rounded up to
-        this order of magnitude. Default: derive this value from the
-        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+    data : :obj:`~numpy.ndarray` (float, 4D)
+        The data array used to generate the spike mask.
+    spike_mask : :obj:`~numpy.ndarray` (bool, same shape as data)
+        The binary mask indicating spike voxels (True) and non-spike voxels (False).
+    slice_threshold : :obj:`float`, optional (default=0.05)
+        The minimum fraction of voxels in a slice that must be classified as spikes
+        for the slice to be considered spiking.
 
-    Returns
-    ---------
-    numpy array
+    Returns:
+    -------
+    :obj:`dict`
+        A dictionary containing the calculated spike percentages:
+            * 'spike_perc_global': :obj:`float` - Global percentage of spiking voxels.
+            * 'spike_perc_slice': :obj:`list` of :obj:`float` - List of slice-wise
+              spiking percentages for each dimension of the data array.
     """
-    if grouping_vals is None:
-        threshold = (z_threshold * np.std(data)) + np.mean(data)
-        spike_mask = data > threshold
-        return spike_mask
 
-    threshold_mask = np.zeros(data.shape)
+    spike_perc_global = float(np.mean(np.ravel(spike_mask)))
+    spike_perc_slice = [
+        float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold))
+        for axis in range(data.ndim)
+    ]
 
-    rounded_grouping_vals = round_bvals(grouping_vals, bmag)
-    gvals = unique_bvals_magnitude(grouping_vals, bmag)
-
-    if grouping_vals.shape == data.shape:
-        for gval in gvals:
-            gval_data = data[rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data))
-                              + np.mean(gval_data))
-            threshold_mask[rounded_grouping_vals == gval] = (
-                gval_threshold * np.ones(gval_data.shape))
-    else:
-        for gval in gvals:
-            gval_data = data[..., rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data))
-                              + np.mean(gval_data))
-            threshold_mask[..., rounded_grouping_vals == gval] = (
-                gval_threshold * np.ones(gval_data.shape))
-
-    spike_mask = data > threshold_mask
-
-    return spike_mask
-
-
-def get_slice_spike_percentage(data, z_threshold=3, slice_threshold=.05):
-    """
-    Return percentage of slices spiking along each dimension
-
-    Parameters
-    ----------
-    data : numpy array
-        Data to be thresholded
-    z_threshold : :obj:`float`
-        Number of standard deviations above the mean to use as spike threshold.
-    slice_threshold : :obj:`float`
-        Percentage of slice elements that need to be above spike threshold
-        for slice to be considered spiking.
-
-    Returns
-    ---------
-    array
-    """
-    spike_mask = get_spike_mask(data, z_threshold)
-
-    ndim = data.ndim
-    slice_spike_percentage = np.zeros(ndim)
-
-    for ii in range(ndim):
-        slice_spike_percentage[ii] = np.mean(np.mean(spike_mask, ii)
-                                             > slice_threshold)
-
-    return slice_spike_percentage
-
-
-def get_global_spike_percentage(data, z_threshold=3):
-    """
-    Return percentage of array elements spiking
-
-    Parameters
-    ----------
-    data : numpy array
-        Data to be thresholded
-    z_threshold : :obj:`float`
-        Number of standard deviations above the mean to use as spike threshold
-
-    Returns
-    ---------
-    float
-    """
-    spike_mask = get_spike_mask(data, z_threshold)
-    global_spike_percentage = np.mean(np.ravel(spike_mask))
-
-    return global_spike_percentage
-
-
-def noise_func_for_shelled_data(shelled_data, gtab):
-    pass
+    return {'spike_perc_global': spike_perc_global, 'spike_perc_slice': spike_perc_slice}
