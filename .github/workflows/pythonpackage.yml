@@ -75,13 +75,13 @@ jobs:
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
         rm -r /tmp/install_wheel
 
-  flake8:
+  ruff:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v5
-    - run: pipx run flake8-pyproject mriqc/
+    - run: pipx run ruff check mriqc/
 
   codespell:
     runs-on: ubuntu-latest
