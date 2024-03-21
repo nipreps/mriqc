@@ -215,35 +215,41 @@ def cc_snr(
             * The second element is the best-case SNR (float).
     """
 
+    cc_mask = cc_mask > 0  # Ensure it's a boolean mask
     std_signal = in_b0[cc_mask].std()
 
     cc_snr_estimates = {}
 
+    xyz = np.eye(3)
+
+    b_values = np.rint(b_values).astype(np.uint16)
+
     # Shell-wise calculation
     for bval, bvecs, shell_data in zip(b_values, b_vectors, dwi_shells):
         if bval == 0:
-            cc_snr_estimates[int(bval)] = in_b0[cc_mask].mean() / std_signal
+            cc_snr_estimates[f'b{bval:d}'] = in_b0[cc_mask].mean() / std_signal
             continue
+
+        shell_data = shell_data[cc_mask]
 
         # Find main directions of diffusion
         axis_X = np.argmin(np.sum(
-            (bvecs - np.array([1, 0, 0])) ** 2, axis=-1))
+            (bvecs - xyz[0, :]) ** 2, axis=-1))
         axis_Y = np.argmin(np.sum(
-            (bvecs - np.array([0, 1, 0])) ** 2, axis=-1))
+            (bvecs - xyz[1, :]) ** 2, axis=-1))
         axis_Z = np.argmin(np.sum(
-            (bvecs - np.array([0, 0, 1])) ** 2, axis=-1))
+            (bvecs - xyz[2, :]) ** 2, axis=-1))
 
         data_X = shell_data[..., axis_X]
         data_Y = shell_data[..., axis_Y]
         data_Z = shell_data[..., axis_Z]
 
-        mean_signal_X = np.mean(data_X[cc_mask])
-        mean_signal_Y = np.mean(data_Y[cc_mask])
-        mean_signal_Z = np.mean(data_Z[cc_mask])
+        mean_signal_worst = np.mean(data_X)
+        mean_signal_best = 0.5 * (np.mean(data_Y) + np.mean(data_Z))
 
-        cc_snr_estimates[int(bval)] = (
-            np.mean(mean_signal_X / std_signal),  # worst
-            np.mean(np.mean(mean_signal_Y, mean_signal_Z) / std_signal),  # best
+        cc_snr_estimates[f'b{bval:d}'] = (
+            np.mean(mean_signal_worst / std_signal),
+            np.mean(mean_signal_best / std_signal),
         )
 
     return cc_snr_estimates
