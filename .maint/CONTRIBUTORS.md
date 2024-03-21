@@ -13,7 +13,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Beliy | Nikita | @nbeliy | | CRC ULiege, Liege, Belgium |
 | Birman | Daniel | @dbirman | 0000-0003-3748-6289 | Department of Psychology, Stanford University, CA, USA |
 | Blair | Ross W. | @rwblair | 0000-0003-3007-1056 | Department of Psychology, Stanford University, CA, USA |
-| Chen | Yibei | @yibeichan | | McGovern Institute for Brain Research, Cambridge, USA |
+| Chen | Yibei | @yibeichan | | McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA |
 | Clark | Michael G. | @mgclark | | National Institutes of Health, USA |
 | Dayan | Michael | @neurorepro | 0000-0002-2666-0969 | International Committee of the Red Cross - ICRC, Geneva, Switzerland |
 | Durnez | Joke | @jokedurnez | 0000-0001-9030-2202 | Department of Psychology, Stanford University, CA, USA |
