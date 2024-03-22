@@ -7,7 +7,7 @@ Welcome to *MRIQC*'s documentation!
 .. image :: _static/OHBM2017-poster.png
 
 Contents
-********
+--------
 
 .. toctree::
    :maxdepth: 3
@@ -24,7 +24,7 @@ Contents
    changes
 
 Indices and tables
-******************
+------------------
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
