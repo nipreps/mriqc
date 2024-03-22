@@ -19,6 +19,7 @@ Contents
    workflows
    dsa
    license
+   changes
 
 Indices and tables
 ==================
