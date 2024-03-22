@@ -2,7 +2,7 @@
 .. _dsa:
 
 Data Sharing Agreement
-======================
+**********************
 Foundations
 -----------
 (Text in this section has been retrieved from https://www.ihris.org/toolkit/tools/data-sharing.html)

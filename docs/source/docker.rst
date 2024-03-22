@@ -2,7 +2,7 @@
 .. _docker:
 
 Run mriqc with docker
-=====================
+*********************
 Preliminaries
 -------------
 #. Get the Docker Engine (https://docs.docker.com/engine/installation/)

@@ -1,8 +1,8 @@
 
 .. _running_mriqc:
 
-Running mriqc
-=============
+Running *MRIQC*
+***************
 .. tip::
      Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
      installation!
