@@ -2,7 +2,7 @@
 .. _reports:
 
 Visual Reports
-==============
+**************
 Demo: anatomical reports
 ------------------------
 .. raw:: html

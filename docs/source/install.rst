@@ -1,6 +1,6 @@
 
 Installation
-============
+************
 Containerized versions
 ----------------------
 If you have Docker installed, the quickest way to get ``mriqc`` to work
