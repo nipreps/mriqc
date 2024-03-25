@@ -200,6 +200,8 @@ Other measures
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
+from __future__ import annotations
+
 import os.path as op
 from math import sqrt
 
@@ -556,25 +558,51 @@ def rpve(pvms, seg):
     return {k: float(v) for k, v in list(pvfs.items())}
 
 
-def summary_stats(data, pvms, airmask=None, erode=True):
-    r"""
-    Estimates the mean, the median, the standard deviation,
-    the kurtosis,the median absolute deviation (mad), the 95\%
-    and the 5\% percentiles and the number of voxels (summary\_\*\_n)
-    of each tissue distribution.
+def summary_stats(
+    data: np.ndarray,
+    pvms: dict[str, np.ndarray],
+    rprec_data: int = 0,
+    rprec_prob: int = 3
+) -> dict[str, dict[str, float]]:
+    """
+    Estimates weighted summary statistics for each tissue distribution in the data.
 
-    .. warning ::
+    This function calculates the mean, median, standard deviation, kurtosis, median
+    absolute deviation (MAD), the 95th and 5th percentiles, and the number of voxels for
+    each tissue distribution defined by a label in the provided partial volume maps (pvms).
 
-        Sometimes (with datasets that have been partially processed), the air
-        mask will be empty. In those cases, the background stats will be zero
-        for the mean, median, percentiles and kurtosis, the sum of voxels in
-        the other remaining labels for ``n``, and finally the MAD and the
-        :math:`\sigma` will be calculated as:
+    Parameters
+    ----------
+    data : :obj:`~numpy.ndarray` (float, 3D)
+        A three-dimensional array of data from which summary statistics will be extracted.
+    pvms : :obj:`dict` of :obj:`str` keys and :obj:`~numpy.ndarray` (float, 3D) values
+        A dictionary of partial volume maps where the key indicates the label of a
+        region-of-interest (ROI) and the values are three-dimensional arrays matched in size
+        with `data` and containing the probability/fraction of the voxel containing the given
+        label.
+    rprec_data : :obj:`int`, optional (default=0)
+        Number of decimal places to round the data array before calculation. Rounding
+        alleviates floating-point error variability by explicitly rounding before
+        quantification operations.
+    rprec_prob : :obj:`int`, optional (default=3)
+        Number of decimal places to round the probability maps before calculation. Rounding
+        alleviates floating-point error variability by explicitly rounding before
+        quantification operations.
 
-        .. math ::
+    Returns
+    -------
+    :obj:`dict`
+        A dictionary where the keys are labels from the ``pvms`` dictionary and the values
+        are dictionaries containing the following keys for each tissue distribution:
 
-            \sigma_\text{BG} = \sqrt{\sum \sigma_\text{i}^2}
-
+            * ``'mean'``: :obj:`float` - Mean value
+            * ``'median'``: :obj:`float` - Median value
+            * ``'p95'``: :obj:`float` - 95th percentile
+            * ``'p05'``: :obj:`float` - 5th percentile
+            * ``'k'``: :obj:`float` - Kurtosis
+            * ``'stdv'``: :obj:`float` - Standard deviation
+            * ``'mad'``: :obj:`float` - Median absolute deviation
+            * ``'n'``: :obj:`int` - Number of voxels in the tissue distribution
 
     """
     from statsmodels.robust.scale import mad
@@ -582,12 +610,12 @@ def summary_stats(data, pvms, airmask=None, erode=True):
 
     output = {}
     for label, probmap in pvms.items():
-        wstats = DescrStatsW(data=data.reshape(-1), weights=probmap.reshape(-1))
-        nvox = probmap.sum()
-        p05, median, p95 = wstats.quantile(
-            np.array([0.05, 0.50, 0.95]),
-            return_pandas=False,
+        wstats = DescrStatsW(
+            data=np.round(data.reshape(-1), rprec_data),
+            weights=np.round(probmap.reshape(-1), rprec_prob),
         )
+        nvox = probmap.sum()
+        p05, median, p95 = wstats.quantile(np.array([0.05, 0.50, 0.95]), return_pandas=False)
         thresholded = data[probmap > (0.5 * probmap.max())]
 
         output[label] = {
