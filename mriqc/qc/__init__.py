@@ -57,6 +57,7 @@ sharpness/blurriness of the images, etc.
 
     iqms/t1w
     iqms/bold
+    iqms/dwi
 
 
 
