@@ -48,7 +48,6 @@ from sklearn.model_selection import GridSearchCV
 
 from mriqc.utils.misc import _flatten_dict
 
-
 __all__ = (
     'CCSegmentation',
     'CorrectSignalDrift',
@@ -158,12 +157,12 @@ class DiffusionQC(SimpleInterface):
         )
         b0data[b0data < 0] = 0
 
-        # Get the FA data and get it ready
-        fanii = nb.load(self.inputs.in_fa)
-        fadata = np.round(
-            np.nan_to_num(np.asanyarray(fanii.dataobj)),
-            3,
-        )
+        # Get the FA data and get it ready OE: enable when used
+        # fanii = nb.load(self.inputs.in_fa)
+        # fadata = np.round(
+        #     np.nan_to_num(np.asanyarray(fanii.dataobj)),
+        #     3,
+        # )
 
         # Get brain mask data
         msknii = nb.load(self.inputs.brain_mask)

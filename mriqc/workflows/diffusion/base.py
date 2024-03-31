@@ -109,10 +109,10 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='datalad_get',
     )
 
-    outputnode = pe.Node(
-        niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
-        name='outputnode',
-    )
+    # outputnode = pe.Node(
+    #     niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
+    #     name='outputnode',
+    # )
 
     sanitize = pe.Node(
         SanitizeImage(
@@ -190,7 +190,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     )
 
     # Calculate CC mask
-    cc_mask = pe.Node(CCSegmentation(), name="cc_mask")
+    cc_mask = pe.Node(CCSegmentation(), name='cc_mask')
 
     # EPI to MNI registration
     spatial_norm = epi_mni_align()
@@ -289,8 +289,8 @@ def compute_iqms(name='ComputeIQMs'):
     from niworkflows.interfaces.bids import ReadSidecarJSON
 
     from mriqc.interfaces import IQMFileSink
-    from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces.diffusion import DiffusionQC
+    from mriqc.interfaces.reports import AddProvenance
 
     # from mriqc.workflows.utils import _tofloat, get_fwhmx
     # mem_gb = config.workflow.biggest_file_gb
@@ -380,7 +380,7 @@ def compute_iqms(name='ComputeIQMs'):
                           ('out_dict', 'metadata')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
         (meta, outputnode, [('out_dict', 'meta_sidecar')]),
-        (measures, datasink, [("out_qc", "root")]),
+        (measures, datasink, [('out_qc', 'root')]),
     ])
     # fmt: on
     return workflow

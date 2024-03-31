@@ -73,7 +73,7 @@ IQMs targeting artifacts that are specific of DWI images.
 .. _iqms_spike_percentage:
 
 Global and slice-wise spike percentages (``spike_perc``)
-    Voxels classified as spikes. The spikes mask is calculated by identifing
+    Voxels classified as spikes. The spikes mask is calculated by identifying
     voxels with signal intensities exceeding a threshold based on standard
     deviations above the mean.
 
