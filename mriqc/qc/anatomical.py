@@ -612,7 +612,7 @@ def summary_stats(
     for label, probmap in pvms.items():
         wstats = DescrStatsW(
             data=np.round(data.reshape(-1), rprec_data),
-            weights=np.round(probmap.reshape(-1), rprec_prob),
+            weights=np.round(probmap.astype(np.float32).reshape(-1), rprec_prob),
         )
         nvox = probmap.sum()
         p05, median, p95 = wstats.quantile(np.array([0.05, 0.50, 0.95]), return_pandas=False)
