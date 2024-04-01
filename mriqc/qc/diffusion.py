@@ -302,4 +302,4 @@ def spike_percentage(
         for axis in range(data.ndim)
     ]
 
-    return {'spike_perc_global': spike_perc_global, 'spike_perc_slice': spike_perc_slice}
+    return {'global': spike_perc_global, 'slice': spike_perc_slice}
