@@ -96,12 +96,12 @@ def noise_b0(
     percentiles of the variance distribution. This approach assumes that noise primarily
     contributes to the lower end of the variance distribution.
 
-    Parameters:
+    Parameters
     ----------
     in_b0 : :obj:`~numpy.ndarray`
         The 3D or 4D dMRI data array. If 4D, the first volume (assumed to be
         the $b$=0 image) is used for noise estimation.
-    percentiles : :obj:`tuple`(float, float, float), optional (default=(25, 50, 75))
+    percentiles : :obj:`tuple` (float, float, float), optional (default=(25, 50, 75))
         A tuple of three integers specifying the percentiles of the variance
         distribution to use for noise estimation. These percentiles represent
         different noise levels within the data.
@@ -110,12 +110,14 @@ def noise_b0(
         If ``None``, a mask of ones with the same shape as the first 3 dimensions of
         ``in_b0`` is used.
 
-    Returns:
+    Returns
     -------
-    noise_estimates : :obj:`dict`
+    :obj:`dict`
         A dictionary containing the noise estimates at the specified percentiles:
-            * keys: :obj:`str` - Percentile values (e.g., '25', '50', '75').
-            * values: :obj:`float` - Noise level estimates at the corresponding percentiles.
+
+        * keys: :obj:`str` - Percentile values (e.g., '25', '50', '75').
+        * values: :obj:`float` - Noise level estimates at the corresponding percentiles.
+
     """
 
     if in_b0.ndim != 4:
@@ -211,8 +213,10 @@ def cc_snr(
     cc_snr_estimates : :obj:`dict`
         Dictionary containing SNR estimates for each b-value. Keys are the b-values
         (integers), and values are tuples containing two elements:
-            * The first element is the worst-case SNR (float).
-            * The second element is the best-case SNR (float).
+
+        * The first element is the worst-case SNR (float).
+        * The second element is the best-case SNR (float).
+
     """
 
     cc_mask = cc_mask > 0  # Ensure it's a boolean mask
@@ -271,7 +275,7 @@ def spike_percentage(
       the data array where the average fraction of spiking voxels within the slice
       exceeds a user-defined threshold (``slice_threshold``).
 
-    Parameters:
+    Parameters
     ----------
     data : :obj:`~numpy.ndarray` (float, 4D)
         The data array used to generate the spike mask.
@@ -281,13 +285,15 @@ def spike_percentage(
         The minimum fraction of voxels in a slice that must be classified as spikes
         for the slice to be considered spiking.
 
-    Returns:
+    Returns
     -------
     :obj:`dict`
         A dictionary containing the calculated spike percentages:
-            * 'spike_perc_global': :obj:`float` - Global percentage of spiking voxels.
-            * 'spike_perc_slice': :obj:`list` of :obj:`float` - List of slice-wise
-              spiking percentages for each dimension of the data array.
+
+        * 'spike_perc_global': :obj:`float` - Global percentage of spiking voxels.
+        * 'spike_perc_slice': :obj:`list` of :obj:`float` - List of slice-wise
+            spiking percentages for each dimension of the data array.
+
     """
 
     spike_perc_global = float(np.mean(np.ravel(spike_mask)))
