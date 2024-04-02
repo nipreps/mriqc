@@ -1222,8 +1222,8 @@ def _find_qspace_neighbors(
     `dipy/dipy#3156 <https://github.com/dipy/dipy/pull/3156>`__.
 
     """
-    from dipy.core.gradients import gradient_table
     from dipy.core.geometry import cart_distance
+    from dipy.core.gradients import gradient_table
 
     gtab = gradient_table(bvals, bvecs)
 
