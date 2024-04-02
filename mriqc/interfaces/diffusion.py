@@ -57,6 +57,7 @@ __all__ = (
     'FilterShells',
     'NumberOfShells',
     'ReadDWIMetadata',
+    'SpikingVoxelsMask',
     'SplitShells',
     'WeightedStat',
 )
@@ -100,7 +101,8 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
     in_md = File(exists=True, mandatory=True, desc='input MD map')
     brain_mask = File(exists=True, mandatory=True, desc='input probabilistic brain mask')
     wm_mask = File(exists=True, mandatory=True, desc='input probabilistic white-matter mask')
-    cc_mask = File(exists=True, mandatory=True, desc='input probabilistic white-matter mask')
+    cc_mask = File(exists=True, mandatory=True, desc='input binary mask of the corpus callosum')
+    spikes_mask = File(exists=True, mandatory=True, desc='input binary mask of spiking voxels')
     direction = traits.Enum(
         'all',
         'x',
@@ -130,6 +132,7 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     fa_nans = traits.Float
     fber = traits.Dict
     fd = traits.Dict
+    spikes_ppm = traits.Dict
     # snr = traits.Float
     # gsr = traits.Dict
     # tsnr = traits.Float
@@ -227,6 +230,10 @@ class DiffusionQC(SimpleInterface):
             float(fa_degenerate_mask[mskdata > 0.5].mean()),
             8,
         ) * 1e6
+
+        # Get spikes-mask data
+        spmask = np.asanyarray(nb.load(self.inputs.spikes_mask).dataobj) > 0.0
+        self._results['spikes_ppm'] = dqc.spike_ppm(spmask)
 
         # FBER
         self._results['fber'] = {
@@ -936,6 +943,66 @@ class CCSegmentation(SimpleInterface):
         return runtime
 
 
+class _SpikingVoxelsMaskInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='a DWI 4D file')
+    brain_mask = File(exists=True, mandatory=True, desc='input probabilistic brain 3D mask')
+    z_threshold = traits.Float(3.0, usedefault=True, desc='z-score threshold')
+    b_masks = traits.List(
+        traits.List(traits.Int, minlen=1),
+        minlen=1,
+        mandatory=True,
+        desc='list of ``n_shells`` b-value-wise indices lists'
+    )
+
+
+class _SpikingVoxelsMaskOutputSpec(_TraitedSpec):
+    out_mask = File(exists=True, desc='a 4D binary mask of spiking voxels')
+
+
+class SpikingVoxelsMask(SimpleInterface):
+    """Computes :abbr:`QC (Quality Control)` measures on the input DWI EPI scan."""
+
+    input_spec = _SpikingVoxelsMaskInputSpec
+    output_spec = _SpikingVoxelsMaskOutputSpec
+
+    def _run_interface(self, runtime):
+        self._results['out_mask'] = fname_presuffix(
+            self.inputs.in_file,
+            suffix='spikesmask',
+            newpath=runtime.cwd,
+        )
+
+        in_nii = nb.load(self.inputs.in_file)
+        data = np.round(in_nii.get_fdata(), 4).astype('float32')
+
+        bmask_nii = nb.load(self.inputs.brain_mask)
+        brainmask = np.round(bmask_nii.get_fdata(), 2).astype('float32')
+
+        spikes_mask = get_spike_mask(
+            data,
+            shell_masks=self.inputs.b_masks,
+            brainmask=brainmask,
+            z_threshold=self.inputs.z_threshold,
+        )
+
+        header = bmask_nii.header.copy()
+        header.set_data_dtype(np.uint8)
+        header.set_xyzt_units('mm')
+        header.set_intent('estimate', name='spiking voxels mask')
+        header['cal_max'] = 1
+        header['cal_min'] = 0
+
+        # Write out binary WM mask after binary opening
+        spikes_mask_nii = nb.Nifti1Image(
+            spikes_mask.astype(np.uint8),
+            bmask_nii.affine,
+            header,
+        )
+        spikes_mask_nii.to_filename(self._results['out_mask'])
+
+        return runtime
+
+
 def _rms(estimator, X):
     """
     Callable to pass to GridSearchCV that will calculate a distance score.
@@ -1040,9 +1107,9 @@ def segment_corpus_callosum(
 
 def get_spike_mask(
     data: np.ndarray,
+    shell_masks: list,
+    brainmask: np.ndarray,
     z_threshold: float = 3.0,
-    grouping_vals: np.ndarray | None = None,
-    bmag: int | None = None,
 ) -> np.ndarray:
     """
     Creates a binary mask classifying voxels in the data array as spike or non-spike.
@@ -1059,18 +1126,10 @@ def get_spike_mask(
     z_threshold : :obj:`float`, optional (default=3.0)
         The number of standard deviations to use above the mean as the threshold
         multiplier.
-    grouping_vals : :obj:`~numpy.ndarray`, optional
-        If provided, this array is used to group voxels for thresholding. Voxels
-        with the same value in ``grouping_vals`` are considered to belong to the same
-        group. The threshold will be calculated independently for each group.
-        - If ``grouping_vals`` has the same shape as ``data`` (4D), it is assumed to be
-          a mask where each voxel value indicates the group it belongs to.
-        - If ``grouping_vals`` has a 3D shape, it is assumed to represent b-values
-          corresponding to each voxel in the 4D ``data`` array. In this case, voxels
-          with the same b-value are grouped together.
-    bmag : int, optional
-        The order of magnitude for b-value rounding (used only if
-        ``grouping_vals`` is provided as b-values). Default: None (derived from max b-value).
+    brainmask : :obj:`~numpy.ndarray`
+        The brain mask.
+    shell_masks : :obj:`list`
+        A list of :obj:`~numpy.ndarray` objects
 
     Returns:
     -------
@@ -1080,33 +1139,16 @@ def get_spike_mask(
         data array.
 
     """
-    from dipy.core.gradients import round_bvals, unique_bvals_magnitude
 
-    if grouping_vals is None:
-        threshold = np.round((z_threshold * np.std(data)) + np.mean(data), 3)
-        spike_mask = np.round(data, 3) > threshold
-        return spike_mask
+    spike_mask = np.zeros_like(data, dtype=bool)
 
-    threshold_mask = np.zeros(data.shape)
+    brainmask = brainmask >= 0.5
 
-    rounded_grouping_vals = round_bvals(grouping_vals, bmag)
-    gvals = unique_bvals_magnitude(grouping_vals, bmag)
+    for b_mask in shell_masks:
+        shelldata = data[..., b_mask]
 
-    if grouping_vals.shape == data.shape:
-        for gval in gvals:
-            gval_data = data[rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data))
-                              + np.mean(gval_data))
-            threshold_mask[rounded_grouping_vals == gval] = (
-                gval_threshold * np.ones(gval_data.shape))
-    else:
-        for gval in gvals:
-            gval_data = data[..., rounded_grouping_vals == gval]
-            gval_threshold = ((z_threshold * np.std(gval_data))
-                              + np.mean(gval_data))
-            threshold_mask[..., rounded_grouping_vals == gval] = (
-                gval_threshold * np.ones(gval_data.shape))
+        a_thres = z_threshold * shelldata[brainmask].std() + shelldata[brainmask].mean()
 
-    spike_mask = data > threshold_mask
+        spike_mask[..., b_mask] = shelldata > a_thres
 
     return spike_mask
