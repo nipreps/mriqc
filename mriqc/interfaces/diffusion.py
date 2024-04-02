@@ -126,6 +126,8 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
 class _DiffusionQCOutputSpec(TraitedSpec):
     cc_snr = traits.Dict
     efc = traits.Dict
+    fa_degenerate = traits.Float
+    fa_nans = traits.Float
     fber = traits.Dict
     fd = traits.Dict
     # snr = traits.Float
@@ -202,7 +204,7 @@ class DiffusionQC(SimpleInterface):
         # Summary stats
         rois = {
             'fg': mskdata,
-            'bg': ~mskdata,
+            'bg': 1.0 - mskdata,
             'cc': ccdata,
             'wm': wmdata,
         }
@@ -216,6 +218,12 @@ class DiffusionQC(SimpleInterface):
             b_values=self.inputs.in_bval,
             b_vectors=self.inputs.in_bvec,
         )
+
+        fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
+        self._results['fa_nans'] = float(fa_nans_mask[mskdata > 0.5].mean())
+
+        fa_degenerate_mask = np.asanyarray(nb.load(self.inputs.in_fa_degenerate).dataobj) > 0.0
+        self._results['fa_degenerate'] = float(fa_degenerate_mask[mskdata > 0.5].mean())
 
         # FBER
         self._results['fber'] = {
