@@ -66,16 +66,27 @@ Noise in raw dMRI estimated with PIESNO (``piesno_sigma``)
 SNR estimated in the Corpus Callosum (``cc_snr``)
     Worst-case and best-case signal-to-noise ratio (SNR) within the corpus callosum.
 
+.. _iqms_fa_nans:
+
+Number of not-a-number (NaN) values in the FA map (``fa_nan``)
+    Fraction of NaNs within the brain mask, in ppm.
+
+.. _iqms_fa_degenerate:
+
+Number of degenerate modeled voxels in the FA map (``fa_degenerate``)
+    Fraction of invalid FA values (i.e., outside the [0, 1] closed range) within
+    the brain mask, in ppm.
+
 IQMs relating artifacts and other
 ---------------------------------
 IQMs targeting artifacts that are specific of DWI images.
 
-.. _iqms_spike_percentage:
+.. _iqms_spike_ppm:
 
-Global and slice-wise spike percentages (``spike_perc``)
-    Voxels classified as spikes. The spikes mask is calculated by identifying
-    voxels with signal intensities exceeding a threshold based on standard
-    deviations above the mean.
+Global and slice-wise spike fractions (``spikes_ppm``)
+    Fractions of voxels classified as spikes (in parts-per-million, ppm).
+    The spikes mask is calculated by identifying voxels with signal intensities
+    exceeding a threshold based on standard deviations above the mean.
 
 """
 from __future__ import annotations

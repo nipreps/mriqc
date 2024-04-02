@@ -128,6 +128,8 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
 class _DiffusionQCOutputSpec(TraitedSpec):
     cc_snr = traits.Dict
     efc = traits.Dict
+    fa_degenerate = traits.Float
+    fa_nans = traits.Float
     fber = traits.Dict
     fd = traits.Dict
     spikes_ppm = traits.Dict
@@ -205,7 +207,7 @@ class DiffusionQC(SimpleInterface):
         # Summary stats
         rois = {
             'fg': mskdata,
-            'bg': ~mskdata,
+            'bg': 1.0 - mskdata,
             'cc': ccdata,
             'wm': wmdata,
         }
@@ -220,7 +222,16 @@ class DiffusionQC(SimpleInterface):
             b_vectors=self.inputs.in_bvec,
         )
 
-        # Get cc mask data
+        fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
+        self._results['fa_nans'] = np.round(float(fa_nans_mask[mskdata > 0.5].mean()), 8) * 1e6
+
+        fa_degenerate_mask = np.asanyarray(nb.load(self.inputs.in_fa_degenerate).dataobj) > 0.0
+        self._results['fa_degenerate'] = np.round(
+            float(fa_degenerate_mask[mskdata > 0.5].mean()),
+            8,
+        ) * 1e6
+
+        # Get spikes-mask data
         spmask = np.asanyarray(nb.load(self.inputs.spikes_mask).dataobj) > 0.0
         self._results['spikes_ppm'] = dqc.spike_ppm(spmask)
 
