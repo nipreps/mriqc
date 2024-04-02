@@ -220,10 +220,13 @@ class DiffusionQC(SimpleInterface):
         )
 
         fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
-        self._results['fa_nans'] = float(fa_nans_mask[mskdata > 0.5].mean())
+        self._results['fa_nans'] = np.round(float(fa_nans_mask[mskdata > 0.5].mean()), 5) * 100.0
 
         fa_degenerate_mask = np.asanyarray(nb.load(self.inputs.in_fa_degenerate).dataobj) > 0.0
-        self._results['fa_degenerate'] = float(fa_degenerate_mask[mskdata > 0.5].mean())
+        self._results['fa_degenerate'] = np.round(
+            float(fa_degenerate_mask[mskdata > 0.5].mean()),
+            5,
+        ) * 100.0
 
         # FBER
         self._results['fber'] = {
