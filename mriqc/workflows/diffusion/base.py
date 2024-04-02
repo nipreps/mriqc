@@ -78,6 +78,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         FilterShells,
         NumberOfShells,
         ReadDWIMetadata,
+        SpikingVoxelsMask,
         WeightedStat,
     )
     from mriqc.messages import BUILDING_WORKFLOW
@@ -189,6 +190,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='dti',
     )
 
+    sp_mask = pe.Node(SpikingVoxelsMask(), name='sp_mask')
+
     # Calculate CC mask
     cc_mask = pe.Node(CCSegmentation(), name='cc_mask')
 
@@ -211,7 +214,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (datalad_get, iqms_wf, [('in_file', 'inputnode.in_file')]),
         (datalad_get, sanitize, [('in_file', 'in_file')]),
         (sanitize, dwi_ref, [('out_file', 'in_file')]),
+        (sanitize, sp_mask, [('out_file', 'in_file')]),
         (shells, dwi_ref, [(('b_masks', _first), 't_mask')]),
+        (shells, sp_mask, [('b_masks', 'b_masks')]),
         (meta, shells, [('out_bval_file', 'in_bvals')]),
         (sanitize, drift, [('out_file', 'full_epi')]),
         (shells, get_lowb, [(('b_indices', _first), 'indices')]),
@@ -222,6 +227,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (hmc_b0, drift, [('out_file', 'in_file')]),
         (shells, drift, [(('b_indices', _first), 'b0_ixs')]),
         (dwi_ref, dmri_bmsk, [('out_file', 'inputnode.in_files')]),
+        (dmri_bmsk, sp_mask, [('outputnode.out_mask', 'brain_mask')]),
         (dmri_bmsk, drift, [('outputnode.out_mask', 'brainmask_file')]),
         (drift, hmcwf, [('out_full_file', 'inputnode.in_file')]),
         (drift, averages, [('out_full_file', 'in_file')]),
@@ -244,6 +250,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (dti, cc_mask, [('out_fa', 'in_fa'),
                         ('out_cfa', 'in_cfa')]),
         (averages, iqms_wf, [(('out_file', _first), 'inputnode.in_b0')]),
+        (sp_mask, iqms_wf, [('out_mask', 'inputnode.spikes_mask')]),
         (hmcwf, iqms_wf, [('outputnode.out_fd', 'inputnode.framewise_displacement')]),
         (dti, iqms_wf, [('out_fa', 'inputnode.in_fa'),
                         ('out_cfa', 'inputnode.in_cfa'),
@@ -313,6 +320,7 @@ def compute_iqms(name='ComputeIQMs'):
                 'brain_mask',
                 'wm_mask',
                 'cc_mask',
+                'spikes_mask',
                 'framewise_displacement',
             ]
         ),
@@ -363,6 +371,7 @@ def compute_iqms(name='ComputeIQMs'):
                                ('brain_mask', 'brain_mask'),
                                ('wm_mask', 'wm_mask'),
                                ('cc_mask', 'cc_mask'),
+                               ('spikes_mask', 'spikes_mask'),
                                ('in_fa', 'in_fa'),
                                ('in_md', 'in_md'),
                                ('in_cfa', 'in_cfa'),

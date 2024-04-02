@@ -260,7 +260,6 @@ def cc_snr(
 
 
 def spike_percentage(
-    data: np.ndarray,
     spike_mask: np.ndarray,
     slice_threshold: float = 0.05,
 ) -> dict[str, float | np.ndarray]:
@@ -277,8 +276,6 @@ def spike_percentage(
 
     Parameters
     ----------
-    data : :obj:`~numpy.ndarray` (float, 4D)
-        The data array used to generate the spike mask.
     spike_mask : :obj:`~numpy.ndarray` (bool, same shape as data)
         The binary mask indicating spike voxels (True) and non-spike voxels (False).
     slice_threshold : :obj:`float`, optional (default=0.05)
@@ -298,8 +295,8 @@ def spike_percentage(
 
     spike_perc_global = float(np.mean(np.ravel(spike_mask)))
     spike_perc_slice = [
-        float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold))
-        for axis in range(data.ndim)
+        float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)) * 100
+        for axis in range(spike_mask.ndim)
     ]
 
-    return {'global': spike_perc_global, 'slice': spike_perc_slice}
+    return {'global': spike_perc_global * 100, 'slice': spike_perc_slice}
