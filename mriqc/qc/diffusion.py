@@ -259,18 +259,19 @@ def cc_snr(
     return cc_snr_estimates
 
 
-def spike_percentage(
+def spike_ppm(
     spike_mask: np.ndarray,
     slice_threshold: float = 0.05,
+    decimals: int = 8,
 ) -> dict[str, float | np.ndarray]:
     """
-    Calculates the percentage of voxels classified as spikes (global and slice-wise).
+    Calculates fractions (global and slice-wise) of voxels classified as spikes in ppm.
 
     This function computes two metrics:
 
-    * Global spike percentage: The average fraction of voxels exceeding the spike
+    * Global spike parts-per-million [ppm]: Fraction of voxels exceeding the spike
       threshold across the entire data array.
-    * Slice-wise spiking percentage: The fraction of slices along each dimension of
+    * Slice-wise spiking [ppm]: The fraction of slices along each dimension of
       the data array where the average fraction of spiking voxels within the slice
       exceeds a user-defined threshold (``slice_threshold``).
 
@@ -281,21 +282,25 @@ def spike_percentage(
     slice_threshold : :obj:`float`, optional (default=0.05)
         The minimum fraction of voxels in a slice that must be classified as spikes
         for the slice to be considered spiking.
+    decimals : :obj:`int`
+        The number of decimals to round the fractions.
 
     Returns
     -------
     :obj:`dict`
         A dictionary containing the calculated spike percentages:
 
-        * 'spike_perc_global': :obj:`float` - Global percentage of spiking voxels.
-        * 'spike_perc_slice': :obj:`list` of :obj:`float` - List of slice-wise
-            spiking percentages for each dimension of the data array.
+        * 'global': :obj:`float` - global spiking voxels ppm.
+        * 'slice': :obj:`list` of :obj:`float` - List of slice-wise spiking voxel
+          fractions in ppm for each dimension of the data array.
 
     """
 
-    spike_perc_global = round(float(np.mean(np.ravel(spike_mask))), 5) * 100
+    spike_perc_global = round(float(np.mean(np.ravel(spike_mask))), decimals) * 1e6
     spike_perc_slice = [
-        round(float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), 5) * 100
+        round(
+            float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), decimals
+        ) * 1e6
         for axis in range(spike_mask.ndim)
     ]
 

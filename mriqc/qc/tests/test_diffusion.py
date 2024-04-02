@@ -23,15 +23,15 @@
 
 import numpy as np
 
-from mriqc.qc.diffusion import spike_percentage
+from mriqc.qc.diffusion import spike_ppm
 
 
-def test_spike_percentage():
+def test_spike_ppm():
     msk = np.random.randint(0, high=2, size=(76, 76, 64, 124), dtype=bool)
-    val = spike_percentage(msk, .5)
+    val = spike_ppm(msk, .5)
 
-    assert np.isclose(val['global'], 50.0, rtol=1, atol=1)
+    assert np.isclose(val['global'], 0.5e6, rtol=1, atol=1)
 
     assert np.min(val['slice']) >= 0
-    assert np.max(val['slice']) <= 1
+    assert np.max(val['slice']) <= 1e6
     assert len(val['slice']) == msk.ndim

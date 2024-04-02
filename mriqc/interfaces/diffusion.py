@@ -130,7 +130,7 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     efc = traits.Dict
     fber = traits.Dict
     fd = traits.Dict
-    spikes_percent = traits.Dict
+    spikes_ppm = traits.Dict
     # snr = traits.Float
     # gsr = traits.Dict
     # tsnr = traits.Float
@@ -222,7 +222,7 @@ class DiffusionQC(SimpleInterface):
 
         # Get cc mask data
         spmask = np.asanyarray(nb.load(self.inputs.spikes_mask).dataobj) > 0.0
-        self._results['spikes_percent'] = dqc.spike_percentage(spmask)
+        self._results['spikes_ppm'] = dqc.spike_ppm(spmask)
 
         # FBER
         self._results['fber'] = {
