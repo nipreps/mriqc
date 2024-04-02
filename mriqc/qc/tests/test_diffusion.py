@@ -27,12 +27,11 @@ from mriqc.qc.diffusion import spike_percentage
 
 
 def test_spike_percentage():
-    img = np.random.normal(loc=10, scale=1.0, size=(76, 76, 64, 124))
     msk = np.random.randint(0, high=2, size=(76, 76, 64, 124), dtype=bool)
-    val = spike_percentage(img, msk, .5)
+    val = spike_percentage(msk, .5)
 
-    assert np.isclose(val['global'], 0.5, rtol=1, atol=1)
+    assert np.isclose(val['global'], 50.0, rtol=1, atol=1)
 
     assert np.min(val['slice']) >= 0
     assert np.max(val['slice']) <= 1
-    assert len(val['slice']) == img.ndim
+    assert len(val['slice']) == msk.ndim
