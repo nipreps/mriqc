@@ -123,6 +123,12 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
         desc='FD threshold for orientation exclusion based on head motion'
     )
     in_fwhm = traits.List(traits.Float, desc='smoothness estimated with AFNI')
+    qspace_neighbors = traits.List(
+        traits.Tuple(traits.Int, traits.Int),
+        mandatory=True,
+        minlen=1,
+        desc='q-space nearest neighbor pairs',
+    )
 
 
 class _DiffusionQCOutputSpec(TraitedSpec):
@@ -132,8 +138,8 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     fa_nans = traits.Float
     fber = traits.Dict
     fd = traits.Dict
+    ndc = traits.Float
     spikes_ppm = traits.Dict
-    # snr = traits.Float
     # gsr = traits.Dict
     # tsnr = traits.Float
     # fwhm = traits.Dict(desc='full width half-maximum measure')
@@ -172,7 +178,7 @@ class DiffusionQC(SimpleInterface):
         # Get brain mask data
         msknii = nb.load(self.inputs.brain_mask)
         mskdata = np.round(  # Protect the thresholding with a rounding for stability
-            np.asanyarray(msknii.dataobj),
+            msknii.get_fdata(),
             3,
         )
         if np.sum(mskdata) < 100:
@@ -256,6 +262,19 @@ class DiffusionQC(SimpleInterface):
             'perc': float(num_fd * 100 / (len(fd_data) + 1)),
         }
 
+        # NDC
+        dwidata = np.round(
+            np.nan_to_num(nb.load(self.inputs.in_b0).get_fdata()),
+            3,
+        )
+        self._results['ndc'] = float(
+            dqc.neighboring_dwi_correlation(
+                dwidata,
+                neighbor_indices=self.inputs.qspace_neighbors,
+                mask=mskdata > 0.5,
+            )
+        )
+
         self._results['out_qc'] = _flatten_dict(self._results)
 
         return runtime
@@ -265,6 +284,10 @@ class _ReadDWIMetadataOutputSpec(_ReadSidecarJSONOutputSpec):
     out_bvec_file = File(desc='corresponding bvec file')
     out_bval_file = File(desc='corresponding bval file')
     out_bmatrix = traits.List(traits.List(traits.Float), desc='b-matrix')
+    qspace_neighbors = traits.List(
+        traits.Tuple(traits.Int, traits.Int),
+        desc='q-space nearest neighbor pairs',
+    )
 
 
 class ReadDWIMetadata(ReadSidecarJSON):
@@ -283,6 +306,7 @@ class ReadDWIMetadata(ReadSidecarJSON):
         bvecs = np.loadtxt(self._results['out_bvec_file']).T
         bvals = np.loadtxt(self._results['out_bval_file'])
 
+        self._results['qspace_neighbors'] = _find_qspace_neighbors(bvals, bvecs)
         self._results['out_bmatrix'] = np.hstack((bvecs, bvals[:, np.newaxis])).tolist()
 
         return runtime
@@ -1152,3 +1176,78 @@ def get_spike_mask(
         spike_mask[..., b_mask] = shelldata > a_thres
 
     return spike_mask
+
+
+def _find_qspace_neighbors(
+    bvals: np.ndarray, bvecs: np.ndarray
+) -> list[tuple[int, int]]:
+    """
+    Create a mapping of dwi volume index to its nearest neighbor in q-space.
+
+    This function implements an approximate nearest neighbor search in q-space
+    (excluding delta encoding). It calculates the Cartesian distance between
+    q-space representations of each diffusion-weighted imaging (DWI) volume
+    (represented by b-values and b-vectors) and identifies the closest one
+    (excluding the volume itself and b=0 volumes).
+
+    Parameters
+    ----------
+    bvals : :obj:`~numpy.ndarray`
+        List of b-values.
+    bvecs : :obj:`~numpy.ndarray`
+        Table of b-vectors.
+
+    Returns
+    -------
+    :obj:`list` of :obj:`tuple`
+        A list of 2-tuples indicating the nearest q-space neighbor
+        of each dwi volume.
+
+    Examples
+    --------
+    >>> _find_qspace_neighbors(
+    ...     np.array([0, 1000, 1000, 2000]),
+    ...     np.array([
+    ...         [1, 0, 0],
+    ...         [1, 0, 0],
+    ...         [0.99, 0.0001, 0.0001],
+    ...         [1, 0, 0]])),
+    ... )
+    [(1, 2), (2, 1), (3, 1)]
+
+    Notes
+    -----
+    This is a copy of DIPY's code to be removed (and just imported) as soon as
+    a new release of DIPY is cut including
+    `dipy/dipy#3156 <https://github.com/dipy/dipy/pull/3156>`__.
+
+    """
+    from dipy.core.gradients import gradient_table
+    from dipy.core.geometry import cart_distance
+
+    gtab = gradient_table(bvals, bvecs)
+
+    dwi_neighbors: list[tuple[int, int]] = []
+
+    # Only correlate the b>0 images
+    dwi_indices = np.flatnonzero(~gtab.b0s_mask)
+
+    # Get a pseudo-qspace value for b>0s
+    qvecs = np.sqrt(gtab.bvals)[:, np.newaxis] * gtab.bvecs
+
+    for dwi_index in dwi_indices:
+        qvec = qvecs[dwi_index]
+
+        # Calculate distance in q-space, accounting for symmetry
+        pos_dist = cart_distance(qvec[np.newaxis, :], qvecs)
+        neg_dist = cart_distance(qvec[np.newaxis, :], -qvecs)
+        distances = np.min(np.column_stack([pos_dist, neg_dist]), axis=1)
+
+        # Be sure we don't select the image as its own neighbor
+        distances[dwi_index] = np.inf
+        # Or a b=0
+        distances[gtab.b0s_mask] = np.inf
+        neighbor_index = np.argmin(distances)
+        dwi_neighbors.append((dwi_index, neighbor_index))
+
+    return dwi_neighbors
