@@ -293,10 +293,10 @@ def spike_percentage(
 
     """
 
-    spike_perc_global = float(np.mean(np.ravel(spike_mask)))
+    spike_perc_global = round(float(np.mean(np.ravel(spike_mask))), 5) * 100
     spike_perc_slice = [
-        float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)) * 100
+        round(float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), 5) * 100
         for axis in range(spike_mask.ndim)
     ]
 
-    return {'global': spike_perc_global * 100, 'slice': spike_perc_slice}
+    return {'global': spike_perc_global, 'slice': spike_perc_slice}
