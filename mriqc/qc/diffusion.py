@@ -58,7 +58,7 @@ IQMs specific to diffusion weighted imaging.
 
 Noise in raw dMRI estimated with PIESNO (``piesno_sigma``)
     Employs PIESNO (Probabilistic Identification and Estimation
-    of Noise) algorithm [1]_ to estimate the standard deviation (sigma) of the
+    of Noise) algorithm [Koay2009]_ to estimate the standard deviation (sigma) of the
     noise in each voxel of a 4D dMRI data array.
 
 .. _iqms_cc_snr:
@@ -87,6 +87,12 @@ Global and slice-wise spike fractions (``spikes_ppm``)
     Fractions of voxels classified as spikes (in parts-per-million, ppm).
     The spikes mask is calculated by identifying voxels with signal intensities
     exceeding a threshold based on standard deviations above the mean.
+
+References
+----------
+.. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
+       and Estimation of Noise (PIESNO): A self-consistent approach and
+       its applications in MRI. JMR, 199(1):94-103, 2009.
 
 """
 from __future__ import annotations
@@ -145,45 +151,6 @@ def noise_b0(
     ))
 
     return noise_estimates
-
-
-def noise_piesno(data: np.ndarray, n_channels: int = 4) -> (np.ndarray, np.ndarray):
-    """
-    Estimates noise in raw diffusion MRI (dMRI) data using the PIESNO algorithm.
-
-    This function implements the PIESNO (Probabilistic Identification and Estimation
-    of Noise) algorithm [1]_ to estimate the standard deviation (sigma) of the
-    noise in each voxel of a 4D dMRI data array. The PIESNO algorithm assumes Rician
-    distributed signal and exploits the statistical properties of the noise to
-    separate it from the underlying signal.
-
-    Parameters
-    ----------
-    data : :obj:`~numpy.ndarray`
-        The 4D raw dMRI data array.
-    n_channels : :obj:`int`, optional (default=4)
-        The number of diffusion-encoding channels in the data. This value is used
-        internally by the PIESNO algorithm.
-
-    Returns
-    -------
-    sigma : :obj:`~numpy.ndarray`
-        The estimated noise standard deviation for each voxel in the data array.
-    mask : :obj:`~numpy.ndarray`
-        A brain mask estimated by PIESNO. This mask identifies voxels containing
-        mostly noise and can be used for further processing.
-
-    Notes
-    -----
-
-    .. [1] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
-           and Estimation of Noise (PIESNO): A self-consistent approach and
-           its applications in MRI. JMR, 199(1):94-103, 2009.
-    """
-    from dipy.denoise.noise_estimate import piesno
-
-    sigma, mask = piesno(data, N=n_channels, return_mask=True)
-    return sigma, mask
 
 
 def cc_snr(
@@ -268,7 +235,7 @@ def cc_snr(
             np.mean(mean_signal_best / std_signal),
         )
 
-    return cc_snr_estimates
+    return cc_snr_estimates, std_signal
 
 
 def spike_ppm(

@@ -71,6 +71,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     from niworkflows.interfaces.images import RobustAverage
 
     from mriqc.interfaces.diffusion import (
+        PIESNO,
         CCSegmentation,
         CorrectSignalDrift,
         DipyDTI,
@@ -195,6 +196,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     # Calculate CC mask
     cc_mask = pe.Node(CCSegmentation(), name='cc_mask')
 
+    # Run PIESNO noise estimation
+    piesno = pe.Node(PIESNO(), name='piesno')
+
     # EPI to MNI registration
     spatial_norm = epi_mni_align()
 
@@ -215,6 +219,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (datalad_get, sanitize, [('in_file', 'in_file')]),
         (sanitize, dwi_ref, [('out_file', 'in_file')]),
         (sanitize, sp_mask, [('out_file', 'in_file')]),
+        (sanitize, piesno, [('out_file', 'in_file')]),
         (shells, dwi_ref, [(('b_masks', _first), 't_mask')]),
         (shells, sp_mask, [('b_masks', 'b_masks')]),
         (meta, shells, [('out_bval_file', 'in_bvals')]),
@@ -252,6 +257,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (meta, iqms_wf, [('qspace_neighbors', 'inputnode.qspace_neighbors')]),
         (averages, iqms_wf, [(('out_file', _first), 'inputnode.in_b0')]),
         (sp_mask, iqms_wf, [('out_mask', 'inputnode.spikes_mask')]),
+        (piesno, iqms_wf, [('sigma', 'inputnode.piesno_sigma')]),
         (hmcwf, iqms_wf, [('outputnode.out_fd', 'inputnode.framewise_displacement')]),
         (dti, iqms_wf, [('out_fa', 'inputnode.in_fa'),
                         ('out_cfa', 'inputnode.in_cfa'),
@@ -324,6 +330,7 @@ def compute_iqms(name='ComputeIQMs'):
                 'spikes_mask',
                 'framewise_displacement',
                 'qspace_neighbors',
+                'piesno_sigma',
             ]
         ),
         name='inputnode',
@@ -380,7 +387,8 @@ def compute_iqms(name='ComputeIQMs'):
                                ('in_fa_nans', 'in_fa_nans'),
                                ('in_fa_degenerate', 'in_fa_degenerate'),
                                ('framewise_displacement', 'in_fd'),
-                               ('qspace_neighbors', 'qspace_neighbors')]),
+                               ('qspace_neighbors', 'qspace_neighbors'),
+                               ('piesno_sigma', 'piesno_sigma')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (meta, datasink, [('subject', 'subject_id'),
