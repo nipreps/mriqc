@@ -92,6 +92,7 @@ Global and slice-wise spike fractions (``spikes_ppm``)
 from __future__ import annotations
 
 import numpy as np
+from statsmodels.robust.scale import mad
 
 
 def noise_b0(
@@ -231,7 +232,7 @@ def cc_snr(
     """
 
     cc_mask = cc_mask > 0  # Ensure it's a boolean mask
-    std_signal = in_b0[cc_mask].std()
+    std_signal = mad(in_b0[cc_mask])
 
     cc_snr_estimates = {}
 
