@@ -264,7 +264,7 @@ class DiffusionQC(SimpleInterface):
 
         # NDC
         dwidata = np.round(
-            np.nan_to_num(nb.load(self.inputs.in_b0).get_fdata()),
+            np.nan_to_num(nb.load(self.inputs.in_file).get_fdata()),
             3,
         )
         self._results['ndc'] = float(

@@ -362,9 +362,11 @@ def neighboring_dwi_correlation(
 
     mask = np.ones_like(dwi_data[..., 0], dtype=bool) if mask is None else mask
 
+    dwi_data = dwi_data[mask]
+
     for from_index, to_index in neighbor_indices:
-        flat_from_image = dwi_data[..., from_index][mask]
-        flat_to_image = dwi_data[..., to_index][mask]
+        flat_from_image = dwi_data[from_index]
+        flat_to_image = dwi_data[to_index]
 
         neighbor_correlations.append(
             np.corrcoef(flat_from_image, flat_to_image)[0, 1]
