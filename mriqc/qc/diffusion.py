@@ -328,7 +328,7 @@ def neighboring_dwi_correlation(
 
     The NDC is a measure of the correlation between signal intensities in neighboring
     diffusion-weighted images (DWIs) within a mask. A low NDC (typically below 0.4)
-    can indicate poor image quality, according to Yeh et al. [Yeh2019].
+    can indicate poor image quality, according to Yeh et al. [Yeh2019]_.
 
     Parameters
     ----------
