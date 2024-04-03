@@ -271,9 +271,10 @@ def dmri_qc_workflow(name='dwiMRIQC'):
                            ('b_values', 'inputnode.b_values')]),
         (get_hmc_shells, iqms_wf, [('out_file', 'inputnode.in_shells'),
                                    ('out_bvec', 'inputnode.in_bvec')]),
+        (dwidenoise, iqms_wf, [('noise', 'inputnode.in_noise')]),
         (dwi_ref, spatial_norm, [('out_file', 'inputnode.epi_mean')]),
         (dmri_bmsk, spatial_norm, [('outputnode.out_mask', 'inputnode.epi_mask')]),
-        (dwidenoise, dwi_report_wf, [('noise', 'inputnode.in_noise')]),
+        (iqms_wf, dwi_report_wf, [('outputnode.noise_floor', 'inputnode.noise_floor')]),
         (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict')]),
         (dmri_bmsk, dwi_report_wf, [('outputnode.out_mask', 'inputnode.brain_mask')]),
         (shells, dwi_report_wf, [('b_values', 'inputnode.in_shells')]),
@@ -324,6 +325,7 @@ def compute_iqms(name='ComputeIQMs'):
                 'in_fa_nans',
                 'in_fa_degenerate',
                 'in_md',
+                'in_noise',
                 'brain_mask',
                 'wm_mask',
                 'cc_mask',
@@ -340,9 +342,15 @@ def compute_iqms(name='ComputeIQMs'):
             fields=[
                 'out_file',
                 'meta_sidecar',
+                'noise_floor',
             ]
         ),
         name='outputnode',
+    )
+
+    estimate_sigma = pe.Node(
+        niu.Function(function=_estimate_sigma),
+        name='estimate_sigma',
     )
 
     meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name='metadata')
@@ -401,6 +409,10 @@ def compute_iqms(name='ComputeIQMs'):
         (datasink, outputnode, [('out_file', 'out_file')]),
         (meta, outputnode, [('out_dict', 'meta_sidecar')]),
         (measures, datasink, [('out_qc', 'root')]),
+        (inputnode, estimate_sigma, [('in_noise', 'in_file'),
+                                     ('brain_mask', 'mask')]),
+        (estimate_sigma, measures, [('out', 'noise_floor')]),
+        (estimate_sigma, outputnode, [('out', 'noise_floor')]),
     ])
     # fmt: on
     return workflow
@@ -639,3 +651,14 @@ def _all_but_first(inlist):
         return inlist[1:]
 
     return inlist
+
+
+def _estimate_sigma(in_file, mask):
+    import nibabel as nb
+    import numpy as np
+
+    msk = nb.load(mask).get_fdata() > 0.5
+    return round(
+        float(np.median(nb.load(in_file).get_fdata()[msk])),
+        6,
+    )
