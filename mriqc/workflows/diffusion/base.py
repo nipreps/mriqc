@@ -71,13 +71,13 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     from niworkflows.interfaces.images import RobustAverage
 
     from mriqc.interfaces.diffusion import (
+        PIESNO,
         CCSegmentation,
         CorrectSignalDrift,
         DipyDTI,
         ExtractOrientations,
         FilterShells,
         NumberOfShells,
-        PIESNO,
         ReadDWIMetadata,
         SpikingVoxelsMask,
         WeightedStat,
