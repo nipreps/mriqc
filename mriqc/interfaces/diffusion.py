@@ -56,6 +56,7 @@ __all__ = (
     'ExtractOrientations',
     'FilterShells',
     'NumberOfShells',
+    'PIESNO',
     'ReadDWIMetadata',
     'SpikingVoxelsMask',
     'SplitShells',
@@ -129,6 +130,7 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
         minlen=1,
         desc='q-space nearest neighbor pairs',
     )
+    piesno_sigma = traits.Float(-1.0, usedefault=True, desc='noise sigma calculated with PIESNO')
 
 
 class _DiffusionQCOutputSpec(TraitedSpec):
@@ -139,6 +141,7 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     fber = traits.Dict
     fd = traits.Dict
     ndc = traits.Float
+    piesnosigma = traits.Float
     spikes_ppm = traits.Dict
     # gsr = traits.Dict
     # tsnr = traits.Float
@@ -274,6 +277,9 @@ class DiffusionQC(SimpleInterface):
                 mask=mskdata > 0.5,
             )
         )
+
+        # PIESNO
+        self._results['piesnosigma'] = round(self.inputs.piesno_sigma, 4)
 
         self._results['out_qc'] = _flatten_dict(self._results)
 
@@ -1027,6 +1033,51 @@ class SpikingVoxelsMask(SimpleInterface):
         return runtime
 
 
+class _PIESNOInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='a DWI 4D file')
+    n_channels = traits.Int(4, usedefault=True, min=1, desc='number of channels')
+
+
+class _PIESNOOutputSpec(_TraitedSpec):
+    sigma = traits.Float(desc='noise sigma calculated with PIESNO')
+    out_mask = File(exists=True, desc='a 4D binary mask of spiking voxels')
+
+
+class PIESNO(SimpleInterface):
+    """Computes :abbr:`QC (Quality Control)` measures on the input DWI EPI scan."""
+
+    input_spec = _PIESNOInputSpec
+    output_spec = _PIESNOOutputSpec
+
+    def _run_interface(self, runtime):
+        self._results['out_mask'] = fname_presuffix(
+            self.inputs.in_file,
+            suffix='piesno',
+            newpath=runtime.cwd,
+        )
+
+        in_nii = nb.load(self.inputs.in_file)
+        data = np.round(in_nii.get_fdata(), 4).astype('float32')
+
+        sigma, maskdata = noise_piesno(data)
+
+        header = in_nii.header.copy()
+        header.set_data_dtype(np.uint8)
+        header.set_xyzt_units('mm')
+        header.set_intent('estimate', name='PIESNO noise voxels mask')
+        header['cal_max'] = 1
+        header['cal_min'] = 0
+
+        nb.Nifti1Image(
+            maskdata.astype(np.uint8),
+            in_nii.affine,
+            header,
+        ).to_filename(self._results['out_mask'])
+
+        self._results['sigma'] = round(float(np.median(sigma)), 5)
+        return runtime
+
+
 def _rms(estimator, X):
     """
     Callable to pass to GridSearchCV that will calculate a distance score.
@@ -1252,3 +1303,42 @@ def _find_qspace_neighbors(
         dwi_neighbors.append((dwi_index, neighbor_index))
 
     return dwi_neighbors
+
+
+def noise_piesno(data: np.ndarray, n_channels: int = 4) -> (np.ndarray, np.ndarray):
+    """
+    Estimates noise in raw diffusion MRI (dMRI) data using the PIESNO algorithm.
+
+    This function implements the PIESNO (Probabilistic Identification and Estimation
+    of Noise) algorithm [Koay2009]_ to estimate the standard deviation (sigma) of the
+    noise in each voxel of a 4D dMRI data array. The PIESNO algorithm assumes Rician
+    distributed signal and exploits the statistical properties of the noise to
+    separate it from the underlying signal.
+
+    Parameters
+    ----------
+    data : :obj:`~numpy.ndarray`
+        The 4D raw dMRI data array.
+    n_channels : :obj:`int`, optional (default=4)
+        The number of diffusion-encoding channels in the data. This value is used
+        internally by the PIESNO algorithm.
+
+    Returns
+    -------
+    sigma : :obj:`~numpy.ndarray`
+        The estimated noise standard deviation for each voxel in the data array.
+    mask : :obj:`~numpy.ndarray`
+        A brain mask estimated by PIESNO. This mask identifies voxels containing
+        mostly noise and can be used for further processing.
+
+    Notes
+    -----
+
+    .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
+           and Estimation of Noise (PIESNO): A self-consistent approach and
+           its applications in MRI. JMR, 199(1):94-103, 2009.
+    """
+    from dipy.denoise.noise_estimate import piesno
+
+    sigma, mask = piesno(data, N=n_channels, return_mask=True)
+    return sigma, mask
