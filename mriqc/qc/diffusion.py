@@ -228,7 +228,7 @@ def cc_snr(
             np.mean(mean_signal_best / std_signal),
         )
 
-    return cc_snr_estimates
+    return cc_snr_estimates, std_signal
 
 
 def spike_ppm(

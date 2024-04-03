@@ -141,7 +141,8 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     fber = traits.Dict
     fd = traits.Dict
     ndc = traits.Float
-    piesnosigma = traits.Float
+    sigma_cc = traits.Float
+    sigma_piesno = traits.Float
     spikes_ppm = traits.Dict
     # gsr = traits.Dict
     # tsnr = traits.Float
@@ -217,13 +218,12 @@ class DiffusionQC(SimpleInterface):
         rois = {
             'fg': mskdata,
             'bg': 1.0 - mskdata,
-            'cc': ccdata,
             'wm': wmdata,
         }
         stats = aqc.summary_stats(b0data, rois)
         self._results['summary'] = stats
 
-        self._results['cc_snr'] = dqc.cc_snr(
+        self._results['cc_snr'], cc_sigma = dqc.cc_snr(
             in_b0=b0data,
             dwi_shells=shelldata,
             cc_mask=ccdata,
@@ -279,7 +279,8 @@ class DiffusionQC(SimpleInterface):
         )
 
         # PIESNO
-        self._results['piesnosigma'] = round(self.inputs.piesno_sigma, 4)
+        self._results['sigma_piesno'] = round(self.inputs.piesno_sigma, 4)
+        self._results['sigma_cc'] = round(float(cc_sigma), 4)
 
         self._results['out_qc'] = _flatten_dict(self._results)
 
