@@ -67,16 +67,11 @@ def init_dwi_report_wf(name='dwi_report_wf'):
                 'in_md',
                 'in_parcellation',
                 'in_bdict',
-                'in_noise',
+                'noise_floor',
                 'name_source',
             ]
         ),
         name='inputnode',
-    )
-
-    estimate_sigma = pe.Node(
-        niu.Function(function=_estimate_sigma),
-        name='estimate_sigma',
     )
 
     # Set FD threshold
@@ -207,11 +202,9 @@ def init_dwi_report_wf(name='dwi_report_wf'):
         (inputnode, get_wm, [('in_parcellation', 'in_file')]),
         (inputnode, plot_heatmap, [('in_epi', 'in_file'),
                                    ('in_fa', 'scalarmap'),
-                                   ('in_bdict', 'b_indices')]),
+                                   ('in_bdict', 'b_indices'),
+                                   ('noise_floor', 'sigma')]),
         (inputnode, ds_report_hm, [('name_source', 'source_file')]),
-        (inputnode, estimate_sigma, [('in_noise', 'in_file'),
-                                     ('brain_mask', 'mask')]),
-        (estimate_sigma, plot_heatmap, [('out', 'sigma')]),
         (get_wm, plot_heatmap, [('out', 'mask_file')]),
         (plot_heatmap, ds_report_hm, [('out_file', 'in_file')]),
 
@@ -425,14 +418,3 @@ def _get_wm(in_file, radius=2):
         hdr,
     ).to_filename(out_wm)
     return out_wm
-
-
-def _estimate_sigma(in_file, mask):
-    import nibabel as nb
-    import numpy as np
-
-    msk = np.asanyarray(nb.load(mask).dataobj) > 0.5
-
-    return float(
-        np.median(nb.load(in_file).get_fdata()[msk])
-    )

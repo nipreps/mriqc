@@ -104,6 +104,7 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
     wm_mask = File(exists=True, mandatory=True, desc='input probabilistic white-matter mask')
     cc_mask = File(exists=True, mandatory=True, desc='input binary mask of the corpus callosum')
     spikes_mask = File(exists=True, mandatory=True, desc='input binary mask of spiking voxels')
+    noise_floor = traits.Float(mandatory=True, desc='noise-floor map estimated by means of PCA')
     direction = traits.Enum(
         'all',
         'x',
@@ -142,6 +143,7 @@ class _DiffusionQCOutputSpec(TraitedSpec):
     fd = traits.Dict
     ndc = traits.Float
     sigma_cc = traits.Float
+    sigma_pca = traits.Float
     sigma_piesno = traits.Float
     spikes_ppm = traits.Dict
     # gsr = traits.Dict
@@ -223,6 +225,7 @@ class DiffusionQC(SimpleInterface):
         stats = aqc.summary_stats(b0data, rois)
         self._results['summary'] = stats
 
+        # CC mask SNR and std
         self._results['cc_snr'], cc_sigma = dqc.cc_snr(
             in_b0=b0data,
             dwi_shells=shelldata,
@@ -230,6 +233,7 @@ class DiffusionQC(SimpleInterface):
             b_values=self.inputs.in_bval,
             b_vectors=self.inputs.in_bvec,
         )
+        self._results['sigma_cc'] = round(float(cc_sigma), 4)
 
         fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
         self._results['fa_nans'] = np.round(float(fa_nans_mask[mskdata > 0.5].mean()), 8) * 1e6
@@ -280,7 +284,9 @@ class DiffusionQC(SimpleInterface):
 
         # PIESNO
         self._results['sigma_piesno'] = round(self.inputs.piesno_sigma, 4)
-        self._results['sigma_cc'] = round(float(cc_sigma), 4)
+
+        # dwidenoise - Marchenko-Pastur PCA
+        self._results['sigma_pca'] = round(self.inputs.noise_floor, 4)
 
         self._results['out_qc'] = _flatten_dict(self._results)
 
