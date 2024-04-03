@@ -316,3 +316,60 @@ def spike_ppm(
     ]
 
     return {'global': spike_perc_global, 'slice': spike_perc_slice}
+
+
+def neighboring_dwi_correlation(
+    dwi_data: np.ndarray,
+    neighbor_indices: list[tuple[int, int]],
+    mask: np.ndarray | None = None,
+) -> float:
+    """
+    Calculates the Neighboring DWI Correlation (NDC) from diffusion MRI (dMRI) data.
+
+    The NDC is a measure of the correlation between signal intensities in neighboring
+    diffusion-weighted images (DWIs) within a mask. A low NDC (typically below 0.4)
+    can indicate poor image quality, according to Yeh et al. [Yeh2019]_.
+
+    Parameters
+    ----------
+    dwi_data : 4D :obj:`~numpy.ndarray`
+        DWI data on which to calculate NDC
+    neighbor_indices : :obj:`list` of :obj:`tuple`
+        List of (from, to) index neighbors.
+    mask : 3D :obj:`~numpy.ndarray`, optional
+        optional mask of voxels to include in the NDC calculation
+
+    Returns
+    -------
+    :obj:`float`
+        The NDC value.
+
+    References
+    ----------
+    .. [Yeh2019] Yeh, Fang-Cheng, et al. "Differential tractography as a
+                 track-based biomarker for neuronal injury."
+                 NeuroImage 202 (2019): 116131.
+
+    Notes
+    -----
+    This is a copy of DIPY's code to be removed (and just imported) as soon as
+    a new release of DIPY is cut including
+    `dipy/dipy#3156 <https://github.com/dipy/dipy/pull/3156>`__.
+
+    """
+
+    neighbor_correlations = []
+
+    mask = np.ones_like(dwi_data[..., 0], dtype=bool) if mask is None else mask
+
+    dwi_data = dwi_data[mask]
+
+    for from_index, to_index in neighbor_indices:
+        flat_from_image = dwi_data[from_index]
+        flat_to_image = dwi_data[to_index]
+
+        neighbor_correlations.append(
+            np.corrcoef(flat_from_image, flat_to_image)[0, 1]
+        )
+
+    return np.round(np.mean(neighbor_correlations), 4)
