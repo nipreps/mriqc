@@ -51,13 +51,14 @@ from mriqc.utils.misc import _flatten_dict
 __all__ = (
     'CCSegmentation',
     'CorrectSignalDrift',
-    'DiffusionQC',
     'DiffusionModel',
+    'DiffusionQC',
     'ExtractOrientations',
     'FilterShells',
     'NumberOfShells',
     'PIESNO',
     'ReadDWIMetadata',
+    'RotateVectors',
     'SpikingVoxelsMask',
     'SplitShells',
     'WeightedStat',
@@ -89,6 +90,18 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
         mandatory=True,
         minlen=1,
         desc='a list of shell-wise splits of b-vectors lists -- first list are b=0',
+    )
+    in_bvec_rotated = traits.List(
+        traits.Tuple(traits.Float, traits.Float, traits.Float),
+        mandatory=True,
+        minlen=1,
+        desc='b-vectors after rotating by the head-motion correction transform',
+    )
+    in_bvec_diff = traits.List(
+        traits.Float,
+        mandatory=True,
+        minlen=1,
+        desc='list of angle deviations from the original b-vectors table',
     )
     in_fa = File(exists=True, mandatory=True, desc='input FA map')
     in_fa_nans = File(exists=True, mandatory=True,
@@ -135,6 +148,7 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
 
 
 class _DiffusionQCOutputSpec(TraitedSpec):
+    bdiffs = traits.Dict
     cc_snr = traits.Dict
     efc = traits.Dict
     fa_degenerate = traits.Float
@@ -288,8 +302,16 @@ class DiffusionQC(SimpleInterface):
         # dwidenoise - Marchenko-Pastur PCA
         self._results['sigma_pca'] = round(self.inputs.noise_floor, 4)
 
-        self._results['out_qc'] = _flatten_dict(self._results)
+        # rotated b-vecs deviations
+        diffs = np.array(self.inputs.in_bvec_diff)
+        self._results['bdiffs'] = {
+            'mean': round(float(diffs[diffs > 1e-4].mean()), 4),
+            'median': round(float(np.median(diffs[diffs > 1e-4])), 4),
+            'max': round(float(diffs[diffs > 1e-4].max()), 4),
+            'min': round(float(diffs[diffs > 1e-4].min()), 4),
+        }
 
+        self._results['out_qc'] = _flatten_dict(self._results)
         return runtime
 
 
@@ -1090,6 +1112,76 @@ class PIESNO(SimpleInterface):
         ).to_filename(self._results['out_mask'])
 
         self._results['sigma'] = round(float(np.median(sigma)), 5)
+        return runtime
+
+
+class _RotateVectorsInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(
+        exists=True,
+        mandatory=True,
+        desc='TSV file containing original b-vectors and b-values',
+    )
+    reference = File(
+        exists=True,
+        mandatory=True,
+        desc='dwi-related file providing the reference affine',
+    )
+    transforms = File(exists=True, desc='list of head-motion transforms')
+
+
+class _RotateVectorsOutputSpec(_TraitedSpec):
+    out_bvec = traits.List(
+        traits.Tuple(traits.Float, traits.Float, traits.Float),
+        minlen=1,
+        desc='rotated b-vectors',
+    )
+    out_diff = traits.List(
+        traits.Float,
+        minlen=1,
+        desc='angles in radians between new b-vectors and the original ones',
+    )
+
+
+class RotateVectors(SimpleInterface):
+    """Extract all b=0 volumes from a dwi series."""
+
+    input_spec = _RotateVectorsInputSpec
+    output_spec = _RotateVectorsOutputSpec
+
+    def _run_interface(self, runtime):
+        from nitransforms.linear import load
+
+        vox2ras = nb.load(self.inputs.reference).affine
+        ras2vox = np.linalg.inv(vox2ras)
+
+        ijk = np.loadtxt(self.inputs.in_file).T
+        nonzero = np.linalg.norm(ijk, axis=1) > 1e-3
+
+        xyz = (vox2ras[:3, :3] @ ijk.T).T
+
+        # Unit vectors in RAS coordinates
+        xyz_norms = np.linalg.norm(xyz, axis=1)
+        xyz[nonzero] = xyz[nonzero] / xyz_norms[nonzero, np.newaxis]
+
+        hmc_rot = load(self.inputs.transforms).matrix[:, :3, :3]
+        ijk_rotated = (
+            ras2vox[:3, :3]
+            @ np.einsum('ijk,ik->ij', hmc_rot, xyz).T
+        ).T.astype('float32')
+        ijk_rotated_norm = np.linalg.norm(ijk_rotated, axis=1)
+        ijk_rotated[nonzero] = ijk_rotated[nonzero] / ijk_rotated_norm[nonzero, np.newaxis]
+        ijk_rotated[~nonzero] = ijk[~nonzero]
+
+        self._results['out_bvec'] = list(
+            zip(ijk_rotated[:, 0], ijk_rotated[:, 1], ijk_rotated[:, 2])
+        )
+
+        diffs = np.zeros_like(ijk[:, 0])
+        diffs[nonzero] = np.arccos(
+            np.clip(np.einsum('ij, ij->i', ijk[nonzero], ijk_rotated[nonzero]), -1.0, 1.0)
+        )
+        self._results['out_diff'] = [round(float(v), 6) for v in diffs]
+
         return runtime
 
 

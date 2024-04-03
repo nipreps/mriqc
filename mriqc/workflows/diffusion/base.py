@@ -110,11 +110,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='datalad_get',
     )
 
-    # outputnode = pe.Node(
-    #     niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
-    #     name='outputnode',
-    # )
-
     sanitize = pe.Node(
         SanitizeImage(
             n_volumes_to_discard=0,
@@ -140,14 +135,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='hmc_b0',
         mem_gb=mem_gb * 2.5,
     )
-
-    # Shell-wise hmc not functional (yet?)
-    # hmc_shells = pe.MapNode(
-    #     Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
-    #     name='hmc_shells',
-    #     mem_gb=mem_gb * 2.5,
-    #     iterfield=['in_file'],
-    # )
 
     # Calculate brainmask
     dmri_bmsk = dmri_bmsk_workflow(omp_nthreads=config.nipype.omp_nthreads)
@@ -230,6 +217,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (dmri_bmsk, sp_mask, [('outputnode.out_mask', 'brain_mask')]),
         (dmri_bmsk, drift, [('outputnode.out_mask', 'brainmask_file')]),
         (drift, hmcwf, [('out_full_file', 'inputnode.in_file')]),
+        (meta, hmcwf, [('out_bvec_file', 'inputnode.in_bvec')]),
         (drift, averages, [('out_full_file', 'in_file')]),
         (drift, stddev, [('out_full_file', 'in_file')]),
         (shells, averages, [('b_masks', 'in_weights')]),
@@ -251,7 +239,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (averages, iqms_wf, [(('out_file', _first), 'inputnode.in_b0')]),
         (sp_mask, iqms_wf, [('out_mask', 'inputnode.spikes_mask')]),
         (piesno, iqms_wf, [('sigma', 'inputnode.piesno_sigma')]),
-        (hmcwf, iqms_wf, [('outputnode.out_fd', 'inputnode.framewise_displacement')]),
+        (hmcwf, iqms_wf, [('outputnode.out_fd', 'inputnode.framewise_displacement'),
+                          ('outputnode.out_bvec', 'inputnode.in_bvec_rotated'),
+                          ('outputnode.out_bvec_diff', 'inputnode.in_bvec_diff')]),
         (dwimodel, iqms_wf, [('out_fa', 'inputnode.in_fa'),
                              ('out_cfa', 'inputnode.in_cfa'),
                              ('out_fa_nans', 'inputnode.in_fa_nans'),
@@ -312,6 +302,8 @@ def compute_iqms(name='ComputeIQMs'):
                 'in_file',
                 'in_shells',
                 'in_bvec',
+                'in_bvec_rotated',
+                'in_bvec_diff',
                 'in_b0',
                 'in_fa',
                 'in_cfa',
@@ -377,6 +369,8 @@ def compute_iqms(name='ComputeIQMs'):
                                ('b_values', 'in_bval'),
                                ('in_shells', 'in_shells'),
                                ('in_bvec', 'in_bvec'),
+                               ('in_bvec_rotated', 'in_bvec_rotated'),
+                               ('in_bvec_diff', 'in_bvec_diff'),
                                ('in_b0', 'in_b0'),
                                ('brain_mask', 'brain_mask'),
                                ('wm_mask', 'wm_mask'),
@@ -426,12 +420,23 @@ def hmc_workflow(name='dMRI_HMC'):
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Volreg
 
+    from mriqc.interfaces.diffusion import RotateVectors
+
     mem_gb = config.workflow.biggest_file_gb
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file', 'reference']), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=['out_file', 'out_fd']), name='outputnode')
+    inputnode = pe.Node(niu.IdentityInterface(fields=[
+        'in_file',
+        'reference',
+        'in_bvec',
+    ]), name='inputnode')
+    outputnode = pe.Node(niu.IdentityInterface(fields=[
+        'out_file',
+        'out_fd',
+        'out_bvec',
+        'out_bvec_diff',
+    ]), name='outputnode')
 
     # calculate hmc parameters
     hmc = pe.Node(
@@ -439,6 +444,8 @@ def hmc_workflow(name='dMRI_HMC'):
         name='motion_correct',
         mem_gb=mem_gb * 2.5,
     )
+
+    bvec_rot = pe.Node(RotateVectors(), name='bvec_rot')
 
     # Compute the frame-wise displacement
     fdnode = pe.Node(
@@ -454,9 +461,14 @@ def hmc_workflow(name='dMRI_HMC'):
     workflow.connect([
         (inputnode, hmc, [('in_file', 'in_file'),
                           ('reference', 'basefile')]),
+        (inputnode, bvec_rot, [('in_bvec', 'in_file'),
+                               ('reference', 'reference')]),
         (hmc, outputnode, [('out_file', 'out_file')]),
         (hmc, fdnode, [('oned_file', 'in_file')]),
+        (hmc, bvec_rot, [('oned_matrix_save', 'transforms')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (bvec_rot, outputnode, [('out_bvec', 'out_bvec'),
+                                ('out_diff', 'out_bvec_diff')]),
     ])
     # fmt: on
     return workflow
