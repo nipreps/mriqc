@@ -52,7 +52,7 @@ __all__ = (
     'CCSegmentation',
     'CorrectSignalDrift',
     'DiffusionQC',
-    'DipyDTI',
+    'DiffusionModel',
     'ExtractOrientations',
     'FilterShells',
     'NumberOfShells',
@@ -697,17 +697,16 @@ class FilterShells(SimpleInterface):
         return runtime
 
 
-class _DipyDTIInputSpec(_BaseInterfaceInputSpec):
+class _DiffusionModelInputSpec(_BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='dwi file')
     bvals = traits.List(traits.Float, mandatory=True, desc='bval table')
     bvec_file = File(exists=True, mandatory=True, desc='b-vectors')
-    brainmask = File(exists=True, desc='brain mask file')
-    free_water_model = traits.Bool(False, usedefault=True, desc='use free water model')
-    b_threshold = traits.Float(1100, usedefault=True, desc='use only inner shells of the data')
+    brain_mask = File(exists=True, desc='brain mask file')
     decimals = traits.Int(3, usedefault=True, desc='round output maps for reliability')
+    n_shells = traits.Int(mandatory=True, desc='number of shells')
 
 
-class _DipyDTIOutputSpec(_TraitedSpec):
+class _DiffusionModelOutputSpec(_TraitedSpec):
     out_fa = File(exists=True, desc='output FA file')
     out_fa_nans = File(exists=True, desc='binary mask of NaN values in the "raw" FA map')
     out_fa_degenerate = File(
@@ -718,44 +717,53 @@ class _DipyDTIOutputSpec(_TraitedSpec):
     out_md = File(exists=True, desc='output MD file')
 
 
-class DipyDTI(SimpleInterface):
-    """Split a DWI dataset into ."""
+class DiffusionModel(SimpleInterface):
+    """
+    Fit a :obj:`~dipy.reconst.dki.DiffusionKurtosisModel` on the dataset.
 
-    input_spec = _DipyDTIInputSpec
-    output_spec = _DipyDTIOutputSpec
+    If ``n_shells`` is set to 1, then a :obj:`~dipy.reconst.dti.TensorModel`
+    is used.
+
+    """
+
+    input_spec = _DiffusionModelInputSpec
+    output_spec = _DiffusionModelOutputSpec
 
     def _run_interface(self, runtime):
         from dipy.core.gradients import gradient_table_from_bvals_bvecs
-        from dipy.reconst.dti import TensorModel, color_fa, fractional_anisotropy
-        from dipy.reconst.fwdti import FreeWaterTensorModel
         from nipype.utils.filemanip import fname_presuffix
 
         bvals = np.array(self.inputs.bvals)
-        bval_mask = bvals < self.inputs.b_threshold
 
         gtab = gradient_table_from_bvals_bvecs(
-            bvals=bvals[bval_mask],
-            bvecs=np.loadtxt(self.inputs.bvec_file).T[bval_mask],
+            bvals=bvals,
+            bvecs=np.loadtxt(self.inputs.bvec_file).T,
         )
 
         img = nb.load(self.inputs.in_file)
-        data = img.get_fdata(dtype='float32')[..., bval_mask]
+        data = img.get_fdata(dtype='float32')
 
         brainmask = np.ones_like(data[..., 0], dtype=bool)
 
-        if isdefined(self.inputs.brainmask):
-            brainmask = np.asanyarray(nb.load(self.inputs.brainmask).dataobj) > 0.5
+        if isdefined(self.inputs.brain_mask):
+            brainmask = np.round(
+                nb.load(self.inputs.brain_mask).get_fdata(),
+                3,
+            ) > 0.5
 
-        DTIModel = FreeWaterTensorModel if self.inputs.free_water_model else TensorModel
+        if self.inputs.n_shells == 1:
+            from dipy.reconst.dti import TensorModel as Model
+        else:
+            from dipy.reconst.dki import DiffusionKurtosisModel as Model
 
         # Fit DIT
-        fwdtifit = DTIModel(gtab).fit(
+        fwdtifit = Model(gtab).fit(
             data,
             mask=brainmask,
         )
 
         # Extract the FA
-        fa_data = fractional_anisotropy(fwdtifit.evals)
+        fa_data = fwdtifit.fa
         fa_nan_msk = np.isnan(fa_data)
         fa_data[fa_nan_msk] = 0
 
@@ -823,7 +831,7 @@ class DipyDTI(SimpleInterface):
         fa_degenerate_nii.to_filename(self._results['out_fa_degenerate'])
 
         # Extract the color FA
-        cfa_data = color_fa(fa_data, fwdtifit.evecs)
+        cfa_data = fwdtifit.color_fa
         cfa_nii = nb.Nifti1Image(
             np.clip(cfa_data, a_min=0.0, a_max=1.0),
             img.affine,
@@ -848,15 +856,15 @@ class DipyDTI(SimpleInterface):
             suffix='md',
             newpath=runtime.cwd,
         )
-        ad_data = np.array(fwdtifit.ad, dtype='float32')
-        ad_data[np.isnan(ad_data)] = 0
-        ad_data = np.clip(ad_data, 0, 1)
-        ad_hdr = fa_nii.header.copy()
-        ad_hdr.set_intent('estimate', name='Mean diffusivity (MD)')
+        md_data = np.array(fwdtifit.md, dtype='float32')
+        md_data[np.isnan(md_data)] = 0
+        md_data = np.clip(md_data, 0, 1)
+        md_hdr = fa_nii.header.copy()
+        md_hdr.set_intent('estimate', name='Mean diffusivity (MD)')
         nb.Nifti1Image(
-            ad_data,
+            md_data,
             img.affine,
-            ad_hdr
+            md_hdr
         ).to_filename(self._results['out_md'])
 
         return runtime

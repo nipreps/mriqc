@@ -74,9 +74,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         PIESNO,
         CCSegmentation,
         CorrectSignalDrift,
-        DipyDTI,
+        DiffusionModel,
         ExtractOrientations,
-        FilterShells,
         NumberOfShells,
         ReadDWIMetadata,
         SpikingVoxelsMask,
@@ -176,8 +175,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         iterfield=['in_weights'],
     )
 
-    # Fit DTI model
-    dti_filter = pe.Node(FilterShells(), name='dti_filter')
     dwidenoise = pe.Node(
         DWIDenoise(
             noise='noisemap.nii.gz',
@@ -186,10 +183,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='dwidenoise',
         nprocs=config.nipype.omp_nthreads,
     )
-    dti = pe.Node(
-        DipyDTI(free_water_model=False),
-        name='dti',
-    )
+    # Fit DTI/DKI model
+    dwimodel = pe.Node(DiffusionModel(), name='dwimodel')
 
     sp_mask = pe.Node(SpikingVoxelsMask(), name='sp_mask')
 
@@ -240,30 +235,28 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (shells, averages, [('b_masks', 'in_weights')]),
         (averages, hmcwf, [(('out_file', _first), 'inputnode.reference')]),
         (shells, stddev, [('b_masks', 'in_weights')]),
-        (shells, dti_filter, [('out_data', 'bvals')]),
-        (meta, dti_filter, [('out_bvec_file', 'bvec_file')]),
-        (drift, dti_filter, [('out_full_file', 'in_file')]),
-        (dti_filter, dti, [('out_bvals', 'bvals')]),
-        (dti_filter, dti, [('out_bvec_file', 'bvec_file')]),
-        (dti_filter, dwidenoise, [('out_file', 'in_file')]),
+        (shells, dwimodel, [('out_data', 'bvals'),
+                            ('n_shells', 'n_shells')]),
+        (meta, dwimodel, [('out_bvec_file', 'bvec_file')]),
+        (drift, dwidenoise, [('out_full_file', 'in_file')]),
         (dmri_bmsk, dwidenoise, [('outputnode.out_mask', 'mask')]),
-        (dwidenoise, dti, [('out_file', 'in_file')]),
-        (dmri_bmsk, dti, [('outputnode.out_mask', 'brainmask')]),
+        (dwidenoise, dwimodel, [('out_file', 'in_file')]),
+        (dmri_bmsk, dwimodel, [('outputnode.out_mask', 'brain_mask')]),
         (meta, get_hmc_shells, [('out_bvec_file', 'in_bvec_file')]),
         (shells, get_hmc_shells, [('b_indices', 'indices')]),
         (hmcwf, get_hmc_shells, [('outputnode.out_file', 'in_file')]),
-        (dti, cc_mask, [('out_fa', 'in_fa'),
-                        ('out_cfa', 'in_cfa')]),
+        (dwimodel, cc_mask, [('out_fa', 'in_fa'),
+                             ('out_cfa', 'in_cfa')]),
         (meta, iqms_wf, [('qspace_neighbors', 'inputnode.qspace_neighbors')]),
         (averages, iqms_wf, [(('out_file', _first), 'inputnode.in_b0')]),
         (sp_mask, iqms_wf, [('out_mask', 'inputnode.spikes_mask')]),
         (piesno, iqms_wf, [('sigma', 'inputnode.piesno_sigma')]),
         (hmcwf, iqms_wf, [('outputnode.out_fd', 'inputnode.framewise_displacement')]),
-        (dti, iqms_wf, [('out_fa', 'inputnode.in_fa'),
-                        ('out_cfa', 'inputnode.in_cfa'),
-                        ('out_fa_nans', 'inputnode.in_fa_nans'),
-                        ('out_fa_degenerate', 'inputnode.in_fa_degenerate'),
-                        ('out_md', 'inputnode.in_md')]),
+        (dwimodel, iqms_wf, [('out_fa', 'inputnode.in_fa'),
+                             ('out_cfa', 'inputnode.in_cfa'),
+                             ('out_fa_nans', 'inputnode.in_fa_nans'),
+                             ('out_fa_degenerate', 'inputnode.in_fa_degenerate'),
+                             ('out_md', 'inputnode.in_md')]),
         (dmri_bmsk, iqms_wf, [('outputnode.out_mask', 'inputnode.brain_mask')]),
         (cc_mask, iqms_wf, [('out_mask', 'inputnode.cc_mask'),
                             ('wm_finalmask', 'inputnode.wm_mask')]),
@@ -281,8 +274,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (averages, dwi_report_wf, [('out_file', 'inputnode.in_avgmap')]),
         (stddev, dwi_report_wf, [('out_file', 'inputnode.in_stdmap')]),
         (drift, dwi_report_wf, [('out_full_file', 'inputnode.in_epi')]),
-        (dti, dwi_report_wf, [('out_fa', 'inputnode.in_fa'),
-                              ('out_md', 'inputnode.in_md')]),
+        (dwimodel, dwi_report_wf, [('out_fa', 'inputnode.in_fa'),
+                                   ('out_md', 'inputnode.in_md')]),
         (spatial_norm, dwi_report_wf, [('outputnode.epi_parc', 'inputnode.in_parcellation')]),
     ])
     # fmt: on

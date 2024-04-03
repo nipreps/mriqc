@@ -149,7 +149,7 @@ def init_dwi_report_wf(name='dwi_report_wf'):
     ds_report_md = pe.Node(
         DerivativesDataSink(
             base_directory=reportlets_dir,
-            desc='ad',
+            desc='md',
             datatype='figures',
         ),
         name='ds_report_md',
