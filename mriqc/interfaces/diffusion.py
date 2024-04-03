@@ -1332,12 +1332,6 @@ def noise_piesno(data: np.ndarray, n_channels: int = 4) -> (np.ndarray, np.ndarr
         A brain mask estimated by PIESNO. This mask identifies voxels containing
         mostly noise and can be used for further processing.
 
-    Notes
-    -----
-
-    .. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
-           and Estimation of Noise (PIESNO): A self-consistent approach and
-           its applications in MRI. JMR, 199(1):94-103, 2009.
     """
     from dipy.denoise.noise_estimate import piesno
 

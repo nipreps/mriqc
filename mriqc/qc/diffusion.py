@@ -58,7 +58,7 @@ IQMs specific to diffusion weighted imaging.
 
 Noise in raw dMRI estimated with PIESNO (``piesno_sigma``)
     Employs PIESNO (Probabilistic Identification and Estimation
-    of Noise) algorithm [1]_ to estimate the standard deviation (sigma) of the
+    of Noise) algorithm [Koay2009]_ to estimate the standard deviation (sigma) of the
     noise in each voxel of a 4D dMRI data array.
 
 .. _iqms_cc_snr:
@@ -87,6 +87,12 @@ Global and slice-wise spike fractions (``spikes_ppm``)
     Fractions of voxels classified as spikes (in parts-per-million, ppm).
     The spikes mask is calculated by identifying voxels with signal intensities
     exceeding a threshold based on standard deviations above the mean.
+
+References
+----------
+.. [Koay2009] Koay C.G., E. Ozarslan, C. Pierpaoli. Probabilistic Identification
+       and Estimation of Noise (PIESNO): A self-consistent approach and
+       its applications in MRI. JMR, 199(1):94-103, 2009.
 
 """
 from __future__ import annotations
