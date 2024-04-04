@@ -284,27 +284,6 @@ def spatial_normalization(name='SpatialNormalization'):
         )
     ]
 
-    # Project MNI segmentation to T1 space
-    tpms_std2t1w = pe.MapNode(
-        ApplyTransforms(
-            dimension=3,
-            default_value=0,
-            interpolation='Linear',
-            float=config.execution.ants_float,
-        ),
-        iterfield=['input_image'],
-        name='tpms_std2t1w',
-    )
-    tpms_std2t1w.inputs.input_image = [
-        str(p)
-        for p in get_template(
-            config.workflow.template_id,
-            suffix='probseg',
-            resolution=(1 if config.workflow.species.lower() == 'human' else None),
-            label=['CSF', 'GM', 'WM'],
-        )
-    ]
-
     # fmt: off
     workflow.connect([
         (inputnode, norm, [('moving_image', 'moving_image'),
