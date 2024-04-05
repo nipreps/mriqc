@@ -34,12 +34,12 @@ GROUP_START = 'Group level started...'
 INDIVIDUAL_REPORT_GENERATED = 'Generated individual log: {out_file}'
 PARTICIPANT_START = """\
 ------------------------------------------------------------------
-         Running MRIQC version {version}
-         ------------------------------------------------------------------
-           * BIDS dataset path: {bids_dir}.
-           * Output folder: {output_dir}.
-           * Analysis levels: {analysis_level}.
-{extra_messages}
+  Running MRIQC version {version}
+  ----------------------------------------------------------------
+  * BIDS dataset path: {bids_dir}.
+  * Output folder: {output_dir}.
+  * Analysis levels: {analysis_level}.
+{extra_messages}------------------------------------------------------------------
 """
 PARTICIPANT_FINISHED = 'Participant level finished successfully.'
 POST_Z_NANS = 'Columns {nan_columns} contain NaNs after z-scoring.'

@@ -53,7 +53,10 @@ def main():
     config_file = mkstemp(
         dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml'
     )[1]
+
+    config.loggers.cli.info('Saving config')
     config.to_filename(config_file)
+    config.loggers.cli.info('Saved config')
     config.file_path = config_file
     exitcode = 0
     # Set up participant level

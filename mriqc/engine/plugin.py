@@ -24,13 +24,17 @@
 
 # Import packages
 import gc
+import getpass
 import multiprocessing as mp
 import os
 import sys
+import uuid
 from concurrent.futures import ProcessPoolExecutor
 from copy import deepcopy
-from time import sleep, time
+from time import sleep, strftime, time
 from traceback import format_exception
+
+from nipype.utils.filemanip import crash2txt, savepkl
 
 
 # Run node
@@ -58,9 +62,20 @@ def run_node(node, updatehash, taskid):
     # Try and execute the node via node.run()
     try:
         result['result'] = node.run(updatehash=updatehash)
+    except (KeyboardInterrupt, SystemError, SystemExit):
+        raise
     except:  # noqa: E722, intendedly catch all here
-        result['traceback'] = format_exception(*sys.exc_info())
+        from mriqc import config
+
+        tb = format_exception(*sys.exc_info())
+        node._traceback = tb
         result['result'] = node.result
+        result['traceback'] = tb
+
+        crashfile = report_crash(node, traceback=tb)
+        config.loggers.workflow.error(
+            f'Node {node._id} (taskid={taskid}) crashed: {crashfile}'
+        )
 
     # Return the result dictionary
     return result
@@ -227,16 +242,6 @@ class DistributedPluginBase(PluginBase):
     def _submit_job(self, node, updatehash=False):
         raise NotImplementedError
 
-    def _report_crash(self, node, result=None):
-        from nipype.pipeline.plugins.tools import report_crash
-
-        tb = None
-        if result is not None:
-            node._result = result['result']
-            tb = result['traceback']
-            node._traceback = tb
-        return report_crash(node, traceback=tb)
-
     def _clear_task(self, taskid):
         raise NotImplementedError
 
@@ -251,7 +256,6 @@ class DistributedPluginBase(PluginBase):
                 'traceback': '\n'.join(format_exception(*sys.exc_info())),
             }
 
-        crashfile = self._report_crash(self.procs[jobid], result=result)
         if config.nipype.stop_on_first_crash:
             raise RuntimeError(''.join(result['traceback']))
         if jobid in self.mapnodesubids:
@@ -263,7 +267,7 @@ class DistributedPluginBase(PluginBase):
             self.proc_pending[jobid] = False
             self.proc_done[jobid] = True
         # remove dependencies from queue
-        return self._remove_node_deps(jobid, crashfile, graph)
+        return self._remove_node_deps(jobid, graph)
 
     def _send_procs_to_workers(self, updatehash=False, graph=None):
         """Submit tasks to workers when system resources are available."""
@@ -352,7 +356,7 @@ class DistributedPluginBase(PluginBase):
         self.proc_done = np.zeros(len(self.procs), dtype=bool)
         self.proc_pending = np.zeros(len(self.procs), dtype=bool)
 
-    def _remove_node_deps(self, jobid, crashfile, graph):
+    def _remove_node_deps(self, jobid, graph):
         import networkx as nx
 
         try:
@@ -367,7 +371,6 @@ class DistributedPluginBase(PluginBase):
         return {
             'node': self.procs[jobid],
             'dependents': subnodes,
-            'crashfile': crashfile,
         }
 
     def _remove_node_dirs(self):
@@ -613,3 +616,28 @@ class MultiProcPlugin(DistributedPluginBase):
                 key=lambda item: (self.procs[item].mem_gb, self.procs[item].n_procs),
             )
         return jobids
+
+
+def report_crash(node, traceback=None, hostname=None):
+    """Writes crash related information to a file"""
+    name = node._id
+    traceback = traceback or format_exception(*sys.exc_info())
+    timeofcrash = strftime('%Y%m%d-%H%M%S')
+    try:
+        login_name = getpass.getuser()
+    except KeyError:
+        login_name = f'UID{os.getuid():d}'
+
+    crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{str(uuid.uuid4())}'
+    crashdir = node.config['execution'].get('crashdump_dir', os.getcwd())
+
+    os.makedirs(crashdir, exist_ok=True)
+    crashfile = os.path.join(crashdir, crashfile)
+
+    if node.config['execution']['crashfile_format'].lower() in ('text', 'txt', '.txt'):
+        crashfile = f'{crashfile}.txt'
+        crash2txt(crashfile, {'node': node, 'traceback': traceback})
+    else:
+        crashfile = f'{crashfile}.pklz'
+        savepkl(crashfile, {'node': node, 'traceback': traceback}, versioning=True)
+    return crashfile
