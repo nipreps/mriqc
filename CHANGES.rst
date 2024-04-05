@@ -1,3 +1,28 @@
+24.0.0 (April 05, 2024)
+=======================
+Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
+for first time in *MRIQC*'s timeline.
+
+CHANGES
+-------
+
+  * FIX: Duplicate node in anatomical workflow (#1234)
+  * FIX: Typo in ``sorted(..., reverse=True)`` call (#1211)
+  * ENH: Add *b*-vector angular deviations as IQMs (#1233)
+  * ENH: Move from DTI to DKI with multishell data (#1230)
+  * ENH: Noise floor estimated with PCA (``dwidenoise``) as an IQM (#1229)
+  * ENH: Integrate PIESNO noise mask and sigma estimation (#1227)
+  * ENH: Use MAD for robust estimation of sigma in the CC mask (#1228)
+  * ENH: Add new IQM for DWI → NDC (#1226)
+  * ENH: Add FA-based IQMs (nans percentage and degenerate percentage) (#1225)
+  * ENH: Add computation of spiking voxels mask and percent IQMs (#1224)
+  * ENH: Adds diffusion-related IQMs. (#1131)
+  * ENH: Revise summary stats extraction and include controlled roundings (#1219)
+  * DOC: Add changelog to documentation (#1217)
+  * MAINT: Move GitHub Actions and config files from *flake8* → *ruff* (#1212)
+  * MAINT: Update contributor affiliation in ``CONTRIBUTORS.md`` (#1214)
+
+
 23.1.1 (March 20, 2024)
 =======================
 A long-overdue hotfix release addressing many bugs generated during the development
