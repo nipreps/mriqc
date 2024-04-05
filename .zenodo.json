@@ -35,6 +35,11 @@
   ],
   "contributors": [
     {
+      "affiliation": "The University of Washington eScience Institute, WA, USA",
+      "name": "Teresa Gomez",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0003-4613-6643",
       "affiliation": "Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA",
       "name": "Dylan Nielson",
@@ -49,6 +54,12 @@
       "orcid": "0000-0003-3007-1056",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Ross W. Blair",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0003-0679-1985",
+      "affiliation": "The University of Washington eScience Institute, WA, USA",
+      "name": "Ariel Rokem",
       "type": "Researcher"
     },
     {
@@ -93,6 +104,7 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0003-2882-0900",
       "affiliation": "McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA",
       "name": "Yibei Chen",
       "type": "Researcher"
@@ -167,9 +179,8 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-0679-1985",
-      "affiliation": "The University of Washington eScience Institute, WA, USA",
-      "name": "Ariel Rokem",
+      "affiliation": "Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA",
+      "name": "Adam C. Raikes",
       "type": "Researcher"
     },
     {

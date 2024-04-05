@@ -21,6 +21,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
 | Garcia-Dias | Rafael | @garciadias | 0000-0001-9332-1580 | Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK |
 | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
+| Gomez | Teresa | @teresamg | | The University of Washington eScience Institute, WA, USA |
 | Goncalves | Mathias | @mgxd | 0000-0002-7252-7771 | Department of Psychology, Stanford University, CA, USA |
 | Halchenko | Yaroslav O. | @yarikoptic | 0000-0003-3456-2493 | Psychological and Brain Sciences Department, Dartmouth College, NH, USA |
 | Huffman | Adam | @verdurin | | Department of Physics, Imperial College London, London, UK |
@@ -31,6 +32,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
 | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
 | Papadopoulos Orfanos | Dimitri | @DimitriPapadopoulos | 0000-0002-1242-8990 | NeuroSpin, CEA, Université Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France |
+| Raikes | Adam C. | @araikes | | Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA |
 | Rokem | Ariel | @arokem | 0000-0003-0679-1985 | The University of Washington eScience Institute, WA, USA |
 | Sadil | Patrick | @psadil | 0000-0003-4141-1343 | Johns Hopkins Bloomberg School of Public Health, MD, USA |
 | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
