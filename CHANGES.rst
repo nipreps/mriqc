@@ -3,6 +3,51 @@
 Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
 for first time in *MRIQC*'s timeline.
 
+.. admonition:: Author list for papers based on *MRIQC* 23.0 series
+
+    As described in the `Contributor Guidelines
+    <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
+    anyone listed as developer or contributor may write and submit manuscripts
+    about *MRIQC*.
+    To do so, please move the author(s) name(s) to the front of the following list:
+
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Eilidh MacNicol \ :sup:`3`\ ; Céline Provins \ :sup:`4`\ ; Teresa Gomez \ :sup:`5`\ ; Dylan Nielson \ :sup:`6`\ ; Jan Varada \ :sup:`7`\ ; Ross W. Blair \ :sup:`1`\ ; Dimitri Papadopoulos Orfanos \ :sup:`8`\ ; William Triplett \ :sup:`9`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`10`\ ; John A. Lee \ :sup:`11`\ ; Patrick Sadil \ :sup:`12`\ ; Ursula A. Tooley \ :sup:`13`\ ; Yibei Chen \ :sup:`14`\ ; James D. Kent \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Bennet Fauber \ :sup:`17`\ ; Taylor Salo \ :sup:`18`\ ; Michael Krause \ :sup:`19`\ ; Pablo Velasco \ :sup:`20`\ ; Thomas Nichols \ :sup:`21`\ ; Adam Huffman \ :sup:`22`\ ; Elodie Savary \ :sup:`4`\ ; Johannes Achtzehn \ :sup:`23`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`24`\ ; Adam C. Raikes \ :sup:`25`\ ; Asier Erramuzpe \ :sup:`26`\ ; Benjamin Kay \ :sup:`27`\ ; Daniel Birman \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`28`\ ; Michael Dayan \ :sup:`29`\ ; Michael G. Clark \ :sup:`30`\ ; Rafael Garcia-Dias \ :sup:`31`\ ; Adam G. Thomas \ :sup:`32`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`5`\ ; Oscar Esteban \ :sup:`4`\ .
+
+    Affiliations:
+
+      1. Department of Psychology, Stanford University, CA, USA
+      2. Sagol School of Neuroscience, Tel Aviv University, Tel Aviv, Israel
+      3. Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK
+      4. Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland
+      5. The University of Washington eScience Institute, WA, USA
+      6. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
+      7. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
+      8. NeuroSpin, CEA, Université Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France
+      9. University of Florida: Gainesville, Florida, US
+      10. CRC ULiege, Liege, Belgium
+      11. Quansight, Dublin, Ireland
+      12. Johns Hopkins Bloomberg School of Public Health, MD, USA
+      13. Department of Neuroscience, University of Pennsylvania, PA, USA
+      14. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
+      15. Department of Psychology, University of Texas at Austin, TX, USA
+      16. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
+      17. University of Michigan, Ann Arbor, USA
+      18. Department of Psychology, Florida International University, FL, USA
+      19. Max Planck Institute for Human Development, Berlin, Germany
+      20. Center for Brain Imaging, New York University, NY, USA
+      21. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      22. Department of Physics, Imperial College London, London, UK
+      23. Charité Berlin, Berlin, Germany
+      24. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      25. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
+      26. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      27. Washington University School of Medicine, St.Louis, MO, USA
+      28. Psychology Department, University of Washington, Seattle, WA, USA
+      29. International Committee of the Red Cross - ICRC, Geneva, Switzerland
+      30. National Institutes of Health, USA
+      31. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      32. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+
 CHANGES
 -------
 
