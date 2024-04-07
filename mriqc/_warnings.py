@@ -22,27 +22,93 @@
 #
 """Manipulate Python warnings."""
 import logging
-import warnings
+import sys
+
+from nipype import logging as nlogging
+
+logging.addLevelName(26, 'BANNER')  # Add a new level for banners
+logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
+logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
+
+LOGGER_FMT = (
+    '%(asctime)s |{color} %(levelname)-8s {reset}|{color} %(name)-16s '
+    '{reset}|{color} %(message)s{reset}'
+)
+DATE_FMT = '%Y-%m-%d %H:%M:%S'
+CONSOLE_COLORS = {
+    logging.DEBUG: '\x1b[38;20m',
+    logging.INFO: '\x1b[34;20m',
+    25: '\x1b[33;20m',
+    logging.WARNING: '\x1b[93;20m',
+    logging.ERROR: '\x1b[31;20m',
+    logging.CRITICAL: '\x1b[31;1m',
+    'reset': '\x1b[0m',
+}
+
+
+class _LogFormatter(logging.Formatter):
+    """Customize the log format."""
+
+    _colored = True
+
+    def __init__(self, datefmt=None, colored=True, **kwargs):
+        self._colored = colored
+        super().__init__(
+            datefmt=datefmt or DATE_FMT,
+            fmt=LOGGER_FMT.format(
+                color=CONSOLE_COLORS['reset'] if colored else '',
+                reset=CONSOLE_COLORS['reset'] if colored else '',
+            ),
+        )
+
+    def format(self, record):
+        reset = CONSOLE_COLORS['reset'] if self._colored else ''
+        self._style._fmt = (
+            '%(message)s' if record.levelno == 26
+            else LOGGER_FMT.format(
+                color=CONSOLE_COLORS.get(
+                    record.levelno,
+                    CONSOLE_COLORS['reset'],
+                ) if self._colored else '',
+                reset=reset,
+            )
+        )
+        return super().format(record)
+
+
+nlogging.getLogger('nipype')
+for logger_name in logging.root.manager.loggerDict:
+    logging.getLogger(logger_name).handlers.clear()
+
+_root_logger = logging.getLogger()
+# _root_logger.handlers.clear()
+_handler = logging.StreamHandler(stream=sys.stdout)
+_handler.setFormatter(_LogFormatter())
+_root_logger.addHandler(_handler)
+
 
 _wlog = logging.getLogger('py.warnings')
 _wlog.addHandler(logging.NullHandler())
 
+_numexprlog = logging.getLogger('numexpr.utils')
+_numexprlog.handlers.clear()
+_numexprlog.addHandler(logging.NullHandler())
 
-def _warn(message, category=None, stacklevel=1, source=None):
-    """Redefine the warning function."""
-    if category is not None:
-        category = type(category).__name__
-        category = category.replace('type', 'WARNING')
+# def _warn(message, category=None, stacklevel=1, source=None):
+#     """Redefine the warning function."""
+#     if category is not None:
+#         category = type(category).__name__
+#         category = category.replace('type', 'WARNING')
 
-    logging.getLogger('py.warnings').warning(f"{category or 'WARNING'}: {message}")
-
-
-def _showwarning(message, category, filename, lineno, file=None, line=None):
-    _warn(message, category=category)
+#     logging.getLogger('py.warnings').debug(f"{category or 'WARNING'}: {message}")
 
 
-warnings.warn = _warn
-warnings.showwarning = _showwarning
+# def _showwarning(message, category, filename, lineno, file=None, line=None):
+#     _warn(message, category=category)
+
+
+# warnings.warn = _warn
+# warnings.showwarning = _showwarning
 
 # warnings.filterwarnings("ignore", category=FutureWarning)
 # warnings.filterwarnings("ignore", category=DeprecationWarning)

@@ -128,8 +128,6 @@ if not any(
 ):
     os.environ['PYTHONWARNINGS'] = 'ignore'
 
-logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
-logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 
 SUPPORTED_SUFFIXES = ('T1w', 'T2w', 'bold', 'dwi')
 
@@ -475,7 +473,7 @@ class execution(_Config):
                 ignore_paths[0] = re.compile(
                     r'^(?!/sub-('
                     + '|'.join(cls.participant_label)
-                    + r'))'
+                    + '))'
                 )
 
             # Recommended after PyBIDS 12.1
@@ -552,8 +550,7 @@ class workflow(_Config):
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
-    _fmt = '%(asctime)s,%(msecs)d %(name)-2s ' '%(levelname)-2s:\n\t %(message)s'
-    _datefmt = '%y%m%d-%H:%M:%S'
+    _datefmt = '%y%m%d %H:%M:%S'
     _init = False
 
     default = logging.getLogger()
@@ -585,12 +582,9 @@ class loggers:
             cls.interface = nlogging.getLogger('nipype.interface')
             cls.utils = nlogging.getLogger('nipype.utils')
 
-            if not len(cls.cli.handlers):
-                _handler = logging.StreamHandler(stream=sys.stdout)
-                _handler.setFormatter(
-                    logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt)
-                )
-                cls.cli.addHandler(_handler)
+            cls.workflow.handlers.clear()
+            cls.interface.handlers.clear()
+            cls.utils.handlers.clear()
 
             ncfg.update_config(
                 {
@@ -614,9 +608,6 @@ class loggers:
         retval = getattr(cls, name)
         if retval is None:
             setattr(cls, name, logging.getLogger(name))
-            _handler = logging.StreamHandler(stream=sys.stdout)
-            _handler.setFormatter(logging.Formatter(fmt=cls._fmt, datefmt=cls._datefmt))
-            retval.addHandler(_handler)
             retval.setLevel(execution.log_level)
         return retval
 

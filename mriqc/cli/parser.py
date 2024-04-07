@@ -456,12 +456,14 @@ def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
     from contextlib import suppress
     from json import loads
-    from logging import DEBUG
+    from logging import DEBUG, FileHandler
+    from pathlib import Path
     from pprint import pformat
 
     from niworkflows.utils.bids import DEFAULT_BIDS_QUERIES, collect_data
 
     from mriqc import __version__
+    from mriqc._warnings import DATE_FMT, LOGGER_FMT, _LogFormatter
     from mriqc.messages import PARTICIPANT_START
 
     parser = _build_parser()
@@ -470,16 +472,26 @@ def parse_args(args=None, namespace=None):
 
     config.loggers.init()
 
-    extra_messages = [' ' * 9 + '-' * 66]
+    _log_file = Path(opts.output_dir) / 'logs' / 'mriqc.log'
+    _log_file.parent.mkdir(exist_ok=True, parents=True)
+    _handler = FileHandler(_log_file)
+    _handler.setFormatter(_LogFormatter(
+        fmt=LOGGER_FMT.format(color='', reset=''),
+        datefmt=DATE_FMT,
+        colored=False,
+    ))
+    config.loggers.default.addHandler(_handler)
+
+    extra_messages = []
 
     if opts.bids_filter_file:
         extra_messages.insert(
             0,
-            f'           * BIDS filters-file: {opts.bids_filter_file.absolute()}.',
+            f'  * BIDS filters-file: {opts.bids_filter_file.absolute()}.',
         )
 
     config.loggers.cli.log(
-        25,
+        26,
         PARTICIPANT_START.format(
             version=__version__,
             bids_dir=opts.bids_dir,
