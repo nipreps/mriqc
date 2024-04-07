@@ -472,7 +472,7 @@ def parse_args(args=None, namespace=None):
 
     config.loggers.init()
 
-    _log_file = Path(opts.output_dir) / 'log' / 'mriqc.log'
+    _log_file = Path(opts.output_dir) / 'logs' / 'mriqc.log'
     _log_file.parent.mkdir(exist_ok=True, parents=True)
     _handler = FileHandler(_log_file)
     _handler.setFormatter(_LogFormatter(

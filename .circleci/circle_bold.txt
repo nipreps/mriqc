@@ -5,6 +5,7 @@ dataset_description.json
 group_bold.html
 group_bold.tsv
 logs
+logs/mriqc.log
 sub-ds205s03
 sub-ds205s03/figures
 sub-ds205s03/figures/sub-ds205s03_task-functionallocalizer_run-01_desc-background_bold.svg
