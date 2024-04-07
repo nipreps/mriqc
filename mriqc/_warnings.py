@@ -27,11 +27,11 @@ import sys
 from nipype import logging as nlogging
 
 logging.addLevelName(26, 'BANNER')  # Add a new level for banners
-logging.addLevelName(25, 'CAUTION')  # Add a new level between INFO and WARNING
+logging.addLevelName(25, 'IMPORTANT')  # Add a new level between INFO and WARNING
 logging.addLevelName(15, 'VERBOSE')  # Add a new level between INFO and DEBUG
 
 LOGGER_FMT = (
-    '%(asctime)s |{color} %(levelname)-8s {reset}|{color} %(name)-20s '
+    '%(asctime)s |{color} %(levelname)-8s {reset}|{color} %(name)-16s '
     '{reset}|{color} %(message)s{reset}'
 )
 DATE_FMT = '%Y-%m-%d %H:%M:%S'
@@ -91,6 +91,7 @@ _wlog = logging.getLogger('py.warnings')
 _wlog.addHandler(logging.NullHandler())
 
 _numexprlog = logging.getLogger('numexpr.utils')
+_numexprlog.handlers.clear()
 _numexprlog.addHandler(logging.NullHandler())
 
 # def _warn(message, category=None, stacklevel=1, source=None):

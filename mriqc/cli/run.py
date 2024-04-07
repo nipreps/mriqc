@@ -29,12 +29,15 @@ def main():
     import gc
     import os
     import sys
+    import time
     from tempfile import mkstemp
 
     from mriqc import config, messages
     from mriqc.cli.parser import parse_args
 
     atexit.register(config.restore_env)
+
+    start_time = time.time()
 
     # Run parser
     parse_args()
@@ -54,9 +57,9 @@ def main():
         dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml'
     )[1]
 
-    config.loggers.cli.info('Saving config')
     config.to_filename(config_file)
-    config.loggers.cli.info('Saved config')
+    config.loggers.cli.info(
+        f'Saved MRIQC config file: {config_file}.')
     config.file_path = config_file
     exitcode = 0
     # Set up participant level
@@ -177,7 +180,9 @@ def main():
 
             generate_reports()
 
-        config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED)
+        config.loggers.cli.log(26, messages.PARTICIPANT_FINISHED.format(
+            duration=time.strftime('%Hh %Mmin %Ss', time.gmtime(time.time() - start_time))
+        ))
 
         if _resmon is not None:
             from mriqc.instrumentation.viz import plot
