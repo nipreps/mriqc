@@ -431,7 +431,6 @@ class execution(_Config):
         'bids_database_dir',
         'fs_license_file',
         'fs_subjects_dir',
-        'layout',
         'log_dir',
         'output_dir',
         'templateflow_home',
@@ -510,6 +509,11 @@ class execution(_Config):
                 database_path=cls.bids_database_dir,
                 indexer=_indexer,
             )
+
+            # Rewrite __repr__ to avoid the layout query and build the summary
+            # For a smallish dataset this takes one minute each time.
+            # See https://github.com/nipreps/mriqc/issues/1239
+            cls._layout.__class__.__repr__ = lambda x: f'BIDS Layout: {cls.bids_dir}'
 
         cls.layout = cls._layout
 
