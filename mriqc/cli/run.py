@@ -72,6 +72,7 @@ def main():
             from contextlib import suppress
 
             os.environ['OMP_NUM_THREADS'] = '1'
+            os.environ['NUMEXPR_MAX_THREADS'] = '1'
 
             with suppress(RuntimeError):
                 mp.set_start_method('fork')
