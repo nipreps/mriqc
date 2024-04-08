@@ -38,6 +38,7 @@ def build_workflow(config_file, retval):
     from mriqc import config
     # We do not need OMP > 1 for workflow creation
     os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['NUMEXPR_MAX_THREADS'] = '1'
 
     from mriqc.workflows.core import init_mriqc_wf
 

@@ -691,6 +691,7 @@ def _process_initializer(config_file: Path):
 
     # Set the maximal number of threads per process
     os.environ['OMP_NUM_THREADS'] = f'{config.nipype.omp_nthreads}'
+    os.environ['NUMEXPR_MAX_THREADS'] = f'{config.nipype.omp_nthreads}'
 
 
 def restore_env():
