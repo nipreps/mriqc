@@ -619,7 +619,8 @@ class CorrectSignalDrift(SimpleInterface):
 
         config.loggers.interface.info(
             f'Correcting drift with {len(global_signal)} b=0 volumes, with '
-            f'global signal estimated at {",".join(self._results["b0_drift"])}.'
+            'global signal estimated at '
+            f'{", ".join([str(v) for v in self._results["b0_drift"]])}.'
         )
 
         data *= 1.0 / global_signal[np.newaxis, np.newaxis, np.newaxis, :]
