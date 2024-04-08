@@ -78,23 +78,35 @@ def fmri_qc_workflow(name='funcMRIQC'):
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get('bold', [])
-    full_files = [
-        file for file in dataset if nb.load(file).shape[3] >= 5
-    ]
+    full_files = []
+    for bold_path in dataset:
+        try:
+            bold_len = nb.load(bold_path).shape[3]
+        except nb.filebasedimages.ImageFileError:
+            bold_len = config.workflow.min_len_bold
+        except IndexError:    # shape has only 3 elements
+            bold_len = 0
+        if bold_len >= config.workflow.min_len_bold:
+            full_files.append(bold_path)
+        else:
+            config.loggers.workflow.warn(
+                f'Dismissing {bold_path} for processing: insufficient number of '
+                f'timepoints ({bold_len}) to execute the workflow.'
+            )
 
     message = BUILDING_WORKFLOW.format(
         modality='functional',
         detail=(
-            f"for {len(full_files)} NIfTI files."
+            f'for {len(full_files)} BOLD runs.'
             if len(full_files) > 2
-            else f"({' and '.join(('<%s>' % v for v in dataset))})."
+            else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
     )
     config.loggers.workflow.info(message)
 
     if full_files != dataset:
         config.loggers.workflow.info(
-            f"Skipping short runs: {sorted(set(dataset) - set(full_files))}"
+            f'Skipping short runs: {sorted(set(dataset) - set(full_files))}'
         )
 
     # Define workflow, inputs and outputs

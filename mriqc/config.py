@@ -554,6 +554,8 @@ class workflow(_Config):
     Minimum DWI length to be considered a "processable" dataset
     (default: 7, assuming one low-b and six gradients for diffusion tensor imaging).
     """
+    min_len_bold = 5
+    """Minimum BOLD length to be considered a "processable" dataset."""
     species = 'human'
     """Subject species to choose most appropriate template"""
     template_id = 'MNI152NLin2009cAsym'
