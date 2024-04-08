@@ -545,6 +545,8 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     inputs = None
     """List of files to be processed with MRIQC."""
+    min_len_dwi = 5
+    """Minimum DWI length to be considered a "processable" dataset."""
     species = 'human'
     """Subject species to choose most appropriate template"""
     template_id = 'MNI152NLin2009cAsym'
