@@ -42,6 +42,9 @@ The diffusion workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`dmri_qc_workflow`.
 """
+from pathlib import Path
+
+import numpy as np
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 
@@ -89,13 +92,28 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get('dwi', [])
+    full_data = []
+
+    for dwi_path in dataset:
+        bval = config.execution.layout.get_bval(dwi_path)
+        if (
+            bval
+            and Path(bval).exists()
+            and len(np.loadtxt(bval)) > config.workflow.min_len_dwi
+        ):
+            full_data.append(dwi_path)
+        else:
+            config.loggers.workflow.warn(
+                f'Dismissing {dwi_path} for processing. b-values are missing or '
+                'insufficient in number to execute the workflow.'
+            )
 
     message = BUILDING_WORKFLOW.format(
         modality='diffusion',
         detail=(
-            f'for {len(dataset)} NIfTI files.'
-            if len(dataset) > 2
-            else f"({' and '.join('<%s>' % v for v in dataset)})."
+            f'for {len(full_data)} NIfTI files.'
+            if len(full_data) > 2
+            else f"({' and '.join('<%s>' % v for v in full_data)})."
         ),
     )
     config.loggers.workflow.info(message)
@@ -103,7 +121,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', dataset)]
+    inputnode.iterables = [('in_file', full_data)]
 
     datalad_get = pe.Node(
         DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),
