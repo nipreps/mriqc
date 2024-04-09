@@ -104,10 +104,8 @@ def fmri_qc_workflow(name='funcMRIQC'):
     )
     config.loggers.workflow.info(message)
 
-    if full_files != dataset:
-        config.loggers.workflow.info(
-            f'Skipping short runs: {sorted(set(dataset) - set(full_files))}'
-        )
+    if set(dataset) - set(full_files):
+        config.workflow.inputs['bold'] = full_files
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
