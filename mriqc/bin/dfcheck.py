@@ -43,14 +43,14 @@ def read_iqms(feat_file):
             feat_file, index_col=False, dtype={col: str for col in BIDS_COMP}
         )
         # Find present bids bits and sort by them
-        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(BIDS_COMP))
+        bids_comps_present = list(set(x_df.columns) & set(BIDS_COMP))
         bids_comps_present = [bit for bit in BIDS_COMP if bit in bids_comps_present]
         x_df = x_df.sort_values(by=bids_comps_present)
         # Remove sub- prefix in subject_id
         x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
 
         # Remove columns that are not IQMs
-        feat_names = list(x_df._get_numeric_data().columns.ravel())
+        feat_names = x_df._get_numeric_data().columns.tolist()
         for col in BIDS_COMP:
             try:
                 feat_names.remove(col)
@@ -65,7 +65,7 @@ def read_iqms(feat_file):
         x_df['subject_id'] = x_df.bids_name.str.lstrip('sub-')
         x_df = x_df.drop(columns=['bids_name'])
         x_df.subject_id = ['_'.join(v.split('_')[:-1]) for v in x_df.subject_id.ravel()]
-        feat_names = list(x_df._get_numeric_data().columns.ravel())
+        feat_names = x_df._get_numeric_data().columns.tolist()
 
     for col in feat_names:
         if col.startswith(('size_', 'spacing_', 'Unnamed')):
