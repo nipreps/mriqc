@@ -51,6 +51,8 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Skip short BOLD runs that break outlier detection (#1120)
+* FIX: Revise config save/load and update inputs after dropping (#1245)
 * FIX: Revise config save/load and update inputs after dropping (#1245)
 * FIX: Drift should not be estimated when less than three low-b volumes present (#1242, #1243)
 * FIX: Handle ``NUMEXPR_MAX_THREADS`` like ``OMP_NUM_THREADS`` (#1241)
@@ -58,6 +60,7 @@ CHANGES
 * FIX: Avert costly ``BIDSLayout.__repr__`` calls when saving config (#1239)
 * FIX: Duplicate node in anatomical workflow (#1234)
 * FIX: Typo in ``sorted(..., reverse=True)`` call (#1211)
+* ENH: Expose a command-line option for minimum DWI volumes (#1249)
 * ENH: Improve error handling and logging (#1238)
 * ENH: Add *b*-vector angular deviations as IQMs (#1233)
 * ENH: Move from DTI to DKI with multishell data (#1230)
