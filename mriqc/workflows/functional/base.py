@@ -106,6 +106,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
 
     if set(dataset) - set(full_files):
         config.workflow.inputs['bold'] = full_files
+        config.to_filename()
 
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
