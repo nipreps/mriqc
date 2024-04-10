@@ -42,6 +42,7 @@ The functional workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
+import nibabel as nb
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
@@ -77,21 +78,40 @@ def fmri_qc_workflow(name='funcMRIQC'):
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get('bold', [])
+    full_files = []
+    for bold_path in dataset:
+        try:
+            bold_len = nb.load(bold_path).shape[3]
+        except nb.filebasedimages.ImageFileError:
+            bold_len = config.workflow.min_len_bold
+        except IndexError:    # shape has only 3 elements
+            bold_len = 0
+        if bold_len >= config.workflow.min_len_bold:
+            full_files.append(bold_path)
+        else:
+            config.loggers.workflow.warn(
+                f'Dismissing {bold_path} for processing: insufficient number of '
+                f'timepoints ({bold_len}) to execute the workflow.'
+            )
 
     message = BUILDING_WORKFLOW.format(
         modality='functional',
         detail=(
-            f'for {len(dataset)} BOLD runs.'
-            if len(dataset) > 2
+            f'for {len(full_files)} BOLD runs.'
+            if len(full_files) > 2
             else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
     )
     config.loggers.workflow.info(message)
 
+    if set(dataset) - set(full_files):
+        config.workflow.inputs['bold'] = full_files
+        config.to_filename()
+
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', dataset)]
+    inputnode.iterables = [('in_file', full_files)]
 
     datalad_get = pe.MapNode(
         DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),

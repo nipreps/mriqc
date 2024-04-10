@@ -399,6 +399,14 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
     # Functional workflow settings
     g_func = parser.add_argument_group('Functional MRI workflow configuration')
     g_func.add_argument(
+        '--min-bold-length',
+        action='store',
+        default=config.workflow.min_len_bold,
+        dest='min_len_bold',
+        help='Drop BOLD runs with fewer time points than this threshold.',
+        type=int,
+    )
+    g_func.add_argument(
         '--fft-spikes-detector',
         action='store_true',
         default=False,
