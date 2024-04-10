@@ -385,6 +385,17 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Path to JSON file with settings for ANTs.',
     )
 
+    # Diffusion workflow settings
+    g_dwi = parser.add_argument_group('Diffusion MRI workflow configuration')
+    g_dwi.add_argument(
+        '--min-dwi-length',
+        action='store',
+        default=config.workflow.min_len_dwi,
+        dest='min_len_dwi',
+        help='Drop DWI runs with fewer orientations than this threshold.',
+        type=int,
+    )
+
     # Functional workflow settings
     g_func = parser.add_argument_group('Functional MRI workflow configuration')
     g_func.add_argument(
