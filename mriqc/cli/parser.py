@@ -482,7 +482,7 @@ def parse_args(args=None, namespace=None):
     ))
     config.loggers.default.addHandler(_handler)
 
-    extra_messages = []
+    extra_messages = ['']
 
     if opts.bids_filter_file:
         extra_messages.insert(

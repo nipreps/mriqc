@@ -91,6 +91,7 @@ import os
 import sys
 from contextlib import suppress
 from pathlib import Path
+from tempfile import mkstemp
 from time import strftime
 from uuid import uuid4
 
@@ -205,12 +206,6 @@ elif 'darwin' in sys.platform:
             _memory_gb = float(_mem_str) / (1024.0**3)
 
 
-file_path: Path = None
-"""
-Path to configuration file.
-"""
-
-
 class _Config:
     """An abstract class forbidding instantiation."""
 
@@ -221,9 +216,9 @@ class _Config:
         raise RuntimeError('Configuration type is not instantiable.')
 
     @classmethod
-    def load(cls, settings, init=True):
+    def load(cls, sections, init=True):
         """Store settings from a dictionary."""
-        for k, v in settings.items():
+        for k, v in sections.items():
             if v is None:
                 continue
             if k in cls._paths:
@@ -251,6 +246,15 @@ class _Config:
                 v = str(v)
             out[k] = v
         return out
+
+
+class settings(_Config):
+    """Settings of this config module."""
+
+    file_path: Path = None
+    """Path to this configuration file."""
+
+    _paths = ('file_path', )
 
 
 class environment(_Config):
@@ -545,8 +549,11 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     inputs = None
     """List of files to be processed with MRIQC."""
-    min_len_dwi = 5
-    """Minimum DWI length to be considered a "processable" dataset."""
+    min_len_dwi = 7
+    """
+    Minimum DWI length to be considered a "processable" dataset
+    (default: 7, assuming one low-b and six gradients for diffusion tensor imaging).
+    """
     species = 'human'
     """Subject species to choose most appropriate template"""
     template_id = 'MNI152NLin2009cAsym'
@@ -561,7 +568,7 @@ class loggers:
 
     default = logging.getLogger()
     """The root logger."""
-    cli = logging.getLogger('cli')
+    cli = logging.getLogger('mriqc')
     """Command-line interface logging."""
     workflow = None
     """NiPype's workflow logger."""
@@ -618,11 +625,11 @@ class loggers:
         return retval
 
 
-def from_dict(settings):
+def from_dict(sections):
     """Read settings from a flat dictionary."""
-    execution.load(settings)
-    workflow.load(settings)
-    nipype.load(settings, init=False)
+    execution.load(sections)
+    workflow.load(sections)
+    nipype.load(sections, init=False)
 
 
 def load(filename):
@@ -630,27 +637,33 @@ def load(filename):
     from toml import loads
 
     filename = Path(filename)
-    settings = loads(filename.read_text())
-    for sectionname, configs in settings.items():
+    sections = loads(filename.read_text())
+    for sectionname, configs in sections.items():
         if sectionname != 'environment':
             section = getattr(sys.modules[__name__], sectionname)
             section.load(configs)
 
+    if settings.file_path is None:
+        settings.file_path = filename
+
+    loggers.cli.debug(f'Loaded MRIQC config file: {settings.file_path}.')
+
 
 def get(flat=False):
     """Get config as a dict."""
-    settings = {
+    sections = {
         'environment': environment.get(),
         'execution': execution.get(),
         'workflow': workflow.get(),
         'nipype': nipype.get(),
+        'settings': settings.get(),
     }
     if not flat:
-        return settings
+        return sections
 
     return {
         '.'.join((section, k)): v
-        for section, configs in settings.items()
+        for section, configs in sections.items()
         for k, v in configs.items()
     }
 
@@ -662,11 +675,24 @@ def dumps():
     return dumps(get())
 
 
-def to_filename(filename):
+def to_filename(filename=None):
     """Write settings to file."""
-    filename = Path(filename)
-    filename.parent.mkdir(exist_ok=True, parents=True)
-    filename.write_text(dumps())
+
+    if filename:
+        settings.file_path = Path(filename)
+    elif settings.file_path is None:
+        settings.file_path = Path(
+            mkstemp(
+                dir=execution.work_dir,
+                prefix='.mriqc.',
+                suffix='.toml'
+            )[1],
+        )
+
+    settings.file_path.parent.mkdir(exist_ok=True, parents=True)
+    settings.file_path.write_text(dumps())
+    loggers.cli.debug(f'Saved MRIQC config file: {settings.file_path}.')
+    return settings.file_path
 
 
 def _process_initializer(config_file: Path):

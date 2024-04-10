@@ -108,6 +108,10 @@ def dmri_qc_workflow(name='dwiMRIQC'):
                 'insufficient in number to execute the workflow.'
             )
 
+    if set(dataset) - set(full_data):
+        config.workflow.inputs['dwi'] = full_data
+        config.to_filename()
+
     message = BUILDING_WORKFLOW.format(
         modality='diffusion',
         detail=(
