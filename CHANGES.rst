@@ -1,5 +1,5 @@
-24.0.0 (April 08, 2024)
-=======================
+24.0.0 (TBD)
+============
 Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
 for first time in *MRIQC*'s timeline.
 
@@ -51,6 +51,7 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Revise config save/load and update inputs after dropping (#1245)
 * FIX: Drift should not be estimated when less than three low-b volumes present (#1242, #1243)
 * FIX: Handle ``NUMEXPR_MAX_THREADS`` like ``OMP_NUM_THREADS`` (#1241)
 * FIX: Exclude DWI runs with insufficient orientations or missing bvals (#1240)
