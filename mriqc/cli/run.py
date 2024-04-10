@@ -53,14 +53,9 @@ def main():
     # straightforward way to communicate with the child process is via the filesystem.
     # The config file name needs to be unique, otherwise multiple mriqc instances
     # will create write conflicts.
-    config_file = mkstemp(
-        dir=config.execution.work_dir, prefix='.mriqc.', suffix='.toml'
-    )[1]
+    config_file = config.to_filename()
+    config.loggers.cli.info(f'MRIQC config file: {config_file}.')
 
-    config.to_filename(config_file)
-    config.loggers.cli.info(
-        f'Saved MRIQC config file: {config_file}.')
-    config.file_path = config_file
     exitcode = 0
     # Set up participant level
     if 'participant' in config.workflow.analysis_level:
@@ -81,7 +76,7 @@ def main():
             _pool = ProcessPoolExecutor(
                 max_workers=config.nipype.nprocs,
                 initializer=config._process_initializer,
-                initargs=(config.file_path,),
+                initargs=(config_file,),
             )
 
         _resmon = None
@@ -153,7 +148,7 @@ def main():
         if mriqc_wf and config.execution.write_graph:
             mriqc_wf.write_graph(graph2use='colored', format='svg', simple_form=True)
 
-        if not config.execution.dry_run or not config.execution.reports_only:
+        if not config.execution.dry_run and not config.execution.reports_only:
             # Warn about submitting measures BEFORE
             if not config.execution.no_sub:
                 config.loggers.cli.warning(config.DSA_MESSAGE)

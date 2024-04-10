@@ -447,7 +447,7 @@ class MultiProcPlugin(DistributedPluginBase):
         self.pool = pool or ProcessPoolExecutor(
             max_workers=self.processors,
             initializer=config._process_initializer,
-            initargs=(config.file_path,),
+            initargs=(config.settings.file_path,),
             mp_context=mp_context,
         )
 
