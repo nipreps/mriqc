@@ -5,6 +5,7 @@ dataset_description.json
 group_T1w.html
 group_T1w.tsv
 logs
+logs/mriqcconfig.toml
 logs/mriqc.log
 sub-50137
 sub-50137/anat

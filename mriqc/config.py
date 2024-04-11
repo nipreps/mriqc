@@ -217,6 +217,7 @@ class _Config:
     """An abstract class forbidding instantiation."""
 
     _paths = ()
+    _hidden = ()
 
     def __init__(self):
         """Avert instantiation."""
@@ -246,6 +247,8 @@ class _Config:
         out = {}
         for k, v in cls.__dict__.items():
             if k.startswith('_') or v is None:
+                continue
+            if k in cls._hidden:
                 continue
             if callable(getattr(cls, k)):
                 continue
@@ -452,6 +455,10 @@ class execution(_Config):
         'output_dir',
         'templateflow_home',
         'work_dir',
+    )
+
+    _hidden = (
+        'webapi_token',
     )
 
     @classmethod
