@@ -51,6 +51,7 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Make sure new logs and config file output are compatible with parallel processes (#1259)
 * FIX: Skip short BOLD runs that break outlier detection (#1120)
 * FIX: Revise config save/load and update inputs after dropping (#1245)
 * FIX: Drift should not be estimated when less than three low-b volumes present (#1242, #1243)
