@@ -91,7 +91,6 @@ import os
 import sys
 from contextlib import suppress
 from pathlib import Path
-from tempfile import mkstemp
 from time import strftime
 from uuid import uuid4
 
@@ -117,6 +116,8 @@ _disable_et = bool(
 os.environ['NIPYPE_NO_ET'] = '1'
 os.environ['NO_ET'] = '1'
 
+_mriqc_dev = os.getenv('MRIQC_DEV', '0').lower() in ('1', 'on', 'true', 'y', 'yes')
+
 if not hasattr(sys, '_is_pytest_session'):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
 # Disable all warnings in main and children processes only on production versions
@@ -124,7 +125,7 @@ if not any(
     (
         '+' in __version__,
         __version__.endswith('.dirty'),
-        os.getenv('MRIQC_DEV', '0').lower() in ('1', 'on', 'true', 'y', 'yes'),
+        _mriqc_dev,
     )
 ):
     os.environ['PYTHONWARNINGS'] = 'ignore'
@@ -211,6 +212,12 @@ _default_model_path = Path(_fs_home) / 'models' / 'synthstrip.1.pt' if _fs_home 
 
 if _fs_home and not _default_model_path.exists():
     _default_model_path = None
+
+# Override the unique ID if MRIQC_DEV is set
+_run_uuid = (
+    '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4()) if not _mriqc_dev
+    else '18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f'
+)
 
 
 class _Config:
@@ -422,7 +429,7 @@ class execution(_Config):
     """Enable resource monitor."""
     run_id = None
     """Filter input dataset by run identifier."""
-    run_uuid = '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4())
+    run_uuid = _run_uuid
     """Unique identifier of this particular run."""
     session_id = None
     """Filter input dataset by session identifier."""
@@ -703,12 +710,8 @@ def to_filename(filename=None):
     if filename:
         settings.file_path = Path(filename)
     elif settings.file_path is None:
-        settings.file_path = Path(
-            mkstemp(
-                dir=execution.work_dir,
-                prefix='.mriqc.',
-                suffix='.toml'
-            )[1],
+        settings.file_path = (
+            execution.work_dir / f'config-{execution.run_uuid}.toml'
         )
 
     settings.file_path.parent.mkdir(exist_ok=True, parents=True)

@@ -5,8 +5,8 @@ dataset_description.json
 group_bold.html
 group_bold.tsv
 logs
-logs/mriqcconfig.toml
-logs/mriqc.log
+logs/config-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.toml
+logs/mriqc-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.log
 sub-ds205s03
 sub-ds205s03/figures
 sub-ds205s03/figures/sub-ds205s03_task-functionallocalizer_run-01_desc-background_bold.svg
