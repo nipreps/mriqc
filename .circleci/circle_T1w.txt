@@ -5,8 +5,8 @@ dataset_description.json
 group_T1w.html
 group_T1w.tsv
 logs
-logs/mriqcconfig.toml
-logs/mriqc.log
+logs/config-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.toml
+logs/mriqc-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.log
 sub-50137
 sub-50137/anat
 sub-50137/anat/sub-50137_T1w.json

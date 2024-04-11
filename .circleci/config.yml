@@ -389,6 +389,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
@@ -400,7 +401,6 @@ jobs:
           name: Move temporary but relevant artifacts
           command: |
             mkdir /tmp/t1w/misc
-            mv /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/misc
             mv /tmp/t1w/work/.resources.*.tsv /tmp/t1w/misc
             mv /tmp/t1w/work/.resources.*.png /tmp/t1w/misc
 
@@ -419,6 +419,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m T1w -vv
@@ -551,6 +552,7 @@ jobs:
             # Run MRIQC
             docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
@@ -561,7 +563,6 @@ jobs:
           name: Move temporary but relevant artifacts
           command: |
             mkdir /tmp/bold/misc
-            mv /tmp/bold/work/.mriqc.*.toml /tmp/bold/misc
             mv /tmp/bold/work/.resources.*.tsv /tmp/bold/misc
             mv /tmp/bold/work/.resources.*.png /tmp/bold/misc
 
@@ -578,6 +579,7 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -e MRIQC_DEV=1 \
                        -v $PWD:/scratch -w /scratch \
                        nipreps/mriqc:latest \
                        /data derivatives/ group \
