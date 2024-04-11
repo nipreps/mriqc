@@ -142,6 +142,19 @@ def main():
                 config.nipype.nprocs,
             )
 
+        # Check synthstrip is properly installed
+        if not config.environment.synthstrip_path:
+            config.loggers.cli.warning(
+                (
+                    'Please make sure FreeSurfer is installed and the FREESURFER_HOME '
+                    'environment variable is defined and pointing at the right directory.'
+                ) if config.environment.freesurfer_home is None
+                else (
+                    f'FreeSurfer seems to be installed at {config.environment.freesurfer_home},'
+                    " however SynthStrip's model is not found at the expected path."
+                )
+            )
+
         if mriqc_wf is None:
             sys.exit(os.EX_SOFTWARE)
 
