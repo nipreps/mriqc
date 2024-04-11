@@ -30,7 +30,11 @@ CREATED_DATASET = (
 DROPPING_NON_NUMERICAL = 'Dropping {n_labels} samples for having non-numerical labels'
 GROUP_FINISHED = 'Group level finished successfully.'
 GROUP_NO_DATA = 'No data found. No group level reports were generated.'
-GROUP_START = 'Group level started...'
+GROUP_START = """\
+------------------------------------------------------------------
+Generating group reports
+------------------------------------------------------------------
+"""
 INDIVIDUAL_REPORT_GENERATED = 'Generated individual log: {out_file}'
 PARTICIPANT_START = """\
 ------------------------------------------------------------------
@@ -42,15 +46,16 @@ PARTICIPANT_START = """\
 {extra_messages}------------------------------------------------------------------
 """
 PARTICIPANT_FINISHED = """\
-----------------------------------------------------------------
-  Participant level finished successfully ({duration})
-----------------------------------------------------------------
-"""
+Participant level finished successfully averaging {duration} per subject."""
 POST_Z_NANS = 'Columns {nan_columns} contain NaNs after z-scoring.'
 QC_UPLOAD_COMPLETE = 'QC metrics successfully uploaded.'
 QC_UPLOAD_START = 'MRIQC Web API: submitting to <{url}>'
 GROUP_REPORT_GENERATED = 'Group-{modality} report generated: {path}'
-RUN_FINISHED = 'MRIQC completed.'
+RUN_FINISHED = """\
+----------------------------------------------------------------
+  MRIQC completed (elapsed time {duration}).
+----------------------------------------------------------------
+"""
 SUSPICIOUS_DATA_TYPE = "Input image {in_file} has a suspicious data type: '{dtype}'"
 TSV_GENERATED = 'Generated summary TSV table for {modality} data: {path}'
 VOXEL_SIZE_OK = 'Voxel size is large enough.'

@@ -37,7 +37,7 @@ def main():
 
     atexit.register(config.restore_env)
 
-    start_time = time.time()
+    config.settings.start_time = time.time()
 
     # Run parser
     parse_args()
@@ -176,8 +176,12 @@ def main():
 
             generate_reports()
 
-        config.loggers.cli.log(26, messages.PARTICIPANT_FINISHED.format(
-            duration=time.strftime('%Hh %Mmin %Ss', time.gmtime(time.time() - start_time))
+        _subject_duration = time.gmtime(
+            (time.time() - config.settings.start_time)
+            / sum(len(files) for files in config.workflow.inputs.values())
+        )
+        config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED.format(
+            duration=time.strftime('%Hh %Mmin %Ss', _subject_duration)
         ))
 
         if _resmon is not None:
@@ -200,7 +204,7 @@ def main():
 
         from ..utils.misc import generate_tsv  # , generate_pred
 
-        config.loggers.cli.info(messages.GROUP_START)
+        config.loggers.cli.log(26, messages.GROUP_START)
 
         # Generate reports
         mod_group_reports = []
@@ -242,7 +246,11 @@ def main():
     config.loggers.cli.info(messages.BIDS_META)
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
-    config.loggers.cli.info(messages.RUN_FINISHED)
+    config.loggers.cli.log(26, messages.RUN_FINISHED.format(
+        duration=time.strftime(
+            '%Hh %Mmin %Ss',
+            time.gmtime(time.time() - config.settings.start_time))
+    ))
     sys.exit(exitcode)
 
 

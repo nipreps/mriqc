@@ -253,6 +253,8 @@ class settings(_Config):
 
     file_path: Path = None
     """Path to this configuration file."""
+    start_time: float = None
+    """A :obj:`~time.time` timestamp at the time the workflow is started."""
 
     _paths = ('file_path', )
 
