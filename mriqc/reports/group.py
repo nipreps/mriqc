@@ -245,12 +245,12 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
         for iqm in group:
             if iqm in datacols:
-                values = dataframe[[iqm]].values.tolist()
+                values = dataframe[[iqm]].values.ravel().tolist()
                 if values:
                     dfdict['iqm'] += [iqm] * nPart
                     dfdict['units'] += [units] * nPart
                     dfdict['value'] += values
-                    dfdict['label'] += dataframe[['label']].values.tolist()
+                    dfdict['label'] += dataframe[['label']].values.ravel().tolist()
 
         # Save only if there are values
         if dfdict['value']:
