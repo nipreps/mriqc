@@ -51,6 +51,7 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Make sure new logs and config file output are compatible with parallel processes (#1259)
 * FIX: Skip short BOLD runs that break outlier detection (#1120)
 * FIX: Revise config save/load and update inputs after dropping (#1245)
 * FIX: Revise config save/load and update inputs after dropping (#1245)
@@ -60,6 +61,9 @@ CHANGES
 * FIX: Avert costly ``BIDSLayout.__repr__`` calls when saving config (#1239)
 * FIX: Duplicate node in anatomical workflow (#1234)
 * FIX: Typo in ``sorted(..., reverse=True)`` call (#1211)
+* ENH: Mechanism to protect config's fields and write out config (#1258)
+* ENH: Improve documentation and logging of *SynthStrip*'s model (#1254)
+* ENH: Improve logging of runtime (#1253)
 * ENH: Expose a command-line option for minimum DWI volumes (#1249)
 * ENH: Improve error handling and logging (#1238)
 * ENH: Add *b*-vector angular deviations as IQMs (#1233)
@@ -73,6 +77,8 @@ CHANGES
 * ENH: Adds diffusion-related IQMs. (#1131)
 * ENH: Revise summary stats extraction and include controlled roundings (#1219)
 * DOC: Add changelog to documentation (#1217)
+* MAINT: Clean up more ``FutureWarning`` issued by pandas (#1257)
+* MAINT: Prevent pandas-originating deprecation warning (#1251)
 * MAINT: Move GitHub Actions and config files from *flake8* → *ruff* (#1212)
 * MAINT: Update contributor affiliation in ``CONTRIBUTORS.md`` (#1214)
 
