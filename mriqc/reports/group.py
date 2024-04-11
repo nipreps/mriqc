@@ -212,7 +212,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
         )
 
-        id_labels = list(set(BIDS_COMP) & set(dataframe.columns.ravel().tolist()))
+        id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
         dataframe['label'] = dataframe[id_labels].apply(
             _format_labels, args=(id_labels,), axis=1
         )
@@ -228,7 +228,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     if csv_failed is not None and op.isfile(csv_failed):
         config.loggers.cli.warning(f'Found failed-workflows table "{csv_failed}"')
         failed_df = pd.read_csv(csv_failed, index_col=False)
-        cols = list(set(id_labels) & set(failed_df.columns.ravel().tolist()))
+        cols = list(set(id_labels) & set(failed_df.columns))
 
         try:
             failed_df = failed_df.sort_values(by=cols)
@@ -239,18 +239,18 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         # failed = failed_df[cols].apply(myfmt, args=(cols,), axis=1).ravel().tolist()
 
     csv_groups = []
-    datacols = dataframe.columns.ravel().tolist()
+    datacols = dataframe.columns.tolist()
     for group, units in QCGROUPS[mod]:
         dfdict = {'iqm': [], 'value': [], 'label': [], 'units': []}
 
         for iqm in group:
             if iqm in datacols:
-                values = dataframe[[iqm]].values.ravel().tolist()
+                values = dataframe[[iqm]].values.tolist()
                 if values:
                     dfdict['iqm'] += [iqm] * nPart
                     dfdict['units'] += [units] * nPart
                     dfdict['value'] += values
-                    dfdict['label'] += dataframe[['label']].values.ravel().tolist()
+                    dfdict['label'] += dataframe[['label']].values.tolist()
 
         # Save only if there are values
         if dfdict['value']:
