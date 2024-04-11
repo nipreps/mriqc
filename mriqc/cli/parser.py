@@ -604,7 +604,10 @@ def parse_args(args=None, namespace=None):
         session_id=config.execution.session_id,
         task=config.execution.task_id,
         group_echos=True,
-        bids_filters=config.execution.bids_filters,
+        bids_filters={
+            mod: config.execution.bids_filters.get(mod, {})
+            for mod in lc_modalities
+        },
         queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
     )
 
