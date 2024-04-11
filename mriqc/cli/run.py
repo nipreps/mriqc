@@ -264,6 +264,7 @@ def main():
             '%Hh %Mmin %Ss',
             time.gmtime(time.time() - config.settings.start_time))
     ))
+    config.to_filename(config.execution.log_dir / 'mriqcconfig.toml')
     sys.exit(exitcode)
 
 
