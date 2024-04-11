@@ -205,6 +205,13 @@ elif 'darwin' in sys.platform:
             ).decode().strip().split(' ')[-1]
             _memory_gb = float(_mem_str) / (1024.0**3)
 
+# Check for FreeSurfer's SynthStrip model
+_fs_home = os.getenv('FREESURFER_HOME', None)
+_default_model_path = Path(_fs_home) / 'models' / 'synthstrip.1.pt' if _fs_home else None
+
+if _fs_home and not _default_model_path.exists():
+    _default_model_path = None
+
 
 class _Config:
     """An abstract class forbidding instantiation."""
@@ -281,12 +288,16 @@ class environment(_Config):
     """A string representing the execution platform."""
     free_mem = _free_mem_at_start
     """Free memory at start."""
+    freesurfer_home = _fs_home
+    """Path to the *FreeSurfer* installation (from ``FREESURFER_HOME`` environment variable)."""
     overcommit_policy = _oc_policy
     """Linux's kernel virtual memory overcommit policy."""
     overcommit_limit = _oc_limit
     """Linux's kernel virtual memory overcommit limits."""
     nipype_version = get_version('nipype')
     """Nipype's current version."""
+    synthstrip_path = _default_model_path
+    """Path to *SynthStrip*'s model weights (requires *FreeSurfer*)."""
     templateflow_version = get_version('templateflow')
     """The TemplateFlow client version installed."""
     total_memory = _memory_gb
