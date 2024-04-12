@@ -64,8 +64,8 @@ function makeDistroChart(settings) {
     chart.data = chart.settings.data;
 
     iqmName = chart.data[0][chart.settings.xName]
-    if (iqmName.lastIndexOf('_') > 0) {
-        iqmName = iqmName.substr(0, iqmName.lastIndexOf('_'))
+    if (iqmName.indexOf('_') > 0) {
+        iqmName = iqmName.substr(0, iqmName.indexOf('_'))
     }
     chart.settings.axisLabels.yAxis = iqmName.toUpperCase()
     if (iqmName.toLowerCase().startsWith('fd') || iqmName.toLowerCase().startsWith('spikes')) {

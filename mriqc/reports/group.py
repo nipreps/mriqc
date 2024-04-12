@@ -204,7 +204,54 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                 None,
             ),
         ],
-        'dwi': [],
+        'dwi': [
+            ([
+                f'bdiffs_{sub}' for sub in ('max', 'mean', 'median', 'min')
+            ], 'rad'),
+            (['fa_degenerate', 'fa_nans'], 'ppm'),
+            (['spikes_ppm_global', 'spikes_ppm_slice'], 'ppm'),
+            (['ndc'], None),
+            ([f'sigma_{meth}' for meth in ('cc', 'pca', 'piesno')], None),
+            (['fd_mean'], 'mm'),
+            (['fd_num'], '# timepoints'),
+            (['fd_perc'], '% timepoints'),
+            (
+                [
+                    'summary_bg_p05',
+                    'summary_fg_p05',
+                    'summary_wm_p05',
+                    'summary_bg_mean',
+                    'summary_fg_mean',
+                    'summary_wm_mean',
+                    'summary_bg_median',
+                    'summary_fg_median',
+                    'summary_wm_median',
+                    'summary_bg_p95',
+                    'summary_fg_p95',
+                    'summary_wm_p95',
+                ],
+                'a.u.',
+            ),
+            (
+                [
+                    'summary_bg_stdv',
+                    'summary_fg_stdv',
+                    'summary_wm_stdv',
+                    'summary_bg_mad',
+                    'summary_fg_mad',
+                    'summary_wm_mad',
+                ],
+                None,
+            ),
+            (
+                [
+                    'summary_bg_k',
+                    'summary_fg_k',
+                    'summary_wm_k',
+                ],
+                None,
+            ),
+        ],
     }
 
     if csv_file.suffix == '.csv':
