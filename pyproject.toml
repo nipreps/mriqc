@@ -89,6 +89,7 @@ dev = [
     "pre-commit",
     "isort ~= 5.10.1",
     "flake8-pyproject",
+    "ruff == 0.3.7"
 ]
 
 test = [
