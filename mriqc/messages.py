@@ -24,9 +24,7 @@
 
 BIDS_META = 'Generating BIDS derivatives metadata.'
 BUILDING_WORKFLOW = 'Building {modality} MRIQC workflow {detail}.'
-CREATED_DATASET = (
-    'Created dataset X="{feat_file}", Y="{label_file}" (N={n_samples} valid samples)'
-)
+CREATED_DATASET = 'Created dataset X="{feat_file}", Y="{label_file}" (N={n_samples} valid samples)'
 DROPPING_NON_NUMERICAL = 'Dropping {n_labels} samples for having non-numerical labels'
 GROUP_FINISHED = 'Group level finished successfully.'
 GROUP_NO_DATA = 'No data found. No group level reports were generated.'

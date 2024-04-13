@@ -115,15 +115,11 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     endpoint = Str(mandatory=True, desc='URL of the POST endpoint')
     auth_token = Str(mandatory=True, desc='authentication token')
     email = Str(desc='set sender email')
-    strict = traits.Bool(
-        False, usedefault=True, desc='crash if upload was not successful'
-    )
+    strict = traits.Bool(False, usedefault=True, desc='crash if upload was not successful')
 
 
 class UploadIQMsOutputSpec(TraitedSpec):
-    api_id = traits.Either(
-        None, traits.Str, desc='Id for report returned by the web api'
-    )
+    api_id = traits.Either(None, traits.Str, desc='Id for report returned by the web api')
 
 
 class UploadIQMs(SimpleInterface):
@@ -252,9 +248,7 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = (
-            'QC metrics failed to upload due to connection error shown below:\n%s' % err
-        )
+        errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % err
         return Bunch(status_code=1, text=errmsg)
 
     return response

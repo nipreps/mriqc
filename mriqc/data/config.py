@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Utilities: Jinja2 templates."""
+
 from pathlib import Path
 
 from niworkflows.data import Loader

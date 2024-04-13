@@ -206,6 +206,7 @@ Number of *dummy* scans** (``dummy``)
     2013, doi:`10.1089/brain.2013.0156
     <https://doi.org/10.1089/brain.2013.0156>`_.
 """
+
 import os.path as op
 
 import numpy as np
@@ -243,9 +244,7 @@ def gsr(epi_data, mask, direction='y', ref_file=None, out_file=None):
     """
     direction = direction.lower()
     if direction[-1] not in ('x', 'y', 'all'):
-        raise Exception(
-            f'Unknown direction {direction}, should be one of x, -x, y, -y, all'
-        )
+        raise Exception(f'Unknown direction {direction}, should be one of x, -x, y, -y, all')
 
     if direction == 'all':
         result = []

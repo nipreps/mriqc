@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """PyBIDS tooling."""
+
 from __future__ import annotations
 
 import json
@@ -32,6 +33,7 @@ DOI = 'https://doi.org/10.1371/journal.pone.0184661'
 
 def write_bidsignore(deriv_dir):
     from mriqc.config import SUPPORTED_SUFFIXES
+
     bids_ignore = [
         '*.html',
         'logs/',  # Reports
@@ -189,6 +191,6 @@ def derive_bids_fname(
         else:
             bidts.insert(position, entity.strip('_'))
 
-    retval = (newpath / f"{'_'.join(bidts)}_{newsuffix}.{newext.strip('.')}")
+    retval = newpath / f"{'_'.join(bidts)}_{newsuffix}.{newext.strip('.')}"
 
     return retval.absolute() if absolute else retval

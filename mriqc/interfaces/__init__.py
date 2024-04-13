@@ -20,7 +20,8 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""mriqc nipype interfaces """
+"""mriqc nipype interfaces"""
+
 from niworkflows.interfaces.bids import DerivativesDataSink as _DDSink
 
 from mriqc.interfaces.anatomical import (

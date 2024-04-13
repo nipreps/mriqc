@@ -33,6 +33,7 @@
     :show-inheritance:
 
 """
+
 from mriqc.workflows.anatomical.base import anat_qc_workflow
 from mriqc.workflows.functional.base import fmri_qc_workflow
 

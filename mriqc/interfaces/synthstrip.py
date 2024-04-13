@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """SynthStrip interface."""
+
 from nipype.interfaces.base import (
     CommandLine,
     CommandLineInputSpec,
@@ -46,9 +47,7 @@ class _SynthStripInputSpec(CommandLineInputSpec):
         argstr='-i %s',
         desc='Input image to be brain extracted',
     )
-    use_gpu = traits.Bool(
-        False, usedefault=True, argstr='-g', desc='Use GPU', nohash=True
-    )
+    use_gpu = traits.Bool(False, usedefault=True, argstr='-g', desc='Use GPU', nohash=True)
     model = File(
         _model_path,
         usedefault=True,
@@ -56,9 +55,7 @@ class _SynthStripInputSpec(CommandLineInputSpec):
         argstr='--model %s',
         desc="file containing model's weights",
     )
-    border_mm = traits.Int(
-        1, usedefault=True, argstr='-b %d', desc='Mask border threshold in mm'
-    )
+    border_mm = traits.Int(1, usedefault=True, argstr='-b %d', desc='Mask border threshold in mm')
     out_file = File(
         name_source=['in_file'],
         name_template='%s_desc-brain.nii.gz',

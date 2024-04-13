@@ -36,6 +36,7 @@ def build_workflow(config_file, retval):
     import os
 
     from mriqc import config
+
     # We do not need OMP > 1 for workflow creation
     os.environ['OMP_NUM_THREADS'] = '1'
     os.environ['NUMEXPR_MAX_THREADS'] = '1'
@@ -54,8 +55,5 @@ def build_workflow(config_file, retval):
     config.loggers.cli.log(25, "Building MRIQC's workflows...")
     retval['workflow'] = init_mriqc_wf()
     retval['return_code'] = int(retval['workflow'] is None)
-    config.loggers.cli.log(
-        25,
-        f"Workflow building finished (exit code {retval['return_code']})."
-    )
+    config.loggers.cli.log(25, f"Workflow building finished (exit code {retval['return_code']}).")
     return retval

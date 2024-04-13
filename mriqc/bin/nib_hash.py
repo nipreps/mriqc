@@ -23,6 +23,7 @@
 """
 Extracts the sha hash of the contents of a nifti file.
 """
+
 from argparse import ArgumentParser, RawTextHelpFormatter
 from hashlib import sha1
 

@@ -127,9 +127,7 @@ def main():
         config.loggers.init()
 
         if _resmon:
-            config.loggers.cli.info(
-                f'Started resource recording at {_resmon._logfile}.'
-            )
+            config.loggers.cli.info(f'Started resource recording at {_resmon._logfile}.')
 
         # Resource management options
         if config.nipype.plugin in ('MultiProc', 'LegacyMultiProc') and (
@@ -148,7 +146,8 @@ def main():
                 (
                     'Please make sure FreeSurfer is installed and the FREESURFER_HOME '
                     'environment variable is defined and pointing at the right directory.'
-                ) if config.environment.freesurfer_home is None
+                )
+                if config.environment.freesurfer_home is None
                 else (
                     f'FreeSurfer seems to be installed at {config.environment.freesurfer_home},'
                     " however SynthStrip's model is not found at the expected path."
@@ -174,9 +173,7 @@ def main():
                 from mriqc.engine.plugin import MultiProcPlugin
 
                 _plugin = {
-                    'plugin': MultiProcPlugin(
-                        pool=_pool, plugin_args=config.nipype.plugin_args
-                    ),
+                    'plugin': MultiProcPlugin(pool=_pool, plugin_args=config.nipype.plugin_args),
                 }
             mriqc_wf.run(**_plugin)
 
@@ -193,12 +190,16 @@ def main():
             (time.time() - config.settings.start_time)
             / sum(len(files) for files in config.workflow.inputs.values())
         )
-        config.loggers.cli.log(25, messages.PARTICIPANT_FINISHED.format(
-            duration=time.strftime('%Hh %Mmin %Ss', _subject_duration)
-        ))
+        config.loggers.cli.log(
+            25,
+            messages.PARTICIPANT_FINISHED.format(
+                duration=time.strftime('%Hh %Mmin %Ss', _subject_duration)
+            ),
+        )
 
         if _resmon is not None:
             from mriqc.instrumentation.viz import plot
+
             _resmon.stop()
             plot(
                 _resmon._logfile,
@@ -243,9 +244,7 @@ def main():
                 csv_failed=output_dir / f'group_variant-failed_{mod}.csv',
                 out_file=out_html,
             )
-            report_message = messages.GROUP_REPORT_GENERATED.format(
-                modality=mod, path=out_html
-            )
+            report_message = messages.GROUP_REPORT_GENERATED.format(modality=mod, path=out_html)
             config.loggers.cli.info(report_message)
             mod_group_reports.append(mod)
 
@@ -259,14 +258,15 @@ def main():
     config.loggers.cli.info(messages.BIDS_META)
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
-    config.loggers.cli.log(26, messages.RUN_FINISHED.format(
-        duration=time.strftime(
-            '%Hh %Mmin %Ss',
-            time.gmtime(time.time() - config.settings.start_time))
-    ))
-    config.to_filename(
-        config.execution.log_dir / f'config-{config.execution.run_uuid}.toml'
+    config.loggers.cli.log(
+        26,
+        messages.RUN_FINISHED.format(
+            duration=time.strftime(
+                '%Hh %Mmin %Ss', time.gmtime(time.time() - config.settings.start_time)
+            )
+        ),
     )
+    config.to_filename(config.execution.log_dir / f'config-{config.execution.run_uuid}.toml')
     sys.exit(exitcode)
 
 

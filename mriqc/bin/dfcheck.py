@@ -23,6 +23,7 @@
 """
 Compares pandas dataframes by columns.
 """
+
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
 from pathlib import Path
@@ -39,9 +40,7 @@ def read_iqms(feat_file):
     feat_file = Path(feat_file)
 
     if feat_file.suffix == '.csv':
-        x_df = pd.read_csv(
-            feat_file, index_col=False, dtype={col: str for col in BIDS_COMP}
-        )
+        x_df = pd.read_csv(feat_file, index_col=False, dtype={col: str for col in BIDS_COMP})
         # Find present bids bits and sort by them
         bids_comps_present = list(set(x_df.columns) & set(BIDS_COMP))
         bids_comps_present = [bit for bit in BIDS_COMP if bit in bids_comps_present]
@@ -58,9 +57,7 @@ def read_iqms(feat_file):
                 pass
     else:
         bids_comps_present = ['subject_id']
-        x_df = pd.read_csv(
-            feat_file, index_col=False, sep='\t', dtype={'bids_name': str}
-        )
+        x_df = pd.read_csv(feat_file, index_col=False, sep='\t', dtype={'bids_name': str})
         x_df = x_df.sort_values(by=['bids_name'])
         x_df['subject_id'] = x_df.bids_name.str.lstrip('sub-')
         x_df = x_df.drop(columns=['bids_name'])
@@ -134,9 +131,7 @@ def main():
         tst_keep = np.sum(tst_rows.isin(ref_rows).values.ravel().tolist())
         print(tst_keep)
 
-    diff = ~np.isclose(
-        ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance
-    )
+    diff = ~np.isclose(ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance)
     if np.any(diff):
         # ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
         # ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()

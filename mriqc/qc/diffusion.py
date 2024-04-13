@@ -1,4 +1,3 @@
-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 #
@@ -95,6 +94,7 @@ References
        its applications in MRI. JMR, 199(1):94-103, 2009.
 
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -103,8 +103,8 @@ from statsmodels.robust.scale import mad
 
 def noise_b0(
     in_b0: np.ndarray,
-    percentiles: tuple[float, float, float] = (25., 50., 75.),
-    mask: np.ndarray | None = None
+    percentiles: tuple[float, float, float] = (25.0, 50.0, 75.0),
+    mask: np.ndarray | None = None,
 ) -> dict[str, float]:
     """
     Estimates noise levels in raw dMRI data using the variance of the $b$=0 volumes.
@@ -141,14 +141,14 @@ def noise_b0(
     if in_b0.ndim != 4:
         return None
 
-    data = in_b0[
-        np.ones(in_b0.shape[:3], dtype=bool) if mask is None else mask
-    ]
+    data = in_b0[np.ones(in_b0.shape[:3], dtype=bool) if mask is None else mask]
     variance = np.var(data, -1)
-    noise_estimates = dict(zip(
-        (f'{p}' for p in percentiles),
-        np.percentile(variance, percentiles),
-    ))
+    noise_estimates = dict(
+        zip(
+            (f'{p}' for p in percentiles),
+            np.percentile(variance, percentiles),
+        )
+    )
 
     return noise_estimates
 
@@ -216,12 +216,9 @@ def cc_snr(
         shell_data = shell_data[cc_mask]
 
         # Find main directions of diffusion
-        axis_X = np.argmin(np.sum(
-            (bvecs - xyz[0, :]) ** 2, axis=-1))
-        axis_Y = np.argmin(np.sum(
-            (bvecs - xyz[1, :]) ** 2, axis=-1))
-        axis_Z = np.argmin(np.sum(
-            (bvecs - xyz[2, :]) ** 2, axis=-1))
+        axis_X = np.argmin(np.sum((bvecs - xyz[0, :]) ** 2, axis=-1))
+        axis_Y = np.argmin(np.sum((bvecs - xyz[1, :]) ** 2, axis=-1))
+        axis_Z = np.argmin(np.sum((bvecs - xyz[2, :]) ** 2, axis=-1))
 
         data_X = shell_data[..., axis_X]
         data_Y = shell_data[..., axis_Y]
@@ -277,9 +274,7 @@ def spike_ppm(
 
     spike_perc_global = round(float(np.mean(np.ravel(spike_mask))), decimals) * 1e6
     spike_perc_slice = [
-        round(
-            float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), decimals
-        ) * 1e6
+        round(float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), decimals) * 1e6
         for axis in range(spike_mask.ndim)
     ]
 
@@ -336,8 +331,6 @@ def neighboring_dwi_correlation(
         flat_from_image = dwi_data[from_index]
         flat_to_image = dwi_data[to_index]
 
-        neighbor_correlations.append(
-            np.corrcoef(flat_from_image, flat_to_image)[0, 1]
-        )
+        neighbor_correlations.append(np.corrcoef(flat_from_image, flat_to_image)[0, 1])
 
     return np.round(np.mean(neighbor_correlations), 4)

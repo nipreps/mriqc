@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
+
 from json import loads
 from pathlib import Path
 
@@ -36,12 +37,8 @@ def generate_reports():
     from mriqc import config
 
     config.loggers.workflow.info('Generating reports...')
-    output_files = [
-        _single_report(ff) for mod in config.workflow.inputs.values() for ff in mod
-    ]
-    config.loggers.workflow.info(
-        f'Report generation finished ({len(output_files)} reports).'
-    )
+    output_files = [_single_report(ff) for mod in config.workflow.inputs.values() for ff in mod]
+    config.loggers.workflow.info(f'Report generation finished ({len(output_files)} reports).')
     return output_files
 
 
@@ -60,11 +57,13 @@ def _single_report(in_file):
     report_type = entities.pop('datatype', None)
 
     # Read output file:
-    mriqc_json = loads((
-        Path(config.execution.output_dir)
-        / in_file.parent.relative_to(config.execution.bids_dir)
-        / in_file.name.replace(''.join(in_file.suffixes), '.json')
-    ).read_text())
+    mriqc_json = loads(
+        (
+            Path(config.execution.output_dir)
+            / in_file.parent.relative_to(config.execution.bids_dir)
+            / in_file.name.replace(''.join(in_file.suffixes), '.json')
+        ).read_text()
+    )
     mriqc_json.pop('bids_meta')
 
     # Clean-up provenance dictionary
@@ -73,9 +72,7 @@ def _single_report(in_file):
     prov.pop('webapi_port', None)
     prov.pop('settings', None)
     prov.pop('software', None)
-    prov.update({
-        f'warnings_{kk}': vv for kk, vv in prov.pop('warnings', {}).items()
-    })
+    prov.update({f'warnings_{kk}': vv for kk, vv in prov.pop('warnings', {}).items()})
     prov['Input filename'] = f'<BIDS root>/{in_file.relative_to(config.execution.bids_dir)}'
     prov['Versions_MRIQC'] = prov.pop('version', config.environment.version)
     prov['Execution environment'] = config.environment.exec_env
@@ -96,7 +93,7 @@ def _single_report(in_file):
                 'Provenance Information': prov,
                 'Dataset Information': bids_meta,
                 'Extracted Image quality metrics (IQMs)': mriqc_json,
-            }
+            },
         },
         plugin_meta={
             'rating-widget': {

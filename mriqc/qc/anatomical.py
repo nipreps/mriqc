@@ -200,6 +200,7 @@ Other measures
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
+
 from __future__ import annotations
 
 import os.path as op
@@ -559,10 +560,7 @@ def rpve(pvms, seg):
 
 
 def summary_stats(
-    data: np.ndarray,
-    pvms: dict[str, np.ndarray],
-    rprec_data: int = 0,
-    rprec_prob: int = 3
+    data: np.ndarray, pvms: dict[str, np.ndarray], rprec_data: int = 0, rprec_prob: int = 3
 ) -> dict[str, dict[str, float]]:
     """
     Estimates weighted summary statistics for each tissue distribution in the data.

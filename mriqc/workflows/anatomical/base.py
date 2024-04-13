@@ -51,6 +51,7 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
         wf = afni_wf()
 
 """
+
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.interfaces.fixes import FixHeaderApplyTransforms as ApplyTransforms

@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Exercise report generation with *NiReports*."""
+
 from json import loads
 from pathlib import Path
 
@@ -29,10 +30,11 @@ from nireports.assembler.report import Report
 
 
 @pytest.mark.parametrize(
-    ('dataset', 'subject'), [
+    ('dataset', 'subject'),
+    [
         ('ds002785', '0017'),
         ('ds002785', '0042'),
-    ]
+    ],
 )
 def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
     """Generate anatomical reports."""
@@ -42,9 +44,7 @@ def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
     reportlets_dir = mriqc_data / 'tests' / dataset
 
     mriqc_json = loads(
-        (
-            reportlets_dir / f'sub-{subject}' / 'anat' / f'sub-{subject}_T1w.json'
-        ).read_text()
+        (reportlets_dir / f'sub-{subject}' / 'anat' / f'sub-{subject}_T1w.json').read_text()
     )
 
     Report(
@@ -60,10 +60,10 @@ def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
                 'Provenance Information': mriqc_json.pop('provenance'),
                 'Dataset Information': mriqc_json.pop('bids_meta'),
                 'Extracted Image quality metrics (IQMs)': mriqc_json,
-            }
+            },
         },
         plugin_meta={
             'filename': f'sub-{subject}_T1w.nii.gz',
             'dataset': dataset,
-        }
+        },
     ).generate_report()

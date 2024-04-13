@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Interfaces for manipulating DWI data."""
+
 from __future__ import annotations
 
 import nibabel as nb
@@ -74,7 +75,7 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
     in_shells = InputMultiObject(
         File(exists=True),
         mandatory=True,
-        desc='DWI data after HMC and split by shells (indexed by in_bval)'
+        desc='DWI data after HMC and split by shells (indexed by in_bval)',
     )
     in_bval = traits.List(
         traits.Float,
@@ -104,8 +105,9 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
         desc='list of angle deviations from the original b-vectors table',
     )
     in_fa = File(exists=True, mandatory=True, desc='input FA map')
-    in_fa_nans = File(exists=True, mandatory=True,
-                      desc='binary mask of NaN values in the "raw" FA map')
+    in_fa_nans = File(
+        exists=True, mandatory=True, desc='binary mask of NaN values in the "raw" FA map'
+    )
     in_fa_degenerate = File(
         exists=True,
         mandatory=True,
@@ -135,7 +137,7 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
     fd_thres = traits.Float(
         FD_THRESHOLD,
         usedefault=True,
-        desc='FD threshold for orientation exclusion based on head motion'
+        desc='FD threshold for orientation exclusion based on head motion',
     )
     in_fwhm = traits.List(traits.Float, desc='smoothness estimated with AFNI')
     qspace_neighbors = traits.List(
@@ -253,10 +255,13 @@ class DiffusionQC(SimpleInterface):
         self._results['fa_nans'] = np.round(float(fa_nans_mask[mskdata > 0.5].mean()), 8) * 1e6
 
         fa_degenerate_mask = np.asanyarray(nb.load(self.inputs.in_fa_degenerate).dataobj) > 0.0
-        self._results['fa_degenerate'] = np.round(
-            float(fa_degenerate_mask[mskdata > 0.5].mean()),
-            8,
-        ) * 1e6
+        self._results['fa_degenerate'] = (
+            np.round(
+                float(fa_degenerate_mask[mskdata > 0.5].mean()),
+                8,
+            )
+            * 1e6
+        )
 
         # Get spikes-mask data
         spmask = np.asanyarray(nb.load(self.inputs.spikes_mask).dataobj) > 0.0
@@ -409,15 +414,18 @@ class _NumberOfShellsOutputSpec(_TraitedSpec):
     b_values = traits.List(
         traits.Float,
         minlen=1,
-        desc='list of ``n_shells`` b-values associated with each shell (only nonzero)')
+        desc='list of ``n_shells`` b-values associated with each shell (only nonzero)',
+    )
     b_masks = traits.List(
         traits.List(traits.Bool, minlen=1),
         minlen=1,
-        desc='list of ``n_shells`` b-value-wise masks')
+        desc='list of ``n_shells`` b-value-wise masks',
+    )
     b_indices = traits.List(
         traits.List(traits.Int, minlen=1),
         minlen=1,
-        desc='list of ``n_shells`` b-value-wise indices lists')
+        desc='list of ``n_shells`` b-value-wise indices lists',
+    )
     b_dict = traits.Dict(
         traits.Int, traits.List(traits.Int), desc='a map of b-values (including b=0) and masks'
     )
@@ -451,20 +459,26 @@ class NumberOfShells(SimpleInterface):
             KMeans(), param_grid={'n_clusters': range(1, 10)}, scoring=_rms
         ).fit(in_data[highb_mask].reshape(-1, 1))
 
-        results = np.array(sorted(zip(
-            grid_search.cv_results_['mean_test_score'] * -1.0,
-            grid_search.cv_results_['param_n_clusters'],
-        )))
+        results = np.array(
+            sorted(
+                zip(
+                    grid_search.cv_results_['mean_test_score'] * -1.0,
+                    grid_search.cv_results_['param_n_clusters'],
+                )
+            )
+        )
 
         self._results['models'] = results[:, 1].astype(int).tolist()
         self._results['n_shells'] = int(grid_search.best_params_['n_clusters'])
 
         out_data = np.zeros_like(in_data)
-        predicted_shell = np.rint(np.squeeze(
-            grid_search.best_estimator_.cluster_centers_[
-                grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
-            ],
-        )).astype(int)
+        predicted_shell = np.rint(
+            np.squeeze(
+                grid_search.best_estimator_.cluster_centers_[
+                    grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
+                ],
+            )
+        ).astype(int)
         original_bvals = np.unique(np.rint(in_data[highb_mask]).astype(int))
 
         # If estimated shells matches direct count, probably right -- do not change b-vals
@@ -596,7 +610,9 @@ class CorrectSignalDrift(SimpleInterface):
             )
 
             img.__class__(
-                np.round(data.astype('float32'), 4), img.affine, img.header,
+                np.round(data.astype('float32'), 4),
+                img.affine,
+                img.header,
             ).to_filename(self._results['out_file'])
 
             if isdefined(self.inputs.full_epi):
@@ -607,15 +623,13 @@ class CorrectSignalDrift(SimpleInterface):
 
             return runtime
 
-        global_signal = np.array([
-            np.median(data[..., n_b0][bmask]) for n_b0 in range(img.shape[-1])
-        ]).astype('float32')
+        global_signal = np.array(
+            [np.median(data[..., n_b0][bmask]) for n_b0 in range(img.shape[-1])]
+        ).astype('float32')
 
         # Normalize and correct
         global_signal /= global_signal[0]
-        self._results['b0_drift'] = [
-            round(float(gs), 4) for gs in global_signal
-        ]
+        self._results['b0_drift'] = [round(float(gs), 4) for gs in global_signal]
 
         config.loggers.interface.info(
             f'Correcting drift with {len(global_signal)} b=0 volumes, with '
@@ -626,7 +640,9 @@ class CorrectSignalDrift(SimpleInterface):
         data *= 1.0 / global_signal[np.newaxis, np.newaxis, np.newaxis, :]
 
         img.__class__(
-            data.astype(img.header.get_data_dtype()), img.affine, img.header,
+            data.astype(img.header.get_data_dtype()),
+            img.affine,
+            img.header,
         ).to_filename(self._results['out_file'])
 
         # Fit line to log-transformed drifts
@@ -642,9 +658,9 @@ class CorrectSignalDrift(SimpleInterface):
             )
             full_img = nb.load(self.inputs.full_epi)
             full_img.__class__(
-                (
-                    full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :]
-                ).astype(full_img.header.get_data_dtype()),
+                (full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :]).astype(
+                    full_img.header.get_data_dtype()
+                ),
                 full_img.affine,
                 full_img.header,
             ).to_filename(self._results['out_full_file'])
@@ -800,10 +816,13 @@ class DiffusionModel(SimpleInterface):
         brainmask = np.ones_like(data[..., 0], dtype=bool)
 
         if isdefined(self.inputs.brain_mask):
-            brainmask = np.round(
-                nb.load(self.inputs.brain_mask).get_fdata(),
-                3,
-            ) > 0.5
+            brainmask = (
+                np.round(
+                    nb.load(self.inputs.brain_mask).get_fdata(),
+                    3,
+                )
+                > 0.5
+            )
 
         if self.inputs.n_shells == 1:
             from dipy.reconst.dti import TensorModel as Model
@@ -871,8 +890,7 @@ class DiffusionModel(SimpleInterface):
 
         fa_degenerate_nii.header.set_xyzt_units('mm')
         fa_degenerate_nii.header.set_intent(
-            'estimate',
-            name='degenerate vectors in the FA map mask'
+            'estimate', name='degenerate vectors in the FA map mask'
         )
         fa_degenerate_nii.header['cal_max'] = 1
         fa_degenerate_nii.header['cal_min'] = 0
@@ -915,11 +933,7 @@ class DiffusionModel(SimpleInterface):
         md_data = np.clip(md_data, 0, 1)
         md_hdr = fa_nii.header.copy()
         md_hdr.set_intent('estimate', name='Mean diffusivity (MD)')
-        nb.Nifti1Image(
-            md_data,
-            img.affine,
-            md_hdr
-        ).to_filename(self._results['out_md'])
+        nb.Nifti1Image(md_data, img.affine, md_hdr).to_filename(self._results['out_md'])
 
         return runtime
 
@@ -927,10 +941,18 @@ class DiffusionModel(SimpleInterface):
 class _CCSegmentationInputSpec(_BaseInterfaceInputSpec):
     in_fa = File(exists=True, mandatory=True, desc='fractional anisotropy (FA) file')
     in_cfa = File(exists=True, mandatory=True, desc='color FA file')
-    min_rgb = traits.Tuple((0.4, 0.008, 0.008), types=(traits.Float,) * 3,
-                           usedefault=True, desc='minimum RGB within the CC')
-    max_rgb = traits.Tuple((1.1, 0.25, 0.25), types=(traits.Float,) * 3,
-                           usedefault=True, desc='maximum RGB within the CC')
+    min_rgb = traits.Tuple(
+        (0.4, 0.008, 0.008),
+        types=(traits.Float,) * 3,
+        usedefault=True,
+        desc='minimum RGB within the CC',
+    )
+    max_rgb = traits.Tuple(
+        (1.1, 0.25, 0.25),
+        types=(traits.Float,) * 3,
+        usedefault=True,
+        desc='maximum RGB within the CC',
+    )
     wm_threshold = traits.Float(0.35, usedefault=True, desc='WM segmentation threshold')
     clean_mask = traits.Bool(False, usedefault=True, desc='run a final cleanup step on mask')
 
@@ -995,9 +1017,7 @@ class CCSegmentation(SimpleInterface):
             structure=struct,
         )
 
-        fa_labels = label((
-            np.round(wm_mask, 4) > self.inputs.wm_threshold
-        ).astype(np.uint8))
+        fa_labels = label((np.round(wm_mask, 4) > self.inputs.wm_threshold).astype(np.uint8))
         wm_mask = fa_labels == np.argmax(np.bincount(fa_labels.flat)[1:]) + 1
 
         # Write out binary WM mask after binary opening
@@ -1009,9 +1029,7 @@ class CCSegmentation(SimpleInterface):
         wm_mask_nii.header.set_intent('estimate', name='white-matter mask after binary opening')
         wm_mask_nii.to_filename(self._results['wm_finalmask'])
 
-        cfa_data = np.round(
-            nb.load(self.inputs.in_cfa).get_fdata(dtype='float32'), 4
-        )
+        cfa_data = np.round(nb.load(self.inputs.in_cfa).get_fdata(dtype='float32'), 4)
         for i in range(cfa_data.shape[-1]):
             cfa_data[..., i] = nd.grey_closing(
                 cfa_data[..., i],
@@ -1050,7 +1068,7 @@ class _SpikingVoxelsMaskInputSpec(_BaseInterfaceInputSpec):
         traits.List(traits.Int, minlen=1),
         minlen=1,
         mandatory=True,
-        desc='list of ``n_shells`` b-value-wise indices lists'
+        desc='list of ``n_shells`` b-value-wise indices lists',
     )
 
 
@@ -1196,10 +1214,9 @@ class RotateVectors(SimpleInterface):
         xyz[nonzero] = xyz[nonzero] / xyz_norms[nonzero, np.newaxis]
 
         hmc_rot = load(self.inputs.transforms).matrix[:, :3, :3]
-        ijk_rotated = (
-            ras2vox[:3, :3]
-            @ np.einsum('ijk,ik->ij', hmc_rot, xyz).T
-        ).T.astype('float32')
+        ijk_rotated = (ras2vox[:3, :3] @ np.einsum('ijk,ik->ij', hmc_rot, xyz).T).T.astype(
+            'float32'
+        )
         ijk_rotated_norm = np.linalg.norm(ijk_rotated, axis=1)
         ijk_rotated[nonzero] = ijk_rotated[nonzero] / ijk_rotated_norm[nonzero, np.newaxis]
         ijk_rotated[~nonzero] = ijk[~nonzero]
@@ -1284,9 +1301,7 @@ def segment_corpus_callosum(
     bounds_min = mins + diff
     bounds_max = maxs - diff
     cc_box[
-        bounds_min[0]:bounds_max[0],
-        bounds_min[1]:bounds_max[1],
-        bounds_min[2]:bounds_max[2]
+        bounds_min[0] : bounds_max[0], bounds_min[1] : bounds_max[1], bounds_min[2] : bounds_max[2]
     ] = True
 
     min_rgb = np.array(min_rgb)
@@ -1299,7 +1314,7 @@ def segment_corpus_callosum(
     )
 
     # Apply bounding box and WM mask
-    cc_mask *= (cc_box & mask)
+    cc_mask *= cc_box & mask
 
     struct = nd.generate_binary_structure(cc_mask.ndim, cc_mask.ndim - 1)
     # Perform a closing followed by opening operations on the FA.
@@ -1368,9 +1383,7 @@ def get_spike_mask(
     return spike_mask
 
 
-def _find_qspace_neighbors(
-    bvals: np.ndarray, bvecs: np.ndarray
-) -> list[tuple[int, int]]:
+def _find_qspace_neighbors(bvals: np.ndarray, bvecs: np.ndarray) -> list[tuple[int, int]]:
     """
     Create a mapping of dwi volume index to its nearest neighbor in q-space.
 

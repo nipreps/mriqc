@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
+
 from sys import version_info
 
 import pandas as pd
@@ -205,9 +206,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             ),
         ],
         'dwi': [
-            ([
-                f'bdiffs_{sub}' for sub in ('max', 'mean', 'median', 'min')
-            ], 'rad'),
+            ([f'bdiffs_{sub}' for sub in ('max', 'mean', 'median', 'min')], 'rad'),
             (['fa_degenerate', 'fa_nans'], 'ppm'),
             (['spikes_ppm_global', 'spikes_ppm_slice'], 'ppm'),
             (['ndc'], None),
@@ -260,13 +259,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         )
 
         id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
-        dataframe['label'] = dataframe[id_labels].apply(
-            _format_labels, args=(id_labels,), axis=1
-        )
+        dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,), axis=1)
     else:
-        dataframe = pd.read_csv(
-            csv_file, index_col=False, sep='\t', dtype={'bids_name': object}
-        )
+        dataframe = pd.read_csv(csv_file, index_col=False, sep='\t', dtype={'bids_name': object})
         dataframe = dataframe.rename(index=str, columns={'bids_name': 'label'})
 
     nPart = len(dataframe)
@@ -316,15 +311,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             'version': ver,
             'csv_groups': csv_groups,
             'failed': failed,
-            'boxplots_js': load_data(
-                'data/reports/embed_resources/boxplots.js'
-            ).read_text(),
-            'd3_js': load_data(
-                'data/reports/embed_resources/d3.min.js'
-            ).read_text(),
-            'boxplots_css': load_data(
-                'data/reports/embed_resources/boxplots.css'
-            ).read_text(),
+            'boxplots_js': load_data('data/reports/embed_resources/boxplots.js').read_text(),
+            'd3_js': load_data('data/reports/embed_resources/d3.min.js').read_text(),
+            'boxplots_css': load_data('data/reports/embed_resources/boxplots.css').read_text(),
         },
         out_file,
     )

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Update and sort the creators list of the zenodo record."""
+
 import json
 import sys
 from pathlib import Path
@@ -37,10 +38,7 @@ def read_md_table(md_text):
     retval = []
     for line in md_text.splitlines():
         if line.strip().startswith('| --- |'):
-            keys = (
-                k.replace('*', '').strip()
-                for k in prev.split('|')
-            )
+            keys = (k.replace('*', '').strip() for k in prev.split('|'))
             keys = [k.lower() for k in keys if k]
             continue
         elif not keys:
@@ -61,19 +59,13 @@ def sort_contributors(entries, git_lines, exclude=None, last=None):
     last = last or []
     sorted_authors = sorted(entries, key=lambda i: i['name'])
 
-    first_last = [
-        ' '.join(val['name'].split(',')[::-1]).strip() for val in sorted_authors
-    ]
-    first_last_excl = [
-        ' '.join(val['name'].split(',')[::-1]).strip() for val in exclude or []
-    ]
+    first_last = [' '.join(val['name'].split(',')[::-1]).strip() for val in sorted_authors]
+    first_last_excl = [' '.join(val['name'].split(',')[::-1]).strip() for val in exclude or []]
 
     unmatched = []
     author_matches = []
     for ele in git_lines:
-        matches = process.extract(
-            ele, first_last, scorer=fuzz.token_sort_ratio, limit=2
-        )
+        matches = process.extract(ele, first_last, scorer=fuzz.token_sort_ratio, limit=2)
         # matches is a list [('First match', % Match), ('Second match', % Match)]
         if matches[0][1] > 80:
             val = sorted_authors[first_last.index(matches[0][0])]
@@ -126,13 +118,10 @@ def get_git_lines(fname='line-contributors.txt'):
         contrib_file.write_text('\n'.join(lines))
 
     if not lines:
-        _msg = (
-            ': git-line-summary not found, please install git-extras '
-            * (git_line_summary_path is None)
+        _msg = ': git-line-summary not found, please install git-extras ' * (
+            git_line_summary_path is None
         )
-        raise RuntimeError(
-            f'Could not find line-contributors from git repository{_msg}.'
-        )
+        raise RuntimeError(f'Could not find line-contributors from git repository{_msg}.')
     return [' '.join(line.strip().split()[1:-1]) for line in lines if '%' in line]
 
 
@@ -155,8 +144,9 @@ def cli():
 @cli.command()
 @click.option('-z', '--zenodo-file', type=click.Path(exists=True), default='.zenodo.json')
 @click.option('-m', '--maintainers', type=click.Path(exists=True), default='.maint/MAINTAINERS.md')
-@click.option('-c', '--contributors', type=click.Path(exists=True),
-              default='.maint/CONTRIBUTORS.md')
+@click.option(
+    '-c', '--contributors', type=click.Path(exists=True), default='.maint/CONTRIBUTORS.md'
+)
 @click.option('--pi', type=click.Path(exists=True), default='.maint/PIs.md')
 @click.option('-f', '--former-file', type=click.Path(exists=True), default='.maint/FORMER.md')
 def zenodo(
@@ -179,32 +169,21 @@ def zenodo(
     )
 
     zen_contributors, miss_contributors = sort_contributors(
-        _namelast(read_md_table(Path(contributors).read_text())),
-        data,
-        exclude=former
+        _namelast(read_md_table(Path(contributors).read_text())), data, exclude=former
     )
 
     zen_pi = _namelast(reversed(read_md_table(Path(pi).read_text())))
 
     zenodo['creators'] = zen_creators
-    zenodo['contributors'] = zen_contributors + [
-        pi for pi in zen_pi if pi not in zen_contributors
-    ]
-    creator_names = {
-        c['name'] for c in zenodo['creators']
-        if c['name'] != '<Unknown Name>'
-    }
+    zenodo['contributors'] = zen_contributors + [pi for pi in zen_pi if pi not in zen_contributors]
+    creator_names = {c['name'] for c in zenodo['creators'] if c['name'] != '<Unknown Name>'}
 
-    zenodo['contributors'] = [
-        c for c in zenodo['contributors']
-        if c['name'] not in creator_names
-    ]
+    zenodo['contributors'] = [c for c in zenodo['contributors'] if c['name'] not in creator_names]
 
     misses = set(miss_creators).intersection(miss_contributors)
     if misses:
         print(
-            "Some people made commits, but are missing in .maint/ "
-            f"files: {', '.join(misses)}",
+            "Some people made commits, but are missing in .maint/ " f"files: {', '.join(misses)}",
             file=sys.stderr,
         )
 
@@ -227,15 +206,14 @@ def zenodo(
         elif isinstance(creator['affiliation'], list):
             creator['affiliation'] = creator['affiliation'][0]
 
-    Path(zenodo_file).write_text(
-        '%s\n' % json.dumps(zenodo, indent=2)
-    )
+    Path(zenodo_file).write_text('%s\n' % json.dumps(zenodo, indent=2))
 
 
 @cli.command()
 @click.option('-m', '--maintainers', type=click.Path(exists=True), default='.maint/MAINTAINERS.md')
-@click.option('-c', '--contributors', type=click.Path(exists=True),
-              default='.maint/CONTRIBUTORS.md')
+@click.option(
+    '-c', '--contributors', type=click.Path(exists=True), default='.maint/CONTRIBUTORS.md'
+)
 @click.option('--pi', type=click.Path(exists=True), default='.maint/PIs.md')
 @click.option('-f', '--former-file', type=click.Path(exists=True), default='.maint/FORMER.md')
 def publication(
@@ -245,9 +223,8 @@ def publication(
     former_file,
 ):
     """Generate the list of authors and affiliations for papers."""
-    members = (
-        _namelast(read_md_table(Path(maintainers).read_text()))
-        + _namelast(read_md_table(Path(contributors).read_text()))
+    members = _namelast(read_md_table(Path(maintainers).read_text())) + _namelast(
+        read_md_table(Path(contributors).read_text())
     )
     former_names = _namelast(read_md_table(Path(former_file).read_text()))
 
@@ -259,10 +236,7 @@ def publication(
 
     pi_hits = _namelast(reversed(read_md_table(Path(pi).read_text())))
     pi_names = [pi['name'] for pi in pi_hits]
-    hits = [
-        hit for hit in hits
-        if hit['name'] not in pi_names
-    ] + pi_hits
+    hits = [hit for hit in hits if hit['name'] not in pi_names] + pi_hits
 
     def _aslist(value):
         if isinstance(value, (list, tuple)):
@@ -289,8 +263,7 @@ def publication(
 
     if misses:
         print(
-            "Some people made commits, but are missing in .maint/ "
-            f"files: {', '.join(misses)}",
+            "Some people made commits, but are missing in .maint/ " f"files: {', '.join(misses)}",
             file=sys.stderr,
         )
 
@@ -298,18 +271,13 @@ def publication(
     print(
         '%s.'
         % '; '.join(
-            [
-                '{} \\ :sup:`{}`\\ '.format(i['name'], idx)
-                for i, idx in zip(hits, aff_indexes)
-            ]
+            ['{} \\ :sup:`{}`\\ '.format(i['name'], idx) for i, idx in zip(hits, aff_indexes)]
         )
     )
 
     print(
         '\n\nAffiliations:\n%s'
-        % '\n'.join(
-            [f'{i + 1: >2}. {a}' for i, a in enumerate(affiliations)]
-        )
+        % '\n'.join([f'{i + 1: >2}. {a}' for i, a in enumerate(affiliations)])
     )
 
 

@@ -42,6 +42,7 @@ The functional workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
+
 import nibabel as nb
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
@@ -84,7 +85,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
             bold_len = nb.load(bold_path).shape[3]
         except nb.filebasedimages.ImageFileError:
             bold_len = config.workflow.min_len_bold
-        except IndexError:    # shape has only 3 elements
+        except IndexError:  # shape has only 3 elements
             bold_len = 0
         if bold_len >= config.workflow.min_len_bold:
             full_files.append(bold_path)
@@ -125,9 +126,11 @@ def fmri_qc_workflow(name='funcMRIQC'):
     )
 
     # Get metadata
-    meta = pe.MapNode(ReadSidecarJSON(
-        index_db=config.execution.bids_database_dir
-    ), name='metadata', iterfield=['in_file'])
+    meta = pe.MapNode(
+        ReadSidecarJSON(index_db=config.execution.bids_database_dir),
+        name='metadata',
+        iterfield=['in_file'],
+    )
 
     pick_echo = pe.Node(SelectEcho(), name='pick_echo')
 
@@ -274,11 +277,15 @@ def fmri_qc_workflow(name='funcMRIQC'):
     if not config.execution.no_sub:
         from mriqc.interfaces.webapi import UploadIQMs
 
-        upldwf = pe.MapNode(UploadIQMs(
-            endpoint=config.execution.webapi_url,
-            auth_token=config.execution.webapi_token,
-            strict=config.execution.upload_strict,
-        ), name='UploadMetrics', iterfield=['in_iqms'])
+        upldwf = pe.MapNode(
+            UploadIQMs(
+                endpoint=config.execution.webapi_url,
+                auth_token=config.execution.webapi_token,
+                strict=config.execution.upload_strict,
+            ),
+            name='UploadMetrics',
+            iterfield=['in_iqms'],
+        )
 
         # fmt: off
         workflow.connect([
@@ -392,7 +399,7 @@ def compute_iqms(name='ComputeIQMs'):
         GatherTimeseries(mpars_source='AFNI'),
         name='timeseries',
         mem_gb=mem_gb * 3,
-        iterfield=['dvars', 'outliers', 'quality']
+        iterfield=['dvars', 'outliers', 'quality'],
     )
 
     # fmt: off
@@ -444,10 +451,7 @@ def compute_iqms(name='ComputeIQMs'):
 
     # Save timeseries TSV file
     ds_timeseries = pe.MapNode(
-        DerivativesDataSink(
-            base_directory=str(config.execution.output_dir),
-            suffix='timeseries'
-        ),
+        DerivativesDataSink(base_directory=str(config.execution.output_dir), suffix='timeseries'),
         name='ds_timeseries',
         run_without_submitting=True,
         iterfield=['in_file', 'source_file', 'meta_dict'],
@@ -787,10 +791,7 @@ def epi_mni_align(name='SpatialNormalization'):
 
 def _parse_tqual(in_file):
     if isinstance(in_file, (list, tuple)):
-        return (
-            [_parse_tqual(f) for f in in_file] if len(in_file) > 1
-            else _parse_tqual(in_file[0])
-        )
+        return [_parse_tqual(f) for f in in_file] if len(in_file) > 1 else _parse_tqual(in_file[0])
 
     import numpy as np
 
@@ -801,10 +802,7 @@ def _parse_tqual(in_file):
 
 def _parse_tout(in_file):
     if isinstance(in_file, (list, tuple)):
-        return (
-            [_parse_tout(f) for f in in_file] if len(in_file) > 1
-            else _parse_tout(in_file[0])
-        )
+        return [_parse_tout(f) for f in in_file] if len(in_file) > 1 else _parse_tout(in_file[0])
 
     import numpy as np
 

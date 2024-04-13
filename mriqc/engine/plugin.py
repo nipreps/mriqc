@@ -73,9 +73,7 @@ def run_node(node, updatehash, taskid):
         result['traceback'] = tb
 
         crashfile = report_crash(node, traceback=tb)
-        config.loggers.workflow.error(
-            f'Node {node._id} (taskid={taskid}) crashed: {crashfile}'
-        )
+        config.loggers.workflow.error(f'Node {node._id} (taskid={taskid}) crashed: {crashfile}')
 
     # Return the result dictionary
     return result
@@ -204,7 +202,8 @@ class DistributedPluginBase(PluginBase):
                     else:
                         if not (self.proc_done[jobid] and self.proc_pending[jobid]):
                             raise RuntimeError(
-                                f'Plugin error while appending task <{taskid}> with ID {jobid}.')
+                                f'Plugin error while appending task <{taskid}> with ID {jobid}.'
+                            )
                         toappend.insert(0, (taskid, jobid))
 
             if toappend:

@@ -87,6 +87,7 @@ The :py:mod:`config` is responsible for other conveniency actions.
     :py:class:`~bids.layout.BIDSLayout`, etc.)
 
 """
+
 import os
 import sys
 from contextlib import suppress
@@ -110,9 +111,7 @@ _pre_exec_env = dict(os.environ)
 _default_omp_threads = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
 
 # Disable NiPype etelemetry always
-_disable_et = bool(
-    os.getenv('NO_ET') is not None or os.getenv('NIPYPE_NO_ET') is not None
-)
+_disable_et = bool(os.getenv('NO_ET') is not None or os.getenv('NIPYPE_NO_ET') is not None)
 os.environ['NIPYPE_NO_ET'] = '1'
 os.environ['NO_ET'] = '1'
 
@@ -178,13 +177,8 @@ with suppress(Exception):
             _proc_oc_kbytes = Path('/proc/sys/vm/overcommit_kbytes')
             if _proc_oc_kbytes.exists():
                 _oc_limit = _proc_oc_kbytes.read_text().strip()
-            if (
-                _oc_limit in ('0', 'n/a')
-                and Path('/proc/sys/vm/overcommit_ratio').exists()
-            ):
-                _oc_limit = '{}%'.format(
-                    Path('/proc/sys/vm/overcommit_ratio').read_text().strip()
-                )
+            if _oc_limit in ('0', 'n/a') and Path('/proc/sys/vm/overcommit_ratio').exists():
+                _oc_limit = '{}%'.format(Path('/proc/sys/vm/overcommit_ratio').read_text().strip())
 
 _memory_gb = None
 
@@ -199,11 +193,9 @@ elif 'darwin' in sys.platform:
     from shutil import which
     from subprocess import check_output
 
-    if (_cmd := which('sysctl')):
+    if _cmd := which('sysctl'):
         with suppress(Exception):
-            _mem_str = check_output(
-                [_cmd, 'hw.memsize']
-            ).decode().strip().split(' ')[-1]
+            _mem_str = check_output([_cmd, 'hw.memsize']).decode().strip().split(' ')[-1]
             _memory_gb = float(_mem_str) / (1024.0**3)
 
 # Check for FreeSurfer's SynthStrip model
@@ -215,7 +207,8 @@ if _fs_home and not _default_model_path.exists():
 
 # Override the unique ID if MRIQC_DEV is set
 _run_uuid = (
-    '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4()) if not _mriqc_dev
+    '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4())
+    if not _mriqc_dev
     else '18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f'
 )
 
@@ -273,7 +266,7 @@ class settings(_Config):
     start_time: float = None
     """A :obj:`~time.time` timestamp at the time the workflow is started."""
 
-    _paths = ('file_path', )
+    _paths = ('file_path',)
 
 
 class environment(_Config):
@@ -464,9 +457,7 @@ class execution(_Config):
         'work_dir',
     )
 
-    _hidden = (
-        'webapi_token',
-    )
+    _hidden = ('webapi_token',)
 
     @classmethod
     def init(cls):
@@ -501,9 +492,7 @@ class execution(_Config):
             if cls.participant_label:
                 # If we know participant labels, ignore all other
                 ignore_paths[0] = re.compile(
-                    r'^(?!/sub-('
-                    + '|'.join(cls.participant_label)
-                    + '))'
+                    r'^(?!/sub-(' + '|'.join(cls.participant_label) + '))'
                 )
 
             # Recommended after PyBIDS 12.1
@@ -519,8 +508,7 @@ class execution(_Config):
 
             if cls.bids_database_dir is None:
                 cls.bids_database_dir = (
-                    cls.output_dir / '.bids_db'
-                    if not cls.participant_label else _db_path
+                    cls.output_dir / '.bids_db' if not cls.participant_label else _db_path
                 )
 
             if cls.bids_database_wipe or not cls.bids_database_dir.exists():
@@ -710,9 +698,7 @@ def to_filename(filename=None):
     if filename:
         settings.file_path = Path(filename)
     elif settings.file_path is None:
-        settings.file_path = (
-            execution.work_dir / f'config-{execution.run_uuid}.toml'
-        )
+        settings.file_path = execution.work_dir / f'config-{execution.run_uuid}.toml'
 
     settings.file_path.parent.mkdir(exist_ok=True, parents=True)
     settings.file_path.write_text(dumps())
