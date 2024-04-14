@@ -210,13 +210,13 @@ def cc_snr(
     b_values = np.rint(b_values).astype(np.uint16)
     n_shells = len(b_values)
 
-    cc_snr_estimates[f'shell0'] = round(
+    cc_snr_estimates['shell0'] = round(
         float(in_b0[cc_mask].mean() / std_signal), decimals
     )
 
     # Shell-wise calculation
-    for shell_index, bval, bvecs, shell_data in zip(
-        range(1, n_shells + 1), b_values, b_vectors, dwi_shells
+    for shell_index, bvecs, shell_data in zip(
+        range(1, n_shells + 1), b_vectors, dwi_shells
     ):
         shell_data = shell_data[cc_mask]
 
@@ -282,7 +282,7 @@ def spike_ppm(
 
     """
 
-    axisnames = "ijkt"
+    axisnames = 'ijkt'
 
     spike_global = round(float(1e6 * np.mean(np.ravel(spike_mask))), decimals)
     spike_slice = {

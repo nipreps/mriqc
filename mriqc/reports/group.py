@@ -21,8 +21,8 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
-from sys import version_info
 from itertools import product
+from sys import version_info
 
 import pandas as pd
 

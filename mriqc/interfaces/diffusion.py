@@ -393,6 +393,9 @@ class WeightedStat(SimpleInterface):
 class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
     in_bvals = File(mandatory=True, desc='bvals file')
     b0_threshold = traits.Float(50, usedefault=True, desc='a threshold for the low-b values')
+    dsi_threshold = traits.Int(
+        11, usedefault=True, desc='number of shells to call a dataset DSI'
+    )
 
 
 class _NumberOfShellsOutputSpec(_TraitedSpec):
@@ -444,37 +447,48 @@ class NumberOfShells(SimpleInterface):
     def _run_interface(self, runtime):
         in_data = np.squeeze(np.loadtxt(self.inputs.in_bvals))
         highb_mask = in_data > self.inputs.b0_threshold
-        grid_search = GridSearchCV(
-            KMeans(), param_grid={'n_clusters': range(1, 10)}, scoring=_rms
-        ).fit(in_data[highb_mask].reshape(-1, 1))
 
-        results = np.array(sorted(zip(
-            grid_search.cv_results_['mean_test_score'] * -1.0,
-            grid_search.cv_results_['param_n_clusters'],
-        )))
+        original_bvals = sorted(set(np.rint(in_data[highb_mask]).astype(int)))
+        round_bvals = np.round(in_data, -2).astype(int)
+        shell_bvals = sorted(set(round_bvals))
 
-        self._results['models'] = results[:, 1].astype(int).tolist()
-        self._results['n_shells'] = int(grid_search.best_params_['n_clusters'])
+        if len(shell_bvals) <= self.inputs.dsi_threshold:
+            self._results['n_shells'] = len(shell_bvals) - 1
+            self._results['models'] = [self._results['n_shells']]
+            self._results['out_data'] = round_bvals.tolist()
+            self._results['b_values'] = shell_bvals
+        else:
+            # For datasets identified as DSI, fit a k-means
+            grid_search = GridSearchCV(
+                KMeans(), param_grid={'n_clusters': range(1, 10)}, scoring=_rms
+            ).fit(in_data[highb_mask].reshape(-1, 1))
 
-        out_data = np.zeros_like(in_data)
-        predicted_shell = np.rint(np.squeeze(
-            grid_search.best_estimator_.cluster_centers_[
-                grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
-            ],
-        )).astype(int)
-        original_bvals = np.unique(np.rint(in_data[highb_mask]).astype(int))
+            results = np.array(sorted(zip(
+                grid_search.cv_results_['mean_test_score'] * -1.0,
+                grid_search.cv_results_['param_n_clusters'],
+            )))
 
-        # If estimated shells matches direct count, probably right -- do not change b-vals
-        if len(original_bvals) == self._results['n_shells']:
-            # Find closest b-values
-            indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
-            predicted_shell = original_bvals[indices]
+            self._results['models'] = results[:, 1].astype(int).tolist()
+            self._results['n_shells'] = int(grid_search.best_params_['n_clusters'])
 
-        out_data[highb_mask] = predicted_shell
-        self._results['out_data'] = np.round(out_data.astype(float), 2).tolist()
-        self._results['b_values'] = sorted(
-            np.unique(np.round(predicted_shell.astype(float), 2)).tolist()
-        )
+            out_data = np.zeros_like(in_data)
+            predicted_shell = np.rint(np.squeeze(
+                grid_search.best_estimator_.cluster_centers_[
+                    grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
+                ],
+            )).astype(int)
+
+            # If estimated shells matches direct count, probably right -- do not change b-vals
+            if len(original_bvals) == self._results['n_shells']:
+                # Find closest b-values
+                indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
+                predicted_shell = original_bvals[indices]
+
+            out_data[highb_mask] = predicted_shell
+            self._results['out_data'] = np.round(out_data.astype(float), 2).tolist()
+            self._results['b_values'] = sorted(
+                np.unique(np.round(predicted_shell.astype(float), 2)).tolist()
+            )
 
         self._results['b_masks'] = [(~highb_mask).tolist()] + [
             np.isclose(self._results['out_data'], bvalue).tolist()
