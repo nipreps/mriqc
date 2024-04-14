@@ -252,6 +252,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                     'summary_bg_median',
                     'summary_fg_median',
                     'summary_wm_median',
+                ],
+                'a.u.',
+            ),
+            (
+                [
                     'summary_bg_p95',
                     'summary_fg_p95',
                     'summary_wm_p95',
@@ -272,6 +277,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (
                 [
                     'summary_bg_k',
+                ],
+                None,
+            ),
+            (
+                [
                     'summary_fg_k',
                     'summary_wm_k',
                 ],
