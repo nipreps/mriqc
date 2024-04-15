@@ -191,6 +191,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         ),
         name='dwidenoise',
         nprocs=config.nipype.omp_nthreads,
+        mem_gb=mem_gb * 4,
     )
     # Fit DTI/DKI model
     dwimodel = pe.Node(DiffusionModel(), name='dwimodel')
@@ -257,7 +258,10 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (hmcwf, get_hmc_shells, [('outputnode.out_file', 'in_file')]),
         (dwimodel, cc_mask, [('out_fa', 'in_fa'),
                              ('out_cfa', 'in_cfa')]),
-        (meta, iqms_wf, [('qspace_neighbors', 'inputnode.qspace_neighbors')]),
+        (meta, iqms_wf, [
+            ('out_bval_file', 'inputnode.b_values_file'),
+            ('qspace_neighbors', 'inputnode.qspace_neighbors'),
+        ]),
         (averages, iqms_wf, [(('out_file', _first), 'inputnode.in_b0')]),
         (sp_mask, iqms_wf, [('out_mask', 'inputnode.spikes_mask')]),
         (piesno, iqms_wf, [('sigma', 'inputnode.piesno_sigma')]),
@@ -273,7 +277,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (cc_mask, iqms_wf, [('out_mask', 'inputnode.cc_mask'),
                             ('wm_finalmask', 'inputnode.wm_mask')]),
         (shells, iqms_wf, [('n_shells', 'inputnode.n_shells'),
-                           ('b_values', 'inputnode.b_values')]),
+                           ('b_values', 'inputnode.b_values_shells')]),
         (get_hmc_shells, iqms_wf, [('out_file', 'inputnode.in_shells'),
                                    ('out_bvec', 'inputnode.in_bvec')]),
         (dwidenoise, iqms_wf, [('noise', 'inputnode.in_noise')]),
@@ -319,10 +323,11 @@ def compute_iqms(name='ComputeIQMs'):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
-                'n_shells',
-                'b_values',
                 'in_file',
                 'in_shells',
+                'n_shells',
+                'b_values_file',
+                'b_values_shells',
                 'in_bvec',
                 'in_bvec_rotated',
                 'in_bvec_diff',
@@ -385,10 +390,12 @@ def compute_iqms(name='ComputeIQMs'):
     workflow.connect([
         (inputnode, datasink, [('in_file', 'in_file'),
                                ('n_shells', 'NumberOfShells'),
-                               ('b_values', 'b-values')]),
+                               ('b_values_shells', 'bValuesEstimation'),
+                               (('b_values_file', _bvals_report), 'bValues')]),
         (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, measures, [('in_file', 'in_file'),
-                               ('b_values', 'in_bval'),
+                               ('b_values_file', 'in_bval_file'),
+                               ('b_values_shells', 'in_shells_bval'),
                                ('in_shells', 'in_shells'),
                                ('in_bvec', 'in_bvec'),
                                ('in_bvec_rotated', 'in_bvec_rotated'),
@@ -689,3 +696,16 @@ def _estimate_sigma(in_file, mask):
         float(np.median(nb.load(in_file).get_fdata()[msk])),
         6,
     )
+
+
+def _bvals_report(in_file):
+    import numpy as np
+
+    bvals = [
+        round(float(val), 2) for val in np.unique(np.round(np.loadtxt(in_file), 2))
+    ]
+
+    if len(bvals) > 10:
+        return 'Likely DSI'
+
+    return bvals
