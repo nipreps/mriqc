@@ -627,7 +627,7 @@ Please, check out your currently set filters {ffile}:
     }
     if unknown_mods:
         parser.error(
-            'MRIQC is unable to process the following modalities: ' f'{", ".join(unknown_mods)}.'
+            f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
     # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)
