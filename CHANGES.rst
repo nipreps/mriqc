@@ -51,6 +51,10 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Finalized naming and connection of DWI IQMs (#1272)
+* FIX: Enable group reports for DWI (#1266)
+* FIX: Address issues that had broken the group reports (#1262)
+* FIX: Select filters if modalities are selected (#1261)
 * FIX: Make sure new logs and config file output are compatible with parallel processes (#1259)
 * FIX: Skip short BOLD runs that break outlier detection (#1120)
 * FIX: Revise config save/load and update inputs after dropping (#1245)
@@ -76,6 +80,7 @@ CHANGES
 * ENH: Adds diffusion-related IQMs. (#1131)
 * ENH: Revise summary stats extraction and include controlled roundings (#1219)
 * DOC: Add changelog to documentation (#1217)
+* MAINT: Removed pre-commit from development dependencies (#1269)
 * MAINT: Clean up more ``FutureWarning`` issued by *Pandas* (#1257)
 * MAINT: Prevent pandas-originating deprecation warning (#1251)
 * MAINT: Move GitHub Actions and config files from *flake8* → *ruff* (#1212)
