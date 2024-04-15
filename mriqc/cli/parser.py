@@ -425,7 +425,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         '--deoblique',
         action='store_true',
         default=False,
-        help='Deoblique the functional scans during head motion correction ' 'preprocessing.',
+        help='Deoblique the functional scans during head motion correction preprocessing.',
     )
     g_func.add_argument(
         '--despike',
