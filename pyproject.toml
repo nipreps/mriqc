@@ -207,6 +207,7 @@ skip = """
 ./docs/source/_static/example_anatreport.html"""
 
 [tool.ruff]
+exclude = [".maint/update_authors.py"]
 line-length = 99
 
 [tool.ruff.lint]
