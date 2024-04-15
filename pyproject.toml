@@ -86,7 +86,6 @@ notebook = [
 
 dev = [
     "black ~= 22.3.0",
-    "pre-commit",
     "isort ~= 5.10.1",
     "flake8-pyproject",
 ]
