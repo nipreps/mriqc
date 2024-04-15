@@ -85,9 +85,7 @@ notebook = [
 ]
 
 dev = [
-    "black ~= 22.3.0",
-    "isort ~= 5.10.1",
-    "flake8-pyproject",
+    "ruff",
 ]
 
 test = [
