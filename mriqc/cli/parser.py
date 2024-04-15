@@ -336,7 +336,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         '--no-sub',
         default=False,
         action='store_true',
-        help='Turn off submission of anonymized quality metrics ' "to MRIQC's metrics repository.",
+        help="Turn off submission of anonymized quality metrics to MRIQC's metrics repository.",
     )
     g_outputs.add_argument(
         '--email',
