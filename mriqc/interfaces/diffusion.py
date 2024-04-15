@@ -77,12 +77,13 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
         mandatory=True,
         desc='DWI data after HMC and split by shells (indexed by in_bval)',
     )
-    in_bval = traits.List(
+    in_shells_bval = traits.List(
         traits.Float,
         minlen=1,
         mandatory=True,
         desc='list of unique b-values (one per shell), ordered by growing intensity',
     )
+    in_bval_file = File(exists=True, mandatory=True, desc='original b-vals file')
     in_bvec = traits.List(
         traits.List(
             traits.Tuple(traits.Float, traits.Float, traits.Float),
@@ -151,21 +152,19 @@ class _DiffusionQCInputSpec(_BaseInterfaceInputSpec):
 
 class _DiffusionQCOutputSpec(TraitedSpec):
     bdiffs = traits.Dict
-    cc_snr = traits.Dict
     efc = traits.Dict
     fa_degenerate = traits.Float
     fa_nans = traits.Float
     fber = traits.Dict
     fd = traits.Dict
     ndc = traits.Float
-    sigma_cc = traits.Float
-    sigma_pca = traits.Float
-    sigma_piesno = traits.Float
-    spikes_ppm = traits.Dict
+    sigma = traits.Dict
+    spikes = traits.Dict
     # gsr = traits.Dict
     # tsnr = traits.Float
     # fwhm = traits.Dict(desc='full width half-maximum measure')
     # size = traits.Dict
+    snr_cc = traits.Dict
     summary = traits.Dict
 
     out_qc = traits.Dict(desc='output flattened dictionary with all measures')
@@ -242,48 +241,43 @@ class DiffusionQC(SimpleInterface):
         self._results['summary'] = stats
 
         # CC mask SNR and std
-        self._results['cc_snr'], cc_sigma = dqc.cc_snr(
+        self._results['snr_cc'], cc_sigma = dqc.cc_snr(
             in_b0=b0data,
             dwi_shells=shelldata,
             cc_mask=ccdata,
-            b_values=self.inputs.in_bval,
+            b_values=self.inputs.in_shells_bval,
             b_vectors=self.inputs.in_bvec,
         )
-        self._results['sigma_cc'] = round(float(cc_sigma), 4)
 
         fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
-        self._results['fa_nans'] = np.round(float(fa_nans_mask[mskdata > 0.5].mean()), 8) * 1e6
+        self._results['fa_nans'] = round(float(1e6 * fa_nans_mask[mskdata > 0.5].mean()), 2)
 
         fa_degenerate_mask = np.asanyarray(nb.load(self.inputs.in_fa_degenerate).dataobj) > 0.0
-        self._results['fa_degenerate'] = (
-            np.round(
-                float(fa_degenerate_mask[mskdata > 0.5].mean()),
-                8,
-            )
-            * 1e6
+        self._results['fa_degenerate'] = round(
+            float(1e6 * fa_degenerate_mask[mskdata > 0.5].mean()),
+            2,
         )
 
         # Get spikes-mask data
         spmask = np.asanyarray(nb.load(self.inputs.spikes_mask).dataobj) > 0.0
-        self._results['spikes_ppm'] = dqc.spike_ppm(spmask)
+        self._results['spikes'] = dqc.spike_ppm(spmask)
 
         # FBER
         self._results['fber'] = {
-            f'b{int(bval):d}': aqc.fber(bdata, mskdata.astype(np.uint8))
-            for bval, bdata in zip(self.inputs.in_bval, shelldata)
+            f'shell{i + 1:02d}': aqc.fber(bdata, mskdata.astype(np.uint8))
+            for i, bdata in enumerate(shelldata)
         }
 
         # EFC
         self._results['efc'] = {
-            f'b{int(bval):d}': aqc.efc(bdata)
-            for bval, bdata in zip(self.inputs.in_bval, shelldata)
+            f'shell{i + 1:02d}': aqc.efc(bdata) for i, bdata in enumerate(shelldata)
         }
 
         # FD
         fd_data = np.loadtxt(self.inputs.in_fd, skiprows=1)
         num_fd = (fd_data > self.inputs.fd_thres).sum()
         self._results['fd'] = {
-            'mean': float(fd_data.mean()),
+            'mean': round(float(fd_data.mean()), 4),
             'num': int(num_fd),
             'perc': float(num_fd * 100 / (len(fd_data) + 1)),
         }
@@ -293,19 +287,18 @@ class DiffusionQC(SimpleInterface):
             np.nan_to_num(nb.load(self.inputs.in_file).get_fdata()),
             3,
         )
-        self._results['ndc'] = float(
-            dqc.neighboring_dwi_correlation(
-                dwidata,
-                neighbor_indices=self.inputs.qspace_neighbors,
-                mask=mskdata > 0.5,
-            )
+        self._results['ndc'] = dqc.neighboring_dwi_correlation(
+            dwidata,
+            neighbor_indices=self.inputs.qspace_neighbors,
+            mask=mskdata > 0.5,
         )
 
-        # PIESNO
-        self._results['sigma_piesno'] = round(self.inputs.piesno_sigma, 4)
-
-        # dwidenoise - Marchenko-Pastur PCA
-        self._results['sigma_pca'] = round(self.inputs.noise_floor, 4)
+        # Sigmas
+        self._results['sigma'] = {
+            'cc': round(float(cc_sigma), 4),
+            'piesno': round(self.inputs.piesno_sigma, 4),
+            'pca': round(self.inputs.noise_floor, 4),
+        }
 
         # rotated b-vecs deviations
         diffs = np.array(self.inputs.in_bvec_diff)
@@ -401,6 +394,7 @@ class WeightedStat(SimpleInterface):
 class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
     in_bvals = File(mandatory=True, desc='bvals file')
     b0_threshold = traits.Float(50, usedefault=True, desc='a threshold for the low-b values')
+    dsi_threshold = traits.Int(11, usedefault=True, desc='number of shells to call a dataset DSI')
 
 
 class _NumberOfShellsOutputSpec(_TraitedSpec):
@@ -455,43 +449,54 @@ class NumberOfShells(SimpleInterface):
     def _run_interface(self, runtime):
         in_data = np.squeeze(np.loadtxt(self.inputs.in_bvals))
         highb_mask = in_data > self.inputs.b0_threshold
-        grid_search = GridSearchCV(
-            KMeans(), param_grid={'n_clusters': range(1, 10)}, scoring=_rms
-        ).fit(in_data[highb_mask].reshape(-1, 1))
 
-        results = np.array(
-            sorted(
-                zip(
-                    grid_search.cv_results_['mean_test_score'] * -1.0,
-                    grid_search.cv_results_['param_n_clusters'],
+        original_bvals = sorted(set(np.rint(in_data[highb_mask]).astype(int)))
+        round_bvals = np.round(in_data, -2).astype(int)
+        shell_bvals = sorted(set(round_bvals))
+
+        if len(shell_bvals) <= self.inputs.dsi_threshold:
+            self._results['n_shells'] = len(shell_bvals) - 1
+            self._results['models'] = [self._results['n_shells']]
+            self._results['out_data'] = round_bvals.tolist()
+            self._results['b_values'] = shell_bvals
+        else:
+            # For datasets identified as DSI, fit a k-means
+            grid_search = GridSearchCV(
+                KMeans(), param_grid={'n_clusters': range(1, 10)}, scoring=_rms
+            ).fit(in_data[highb_mask].reshape(-1, 1))
+
+            results = np.array(
+                sorted(
+                    zip(
+                        grid_search.cv_results_['mean_test_score'] * -1.0,
+                        grid_search.cv_results_['param_n_clusters'],
+                    )
                 )
             )
-        )
 
-        self._results['models'] = results[:, 1].astype(int).tolist()
-        self._results['n_shells'] = int(grid_search.best_params_['n_clusters'])
+            self._results['models'] = results[:, 1].astype(int).tolist()
+            self._results['n_shells'] = int(grid_search.best_params_['n_clusters'])
 
-        out_data = np.zeros_like(in_data)
-        predicted_shell = np.rint(
-            np.squeeze(
-                grid_search.best_estimator_.cluster_centers_[
-                    grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
-                ],
+            out_data = np.zeros_like(in_data)
+            predicted_shell = np.rint(
+                np.squeeze(
+                    grid_search.best_estimator_.cluster_centers_[
+                        grid_search.best_estimator_.predict(in_data[highb_mask].reshape(-1, 1))
+                    ],
+                )
+            ).astype(int)
+
+            # If estimated shells matches direct count, probably right -- do not change b-vals
+            if len(original_bvals) == self._results['n_shells']:
+                # Find closest b-values
+                indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
+                predicted_shell = original_bvals[indices]
+
+            out_data[highb_mask] = predicted_shell
+            self._results['out_data'] = np.round(out_data.astype(float), 2).tolist()
+            self._results['b_values'] = sorted(
+                np.unique(np.round(predicted_shell.astype(float), 2)).tolist()
             )
-        ).astype(int)
-        original_bvals = np.unique(np.rint(in_data[highb_mask]).astype(int))
-
-        # If estimated shells matches direct count, probably right -- do not change b-vals
-        if len(original_bvals) == self._results['n_shells']:
-            # Find closest b-values
-            indices = np.abs(predicted_shell[:, np.newaxis] - original_bvals).argmin(axis=1)
-            predicted_shell = original_bvals[indices]
-
-        out_data[highb_mask] = predicted_shell
-        self._results['out_data'] = np.round(out_data.astype(float), 2).tolist()
-        self._results['b_values'] = sorted(
-            np.unique(np.round(predicted_shell.astype(float), 2)).tolist()
-        )
 
         self._results['b_masks'] = [(~highb_mask).tolist()] + [
             np.isclose(self._results['out_data'], bvalue).tolist()
