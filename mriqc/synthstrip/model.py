@@ -60,7 +60,6 @@ class StripModel(nn.Module):
         max_pool=2,
         return_mask=False,
     ):
-
         super().__init__()
 
         # dimensionality
@@ -69,12 +68,8 @@ class StripModel(nn.Module):
         # build feature list automatically
         if isinstance(nb_features, int):
             if nb_levels is None:
-                raise ValueError(
-                    'must provide unet nb_levels if nb_features is an integer'
-                )
-            feats = np.round(nb_features * feat_mult ** np.arange(nb_levels)).astype(
-                int
-            )
+                raise ValueError('must provide unet nb_levels if nb_features is an integer')
+            feats = np.round(nb_features * feat_mult ** np.arange(nb_levels)).astype(int)
             feats = np.clip(feats, 1, max_features)
             nb_features = [
                 np.repeat(feats[:-1], nb_conv_per_level),
@@ -96,9 +91,7 @@ class StripModel(nn.Module):
         # cache downsampling / upsampling operations
         MaxPooling = getattr(nn, 'MaxPool%dd' % ndims)
         self.pooling = [MaxPooling(s) for s in max_pool]
-        self.upsampling = [
-            nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool
-        ]
+        self.upsampling = [nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool]
 
         # configure encoder (down-sampling path)
         prev_nf = 1
@@ -140,7 +133,6 @@ class StripModel(nn.Module):
             self.remaining.append(ConvBlock(ndims, prev_nf, 1, activation=None))
 
     def forward(self, x):
-
         # encoder forward pass
         x_history = [x]
         for level, convs in enumerate(self.encoder):

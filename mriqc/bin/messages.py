@@ -20,20 +20,12 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-ABIDE_SUBJECT_FETCHED = (
-    'Successfully processed subject {subject_id} from site {site_name}'
-)
+ABIDE_SUBJECT_FETCHED = 'Successfully processed subject {subject_id} from site {site_name}'
 ABIDE_TEMPORAL_WARNING = 'WARNING: Error deleting temporal files: {message}'
-BIDS_LABEL_MISSING = (
-    'Participant label(s) not found in the BIDS root directory: {label}'
-)
-BIDS_GROUP_SIZE = (
-    'Group size should be at least 0 (i.e. all participants assigned to same group).'
-)
+BIDS_LABEL_MISSING = 'Participant label(s) not found in the BIDS root directory: {label}'
+BIDS_GROUP_SIZE = 'Group size should be at least 0 (i.e. all participants assigned to same group).'
 CLF_CAPTURED_WARNING = 'Captured warning ({category}): {message}'
-CLF_CLASSIFIER_MISSING = (
-    'No training samples were given, and the --load-classifier option {info}.'
-)
+CLF_CLASSIFIER_MISSING = 'No training samples were given, and the --load-classifier option {info}.'
 CLF_SAVED_RESULTS = 'Results saved as {path}.'
 CLF_TRAIN_LOAD_ERROR = 'Errors ({n_errors}) loading training set: {errors}.'
 CLF_WRONG_PARAMETER_COUNT = 'Wrong number of parameters.'

@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """BIDS-Apps subject wrangler."""
+
 import glob
 import os.path as op
 from argparse import ArgumentParser, RawTextHelpFormatter
@@ -124,9 +125,7 @@ def main():
 
         if list(set(subject_list) - set(all_subjects)):
             non_exist = list(set(subject_list) - set(all_subjects))
-            missing_label_error = messages.BIDS_LABEL_MISSING.format(
-                label=' '.join(non_exist)
-            )
+            missing_label_error = messages.BIDS_LABEL_MISSING.format(label=' '.join(non_exist))
             raise RuntimeError(missing_label_error)
 
     if not opts.no_randomize:

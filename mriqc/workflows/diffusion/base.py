@@ -42,6 +42,7 @@ The diffusion workflow follows the following steps:
 
 This workflow is orchestrated by :py:func:`dmri_qc_workflow`.
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -96,11 +97,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     for dwi_path in dataset:
         bval = config.execution.layout.get_bval(dwi_path)
-        if (
-            bval
-            and Path(bval).exists()
-            and len(np.loadtxt(bval)) > config.workflow.min_len_dwi
-        ):
+        if bval and Path(bval).exists() and len(np.loadtxt(bval)) > config.workflow.min_len_dwi:
             full_data.append(dwi_path)
         else:
             config.loggers.workflow.warn(
@@ -455,17 +452,27 @@ def hmc_workflow(name='dMRI_HMC'):
 
     workflow = pe.Workflow(name=name)
 
-    inputnode = pe.Node(niu.IdentityInterface(fields=[
-        'in_file',
-        'reference',
-        'in_bvec',
-    ]), name='inputnode')
-    outputnode = pe.Node(niu.IdentityInterface(fields=[
-        'out_file',
-        'out_fd',
-        'out_bvec',
-        'out_bvec_diff',
-    ]), name='outputnode')
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=[
+                'in_file',
+                'reference',
+                'in_bvec',
+            ]
+        ),
+        name='inputnode',
+    )
+    outputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=[
+                'out_file',
+                'out_fd',
+                'out_bvec',
+                'out_bvec_diff',
+            ]
+        ),
+        name='outputnode',
+    )
 
     # calculate hmc parameters
     hmc = pe.Node(

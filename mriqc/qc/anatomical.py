@@ -200,6 +200,7 @@ Other measures
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
+
 from __future__ import annotations
 
 import os.path as op
@@ -394,8 +395,7 @@ def efc(img, framemask=None, decimals=4):
         float(
             (1.0 / efc_max)
             * np.sum(
-                (img[framemask == 0] / b_max)
-                * np.log((img[framemask == 0] + 1e-16) / b_max)
+                (img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max)
             ),
         ),
         decimals,

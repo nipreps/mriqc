@@ -46,9 +46,7 @@ class GCORInputSpec(CommandLineInputSpec):
         copyfile=False,
     )
 
-    nfirst = traits.Int(
-        0, argstr='-nfirst %d', desc='specify number of initial TRs to ignore'
-    )
+    nfirst = traits.Int(0, argstr='-nfirst %d', desc='specify number of initial TRs to ignore')
     no_demean = traits.Bool(
         False,
         argstr='-no_demean',

@@ -28,7 +28,7 @@ from mriqc.qc.diffusion import spike_ppm
 
 def test_spike_ppm():
     msk = np.random.randint(0, high=2, size=(76, 76, 64, 124), dtype=bool)
-    val = spike_ppm(msk, .5)
+    val = spike_ppm(msk, 0.5)
 
     assert np.isclose(val['global'], 0.5e6, rtol=1, atol=1)
 

@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Writing out diffusion reportlets."""
+
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from nireports.interfaces.dmri import DWIHeatmap

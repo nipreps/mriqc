@@ -23,6 +23,7 @@
 """
 Batch export freesurfer results to animated gifs.
 """
+
 import os
 import os.path as op
 import subprocess as sp
@@ -129,10 +130,7 @@ set i 0
                 )
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write(
-                    f'    SaveTIFF [format "{tmp_sub}/{subid}-'
-                    '%03d.tif" $i]\n'
-                )
+                tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-' '%03d.tif" $i]\n')
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
@@ -175,15 +173,10 @@ set i 0
                     'for { set slice %d } { $slice < %d } { incr slice } {'
                     % (bbox_min[2], bbox_max[2])
                 )
-                tclfp.write(
-                    '    SetZoomCenter %d %d $slice\n'
-                    % (center[0] + 30, center[1] - 10)
-                )
+                tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] + 30, center[1] - 10))
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write(
-                    f'    SaveTIFF [format "{tmp_sub}/{subid}-lh-%03d.tif" $i]\n'
-                )
+                tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-lh-%03d.tif" $i]\n')
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')
@@ -205,15 +198,10 @@ set i 0
                     'for { set slice %d } { $slice < %d } { incr slice } {'
                     % (bbox_min[2], bbox_max[2])
                 )
-                tclfp.write(
-                    '    SetZoomCenter %d %d $slice\n'
-                    % (center[0] - 30, center[1] - 10)
-                )
+                tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] - 30, center[1] - 10))
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write(
-                    f'    SaveTIFF [format "{tmp_sub}/{subid}-rh-%03d.tif" $slice]\n'
-                )
+                tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-rh-%03d.tif" $slice]\n')
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')

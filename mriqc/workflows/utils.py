@@ -25,10 +25,7 @@
 
 def _tofloat(inlist):
     if isinstance(inlist, (list, tuple)):
-        return (
-            [_tofloat(el) for el in inlist] if len(inlist) > 1
-            else _tofloat(inlist[0])
-        )
+        return [_tofloat(el) for el in inlist] if len(inlist) > 1 else _tofloat(inlist[0])
     return float(inlist)
 
 
@@ -231,6 +228,7 @@ def generate_filename(in_file, dirname=None, suffix='', extension=None):
 
     """
     from pathlib import Path
+
     in_file = Path(in_file)
     in_ext = ''.join(in_file.suffixes)
 
@@ -241,7 +239,7 @@ def generate_filename(in_file, dirname=None, suffix='', extension=None):
     else:
         extension = in_ext
 
-    stem = in_file.name[:-len(in_ext)] if in_ext else in_file.name
+    stem = in_file.name[: -len(in_ext)] if in_ext else in_file.name
 
     if suffix and not suffix.startswith('_'):
         suffix = f'_{suffix}'

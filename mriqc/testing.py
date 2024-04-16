@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Utilities and mocks for testing and documentation building."""
+
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import mkdtemp

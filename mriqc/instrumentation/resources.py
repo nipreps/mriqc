@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Instrumentation to profile resource utilization."""
+
 import signal
 from contextlib import suppress
 from datetime import datetime, timezone
@@ -59,7 +60,6 @@ def FindProcess(process_name):
     for proc in psutil.process_iter():
         try:
             if process_name == proc.name():
-
                 parent = proc.parent()
 
                 if parent.name() != process_name:
@@ -127,9 +127,7 @@ def parse_sample(datapoint, timestamp=None, attrs=SAMPLE_ATTRS):
     return retval
 
 
-def sample2file(
-    pid=None, recursive=True, timestamp=None, fd=None, flush=True, exclude=()
-):
+def sample2file(pid=None, recursive=True, timestamp=None, fd=None, flush=True, exclude=()):
     if fd is None:
         return
 
@@ -149,9 +147,7 @@ def sample2file(
 class ResourceRecorder(Process):
     """Attach a ``Thread`` to sample a specific PID with a certain frequency."""
 
-    def __init__(
-        self, pid, frequency=0.2, log_file=None, exclude_probe=True, **process_kwargs
-    ):
+    def __init__(self, pid, frequency=0.2, log_file=None, exclude_probe=True, **process_kwargs):
         Process.__init__(self, name='nipype_resmon', daemon=True, **process_kwargs)
 
         self._pid = int(pid)

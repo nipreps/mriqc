@@ -60,11 +60,7 @@ class DataladIdentityInterface(BaseInterface):
             raise ValueError(
                 f"inputs not in the fields: {', '.join(set(inputs.keys()) - set(fields))}."
             )
-        add_traits(
-            self.inputs,
-            fields,
-            trait_type=File(nohash=True, mandatory=mandatory_inputs)
-        )
+        add_traits(self.inputs, fields, trait_type=File(nohash=True, mandatory=mandatory_inputs))
 
         if dataset_path:
             inputs['dataset_path'] = dataset_path
@@ -74,10 +70,7 @@ class DataladIdentityInterface(BaseInterface):
     def _run_interface(self, runtime):
         inputs = self.inputs.get()
         dataset_path = inputs.pop('dataset_path')
-        if (
-            not isdefined(dataset_path)
-            or not (Path(dataset_path) / '.datalad').exists()
-        ):
+        if not isdefined(dataset_path) or not (Path(dataset_path) / '.datalad').exists():
             config.loggers.interface.info('Datalad interface without dataset path defined.')
             return runtime
 
@@ -87,6 +80,7 @@ class DataladIdentityInterface(BaseInterface):
 
             _dl_found = True
         except ImportError:
+
             def get(*args, **kwargs):
                 """Mock datalad get."""
 
@@ -106,16 +100,16 @@ class DataladIdentityInterface(BaseInterface):
 
             if _datalad_candidate:
                 try:
-                    result = get(
-                        _pth,
-                        dataset=dataset_path
-                    )
+                    result = get(_pth, dataset=dataset_path)
                 except Exception as exc:  # noqa: BLE001
                     config.loggers.interface.warning(f'datalad get on {_pth} failed.')
                     if (
                         config.environment.exec_env == 'docker'
-                        and ('This repository is not initialized for use by git-annex, '
-                             'but .git/annex/objects/ exists') in f'{exc}'
+                        and (
+                            'This repository is not initialized for use by git-annex, '
+                            'but .git/annex/objects/ exists'
+                        )
+                        in f'{exc}'
                     ):
                         config.loggers.interface.warning(
                             'Execution seems containerirzed with Docker, please make sure '
