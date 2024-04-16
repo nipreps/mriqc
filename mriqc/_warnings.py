@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Manipulate Python warnings."""
+
 import logging
 import sys
 
@@ -64,12 +65,15 @@ class _LogFormatter(logging.Formatter):
     def format(self, record):
         reset = CONSOLE_COLORS['reset'] if self._colored else ''
         self._style._fmt = (
-            '%(message)s' if record.levelno == 26
+            '%(message)s'
+            if record.levelno == 26
             else LOGGER_FMT.format(
                 color=CONSOLE_COLORS.get(
                     record.levelno,
                     CONSOLE_COLORS['reset'],
-                ) if self._colored else '',
+                )
+                if self._colored
+                else '',
                 reset=reset,
             )
         )

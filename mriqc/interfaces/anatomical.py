@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Nipype interfaces to support anatomical workflow."""
+
 from pathlib import Path
 
 import nibabel as nb
@@ -400,7 +401,6 @@ class Harmonize(SimpleInterface):
     output_spec = HarmonizeOutputSpec
 
     def _run_interface(self, runtime):
-
         in_file = nb.load(self.inputs.in_file)
         wm_mask = nb.load(self.inputs.wm_mask).get_fdata()
         wm_mask[wm_mask < 0.9] = 0

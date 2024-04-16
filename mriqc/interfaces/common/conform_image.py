@@ -23,6 +23,7 @@
 """
 Definition of the :class:`ConformImage` interface.
 """
+
 from os import path as op
 
 import nibabel as nib

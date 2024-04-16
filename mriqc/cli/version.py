@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Version CLI helpers."""
+
 from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path

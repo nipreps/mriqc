@@ -23,6 +23,7 @@
 """
 Combines the structural and functional MRI workflows.
 """
+
 from nipype.pipeline.engine import Workflow
 
 from mriqc.workflows.anatomical.base import anat_qc_workflow

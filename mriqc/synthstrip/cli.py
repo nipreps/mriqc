@@ -66,15 +66,10 @@ def main():
         required=True,
         help='Input image to skullstrip.',
     )
-    parser.add_argument(
-        '-o', '--out', metavar='file', help='Save stripped image to path.'
-    )
-    parser.add_argument(
-        '-m', '--mask', metavar='file', help='Save binary brain mask to path.'
-    )
+    parser.add_argument('-o', '--out', metavar='file', help='Save stripped image to path.')
+    parser.add_argument('-m', '--mask', metavar='file', help='Save binary brain mask to path.')
     parser.add_argument('-g', '--gpu', action='store_true', help='Use the GPU.')
-    parser.add_argument(
-        '-n', '--num-threads', action='store', type=int, help='number of threads')
+    parser.add_argument('-n', '--num-threads', action='store', type=int, help='number of threads')
     parser.add_argument(
         '-b',
         '--border',
@@ -201,10 +196,7 @@ def conform(input_nii):
     )
 
     # Get corner voxel centers in mm
-    corners_xyz = (
-        affine
-        @ np.hstack((corner_centers_ijk, np.ones((len(corner_centers_ijk), 1)))).T
-    )
+    corners_xyz = affine @ np.hstack((corner_centers_ijk, np.ones((len(corner_centers_ijk), 1)))).T
 
     # Target affine is 1mm voxels in LIA orientation
     target_affine = np.diag([-1.0, 1.0, -1.0, 1.0])[:, (0, 2, 1, 3)]
@@ -214,9 +206,7 @@ def conform(input_nii):
     target_shape = ((extent[1] - extent[0]) / 1.0 + 0.999).astype(int)
 
     # SynthStrip likes dimensions be multiple of 64 (192, 256, or 320)
-    target_shape = np.clip(
-        np.ceil(np.array(target_shape) / 64).astype(int) * 64, 192, 320
-    )
+    target_shape = np.clip(np.ceil(np.array(target_shape) / 64).astype(int) * 64, 192, 320)
 
     # Ensure shape ordering is LIA too
     target_shape[2], target_shape[1] = target_shape[1:3]

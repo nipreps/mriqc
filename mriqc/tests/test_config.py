@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Exercise config module."""
+
 from pathlib import Path
 
 import pytest

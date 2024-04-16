@@ -200,6 +200,7 @@ Other measures
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
+
 from __future__ import annotations
 
 import os.path as op
@@ -318,7 +319,7 @@ def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     return float((sigma_wm + sigma_gm) / abs(mu_wm - mu_gm))
 
 
-def fber(img, headmask, rotmask=None):
+def fber(img, headmask, rotmask=None, decimals=4):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
@@ -347,10 +348,10 @@ def fber(img, headmask, rotmask=None):
     bg_mu = np.median(np.abs(img[airmask == 1]) ** 2)
     if bg_mu < 1.0e-3:
         return -1.0
-    return float(fg_mu / bg_mu)
+    return round(float(fg_mu / bg_mu), decimals)
 
 
-def efc(img, framemask=None):
+def efc(img, framemask=None, decimals=4):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
@@ -390,9 +391,14 @@ def efc(img, framemask=None):
     b_max = np.sqrt((img[framemask == 0] ** 2).sum())
 
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
-    return float(
-        (1.0 / efc_max)
-        * np.sum((img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max))
+    return round(
+        float(
+            (1.0 / efc_max)
+            * np.sum(
+                (img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max)
+            ),
+        ),
+        decimals,
     )
 
 
@@ -562,7 +568,8 @@ def summary_stats(
     data: np.ndarray,
     pvms: dict[str, np.ndarray],
     rprec_data: int = 0,
-    rprec_prob: int = 3
+    rprec_prob: int = 3,
+    decimals: int = 4,
 ) -> dict[str, dict[str, float]]:
     """
     Estimates weighted summary statistics for each tissue distribution in the data.
@@ -619,13 +626,13 @@ def summary_stats(
         thresholded = data[probmap > (0.5 * probmap.max())]
 
         output[label] = {
-            'mean': float(wstats.mean),
-            'median': float(median),
-            'p95': float(p95),
-            'p05': float(p05),
-            'k': float(kurtosis(thresholded)),
-            'stdv': float(wstats.std),
-            'mad': float(mad(thresholded, center=median)),
+            'mean': round(float(wstats.mean), decimals),
+            'median': round(float(median), decimals),
+            'p95': round(float(p95), decimals),
+            'p05': round(float(p05), decimals),
+            'k': round(float(kurtosis(thresholded)), decimals),
+            'stdv': round(float(wstats.std), decimals),
+            'mad': round(float(mad(thresholded, center=median)), decimals),
             'n': float(nvox),
         }
 

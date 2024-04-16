@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Parser."""
+
 import re
 
 from mriqc import config
@@ -42,10 +43,9 @@ def _parse_participant_labels(value):
     ['s060']
 
     """
-    return sorted({
-        re.sub(r'^sub-', '', item.strip())
-        for item in re.split(r'\s+', f'{value}'.strip())
-    })
+    return sorted(
+        {re.sub(r'^sub-', '', item.strip()) for item in re.split(r'\s+', f'{value}'.strip())}
+    )
 
 
 def _build_parser():
@@ -176,10 +176,13 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         'identifier (the sub- prefix can be removed).',
     )
     g_bids.add_argument(
-        '--bids-filter-file', action='store', type=Path, metavar='PATH',
+        '--bids-filter-file',
+        action='store',
+        type=Path,
+        metavar='PATH',
         help='a JSON file describing custom BIDS input filter using pybids '
-             '{<suffix>:{<entity>:<filter>,...},...} '
-             '(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)'
+        '{<suffix>:{<entity>:<filter>,...},...} '
+        '(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)',
     )
     g_bids.add_argument(
         '--session-id',
@@ -280,7 +283,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         action='store_true',
         default=True,
         help="Cast the input data to float32 if it's represented in higher precision "
-        "(saves space and improves performance).",
+        '(saves space and improves performance).',
     )
     g_perfm.add_argument(
         '--pdb',
@@ -333,8 +336,7 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         '--no-sub',
         default=False,
         action='store_true',
-        help="Turn off submission of anonymized quality metrics "
-        "to MRIQC's metrics repository.",
+        help="Turn off submission of anonymized quality metrics to MRIQC's metrics repository.",
     )
     g_outputs.add_argument(
         '--email',
@@ -423,15 +425,13 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         '--deoblique',
         action='store_true',
         default=False,
-        help='Deoblique the functional scans during head motion correction '
-        'preprocessing.',
+        help='Deoblique the functional scans during head motion correction preprocessing.',
     )
     g_func.add_argument(
         '--despike',
         action='store_true',
         default=False,
-        help='Despike the functional scans during head motion correction '
-        'preprocessing.',
+        help='Despike the functional scans during head motion correction preprocessing.',
     )
     g_func.add_argument(
         '--start-idx',
@@ -491,18 +491,16 @@ def parse_args(args=None, namespace=None):
 
     config.loggers.init()
 
-    _log_file = (
-        Path(opts.output_dir)
-        / 'logs'
-        / f'mriqc-{config.execution.run_uuid}.log'
-    )
+    _log_file = Path(opts.output_dir) / 'logs' / f'mriqc-{config.execution.run_uuid}.log'
     _log_file.parent.mkdir(exist_ok=True, parents=True)
     _handler = FileHandler(_log_file)
-    _handler.setFormatter(_LogFormatter(
-        fmt=LOGGER_FMT.format(color='', reset=''),
-        datefmt=DATE_FMT,
-        colored=False,
-    ))
+    _handler.setFormatter(
+        _LogFormatter(
+            fmt=LOGGER_FMT.format(color='', reset=''),
+            datefmt=DATE_FMT,
+            colored=False,
+        )
+    )
     config.loggers.default.addHandler(_handler)
 
     extra_messages = ['']
@@ -521,7 +519,7 @@ def parse_args(args=None, namespace=None):
             output_dir=opts.output_dir,
             analysis_level=opts.analysis_level,
             extra_messages='\n'.join(extra_messages),
-        )
+        ),
     )
     config.from_dict(vars(opts))
 
@@ -535,9 +533,7 @@ def parse_args(args=None, namespace=None):
         if _plugin:
             config.nipype.plugin = _plugin
             config.nipype.plugin_args = plugin_settings.get('plugin_args', {})
-            config.nipype.nprocs = config.nipype.plugin_args.get(
-                'nprocs', config.nipype.nprocs
-            )
+            config.nipype.nprocs = config.nipype.plugin_args.get('nprocs', config.nipype.nprocs)
 
     # Load BIDS filters
     if opts.bids_filter_file:
@@ -575,13 +571,12 @@ def parse_args(args=None, namespace=None):
     config.execution.init()
 
     participant_label = [
-        d.name[4:] for d in config.execution.bids_dir.glob('sub-*')
-        if d.is_dir() and d.exists()
+        d.name[4:] for d in config.execution.bids_dir.glob('sub-*') if d.is_dir() and d.exists()
     ]
 
     if config.execution.participant_label is not None:
         selected_label = set(config.execution.participant_label)
-        if (missing_subjects := selected_label - set(participant_label)):
+        if missing_subjects := selected_label - set(participant_label):
             parser.error(
                 "One or more participant labels were not found in the BIDS directory: "
                 f"{', '.join(missing_subjects)}."
@@ -604,23 +599,19 @@ def parse_args(args=None, namespace=None):
         session_id=config.execution.session_id,
         task=config.execution.task_id,
         group_echos=True,
-        bids_filters={
-            mod: config.execution.bids_filters.get(mod, {})
-            for mod in lc_modalities
-        },
-        queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities}
+        bids_filters={mod: config.execution.bids_filters.get(mod, {}) for mod in lc_modalities},
+        queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities},
     )
 
     # Drop empty queries
-    bids_dataset = {
-        mod: files for mod, files in bids_dataset.items() if files
-    }
+    bids_dataset = {mod: files for mod, files in bids_dataset.items() if files}
     config.workflow.inputs = bids_dataset
 
     # Check the query is not empty
     if not list(config.workflow.inputs.values()):
         ffile = (
-            '(--bids-filter-file was not set)' if not opts.bids_filter_file
+            '(--bids-filter-file was not set)'
+            if not opts.bids_filter_file
             else f"(with '--bids-filter-file {opts.bids_filter_file}')"
         )
         parser.error(
@@ -636,8 +627,7 @@ Please, check out your currently set filters {ffile}:
     }
     if unknown_mods:
         parser.error(
-            'MRIQC is unable to process the following modalities: '
-            f'{", ".join(unknown_mods)}.'
+            f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
     # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)

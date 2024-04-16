@@ -215,7 +215,6 @@ class SpikesOutputSpec(TraitedSpec):
 
 
 class Spikes(SimpleInterface):
-
     """
     Computes the number of spikes
     https://github.com/cni/nims/blob/master/nimsproc/qa_report.py
@@ -304,8 +303,7 @@ class SelectEcho(SimpleInterface):
         ) = select_echo(
             self.inputs.in_files,
             te_echos=(
-                _get_echotime(self.inputs.metadata) if isdefined(self.inputs.metadata)
-                else None
+                _get_echotime(self.inputs.metadata) if isdefined(self.inputs.metadata) else None
             ),
             te_reference=self.inputs.te_reference,
         )
@@ -329,11 +327,9 @@ class GatherTimeseriesInputSpec(TraitedSpec):
     outliers = File(
         exists=True,
         mandatory=True,
-        desc="input file containing timeseries of AFNI's outlier count")
-    quality = File(
-        exists=True,
-        mandatory=True,
-        desc="input file containing AFNI's Quality Index")
+        desc="input file containing timeseries of AFNI's outlier count",
+    )
+    quality = File(exists=True, mandatory=True, desc="input file containing AFNI's Quality Index")
 
 
 class GatherTimeseriesOutputSpec(TraitedSpec):
@@ -346,11 +342,11 @@ class GatherTimeseries(SimpleInterface):
     Gather quality metrics that are timeseries into one TSV file
 
     """
+
     input_spec = GatherTimeseriesInputSpec
     output_spec = GatherTimeseriesOutputSpec
 
     def _run_interface(self, runtime):
-
         # motion parameters
         mpars = np.apply_along_axis(
             func1d=normalize_mc_params,
@@ -359,15 +355,8 @@ class GatherTimeseries(SimpleInterface):
             source=self.inputs.mpars_source,
         )
         timeseries = pd.DataFrame(
-            mpars,
-            columns=[
-                'trans_x',
-                'trans_y',
-                'trans_z',
-                'rot_x',
-                'rot_y',
-                'rot_z'
-            ])
+            mpars, columns=['trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
+        )
 
         # DVARS
         dvars = pd.read_csv(
@@ -375,30 +364,21 @@ class GatherTimeseries(SimpleInterface):
             delim_whitespace=True,
             skiprows=1,  # column names have spaces
             header=None,
-            names=['dvars_std', 'dvars_nstd', 'dvars_vstd'])
+            names=['dvars_std', 'dvars_nstd', 'dvars_vstd'],
+        )
         dvars.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # FD
         fd = pd.read_csv(
-            self.inputs.fd,
-            delim_whitespace=True,
-            header=0,
-            names=['framewise_displacement'])
+            self.inputs.fd, delim_whitespace=True, header=0, names=['framewise_displacement']
+        )
         fd.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # AQI
-        aqi = pd.read_csv(
-            self.inputs.quality,
-            delim_whitespace=True,
-            header=None,
-            names=['aqi'])
+        aqi = pd.read_csv(self.inputs.quality, delim_whitespace=True, header=None, names=['aqi'])
 
         # Outliers
-        aor = pd.read_csv(
-            self.inputs.outliers,
-            delim_whitespace=True,
-            header=None,
-            names=['aor'])
+        aor = pd.read_csv(self.inputs.outliers, delim_whitespace=True, header=None, names=['aor'])
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
 
@@ -416,12 +396,12 @@ def _build_timeseries_metadata():
         'trans_x': {
             'LongName': 'Translation Along X Axis',
             'Description': 'Estimated Motion Parameter',
-            'Units': 'mm'
+            'Units': 'mm',
         },
         'trans_y': {
             'LongName': 'Translation Along Y Axis',
             'Description': 'Estimated Motion Parameter',
-            'Units': 'mm'
+            'Units': 'mm',
         },
         'trans_z': {
             'LongName': 'Translation Along Z Axis',
@@ -431,17 +411,17 @@ def _build_timeseries_metadata():
         'rot_x': {
             'LongName': 'Rotation Around X Axis',
             'Description': 'Estimated Motion Parameter',
-            'Units': 'rad'
+            'Units': 'rad',
         },
         'rot_y': {
             'LongName': 'Rotation Around X Axis',
             'Description': 'Estimated Motion Parameter',
-            'Units': 'rad'
+            'Units': 'rad',
         },
         'rot_z': {
             'LongName': 'Rotation Around X Axis',
             'Description': 'Estimated Motion Parameter',
-            'Units': 'rad'
+            'Units': 'rad',
         },
         'dvars_std': {
             'LongName': 'Derivative of RMS Variance over Voxels, Standardized',
@@ -449,17 +429,14 @@ def _build_timeseries_metadata():
                 'Indexes the rate of change of BOLD signal across'
                 'the entire brain at each frame of data, normalized with the'
                 'standard deviation of the temporal difference time series'
-            )
+            ),
         },
         'dvars_nstd': {
-            'LongName': (
-                'Derivative of RMS Variance over Voxels,'
-                'Non-Standardized'
-            ),
+            'LongName': ('Derivative of RMS Variance over Voxels,' 'Non-Standardized'),
             'Description': (
                 'Indexes the rate of change of BOLD signal across'
                 'the entire brain at each frame of data, not normalized.'
-            )
+            ),
         },
         'dvars_vstd': {
             'LongName': 'Derivative of RMS Variance over Voxels, Standardized',
@@ -468,7 +445,7 @@ def _build_timeseries_metadata():
                 'the entire brain at each frame of data, normalized across'
                 'time by that voxel standard deviation across time,'
                 'before computing the RMS of the temporal difference'
-            )
+            ),
         },
         'framewise_displacement': {
             'LongName': 'Framewise Displacement',
@@ -476,19 +453,18 @@ def _build_timeseries_metadata():
                 'A quantification of the estimated bulk-head'
                 'motion calculated using formula proposed by Power (2012)'
             ),
-            'Units': 'mm'
+            'Units': 'mm',
         },
         'aqi': {
             'LongName': "AFNI's Quality Index",
-            'Description': "Mean quality index as computed by AFNI's 3dTqual"
+            'Description': "Mean quality index as computed by AFNI's 3dTqual",
         },
         'aor': {
             'LongName': "AFNI's Fraction of Outliers per Volume",
             'Description': (
-                "Mean fraction of outliers per fMRI volume as"
-                "given by AFNI's 3dToutcount"
-            )
-        }
+                'Mean fraction of outliers per fMRI volume as' "given by AFNI's 3dToutcount"
+            ),
+        },
     }
 
 

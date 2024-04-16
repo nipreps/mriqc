@@ -21,6 +21,8 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Encapsulates report generation functions."""
+
+from itertools import product
 from sys import version_info
 
 import pandas as pd
@@ -46,6 +48,19 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
     UTC = timezone.utc
     load_data = Loader('mriqc')
+
+    if csv_file.suffix == '.csv':
+        dataframe = pd.read_csv(
+            csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
+        )
+
+        id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
+        dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,), axis=1)
+    else:
+        dataframe = pd.read_csv(csv_file, index_col=False, sep='\t', dtype={'bids_name': object})
+        dataframe = dataframe.rename(index=str, columns={'bids_name': 'label'})
+
+    shells_id = list(range(1, 1 + dataframe.columns.str.startswith('efc_shell').sum()))
 
     QCGROUPS = {
         'T1w': [
@@ -205,16 +220,22 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             ),
         ],
         'dwi': [
-            ([
-                f'bdiffs_{sub}' for sub in ('max', 'mean', 'median', 'min')
-            ], 'rad'),
+            ([f'bdiffs_{sub}' for sub in ('max', 'mean', 'median', 'min')], 'rad'),
+            ([f'efc_shell{i:02d}' for i in shells_id], None),
             (['fa_degenerate', 'fa_nans'], 'ppm'),
-            (['spikes_ppm_global', 'spikes_ppm_slice'], 'ppm'),
-            (['ndc'], None),
-            ([f'sigma_{meth}' for meth in ('cc', 'pca', 'piesno')], None),
+            ([f'fber_shell{i:02d}' for i in shells_id], None),
             (['fd_mean'], 'mm'),
             (['fd_num'], '# timepoints'),
             (['fd_perc'], '% timepoints'),
+            (['ndc'], None),
+            (['sigma_cc'], None),
+            (['sigma_pca', 'sigma_piesno'], None),
+            (
+                ['snr_cc_shell0']
+                + [f'snr_cc_shell{s}_{t}' for s, t in product(shells_id, ('best', 'worst'))],
+                None,
+            ),
+            (['spikes_global'] + [f'spikes_slice_{ax}' for ax in 'ijk'], 'ppm'),
             (
                 [
                     'summary_bg_p05',
@@ -226,6 +247,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
                     'summary_bg_median',
                     'summary_fg_median',
                     'summary_wm_median',
+                ],
+                'a.u.',
+            ),
+            (
+                [
                     'summary_bg_p95',
                     'summary_fg_p95',
                     'summary_wm_p95',
@@ -246,6 +272,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (
                 [
                     'summary_bg_k',
+                ],
+                None,
+            ),
+            (
+                [
                     'summary_fg_k',
                     'summary_wm_k',
                 ],
@@ -253,21 +284,6 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             ),
         ],
     }
-
-    if csv_file.suffix == '.csv':
-        dataframe = pd.read_csv(
-            csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
-        )
-
-        id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
-        dataframe['label'] = dataframe[id_labels].apply(
-            _format_labels, args=(id_labels,), axis=1
-        )
-    else:
-        dataframe = pd.read_csv(
-            csv_file, index_col=False, sep='\t', dtype={'bids_name': object}
-        )
-        dataframe = dataframe.rename(index=str, columns={'bids_name': 'label'})
 
     nPart = len(dataframe)
 
@@ -316,15 +332,9 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             'version': ver,
             'csv_groups': csv_groups,
             'failed': failed,
-            'boxplots_js': load_data(
-                'data/reports/embed_resources/boxplots.js'
-            ).read_text(),
-            'd3_js': load_data(
-                'data/reports/embed_resources/d3.min.js'
-            ).read_text(),
-            'boxplots_css': load_data(
-                'data/reports/embed_resources/boxplots.css'
-            ).read_text(),
+            'boxplots_js': load_data('data/reports/embed_resources/boxplots.js').read_text(),
+            'd3_js': load_data('data/reports/embed_resources/d3.min.js').read_text(),
+            'boxplots_css': load_data('data/reports/embed_resources/boxplots.css').read_text(),
         },
         out_file,
     )

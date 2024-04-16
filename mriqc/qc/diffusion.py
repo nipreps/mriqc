@@ -1,4 +1,3 @@
-
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 #
@@ -95,6 +94,7 @@ References
        its applications in MRI. JMR, 199(1):94-103, 2009.
 
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -103,8 +103,8 @@ from statsmodels.robust.scale import mad
 
 def noise_b0(
     in_b0: np.ndarray,
-    percentiles: tuple[float, float, float] = (25., 50., 75.),
-    mask: np.ndarray | None = None
+    percentiles: tuple[float, float, float] = (25.0, 50.0, 75.0),
+    mask: np.ndarray | None = None,
 ) -> dict[str, float]:
     """
     Estimates noise levels in raw dMRI data using the variance of the $b$=0 volumes.
@@ -141,14 +141,14 @@ def noise_b0(
     if in_b0.ndim != 4:
         return None
 
-    data = in_b0[
-        np.ones(in_b0.shape[:3], dtype=bool) if mask is None else mask
-    ]
+    data = in_b0[np.ones(in_b0.shape[:3], dtype=bool) if mask is None else mask]
     variance = np.var(data, -1)
-    noise_estimates = dict(zip(
-        (f'{p}' for p in percentiles),
-        np.percentile(variance, percentiles),
-    ))
+    noise_estimates = dict(
+        zip(
+            (f'{p}' for p in percentiles),
+            np.percentile(variance, percentiles),
+        )
+    )
 
     return noise_estimates
 
@@ -159,6 +159,8 @@ def cc_snr(
     cc_mask: np.ndarray,
     b_values: np.ndarray,
     b_vectors: np.ndarray,
+    bval_thres: int = 50,
+    decimals: int = 2,
 ) -> dict[int, (float, float)]:
     """
     Calculates the worst-case and best-case signal-to-noise ratio (SNR) within the corpus callosum.
@@ -206,22 +208,18 @@ def cc_snr(
     xyz = np.eye(3)
 
     b_values = np.rint(b_values).astype(np.uint16)
+    n_shells = len(b_values)
+
+    cc_snr_estimates['shell0'] = round(float(in_b0[cc_mask].mean() / std_signal), decimals)
 
     # Shell-wise calculation
-    for bval, bvecs, shell_data in zip(b_values, b_vectors, dwi_shells):
-        if bval == 0:
-            cc_snr_estimates[f'b{bval:d}'] = in_b0[cc_mask].mean() / std_signal
-            continue
-
+    for shell_index, bvecs, shell_data in zip(range(1, n_shells + 1), b_vectors, dwi_shells):
         shell_data = shell_data[cc_mask]
 
         # Find main directions of diffusion
-        axis_X = np.argmin(np.sum(
-            (bvecs - xyz[0, :]) ** 2, axis=-1))
-        axis_Y = np.argmin(np.sum(
-            (bvecs - xyz[1, :]) ** 2, axis=-1))
-        axis_Z = np.argmin(np.sum(
-            (bvecs - xyz[2, :]) ** 2, axis=-1))
+        axis_X = np.argmin(np.sum((bvecs - xyz[0, :]) ** 2, axis=-1))
+        axis_Y = np.argmin(np.sum((bvecs - xyz[1, :]) ** 2, axis=-1))
+        axis_Z = np.argmin(np.sum((bvecs - xyz[2, :]) ** 2, axis=-1))
 
         data_X = shell_data[..., axis_X]
         data_Y = shell_data[..., axis_Y]
@@ -230,9 +228,11 @@ def cc_snr(
         mean_signal_worst = np.mean(data_X)
         mean_signal_best = 0.5 * (np.mean(data_Y) + np.mean(data_Z))
 
-        cc_snr_estimates[f'b{bval:d}'] = (
-            np.mean(mean_signal_worst / std_signal),
-            np.mean(mean_signal_best / std_signal),
+        cc_snr_estimates[f'shell{shell_index:d}_worst'] = round(
+            float(np.mean(mean_signal_worst / std_signal)), decimals
+        )
+        cc_snr_estimates[f'shell{shell_index:d}_best'] = round(
+            float(np.mean(mean_signal_best / std_signal)), decimals
         )
 
     return cc_snr_estimates, std_signal
@@ -241,7 +241,7 @@ def cc_snr(
 def spike_ppm(
     spike_mask: np.ndarray,
     slice_threshold: float = 0.05,
-    decimals: int = 8,
+    decimals: int = 2,
 ) -> dict[str, float | np.ndarray]:
     """
     Calculates fractions (global and slice-wise) of voxels classified as spikes in ppm.
@@ -270,26 +270,29 @@ def spike_ppm(
         A dictionary containing the calculated spike percentages:
 
         * 'global': :obj:`float` - global spiking voxels ppm.
-        * 'slice': :obj:`list` of :obj:`float` - List of slice-wise spiking voxel
+        * 'slice_{i,j,k,t}': :obj:`float` - Slice-wise spiking voxel
           fractions in ppm for each dimension of the data array.
 
     """
 
-    spike_perc_global = round(float(np.mean(np.ravel(spike_mask))), decimals) * 1e6
-    spike_perc_slice = [
-        round(
-            float(np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), decimals
-        ) * 1e6
-        for axis in range(spike_mask.ndim)
-    ]
+    axisnames = 'ijkt'
 
-    return {'global': spike_perc_global, 'slice': spike_perc_slice}
+    spike_global = round(float(1e6 * np.mean(np.ravel(spike_mask))), decimals)
+    spike_slice = {
+        f'slice_{axisnames[axis]}': round(
+            float(1e6 * np.mean(np.mean(spike_mask, axis=axis) > slice_threshold)), decimals
+        )
+        for axis in range(min(spike_mask.ndim, 3))
+    }
+
+    return {'global': spike_global} | spike_slice
 
 
 def neighboring_dwi_correlation(
     dwi_data: np.ndarray,
     neighbor_indices: list[tuple[int, int]],
     mask: np.ndarray | None = None,
+    decimals: int = 4,
 ) -> float:
     """
     Calculates the Neighboring DWI Correlation (NDC) from diffusion MRI (dMRI) data.
@@ -336,8 +339,6 @@ def neighboring_dwi_correlation(
         flat_from_image = dwi_data[from_index]
         flat_to_image = dwi_data[to_index]
 
-        neighbor_correlations.append(
-            np.corrcoef(flat_from_image, flat_to_image)[0, 1]
-        )
+        neighbor_correlations.append(np.corrcoef(flat_from_image, flat_to_image)[0, 1])
 
-    return np.round(np.mean(neighbor_correlations), 4)
+    return round(float(np.mean(neighbor_correlations)), decimals)

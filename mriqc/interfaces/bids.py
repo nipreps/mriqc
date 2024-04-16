@@ -113,14 +113,10 @@ class IQMFileSink(SimpleInterface):
                 break
         in_file = str(path.relative_to(bids_root))
 
-        if (
-            isdefined(self.inputs.dismiss_entities)
-            and (dismiss := self.inputs.dismiss_entities)
-        ):
+        if isdefined(self.inputs.dismiss_entities) and (dismiss := self.inputs.dismiss_entities):
             for entity in dismiss:
                 bids_chunks = [
-                    chunk for chunk in path.name.split('_')
-                    if not chunk.startswith(f'{entity}-')
+                    chunk for chunk in path.name.split('_') if not chunk.startswith(f'{entity}-')
                 ]
                 path = path.parent / '_'.join(bids_chunks)
 
@@ -154,8 +150,7 @@ class IQMFileSink(SimpleInterface):
                 self._out_dict.update(val)
             else:
                 config.loggers.interface.warning(
-                    'Output "%s" is not a dictionary (value="%s"), '
-                    'discarding output.',
+                    'Output "%s" is not a dictionary (value="%s"), ' 'discarding output.',
                     root_key,
                     str(val),
                 )

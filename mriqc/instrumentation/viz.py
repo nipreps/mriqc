@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Visualizing resource recordings."""
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -56,9 +57,8 @@ def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
             proc_names.append(label)
             unified[label] = 0
 
-        unified.loc[rows, label] += (
-            pid_info[param].values
-            / (1024 if param.startswith('mem') else 1)
+        unified.loc[rows, label] += pid_info[param].values / (
+            1024 if param.startswith('mem') else 1
         )
 
     unified[proc_names] = unified[proc_names].replace({0: np.nan})
@@ -75,9 +75,7 @@ def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
     else:
         ax.set_ylabel(param)
 
-    ax.set_xticklabels(
-        [f'{int(float(v) // 60)}:{int(float(v) % 60)}' for v in ax.get_xticks()]
-    )
+    ax.set_xticklabels([f'{int(float(v) // 60)}:{int(float(v) % 60)}' for v in ax.get_xticks()])
     if out_file is not None:
         fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
         return
