@@ -252,14 +252,15 @@ def _datalad_get(input_list, nprocs=None):
     _dataladlog.setLevel(logging.WARNING)
 
     config.loggers.cli.log(
-        25,
-        'DataLad dataset identified, attempting to `datalad get` unavailable files.'
+        25, 'DataLad dataset identified, attempting to `datalad get` unavailable files.'
     )
     return get(
         input_list,
         dataset=str(config.execution.bids_dir),
-        jobs=nprocs if not None else max(
+        jobs=nprocs
+        if not None
+        else max(
             config.nipype.omp_nthreads,
             config.nipype.nprocs,
-        )
+        ),
     )
