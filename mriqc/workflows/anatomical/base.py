@@ -66,7 +66,6 @@ from mriqc.interfaces import (
     RotationMask,
     StructuralQC,
 )
-from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.interfaces.reports import AddProvenance
 from mriqc.messages import BUILDING_WORKFLOW
 from mriqc.workflows.anatomical.output import init_anat_report_wf
@@ -101,6 +100,11 @@ def anat_qc_workflow(name='anatMRIQC'):
     )
     config.loggers.workflow.info(message)
 
+    if config.execution.datalad_get:
+        from mriqc.utils.misc import _datalad_get
+
+        _datalad_get(dataset)
+
     # Initialize workflow
     workflow = pe.Workflow(name=name)
 
@@ -108,11 +112,6 @@ def anat_qc_workflow(name='anatMRIQC'):
     # 0. Get data
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
     inputnode.iterables = [('in_file', dataset)]
-
-    datalad_get = pe.Node(
-        DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),
-        name='datalad_get',
-    )
 
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
@@ -143,13 +142,12 @@ def anat_qc_workflow(name='anatMRIQC'):
     # Connect all nodes
     # fmt: off
     workflow.connect([
-        (inputnode, datalad_get, [('in_file', 'in_file')]),
         (inputnode, anat_report_wf, [
             ('in_file', 'inputnode.name_source'),
         ]),
-        (datalad_get, to_ras, [('in_file', 'in_file')]),
-        (datalad_get, iqmswf, [('in_file', 'inputnode.in_file')]),
-        (datalad_get, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
+        (inputnode, to_ras, [('in_file', 'in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
         (to_ras, skull_stripping, [('out_file', 'inputnode.in_files')]),
         (skull_stripping, hmsk, [
             ('outputnode.out_corrected', 'inputnode.in_file'),

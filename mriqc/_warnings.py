@@ -81,6 +81,10 @@ class _LogFormatter(logging.Formatter):
 
 
 nlogging.getLogger('nipype')
+_wlog = logging.getLogger('py.warnings')
+_numexprlog = logging.getLogger('numexpr.utils')
+_dataladlog = logging.getLogger('datalad')
+
 for logger_name in logging.root.manager.loggerDict:
     logging.getLogger(logger_name).handlers.clear()
 
@@ -90,13 +94,9 @@ _handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setFormatter(_LogFormatter())
 _root_logger.addHandler(_handler)
 
-
-_wlog = logging.getLogger('py.warnings')
 _wlog.addHandler(logging.NullHandler())
-
-_numexprlog = logging.getLogger('numexpr.utils')
-_numexprlog.handlers.clear()
 _numexprlog.addHandler(logging.NullHandler())
+_dataladlog.addHandler(logging.NullHandler())
 
 # def _warn(message, category=None, stacklevel=1, source=None):
 #     """Redefine the warning function."""
