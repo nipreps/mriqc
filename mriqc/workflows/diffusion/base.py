@@ -50,7 +50,6 @@ from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 
 from mriqc import config
-from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
 
 DEFAULT_MEMORY_MIN_GB = 0.01
@@ -91,6 +90,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     workflow = pe.Workflow(name=name)
 
     dataset = config.workflow.inputs.get('dwi', [])
+
     full_data = []
 
     for dwi_path in dataset:
@@ -117,15 +117,15 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     )
     config.loggers.workflow.info(message)
 
+    if config.execution.datalad_get:
+        from mriqc.utils.misc import _datalad_get
+
+        _datalad_get(full_data)
+
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
     inputnode.iterables = [('in_file', full_data)]
-
-    datalad_get = pe.Node(
-        DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),
-        name='datalad_get',
-    )
 
     sanitize = pe.Node(
         SanitizeImage(
@@ -241,13 +241,12 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # fmt: off
     workflow.connect([
-        (inputnode, datalad_get, [('in_file', 'in_file')]),
         (inputnode, load_bmat, [('in_file', 'in_file')]),
         (inputnode, dwi_report_wf, [
             ('in_file', 'inputnode.name_source'),
         ]),
-        (datalad_get, iqms_wf, [('in_file', 'inputnode.in_file')]),
-        (datalad_get, sanitize, [('in_file', 'in_file')]),
+        (inputnode, iqms_wf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, sanitize, [('in_file', 'in_file')]),
         (sanitize, dwi_ref, [('out_file', 'in_file')]),
         (sanitize, sp_mask, [('out_file', 'in_file')]),
         (sanitize, piesno, [('out_file', 'in_file')]),

@@ -227,6 +227,12 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         default=False,
         help='Wipe out previously existing BIDS indexing caches, forcing re-indexing.',
     )
+    g_bids.add_argument(
+        '--no-datalad-get',
+        action='store_false',
+        dest='datalad_get',
+        help='Disable attempting to get remote files in DataLad datasets.'
+    )
 
     # General performance
     g_perfm = parser.add_argument_group('Options to handle performance')
@@ -559,6 +565,12 @@ def parse_args(args=None, namespace=None):
             'The selected working directory is a subdirectory of the input BIDS folder. '
             'Please modify the output path.'
         )
+
+    config.execution.bids_dir_datalad = (
+        config.execution.datalad_get
+        and (bids_dir / '.git').exists()
+        and (bids_dir / '.datalad').exists()
+    )
 
     # Setup directories
     config.execution.log_dir = output_dir / 'logs'

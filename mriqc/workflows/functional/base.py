@@ -49,7 +49,6 @@ from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
 
 from mriqc import config
-from mriqc.interfaces.datalad import DataladIdentityInterface
 from mriqc.workflows.functional.output import init_func_report_wf
 
 
@@ -79,6 +78,12 @@ def fmri_qc_workflow(name='funcMRIQC'):
     mem_gb = config.workflow.biggest_file_gb
 
     dataset = config.workflow.inputs.get('bold', [])
+
+    if config.execution.datalad_get:
+        from mriqc.utils.misc import _datalad_get
+
+        _datalad_get(dataset)
+
     full_files = []
     for bold_path in dataset:
         try:
@@ -113,12 +118,6 @@ def fmri_qc_workflow(name='funcMRIQC'):
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
     inputnode.iterables = [('in_file', full_files)]
-
-    datalad_get = pe.MapNode(
-        DataladIdentityInterface(fields=['in_file'], dataset_path=config.execution.bids_dir),
-        name='datalad_get',
-        iterfield=['in_file'],
-    )
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
@@ -178,10 +177,9 @@ def fmri_qc_workflow(name='funcMRIQC'):
     # fmt: off
 
     workflow.connect([
-        (inputnode, datalad_get, [('in_file', 'in_file')]),
-        (datalad_get, meta, [('in_file', 'in_file')]),
-        (datalad_get, pick_echo, [('in_file', 'in_files')]),
-        (datalad_get, sanitize, [('in_file', 'in_file')]),
+        (inputnode, meta, [('in_file', 'in_file')]),
+        (inputnode, pick_echo, [('in_file', 'in_files')]),
+        (inputnode, sanitize, [('in_file', 'in_file')]),
         (meta, pick_echo, [('out_dict', 'metadata')]),
         (pick_echo, non_steady_state_detector, [('out_file', 'in_file')]),
         (non_steady_state_detector, sanitize, [('n_volumes_to_discard', 'n_volumes_to_discard')]),
@@ -197,7 +195,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
                         ('acquisition', 'inputnode.acquisition'),
                         ('reconstruction', 'inputnode.reconstruction'),
                         ('run', 'inputnode.run')]),
-        (datalad_get, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
         (sanitize, iqmswf, [('out_file', 'inputnode.in_ras')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),

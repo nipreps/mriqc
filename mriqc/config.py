@@ -378,6 +378,8 @@ class execution(_Config):
     """Use float number precision for ANTs computations."""
     bids_dir = None
     """An existing path to the dataset, which must be BIDS-compliant."""
+    bids_dir_datalad = False
+    """Whether the input directory seems under DataLad's version control."""
     bids_database_dir = None
     """Path to the directory containing SQLite database indices for the input BIDS dataset."""
     bids_database_wipe = False
@@ -388,6 +390,12 @@ class execution(_Config):
     """A dictionary describing custom BIDS input filter using PyBIDS."""
     cwd = os.getcwd()
     """Current working directory."""
+    datalad_get = True
+    """
+    If :obj:`~mriqc.config.execution.bids_dir` is a DataLad dataset, a ``datalad get`` command
+    will be executed to ensure all remote files have been fetched.
+    This behavior can be disabled with the command line option ``--no-datalad-get``.
+    """
     debug = False
     """Run in sloppy mode (meaning, suboptimal parameters that minimize run-time)."""
     dry_run = False
@@ -582,6 +590,7 @@ class loggers:
 
     _datefmt = '%y%m%d %H:%M:%S'
     _init = False
+    _other_loggers = ('py.warnings', 'numexpr.utils', 'datalad')
 
     default = logging.getLogger()
     """The root logger."""
@@ -624,6 +633,11 @@ class loggers:
                     },
                 }
             )
+
+            for name in cls._other_loggers:
+                _thislogger = logging.getLogger(name)
+                _thislogger.setLevel(logging.WARNING)
+
             cls._init = True
 
         cls.default.setLevel(execution.log_level)
