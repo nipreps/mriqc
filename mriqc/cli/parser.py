@@ -231,7 +231,7 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         '--no-datalad-get',
         action='store_false',
         dest='datalad_get',
-        help='Disable attempting to get remote files in DataLad datasets.'
+        help='Disable attempting to get remote files in DataLad datasets.',
     )
 
     # General performance
