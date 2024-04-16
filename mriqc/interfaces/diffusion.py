@@ -452,10 +452,10 @@ class NumberOfShells(SimpleInterface):
 
         original_bvals = sorted(set(np.rint(in_data[highb_mask]).astype(int)))
         round_bvals = np.round(in_data, -2).astype(int)
-        shell_bvals = sorted(set(round_bvals))
+        shell_bvals = sorted(set(round_bvals[highb_mask]))
 
         if len(shell_bvals) <= self.inputs.dsi_threshold:
-            self._results['n_shells'] = len(shell_bvals) - 1
+            self._results['n_shells'] = len(shell_bvals)
             self._results['models'] = [self._results['n_shells']]
             self._results['out_data'] = round_bvals.tolist()
             self._results['b_values'] = shell_bvals
