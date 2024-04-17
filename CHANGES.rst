@@ -51,6 +51,8 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Remove *DataLad* as a node (#1278)
+* FIX: Calculation of trivial shells (#1276)
 * FIX: Finalized naming and connection of DWI IQMs (#1272)
 * FIX: Enable group reports for DWI (#1266)
 * FIX: Address issues that had broken the group reports (#1262)
@@ -64,6 +66,8 @@ CHANGES
 * FIX: Avert costly ``BIDSLayout.__repr__`` calls when saving config (#1239)
 * FIX: Duplicate node in anatomical workflow (#1234)
 * FIX: Typo in ``sorted(..., reverse=True)`` call (#1211)
+* ENH: Fail for non-formatted code (#1274)
+* ENH: Annotate nodes with ``n_procs`` to allow safe parallelization (#1277)
 * ENH: Mechanism to protect config's fields and write out config (#1258)
 * ENH: Improve documentation and logging of *SynthStrip*'s model (#1254)
 * ENH: Improve logging of runtime (#1253)
@@ -80,11 +84,14 @@ CHANGES
 * ENH: Adds diffusion-related IQMs. (#1131)
 * ENH: Revise summary stats extraction and include controlled roundings (#1219)
 * DOC: Add changelog to documentation (#1217)
+* MAINT: Added ruff to development dependencies (#1271)
 * MAINT: Removed pre-commit from development dependencies (#1269)
 * MAINT: Clean up more ``FutureWarning`` issued by *Pandas* (#1257)
 * MAINT: Prevent pandas-originating deprecation warning (#1251)
 * MAINT: Move GitHub Actions and config files from *flake8* → *ruff* (#1212)
 * MAINT: Update contributor affiliation in ``CONTRIBUTORS.md`` (#1214)
+* STY: Reformat diffusion workflows module (#1279)
+* STY: Applied ruff formatting (#1273)
 
 23.1.1 (March 20, 2024)
 =======================
