@@ -48,6 +48,7 @@ from pathlib import Path
 import numpy as np
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
+from niworkflows.interfaces.bids import DerivativesDataSink
 
 from mriqc import config
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
@@ -78,6 +79,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         CCSegmentation,
         CorrectSignalDrift,
         DiffusionModel,
+        DWISummary,
         ExtractOrientations,
         NumberOfShells,
         ReadDWIMetadata,
@@ -144,6 +146,16 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='load_bmat',
     )
     shells = pe.Node(NumberOfShells(), name='shells')
+    summary = pe.Node(DWISummary(), name='shells')
+    ds_report_summary = pe.Node(
+        DerivativesDataSink(
+            base_directory=config.execution.output_dir,
+            desc='summary',
+            datatype='figures',
+        ),
+        name='ds_report_summary',
+        run_without_submitting=True,
+    )
     get_lowb = pe.Node(
         ExtractOrientations(),
         name='get_lowb',
@@ -241,6 +253,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # fmt: off
     workflow.connect([
+        (inputnode, summary, [('in_file', 'in_file')]),
+        (inputnode, ds_report_summary, [('in_file', 'source_file')]),
         (inputnode, load_bmat, [('in_file', 'in_file')]),
         (inputnode, dwi_report_wf, [
             ('in_file', 'inputnode.name_source'),
@@ -253,6 +267,12 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (shells, dwi_ref, [(('b_masks', _first), 't_mask')]),
         (shells, sp_mask, [('b_masks', 'b_masks')]),
         (load_bmat, shells, [('out_bval_file', 'in_bvals')]),
+        (load_bmat, summary, [('out_dict', 'metadata')]),
+        (shells, summary, [('n_shells', 'n_shells'),
+                              ('models', 'models'),
+                              ('b_indices', 'b_indices'),
+                              ('b_values', 'b_values'),]),
+        (summary, ds_report_summary, [('out_report', 'in_file')]),
         (sanitize, drift, [('out_file', 'full_epi')]),
         (shells, get_lowb, [(('b_indices', _first), 'indices')]),
         (sanitize, get_lowb, [('out_file', 'in_file')]),
