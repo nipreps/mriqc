@@ -1,5 +1,5 @@
-24.0.0 (TBD)
-============
+24.0.0 (April 17, 2024)
+=======================
 Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
 for first time in *MRIQC*'s timeline.
 
@@ -16,7 +16,7 @@ for first time in *MRIQC*'s timeline.
     Affiliations:
 
       1. Department of Psychology, Stanford University, CA, USA
-      2. Sagol School of Neuroscience, Tel Aviv University, Tel Aviv, Israel
+      2. Quantivly Inc., Somerville, MA, USA
       3. Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK
       4. Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland
       5. The University of Washington eScience Institute, WA, USA
@@ -51,6 +51,7 @@ for first time in *MRIQC*'s timeline.
 CHANGES
 -------
 
+* FIX: Bug in *toml* loader crashing with mixed arrays in config (#1281)
 * FIX: Remove *DataLad* as a node (#1278)
 * FIX: Calculation of trivial shells (#1276)
 * FIX: Finalized naming and connection of DWI IQMs (#1272)
