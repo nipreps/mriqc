@@ -665,7 +665,10 @@ def from_dict(sections):
 
 def load(filename):
     """Load settings from file."""
-    from toml import loads
+    try:
+        from tomllib import loads
+    except ModuleNotFoundError:  # Python < 3.11
+        from tomli import loads
 
     filename = Path(filename)
     sections = loads(filename.read_text())
