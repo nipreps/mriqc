@@ -24,6 +24,7 @@
 
 import json
 from collections import OrderedDict
+from collections.abc import Iterable
 from pathlib import Path
 
 import pandas as pd
@@ -237,6 +238,14 @@ def _flatten_dict(indict):
     return out_qc
 
 
+def _flatten_list(xs):
+    for x in xs:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            yield from _flatten_list(x)
+        else:
+            yield x
+
+
 def _datalad_get(input_list, nprocs=None):
     from mriqc import config
 
@@ -255,7 +264,7 @@ def _datalad_get(input_list, nprocs=None):
         25, 'DataLad dataset identified, attempting to `datalad get` unavailable files.'
     )
     return get(
-        input_list,
+        list(_flatten_list(input_list)),
         dataset=str(config.execution.bids_dir),
         jobs=nprocs
         if not None

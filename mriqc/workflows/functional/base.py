@@ -43,6 +43,8 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 
+from collections.abc import Iterable
+
 import nibabel as nb
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
@@ -87,7 +89,11 @@ def fmri_qc_workflow(name='funcMRIQC'):
     full_files = []
     for bold_path in dataset:
         try:
-            bold_len = nb.load(bold_path).shape[3]
+            bold_len = nb.load(
+                bold_path[0]
+                if isinstance(bold_path, Iterable) and not isinstance(bold_path, (str, bytes))
+                else bold_path
+            ).shape[3]
         except nb.filebasedimages.ImageFileError:
             bold_len = config.workflow.min_len_bold
         except IndexError:  # shape has only 3 elements
