@@ -399,9 +399,9 @@ class DWISummary(SummaryInterface):
     def _generate_segment(self):
         # Determine type of DWI data (multi-shell, single-shell or DSI)
         if self.inputs.models == [0]:
-            dwi_type = 'DSI'
-        else:
             dwi_type = 'single-shell' if self.inputs.n_shells == 1 else 'multi-shell'
+        else:
+            dwi_type = 'DSI'
 
         # Format string to display number of DWIs per shell
         n_dwis = ', '.join(
@@ -410,7 +410,7 @@ class DWISummary(SummaryInterface):
         )
 
         return DWI_TEMPLATE.format(
-            filename=self.inputs.in_file,
+            filename=os.path.basename(self.inputs.in_file),
             pedir=self.inputs.metadata.get('PhaseEncodingDirection'),
             n_b0=len(self.inputs.b_indices[0]),
             b0_indices=self.inputs.b_indices[0],

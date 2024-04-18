@@ -31,6 +31,8 @@ sections:
 - name: Summary
   reportlets:
   - bids: {datatype: figures, desc: summary, extension: [.html]}
+    caption: This section provides a summary of the DWI properties.
+    subtitle: Textual summary
   - bids: {datatype: figures, desc: heatmap}
     caption: This visualization divides the data by shells, and shows the joint distribution
       of SNR vs. FA. At the bottom, the distributions are marginalized for SNR.

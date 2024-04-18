@@ -48,7 +48,7 @@ from pathlib import Path
 import numpy as np
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
-from niworkflows.interfaces.bids import DerivativesDataSink
+from mriqc.interfaces import DerivativesDataSink
 
 from mriqc import config
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
@@ -146,7 +146,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         name='load_bmat',
     )
     shells = pe.Node(NumberOfShells(), name='shells')
-    summary = pe.Node(DWISummary(), name='shells')
+    summary = pe.Node(DWISummary(), name='summary')
     ds_report_summary = pe.Node(
         DerivativesDataSink(
             base_directory=config.execution.output_dir,
