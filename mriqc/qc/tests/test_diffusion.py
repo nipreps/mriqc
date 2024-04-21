@@ -21,9 +21,11 @@
 #     https://www.nipreps.org/community/licensing/
 #
 
+from pathlib import Path
+
 import numpy as np
 
-from mriqc.qc.diffusion import spike_ppm
+from mriqc.qc.diffusion import plot_gradients, spike_ppm
 
 
 def test_spike_ppm():
@@ -35,3 +37,20 @@ def test_spike_ppm():
     assert np.min([val[f'slice_{ax}'] for ax in 'ijk']) >= 0
     assert np.max([val[f'slice_{ax}'] for ax in 'ijk']) <= 1e6
     assert len([val[f'slice_{ax}'] for ax in 'ijk']) == msk.ndim - 1
+
+
+def test_plot_gradients(tmp_path):
+    from dipy.io import read_bvals_bvecs
+    from dipy.core.gradients import gradient_table
+    fbval = "./mriqc/data/testdata/hcp_bvals"
+    fbvec = "./mriqc/data/testdata/hcp_bvecs"
+    _bvals, _bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(_bvals, _bvecs)
+    bvecs = gtab.bvecs[~gtab.b0s_mask]
+    bvals = gtab.bvals[~gtab.b0s_mask]
+
+    gradients = np.vstack([bvecs.T, bvals])
+    _ = plot_gradients(gradients)
+
+    from matplotlib import pyplot as plt
+    plt.savefig(Path(tmp_path) / "gradients.png")
