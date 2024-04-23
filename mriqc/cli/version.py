@@ -24,11 +24,10 @@
 
 from contextlib import suppress
 from datetime import datetime, timezone
-from pathlib import Path
 
 import requests
 
-from mriqc import __version__
+from mriqc import __version__, config
 
 RELEASE_EXPIRY_DAYS = 14
 DATE_FMT = '%Y%m%d'
@@ -42,7 +41,7 @@ def check_latest():
     latest = None
     date = None
     outdated = None
-    cachefile = Path.home() / '.cache' / 'mriqc' / 'latest'
+    cachefile = config.environment.cache_path / 'latest'
     try:
         cachefile.parent.mkdir(parents=True, exist_ok=True)
     except OSError:

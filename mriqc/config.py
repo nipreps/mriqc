@@ -212,6 +212,10 @@ _run_uuid = (
     else '18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f'
 )
 
+_mriqc_cache = Path(
+    os.getenv('MRIQC_CACHE_PATH', str(Path.home() / '.cache' / 'mriqc'))
+).absolute()
+
 
 class _Config:
     """An abstract class forbidding instantiation."""
@@ -283,6 +287,8 @@ class environment(_Config):
 
     """
 
+    cache_path = _mriqc_cache
+    """Path to the location of the cache directory."""
     cpu_count = os.cpu_count()
     """Number of available CPUs."""
     exec_docker_version = _docker_ver
