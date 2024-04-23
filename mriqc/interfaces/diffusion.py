@@ -414,13 +414,13 @@ class DWISummary(SummaryInterface):
         return DWI_TEMPLATE.format(
             filename=os.path.basename(self.inputs.in_file),
             pedir=self.inputs.metadata.get('PhaseEncodingDirection'),
-            te = self.inputs.metadata.get('EchoTime'),
-            tr = self.inputs.metadata.get('RepetitionTime'),
+            te=self.inputs.metadata.get('EchoTime'),
+            tr=self.inputs.metadata.get('RepetitionTime'),
             n_b0=len(self.inputs.b_indices[0]),
             b0_indices=self.inputs.b_indices[0],
             dwi_type=dwi_type,
             n_shells=self.inputs.n_shells,
-            n_dwis=n_dwis
+            n_dwis=n_dwis,
         )
 
 
