@@ -74,6 +74,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
 
     from mriqc.interfaces.functional import SelectEcho
     from mriqc.messages import BUILDING_WORKFLOW
+    from mriqc.utils.misc import _flatten_list as flatten
 
     workflow = pe.Workflow(name=name)
 
@@ -116,7 +117,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
     )
     config.loggers.workflow.info(message)
 
-    if set(dataset) - set(full_files):
+    if set(flatten(dataset)) - set(flatten(full_files)):
         config.workflow.inputs['bold'] = full_files
         config.to_filename()
 
