@@ -88,11 +88,14 @@ The :py:mod:`config` is responsible for other conveniency actions.
 
 """
 
+from __future__ import annotations
+
 import os
 import sys
 from contextlib import suppress
 from pathlib import Path
 from time import strftime
+from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
 
 try:
@@ -104,18 +107,23 @@ except ImportError:
 # Ignore annoying warnings
 from mriqc._warnings import logging
 
-__version__ = get_version('mriqc')
-_pre_exec_env = dict(os.environ)
+if TYPE_CHECKING:
+    from re import Pattern
+
+    from bids.layout import BIDSLayout
+
+__version__: str = get_version('mriqc')
+_pre_exec_env: dict[str, str] = dict(os.environ)
 
 # Reduce numpy's vms by limiting OMP_NUM_THREADS
-_default_omp_threads = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
+_default_omp_threads: int = int(os.getenv('OMP_NUM_THREADS', os.cpu_count()))
 
 # Disable NiPype etelemetry always
-_disable_et = bool(os.getenv('NO_ET') is not None or os.getenv('NIPYPE_NO_ET') is not None)
+_disable_et: bool = bool(os.getenv('NO_ET') is not None or os.getenv('NIPYPE_NO_ET') is not None)
 os.environ['NIPYPE_NO_ET'] = '1'
 os.environ['NO_ET'] = '1'
 
-_mriqc_dev = os.getenv('MRIQC_DEV', '0').lower() in ('1', 'on', 'true', 'y', 'yes')
+_mriqc_dev: bool = os.getenv('MRIQC_DEV', '0').lower() in ('1', 'on', 'true', 'y', 'yes')
 
 if not hasattr(sys, '_is_pytest_session'):
     sys._is_pytest_session = False  # Trick to avoid sklearn's FutureWarnings
@@ -130,64 +138,66 @@ if not any(
     os.environ['PYTHONWARNINGS'] = 'ignore'
 
 
-SUPPORTED_SUFFIXES = ('T1w', 'T2w', 'bold', 'dwi')
+SUPPORTED_SUFFIXES: tuple[str, ...] = ('T1w', 'T2w', 'bold', 'dwi')
 
-DEFAULT_MEMORY_MIN_GB = 0.01
-DSA_MESSAGE = """\
+DEFAULT_MEMORY_MIN_GB: float = 0.01
+DSA_MESSAGE: str = """\
 IMPORTANT: Anonymized quality metrics (IQMs) will be submitted to MRIQC's metrics \
 repository. \
 Submission of IQMs can be disabled using the ``--no-sub`` argument. \
 Please visit https://mriqc.readthedocs.io/en/latest/dsa.html to revise MRIQC's \
 Data Sharing Agreement."""
 
-_exec_env = os.name
-_docker_ver = None
+_exec_env: str = os.name
+_docker_ver: str | None = None
 # special variable set in the container
 if os.getenv('IS_DOCKER_8395080871'):
-    _exec_env = 'singularity'
-    _cgroup = Path('/proc/1/cgroup')
+    _exec_env: str = 'singularity'
+    _cgroup: Path = Path('/proc/1/cgroup')
     if _cgroup.exists() and 'docker' in _cgroup.read_text():
         _docker_ver = os.getenv('DOCKER_VERSION_8395080871')
         _exec_env = 'docker'
     del _cgroup
 
-_templateflow_home = Path(
+_templateflow_home: Path = Path(
     os.getenv(
         'TEMPLATEFLOW_HOME',
         os.path.join(os.getenv('HOME'), '.cache', 'templateflow'),
     )
 )
 
-_free_mem_at_start = None
+_free_mem_at_start: int | None = None
 with suppress(Exception):
     from psutil import virtual_memory
 
-    _free_mem_at_start = round(virtual_memory().free / 1024**3, 1)
+    _free_mem_at_start: int = round(virtual_memory().free / 1024**3, 1)
 
-_oc_limit = 'n/a'
-_oc_policy = 'n/a'
+_oc_limit: str = 'n/a'
+_oc_policy: str = 'n/a'
 with suppress(Exception):
     # Memory policy may have a large effect on types of errors experienced
-    _proc_oc_path = Path('/proc/sys/vm/overcommit_memory')
+    _proc_oc_path: Path = Path('/proc/sys/vm/overcommit_memory')
     if _proc_oc_path.exists():
-        _oc_policy = {'0': 'heuristic', '1': 'always', '2': 'never'}.get(
+        _oc_policy: str = {'0': 'heuristic', '1': 'always', '2': 'never'}.get(
             _proc_oc_path.read_text().strip(), 'unknown'
         )
         if _oc_policy != 'never':
-            _proc_oc_kbytes = Path('/proc/sys/vm/overcommit_kbytes')
+            _proc_oc_kbytes: Path = Path('/proc/sys/vm/overcommit_kbytes')
             if _proc_oc_kbytes.exists():
-                _oc_limit = _proc_oc_kbytes.read_text().strip()
+                _oc_limit: str = _proc_oc_kbytes.read_text().strip()
             if _oc_limit in ('0', 'n/a') and Path('/proc/sys/vm/overcommit_ratio').exists():
-                _oc_limit = '{}%'.format(Path('/proc/sys/vm/overcommit_ratio').read_text().strip())
+                _oc_limit: str = '{}%'.format(
+                    Path('/proc/sys/vm/overcommit_ratio').read_text().strip()
+                )
 
-_memory_gb = None
+_memory_gb: float | None = None
 
 if 'linux' in sys.platform:
     with suppress(Exception):
         with open('/proc/meminfo') as f_in:
-            _meminfo_lines = f_in.readlines()
-            _mem_total_line = [line for line in _meminfo_lines if 'MemTotal' in line][0]
-            _mem_total = float(_mem_total_line.split()[1])
+            _meminfo_lines: list[str] = f_in.readlines()
+            _mem_total_line: str = [line for line in _meminfo_lines if 'MemTotal' in line][0]
+            _mem_total: float = float(_mem_total_line.split()[1])
             _memory_gb = _mem_total / (1024.0**2)
 elif 'darwin' in sys.platform:
     from shutil import which
@@ -195,24 +205,26 @@ elif 'darwin' in sys.platform:
 
     if _cmd := which('sysctl'):
         with suppress(Exception):
-            _mem_str = check_output([_cmd, 'hw.memsize']).decode().strip().split(' ')[-1]
-            _memory_gb = float(_mem_str) / (1024.0**3)
+            _mem_str: str = check_output([_cmd, 'hw.memsize']).decode().strip().split(' ')[-1]
+            _memory_gb: float = float(_mem_str) / (1024.0**3)
 
 # Check for FreeSurfer's SynthStrip model
-_fs_home = os.getenv('FREESURFER_HOME', None)
-_default_model_path = Path(_fs_home) / 'models' / 'synthstrip.1.pt' if _fs_home else None
+_fs_home: str | None = os.getenv('FREESURFER_HOME', None)
+_default_model_path: Path | None = (
+    Path(_fs_home) / 'models' / 'synthstrip.1.pt' if _fs_home else None
+)
 
 if _fs_home and not _default_model_path.exists():
     _default_model_path = None
 
 # Override the unique ID if MRIQC_DEV is set
-_run_uuid = (
+_run_uuid: str = (
     '{}_{}'.format(strftime('%Y%m%d-%H%M%S'), uuid4())
     if not _mriqc_dev
     else '18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f'
 )
 
-_mriqc_cache = Path(
+_mriqc_cache: Path = Path(
     os.getenv('MRIQC_CACHE_PATH', str(Path.home() / '.cache' / 'mriqc'))
 ).absolute()
 
@@ -220,8 +232,8 @@ _mriqc_cache = Path(
 class _Config:
     """An abstract class forbidding instantiation."""
 
-    _paths = ()
-    _hidden = ()
+    _paths: tuple[str, ...] = ()
+    _hidden: tuple[str, ...] = ()
 
     def __init__(self):
         """Avert instantiation."""
@@ -246,9 +258,9 @@ class _Config:
                 pass
 
     @classmethod
-    def get(cls):
+    def get(cls) -> dict[str, Any]:
         """Return defined settings."""
-        out = {}
+        out: dict[str, str] = {}
         for k, v in cls.__dict__.items():
             if k.startswith('_') or v is None:
                 continue
@@ -265,12 +277,12 @@ class _Config:
 class settings(_Config):
     """Settings of this config module."""
 
-    file_path: Path = None
+    file_path: Path | None = None
     """Path to this configuration file."""
-    start_time: float = None
+    start_time: float | None = None
     """A :obj:`~time.time` timestamp at the time the workflow is started."""
 
-    _paths = ('file_path',)
+    _paths: tuple[str, ...] = ('file_path',)
 
 
 class environment(_Config):
@@ -287,69 +299,69 @@ class environment(_Config):
 
     """
 
-    cache_path = _mriqc_cache
+    cache_path: Path = _mriqc_cache
     """Path to the location of the cache directory."""
-    cpu_count = os.cpu_count()
+    cpu_count: int = os.cpu_count()
     """Number of available CPUs."""
-    exec_docker_version = _docker_ver
+    exec_docker_version: str | None = _docker_ver
     """Version of Docker Engine."""
-    exec_env = _exec_env
+    exec_env: str = _exec_env
     """A string representing the execution platform."""
-    free_mem = _free_mem_at_start
+    free_mem: int | None = _free_mem_at_start
     """Free memory at start."""
-    freesurfer_home = _fs_home
+    freesurfer_home: str | None = _fs_home
     """Path to the *FreeSurfer* installation (from ``FREESURFER_HOME`` environment variable)."""
-    overcommit_policy = _oc_policy
+    overcommit_policy: str = _oc_policy
     """Linux's kernel virtual memory overcommit policy."""
-    overcommit_limit = _oc_limit
+    overcommit_limit: str = _oc_limit
     """Linux's kernel virtual memory overcommit limits."""
-    nipype_version = get_version('nipype')
+    nipype_version: str = get_version('nipype')
     """Nipype's current version."""
-    synthstrip_path = _default_model_path
+    synthstrip_path: Path | None = _default_model_path
     """Path to *SynthStrip*'s model weights (requires *FreeSurfer*)."""
-    templateflow_version = get_version('templateflow')
+    templateflow_version: str = get_version('templateflow')
     """The TemplateFlow client version installed."""
-    total_memory = _memory_gb
+    total_memory: float | None = _memory_gb
     """Total memory available, in GB."""
-    version = __version__
+    version: str = __version__
     """*MRIQC*'s version."""
-    _pre_mriqc = _pre_exec_env
+    _pre_mriqc: dict[str, str] = _pre_exec_env
     """Environment variables before MRIQC's execution."""
 
 
 class nipype(_Config):
     """Nipype settings."""
 
-    crashfile_format = 'txt'
+    crashfile_format: str = 'txt'
     """The file format for crashfiles, either text or pickle."""
-    get_linked_libs = False
+    get_linked_libs: bool = False
     """Run NiPype's tool to enlist linked libraries for every interface."""
-    local_hash_check = True
+    local_hash_check: bool = True
     """Check if interface is cached locally before executing."""
-    memory_gb = None
+    memory_gb: float | str | None = None
     """Estimation in GB of the RAM this workflow can allocate at any given time."""
-    nprocs = os.cpu_count()
+    nprocs: int = os.cpu_count()
     """Number of processes (compute tasks) that can be run in parallel (multiprocessing only)."""
-    omp_nthreads = _default_omp_threads
+    omp_nthreads: int = _default_omp_threads
     """Number of CPUs a single process can access for multithreaded execution."""
-    plugin = 'MultiProc'
+    plugin: str = 'MultiProc'
     """NiPype's execution plugin."""
-    plugin_args = {
+    plugin_args: dict[str, Any] = {
         'maxtasksperchild': 1,
         'raise_insufficient': False,
     }
     """Settings for NiPype's execution plugin."""
-    remove_node_directories = False
+    remove_node_directories: bool = False
     """Remove directories whose outputs have already been used up."""
-    resource_monitor = False
+    resource_monitor: bool = False
     """Enable resource monitor."""
-    stop_on_first_crash = True
+    stop_on_first_crash: bool = True
     """Whether the workflow should stop or continue after the first error."""
 
     @classmethod
-    def get_plugin(cls):
+    def get_plugin(cls) -> dict[str, Any]:
         """Format a dictionary for Nipype consumption."""
-        out = {
+        out: dict[str, Any] = {
             'plugin': cls.plugin,
             'plugin_args': cls.plugin_args,
         }
@@ -360,7 +372,7 @@ class nipype(_Config):
         return out
 
     @classmethod
-    def init(cls):
+    def init(cls) -> None:
         """Set NiPype configurations."""
         from nipype import config as ncfg
 
@@ -380,86 +392,86 @@ class nipype(_Config):
 class execution(_Config):
     """Configure run-level settings."""
 
-    ants_float = False
+    ants_float: bool = False
     """Use float number precision for ANTs computations."""
-    bids_dir = None
+    bids_dir: str | os.PathLike | None = None
     """An existing path to the dataset, which must be BIDS-compliant."""
-    bids_dir_datalad = False
+    bids_dir_datalad: bool = False
     """Whether the input directory seems under DataLad's version control."""
-    bids_database_dir = None
+    bids_database_dir: str | os.PathLike | None = None
     """Path to the directory containing SQLite database indices for the input BIDS dataset."""
-    bids_database_wipe = False
+    bids_database_wipe: bool = False
     """Wipe out previously existing BIDS indexing caches, forcing re-indexing."""
-    bids_description_hash = None
+    bids_description_hash: str | None = None
     """Checksum (SHA256) of the ``dataset_description.json`` of the BIDS dataset."""
-    bids_filters = None
+    bids_filters: dict | None = None
     """A dictionary describing custom BIDS input filter using PyBIDS."""
-    cwd = os.getcwd()
+    cwd: str = os.getcwd()
     """Current working directory."""
-    datalad_get = True
+    datalad_get: bool = True
     """
     If :obj:`~mriqc.config.execution.bids_dir` is a DataLad dataset, a ``datalad get`` command
     will be executed to ensure all remote files have been fetched.
     This behavior can be disabled with the command line option ``--no-datalad-get``.
     """
-    debug = False
+    debug: bool = False
     """Run in sloppy mode (meaning, suboptimal parameters that minimize run-time)."""
-    dry_run = False
+    dry_run: bool = False
     """Just test, do not run."""
-    dsname = '<unset>'
+    dsname: str = '<unset>'
     """A dataset name used when generating files from the rating widget."""
-    echo_id = None
+    echo_id: str | None = None
     """Select a particular echo for multi-echo EPI datasets."""
-    float32 = True
+    float32: bool = True
     """Cast the input data to float32 if it's represented with higher precision."""
-    layout = None
+    layout: BIDSLayout | None = None
     """A :py:class:`~bids.layout.BIDSLayout` object, see :py:func:`init`."""
-    log_dir = None
+    log_dir: str | os.PathLike | None = None
     """The path to a directory that contains execution logs."""
-    log_level = 25
+    log_level: int | str = 25
     """Output verbosity."""
-    modalities = None
+    modalities: Iterable[str] = None
     """Filter input dataset by MRI type."""
-    no_sub = False
+    no_sub: bool = False
     """Turn off submission of anonymized quality metrics to Web API."""
-    notrack = False
+    notrack: bool = False
     """Disable the sharing of usage information with developers."""
-    output_dir = None
+    output_dir: str | os.PathLike | None = None
     """Folder where derivatives will be stored."""
-    participant_label = None
+    participant_label: Iterable[str] | None = None
     """List of participant identifiers that are to be preprocessed."""
-    pdb = False
+    pdb: bool = False
     """Drop into PDB when exceptions are encountered."""
-    reports_only = False
+    reports_only: bool = False
     """Only build the reports, based on the reportlets found in a cached working directory."""
-    resource_monitor = False
+    resource_monitor: bool = False
     """Enable resource monitor."""
-    run_id = None
+    run_id: str | None = None
     """Filter input dataset by run identifier."""
-    run_uuid = _run_uuid
+    run_uuid: str = _run_uuid
     """Unique identifier of this particular run."""
-    session_id = None
+    session_id: str | None = None
     """Filter input dataset by session identifier."""
-    task_id = None
+    task_id: str | None = None
     """Select a particular task from all available in the dataset."""
-    templateflow_home = _templateflow_home
+    templateflow_home: str | os.PathLike | None = _templateflow_home
     """The root folder of the TemplateFlow client."""
-    upload_strict = False
+    upload_strict: bool = False
     """Workflow will crash if upload is not successful."""
-    verbose_reports = False
+    verbose_reports: bool = False
     """Generate extended reports."""
-    webapi_token = '<secret_token>'
+    webapi_token: str = '<secret_token>'
     """Authorization token for the WebAPI service."""
-    webapi_url = 'https://mriqc.nimh.nih.gov:443/api/v1'
+    webapi_url: str = 'https://mriqc.nimh.nih.gov:443/api/v1'
     """IP address where the MRIQC WebAPI is listening."""
-    work_dir = Path('work').absolute()
+    work_dir: Path = Path('work').absolute()
     """Path to a working directory where intermediate results will be available."""
-    write_graph = False
+    write_graph: bool = False
     """Write out the computational graph corresponding to the planned preprocessing."""
 
-    _layout = None
+    _layout: BIDSLayout | None = None
 
-    _paths = (
+    _paths: tuple[str, ...] = (
         'anat_derivatives',
         'bids_dir',
         'bids_database_dir',
@@ -471,10 +483,10 @@ class execution(_Config):
         'work_dir',
     )
 
-    _hidden = ('webapi_token',)
+    _hidden: tuple[str, ...] = ('webapi_token',)
 
     @classmethod
-    def init(cls):
+    def init(cls) -> None:
         """Create a new BIDS Layout accessible with :attr:`~execution.layout`."""
 
         if cls.bids_filters is None:
@@ -491,7 +503,7 @@ class execution(_Config):
             from bids.layout import BIDSLayout
             from bids.layout.index import BIDSLayoutIndexer
 
-            ignore_paths = [
+            ignore_paths: list[Pattern] = [
                 # Ignore folders at the top if they don't start with /sub-<label>/
                 re.compile(r'^(?!/sub-[a-zA-Z0-9]+)'),
                 # Ignore all modality subfolders, except for func/ or anat/
@@ -510,13 +522,13 @@ class execution(_Config):
                 )
 
             # Recommended after PyBIDS 12.1
-            _indexer = BIDSLayoutIndexer(
+            _indexer: BIDSLayoutIndexer = BIDSLayoutIndexer(
                 validate=False,
                 ignore=ignore_paths,
             )
 
             # Initialize database in a multiprocessing-safe manner
-            _db_path = (
+            _db_path: Path = (
                 cls.work_dir if cls.participant_label else cls.output_dir
             ) / f'.bids_db-{cls.run_uuid}'
 
@@ -548,7 +560,7 @@ class execution(_Config):
             # See https://github.com/nipreps/mriqc/issues/1239
             cls._layout.__class__.__repr__ = lambda x: f'BIDS Layout: {cls.bids_dir}'
 
-        cls.layout = cls._layout
+        cls.layout: BIDSLayout = cls._layout
 
 
 # These variables are not necessary anymore
@@ -562,55 +574,55 @@ del _oc_policy
 class workflow(_Config):
     """Configure the particular execution graph of this workflow."""
 
-    analysis_level = ['participant']
+    analysis_level: list[str] = ['participant']
     """Level of analysis."""
-    biggest_file_gb = 1
+    biggest_file_gb: int = 1
     """Size of largest file in GB."""
-    deoblique = False
+    deoblique: bool = False
     """Deoblique the functional scans during head motion correction preprocessing."""
-    despike = False
+    despike: bool = False
     """Despike the functional scans during head motion correction preprocessing."""
-    fd_thres = 0.2
+    fd_thres: float = 0.2
     """Threshold on Framewise Displacement estimates to detect outliers."""
-    fd_radius = 50
+    fd_radius: int = 50
     """Radius in mm. of the sphere for the FD calculation."""
-    fft_spikes_detector = False
+    fft_spikes_detector: bool = False
     """Turn on FFT based spike detector (slow)."""
-    inputs = None
+    inputs: list[str | os.PathLike] | None = None
     """List of files to be processed with MRIQC."""
-    min_len_dwi = 7
+    min_len_dwi: int = 7
     """
     Minimum DWI length to be considered a "processable" dataset
     (default: 7, assuming one low-b and six gradients for diffusion tensor imaging).
     """
-    min_len_bold = 5
+    min_len_bold: int = 5
     """Minimum BOLD length to be considered a "processable" dataset."""
-    species = 'human'
+    species: str = 'human'
     """Subject species to choose most appropriate template"""
-    template_id = 'MNI152NLin2009cAsym'
+    template_id: str = 'MNI152NLin2009cAsym'
     """TemplateFlow ID of template used for the anatomical processing."""
 
 
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
-    _datefmt = '%y%m%d %H:%M:%S'
-    _init = False
-    _other_loggers = ('py.warnings', 'numexpr.utils', 'datalad')
+    _datefmt: str = '%y%m%d %H:%M:%S'
+    _init: bool = False
+    _other_loggers: tuple[str, ...] = ('py.warnings', 'numexpr.utils', 'datalad')
 
-    default = logging.getLogger()
+    default: logging.Logger = logging.getLogger()
     """The root logger."""
-    cli = logging.getLogger('mriqc')
+    cli: logging.Logger = logging.getLogger('mriqc')
     """Command-line interface logging."""
-    workflow = None
+    workflow: logging.Logger | None = None
     """NiPype's workflow logger."""
-    interface = None
+    interface: logging.Logger | None = None
     """NiPype's interface logger."""
-    utils = None
+    utils: logging.Logger | None = None
     """NiPype's utils logger."""
 
     @classmethod
-    def init(cls):
+    def init(cls) -> None:
         """
         Set the log level, initialize all loggers into :py:class:`loggers`.
 
@@ -641,7 +653,7 @@ class loggers:
             )
 
             for name in cls._other_loggers:
-                _thislogger = logging.getLogger(name)
+                _thislogger: logging.Logger = logging.getLogger(name)
                 _thislogger.setLevel(logging.WARNING)
 
             cls._init = True
@@ -653,31 +665,31 @@ class loggers:
         cls.utils.setLevel(execution.log_level)
 
     @classmethod
-    def getLogger(cls, name):
+    def getLogger(cls, name) -> logging.Logger:
         """Create a new logger."""
-        retval = getattr(cls, name)
+        retval: logging.Logger | None = getattr(cls, name)
         if retval is None:
             setattr(cls, name, logging.getLogger(name))
             retval.setLevel(execution.log_level)
         return retval
 
 
-def from_dict(sections):
+def from_dict(sections: dict) -> None:
     """Read settings from a flat dictionary."""
     execution.load(sections)
     workflow.load(sections)
     nipype.load(sections, init=False)
 
 
-def load(filename):
+def load(filename: str | os.PathLike) -> None:
     """Load settings from file."""
     try:
         from tomllib import loads
     except ModuleNotFoundError:  # Python < 3.11
         from tomli import loads
 
-    filename = Path(filename)
-    sections = loads(filename.read_text())
+    filename: Path = Path(filename)
+    sections: dict[str, Any] = loads(filename.read_text())
     for sectionname, configs in sections.items():
         if sectionname != 'environment':
             section = getattr(sys.modules[__name__], sectionname)
@@ -689,7 +701,7 @@ def load(filename):
     loggers.cli.debug(f'Loaded MRIQC config file: {settings.file_path}.')
 
 
-def get(flat=False):
+def get(flat: bool = False) -> dict[str, dict[str, Any]]:
     """Get config as a dict."""
     sections = {
         'environment': environment.get(),
@@ -708,14 +720,14 @@ def get(flat=False):
     }
 
 
-def dumps():
+def dumps() -> str:
     """Format config into toml."""
     from toml import dumps
 
     return dumps(get())
 
 
-def to_filename(filename=None):
+def to_filename(filename: str | os.PathLike | None = None) -> Path:
     """Write settings to file."""
 
     if filename:
@@ -729,7 +741,7 @@ def to_filename(filename=None):
     return settings.file_path
 
 
-def _process_initializer(config_file: Path):
+def _process_initializer(config_file: Path) -> None:
     """Initialize the environment of the child process."""
     from mriqc import config
 
@@ -754,7 +766,7 @@ def _process_initializer(config_file: Path):
     os.environ['NUMEXPR_MAX_THREADS'] = f'{config.nipype.omp_nthreads}'
 
 
-def restore_env():
+def restore_env() -> None:
     """Restore the original environment."""
 
     for k in os.environ.keys():
