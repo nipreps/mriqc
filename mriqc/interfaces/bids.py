@@ -150,7 +150,7 @@ class IQMFileSink(SimpleInterface):
                 self._out_dict.update(val)
             else:
                 config.loggers.interface.warning(
-                    'Output "%s" is not a dictionary (value="%s"), ' 'discarding output.',
+                    'Output "%s" is not a dictionary (value="%s"), discarding output.',
                     root_key,
                     str(val),
                 )

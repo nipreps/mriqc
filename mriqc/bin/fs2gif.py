@@ -130,7 +130,7 @@ set i 0
                 )
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
-                tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-' '%03d.tif" $i]\n')
+                tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-%03d.tif" $i]\n')
                 tclfp.write('    incr i\n')
                 tclfp.write('}\n')
                 tclfp.write('QuitMedit\n')

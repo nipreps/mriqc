@@ -432,7 +432,7 @@ def _build_timeseries_metadata():
             ),
         },
         'dvars_nstd': {
-            'LongName': ('Derivative of RMS Variance over Voxels,' 'Non-Standardized'),
+            'LongName': ('Derivative of RMS Variance over Voxels, Non-Standardized'),
             'Description': (
                 'Indexes the rate of change of BOLD signal across'
                 'the entire brain at each frame of data, not normalized.'
@@ -462,7 +462,7 @@ def _build_timeseries_metadata():
         'aor': {
             'LongName': "AFNI's Fraction of Outliers per Volume",
             'Description': (
-                'Mean fraction of outliers per fMRI volume as' "given by AFNI's 3dToutcount"
+                "Mean fraction of outliers per fMRI volume as given by AFNI's 3dToutcount"
             ),
         },
     }
