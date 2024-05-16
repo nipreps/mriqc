@@ -55,8 +55,10 @@ the root of this repository:
 
 To test changes the local source code will need to be mounted into the development container:
 
-    docker run -v .:/src/mriqc mriqc_devel
+    docker run --rm -v .:/src/mriqc mriqc_devel
 
+New python dependencies can be added in `pyproject.toml` under `dependencies`. Any time a dependency is changed
+or added there the docker image will need to be rebuilt using the above `docker build` command.
 
 License information
 -------------------
