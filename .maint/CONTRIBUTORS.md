@@ -29,6 +29,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Kent | James D. | @jdkent | 0000-0002-4892-2659 | Department of Psychology, University of Texas at Austin, TX, USA |
 | Krause | Michael | @octomike | | Max Planck Institute for Human Development, Berlin, Germany |
 | Lee | John A. | @leej3 | 0000-0001-5884-4247 | Quansight, Dublin, Ireland |
+| Legarreta Gorroño | Jon Haitz | @jhlegarreta | 0000-0002-9661-1396 | Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA |
 | Nichols | Thomas | @nicholst | 0000-0002-4516-5103 | Oxford Big Data Institute, University of Oxford, Oxford, GB |
 | Nielson | Dylan | @Shotgunosine | 0000-0003-4613-6643 | Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA |
 | Papadopoulos Orfanos | Dimitri | @DimitriPapadopoulos | 0000-0002-1242-8990 | NeuroSpin, CEA, Université Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France |
