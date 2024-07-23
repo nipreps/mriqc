@@ -590,7 +590,7 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
         name='apply_hmc',
         iterfield=['in_file'],
         # NiTransforms is a memory hog, so ensure only one process is running at a time
-        num_threads=config.environment.cpu_count,
+        n_procs=config.environment.cpu_count,
     )
 
     # fmt: off
