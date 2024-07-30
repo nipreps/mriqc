@@ -97,8 +97,17 @@ References
 
 from __future__ import annotations
 
+from contextlib import suppress
+from warnings import warn
+
 import numpy as np
 from statsmodels.robust.scale import mad
+
+MIN_NUM_CC_MASK = 5
+
+
+class ExtremeValueWarning(UserWarning):
+    """A warning type for dubious metric values."""
 
 
 def noise_b0(
@@ -198,18 +207,30 @@ def cc_snr(
         * The first element is the worst-case SNR (float).
         * The second element is the best-case SNR (float).
 
+        The SNR estimates are zero if there are no sufficient voxels to calculate them
+        (may occur if the number of orientations in the file is very low).
+
     """
 
     cc_mask = cc_mask > 0  # Ensure it's a boolean mask
-    std_signal = mad(in_b0[cc_mask])
-
-    cc_snr_estimates = {}
-
-    xyz = np.eye(3)
-
     b_values = np.rint(b_values).astype(np.uint16)
     n_shells = len(b_values)
 
+    if (nvox_cc := cc_mask.sum()) < MIN_NUM_CC_MASK:
+        warn(f'CC mask is too small ({nvox_cc} voxels)', ExtremeValueWarning, stacklevel=1)
+        cc_snr_estimates = {'shell0': 0}
+        cc_snr_estimates = cc_snr_estimates | {
+            f'shell{shell_index:d}_worst': 0 for shell_index in range(1, n_shells + 1)
+        }
+        cc_snr_estimates = cc_snr_estimates | {
+            f'shell{shell_index:d}_best': 0 for shell_index in range(1, n_shells + 1)
+        }
+        return cc_snr_estimates, 0
+
+    std_signal = mad(in_b0[cc_mask])
+    xyz = np.eye(3)
+
+    cc_snr_estimates = {}
     cc_snr_estimates['shell0'] = round(float(in_b0[cc_mask].mean() / std_signal), decimals)
 
     # Shell-wise calculation
@@ -221,12 +242,16 @@ def cc_snr(
         axis_Y = np.argmin(np.sum((bvecs - xyz[1, :]) ** 2, axis=-1))
         axis_Z = np.argmin(np.sum((bvecs - xyz[2, :]) ** 2, axis=-1))
 
-        data_X = shell_data[..., axis_X]
-        data_Y = shell_data[..., axis_Y]
-        data_Z = shell_data[..., axis_Z]
+        mean_signal_worst = 0
+        with suppress(IndexError):
+            data_X = shell_data[..., axis_X]
+            mean_signal_worst = np.mean(data_X)
 
-        mean_signal_worst = np.mean(data_X)
-        mean_signal_best = 0.5 * (np.mean(data_Y) + np.mean(data_Z))
+        mean_signal_best = 0
+        with suppress(IndexError):
+            data_Y = shell_data[..., axis_Y]
+            data_Z = shell_data[..., axis_Z]
+            mean_signal_best = 0.5 * (np.mean(data_Y) + np.mean(data_Z))
 
         cc_snr_estimates[f'shell{shell_index:d}_worst'] = round(
             float(np.mean(mean_signal_worst / std_signal)), decimals
