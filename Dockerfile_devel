@@ -1,0 +1,4 @@
+FROM nipreps/mriqc:latest
+COPY . /src/mriqc
+ARG VERSION
+RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION && pip install -e /src/mriqc[all]

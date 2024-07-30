@@ -46,6 +46,21 @@ Users can get help using the `mriqc-users google group <https://groups.google.co
 All bugs, concerns and enhancement requests for this software can be submitted here:
 https://github.com/nipreps/mriqc/issues.
 
+Development
+-----------
+A local development build based on the latest docker build of MRIQC can be built with this command run from 
+the root of this repository::
+
+    docker build -f Dockerfile_devel -t mriqc_devel .
+
+To test changes the local source code will need to be mounted into the development container::
+
+    docker run --rm -v .:/src/mriqc mriqc_devel
+
+New Python dependencies can be added in ``pyproject.toml`` under ``dependencies``.
+Any time a dependency is changed or added there the docker image will need to be rebuilt
+using the above ``docker build`` command.
+
 License information
 -------------------
 *MRIQC* adheres to the
