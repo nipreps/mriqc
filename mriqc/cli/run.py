@@ -23,7 +23,7 @@
 """Definition of the command line interface's (CLI) entry point."""
 
 
-def main():
+def main(argv=None):
     """Entry point for MRIQC's CLI."""
     import atexit
     import gc
@@ -40,7 +40,7 @@ def main():
     config.settings.start_time = time.time()
 
     # Run parser
-    parse_args()
+    parse_args(argv)
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
