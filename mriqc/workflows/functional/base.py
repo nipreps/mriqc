@@ -768,10 +768,16 @@ def _apply_transforms(in_file, in_xfm):
     from pathlib import Path
 
     from nitransforms.linear import load
+    from nitransforms.resampling import apply
 
     from mriqc.utils.bids import derive_bids_fname
 
-    realigned = load(in_xfm, fmt='afni', reference=in_file, moving=in_file).apply(in_file)
+    realigned = apply(
+        load(in_xfm, fmt='afni', reference=in_file, moving=in_file),
+        in_file,
+        dtype_width=4,
+        serialize_nvols=2,
+    )
     out_file = derive_bids_fname(
         in_file,
         entity='desc-realigned',
