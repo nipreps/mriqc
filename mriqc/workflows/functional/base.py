@@ -78,53 +78,24 @@ def fmri_qc_workflow(name='funcMRIQC'):
 
     workflow = pe.Workflow(name=name)
 
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb["bold"]
 
     dataset = config.workflow.inputs.get('bold', [])
-
-    if config.execution.datalad_get:
-        from mriqc.utils.misc import _datalad_get
-
-        _datalad_get(dataset)
-
-    full_files = []
-    for bold_path in dataset:
-        try:
-            bold_len = nb.load(
-                bold_path[0]
-                if isinstance(bold_path, Iterable) and not isinstance(bold_path, (str, bytes))
-                else bold_path
-            ).shape[3]
-        except nb.filebasedimages.ImageFileError:
-            bold_len = config.workflow.min_len_bold
-        except IndexError:  # shape has only 3 elements
-            bold_len = 0
-        if bold_len >= config.workflow.min_len_bold:
-            full_files.append(bold_path)
-        else:
-            config.loggers.workflow.warn(
-                f'Dismissing {bold_path} for processing: insufficient number of '
-                f'timepoints ({bold_len}) to execute the workflow.'
-            )
 
     message = BUILDING_WORKFLOW.format(
         modality='functional',
         detail=(
-            f'for {len(full_files)} BOLD runs.'
-            if len(full_files) > 2
+            f'for {len(dataset)} BOLD runs.'
+            if len(dataset) > 2
             else f"({' and '.join('<%s>' % v for v in dataset)})."
         ),
     )
     config.loggers.workflow.info(message)
 
-    if set(flatten(dataset)) - set(flatten(full_files)):
-        config.workflow.inputs['bold'] = full_files
-        config.to_filename()
-
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', full_files)]
+    inputnode.iterables = [('in_file', dataset)]
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
@@ -321,7 +292,7 @@ def compute_iqms(name='ComputeIQMs'):
     from mriqc.interfaces.transitional import GCOR
     from mriqc.workflows.utils import _tofloat, get_fwhmx
 
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb["bold"]
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
@@ -557,7 +528,7 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Despike, Refit, Volreg
 
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb["bold"]
 
     workflow = pe.Workflow(name=name)
 

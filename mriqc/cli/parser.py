@@ -490,6 +490,7 @@ def parse_args(args=None, namespace=None):
     from mriqc import __version__
     from mriqc._warnings import DATE_FMT, LOGGER_FMT, _LogFormatter
     from mriqc.messages import PARTICIPANT_START
+    from mriqc.utils.misc import initialize_meta_and_data
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
@@ -642,11 +643,7 @@ Please, check out your currently set filters {ffile}:
             f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
-    # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)
-    with suppress(FileNotFoundError):
-        config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
-            config.workflow.inputs.values()
-        )
+    initialize_meta_and_data()
 
     # set specifics for alternative populations
     if opts.species.lower() != 'human':
@@ -660,17 +657,3 @@ Please, check out your currently set filters {ffile}:
             config.workflow.fd_radius = 7.5
             # block uploads for the moment; can be reversed before wider release
             config.execution.no_sub = True
-
-
-def _get_biggest_file_size_gb(files):
-    """Identify the largest file size (allows multi-echo groups)."""
-
-    import os
-
-    sizes = []
-    for file in files:
-        if isinstance(file, (list, tuple)):
-            sizes.append(_get_biggest_file_size_gb(file))
-        else:
-            sizes.append(os.path.getsize(file))
-    return max(sizes) / (1024**3)

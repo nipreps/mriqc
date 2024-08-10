@@ -116,6 +116,11 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     auth_token = Str(mandatory=True, desc='authentication token')
     email = Str(desc='set sender email')
     strict = traits.Bool(False, usedefault=True, desc='crash if upload was not successful')
+    modality = Str(
+        'undefined',
+        usedefault=True,
+        desc='override modality field if provided through metadata',
+    )
 
 
 class UploadIQMsOutputSpec(TraitedSpec):
@@ -143,6 +148,7 @@ class UploadIQMs(SimpleInterface):
             endpoint=self.inputs.endpoint,
             auth_token=self.inputs.auth_token,
             email=email,
+            modality=self.inputs.modality,
         )
 
         try:
@@ -175,6 +181,7 @@ def upload_qc_metrics(
     endpoint=None,
     email=None,
     auth_token=None,
+    modality=None,
 ):
     """
     Upload qc metrics to remote repository.
@@ -205,18 +212,17 @@ def upload_qc_metrics(
 
     # Extract metadata and provenance
     meta = in_data.pop('bids_meta')
-
-    # For compatibility with WebAPI. Should be rolled back to int
-    if meta.get('run_id', None) is not None:
-        meta['run_id'] = '%d' % meta.get('run_id')
-
     prov = in_data.pop('provenance')
 
     # At this point, data should contain only IQMs
     data = deepcopy(in_data)
 
     # Check modality
-    modality = meta.get('modality', 'None')
+    modality = (
+        meta.get('modality', None)
+        or meta.get('suffix', None)
+        or modality
+    )
     if modality not in ('T1w', 'bold', 'T2w'):
         errmsg = (
             'Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
@@ -226,11 +232,26 @@ def upload_qc_metrics(
 
     # Filter metadata values that aren't in whitelist
     data['bids_meta'] = {k: meta[k] for k in META_WHITELIST if k in meta}
+
+    # Check for fields with appended _id
+    bids_meta_names = {k: k.replace('_id', '') for k in META_WHITELIST if k.endswith('_id')}
+    data['bids_meta'] = {k: meta[v] for k, v in bids_meta_names.items() if v in meta}
+
+    # For compatibility with WebAPI. Should be rolled back to int
+    if (run_id := data['bids_meta'].get('run_id', None)) is not None:
+        data['bids_meta']['run_id'] = f'{run_id}'
+
+    # One more chance for spelled-out BIDS entity acquisition
+    if (acq_id := meta.get('acquisition', None)) is not None:
+        data['bids_meta']['acq_id'] = acq_id
+
     # Filter provenance values that aren't in whitelist
     data['provenance'] = {k: prov[k] for k in PROV_WHITELIST if k in prov}
 
     # Hash fields that may contain personal information
     data['bids_meta'] = _hashfields(data['bids_meta'])
+
+    data['bids_meta']['modality'] = modality
 
     if email:
         data['provenance']['email'] = email
