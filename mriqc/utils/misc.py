@@ -324,7 +324,7 @@ def _file_meta_and_size(
     multifile = isinstance(files, (list, tuple))
     if multifile:
         metadata = []
-        entities = []
+        _bids_list = []
         _size_list = []
         _valid_list = []
 
@@ -337,12 +337,12 @@ def _file_meta_and_size(
 
             # Add to output lists
             metadata.append(metadata_i)
-            entities.append(entities_i)
+            _bids_list.append(entities_i)
             _size_list.append(sizes_i)
             _valid_list.append(valid_i)
 
         valid = all(_valid_list) and len({_m['NumberOfVolumes'] for _m in metadata}) == 1
-        return metadata, entities, np.sum(_size_list), valid
+        return metadata, _merge_entities(_bids_list), np.sum(_size_list), valid
 
     metadata = config.execution.layout.get_metadata(files)
     entities = config.execution.layout.parse_file_entities(files)
@@ -503,3 +503,53 @@ def initialize_meta_and_data(
             25,
             f"File size ('{mod}'): {_max_size:.2f}|{np.mean(size):.2f} " 'GB [maximum|average].',
         )
+
+
+def _merge_entities(
+    entities: list,
+) -> dict:
+    """
+    Merge a list of dictionaries with entities dropping those with nonuniform values.
+
+    Examples
+    --------
+    >>> _merge_entities([
+    ...     {'subject': '001', 'session': '001'},
+    ...     {'subject': '001', 'session': '002'},
+    ... ])
+    {'subject': '001'}
+
+    >>> _merge_entities([
+    ...     {'subject': '001', 'session': '002'},
+    ...     {'subject': '001', 'session': '002'},
+    ... ])
+    {'subject': '001', 'session': '002'}
+
+    >>> _merge_entities([
+    ...     {'subject': '001', 'session': '002'},
+    ...     {'subject': '001', 'session': '002', 'run': 1},
+    ... ])
+    {'subject': '001', 'session': '002'}
+
+    >>> _merge_entities([
+    ...     {'subject': '001', 'session': '002'},
+    ...     {'subject': '001', 'run': 1},
+    ... ])
+    {'subject': '001'}
+
+    """
+    out_entities = {}
+
+    bids_keys = set(entities[0].keys())
+    for entities_i in entities[1:]:
+        bids_keys.intersection_update(entities_i.keys())
+
+    # Preserve ordering
+    bids_keys = [_b for _b in entities[0].keys() if _b in bids_keys]
+
+    for key in bids_keys:
+        values = {_entities[key] for _entities in entities}
+        if len(values) == 1:
+            out_entities[key] = values.pop()
+
+    return out_entities
