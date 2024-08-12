@@ -68,6 +68,7 @@ BIDS_EXPR = """\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
 
+
 async def worker(job: Callable[[], R], semaphore) -> R:
     async with semaphore:
         loop = asyncio.get_running_loop()
@@ -264,10 +265,7 @@ def _flatten_list(xs):
 def _datalad_get(input_list, nprocs=None):
     from mriqc import config
 
-    if (
-        not config.execution.bids_dir_datalad
-        or not config.execution.datalad_get
-    ):
+    if not config.execution.bids_dir_datalad or not config.execution.datalad_get:
         return
 
     # Delay datalad import until we're sure we'll need it
@@ -343,10 +341,7 @@ def _file_meta_and_size(
             _size_list.append(sizes_i)
             _valid_list.append(valid_i)
 
-        valid = (
-            all(_valid_list)
-            and len({_m['NumberOfVolumes'] for _m in metadata}) == 1
-        )
+        valid = all(_valid_list) and len({_m['NumberOfVolumes'] for _m in metadata}) == 1
         return metadata, entities, np.sum(_size_list), valid
 
     metadata = config.execution.layout.get_metadata(files)
@@ -458,7 +453,7 @@ def initialize_meta_and_data(
     for mod, input_list in config.workflow.inputs.items():
         config.loggers.cli.log(
             25,
-            f"Extracting metadata and entities for {len(input_list)} input runs "
+            f'Extracting metadata and entities for {len(input_list)} input runs '
             f"of modality '{mod}'...",
         )
 
@@ -485,13 +480,14 @@ def initialize_meta_and_data(
         )
 
         # Identify nonconformant files that need to be dropped (and drop them)
-        if (num_dropped := len(input_list) - np.sum(valid)):
+        if num_dropped := len(input_list) - np.sum(valid):
             config.loggers.workflow.warn(
                 f'{num_dropped} cannot be processed (too short or too long)'
             )
 
             filtered_results = [
-                _v[:-1] for _v in zip(input_list, metadata, entities, size, valid)
+                _v[:-1]
+                for _v in zip(input_list, metadata, entities, size, valid)
                 if _v[-1] is True
             ]
             input_list, metadata, entities, size = list(zip(*filtered_results))
@@ -505,6 +501,5 @@ def initialize_meta_and_data(
 
         config.loggers.cli.log(
             25,
-            f"File size ('{mod}'): {_max_size:.2f}|{np.mean(size):.2f} "
-            "GB [maximum|average].",
+            f"File size ('{mod}'): {_max_size:.2f}|{np.mean(size):.2f} " 'GB [maximum|average].',
         )
