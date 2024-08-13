@@ -91,6 +91,7 @@ The :py:mod:`config` is responsible for other conveniency actions.
 from __future__ import annotations
 
 import os
+import pickle
 import sys
 from contextlib import suppress
 from pathlib import Path
@@ -576,8 +577,8 @@ class workflow(_Config):
 
     analysis_level: list[str] = ['participant']
     """Level of analysis."""
-    biggest_file_gb: int = 1
-    """Size of largest file in GB."""
+    biggest_file_gb: dict[int] = 1
+    """Dictionary holding the size of largest file in GB (per modality)."""
     deoblique: bool = False
     """Deoblique the functional scans during head motion correction preprocessing."""
     despike: bool = False
@@ -590,6 +591,12 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     inputs: list[str | os.PathLike] | None = None
     """List of files to be processed with MRIQC."""
+    inputs_entities: dict[list[dict]]
+    """List of entities corresponding to inputs."""
+    inputs_metadata: dict[list[dict | list[dict]]] | None = None
+    """List of metadata corresponding to inputs."""
+    inputs_path: Path | None = None
+    """Path to a pickle file with the input paths and metadata."""
     min_len_dwi: int = 7
     """
     Minimum DWI length to be considered a "processable" dataset
@@ -601,6 +608,21 @@ class workflow(_Config):
     """Subject species to choose most appropriate template"""
     template_id: str = 'MNI152NLin2009cAsym'
     """TemplateFlow ID of template used for the anatomical processing."""
+
+    _hidden: tuple[str, ...] = ('inputs', 'inputs_entities', 'inputs_metadata')
+
+    @classmethod
+    def init(cls) -> None:
+        if cls.inputs_path is None:
+            cls.inputs_path = execution.work_dir / f'inputs-{execution.run_uuid}.pkl'
+
+        if cls.inputs_path.exists():
+            with open(cls.inputs_path, 'rb') as handle:
+                _inputs = pickle.load(handle)
+
+                cls.inputs = _inputs['paths']
+                cls.inputs_metadata = _inputs['metadata']
+                cls.inputs_entities = _inputs['entities']
 
 
 class loggers:
@@ -727,7 +749,10 @@ def dumps() -> str:
     return dumps(get())
 
 
-def to_filename(filename: str | os.PathLike | None = None) -> Path:
+def to_filename(
+    filename: str | os.PathLike | None = None,
+    store_inputs: bool = True,
+) -> Path:
     """Write settings to file."""
 
     if filename:
@@ -738,6 +763,21 @@ def to_filename(filename: str | os.PathLike | None = None) -> Path:
     settings.file_path.parent.mkdir(exist_ok=True, parents=True)
     settings.file_path.write_text(dumps())
     loggers.cli.debug(f'Saved MRIQC config file: {settings.file_path}.')
+
+    if store_inputs:
+        if workflow.inputs_path is None:
+            workflow.inputs_path = execution.work_dir / f'inputs-{execution.run_uuid}.pkl'
+
+        # Pickle inputs
+        with open(workflow.inputs_path, 'wb') as handle:
+            inputs_dict = {
+                'paths': workflow.inputs,
+                'metadata': workflow.inputs_metadata,
+                'entities': workflow.inputs_entities,
+            }
+            pickle.dump(inputs_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        loggers.cli.debug(f'Saved MRIQC inputs file: {workflow.inputs_path}.')
     return settings.file_path
 
 

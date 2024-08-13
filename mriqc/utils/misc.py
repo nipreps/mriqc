@@ -447,8 +447,8 @@ def initialize_meta_and_data(
     _datalad_get(dataset)
 
     # Extract metadata and filesize
-    config.workflow.input_metadata = {}
-    config.workflow.input_entities = {}
+    config.workflow.inputs_metadata = {}
+    config.workflow.inputs_entities = {}
     config.workflow.biggest_file_gb = {}
     for mod, input_list in config.workflow.inputs.items():
         config.loggers.cli.log(
@@ -495,8 +495,8 @@ def initialize_meta_and_data(
 
         # Finalizing (write to config so that values are propagated)
         _max_size = np.max(size)
-        config.workflow.input_metadata[mod] = metadata
-        config.workflow.input_entities[mod] = entities
+        config.workflow.inputs_metadata[mod] = metadata
+        config.workflow.inputs_entities[mod] = entities
         config.workflow.biggest_file_gb[mod] = float(_max_size)  # Cast required to store YAML
 
         config.loggers.cli.log(
