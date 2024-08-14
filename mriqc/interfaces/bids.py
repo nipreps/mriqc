@@ -42,15 +42,19 @@ from mriqc.utils.misc import BIDS_COMP
 
 class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     in_file = Str(mandatory=True, desc='path of input file')
-    subject_id = Str(mandatory=True, desc='the subject id')
     modality = Str(mandatory=True, desc='the qc type')
+    entities = traits.Dict(desc='entities corresponding to the input')
+    subject_id = Str(mandatory=True, desc='the subject id')
     session_id = traits.Either(None, Str, usedefault=True)
     task_id = traits.Either(None, Str, usedefault=True)
     acq_id = traits.Either(None, Str, usedefault=True)
     rec_id = traits.Either(None, Str, usedefault=True)
     run_id = traits.Either(None, traits.Int, usedefault=True)
     dataset = Str(desc='dataset identifier')
-    dismiss_entities = traits.List(['part'], usedefault=True)
+    dismiss_entities = traits.List(
+        ['datatype', 'part', 'echo', 'extension', 'suffix'],
+        usedefault=True,
+    )
     metadata = traits.Dict()
     provenance = traits.Dict()
 
@@ -156,7 +160,7 @@ class IQMFileSink(SimpleInterface):
                 )
 
         # Fill in the "bids_meta" key
-        id_dict = {}
+        id_dict = self.inputs.entities if isdefined(self.inputs.entities) else {}
         for comp in BIDS_COMP:
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:

@@ -20,6 +20,8 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
+import json
+
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     Bunch,
@@ -143,7 +145,7 @@ class UploadIQMs(SimpleInterface):
 
         self._results['api_id'] = None
 
-        response = upload_qc_metrics(
+        response, payload = upload_qc_metrics(
             self.inputs.in_iqms,
             endpoint=self.inputs.endpoint,
             auth_token=self.inputs.auth_token,
@@ -157,7 +159,9 @@ class UploadIQMs(SimpleInterface):
             # response did not give us an ID
             errmsg = (
                 'QC metrics upload failed to create an ID for the record '
-                f'uplOADED. rEsponse from server follows: {response.text}'
+                f'uploaded. Response from server follows: {response.text}'
+                '\n\nPayload:\n'
+                f'{json.dumps(payload, indent=2)}'
             )
             config.loggers.interface.warning(errmsg)
 
@@ -165,13 +169,18 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
-        errmsg = 'QC metrics failed to upload. Status %d: %s' % (
-            response.status_code,
+        errmsg = '\n'.join([
+            'Unsuccessful upload.',
+            f'Server response status {response.status_code}:',
             response.text,
-        )
+            '',
+            '',
+            'Payload:',
+            json.dumps(payload, indent=2),
+        ])
         config.loggers.interface.warning(errmsg)
         if self.inputs.strict:
-            raise RuntimeError(response.text)
+            raise RuntimeError(errmsg)
 
         return runtime
 
@@ -226,7 +235,7 @@ def upload_qc_metrics(
     if modality not in ('T1w', 'bold', 'T2w'):
         errmsg = (
             'Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
-            '(found "%s")' % modality
+            f'(found "{modality}")'
         )
         return Bunch(status_code=1, text=errmsg)
 
@@ -235,7 +244,9 @@ def upload_qc_metrics(
 
     # Check for fields with appended _id
     bids_meta_names = {k: k.replace('_id', '') for k in META_WHITELIST if k.endswith('_id')}
-    data['bids_meta'] = {k: meta[v] for k, v in bids_meta_names.items() if v in meta}
+    data['bids_meta'].update({
+        k: meta[v] for k, v in bids_meta_names.items() if v in meta
+    })
 
     # For compatibility with WebAPI. Should be rolled back to int
     if (run_id := data['bids_meta'].get('run_id', None)) is not None:
@@ -269,10 +280,10 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = 'QC metrics failed to upload due to connection error shown below:\n%s' % err
+        errmsg = f'QC metrics failed to upload due to connection error shown below:\n{err}'
         return Bunch(status_code=1, text=errmsg)
 
-    return response
+    return response, data
 
 
 def _hashfields(data):
