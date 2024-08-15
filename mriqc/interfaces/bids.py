@@ -44,7 +44,7 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
     in_file = Str(mandatory=True, desc='path of input file')
     modality = Str(mandatory=True, desc='the qc type')
     entities = traits.Dict(desc='entities corresponding to the input')
-    subject_id = Str(mandatory=True, desc='the subject id')
+    subject_id = Str(desc='the subject id')
     session_id = traits.Either(None, Str, usedefault=True)
     task_id = traits.Either(None, Str, usedefault=True)
     acq_id = traits.Either(None, Str, usedefault=True)
