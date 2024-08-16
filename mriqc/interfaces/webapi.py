@@ -169,15 +169,17 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
-        errmsg = '\n'.join([
-            'Unsuccessful upload.',
-            f'Server response status {response.status_code}:',
-            response.text,
-            '',
-            '',
-            'Payload:',
-            json.dumps(payload, indent=2),
-        ])
+        errmsg = '\n'.join(
+            [
+                'Unsuccessful upload.',
+                f'Server response status {response.status_code}:',
+                response.text,
+                '',
+                '',
+                'Payload:',
+                json.dumps(payload, indent=2),
+            ]
+        )
         config.loggers.interface.warning(errmsg)
         if self.inputs.strict:
             raise RuntimeError(errmsg)
@@ -227,11 +229,7 @@ def upload_qc_metrics(
     data = deepcopy(in_data)
 
     # Check modality
-    modality = (
-        meta.get('modality', None)
-        or meta.get('suffix', None)
-        or modality
-    )
+    modality = meta.get('modality', None) or meta.get('suffix', None) or modality
     if modality not in ('T1w', 'bold', 'T2w'):
         errmsg = (
             'Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
@@ -244,9 +242,7 @@ def upload_qc_metrics(
 
     # Check for fields with appended _id
     bids_meta_names = {k: k.replace('_id', '') for k in META_WHITELIST if k.endswith('_id')}
-    data['bids_meta'].update({
-        k: meta[v] for k, v in bids_meta_names.items() if v in meta
-    })
+    data['bids_meta'].update({k: meta[v] for k, v in bids_meta_names.items() if v in meta})
 
     # For compatibility with WebAPI. Should be rolled back to int
     if (run_id := data['bids_meta'].get('run_id', None)) is not None:

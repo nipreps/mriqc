@@ -479,7 +479,6 @@ discourage its usage.""",
 
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
-    from contextlib import suppress
     from json import loads
     from logging import DEBUG, FileHandler
     from pathlib import Path
@@ -555,10 +554,9 @@ def parse_args(args=None, namespace=None):
     if output_dir == bids_dir:
         parser.error(
             'The selected output folder is the same as the input BIDS folder. '
-            'Please modify the output path (suggestion: %s).'
-            % bids_dir
+            f'Please modify the output path (suggestion: {bids_dir}).'
             / 'derivatives'
-            / ('mriqc-%s' % version.split('+')[0])
+            / ('mriqc-{}'.format(version.split('+')[0]))
         )
 
     if bids_dir in work_dir.parents:

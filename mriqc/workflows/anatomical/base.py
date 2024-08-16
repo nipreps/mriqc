@@ -53,6 +53,7 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 """
 
 from itertools import chain
+
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.interfaces.fixes import FixHeaderApplyTransforms as ApplyTransforms
@@ -94,18 +95,24 @@ def anat_qc_workflow(name='anatMRIQC'):
     #     config.workflow.biggest_file_gb['t1w'],
     #     config.workflow.biggest_file_gb['t2w'],
     # )
-    dataset = list(chain(
-        config.workflow.inputs.get('t1w', []),
-        config.workflow.inputs.get('t2w', []),
-    ))
-    metadata = list(chain(
-        config.workflow.inputs_metadata.get('t1w', []),
-        config.workflow.inputs_metadata.get('t2w', []),
-    ))
-    entities = list(chain(
-        config.workflow.inputs_entities.get('t1w', []),
-        config.workflow.inputs_entities.get('t2w', []),
-    ))
+    dataset = list(
+        chain(
+            config.workflow.inputs.get('t1w', []),
+            config.workflow.inputs.get('t2w', []),
+        )
+    )
+    metadata = list(
+        chain(
+            config.workflow.inputs_metadata.get('t1w', []),
+            config.workflow.inputs_metadata.get('t2w', []),
+        )
+    )
+    entities = list(
+        chain(
+            config.workflow.inputs_entities.get('t1w', []),
+            config.workflow.inputs_entities.get('t2w', []),
+        )
+    )
     message = BUILDING_WORKFLOW.format(
         modality='anatomical',
         detail=f'for {len(dataset)} NIfTI files.',
@@ -117,9 +124,12 @@ def anat_qc_workflow(name='anatMRIQC'):
 
     # Define workflow, inputs and outputs
     # 0. Get data
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'metadata', 'entities'],
-    ), name='inputnode')
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
     inputnode.synchronize = True  # Do not test combinations of iterables
     inputnode.iterables = [
         ('in_file', dataset),

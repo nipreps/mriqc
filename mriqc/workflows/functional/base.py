@@ -43,7 +43,6 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 
-
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
@@ -86,9 +85,12 @@ def fmri_qc_workflow(name='funcMRIQC'):
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'metadata', 'entities'],
-    ), name='inputnode')
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
     inputnode.synchronize = True  # Do not test combinations of iterables
     inputnode.iterables = [
         ('in_file', dataset),

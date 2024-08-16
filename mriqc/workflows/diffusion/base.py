@@ -98,9 +98,12 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
     workflow = pe.Workflow(name=name)
-    inputnode = pe.Node(niu.IdentityInterface(
-        fields=['in_file', 'metadata', 'entities'],
-    ), name='inputnode')
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
     inputnode.synchronize = True  # Do not test combinations of iterables
     inputnode.iterables = [
         ('in_file', dataset),
