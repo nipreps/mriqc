@@ -266,7 +266,10 @@ def main(argv=None):
             )
         ),
     )
-    config.to_filename(config.execution.log_dir / f'config-{config.execution.run_uuid}.toml')
+    config.to_filename(
+        config.execution.log_dir / f'config-{config.execution.run_uuid}.toml',
+        store_inputs=False,  # Inputs are not necessary anymore
+    )
     sys.exit(exitcode)
 
 

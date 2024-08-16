@@ -49,7 +49,7 @@ def init_func_report_wf(name='func_report_wf'):
     # from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb['bold']
     reportlets_dir = config.execution.work_dir / 'reportlets'
 
     workflow = pe.Workflow(name=name)
