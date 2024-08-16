@@ -110,6 +110,7 @@ def init_func_report_wf(name='func_report_wf'):
         name='BigPlot',
         mem_gb=mem_gb * 3.5,
         iterfield=['in_func', 'dvars', 'outliers', 'in_spikes_bg'],
+        n_procs=(config.nipype.nprocs + 3) // 4,  # Big plot is a memory hog
     )
 
     # fmt: off
