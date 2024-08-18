@@ -662,10 +662,17 @@ class CorrectSignalDrift(SimpleInterface):
                 self.inputs.full_epi, suffix='_nodriftfull', newpath=runtime.cwd
             )
             full_img = nb.load(self.inputs.full_epi)
+
+            # Read slope and intercept (see #1315)
+            slope, intercept = full_img.header.get_slope_inter()
+            slope = slope if slope is not None else 1.0
+            intercept = intercept if intercept is not None else 0.0
+            corrected = (
+                full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :] / slope
+                - intercept
+            )
             full_img.__class__(
-                (full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :]).astype(
-                    full_img.header.get_data_dtype()
-                ),
+                corrected.astype(full_img.header.get_data_dtype()),
                 full_img.affine,
                 full_img.header,
             ).to_filename(self._results['out_full_file'])
