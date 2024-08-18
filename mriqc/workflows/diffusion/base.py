@@ -131,21 +131,21 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     get_lowb = pe.Node(
         ExtractOrientations(),
         name='get_lowb',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Generate B0 reference
     dwi_ref = pe.Node(
         RobustAverage(mc_method=None),
         name='dwi_ref',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     hmc_b0 = pe.Node(
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='hmc_b0',
         mem_gb=3.0,
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
 
     # Calculate brainmask
@@ -164,13 +164,13 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     averages = pe.MapNode(
         WeightedStat(),
         name='averages',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_weights'],
     )
     stddev = pe.MapNode(
         WeightedStat(stat='std'),
         name='stddev',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_weights'],
     )
 
@@ -180,38 +180,38 @@ def dmri_qc_workflow(name='dwiMRIQC'):
             nthreads=config.nipype.omp_nthreads,
         ),
         name='dwidenoise',
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
     drift = pe.Node(
         CorrectSignalDrift(),
         name='drift',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
     sp_mask = pe.Node(
         SpikingVoxelsMask(),
         name='sp_mask',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Fit DTI/DKI model
     dwimodel = pe.Node(
         DiffusionModel(),
         name='dwimodel',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=config.nipype.nprocs,
     )
 
     # Calculate CC mask
     cc_mask = pe.Node(
         CCSegmentation(),
         name='cc_mask',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Run PIESNO noise estimation
     piesno = pe.Node(
         PIESNO(),
         name='piesno',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # EPI to MNI registration
@@ -483,7 +483,7 @@ def hmc_workflow(name='dMRI_HMC'):
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct',
         mem_gb=3.0,
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
 
     bvec_rot = pe.Node(RotateVectors(), name='bvec_rot')
