@@ -81,10 +81,12 @@ def init_dwi_report_wf(name='dwi_report_wf'):
     mosaic_fa = pe.Node(
         PlotMosaic(cmap='Greys_r'),
         name='mosaic_fa',
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
     mosaic_md = pe.Node(
         PlotMosaic(cmap='Greys_r'),
         name='mosaic_md',
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     mosaic_snr = pe.MapNode(
@@ -97,6 +99,7 @@ def init_dwi_report_wf(name='dwi_report_wf'):
         ),
         name='mosaic_snr',
         iterfield=['before', 'after'],
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     mosaic_noise = pe.MapNode(
@@ -106,6 +109,7 @@ def init_dwi_report_wf(name='dwi_report_wf'):
         ),
         name='mosaic_noise',
         iterfield=['in_file'],
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     if config.workflow.species.lower() in ('rat', 'mouse'):
@@ -187,6 +191,7 @@ def init_dwi_report_wf(name='dwi_report_wf'):
     plot_heatmap = pe.Node(
         DWIHeatmap(scalarmap_label='Shell-wise Fractional Anisotropy (FA)'),
         name='plot_heatmap',
+        n_procs=config.nipype.nprocs,
     )
     ds_report_hm = pe.Node(
         DerivativesDataSink(
