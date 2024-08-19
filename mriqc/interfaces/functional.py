@@ -361,7 +361,7 @@ class GatherTimeseries(SimpleInterface):
         # DVARS
         dvars = pd.read_csv(
             self.inputs.dvars,
-            delim_whitespace=True,
+            sep=r'\s+',
             skiprows=1,  # column names have spaces
             header=None,
             names=['dvars_std', 'dvars_nstd', 'dvars_vstd'],
@@ -369,16 +369,14 @@ class GatherTimeseries(SimpleInterface):
         dvars.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # FD
-        fd = pd.read_csv(
-            self.inputs.fd, delim_whitespace=True, header=0, names=['framewise_displacement']
-        )
+        fd = pd.read_csv(self.inputs.fd, sep=r'\s+', header=0, names=['framewise_displacement'])
         fd.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # AQI
-        aqi = pd.read_csv(self.inputs.quality, delim_whitespace=True, header=None, names=['aqi'])
+        aqi = pd.read_csv(self.inputs.quality, sep=r'\s+', header=None, names=['aqi'])
 
         # Outliers
-        aor = pd.read_csv(self.inputs.outliers, delim_whitespace=True, header=None, names=['aor'])
+        aor = pd.read_csv(self.inputs.outliers, sep=r'\s+', header=None, names=['aor'])
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
 
