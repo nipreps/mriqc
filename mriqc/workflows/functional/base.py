@@ -351,6 +351,7 @@ def compute_iqms(name='ComputeIQMs'):
         FunctionalQC(),
         name='measures',
         mem_gb=mem_gb * 3,
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_epi', 'in_hmc', 'in_tsnr', 'in_dvars', 'in_fwhm'],
     )
 
