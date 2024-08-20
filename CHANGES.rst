@@ -1,9 +1,11 @@
-24.0.0 (April 17, 2024)
-=======================
-Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
-for first time in *MRIQC*'s timeline.
+24.0.1 (August 20, 2024)
+========================
+A patch release with a large number of bugfixes (mostly focusing on memory issues), maintenance
+activities, and the crawling of metadata before *Nipype* kicks in as a major optimization.
 
-.. admonition:: Author list for papers based on *MRIQC* 23.0 series
+With thanks to @jhlegarreta for his first contribution in `#1293 <https://github.com/nipreps/mriqc/pull/1293>__`.
+
+.. admonition:: Author list for papers based on *MRIQC* 24.0 series
 
     As described in the `Contributor Guidelines
     <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
@@ -11,7 +13,7 @@ for first time in *MRIQC*'s timeline.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Eilidh MacNicol \ :sup:`3`\ ; Céline Provins \ :sup:`4`\ ; Teresa Gomez \ :sup:`5`\ ; Dylan Nielson \ :sup:`6`\ ; Jan Varada \ :sup:`7`\ ; Ross W. Blair \ :sup:`1`\ ; Dimitri Papadopoulos Orfanos \ :sup:`8`\ ; William Triplett \ :sup:`9`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`10`\ ; John A. Lee \ :sup:`11`\ ; Patrick Sadil \ :sup:`12`\ ; Ursula A. Tooley \ :sup:`13`\ ; Yibei Chen \ :sup:`14`\ ; James D. Kent \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Bennet Fauber \ :sup:`17`\ ; Taylor Salo \ :sup:`18`\ ; Michael Krause \ :sup:`19`\ ; Pablo Velasco \ :sup:`20`\ ; Thomas Nichols \ :sup:`21`\ ; Adam Huffman \ :sup:`22`\ ; Elodie Savary \ :sup:`4`\ ; Johannes Achtzehn \ :sup:`23`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`24`\ ; Adam C. Raikes \ :sup:`25`\ ; Asier Erramuzpe \ :sup:`26`\ ; Benjamin Kay \ :sup:`27`\ ; Daniel Birman \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`28`\ ; Michael Dayan \ :sup:`29`\ ; Michael G. Clark \ :sup:`30`\ ; Rafael Garcia-Dias \ :sup:`31`\ ; Adam G. Thomas \ :sup:`32`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`5`\ ; Oscar Esteban \ :sup:`4`\ .
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Eilidh MacNicol \ :sup:`3`\ ; Céline Provins \ :sup:`4`\ ; Teresa Gomez \ :sup:`5`\ ; Dylan Nielson \ :sup:`6`\ ; Ross W. Blair \ :sup:`1`\ ; Jan Varada \ :sup:`7`\ ; Dimitri Papadopoulos Orfanos \ :sup:`8`\ ; William Triplett \ :sup:`9`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`10`\ ; John A. Lee \ :sup:`11`\ ; Yibei Chen \ :sup:`12`\ ; Ursula A. Tooley \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Yaroslav O. Halchenko \ :sup:`15`\ ; James D. Kent \ :sup:`16`\ ; Taylor Salo \ :sup:`17`\ ; Bennet Fauber \ :sup:`18`\ ; Thomas Nichols \ :sup:`19`\ ; Pablo Velasco \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Jon Haitz Legarreta Gorroño \ :sup:`22`\ ; Satrajit S. Ghosh \ :sup:`23`\ ; Joke Durnez \ :sup:`1`\ ; Johannes Achtzehn \ :sup:`24`\ ; Elodie Savary \ :sup:`4`\ ; Adam Huffman \ :sup:`25`\ ; Rafael Garcia-Dias \ :sup:`26`\ ; Michael G. Clark \ :sup:`27`\ ; Michael Dayan \ :sup:`28`\ ; McKenzie P. Hagen \ :sup:`29`\ ; Daniel Birman \ :sup:`1`\ ; Benjamin Kay \ :sup:`30`\ ; Asier Erramuzpe \ :sup:`31`\ ; Adam C. Raikes \ :sup:`32`\ ; Adam G. Thomas \ :sup:`33`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`5`\ ; Oscar Esteban \ :sup:`4`\ .
 
     Affiliations:
 
@@ -26,27 +28,63 @@ for first time in *MRIQC*'s timeline.
       9. University of Florida: Gainesville, Florida, US
       10. CRC ULiege, Liege, Belgium
       11. Quansight, Dublin, Ireland
-      12. Johns Hopkins Bloomberg School of Public Health, MD, USA
+      12. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
       13. Department of Neuroscience, University of Pennsylvania, PA, USA
-      14. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
-      15. Department of Psychology, University of Texas at Austin, TX, USA
-      16. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
-      17. University of Michigan, Ann Arbor, USA
-      18. Department of Psychology, Florida International University, FL, USA
-      19. Max Planck Institute for Human Development, Berlin, Germany
+      14. Johns Hopkins Bloomberg School of Public Health, MD, USA
+      15. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
+      16. Department of Psychology, University of Texas at Austin, TX, USA
+      17. Department of Psychology, Florida International University, FL, USA
+      18. University of Michigan, Ann Arbor, USA
+      19. Oxford Big Data Institute, University of Oxford, Oxford, GB
       20. Center for Brain Imaging, New York University, NY, USA
-      21. Oxford Big Data Institute, University of Oxford, Oxford, GB
-      22. Department of Physics, Imperial College London, London, UK
-      23. Charité Berlin, Berlin, Germany
-      24. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
-      25. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
-      26. Computational Neuroimaging Lab, BioCruces Health Research Institute
-      27. Washington University School of Medicine, St.Louis, MO, USA
-      28. Psychology Department, University of Washington, Seattle, WA, USA
-      29. International Committee of the Red Cross - ICRC, Geneva, Switzerland
-      30. National Institutes of Health, USA
-      31. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
-      32. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      21. Max Planck Institute for Human Development, Berlin, Germany
+      22. Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA
+      23. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      24. Charité Berlin, Berlin, Germany
+      25. Department of Physics, Imperial College London, London, UK
+      26. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      27. National Institutes of Health, USA
+      28. International Committee of the Red Cross - ICRC, Geneva, Switzerland
+      29. Psychology Department, University of Washington, Seattle, WA, USA
+      30. Washington University School of Medicine, St.Louis, MO, USA
+      31. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      32. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
+      33. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+
+CHANGES
+-------
+
+* FIX: Multiecho fMRI crashing with 'unhashable type' errors by @oesteban in https://github.com/nipreps/mriqc/pull/1295
+* FIX: Set ``n_procs`` instead of ``num_threads`` on node ``apply_hmc`` by @oesteban in https://github.com/nipreps/mriqc/pull/1309
+* FIX: Address memory issues by limiting ``BigPlot``'s parallelization. by @oesteban in https://github.com/nipreps/mriqc/pull/1320
+* FIX: Address memory issues in DWI pipeline by @oesteban in https://github.com/nipreps/mriqc/pull/1323
+* FIX: Limit IQMs' node number of processes and therefore, memory by @oesteban in https://github.com/nipreps/mriqc/pull/1325
+* FIX: Resolve numeric overflow in drift estimation node by @oesteban in https://github.com/nipreps/mriqc/pull/1324
+* FIX: Revise bugfix #1324 by @oesteban in https://github.com/nipreps/mriqc/pull/1327
+* FIX: Remove unreachable code within DWI pipeline by @oesteban in https://github.com/nipreps/mriqc/pull/1328
+* ENH: Allow moving the cache folder with an environment variable by @oesteban in https://github.com/nipreps/mriqc/pull/1285
+* ENH: Flatten multi-echo lists in circumstances that they fail by @oesteban in https://github.com/nipreps/mriqc/pull/1286
+* ENH: Added type hints to config module by @zvi-quantivly in https://github.com/nipreps/mriqc/pull/1288
+* ENH: Add test for the CLI parser by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1293
+* ENH: Add CLI entry point test by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1294
+* ENH: Add development dockerfile for testing local changes to repo. by @rwblair in https://github.com/nipreps/mriqc/pull/1299
+* ENH: Crawl dataset's metadata only once and before Nipype's workflow by @oesteban in https://github.com/nipreps/mriqc/pull/1317
+* ENH(dMRI): Deal gracefully with small CC masks by @oesteban in https://github.com/nipreps/mriqc/pull/1311
+* ENH: Leverage new spun-off apply interface by @oesteban in https://github.com/nipreps/mriqc/pull/1313
+* MAINT: Removed personal infromation from maintainers and updated in contributors by @zvi-quantivly in https://github.com/nipreps/mriqc/pull/1289
+* MAINT: Add JHLegarreta to contributors list by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1301
+* MAINT: Flexibilize pandas pinned version by @oesteban in https://github.com/nipreps/mriqc/pull/1310
+* MAINT: Remove *Pandas*'s ``FutureWarning`` by @oesteban in https://github.com/nipreps/mriqc/pull/1326
+* DOC: Add description of ``summary_fg`` to the documentation by @celprov in https://github.com/nipreps/mriqc/pull/1306
+* STY: Apply ruff/flake8-implicit-str-concat rule ISC001 by @DimitriPapadopoulos in https://github.com/nipreps/mriqc/pull/1296
+* STY: Format *Jupyter notebooks* by @oesteban in https://github.com/nipreps/mriqc/pull/1321
+
+**Full Changelog**: https://github.com/nipreps/mriqc/compare/24.0.0...24.0.1
+
+24.0.0 (April 17, 2024)
+=======================
+Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
+for first time in *MRIQC*'s timeline.
 
 CHANGES
 -------
