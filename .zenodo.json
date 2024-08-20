@@ -13,11 +13,6 @@
       "name": "Christopher J. Markiewicz"
     },
     {
-      "orcid": "0000-0001-7159-1387",
-      "affiliation": "Quantivly Inc., Somerville, MA, USA",
-      "name": "Zvi Baratz"
-    },
-    {
       "orcid": "0000-0003-3715-7012",
       "affiliation": "Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK",
       "name": "Eilidh MacNicol"
@@ -35,6 +30,12 @@
   ],
   "contributors": [
     {
+      "orcid": "0000-0001-7159-1387",
+      "affiliation": "Quantivly Inc., Somerville, MA, USA",
+      "name": "Zvi Baratz",
+      "type": "Researcher"
+    },
+    {
       "affiliation": "The University of Washington eScience Institute, WA, USA",
       "name": "Teresa Gomez",
       "type": "Researcher"
@@ -46,14 +47,14 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
-      "name": "Jan Varada",
-      "type": "Researcher"
-    },
-    {
       "orcid": "0000-0003-3007-1056",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Ross W. Blair",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA",
+      "name": "Jan Varada",
       "type": "Researcher"
     },
     {
@@ -92,9 +93,9 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-4141-1343",
-      "affiliation": "Johns Hopkins Bloomberg School of Public Health, MD, USA",
-      "name": "Patrick Sadil",
+      "orcid": "0000-0003-2882-0900",
+      "affiliation": "McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA",
+      "name": "Yibei Chen",
       "type": "Researcher"
     },
     {
@@ -104,15 +105,9 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-2882-0900",
-      "affiliation": "McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA",
-      "name": "Yibei Chen",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-4892-2659",
-      "affiliation": "Department of Psychology, University of Texas at Austin, TX, USA",
-      "name": "James D. Kent",
+      "orcid": "0000-0003-4141-1343",
+      "affiliation": "Johns Hopkins Bloomberg School of Public Health, MD, USA",
+      "name": "Patrick Sadil",
       "type": "Researcher"
     },
     {
@@ -122,8 +117,9 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "University of Michigan, Ann Arbor, USA",
-      "name": "Bennet Fauber",
+      "orcid": "0000-0002-4892-2659",
+      "affiliation": "Department of Psychology, University of Texas at Austin, TX, USA",
+      "name": "James D. Kent",
       "type": "Researcher"
     },
     {
@@ -133,14 +129,8 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
-      "name": "Michael Krause",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-5749-6049",
-      "affiliation": "Center for Brain Imaging, New York University, NY, USA",
-      "name": "Pablo Velasco",
+      "affiliation": "University of Michigan, Ann Arbor, USA",
+      "name": "Bennet Fauber",
       "type": "Researcher"
     },
     {
@@ -150,26 +140,20 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Department of Physics, Imperial College London, London, UK",
-      "name": "Adam Huffman",
+      "orcid": "0000-0002-5749-6049",
+      "affiliation": "Center for Brain Imaging, New York University, NY, USA",
+      "name": "Pablo Velasco",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0002-3896-6906",
-      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
-      "name": "Elodie Savary",
+      "affiliation": "Max Planck Institute for Human Development, Berlin, Germany",
+      "name": "Michael Krause",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0002-0657-6516",
-      "affiliation": "Charit\u00e9 Berlin, Berlin, Germany",
-      "name": "Johannes Achtzehn",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0001-9030-2202",
-      "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Joke Durnez",
+      "orcid": "0000-0002-9661-1396",
+      "affiliation": "Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA",
+      "name": "Jon Haitz Legarreta Gorro\u00f1o",
       "type": "Researcher"
     },
     {
@@ -179,25 +163,37 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA",
-      "name": "Adam C. Raikes",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0002-9402-2184",
-      "affiliation": "Computational Neuroimaging Lab, BioCruces Health Research Institute",
-      "name": "Asier Erramuzpe",
-      "type": "Researcher"
-    },
-    {
-      "affiliation": "Washington University School of Medicine, St.Louis, MO, USA",
-      "name": "Benjamin Kay",
-      "type": "Researcher"
-    },
-    {
-      "orcid": "0000-0003-3748-6289",
+      "orcid": "0000-0001-9030-2202",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
-      "name": "Daniel Birman",
+      "name": "Joke Durnez",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-0657-6516",
+      "affiliation": "Charit\u00e9 Berlin, Berlin, Germany",
+      "name": "Johannes Achtzehn",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-3896-6906",
+      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
+      "name": "Elodie Savary",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Department of Physics, Imperial College London, London, UK",
+      "name": "Adam Huffman",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0001-9332-1580",
+      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
+      "name": "Rafael Garcia-Dias",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "National Institutes of Health, USA",
+      "name": "Michael G. Clark",
       "type": "Researcher"
     },
     {
@@ -207,14 +203,25 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "National Institutes of Health, USA",
-      "name": "Michael G. Clark",
+      "orcid": "0000-0003-3748-6289",
+      "affiliation": "Department of Psychology, Stanford University, CA, USA",
+      "name": "Daniel Birman",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0001-9332-1580",
-      "affiliation": "Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK",
-      "name": "Rafael Garcia-Dias",
+      "affiliation": "Washington University School of Medicine, St.Louis, MO, USA",
+      "name": "Benjamin Kay",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-9402-2184",
+      "affiliation": "Computational Neuroimaging Lab, BioCruces Health Research Institute",
+      "name": "Asier Erramuzpe",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA",
+      "name": "Adam C. Raikes",
       "type": "Researcher"
     },
     {
