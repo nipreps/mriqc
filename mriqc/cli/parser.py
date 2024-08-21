@@ -543,7 +543,9 @@ def parse_args(args=None, namespace=None):
 
     # Load BIDS filters
     if opts.bids_filter_file:
-        config.execution.bids_filters = loads(opts.bids_filter_file.read_text())
+        config.execution.bids_filters = {
+            k.lower(): v for k, v in loads(opts.bids_filter_file.read_text()).items()
+        }
 
     bids_dir = config.execution.bids_dir
     output_dir = config.execution.output_dir
