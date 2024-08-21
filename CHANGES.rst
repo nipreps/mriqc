@@ -1,7 +1,7 @@
 24.0.1 (August 20, 2024)
 ========================
 A patch release with a large number of bugfixes (mostly focusing on memory issues), maintenance
-activities, and the crawling of metadata before *Nipype* kicks in as a major optimization.
+activities, and metadata crawling before *Nipype* kicks in as a major optimization.
 
 With thanks to @jhlegarreta for his first contribution in `#1293 <https://github.com/nipreps/mriqc/pull/1293>__`.
 
@@ -9,7 +9,7 @@ With thanks to @jhlegarreta for his first contribution in `#1293 <https://github
 
     As described in the `Contributor Guidelines
     <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
-    anyone listed as developer or contributor may write and submit manuscripts
+    anyone listed as a developer or contributor may write and submit manuscripts
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
@@ -57,8 +57,8 @@ CHANGES
 * FIX: Multiecho fMRI crashing with 'unhashable type' errors by @oesteban in https://github.com/nipreps/mriqc/pull/1295
 * FIX: Set ``n_procs`` instead of ``num_threads`` on node ``apply_hmc`` by @oesteban in https://github.com/nipreps/mriqc/pull/1309
 * FIX: Address memory issues by limiting ``BigPlot``'s parallelization. by @oesteban in https://github.com/nipreps/mriqc/pull/1320
-* FIX: Address memory issues in DWI pipeline by @oesteban in https://github.com/nipreps/mriqc/pull/1323
-* FIX: Limit IQMs' node number of processes and therefore, memory by @oesteban in https://github.com/nipreps/mriqc/pull/1325
+* FIX: Address memory issues in the DWI pipeline by @oesteban in https://github.com/nipreps/mriqc/pull/1323
+* FIX: Limit IQMs' node number of processes and, therefore, memory by @oesteban in https://github.com/nipreps/mriqc/pull/1325
 * FIX: Resolve numeric overflow in drift estimation node by @oesteban in https://github.com/nipreps/mriqc/pull/1324
 * FIX: Revise bugfix #1324 by @oesteban in https://github.com/nipreps/mriqc/pull/1327
 * FIX: Remove unreachable code within DWI pipeline by @oesteban in https://github.com/nipreps/mriqc/pull/1328
@@ -67,12 +67,12 @@ CHANGES
 * ENH: Added type hints to config module by @zvi-quantivly in https://github.com/nipreps/mriqc/pull/1288
 * ENH: Add test for the CLI parser by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1293
 * ENH: Add CLI entry point test by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1294
-* ENH: Add development dockerfile for testing local changes to repo. by @rwblair in https://github.com/nipreps/mriqc/pull/1299
+* ENH: Add a development Dockerfile for testing local changes to the repo. by @rwblair in https://github.com/nipreps/mriqc/pull/1299
 * ENH: Crawl dataset's metadata only once and before Nipype's workflow by @oesteban in https://github.com/nipreps/mriqc/pull/1317
 * ENH(dMRI): Deal gracefully with small CC masks by @oesteban in https://github.com/nipreps/mriqc/pull/1311
 * ENH: Leverage new spun-off apply interface by @oesteban in https://github.com/nipreps/mriqc/pull/1313
-* MAINT: Removed personal infromation from maintainers and updated in contributors by @zvi-quantivly in https://github.com/nipreps/mriqc/pull/1289
-* MAINT: Add JHLegarreta to contributors list by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1301
+* MAINT: Removed personal information from maintainers and updated in contributors by @zvi-quantivly in https://github.com/nipreps/mriqc/pull/1289
+* MAINT: Add JHLegarreta to the contributors list by @jhlegarreta in https://github.com/nipreps/mriqc/pull/1301
 * MAINT: Flexibilize pandas pinned version by @oesteban in https://github.com/nipreps/mriqc/pull/1310
 * MAINT: Remove *Pandas*'s ``FutureWarning`` by @oesteban in https://github.com/nipreps/mriqc/pull/1326
 * DOC: Add description of ``summary_fg`` to the documentation by @celprov in https://github.com/nipreps/mriqc/pull/1306
@@ -84,7 +84,7 @@ CHANGES
 24.0.0 (April 17, 2024)
 =======================
 Initial major release of 2024, featuring the **extraction of IQMs from DWI data**
-for first time in *MRIQC*'s timeline.
+for the first time in *MRIQC*'s timeline.
 
 CHANGES
 -------
