@@ -339,6 +339,14 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Nipype plugin configuration file.',
     )
     g_outputs.add_argument(
+        '--crashfile-format',
+        action='store',
+        default='txt',
+        choices=['txt', 'pklz'],
+        type=str,
+        help='Nipype crashfile format',
+    )
+    g_outputs.add_argument(
         '--no-sub',
         default=False,
         action='store_true',
