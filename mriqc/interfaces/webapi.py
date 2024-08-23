@@ -280,6 +280,7 @@ def upload_qc_metrics(
     start_message = messages.QC_UPLOAD_START.format(url=endpoint)
     config.loggers.interface.info(start_message)
 
+    errmsg = None
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(
@@ -289,8 +290,12 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = f'QC metrics failed to upload due to connection error shown below:\n{err}'
-        return Bunch(status_code=1, text=errmsg), data
+        errmsg = (f'Error uploading IQMs: Connection error:', f'{err}')
+    except requests.exceptions.ReadTimeout as err:
+        errmsg = (f'Error uploading IQMs: Server {endpoint} is down.', f'{err}')
+
+    if errmsg is not None:
+        response = Bunch(status_code=1, text='\n'.join(errmsg))
 
     return response, data
 
