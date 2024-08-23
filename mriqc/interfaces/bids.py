@@ -187,15 +187,17 @@ class IQMFileSink(SimpleInterface):
             self._out_dict['provenance'] = {}
         self._out_dict['provenance'].update(prov_dict)
 
-        Path(out_file).write_bytes(json.dumps(
-            self._out_dict,
-            option=(
-                json.OPT_SORT_KEYS
-                | json.OPT_INDENT_2
-                | json.OPT_APPEND_NEWLINE
-                | json.OPT_SERIALIZE_NUMPY
-            ),
-        ))
+        Path(out_file).write_bytes(
+            json.dumps(
+                self._out_dict,
+                option=(
+                    json.OPT_SORT_KEYS
+                    | json.OPT_INDENT_2
+                    | json.OPT_APPEND_NEWLINE
+                    | json.OPT_SERIALIZE_NUMPY
+                ),
+            )
+        )
         return runtime
 
 

@@ -155,7 +155,6 @@ class UploadIQMs(SimpleInterface):
             modality=self.inputs.modality,
         )
 
-
         payload_str = orjson.dumps(
             payload,
             option=(
