@@ -30,6 +30,7 @@ dependencies = [
   "nitransforms ~= 24.0",
   "niworkflows ~=1.10.1",
   "numpy ~=1.20",
+  "orjson",
   "pandas",
   "pybids >= 0.15.6",
   "PyYAML",
