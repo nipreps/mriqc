@@ -23,7 +23,7 @@
 import re
 from pathlib import Path
 
-import simplejson as json
+import orjson as json
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     DynamicTraitedSpec,
@@ -187,16 +187,15 @@ class IQMFileSink(SimpleInterface):
             self._out_dict['provenance'] = {}
         self._out_dict['provenance'].update(prov_dict)
 
-        with open(out_file, 'w') as f:
-            f.write(
-                json.dumps(
-                    self._out_dict,
-                    sort_keys=True,
-                    indent=2,
-                    ensure_ascii=False,
-                )
-            )
-
+        Path(out_file).write_bytes(json.dumps(
+            self._out_dict,
+            option=(
+                json.OPT_SORT_KEYS
+                | json.OPT_INDENT_2
+                | json.OPT_APPEND_NEWLINE
+                | json.OPT_SERIALIZE_NUMPY
+            ),
+        ))
         return runtime
 
 

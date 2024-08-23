@@ -20,8 +20,9 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-import json
+from pathlib import Path
 
+import orjson
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     Bunch,
@@ -127,6 +128,7 @@ class UploadIQMsInputSpec(BaseInterfaceInputSpec):
 
 class UploadIQMsOutputSpec(TraitedSpec):
     api_id = traits.Either(None, traits.Str, desc='Id for report returned by the web api')
+    payload_file = File(desc='Submitted payload (only for debugging)')
 
 
 class UploadIQMs(SimpleInterface):
@@ -153,6 +155,19 @@ class UploadIQMs(SimpleInterface):
             modality=self.inputs.modality,
         )
 
+
+        payload_str = orjson.dumps(
+            payload,
+            option=(
+                orjson.OPT_SORT_KEYS
+                | orjson.OPT_INDENT_2
+                | orjson.OPT_APPEND_NEWLINE
+                | orjson.OPT_SERIALIZE_NUMPY
+            ),
+        )
+        Path('payload.json').write_bytes(payload_str)
+        self._results['payload_file'] = str(Path('payload.json').absolute())
+
         try:
             self._results['api_id'] = response.json()['_id']
         except (AttributeError, KeyError, ValueError):
@@ -161,7 +176,7 @@ class UploadIQMs(SimpleInterface):
                 'QC metrics upload failed to create an ID for the record '
                 f'uploaded. Response from server follows: {response.text}'
                 '\n\nPayload:\n'
-                f'{json.dumps(payload, indent=2)}'
+                f'{payload_str}'
             )
             config.loggers.interface.warning(errmsg)
 
@@ -177,7 +192,7 @@ class UploadIQMs(SimpleInterface):
                 '',
                 '',
                 'Payload:',
-                json.dumps(payload, indent=2),
+                payload_str,
             ]
         )
         config.loggers.interface.warning(errmsg)
@@ -209,8 +224,6 @@ def upload_qc_metrics(
 
     """
     from copy import deepcopy
-    from json import dumps, loads
-    from pathlib import Path
 
     import requests
 
@@ -219,7 +232,7 @@ def upload_qc_metrics(
         errmsg = 'Unknown API endpoint' if not endpoint else 'Authentication failed.'
         return Bunch(status_code=1, text=errmsg)
 
-    in_data = loads(Path(in_iqms).read_text())
+    in_data = orjson.loads(Path(in_iqms).read_bytes())
 
     # Extract metadata and provenance
     meta = in_data.pop('bids_meta')
@@ -267,17 +280,18 @@ def upload_qc_metrics(
 
     start_message = messages.QC_UPLOAD_START.format(url=endpoint)
     config.loggers.interface.info(start_message)
+
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(
             f'{endpoint}/{modality}',
             headers=headers,
-            data=dumps(data),
+            data=orjson.dumps(data, option=orjson.OPT_SERIALIZE_NUMPY),
             timeout=15,
         )
     except requests.ConnectionError as err:
         errmsg = f'QC metrics failed to upload due to connection error shown below:\n{err}'
-        return Bunch(status_code=1, text=errmsg)
+        return Bunch(status_code=1, text=errmsg), data
 
     return response, data
 
