@@ -783,6 +783,7 @@ def _apply_transforms(in_file, in_xfm, max_concurrent):
         dtype_width=4,
         serialize_nvols=2,
         max_concurrent=max_concurrent,
+        mode='reflect',
     )
     out_file = derive_bids_fname(
         in_file,
