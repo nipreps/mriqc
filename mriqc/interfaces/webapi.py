@@ -276,7 +276,10 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = f'QC metrics failed to upload due to connection error shown below:\n{err}'
+        errmsg = f'Error uploading IQMs -- Connection error:\n{err}'
+        return Bunch(status_code=1, text=errmsg)
+    except requests.exceptions.ReadTimeout as err:
+        errmsg = f'Error uploading IQMs -- {endpoint} seems down:\n{err}'
         return Bunch(status_code=1, text=errmsg)
 
     return response, data
