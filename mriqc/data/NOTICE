@@ -1,0 +1,17 @@
+MRIQC
+Copyright © The NiPreps Developers.
+
+This product includes software developed by
+the NiPreps Community (https://nipreps.org/).
+
+Portions of this software were developed at the Department of
+Psychology at Stanford University, Stanford, CA, US.
+
+This software contains code ultimately derived from the
+PCP Quality Assessment Protocol (QAP;
+http://preprocessed-connectomes-project.org/quality-assessment-protocol)
+by C. Craddock, S. Giavasis, D. Clark, Z. Shezhad, and J. Pellman.
+
+This software is also distributed as a Docker container image.
+The bootstrapping file for the image ("Dockerfile") is licensed
+under the MIT License.

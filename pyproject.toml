@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+  "acres",
   "dipy",
   'importlib_resources; python_version < "3.9"', # jinja2 imports deprecated function removed in 2.1
   "markupsafe ~= 2.0.1",
