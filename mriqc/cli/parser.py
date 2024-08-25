@@ -494,7 +494,7 @@ def parse_args(args=None, namespace=None):
 
     from niworkflows.utils.bids import DEFAULT_BIDS_QUERIES, collect_data
 
-    from mriqc import __version__
+    from mriqc import __version__, data
     from mriqc._warnings import DATE_FMT, LOGGER_FMT, _LogFormatter
     from mriqc.messages import PARTICIPANT_START
     from mriqc.utils.misc import initialize_meta_and_data
@@ -525,6 +525,7 @@ def parse_args(args=None, namespace=None):
             f'  * BIDS filters-file: {opts.bids_filter_file.absolute()}.',
         )
 
+    notice_path = data.load.readable('NOTICE')
     config.loggers.cli.log(
         26,
         PARTICIPANT_START.format(
@@ -532,6 +533,9 @@ def parse_args(args=None, namespace=None):
             bids_dir=opts.bids_dir,
             output_dir=opts.output_dir,
             analysis_level=opts.analysis_level,
+            notice='\n  '.join(
+                ['NOTICE'] + notice_path.read_text().splitlines(keepends=False)[1:]
+            ),
             extra_messages='\n'.join(extra_messages),
         ),
     )
