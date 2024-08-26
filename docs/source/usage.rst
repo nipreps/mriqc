@@ -147,7 +147,7 @@ Known issues with HPC
 
     The container needs to download the templates from the internet.
     If the container does not have internet access, you can download the
-    templates manually using the templateflow library:
+    templates manually using the ``templateflow`` library:
     
     .. code-block:: python
 
@@ -181,7 +181,7 @@ Known issues with HPC
 
     .. code-block:: bash
 
-      apptainer run --net --network none -v /path/to/templates:/path/to/templateflow --env TEMPLATEFLOW_HOME=/path/to/templateflow ...
+      apptainer run --net --network none -v /path/to/templateflow:/path/to/templates --env TEMPLATEFLOW_HOME=/path/to/templates ...
 
 
   
