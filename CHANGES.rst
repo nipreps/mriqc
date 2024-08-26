@@ -1,3 +1,19 @@
+24.0.2 (August 26, 2024)
+========================
+A patch release with bugfixes and enhancements.
+
+CHANGES
+-------
+
+* FIX: Pin latest *NiReports* release (24.0.2) addressing ``fMRIPlot`` issues by @oesteban (`#1342 <https://github.com/nipreps/mriqc/pull/1342>`__)
+* FIX: Edge artifacts in first and last slices due to interpolation by @oesteban (`#1338 <https://github.com/nipreps/mriqc/pull/1338>`__)
+* FIX: Normalize bids-filters' modality keys to be lowercase by @oesteban (`#1332 <https://github.com/nipreps/mriqc/pull/1332>`__)
+* ENH: Add license NOTICE to start banner by @oesteban (`#1343 <https://github.com/nipreps/mriqc/pull/1343>`__)
+* ENH: Enable writing crashfiles in compressed-pickle format by @oesteban (`#1339 <https://github.com/nipreps/mriqc/pull/1339>`__)
+* ENH: Use ``orjson`` to serialize JSON, addressing *Numpy* serialization issues by @oesteban (`#1337 <https://github.com/nipreps/mriqc/pull/1337>`__)
+* ENH: Handle WebAPI timeouts more gently by @oesteban (`#1336 <https://github.com/nipreps/mriqc/pull/1336>`__)
+
+
 24.0.1 (August 20, 2024)
 ========================
 A patch release with a large number of bugfixes (mostly focusing on memory issues), maintenance
