@@ -156,15 +156,15 @@ Known issues with HPC
       templateflow.api.get('MNI152NLin2009cAsym') # change template if needed
 
 
-    then provide the templates to the container by mounting the ``TEMPLATEFLOW_HOME`` folder and setting the ``TEMPLATEFLOW_HOME`` environment variable:
+    then provide the templates to the container by mounting the ``templateflow`` home directory and setting the ``TEMPLATEFLOW_HOME`` environment variable:
 
     .. code-block:: bash
 
-      apptainer run -v /path/to/templates:/path/to/templateflow --env TEMPLATEFLOW_HOME=/path/to/templateflow ...
+      apptainer run -v /path/to/templateflow:/path/to/templates --env TEMPLATEFLOW_HOME=/path/to/templates ...
 
 #. Socket error:
 
-    When running multiple instances of MRIQC on HPC, you may encounter the following error:
+    When running multiple instances of MRIQC on a HPC, you may encounter the following error:
 
     .. code-block:: python
 
@@ -177,7 +177,7 @@ Known issues with HPC
       apptainer run --net --network none ...
 
     This solution might prevent the container from accessing the internet and downloading templates.
-    In this case, you can download the templates manually and mount provide access to the templates as explained in the previous section.
+    In this case, you can download the templates manually and provide access to the downloaded files as explained in the previous section.
 
     .. code-block:: bash
 
