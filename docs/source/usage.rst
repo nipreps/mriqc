@@ -140,6 +140,53 @@ on ds030 of OpenfMRI:
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.
 
+Known issues with HPC
+.....................
+
+#. No internet access
+
+    The container needs to download the templates from the internet.
+    If the container does not have internet access, you can download the
+    templates manually using the templateflow library:
+    
+    .. code-block:: python
+
+      import templateflow.api
+      templateflow.api.TF_S3_ROOT = 'http://templateflow.s3.amazonaws.com'
+      templateflow.api.get('MNI152NLin2009cAsym') # change template if needed
+
+
+    then provide the templates to the container by mounting the ``TEMPLATEFLOW_HOME`` folder and setting the ``TEMPLATEFLOW_HOME`` environment variable:
+
+    .. code-block:: bash
+
+      apptainer run -v /path/to/templates:/path/to/templateflow --env TEMPLATEFLOW_HOME=/path/to/templateflow ...
+
+#. Socket error:
+
+    When running multiple instances of MRIQC on HPC, you may encounter the following error:
+
+    .. code-block:: python
+
+      OSError: [Errno 98] Address already in use
+
+    To solve this issue, you can try to isolate the container network from the host network by using the ``--network none`` option.
+
+    .. code-block:: bash
+
+      apptainer run --net --network none ...
+
+    This solution might prevent the container from accessing the internet and downloading templates.
+    In this case, you can download the templates manually and mount provide access to the templates as explained in the previous section.
+
+    .. code-block:: bash
+
+      apptainer run --net --network none -v /path/to/templates:/path/to/templateflow --env TEMPLATEFLOW_HOME=/path/to/templateflow ...
+
+
+  
+
+
 .. topic:: References
 
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
