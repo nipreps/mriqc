@@ -226,25 +226,11 @@ class Spikes(SimpleInterface):
 
     def _run_interface(self, runtime):
         func_nii = nb.load(self.inputs.in_file)
-        func_data = func_nii.get_fdata()
+        func_data = func_nii.get_fdata(dtype='float32')
         func_shape = func_data.shape
         ntsteps = func_shape[-1]
         tr = func_nii.header.get_zooms()[-1]
         nskip = self.inputs.skip_frames
-
-        if self.inputs.detrend:
-            from nilearn.signal import clean
-
-            data = func_data.reshape(-1, ntsteps)
-            clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
-            new_shape = (
-                func_shape[0],
-                func_shape[1],
-                func_shape[2],
-                clean_data.shape[-1],
-            )
-            func_data = np.zeros(func_shape)
-            func_data[..., nskip:] = clean_data.reshape(new_shape)
 
         mask_data = np.bool_(nb.load(self.inputs.in_mask).dataobj)
         mask_data[..., :nskip] = 0
@@ -255,6 +241,11 @@ class Spikes(SimpleInterface):
         else:
             mask_data[..., : self.inputs.skip_frames] = 1
             brain = np.ma.array(func_data, mask=(mask_data == 1))
+
+        if self.inputs.detrend:
+            from nilearn.signal import clean
+
+            brain = clean(brain[:, nskip:].T, t_r=tr, standardize=False).T
 
         if self.inputs.no_zscore:
             ts_z = find_peaks(brain)

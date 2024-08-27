@@ -97,6 +97,7 @@ def init_func_report_wf(name='func_report_wf'):
         name='SpikesFinderBgMask',
         mem_gb=mem_gb * 2.5,
         iterfield=['in_file', 'in_mask'],
+        n_procs=(config.nipype.nprocs + 3) // 4,  # spikes is a memory hog
     )
 
     # Generate crown mask
