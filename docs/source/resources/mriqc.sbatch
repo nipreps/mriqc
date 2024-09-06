@@ -15,15 +15,16 @@
 # TODO: adjust the range for your dataset; 1-n%j where n is the number of 
  # participants and j is the maximum number of concurrent jobs you'd like 
  # to run. 
-#SBATCH --array=1-5
-#SBATCH --time=1:00:00 #NOTE: likely much longer than generally needed 
+
+#SBATCH --array=1-216%50
+#SBATCH --time=1:00:00 #NOTE: likely longer than generally needed 
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem-per-cpu=4G
 # Outputs ----------------------------------
 #SBATCH --output log/%x-%A-%a.out
 #SBATCH --error log/%x-%A-%a.err
-#SBATCH --mail-user=%u@stanford.edu #TODO: sub @ for your own inst
+#SBATCH --mail-user=%u@stanford.edu #TODO: update for your email domain
 #SBATCH --mail-type=ALL
 # ------------------------------------------
 
@@ -35,9 +36,13 @@ OUTPUT_DIR="${BIDS_DIR}/derivatives/mriqc-${MRIQC_VERSION}"
 
 SINGULARITY_CMD="singularity run -e mriqc-${MRIQC_VERSION}.simg"
 
-#NOTE: The first clause in this line selects a row in participants.tsv using the system generated 
- #array index variable SLURM_ARRAY_TASK_ID. This is piped to grep to isolate the subject id.     
-subject=$( sed -n ${SLURM_ARRAY_TASK_ID}p ${BIDS_DIR}/participants.tsv | grep -oP "sub-[0-9]*" ) 
+#NOTE: The first clause in this line selects a row in participants.tsv 
+ # using the system generated array index variable SLURM_ARRAY_TASK_ID. 
+ # This is piped to grep to isolate the subject id. The regex should 
+ # work for most subject naming conventions, but may need to be modified.    
+
+subject=$( sed -n ${SLURM_ARRAY_TASK_ID}p ${BIDS_DIR}/participants.tsv \
+ | grep -oP "sub-[A-Za-z0-9_]*" ) 
 
 echo Subject $subject
 
