@@ -38,6 +38,11 @@ PARTICIPANT_START = """\
 ------------------------------------------------------------------
   Running MRIQC version {version}
   ----------------------------------------------------------------
+
+  {notice}
+
+  ----------------------------------------------------------------
+
   * BIDS dataset path: {bids_dir}.
   * Output folder: {output_dir}.
   * Analysis levels: {analysis_level}.

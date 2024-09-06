@@ -49,7 +49,7 @@ def init_func_report_wf(name='func_report_wf'):
     # from mriqc.interfaces.reports import IndividualReport
 
     verbose = config.execution.verbose_reports
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb['bold']
     reportlets_dir = config.execution.work_dir / 'reportlets'
 
     workflow = pe.Workflow(name=name)
@@ -97,6 +97,7 @@ def init_func_report_wf(name='func_report_wf'):
         name='SpikesFinderBgMask',
         mem_gb=mem_gb * 2.5,
         iterfield=['in_file', 'in_mask'],
+        n_procs=(config.nipype.nprocs + 3) // 4,  # spikes is a memory hog
     )
 
     # Generate crown mask
@@ -110,6 +111,7 @@ def init_func_report_wf(name='func_report_wf'):
         name='BigPlot',
         mem_gb=mem_gb * 3.5,
         iterfield=['in_func', 'dvars', 'outliers', 'in_spikes_bg'],
+        n_procs=(config.nipype.nprocs + 3) // 4,  # Big plot is a memory hog
     )
 
     # fmt: off

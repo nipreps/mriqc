@@ -43,9 +43,6 @@ The diffusion workflow follows the following steps:
 This workflow is orchestrated by :py:func:`dmri_qc_workflow`.
 """
 
-from pathlib import Path
-
-import numpy as np
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 
@@ -87,45 +84,32 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     from mriqc.messages import BUILDING_WORKFLOW
     from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
 
-    workflow = pe.Workflow(name=name)
-
-    dataset = config.workflow.inputs.get('dwi', [])
-
-    full_data = []
-
-    for dwi_path in dataset:
-        bval = config.execution.layout.get_bval(dwi_path)
-        if bval and Path(bval).exists() and len(np.loadtxt(bval)) > config.workflow.min_len_dwi:
-            full_data.append(dwi_path)
-        else:
-            config.loggers.workflow.warn(
-                f'Dismissing {dwi_path} for processing. b-values are missing or '
-                'insufficient in number to execute the workflow.'
-            )
-
-    if set(dataset) - set(full_data):
-        config.workflow.inputs['dwi'] = full_data
-        config.to_filename()
-
+    # Enable if necessary
+    # mem_gb = config.workflow.biggest_file_gb['dwi']
+    dataset = config.workflow.inputs['dwi']
+    metadata = config.workflow.inputs_metadata['dwi']
+    entities = config.workflow.inputs_entities['dwi']
     message = BUILDING_WORKFLOW.format(
         modality='diffusion',
-        detail=(
-            f'for {len(full_data)} NIfTI files.'
-            if len(full_data) > 2
-            else f"({' and '.join('<%s>' % v for v in full_data)})."
-        ),
+        detail=f'for {len(dataset)} NIfTI files.',
     )
     config.loggers.workflow.info(message)
 
-    if config.execution.datalad_get:
-        from mriqc.utils.misc import _datalad_get
-
-        _datalad_get(full_data)
-
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', full_data)]
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
+    inputnode.synchronize = True  # Do not test combinations of iterables
+    inputnode.iterables = [
+        ('in_file', dataset),
+        ('metadata', metadata),
+        ('entities', entities),
+    ]
 
     sanitize = pe.Node(
         SanitizeImage(
@@ -147,21 +131,21 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     get_lowb = pe.Node(
         ExtractOrientations(),
         name='get_lowb',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Generate B0 reference
     dwi_ref = pe.Node(
         RobustAverage(mc_method=None),
         name='dwi_ref',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     hmc_b0 = pe.Node(
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='hmc_b0',
         mem_gb=3.0,
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
 
     # Calculate brainmask
@@ -180,13 +164,13 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     averages = pe.MapNode(
         WeightedStat(),
         name='averages',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_weights'],
     )
     stddev = pe.MapNode(
         WeightedStat(stat='std'),
         name='stddev',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_weights'],
     )
 
@@ -196,38 +180,38 @@ def dmri_qc_workflow(name='dwiMRIQC'):
             nthreads=config.nipype.omp_nthreads,
         ),
         name='dwidenoise',
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
     drift = pe.Node(
         CorrectSignalDrift(),
         name='drift',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
     sp_mask = pe.Node(
         SpikingVoxelsMask(),
         name='sp_mask',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Fit DTI/DKI model
     dwimodel = pe.Node(
         DiffusionModel(),
         name='dwimodel',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=config.nipype.nprocs,
     )
 
     # Calculate CC mask
     cc_mask = pe.Node(
         CCSegmentation(),
         name='cc_mask',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # Run PIESNO noise estimation
     piesno = pe.Node(
         PIESNO(),
         name='piesno',
-        n_procs=max(1, config.nipype.omp_nthreads // 2),
+        n_procs=max(1, config.nipype.nprocs // 2),
     )
 
     # EPI to MNI registration
@@ -245,7 +229,11 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (inputnode, dwi_report_wf, [
             ('in_file', 'inputnode.name_source'),
         ]),
-        (inputnode, iqms_wf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, iqms_wf, [
+            ('in_file', 'inputnode.in_file'),
+            ('metadata', 'inputnode.metadata'),
+            ('entities', 'inputnode.entities'),
+        ]),
         (inputnode, sanitize, [('in_file', 'in_file')]),
         (sanitize, dwi_ref, [('out_file', 'in_file')]),
         (sanitize, sp_mask, [('out_file', 'in_file')]),
@@ -335,7 +323,6 @@ def compute_iqms(name='ComputeIQMs'):
             wf = compute_iqms()
 
     """
-    from niworkflows.interfaces.bids import ReadSidecarJSON
 
     from mriqc.interfaces import IQMFileSink
     from mriqc.interfaces.diffusion import DiffusionQC
@@ -348,6 +335,8 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'in_file',
+                'metadata',
+                'entities',
                 'in_shells',
                 'n_shells',
                 'b_values_file',
@@ -377,7 +366,6 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'out_file',
-                'meta_sidecar',
                 'noise_floor',
             ]
         ),
@@ -388,8 +376,6 @@ def compute_iqms(name='ComputeIQMs'):
         niu.Function(function=_estimate_sigma),
         name='estimate_sigma',
     )
-
-    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name='metadata')
 
     measures = pe.Node(DiffusionQC(), name='measures')
 
@@ -413,10 +399,11 @@ def compute_iqms(name='ComputeIQMs'):
     # fmt: off
     workflow.connect([
         (inputnode, datasink, [('in_file', 'in_file'),
+                               ('entities', 'entities'),
+                               (('metadata', _filter_metadata), 'metadata'),
                                ('n_shells', 'NumberOfShells'),
                                ('b_values_shells', 'bValuesEstimation'),
                                (('b_values_file', _bvals_report), 'bValues')]),
-        (inputnode, meta, [('in_file', 'in_file')]),
         (inputnode, measures, [('in_file', 'in_file'),
                                ('b_values_file', 'in_bval_file'),
                                ('b_values_shells', 'in_shells_bval'),
@@ -439,15 +426,7 @@ def compute_iqms(name='ComputeIQMs'):
                                ('piesno_sigma', 'piesno_sigma')]),
         (inputnode, addprov, [('in_file', 'in_file')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
-        (meta, datasink, [('subject', 'subject_id'),
-                          ('session', 'session_id'),
-                          ('task', 'task_id'),
-                          ('acquisition', 'acq_id'),
-                          ('reconstruction', 'rec_id'),
-                          ('run', 'run_id'),
-                          (('out_dict', _filter_metadata), 'metadata')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
-        (meta, outputnode, [('out_dict', 'meta_sidecar')]),
         (measures, datasink, [('out_qc', 'root')]),
         (inputnode, estimate_sigma, [('in_noise', 'in_file'),
                                      ('brain_mask', 'mask')]),
@@ -504,7 +483,7 @@ def hmc_workflow(name='dMRI_HMC'):
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct',
         mem_gb=3.0,
-        n_procs=config.nipype.omp_nthreads,
+        n_procs=config.nipype.nprocs,
     )
 
     bvec_rot = pe.Node(RotateVectors(), name='bvec_rot')
@@ -676,23 +655,23 @@ def epi_mni_align(name='SpatialNormalization'):
 
 
 def _mean(inlist):
-    import numpy as np
+    from numpy import mean
 
-    return np.mean(inlist)
+    return mean(inlist)
 
 
 def _parse_tqual(in_file):
-    import numpy as np
+    from numpy import mean
 
     with open(in_file) as fin:
         lines = fin.readlines()
-    return np.mean([float(line.strip()) for line in lines if not line.startswith('++')])
+    return mean([float(line.strip()) for line in lines if not line.startswith('++')])
 
 
 def _parse_tout(in_file):
-    import numpy as np
+    from numpy import loadtxt
 
-    data = np.loadtxt(in_file)  # pylint: disable=no-member
+    data = loadtxt(in_file)  # pylint: disable=no-member
     return data.mean()
 
 
@@ -701,9 +680,9 @@ def _tolist(value):
 
 
 def _get_bvals(bmatrix):
-    import numpy as np
+    from numpy import squeeze
 
-    return np.squeeze(bmatrix[:, -1]).tolist()
+    return squeeze(bmatrix[:, -1]).tolist()
 
 
 def _first(inlist):
@@ -722,11 +701,11 @@ def _all_but_first(inlist):
 
 def _estimate_sigma(in_file, mask):
     import nibabel as nb
-    import numpy as np
+    from numpy import median
 
     msk = nb.load(mask).get_fdata() > 0.5
     return round(
-        float(np.median(nb.load(in_file).get_fdata()[msk])),
+        float(median(nb.load(in_file).get_fdata()[msk])),
         6,
     )
 

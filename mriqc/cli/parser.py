@@ -339,6 +339,14 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Nipype plugin configuration file.',
     )
     g_outputs.add_argument(
+        '--crashfile-format',
+        action='store',
+        default='txt',
+        choices=['txt', 'pklz'],
+        type=str,
+        help='Nipype crashfile format',
+    )
+    g_outputs.add_argument(
         '--no-sub',
         default=False,
         action='store_true',
@@ -479,7 +487,6 @@ discourage its usage.""",
 
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
-    from contextlib import suppress
     from json import loads
     from logging import DEBUG, FileHandler
     from pathlib import Path
@@ -487,9 +494,10 @@ def parse_args(args=None, namespace=None):
 
     from niworkflows.utils.bids import DEFAULT_BIDS_QUERIES, collect_data
 
-    from mriqc import __version__
+    from mriqc import __version__, data
     from mriqc._warnings import DATE_FMT, LOGGER_FMT, _LogFormatter
     from mriqc.messages import PARTICIPANT_START
+    from mriqc.utils.misc import initialize_meta_and_data
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
@@ -517,6 +525,7 @@ def parse_args(args=None, namespace=None):
             f'  * BIDS filters-file: {opts.bids_filter_file.absolute()}.',
         )
 
+    notice_path = data.load.readable('NOTICE')
     config.loggers.cli.log(
         26,
         PARTICIPANT_START.format(
@@ -524,6 +533,9 @@ def parse_args(args=None, namespace=None):
             bids_dir=opts.bids_dir,
             output_dir=opts.output_dir,
             analysis_level=opts.analysis_level,
+            notice='\n  '.join(
+                ['NOTICE'] + notice_path.read_text().splitlines(keepends=False)[1:]
+            ),
             extra_messages='\n'.join(extra_messages),
         ),
     )
@@ -543,7 +555,9 @@ def parse_args(args=None, namespace=None):
 
     # Load BIDS filters
     if opts.bids_filter_file:
-        config.execution.bids_filters = loads(opts.bids_filter_file.read_text())
+        config.execution.bids_filters = {
+            k.lower(): v for k, v in loads(opts.bids_filter_file.read_text()).items()
+        }
 
     bids_dir = config.execution.bids_dir
     output_dir = config.execution.output_dir
@@ -554,10 +568,9 @@ def parse_args(args=None, namespace=None):
     if output_dir == bids_dir:
         parser.error(
             'The selected output folder is the same as the input BIDS folder. '
-            'Please modify the output path (suggestion: %s).'
-            % bids_dir
+            f'Please modify the output path (suggestion: {bids_dir}).'
             / 'derivatives'
-            / ('mriqc-%s' % version.split('+')[0])
+            / ('mriqc-{}'.format(version.split('+')[0]))
         )
 
     if bids_dir in work_dir.parents:
@@ -642,11 +655,7 @@ Please, check out your currently set filters {ffile}:
             f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
-    # Estimate the biggest file size / leave 1GB if some file does not exist (datalad)
-    with suppress(FileNotFoundError):
-        config.workflow.biggest_file_gb = _get_biggest_file_size_gb(
-            config.workflow.inputs.values()
-        )
+    initialize_meta_and_data()
 
     # set specifics for alternative populations
     if opts.species.lower() != 'human':
@@ -660,17 +669,3 @@ Please, check out your currently set filters {ffile}:
             config.workflow.fd_radius = 7.5
             # block uploads for the moment; can be reversed before wider release
             config.execution.no_sub = True
-
-
-def _get_biggest_file_size_gb(files):
-    """Identify the largest file size (allows multi-echo groups)."""
-
-    import os
-
-    sizes = []
-    for file in files:
-        if isinstance(file, (list, tuple)):
-            sizes.append(_get_biggest_file_size_gb(file))
-        else:
-            sizes.append(os.path.getsize(file))
-    return max(sizes) / (1024**3)

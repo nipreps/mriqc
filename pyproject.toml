@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+  "acres",
   "dipy",
   'importlib_resources; python_version < "3.9"', # jinja2 imports deprecated function removed in 2.1
   "markupsafe ~= 2.0.1",
@@ -26,10 +27,11 @@ dependencies = [
   "nibabel >= 3.0.1",
   "nilearn >= 0.5.1",
   "nipype ~= 1.4",
-  "nireports ~= 23.1",
-  "nitransforms ~= 23.0",
+  "nireports ~= 24.0.2",
+  "nitransforms ~= 24.0",
   "niworkflows ~=1.10.1",
   "numpy ~=1.20",
+  "orjson",
   "pandas",
   "pybids >= 0.15.6",
   "PyYAML",
