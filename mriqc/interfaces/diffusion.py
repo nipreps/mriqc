@@ -663,9 +663,7 @@ class CorrectSignalDrift(SimpleInterface):
             )
             full_img = nb.load(self.inputs.full_epi)
             full_img.__class__(
-                (full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :]).astype(
-                    full_img.header.get_data_dtype()
-                ),
+                full_img.get_fdata() * fitted[np.newaxis, np.newaxis, np.newaxis, :],
                 full_img.affine,
                 full_img.header,
             ).to_filename(self._results['out_full_file'])

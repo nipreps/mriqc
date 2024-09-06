@@ -119,9 +119,14 @@ def get_git_lines(fname='line-contributors.txt'):
         lines = contrib_file.read_text().splitlines()
 
     git_line_summary_path = shutil.which('git-line-summary')
+    if not git_line_summary_path:
+        git_line_summary_path = "git summary --dedup-by-email".split(" ")
+    else:
+        git_line_summary_path = [git_line_summary_path]
+
     if not lines and git_line_summary_path:
         print('Running git-line-summary on repo')
-        lines = sp.check_output([git_line_summary_path]).decode().splitlines()
+        lines = sp.check_output(git_line_summary_path).decode().splitlines()
         lines = [line for line in lines if 'Not Committed Yet' not in line]
         contrib_file.write_text('\n'.join(lines))
 
