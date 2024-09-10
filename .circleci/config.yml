@@ -9,10 +9,11 @@ jobs:
       - MRIQC_API_TAG: 1.1.0
       - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
           python:3.7-slim"
+      - DOCKER_BUILDKIT: 1
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2204:2023.02.1
+      image: default
       docker_layer_caching: true
     working_directory: /tmp/src/mriqc
     steps:
@@ -126,10 +127,12 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
-            python3 -m pip install hatch
+            pyenv local 3
+            pip install hatch
 
             # Get version before making repo dirty
-            THISVERSION=$( python3 -m hatch version )
+            THISVERSION=$( hatch version )
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
@@ -142,6 +145,8 @@ jobs:
               echo "the command ``git fetch --tags --verbose`` and push"
               echo "them to your fork with ``git push origin --tags``"
             fi
+
+            echo "Building version: $THISVERSION."
 
             # Build docker image
             e=1 && for i in {1..5}; do
