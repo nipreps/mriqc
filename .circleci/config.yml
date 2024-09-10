@@ -158,6 +158,9 @@ jobs:
                 --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
+
+            DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
+            test "${CIRCLE_TAG:-$THISVERSION}" == "$DOCKER_VERSION"
       - run:
           name: Docker push to local registry
           no_output_timeout: 40m
