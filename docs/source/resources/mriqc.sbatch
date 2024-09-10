@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #NOTE: These should work with Slurm HPC systems, 
- # but these specific paramters  have only been tested on 
+ # but these specific parameters  have only been tested on 
  # Stanford's Sherlock. Some parameters may need to be 
  # adjusted for other HPCs, specifically --partition.
 
