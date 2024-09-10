@@ -191,7 +191,7 @@ class UploadIQMs(SimpleInterface):
                 '',
                 '',
                 'Payload:',
-                payload_str,
+                f'{payload_str}',
             ]
         )
         config.loggers.interface.warning(errmsg)
