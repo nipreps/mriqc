@@ -31,10 +31,10 @@
 unset PYTHONPATH
 
 MRIQC_VERSION="24.0.0" #TODO: update if using a different version
-BIDS_DIR="ds002785" #TODO: replace with path to your dataset
+BIDS_DIR="${STUDY}/ds002785"  # TODO: replace with path to your dataset
 OUTPUT_DIR="${BIDS_DIR}/derivatives/mriqc-${MRIQC_VERSION}"
 
-SINGULARITY_CMD="singularity run -e mriqc-${MRIQC_VERSION}.simg"
+SINGULARITY_CMD="apptainer run -e mriqc_${MRIQC_VERSION}.sif"
 
 #NOTE: The first clause in this line selects a row in participants.tsv 
  # using the system generated array index variable SLURM_ARRAY_TASK_ID. 
@@ -49,8 +49,9 @@ echo Subject $subject
 cmd="${SINGULARITY_CMD} ${BIDS_DIR} ${OUTPUT_DIR} participant \
      --participant-label $subject \
      -w $PWD/work/ \
-     --omp-nthreads 8 --mem 10 \
-     --verbose-reports"
+     --omp-nthreads 10 --nprocs 12 \  # For nodes with at least 32GB RAM
+     --verbose-reports \
+     --bids-database-dir ${BIDS_DIR}/.bids-index/"
 
 echo Running task ${SLURM_ARRAY_TASK_ID}
 echo Commandline: $cmd
