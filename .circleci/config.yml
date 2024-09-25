@@ -160,6 +160,8 @@ jobs:
             done && [ "$e" -eq "0" ]
 
             DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
+            echo "Target version: \"${CIRCLE_TAG:-$THISVERSION}\""
+            echo "Docker version: \"${DOCKER_VERSION}\""
             test "${CIRCLE_TAG:-$THISVERSION}" == "$DOCKER_VERSION"
       - run:
           name: Docker push to local registry
