@@ -159,10 +159,13 @@ jobs:
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
 
+            TARGET_VERSION="${CIRCLE_TAG:-$THISVERSION}"
+            TARGET_VERSION="MRIQC v${TARGET_VERSION%+*}"
             DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
-            echo "Target version: \"${CIRCLE_TAG:-$THISVERSION}\""
+            DOCKER_VERSION="${DOCKER_VERSION%+*}"
+            echo "Target version: \"${TARGET_VERSION}\""
             echo "Docker version: \"${DOCKER_VERSION}\""
-            test "${CIRCLE_TAG:-$THISVERSION}" == "$DOCKER_VERSION"
+            test "${TARGET_VERSION}" == "$DOCKER_VERSION"
       - run:
           name: Docker push to local registry
           no_output_timeout: 40m
