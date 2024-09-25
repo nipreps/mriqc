@@ -201,6 +201,7 @@ WORKDIR /tmp/
 
 # Run mriqc by default
 ENTRYPOINT ["/opt/conda/bin/mriqc"]
+ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.label-schema.build-date=$BUILD_DATE \
