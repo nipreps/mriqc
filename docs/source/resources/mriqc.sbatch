@@ -49,9 +49,7 @@ echo Subject $subject
 cmd="${APPTAINER_CMD} ${BIDS_DIR} ${OUTPUT_DIR} participant \
      --participant-label $subject \
      -w $PWD/work/ \
-     --omp-nthreads 10 --nprocs 12 \
-	 # For nodes with at least 32GB RAM
-     --verbose-reports"
+     --omp-nthreads 10 --nprocs 12"  # For nodes with at least 32GB RAM
 
 echo Running task ${SLURM_ARRAY_TASK_ID}
 echo Commandline: $cmd
