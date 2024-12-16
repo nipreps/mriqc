@@ -118,4 +118,3 @@ on ds030 of OpenfMRI:
   .. [BIDSApps] `BIDS-Apps: portable neuroimaging pipelines that understand BIDS
      datasets <http://bids-apps.neuroimaging.io/>`_
 
-.. include:: license.rst
