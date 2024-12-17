@@ -4,7 +4,7 @@
 Running *MRIQC*
 ***************
 .. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
+     You can download MRIQC reports online from `OpenNeuro <https://www.openneuro.org/>`_ - without
      installation!
 
 MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
@@ -12,35 +12,30 @@ and therefore it inherently understands the :abbr:`BIDS (brain
 imaging data structure)` standard [BIDS]_ and follows the
 BIDS-Apps standard command line interface::
 
-  mriqc bids-root/ output-folder/ participant
+  mriqc bids_dir/ output_dir/ participant
 
-That simple command runs MRIQC on all the *T1w* and *BOLD* images found
-under the BIDS-compliant folder ``bids-root/``.
-The last ``participant`` keyword indicates that the first level analysis
-is run. (i.e. extracting the :abbr:`IQMs (image quality metrics)` from the
-images retrieved within ``bids-root/``).
-The second level (``group``) is automatically run if no particular subject
-is provided for analysis.
+This command runs MRIQC on all the *T1w, T2w, diffusion* and *BOLD* images found
+under the BIDS-compliant folder ``bids_dir/``.
+The last ``participant`` keyword indicates MRIQC should be run
+(i.e. extracting the :abbr:`IQMs (image quality metrics)` and generating visual reports) 
+for each of the participants found in ``bids-root/``. If no participants are specified, 
+the ``group`` level will automatically run. 
 
-.. note::
-
-   If the argument :code:`--participant-label` is not provided, then all
-   subjects will be processed and the group level analysis will
-   automatically be executed without need of running the command in item 3.
-
-To specify one particular subject, the ``--participant-label`` argument
+To specify one or more particular subjects, the ``--participant-label`` argument
 can be used::
 
-  mriqc bids-root/ output-folder/ participant --participant-label S01 S02 S03
+  mriqc bids_dir/ output-dir/ participant --participant-label S01 S02 S03
 
 That command will run MRIQC only on the subjects indicated: only
-``bids-root/sub-S01``, ``bids-root/sub-S02``, and ``bids-root/sub-S03``
+``bids_dir/sub-S01``, ``bids_dir/sub-S02``, and ``bids_dir/sub-S03``
 will be processed.
 In this case, the ``group`` level will not be triggered automatically.
 We generate the ``group`` level results (the group level report and the
 features CSV table) with: ::
 
-  mriqc bids-root/ output-folder/ group
+  mriqc bids_dir/ output_dir/ group
+
+Running MRIQC with both Docker or Apptainer use a variation of these commands. 
 
 Examples of the generated visual reports are found
 in :ref:`The MRIQC Reports <reports>`.
