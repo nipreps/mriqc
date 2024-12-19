@@ -4,14 +4,17 @@ Installation
 Containerized versions
 ----------------------
 If you have Docker installed, the quickest way to get ``mriqc`` to work
-is following :ref:`the running with docker guide <docker>`.
+is following :ref:`the running with Docker guide <docker>`.
+
+Docker will not run on most high-performance compute clusters. In that case, 
+you should use Apptainer (formerly Singularity). `https://apptainer.org/docs/user/latest/` 
 
 We recommend trying containerized versions first to avoid installation
-issues.
+issues. 
 MRIQC uses bleeding-edge (oftentimes unreleased) versions of
 ``nipype`` and ``niworkflows`` and "bare-metal" installations can
-be hard.
-Nonetheless, we offer support on our `github repository
+require some debugging. 
+Nonetheless, we offer support on our `Github repository
 <https://github.com/nipreps/mriqc/issues>`_.
 
 
