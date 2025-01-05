@@ -3,18 +3,34 @@
 
 Running *MRIQC*
 ***************
-.. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
-     installation!
-
-MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
+*MRIQC* is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
 and therefore it inherently understands the :abbr:`BIDS (brain
-imaging data structure)` standard [BIDS]_ and follows the
-BIDS-Apps standard command line interface::
+imaging data structure)` standard [BIDS]_.
+Before moving forward, please make sure to have read and understood
+*NiPreps*'s
+`introductory documentation <https://www.nipreps.org/apps/framework/>`__).
+
+Containerized execution with *Docker* and *Singularity*
+-------------------------------------------------------
+For containerized execution with *Docker* or *Singularity*, please
+follow the documentation on the *NiPreps* site, which contains
+tip and troubleshooting guidelines for both
+`Docker <https://www.nipreps.org/apps/docker/>`__, and
+`Singularity or Apptainer <https://www.nipreps.org/apps/singularity/>`__.
+In addition to container-specific guidelines, the documentation
+also includes specific
+`help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__
+
+The rest of this documentation page applies to both *bare-metal*
+and containerized execution modes.
+
+A *BIDS Apps* command line interface
+------------------------------------
+*MRIQC* follows the *BIDS Apps* standard command line interface::
 
   mriqc bids-root/ output-folder/ participant
 
-That simple command runs MRIQC on all the *T1w* and *BOLD* images found
+That simple command runs *MRIQC* on all the *T1w* and *BOLD* images found
 under the BIDS-compliant folder ``bids-root/``.
 The last ``participant`` keyword indicates that the first level analysis
 is run. (i.e. extracting the :abbr:`IQMs (image quality metrics)` from the
@@ -80,14 +96,10 @@ Command line interface
 
 Running mriqc on HPC clusters
 -----------------------------
-Singularity containers
-......................
-Requesting resources
-....................
 We have profiled cores and memory usages with the *resource profiler*
-tool of nipype.
+tool of *Nipype*.
 
-An MRIQC run of one subject (from the ABIDE) dataset, containing only one
+An *MRIQC* run of one subject (from the ABIDE) dataset, containing only one
 run, one BOLD task (resting-state) yielded the following report:
 
   .. raw:: html
@@ -117,5 +129,3 @@ on ds030 of OpenfMRI:
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
   .. [BIDSApps] `BIDS-Apps: portable neuroimaging pipelines that understand BIDS
      datasets <http://bids-apps.neuroimaging.io/>`_
-
-.. include:: license.rst
