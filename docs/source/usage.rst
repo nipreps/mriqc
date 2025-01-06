@@ -10,9 +10,9 @@ Before moving forward, please make sure to have read and understood
 *NiPreps*'s
 `introductory documentation <https://www.nipreps.org/apps/framework/>`__).
 
-Containerized execution with *Docker* and *Singularity*
+Containerized execution with *Docker* and *Singularity*/*Apptainer*
 -------------------------------------------------------
-For containerized execution with *Docker* or *Singularity*, please
+For containerized execution with *Docker* or *Singularity*/*Apptainer*, please
 follow the documentation on the *NiPreps* site, which contains
 tip and troubleshooting guidelines for both
 `Docker <https://www.nipreps.org/apps/docker/>`__, and
@@ -88,7 +88,7 @@ in :ref:`The MRIQC Reports <reports>`.
 
 *MRIQC* can fetch data in *DataLad* datasets
 --------------------------------------------
-As of *MRIQC* 22.0.3, the application bundles *DataLad*, enabling automatic
+As of version 22.0.3, *MRIQC* bundles *DataLad*, enabling automatic
 data fetching in *DataLad* datasets.
 Employing this feature in containerized environments may lead to
 somewhat obscure errors (see, for example,
@@ -100,7 +100,7 @@ Alternatively, this feature can be disabled by adding
 ``--no-datalad-get`` to the command line.
 This will separate *DataLad* management from *MRIQC*'s operation,
 which can be an effective way of debugging issues and averting
-fault conditions.
+erroneous conditions.
 
 Command line interface
 ----------------------
