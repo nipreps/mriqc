@@ -19,7 +19,7 @@ tip and troubleshooting guidelines for both
 `Singularity or Apptainer <https://www.nipreps.org/apps/singularity/>`__.
 In addition to container-specific guidelines, the documentation
 also includes specific
-`help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__
+`help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
 
 The rest of this documentation page applies to both *bare-metal*
 and containerized execution modes.
@@ -85,6 +85,22 @@ in :ref:`The MRIQC Reports <reports>`.
     the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
+
+*MRIQC* can fetch data in *DataLad* datasets
+--------------------------------------------
+As of *MRIQC* 22.0.3, the application bundles *DataLad*, enabling automatic
+data fetching in *DataLad* datasets.
+Employing this feature in containerized environments may lead to
+somewhat obscure errors (see, for example,
+`nipreps/mriqc#1307 <https://github.com/nipreps/mriqc/issues/1307>`__).
+If you intend to use *DataLad* datasets, please read carefully
+*NiPreps*' `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
+
+Alternatively, this feature can be disabled by adding
+``--no-datalad-get`` to the command line.
+This will separate *DataLad* management from *MRIQC*'s operation,
+which can be an effective way of debugging issues and averting
+fault conditions.
 
 Command line interface
 ----------------------
