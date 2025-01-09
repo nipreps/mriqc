@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "acres",
-  "dipy",
+  "dipy >= 1.10.0",
   'importlib_resources; python_version < "3.9"', # jinja2 imports deprecated function removed in 2.1
   "markupsafe ~= 2.0.1",
   "matplotlib",
