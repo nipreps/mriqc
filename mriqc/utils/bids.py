@@ -68,7 +68,7 @@ def write_derivative_description(bids_dir, deriv_dir):
     if 'MRIQC_DOCKER_TAG' in os.environ:
         desc['GeneratedBy'][0]['Container'] = {
             'Type': 'docker',
-            'Tag': f"nipreps/mriqc:{os.environ['MRIQC_DOCKER_TAG']}",
+            'Tag': f'nipreps/mriqc:{os.environ["MRIQC_DOCKER_TAG"]}',
         }
     if 'MRIQC_SINGULARITY_URL' in os.environ:
         desc['GeneratedBy'][0]['Container'] = {
@@ -83,7 +83,7 @@ def write_derivative_description(bids_dir, deriv_dir):
         orig_desc = json.loads(fname.read_text())
 
     if 'Name' in orig_desc:
-        desc['Name'] = f"MRIQC - {orig_desc['Name']}"
+        desc['Name'] = f'MRIQC - {orig_desc["Name"]}'
     else:
         desc['Name'] = 'MRIQC - MRI Quality Control'
 
@@ -191,6 +191,6 @@ def derive_bids_fname(
         else:
             bidts.insert(position, entity.strip('_'))
 
-    retval = newpath / f"{'_'.join(bidts)}_{newsuffix}.{newext.strip('.')}"
+    retval = newpath / f'{"_".join(bidts)}_{newsuffix}.{newext.strip(".")}'
 
     return retval.absolute() if absolute else retval

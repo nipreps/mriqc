@@ -501,7 +501,7 @@ def initialize_meta_and_data(
 
         config.loggers.cli.log(
             25,
-            f"File size ('{mod}'): {_max_size:.2f}|{np.mean(size):.2f} " 'GB [maximum|average].',
+            f"File size ('{mod}'): {_max_size:.2f}|{np.mean(size):.2f} GB [maximum|average].",
         )
 
 
