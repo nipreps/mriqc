@@ -153,7 +153,7 @@ version-file = "mriqc/_version.py"
 #
 
 [tool.pytest.ini_options]
-addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
+addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers", "--strict-warnings"]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
