@@ -32,6 +32,9 @@ FROM python:slim AS src
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends git
+ARG VERSION
+ENV SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION
+
 RUN python -m pip install -U pip build
 COPY . /src
 RUN python -m build /src
@@ -197,11 +200,14 @@ RUN find $HOME -type d -exec chmod go=u {} + && \
 # Best practices
 RUN ldconfig
 
+# Update version
+RUN export VERSION=$(python -m mriqc --version | awk '{print $NF}') \
+    && echo "VERSION=$VERSION" >> /etc/environment
+
 WORKDIR /tmp/
 
 # Run mriqc by default
 ENTRYPOINT ["/opt/conda/bin/mriqc"]
-ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.label-schema.build-date=$BUILD_DATE \
