@@ -102,16 +102,8 @@ This will separate *DataLad* management from *MRIQC*'s operation,
 which can be an effective way of debugging issues and averting
 erroneous conditions.
 
-Command line interface
-----------------------
-.. argparse::
-   :ref: mriqc.cli.parser._build_parser
-   :prog: mriqc
-   :nodefault:
-   :nodefaultconst:
-
-Running mriqc on HPC clusters
------------------------------
+Running *MRIQC* on HPC with *Singularity*/*Apptainer*
+-----------------------------------------------------
 We have profiled cores and memory usages with the *resource profiler*
 tool of *Nipype*.
 
@@ -155,7 +147,6 @@ Known issues with HPC
       templateflow.api.TF_S3_ROOT = 'http://templateflow.s3.amazonaws.com'
       templateflow.api.get('MNI152NLin2009cAsym') # change template if needed
 
-
     then provide the templates to the container by mounting the ``templateflow`` home directory and setting the ``TEMPLATEFLOW_HOME`` environment variable:
 
     .. code-block:: bash
@@ -183,10 +174,14 @@ Known issues with HPC
 
       apptainer run --net --network none -v /path/to/templateflow:/path/to/templates --env TEMPLATEFLOW_HOME=/path/to/templates ...
 
-
+Command line interface
+----------------------
+.. argparse::
+   :ref: mriqc.cli.parser._build_parser
+   :prog: mriqc
+   :nodefault:
+   :nodefaultconst:
   
-
-
 .. topic:: References
 
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
