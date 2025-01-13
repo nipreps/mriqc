@@ -175,8 +175,8 @@ class ResourceRecorder(Process):
 
         # Write headers (comment trace + header row)
         _header = [
-            f"# MRIQC Resource recorder started tracking PID {self._pid} "
-            f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
+            f'# MRIQC Resource recorder started tracking PID {self._pid} '
+            f'{datetime.now(tz=UTC).strftime("(%Y/%m/%d; %H:%M:%S)")}',
             '\t'.join(('timestamp', *SAMPLE_ATTRS)).replace(
                 'memory_info', 'mem_rss_mb\tmem_vsm_mb'
             ),
@@ -198,8 +198,8 @@ class ResourceRecorder(Process):
                 sample2file(self._pid, fd=_logfile, timestamp=wait_til)
             except psutil.NoSuchProcess:
                 print(
-                    f"# MRIQC Resource recorder killed "
-                    f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
+                    f'# MRIQC Resource recorder finished '
+                    f'{datetime.now(tz=UTC).strftime("(%Y/%m/%d; %H:%M:%S)")}',
                     file=_logfile,
                 )
                 _logfile.flush()
@@ -216,6 +216,6 @@ class ResourceRecorder(Process):
         self._done.set()
         with Path(self._logfile).open('a') as f:
             f.write(
-                f"# MRIQC Resource recorder finished "
-                f"{datetime.now(tz=UTC).strftime('(%Y/%m/%d; %H:%M:%S)')}",
+                f'# MRIQC Resource recorder finished '
+                f'{datetime.now(tz=UTC).strftime("(%Y/%m/%d; %H:%M:%S)")}',
             )

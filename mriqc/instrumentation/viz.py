@@ -45,7 +45,7 @@ def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
     for pid in pids:
         pid_info = data[data['pid'] == pid]
         try:
-            label = f"{pid_info['name'].values[0]}"
+            label = f'{pid_info["name"].values[0]}'
         except KeyError:
             label = f'{pid}'
 
