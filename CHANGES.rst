@@ -1,3 +1,20 @@
+25.0.0 (TBD)
+============
+A new 25.x series.
+
+CHANGES
+-------
+  * FIX: Decode bytes to produce a string (#1371)
+  * FIX: Containers report wrong version (#1357)
+  * FIX: Elapsed run time format (#1366)
+  * FIX: Passing ``bytes`` into ``str.join()`` (#1356)
+  * FIX: Optimize interface to minimize memory fingerprint (#1351)
+  * ENH: Remove redundant *DIPY* function (#1369)
+  * DOC: Add a HPC troubleshooting section to the documentation (#1349)
+  * DOC: Provide a range of years ending with current for the copyright statement (#1359)
+  * DOC: Fix missing code block start (#1368)
+  * DOC: Reorganize documentation and redirect to *NiPreps* docs (#1367)
+
 24.0.2 (August 26, 2024)
 ========================
 A patch release with bugfixes and enhancements.
