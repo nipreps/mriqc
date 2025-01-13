@@ -603,8 +603,8 @@ def parse_args(args=None, namespace=None):
         selected_label = set(config.execution.participant_label)
         if missing_subjects := selected_label - set(participant_label):
             parser.error(
-                "One or more participant labels were not found in the BIDS directory: "
-                f"{', '.join(missing_subjects)}."
+                'One or more participant labels were not found in the BIDS directory: '
+                f'{", ".join(missing_subjects)}.'
             )
         participant_label = selected_label
 

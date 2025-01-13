@@ -16,7 +16,7 @@ If, for some reason, you really need a custom installation,
 First, please make sure you have the execution system dependencies
 installed (see below).
 Second, the latest development version of MRIQC can be installed from
-github using ``pip`` on a Python 3 environment:
+github using ``pip`` on a Python 3 environment::
 
   python -m pip install -U mriqc
 

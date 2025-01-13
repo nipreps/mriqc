@@ -54,7 +54,7 @@ def main():
                 finished[j - 1] = finished[j - 1] + 1
                 hold[j - 1, i - 1] = int(file[i][j])
     finished = np.divide(np.round(np.divide(finished, total) * 1000), 10)
-    print(f"Completed: {' '.join(['%g%%' % f for f in finished])}")
+    print(f'Completed: {" ".join(["%g%%" % f for f in finished])}')
     print(f'Total: {np.round(np.divide(np.sum(finished), 3))}%')
     input('Waiting: [enter]')
 
