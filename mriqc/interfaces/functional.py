@@ -226,25 +226,11 @@ class Spikes(SimpleInterface):
 
     def _run_interface(self, runtime):
         func_nii = nb.load(self.inputs.in_file)
-        func_data = func_nii.get_fdata()
+        func_data = func_nii.get_fdata(dtype='float32')
         func_shape = func_data.shape
         ntsteps = func_shape[-1]
         tr = func_nii.header.get_zooms()[-1]
         nskip = self.inputs.skip_frames
-
-        if self.inputs.detrend:
-            from nilearn.signal import clean
-
-            data = func_data.reshape(-1, ntsteps)
-            clean_data = clean(data[:, nskip:].T, t_r=tr, standardize=False).T
-            new_shape = (
-                func_shape[0],
-                func_shape[1],
-                func_shape[2],
-                clean_data.shape[-1],
-            )
-            func_data = np.zeros(func_shape)
-            func_data[..., nskip:] = clean_data.reshape(new_shape)
 
         mask_data = np.bool_(nb.load(self.inputs.in_mask).dataobj)
         mask_data[..., :nskip] = 0
@@ -255,6 +241,11 @@ class Spikes(SimpleInterface):
         else:
             mask_data[..., : self.inputs.skip_frames] = 1
             brain = np.ma.array(func_data, mask=(mask_data == 1))
+
+        if self.inputs.detrend:
+            from nilearn.signal import clean
+
+            brain = clean(brain[:, nskip:].T, t_r=tr, standardize=False).T
 
         if self.inputs.no_zscore:
             ts_z = find_peaks(brain)
@@ -361,7 +352,7 @@ class GatherTimeseries(SimpleInterface):
         # DVARS
         dvars = pd.read_csv(
             self.inputs.dvars,
-            delim_whitespace=True,
+            sep=r'\s+',
             skiprows=1,  # column names have spaces
             header=None,
             names=['dvars_std', 'dvars_nstd', 'dvars_vstd'],
@@ -369,16 +360,14 @@ class GatherTimeseries(SimpleInterface):
         dvars.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # FD
-        fd = pd.read_csv(
-            self.inputs.fd, delim_whitespace=True, header=0, names=['framewise_displacement']
-        )
+        fd = pd.read_csv(self.inputs.fd, sep=r'\s+', header=0, names=['framewise_displacement'])
         fd.index = pd.RangeIndex(1, timeseries.index.max() + 1)
 
         # AQI
-        aqi = pd.read_csv(self.inputs.quality, delim_whitespace=True, header=None, names=['aqi'])
+        aqi = pd.read_csv(self.inputs.quality, sep=r'\s+', header=None, names=['aqi'])
 
         # Outliers
-        aor = pd.read_csv(self.inputs.outliers, delim_whitespace=True, header=None, names=['aor'])
+        aor = pd.read_csv(self.inputs.outliers, sep=r'\s+', header=None, names=['aor'])
 
         timeseries = pd.concat((timeseries, dvars, fd, aqi, aor), axis=1)
 
@@ -432,7 +421,7 @@ def _build_timeseries_metadata():
             ),
         },
         'dvars_nstd': {
-            'LongName': ('Derivative of RMS Variance over Voxels,' 'Non-Standardized'),
+            'LongName': ('Derivative of RMS Variance over Voxels, Non-Standardized'),
             'Description': (
                 'Indexes the rate of change of BOLD signal across'
                 'the entire brain at each frame of data, not normalized.'
@@ -462,7 +451,7 @@ def _build_timeseries_metadata():
         'aor': {
             'LongName': "AFNI's Fraction of Outliers per Volume",
             'Description': (
-                'Mean fraction of outliers per fMRI volume as' "given by AFNI's 3dToutcount"
+                "Mean fraction of outliers per fMRI volume as given by AFNI's 3dToutcount"
             ),
         },
     }

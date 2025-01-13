@@ -1,28 +1,22 @@
 
-Installation
-************
-Containerized versions
-----------------------
-If you have Docker installed, the quickest way to get ``mriqc`` to work
-is following :ref:`the running with docker guide <docker>`.
-
-We recommend trying containerized versions first to avoid installation
-issues.
-MRIQC uses bleeding-edge (oftentimes unreleased) versions of
-``nipype`` and ``niworkflows`` and "bare-metal" installations can
-be hard.
-Nonetheless, we offer support on our `github repository
-<https://github.com/nipreps/mriqc/issues>`_.
-
+Installing *MRIQC*
+******************
+*MRIQC* is a *NiPreps* (`www.nipreps.org <https://nipreps.org>`__)
+*BIDS App* [BIDSApps]_.
+As such, *MRIQC* can be installed manually (*Bare-metal installation*,
+see below) or containerized.
+For containerized execution with *Docker* or *Singularity*, please
+follow the documentation on the *NiPreps* site
+(`introduction <https://www.nipreps.org/apps/framework/>`__).
 
 "Bare-metal" installation
 -------------------------
-If, for some reason, you really need a bare-metal installation,
-MRIQC can be installed as follows.
+If, for some reason, you really need a custom installation,
+*MRIQC* can be installed as follows.
 First, please make sure you have the execution system dependencies
 installed (see below).
 Second, the latest development version of MRIQC can be installed from
-github using ``pip`` on a Python 3 environment: ::
+github using ``pip`` on a Python 3 environment::
 
   python -m pip install -U mriqc
 
@@ -54,8 +48,6 @@ github using ``pip`` on a Python 3 environment: ::
         Alternatively, you can issue the following shell command-line to edit this setting::
 
         $ sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
-
-
 
 Execution system dependencies
 .............................

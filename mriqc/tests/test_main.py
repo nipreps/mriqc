@@ -20,18 +20,45 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""
-MRIQC data files
 
-.. autofunction:: load
+import sys
 
-.. automethod:: load.readable
+import pytest
 
-.. automethod:: load.as_path
+from mriqc.__main__ import main
 
-.. automethod:: load.cached
-"""
 
-from acres import Loader
+@pytest.fixture(autouse=True)
+def set_command(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(sys, 'argv', ['mriqc'])
+        yield
 
-load = Loader(__package__)
+
+def test_help(capsys):
+    with pytest.raises(SystemExit):
+        main(['--help'])
+    captured = capsys.readouterr()
+    assert captured.out.startswith('usage: mriqc [-h]')
+
+
+def test_main(tmp_path):
+    bids_dir = tmp_path / 'data/sub-01'
+    out_path = tmp_path / 'out'
+
+    with pytest.raises(SystemExit):
+        main([str(bids_dir), str(out_path)])
+
+    analysis_level = 'participant'
+    species = 'human'
+
+    with pytest.raises(SystemExit):
+        main(
+            [
+                str(bids_dir),
+                str(out_path),
+                analysis_level,
+                '--species',
+                species,
+            ]
+        )

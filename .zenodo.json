@@ -13,11 +13,6 @@
       "name": "Christopher J. Markiewicz"
     },
     {
-      "orcid": "0000-0001-7159-1387",
-      "affiliation": "Quantivly Inc., Somerville, MA, USA",
-      "name": "Zvi Baratz"
-    },
-    {
       "orcid": "0000-0003-3715-7012",
       "affiliation": "Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK",
       "name": "Eilidh MacNicol"
@@ -34,6 +29,12 @@
     }
   ],
   "contributors": [
+    {
+      "orcid": "0000-0001-7159-1387",
+      "affiliation": "Quantivly Inc., Somerville, MA, USA",
+      "name": "Zvi Baratz",
+      "type": "Researcher"
+    },
     {
       "affiliation": "The University of Washington eScience Institute, WA, USA",
       "name": "Teresa Gomez",
@@ -130,6 +131,12 @@
       "orcid": "0000-0001-9813-3167",
       "affiliation": "Department of Psychology, Florida International University, FL, USA",
       "name": "Taylor Salo",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-9661-1396",
+      "affiliation": "Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA",
+      "name": "Jon Haitz Legarreta Gorro\u00f1o",
       "type": "Researcher"
     },
     {

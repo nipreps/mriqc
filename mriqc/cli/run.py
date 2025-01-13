@@ -23,13 +23,23 @@
 """Definition of the command line interface's (CLI) entry point."""
 
 
-def main():
+def format_elapsed_time(elapsed_timedelta):
+    """Format a timedelta instance as a %Hh %Mmin %Ss string."""
+    return (
+        f'{elapsed_timedelta.days * 24 + elapsed_timedelta.seconds // 3600:02d}h '
+        f'{(elapsed_timedelta.seconds % 3600) // 60:02d}min '
+        f'{elapsed_timedelta.seconds % 60:02d}s'
+    )
+
+
+def main(argv=None):
     """Entry point for MRIQC's CLI."""
     import atexit
     import gc
     import os
     import sys
     import time
+    import datetime
     from tempfile import mkstemp
 
     from mriqc import config, messages
@@ -40,7 +50,7 @@ def main():
     config.settings.start_time = time.time()
 
     # Run parser
-    parse_args()
+    parse_args(argv)
 
     if config.execution.pdb:
         from mriqc.utils.debug import setup_exceptionhook
@@ -186,15 +196,15 @@ def main():
 
             generate_reports()
 
-        _subject_duration = time.gmtime(
-            (time.time() - config.settings.start_time)
-            / sum(len(files) for files in config.workflow.inputs.values())
+        _subject_duration = (time.time() - config.settings.start_time) / sum(
+            len(files) for files in config.workflow.inputs.values()
         )
+        _subject_duration_td = datetime.timedelta(seconds=_subject_duration)
+        time_strf = format_elapsed_time(_subject_duration_td)
+
         config.loggers.cli.log(
             25,
-            messages.PARTICIPANT_FINISHED.format(
-                duration=time.strftime('%Hh %Mmin %Ss', _subject_duration)
-            ),
+            messages.PARTICIPANT_FINISHED.format(duration=time_strf),
         )
 
         if _resmon is not None:
@@ -258,15 +268,19 @@ def main():
     config.loggers.cli.info(messages.BIDS_META)
     write_derivative_description(config.execution.bids_dir, config.execution.output_dir)
     write_bidsignore(config.execution.output_dir)
+
+    _run_duration = time.time() - config.settings.start_time
+    _run_duration_td = datetime.timedelta(seconds=_run_duration)
+    time_strf = format_elapsed_time(_run_duration_td)
+
     config.loggers.cli.log(
         26,
-        messages.RUN_FINISHED.format(
-            duration=time.strftime(
-                '%Hh %Mmin %Ss', time.gmtime(time.time() - config.settings.start_time)
-            )
-        ),
+        messages.RUN_FINISHED.format(duration=time_strf),
     )
-    config.to_filename(config.execution.log_dir / f'config-{config.execution.run_uuid}.toml')
+    config.to_filename(
+        config.execution.log_dir / f'config-{config.execution.run_uuid}.toml',
+        store_inputs=False,  # Inputs are not necessary anymore
+    )
     sys.exit(exitcode)
 
 

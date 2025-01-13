@@ -124,8 +124,7 @@ class StructuralQC(SimpleInterface):
 
         if np.sum(segdata > 0) < 1e3:
             raise RuntimeError(
-                'Input segmentation data is likely corrupt. '
-                'MRIQC failed to process this dataset.'
+                'Input segmentation data is likely corrupt. MRIQC failed to process this dataset.'
             )
 
         # Load air, artifacts and head masks

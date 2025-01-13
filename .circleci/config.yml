@@ -9,10 +9,11 @@ jobs:
       - MRIQC_API_TAG: 1.1.0
       - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
           python:3.7-slim"
+      - DOCKER_BUILDKIT: 1
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2204:2023.02.1
+      image: default
       docker_layer_caching: true
     working_directory: /tmp/src/mriqc
     steps:
@@ -126,10 +127,12 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
-            python3 -m pip install hatch
+            pyenv local 3
+            pip install hatch
 
             # Get version before making repo dirty
-            THISVERSION=$( python3 -m hatch version )
+            THISVERSION=$( hatch version )
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
@@ -143,6 +146,8 @@ jobs:
               echo "them to your fork with ``git push origin --tags``"
             fi
 
+            echo "Building version: $THISVERSION."
+
             # Build docker image
             e=1 && for i in {1..5}; do
               docker build \
@@ -153,6 +158,14 @@ jobs:
                 --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
+
+            TARGET_VERSION="${CIRCLE_TAG:-$THISVERSION}"
+            TARGET_VERSION="MRIQC v${TARGET_VERSION%+*}"
+            DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
+            DOCKER_VERSION="${DOCKER_VERSION%+*}"
+            echo "Target version: \"${TARGET_VERSION}\""
+            echo "Docker version: \"${DOCKER_VERSION}\""
+            test "${TARGET_VERSION}" == "$DOCKER_VERSION"
       - run:
           name: Docker push to local registry
           no_output_timeout: 40m
@@ -533,9 +546,9 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v5-{{ .Branch }}
-            - bold-v5-master
-            - bold-v5-
+            - bold-v6-{{ .Branch }}
+            - bold-v6-master
+            - bold-v6-
 
       - run:
           name: Remove old, cached configs
@@ -570,7 +583,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v5-{{ .Branch }}
+          key: bold-v6-{{ .Branch }}
           paths:
             - /tmp/bold/work
 

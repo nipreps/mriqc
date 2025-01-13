@@ -52,6 +52,8 @@ For the skull-stripping, we use ``afni_wf`` from ``niworkflows.anat.skullstrip``
 
 """
 
+from itertools import chain
+
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.interfaces.fixes import FixHeaderApplyTransforms as ApplyTransforms
@@ -88,30 +90,52 @@ def anat_qc_workflow(name='anatMRIQC'):
     """
     from mriqc.workflows.shared import synthstrip_wf
 
-    dataset = config.workflow.inputs.get('t1w', []) + config.workflow.inputs.get('t2w', [])
-
+    # Enable if necessary
+    # mem_gb = max(
+    #     config.workflow.biggest_file_gb['t1w'],
+    #     config.workflow.biggest_file_gb['t2w'],
+    # )
+    dataset = list(
+        chain(
+            config.workflow.inputs.get('t1w', []),
+            config.workflow.inputs.get('t2w', []),
+        )
+    )
+    metadata = list(
+        chain(
+            config.workflow.inputs_metadata.get('t1w', []),
+            config.workflow.inputs_metadata.get('t2w', []),
+        )
+    )
+    entities = list(
+        chain(
+            config.workflow.inputs_entities.get('t1w', []),
+            config.workflow.inputs_entities.get('t2w', []),
+        )
+    )
     message = BUILDING_WORKFLOW.format(
         modality='anatomical',
-        detail=(
-            f'for {len(dataset)} NIfTI files.'
-            if len(dataset) > 2
-            else f"({' and '.join('<%s>' % v for v in dataset)})."
-        ),
+        detail=f'for {len(dataset)} NIfTI files.',
     )
     config.loggers.workflow.info(message)
-
-    if config.execution.datalad_get:
-        from mriqc.utils.misc import _datalad_get
-
-        _datalad_get(dataset)
 
     # Initialize workflow
     workflow = pe.Workflow(name=name)
 
     # Define workflow, inputs and outputs
     # 0. Get data
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', dataset)]
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
+    inputnode.synchronize = True  # Do not test combinations of iterables
+    inputnode.iterables = [
+        ('in_file', dataset),
+        ('metadata', metadata),
+        ('entities', entities),
+    ]
 
     outputnode = pe.Node(niu.IdentityInterface(fields=['out_json']), name='outputnode')
 
@@ -146,7 +170,9 @@ def anat_qc_workflow(name='anatMRIQC'):
             ('in_file', 'inputnode.name_source'),
         ]),
         (inputnode, to_ras, [('in_file', 'in_file')]),
-        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
+                             ('metadata', 'inputnode.metadata'),
+                             ('entities', 'inputnode.entities')]),
         (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
         (to_ras, skull_stripping, [('out_file', 'inputnode.in_files')]),
         (skull_stripping, hmsk, [
@@ -403,7 +429,6 @@ def compute_iqms(name='ComputeIQMs'):
             wf = compute_iqms()
 
     """
-    from niworkflows.interfaces.bids import ReadSidecarJSON
 
     from mriqc.interfaces.anatomical import Harmonize
     from mriqc.workflows.utils import _tofloat
@@ -413,6 +438,8 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'in_file',
+                'metadata',
+                'entities',
                 'in_ras',
                 'brainmask',
                 'airmask',
@@ -424,7 +451,6 @@ def compute_iqms(name='ComputeIQMs'):
                 'inu_corrected',
                 'in_inu',
                 'pvms',
-                'metadata',
                 'std_tpms',
             ]
         ),
@@ -434,9 +460,6 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(fields=['out_file', 'noisefit']),
         name='outputnode',
     )
-
-    # Extract metadata
-    meta = pe.Node(ReadSidecarJSON(index_db=config.execution.bids_database_dir), name='metadata')
 
     # Add provenance
     addprov = pe.Node(AddProvenance(), name='provenance', run_without_submitting=True)
@@ -472,17 +495,12 @@ def compute_iqms(name='ComputeIQMs'):
 
     # fmt: off
     workflow.connect([
-        (inputnode, meta, [('in_file', 'in_file')]),
-        (inputnode, datasink, [('in_file', 'in_file'),
-                               (('in_file', _get_mod), 'modality')]),
+        (inputnode, datasink, [
+            ('in_file', 'in_file'),
+            (('in_file', _get_mod), 'modality'),
+            ('metadata', 'metadata'),
+            ('entities', 'entities')]),
         (inputnode, addprov, [(('in_file', _get_mod), 'modality')]),
-        (meta, datasink, [('subject', 'subject_id'),
-                          ('session', 'session_id'),
-                          ('task', 'task_id'),
-                          ('acquisition', 'acq_id'),
-                          ('reconstruction', 'rec_id'),
-                          ('run', 'run_id'),
-                          ('out_dict', 'metadata')]),
         (inputnode, addprov, [('in_file', 'in_file'),
                               ('airmask', 'air_msk'),
                               ('rotmask', 'rot_msk')]),

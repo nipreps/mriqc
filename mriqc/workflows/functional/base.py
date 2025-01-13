@@ -43,9 +43,6 @@ The functional workflow follows the following steps:
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 
-from collections.abc import Iterable
-
-import nibabel as nb
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from niworkflows.utils.connections import pop_file as _pop
@@ -69,72 +66,41 @@ def fmri_qc_workflow(name='funcMRIQC'):
     """
     from nipype.algorithms.confounds import TSNR, NonSteadyStateDetector
     from nipype.interfaces.afni import TStat
-    from niworkflows.interfaces.bids import ReadSidecarJSON
     from niworkflows.interfaces.header import SanitizeImage
 
     from mriqc.interfaces.functional import SelectEcho
     from mriqc.messages import BUILDING_WORKFLOW
 
-    workflow = pe.Workflow(name=name)
-
-    mem_gb = config.workflow.biggest_file_gb
-
-    dataset = config.workflow.inputs.get('bold', [])
-
-    if config.execution.datalad_get:
-        from mriqc.utils.misc import _datalad_get
-
-        _datalad_get(dataset)
-
-    full_files = []
-    for bold_path in dataset:
-        try:
-            bold_len = nb.load(
-                bold_path[0]
-                if isinstance(bold_path, Iterable) and not isinstance(bold_path, (str, bytes))
-                else bold_path
-            ).shape[3]
-        except nb.filebasedimages.ImageFileError:
-            bold_len = config.workflow.min_len_bold
-        except IndexError:  # shape has only 3 elements
-            bold_len = 0
-        if bold_len >= config.workflow.min_len_bold:
-            full_files.append(bold_path)
-        else:
-            config.loggers.workflow.warn(
-                f'Dismissing {bold_path} for processing: insufficient number of '
-                f'timepoints ({bold_len}) to execute the workflow.'
-            )
+    mem_gb = config.workflow.biggest_file_gb['bold']
+    dataset = config.workflow.inputs['bold']
+    metadata = config.workflow.inputs_metadata['bold']
+    entities = config.workflow.inputs_entities['bold']
 
     message = BUILDING_WORKFLOW.format(
         modality='functional',
-        detail=(
-            f'for {len(full_files)} BOLD runs.'
-            if len(full_files) > 2
-            else f"({' and '.join('<%s>' % v for v in dataset)})."
-        ),
+        detail=f'for {len(dataset)} BOLD runs.',
     )
     config.loggers.workflow.info(message)
 
-    if set(dataset) - set(full_files):
-        config.workflow.inputs['bold'] = full_files
-        config.to_filename()
-
     # Define workflow, inputs and outputs
     # 0. Get data, put it in RAS orientation
-    inputnode = pe.Node(niu.IdentityInterface(fields=['in_file']), name='inputnode')
-    inputnode.iterables = [('in_file', full_files)]
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
+    inputnode.synchronize = True  # Do not test combinations of iterables
+    inputnode.iterables = [
+        ('in_file', dataset),
+        ('metadata', metadata),
+        ('entities', entities),
+    ]
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
         name='outputnode',
-    )
-
-    # Get metadata
-    meta = pe.MapNode(
-        ReadSidecarJSON(index_db=config.execution.bids_database_dir),
-        name='metadata',
-        iterfield=['in_file'],
     )
 
     pick_echo = pe.Node(SelectEcho(), name='pick_echo')
@@ -183,10 +149,9 @@ def fmri_qc_workflow(name='funcMRIQC'):
     # fmt: off
 
     workflow.connect([
-        (inputnode, meta, [('in_file', 'in_file')]),
-        (inputnode, pick_echo, [('in_file', 'in_files')]),
+        (inputnode, pick_echo, [('in_file', 'in_files'),
+                                ('metadata', 'metadata')]),
         (inputnode, sanitize, [('in_file', 'in_file')]),
-        (meta, pick_echo, [('out_dict', 'metadata')]),
         (pick_echo, non_steady_state_detector, [('out_file', 'in_file')]),
         (non_steady_state_detector, sanitize, [('n_volumes_to_discard', 'n_volumes_to_discard')]),
         (sanitize, hmcwf, [('out_file', 'inputnode.in_file')]),
@@ -194,14 +159,9 @@ def fmri_qc_workflow(name='funcMRIQC'):
         (hmcwf, tsnr, [('outputnode.out_file', 'in_file')]),
         (mean, ema, [(('out_file', _pop), 'inputnode.epi_mean')]),
         # Feed IQMs computation
-        (meta, iqmswf, [('out_dict', 'inputnode.metadata'),
-                        ('subject', 'inputnode.subject'),
-                        ('session', 'inputnode.session'),
-                        ('task', 'inputnode.task'),
-                        ('acquisition', 'inputnode.acquisition'),
-                        ('reconstruction', 'inputnode.reconstruction'),
-                        ('run', 'inputnode.run')]),
-        (inputnode, iqmswf, [('in_file', 'inputnode.in_file')]),
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
+                             ('metadata', 'inputnode.metadata'),
+                             ('entities', 'inputnode.entities')]),
         (sanitize, iqmswf, [('out_file', 'inputnode.in_ras')]),
         (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
         (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
@@ -212,6 +172,7 @@ def fmri_qc_workflow(name='funcMRIQC'):
         # Feed reportlet generation
         (inputnode, func_report_wf, [
             ('in_file', 'inputnode.name_source'),
+            ('metadata', 'inputnode.meta_sidecar'),
         ]),
         (sanitize, func_report_wf, [('out_file', 'inputnode.in_ras')]),
         (mean, func_report_wf, [('out_file', 'inputnode.epi_mean')]),
@@ -229,7 +190,6 @@ def fmri_qc_workflow(name='funcMRIQC'):
             ('outputnode.out_dvars', 'inputnode.in_dvars'),
             ('outputnode.outliers', 'inputnode.outliers'),
         ]),
-        (meta, func_report_wf, [('out_dict', 'inputnode.meta_sidecar')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
     # fmt: on
@@ -320,13 +280,15 @@ def compute_iqms(name='ComputeIQMs'):
     from mriqc.interfaces.transitional import GCOR
     from mriqc.workflows.utils import _tofloat, get_fwhmx
 
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb['bold']
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
                 'in_file',
+                'metadata',
+                'entities',
                 'in_ras',
                 'epi_mean',
                 'brainmask',
@@ -334,15 +296,8 @@ def compute_iqms(name='ComputeIQMs'):
                 'hmc_fd',
                 'fd_thres',
                 'in_tsnr',
-                'metadata',
                 'mpars',
                 'exclude_index',
-                'subject',
-                'session',
-                'task',
-                'acquisition',
-                'reconstruction',
-                'run',
             ]
         ),
         name='inputnode',
@@ -396,6 +351,7 @@ def compute_iqms(name='ComputeIQMs'):
         FunctionalQC(),
         name='measures',
         mem_gb=mem_gb * 3,
+        n_procs=max(1, config.nipype.nprocs // 2),
         iterfield=['in_epi', 'in_hmc', 'in_tsnr', 'in_dvars', 'in_fwhm'],
     )
 
@@ -466,12 +422,7 @@ def compute_iqms(name='ComputeIQMs'):
         (inputnode, addprov, [('in_file', 'in_file')]),
         (inputnode, datasink, [('in_file', 'in_file'),
                                ('exclude_index', 'dummy_trs'),
-                               (('subject', _pop), 'subject_id'),
-                               (('session', _pop), 'session_id'),
-                               (('task', _pop), 'task_id'),
-                               (('acquisition', _pop), 'acq_id'),
-                               (('reconstruction', _pop), 'rec_id'),
-                               (('run', _pop), 'run_id'),
+                               ('entities', 'entities'),
                                ('metadata', 'metadata')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (outliers, datasink, [(('out_file', _parse_tout), 'aor')]),
@@ -556,7 +507,7 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Despike, Refit, Volreg
 
-    mem_gb = config.workflow.biggest_file_gb
+    mem_gb = config.workflow.biggest_file_gb['bold']
 
     workflow = pe.Workflow(name=name)
 
@@ -585,12 +536,16 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
 
     # Apply transforms to other echos
     apply_hmc = pe.MapNode(
-        niu.Function(function=_apply_transforms, input_names=['in_file', 'in_xfm']),
+        niu.Function(
+            function=_apply_transforms,
+            input_names=['in_file', 'in_xfm', 'max_concurrent'],
+        ),
         name='apply_hmc',
         iterfield=['in_file'],
         # NiTransforms is a memory hog, so ensure only one process is running at a time
-        num_threads=config.environment.cpu_count,
+        n_procs=config.environment.cpu_count,
     )
+    apply_hmc.inputs.max_concurrent = 4
 
     # fmt: off
     workflow.connect([
@@ -814,14 +769,22 @@ def _parse_tout(in_file):
     return data.mean()
 
 
-def _apply_transforms(in_file, in_xfm):
+def _apply_transforms(in_file, in_xfm, max_concurrent):
     from pathlib import Path
 
     from nitransforms.linear import load
+    from nitransforms.resampling import apply
 
     from mriqc.utils.bids import derive_bids_fname
 
-    realigned = load(in_xfm, fmt='afni', reference=in_file, moving=in_file).apply(in_file)
+    realigned = apply(
+        load(in_xfm, fmt='afni', reference=in_file, moving=in_file),
+        in_file,
+        dtype_width=4,
+        serialize_nvols=2,
+        max_concurrent=max_concurrent,
+        mode='reflect',
+    )
     out_file = derive_bids_fname(
         in_file,
         entity='desc-realigned',

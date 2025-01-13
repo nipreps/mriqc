@@ -151,7 +151,8 @@ Other measures
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
   Mean, median, median absolute deviation (mad), standard deviation, kurtosis,
-  5% percentile, 95% percentile and number of voxels of the distribution of background,
+  5% percentile, 95% percentile and number of voxels of the distribution of background (bg),
+  foreground (fg: corresponds to the voxels within the brain mask),
   :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`.
 
 .. _iqms_tpm:
