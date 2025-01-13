@@ -696,7 +696,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -725,7 +725,7 @@ jobs:
 
   deploy_docker:
     machine:
-      image: ubuntu-2004:202104-01
+      image: default
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:
