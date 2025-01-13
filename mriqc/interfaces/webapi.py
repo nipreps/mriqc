@@ -163,8 +163,8 @@ class UploadIQMs(SimpleInterface):
                 | orjson.OPT_APPEND_NEWLINE
                 | orjson.OPT_SERIALIZE_NUMPY
             ),
-        )
-        Path('payload.json').write_bytes(payload_str)
+        ).decode('utf-8')
+        Path('payload.json').write_text(payload_str)
         self._results['payload_file'] = str(Path('payload.json').absolute())
 
         try:
