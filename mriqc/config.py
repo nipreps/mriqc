@@ -618,7 +618,7 @@ class workflow(_Config):
 
         if cls.inputs_path.exists():
             with open(cls.inputs_path, 'rb') as handle:
-                _inputs = pickle.load(handle)
+                _inputs = pickle.load(handle)  # noqa: S301
 
                 cls.inputs = _inputs['paths']
                 cls.inputs_metadata = _inputs['metadata']
