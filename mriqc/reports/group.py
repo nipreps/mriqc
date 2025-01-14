@@ -185,7 +185,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['efc'], None),
             (['fber'], None),
             (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
-            (['gsr_%s' % a for a in ('x', 'y')], None),
+            ([f'gsr_{a}' for a in ('x', 'y')], None),
             (['snr'], None),
             (['dvars_std', 'dvars_vstd'], None),
             (['dvars_nstd'], None),
