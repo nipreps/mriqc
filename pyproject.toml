@@ -214,8 +214,8 @@ extend-select = [
   "Q",
 ]
 ignore = [
+  "F841",
   "S311", # We are not using random for cryptographic purposes
-  "ISC001",
   "S603",
 ]
 

@@ -114,14 +114,14 @@ set i 0
         center = np.average([bbox_min, bbox_max], axis=0)
 
         if opts.hist_eq:
-            ref_file = op.join(tmp_sub, '%s.mgz' % subid)
+            ref_file = op.join(tmp_sub, f'{subid}.mgz')
             img = nb.load(op.join(sub_path, 'mri', 'norm.mgz'))
             data = exposure.equalize_adapthist(img.get_fdata(), clip_limit=0.03)
             nb.MGHImage(data, img.affine, img.header).to_filename(ref_file)
 
         if not opts.zoom:
             # Export tiffs for left hemisphere
-            tcl_file = op.join(tmp_sub, '%s.tcl' % subid)
+            tcl_file = op.join(tmp_sub, f'{subid}.tcl')
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write(
@@ -147,7 +147,7 @@ set i 0
             if opts.use_xvfb:
                 cmd = _xvfb_run() + cmd
 
-            print('Running tkmedit: %s' % ' '.join(cmd))
+            print('Running tkmedit: {}'.format(' '.join(cmd)))
             sp.call(cmd, env=environ)
             # Convert to animated gif
             print('Stacking coronal slices')
@@ -165,7 +165,7 @@ set i 0
 
         else:
             # Export tiffs for left hemisphere
-            tcl_file = op.join(tmp_sub, 'lh-%s.tcl' % subid)
+            tcl_file = op.join(tmp_sub, f'lh-{subid}.tcl')
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
@@ -184,13 +184,13 @@ set i 0
             if opts.use_xvfb:
                 cmd = _xvfb_run() + cmd
 
-            print('Running tkmedit: %s' % ' '.join(cmd))
+            print('Running tkmedit: {}'.format(' '.join(cmd)))
             sp.call(cmd, env=environ)
             # Convert to animated gif
             print('Stacking coronal slices')
 
             # Export tiffs for right hemisphere
-            tcl_file = op.join(tmp_sub, 'rh-%s.tcl' % subid)
+            tcl_file = op.join(tmp_sub, f'rh-{subid}.tcl')
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
@@ -209,7 +209,7 @@ set i 0
             if opts.use_xvfb:
                 cmd = _xvfb_run() + cmd
 
-            print('Running tkmedit: %s' % ' '.join(cmd))
+            print('Running tkmedit: {}'.format(' '.join(cmd)))
             sp.call(cmd, env=environ)
             # Convert to animated gif
             print('Stacking coronal slices')
@@ -260,7 +260,7 @@ def _xvfb_run(wait=5, server_args='-screen 0, 1600x1200x24', logs=None):
 
 
 def _myerror(msg):
-    print('WARNING: Error deleting temporal files: %s' % msg)
+    print(f'WARNING: Error deleting temporal files: {msg}')
 
 
 if __name__ == '__main__':

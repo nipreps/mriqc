@@ -127,7 +127,7 @@ def fetch(args: (str, str, str, str)) -> (str, str):
         out_dir = op.abspath(out_dir)
 
     pkg_id = [u[9:] for u in url.split('/') if u.startswith('NITRC_IR_')][0]
-    sub_file = op.join(tmpdir, '%s.zip' % pkg_id)
+    sub_file = op.join(tmpdir, f'{pkg_id}.zip')
 
     cmd = [_curl_cmd, '-s', '-u', f'{user}:{password}', '-o', sub_file, url]
     sp.check_call(cmd)
