@@ -190,7 +190,6 @@ skip = """
 [tool.ruff]
 exclude = [".maint/update_authors.py"]
 line-length = 99
-target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = [
