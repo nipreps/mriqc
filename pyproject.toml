@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "acres",
-  "dipy",
+  "dipy >= 1.10.0",
   'importlib_resources; python_version < "3.9"', # jinja2 imports deprecated function removed in 2.1
   "markupsafe ~= 2.0.1",
   "matplotlib",
@@ -48,7 +48,7 @@ dynamic = ["version"]
 license = "Apache-2.0"
 name = "mriqc"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [project.urls]
 "Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
@@ -214,8 +214,8 @@ extend-select = [
   "Q",
 ]
 ignore = [
+  "F841",
   "S311", # We are not using random for cryptographic purposes
-  "ISC001",
   "S603",
 ]
 

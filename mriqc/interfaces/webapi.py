@@ -163,8 +163,8 @@ class UploadIQMs(SimpleInterface):
                 | orjson.OPT_APPEND_NEWLINE
                 | orjson.OPT_SERIALIZE_NUMPY
             ),
-        )
-        Path('payload.json').write_bytes(payload_str)
+        ).decode('utf-8')
+        Path('payload.json').write_text(payload_str)
         self._results['payload_file'] = str(Path('payload.json').absolute())
 
         try:
@@ -191,7 +191,7 @@ class UploadIQMs(SimpleInterface):
                 '',
                 '',
                 'Payload:',
-                payload_str,
+                f'{payload_str}',
             ]
         )
         config.loggers.interface.warning(errmsg)
@@ -290,7 +290,7 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = (f'Error uploading IQMs: Connection error:', f'{err}')
+        errmsg = ('Error uploading IQMs: Connection error:', f'{err}')
     except requests.exceptions.ReadTimeout as err:
         errmsg = (f'Error uploading IQMs: Server {endpoint} is down.', f'{err}')
 

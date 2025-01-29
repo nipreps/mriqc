@@ -23,7 +23,6 @@
 """Encapsulates report generation functions."""
 
 from itertools import product
-from sys import version_info
 
 import pandas as pd
 
@@ -34,17 +33,13 @@ from ..utils.misc import BIDS_COMP
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
     from datetime import datetime, timezone
+    from io import StringIO as TextIO
 
     from niworkflows.data import Loader
 
     from mriqc.data.config import GroupTemplate
 
     from .. import __version__ as ver
-
-    if version_info[0] > 2:
-        from io import StringIO as TextIO
-    else:
-        from io import BytesIO as TextIO
 
     UTC = timezone.utc
     load_data = Loader('mriqc')
@@ -185,7 +180,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['efc'], None),
             (['fber'], None),
             (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
-            (['gsr_%s' % a for a in ('x', 'y')], None),
+            ([f'gsr_{a}' for a in ('x', 'y')], None),
             (['snr'], None),
             (['dvars_std', 'dvars_vstd'], None),
             (['dvars_nstd'], None),

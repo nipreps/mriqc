@@ -14,8 +14,7 @@ Contents
 
    about
    install
-   running
-   docker
+   usage
    measures
    reports
    workflows
