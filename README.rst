@@ -4,7 +4,7 @@ mriqc: image quality metrics for quality assessment of MRI
 |DOI| |Zenodo| |Package| |Pythons| |DevStatus| |License| |Documentation| |CircleCI| |EOSS|
 
 MRIQC extracts no-reference IQMs (image quality metrics) from
-structural (T1w and T2w) and functional MRI (magnetic resonance imaging)
+structural (T1w and T2w), functional and diffusion MRI (magnetic resonance imaging)
 data.
 
 MRIQC is an open-source project, developed under the following
