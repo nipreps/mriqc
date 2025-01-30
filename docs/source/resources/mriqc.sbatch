@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# NOTE: To use this script, edit lines 17, 26, 40, 54, 55, 58
+# NOTE: To use this script, edit lines 17, 26, 40, 55, 56, 58
  # labeled TODO with NOTES explaining how. 
 
 # Set SBATCH Parameters: 
