@@ -21,8 +21,9 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Interfaces for manipulating DWI data."""
-
 from __future__ import annotations
+
+import os
 
 import nibabel as nb
 import numpy as np
@@ -67,6 +68,19 @@ __all__ = (
     'WeightedStat',
 )
 
+DWI_TEMPLATE = """\
+\t<ul class="elem-desc">
+\t\t<li>Filename: {filename}</li>
+\t\t\t<li>Phase-encoding (PE) direction: {pedir}</li>
+\t\t\t<li>Echo time (TE): {te}</li>
+\t\t\t<li>Repetition time (TR): {tr}</li>
+\t\t\t<li>Number of b=0: {n_b0}</li>
+\t\t\t<li>Indices of the b=0 scans: {b0_indices}</li>
+\t\t\t<li>Type of DWIs: {dwi_type}</li>
+\t\t\t<li>Number of shells (after 'shell-ifying' if DSI): {n_shells}</li>
+\t\t\t<li>Number of DWIs: {n_dwis}</li>
+\t</ul>
+"""
 
 FD_THRESHOLD = 0.2
 
@@ -349,6 +363,71 @@ class ReadDWIMetadata(ReadSidecarJSON):
         return runtime
 
 
+class SummaryOutputSpec(_TraitedSpec):
+    out_report = File(exists=True, desc='HTML segment containing summary')
+
+
+class SummaryInterface(SimpleInterface):
+    output_spec = SummaryOutputSpec
+
+    def _run_interface(self, runtime):
+        segment = self._generate_segment()
+        fname = os.path.join(runtime.cwd, 'report.html')
+        with open(fname, 'w') as fobj:
+            fobj.write(segment)
+        self._results['out_report'] = fname
+        return runtime
+
+    def _generate_segment(self):
+        raise NotImplementedError
+
+
+class DWISummaryInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='the input DWI nifti file')
+    metadata = traits.Dict(desc='layout metadata')
+    n_shells = traits.Int(desc='number of shells')
+    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit on DSI')
+    b_indices = traits.List(
+        traits.List(traits.Int, minlen=1),
+        minlen=1,
+        desc='list of ``n_shells`` b-value-wise indices lists',
+    )
+    b_values = traits.List(
+        traits.Float,
+        minlen=1,
+        desc='list of ``n_shells`` b-values associated with each shell (only nonzero)',
+    )
+
+
+class DWISummary(SummaryInterface):
+    input_spec = DWISummaryInputSpec
+
+    def _generate_segment(self):
+        # Determine type of DWI data (multi-shell, single-shell or DSI)
+        if self.inputs.models == [0]:
+            dwi_type = 'single-shell' if self.inputs.n_shells == 1 else 'multi-shell'
+        else:
+            dwi_type = 'DSI'
+
+        # Format string to display number of DWIs per shell
+        n_dwis = ', '.join(
+            f'{len(indices)} DWIs at b={bval:.0f}'
+            for bval, indices in zip(self.inputs.b_values, self.inputs.b_indices[1:])
+        )
+
+        return DWI_TEMPLATE.format(
+            filename=os.path.basename(self.inputs.in_file),
+            pedir=self.inputs.metadata.get('PhaseEncodingDirection'),
+            te=self.inputs.metadata.get('EchoTime'),
+            tr=self.inputs.metadata.get('RepetitionTime'),
+            n_b0=len(self.inputs.b_indices[0]),
+            b0_indices=self.inputs.b_indices[0],
+            dwi_type=dwi_type,
+            n_shells=self.inputs.n_shells,
+            n_dwis=n_dwis,
+        )
+
+
 class _WeightedStatInputSpec(_BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='an image')
     in_weights = traits.List(
@@ -402,7 +481,7 @@ class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
 
 
 class _NumberOfShellsOutputSpec(_TraitedSpec):
-    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit')
+    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit on DSI')
     n_shells = traits.Int(desc='number of shells')
     out_data = traits.List(
         traits.Float,
@@ -460,7 +539,7 @@ class NumberOfShells(SimpleInterface):
 
         if len(shell_bvals) <= self.inputs.dsi_threshold:
             self._results['n_shells'] = len(shell_bvals)
-            self._results['models'] = [self._results['n_shells']]
+            self._results['models'] = [0]
             self._results['out_data'] = round_bvals.tolist()
             self._results['b_values'] = shell_bvals
         else:
