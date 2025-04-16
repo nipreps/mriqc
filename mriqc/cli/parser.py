@@ -182,7 +182,7 @@ Automated Quality Control and visual reports for Quality Assessment of structura
         metavar='PATH',
         help='a JSON file describing custom BIDS input filter using pybids '
         '{<suffix>:{<entity>:<filter>,...},...} '
-        '(https://github.com/bids-standard/pybids/blob/master/bids/layout/config/bids.json)',
+        '(https://github.com/bids-standard/pybids/blob/master/src/bids/layout/config/bids.json)',
     )
     g_bids.add_argument(
         '--session-id',
