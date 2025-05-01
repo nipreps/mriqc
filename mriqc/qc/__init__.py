@@ -27,7 +27,7 @@ A no-reference :abbr:`IQM (image quality metric)` is a measurement of some aspec
 of the actual image which cannot be compared to a reference value for the metric
 since there is no ground-truth about what this number should be.
 All the computed :abbr:`IQMs (image quality metrics)` corresponding to
-an image are saved in a `JSON file <iqm_json>`_ under the ``<output-dir>/derivatives/``
+an image are saved in a `JSON file <../../docs/source/_static/iqms.json>`_ under the ``<output-dir>/derivatives/``
 folder.
 
 The IQMs can be grouped in four broad categories, providing a vector of 56
