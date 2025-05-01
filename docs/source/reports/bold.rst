@@ -6,7 +6,7 @@ BOLD images
 One individual report per input functional timeseries will be generated
 in the path ``<output_dir>/reports/sub-IDxxx_task-name_bold.html```.
 An example report is given
-`here <http://web.stanford.edu/group/poldracklab/mriqc/reports/sub-50013_task-rest_bold.html>`_.
+`here <../_static/example_funcreport.html>`_.
 
 The individual report for the functional images is structured as follows:
 
