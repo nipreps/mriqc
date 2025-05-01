@@ -507,6 +507,7 @@ def compute_iqms(name='ComputeIQMs'):
         (inputnode, getqi2, [('in_ras', 'in_file'),
                              ('hatmask', 'air_msk')]),
         (inputnode, homog, [('inu_corrected', 'in_file'),
+                            ('brainmask', 'brain_mask'),
                             (('pvms', _getwm), 'wm_mask')]),
         (inputnode, measures, [('in_inu', 'in_bias'),
                                ('in_ras', 'in_file'),
