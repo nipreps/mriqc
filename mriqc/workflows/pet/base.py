@@ -38,18 +38,16 @@ The functional workflow follows the following steps:
 #. Spatial Normalization to MNI (ANTs) -- :py:func:`epi_mni_align`
 #. Extraction of IQMs -- :py:func:`compute_iqms`.
 #. Individual-reports generation --
-   :py:func:`~mriqc.workflows.functional.output.init_func_report_wf`.
+   :py:func:`~mriqc.workflows.functional.output.init_pet_report_wf`.
 
 This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
 """
 
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
-from niworkflows.utils.connections import pop_file as _pop
 
 from mriqc import config
-from mriqc.workflows.functional.output import init_func_report_wf
-from mriqc.workflows.functional.base import hmc
+from mriqc.workflows.pet.output import init_pet_report_wf
 
 
 def pet_qc_workflow(name='petMRIQC'):
@@ -65,22 +63,15 @@ def pet_qc_workflow(name='petMRIQC'):
             wf = pet_qc_workflow()
 
     """
-    from nipype.interfaces.afni import TStat
-    from niworkflows.interfaces.header import SanitizeImage
-
-    from mriqc.interfaces.functional import SelectEcho
     from mriqc.messages import BUILDING_WORKFLOW
 
-    modality = 'pet'
-
-    mem_gb = config.workflow.biggest_file_gb[modality]
-    dataset = config.workflow.inputs[modality]
-    metadata = config.workflow.inputs_metadata[modality]
-    entities = config.workflow.inputs_entities[modality]
+    dataset = config.workflow.inputs['pet']
+    metadata = config.workflow.inputs_metadata['pet']
+    entities = config.workflow.inputs_entities['pet']
 
     message = BUILDING_WORKFLOW.format(
         modality='pet',
-        detail=f'for {len(dataset)} {modality.upper()} runs.',
+        detail=f'for {len(dataset)} PET runs.',
     )
     config.loggers.workflow.info(message)
 
@@ -101,15 +92,8 @@ def pet_qc_workflow(name='petMRIQC'):
     ]
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_dvars', 'out_fd']),
+        niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_fd']),
         name='outputnode',
-    )
-
-    sanitize = pe.MapNode(
-        SanitizeImage(max_32bit=config.execution.float32),
-        name='sanitize',
-        mem_gb=mem_gb * 4.0,
-        iterfield=['in_file'],
     )
 
     # Workflow --------------------------------------------------------
@@ -120,63 +104,34 @@ def pet_qc_workflow(name='petMRIQC'):
     # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
 
-    # 2. Compute mean fmri
-    mean = pe.MapNode(
-        TStat(options='-mean', outputtype='NIFTI_GZ'),
-        name='mean',
-        mem_gb=mem_gb * 1.5,
-        iterfield=['in_file'],
-    )
-
     # 7. Compute IQMs
     iqmswf = compute_iqms()
     # Reports
-    func_report_wf = init_func_report_wf()
+    pet_report_wf = init_pet_report_wf()
 
     # fmt: off
-
     workflow.connect([
-        (inputnode, sanitize, [('in_file', 'in_file')]),
-        (sanitize, hmcwf, [('out_file', 'inputnode.in_file')]),
-        (hmcwf, mean, [('outputnode.out_file', 'in_file')]),
+        (inputnode, pet_report_wf, [('in_file', 'inputnode.name_source'),]),
         # Feed IQMs computation
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
-        (sanitize, iqmswf, [('out_file', 'inputnode.in_ras')]),
-        (mean, iqmswf, [('out_file', 'inputnode.epi_mean')]),
-        (hmcwf, iqmswf, [('outputnode.out_file', 'inputnode.hmc_epi'),
-                         ('outputnode.out_fd', 'inputnode.hmc_fd'),
-                         ('outputnode.mpars', 'inputnode.mpars')]),
+        (hmcwf, iqmswf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
         # Feed reportlet generation
-        (inputnode, func_report_wf, [
+        (inputnode, pet_report_wf, [
             ('in_file', 'inputnode.name_source'),
             ('metadata', 'inputnode.meta_sidecar'),
         ]),
-        (sanitize, func_report_wf, [('out_file', 'inputnode.in_ras')]),
-        (mean, func_report_wf, [('out_file', 'inputnode.epi_mean')]),
-        (hmcwf, func_report_wf, [
+        (hmcwf, pet_report_wf, [
             ('outputnode.out_fd', 'inputnode.hmc_fd'),
-            ('outputnode.out_file', 'inputnode.hmc_epi'),
+            ('outputnode.out_xfm', 'inputnode.hmc_xfm'),
         ]),
-        (iqmswf, func_report_wf, [
+        (iqmswf, pet_report_wf, [
             ('outputnode.out_file', 'inputnode.in_iqms'),
-            ('outputnode.out_dvars', 'inputnode.in_dvars'),
-            ('outputnode.outliers', 'inputnode.outliers'),
         ]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
     ])
     # fmt: on
-
-    if config.workflow.fft_spikes_detector:
-        # fmt: off
-        workflow.connect([
-            (iqmswf, func_report_wf, [
-                ('outputnode.out_spikes', 'inputnode.in_spikes'),
-                ('outputnode.out_fft', 'inputnode.in_fft'),
-            ]),
-        ])
-        # fmt: on
 
     # Upload metrics
     if not config.execution.no_sub:
@@ -200,6 +155,66 @@ def pet_qc_workflow(name='petMRIQC'):
 
     return workflow
 
+def hmc(name='petHMC', omp_nthreads=None):
+    """
+    Create a :abbr:` petHMC (head motion correction)` workflow.
+
+    .. workflow::
+
+        from mriqc.workflows.functional.base import hmc
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = hmc()
+
+    """
+    from nipype.algorithms.confounds import FramewiseDisplacement
+    from nipype.interfaces.afni import Volreg
+    from mriqc.interfaces.pet import ChooseRefHMC
+
+    mem_gb = config.workflow.biggest_file_gb['pet']
+
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        niu.IdentityInterface(fields=['in_file', 'fd_radius']),
+        name='inputnode',
+    )
+
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=['out_file', 'out_xfm', 'out_fd', 'mpars']),
+        name='outputnode',
+    )
+    choose_ref_node = pe.Node(
+        ChooseRefHMC(),
+        name='ChooseRefHMC',
+    )
+
+    estimate_hm = pe.Node(
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        name='estimate_hm',
+        mem_gb=mem_gb * 2.5,
+    )
+
+    # Compute the frame-wise displacement
+    fdnode = pe.Node(
+        FramewiseDisplacement(normalize=False, parameter_source='AFNI'),
+        name='ComputeFD',
+    )
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, choose_ref_node, [('in_file', 'in_file')]),
+        (inputnode, estimate_hm, [('in_file', 'in_file')]),
+        (inputnode, fdnode, [('fd_radius', 'radius')]),
+        (choose_ref_node, estimate_hm, [('out_file', 'basefile')]),
+        (estimate_hm, outputnode, [('oned_matrix_save', 'out_xfm')]),
+        (estimate_hm, fdnode, [('oned_file', 'in_file')]),
+        (estimate_hm, outputnode, [('oned_file', 'mpars')]),
+        (fdnode, outputnode, [('out_file', 'out_fd')]),
+    ])
+    # fmt: on
+
+    return workflow
 
 def compute_iqms(name='ComputeIQMs'):
     """
@@ -213,13 +228,9 @@ def compute_iqms(name='ComputeIQMs'):
             wf = compute_iqms()
 
     """
-    from nipype.algorithms.confounds import ComputeDVARS
-
-    from mriqc.interfaces import DerivativesDataSink, FunctionalQC, GatherTimeseries, IQMFileSink
+    from mriqc.interfaces import IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
-    from mriqc.workflows.utils import _tofloat, get_fwhmx
-
-    mem_gb = config.workflow.biggest_file_gb['bold']
+    from mriqc.interfaces.pet import FDStats
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
@@ -228,15 +239,8 @@ def compute_iqms(name='ComputeIQMs'):
                 'in_file',
                 'metadata',
                 'entities',
-                'in_ras',
-                'epi_mean',
-                'brainmask',
-                'hmc_epi',
                 'hmc_fd',
                 'fd_thres',
-                'in_tsnr',
-                'mpars',
-                'exclude_index',
             ]
         ),
         name='inputnode',
@@ -245,10 +249,6 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'out_file',
-                'out_dvars',
-                'outliers',
-                'out_spikes',
-                'out_fft',
             ]
         ),
         name='outputnode',
@@ -257,52 +257,11 @@ def compute_iqms(name='ComputeIQMs'):
     # Set FD threshold
     inputnode.inputs.fd_thres = config.workflow.fd_thres
 
-    # Compute DVARS
-    dvnode = pe.MapNode(
-        ComputeDVARS(save_plot=False, save_all=True),
-        name='ComputeDVARS',
-        mem_gb=mem_gb * 3,
-        iterfield=['in_file'],
+    # Compute FD statistics
+    fd_stats = pe.Node(
+        FDStats(),
+        name='FDStats',
     )
-
-    # AFNI quality measures
-    fwhm = pe.MapNode(get_fwhmx(), name='smoothness', iterfield=['in_file'])
-    fwhm.inputs.acf = True  # Only AFNI >= 16
-
-    measures = pe.MapNode(
-        FunctionalQC(),
-        name='measures',
-        mem_gb=mem_gb * 3,
-        n_procs=max(1, config.nipype.nprocs // 2),
-        iterfield=['in_epi', 'in_hmc', 'in_tsnr', 'in_dvars', 'in_fwhm'],
-    )
-
-    timeseries = pe.MapNode(
-        GatherTimeseries(mpars_source='AFNI'),
-        name='timeseries',
-        mem_gb=mem_gb * 3,
-        iterfield=['dvars', 'outliers', 'quality'],
-    )
-
-    # fmt: off
-    workflow.connect([
-        (inputnode, dvnode, [('hmc_epi', 'in_file'),
-                             ('brainmask', 'in_mask')]),
-        (inputnode, measures, [('epi_mean', 'in_epi'),
-                               ('brainmask', 'in_mask'),
-                               ('hmc_epi', 'in_hmc'),
-                               ('hmc_fd', 'in_fd'),
-                               ('fd_thres', 'fd_thres'),
-                               ('in_tsnr', 'in_tsnr')]),
-        (inputnode, fwhm, [('epi_mean', 'in_file'),
-                           ('brainmask', 'mask')]),
-        (dvnode, measures, [('out_all', 'in_dvars')]),
-        (fwhm, measures, [(('fwhm', _tofloat), 'in_fwhm')]),
-        (dvnode, outputnode, [('out_all', 'out_dvars')]),
-        (dvnode, timeseries, [('out_all', 'dvars')]),
-        (inputnode, timeseries, [('hmc_fd', 'fd'), ('mpars', 'mpars')]),
-    ])
-    # fmt: on
 
     addprov = pe.MapNode(
         AddProvenance(modality='pet'),
@@ -323,49 +282,18 @@ def compute_iqms(name='ComputeIQMs'):
         iterfield=['in_file', 'root', 'metadata', 'provenance'],
     )
 
-    # Save timeseries TSV file
-    ds_timeseries = pe.MapNode(
-        DerivativesDataSink(base_directory=str(config.execution.output_dir), suffix='timeseries'),
-        name='ds_timeseries',
-        run_without_submitting=True,
-        iterfield=['in_file', 'source_file', 'meta_dict'],
-    )
-
     # fmt: off
     workflow.connect([
         (inputnode, addprov, [('in_file', 'in_file')]),
         (inputnode, datasink, [('in_file', 'in_file'),
-                               ('exclude_index', 'dummy_trs'),
                                ('entities', 'entities'),
                                ('metadata', 'metadata')]),
+        (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
+                               ('fd_thres', 'fd_thres')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
-        (measures, datasink, [('out_qc', 'root')]),
+        (fd_stats, datasink, [('out_fd', 'root')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
-        (inputnode, ds_timeseries, [('in_file', 'source_file')]),
-        (timeseries, ds_timeseries, [('timeseries_file', 'in_file'),
-                                     ('timeseries_metadata', 'meta_dict')]),
     ])
     # fmt: on
 
     return workflow
-
-
-def _parse_tqual(in_file):
-    if isinstance(in_file, (list, tuple)):
-        return [_parse_tqual(f) for f in in_file] if len(in_file) > 1 else _parse_tqual(in_file[0])
-
-    import numpy as np
-
-    with open(in_file) as fin:
-        lines = fin.readlines()
-    return np.mean([float(line.strip()) for line in lines if not line.startswith('++')])
-
-
-def _parse_tout(in_file):
-    if isinstance(in_file, (list, tuple)):
-        return [_parse_tout(f) for f in in_file] if len(in_file) > 1 else _parse_tout(in_file[0])
-
-    import numpy as np
-
-    data = np.loadtxt(in_file)  # pylint: disable=no-member
-    return data.mean()

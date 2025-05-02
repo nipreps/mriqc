@@ -492,9 +492,9 @@ def fmri_bmsk_workflow(name='fMRIBrainMask'):
     return workflow
 
 
-def hmc(name='HMC', modality='bold', omp_nthreads=None):
+def hmc(name='fmriHMC', omp_nthreads=None):
     """
-    Create a :abbr:`HMC (head motion correction)` workflow.
+    Create a :abbr:`HMC (head motion correction)` workflow for fMRI.
 
     .. workflow::
 
@@ -507,7 +507,7 @@ def hmc(name='HMC', modality='bold', omp_nthreads=None):
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Despike, Refit, Volreg
 
-    mem_gb = config.workflow.biggest_file_gb[modality]
+    mem_gb = config.workflow.biggest_file_gb['bold']
 
     workflow = pe.Workflow(name=name)
 
