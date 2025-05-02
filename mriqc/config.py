@@ -139,7 +139,7 @@ if not any(
     os.environ['PYTHONWARNINGS'] = 'ignore'
 
 
-SUPPORTED_SUFFIXES: tuple[str, ...] = ('T1w', 'T2w', 'bold', 'dwi')
+SUPPORTED_SUFFIXES: tuple[str, ...] = ('T1w', 'T2w', 'bold', 'dwi', 'pet')
 
 DEFAULT_MEMORY_MIN_GB: float = 0.01
 DSA_MESSAGE: str = """\
