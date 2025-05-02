@@ -72,7 +72,7 @@ class _FDStatsInputSpec(BaseInterfaceInputSpec):
 
 
 class _FDStatsOutputSpec(TraitedSpec):
-    out_fd = dict(desc='Dictionary with FD metrics: mean, num, perc')
+    out_fd = traits.Dict(desc='Dictionary with FD metrics: mean, num, perc')
 
 
 class FDStats(SimpleInterface):
