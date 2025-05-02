@@ -111,20 +111,17 @@ def pet_qc_workflow(name='petMRIQC'):
 
     # fmt: off
     workflow.connect([
-        (inputnode, pet_report_wf, [('in_file', 'inputnode.name_source'),]),
+        (inputnode, hmcwf, [('in_file', 'inputnode.in_file')]),
         # Feed IQMs computation
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
         (hmcwf, iqmswf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
         # Feed reportlet generation
-        (inputnode, pet_report_wf, [
-            ('in_file', 'inputnode.name_source'),
-            ('metadata', 'inputnode.meta_sidecar'),
-        ]),
+        (inputnode, pet_report_wf, [('in_file', 'inputnode.name_source')]),
         (hmcwf, pet_report_wf, [
             ('outputnode.out_fd', 'inputnode.hmc_fd'),
-            ('outputnode.out_xfm', 'inputnode.hmc_xfm'),
+            ('outputnode.out_mot_param', 'inputnode.hmc_mot_param'),
         ]),
         (iqmswf, pet_report_wf, [
             ('outputnode.out_file', 'inputnode.in_iqms'),
@@ -182,7 +179,7 @@ def hmc(name='petHMC', omp_nthreads=None):
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=['out_file', 'out_xfm', 'out_fd', 'mpars']),
+        niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars']),
         name='outputnode',
     )
     choose_ref_node = pe.Node(
@@ -208,7 +205,7 @@ def hmc(name='petHMC', omp_nthreads=None):
         (inputnode, estimate_hm, [('in_file', 'in_file')]),
         (inputnode, fdnode, [('fd_radius', 'radius')]),
         (choose_ref_node, estimate_hm, [('out_file', 'basefile')]),
-        (estimate_hm, outputnode, [('oned_matrix_save', 'out_xfm')]),
+        (estimate_hm, outputnode, [('oned_file', 'out_mot_param')]),
         (estimate_hm, fdnode, [('oned_file', 'in_file')]),
         (estimate_hm, outputnode, [('oned_file', 'mpars')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),

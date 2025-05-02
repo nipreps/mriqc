@@ -24,20 +24,20 @@ import os
 import nibabel as nb
 import numpy as np
 import pandas as pd
-from nipype.interfaces.base import BaseInterfaceInputSpec, File, TraitedSpec
+from nipype.interfaces.base import BaseInterfaceInputSpec, SimpleInterface, File, TraitedSpec, traits
 
 
-class ChooseRefHMCInputSpec(BaseInterfaceInputSpec):
+class _ChooseRefHMCInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='Input PET image file')
 
 
-class ChooseRefHMCOutputSpec(TraitedSpec):
+class _ChooseRefHMCOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Output file with the selected reference frame')
 
 
-class ChooseRefHMC(BaseInterface):
-    input_spec = ChooseRefHMCInputSpec
-    output_spec = ChooseRefHMCOutputSpec
+class ChooseRefHMC(SimpleInterface):
+    input_spec = _ChooseRefHMCInputSpec
+    output_spec = _ChooseRefHMCOutputSpec
 
     def _run_interface(self, runtime):
         in_file = self.inputs.in_file
@@ -66,18 +66,18 @@ class ChooseRefHMC(BaseInterface):
         return runtime
 
 
-class FDStatsInputSpec(BaseInterfaceInputSpec):
+class _FDStatsInputSpec(BaseInterfaceInputSpec):
     in_fd = File(exists=True, mandatory=True, desc='Input FD file')
-    fd_thres = File(mandatory=True, desc='FD threshold value')
+    fd_thres = traits.Float(0.2, usedefault=True, desc='motion threshold for FD computation')
 
 
-class FDStatsOutputSpec(TraitedSpec):
+class _FDStatsOutputSpec(TraitedSpec):
     out_fd = dict(desc='Dictionary with FD metrics: mean, num, perc')
 
 
-class FDStats(BaseInterface):
-    input_spec = FDStatsInputSpec
-    output_spec = FDStatsOutputSpec
+class FDStats(SimpleInterface):
+    input_spec = _FDStatsInputSpec
+    output_spec = _FDStatsOutputSpec
 
     def _run_interface(self, runtime):
         # Load FD data
