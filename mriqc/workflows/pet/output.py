@@ -21,6 +21,7 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Writing out functional reportlets."""
+
 import os
 from os import path as op
 import numpy as np
@@ -53,7 +54,6 @@ def init_pet_report_wf(name='pet_report_wf'):
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=[
-                'hmc_epi',
                 'hmc_xfm',
                 'hmc_fd',
                 'in_iqms',
@@ -65,43 +65,43 @@ def init_pet_report_wf(name='pet_report_wf'):
 
     est_trans_rot = pe.MapNode(
         interface=AvScale(all_param=True),
-        name="est_trans_rot",
-        iterfield=["mat_file"],
+        name='est_trans_rot',
+        iterfield=['mat_file'],
     )
     compute_hmc_stat = pe.Node(
         niu.Function(
-            input_names=["translations", "rotation_translation_matrix", "in_file"],
-            output_names=["max_x", "max_y", "max_z", "max_tot", "median_tot"],
+            input_names=['translations', 'rotation_translation_matrix', 'in_file'],
+            output_names=['max_x', 'max_y', 'max_z', 'max_tot', 'median_tot'],
             function=compute_hmc_stat,
         ),
-        name="compute_hmc_stat",
+        name='compute_hmc_stat',
     )
 
     plot_fd = pe.Node(
         niu.Function(
-            input_names=["fd", "in_file"],
-            output_names=["out_file"],
+            input_names=['fd', 'in_file'],
+            output_names=['out_file'],
             function=plot_fd,
         ),
-        name="plot_fd",
+        name='plot_fd',
     )
 
     plot_trans = pe.Node(
         niu.Function(
-            input_names=["translations", "in_file"],
-            output_names=["out_file"],
+            input_names=['translations', 'in_file'],
+            output_names=['out_file'],
             function=plot_translation,
         ),
-        name="plot_translation",
+        name='plot_translation',
     )
 
     plot_rot = pe.Node(
         niu.Function(
-            input_names=["rot_angles", "in_file"],
-            output_names=["out_file"],
+            input_names=['rot_angles', 'in_file'],
+            output_names=['out_file'],
             function=plot_rotation,
         ),
-        name="plot_rotation",
+        name='plot_rotation',
     )
 
     ds_report_fd = pe.MapNode(
@@ -158,23 +158,25 @@ def init_pet_report_wf(name='pet_report_wf'):
 
     return workflow
 
+
 def plot_fd(fd, in_file):
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + "_fd.png")
+        out_file = op.abspath(fname + '_fd.png')
 
     plt.figure(figsize=(11, 5))
-    plt.plot(np.arange(0, len(fd)), fd, "-r")
-    plt.legend(loc="upper left")
-    plt.ylabel("Framewise Displacement [mm]")
-    plt.xlabel("frame #")
+    plt.plot(np.arange(0, len(fd)), fd, '-r')
+    plt.legend(loc='upper left')
+    plt.ylabel('Framewise Displacement [mm]')
+    plt.xlabel('frame #')
     plt.grid(visible=True)
-    plt.savefig(out_file, format="png")
+    plt.savefig(out_file, format='png')
     plt.close()
 
     return out_file
+
 
 def plot_rotation(rot_angles, in_file):
     rot_angles_np = np.array(rot_angles)
@@ -182,24 +184,24 @@ def plot_rotation(rot_angles, in_file):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + "_rotation.png")
+        out_file = op.abspath(fname + '_rotation.png')
 
     plt.figure(figsize=(11, 5))
-    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 0], "-r", label="rot_x")
-    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 1], "-g", label="rot_y")
-    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 2], "-b", label="rot_z")
-    plt.legend(loc="upper left")
-    plt.ylabel("Rotation [degrees]")
-    plt.xlabel("frame #")
+    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 0], '-r', label='rot_x')
+    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 1], '-g', label='rot_y')
+    plt.plot(np.arange(0, n_frames), rot_angles_np[:, 2], '-b', label='rot_z')
+    plt.legend(loc='upper left')
+    plt.ylabel('Rotation [degrees]')
+    plt.xlabel('frame #')
     plt.grid(visible=True)
-    plt.savefig(out_file, format="png")
+    plt.savefig(out_file, format='png')
     plt.close()
 
     return out_file
 
-    
+
 def plot_translation(translations, in_file):
     """
     Function to plot estimated motion data
@@ -215,21 +217,19 @@ def plot_translation(translations, in_file):
 
     if out_file is None:
         fname, ext = op.splitext(op.basename(in_file))
-        if ext == ".gz":
+        if ext == '.gz':
             fname, _ = op.splitext(fname)
-        out_file = op.abspath(fname + "_translation.png")
+        out_file = op.abspath(fname + '_translation.png')
 
     plt.figure(figsize=(11, 5))
-    plt.plot(np.arange(0, n_frames), translations_np[:, 0], "-r", label="trans_x")
-    plt.plot(np.arange(0, n_frames), translations_np[:, 1], "-g", label="trans_y")
-    plt.plot(np.arange(0, n_frames), translations_np[:, 2], "-b", label="trans_z")
-    plt.legend(loc="upper left")
-    plt.ylabel("Translation [mm]")
-    plt.xlabel("frame #")
+    plt.plot(np.arange(0, n_frames), translations_np[:, 0], '-r', label='trans_x')
+    plt.plot(np.arange(0, n_frames), translations_np[:, 1], '-g', label='trans_y')
+    plt.plot(np.arange(0, n_frames), translations_np[:, 2], '-b', label='trans_z')
+    plt.legend(loc='upper left')
+    plt.ylabel('Translation [mm]')
+    plt.xlabel('frame #')
     plt.grid(visible=True)
-    plt.savefig(out_file, format="png")
+    plt.savefig(out_file, format='png')
     plt.close()
 
     return out_file
-
-    

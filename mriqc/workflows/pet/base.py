@@ -155,6 +155,7 @@ def pet_qc_workflow(name='petMRIQC'):
 
     return workflow
 
+
 def hmc(name='petHMC', omp_nthreads=None):
     """
     Create a :abbr:` petHMC (head motion correction)` workflow.
@@ -215,6 +216,7 @@ def hmc(name='petHMC', omp_nthreads=None):
     # fmt: on
 
     return workflow
+
 
 def compute_iqms(name='ComputeIQMs'):
     """

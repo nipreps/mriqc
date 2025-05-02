@@ -24,17 +24,16 @@ import os
 import nibabel as nb
 import numpy as np
 import pandas as pd
-from nipype.interfaces.base import (
-    BaseInterfaceInputSpec,
-    File,
-    TraitedSpec
-)
+from nipype.interfaces.base import BaseInterfaceInputSpec, File, TraitedSpec
+
 
 class ChooseRefHMCInputSpec(BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc="Input PET image file")
+    in_file = File(exists=True, mandatory=True, desc='Input PET image file')
+
 
 class ChooseRefHMCOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc="Output file with the selected reference frame")
+    out_file = File(exists=True, desc='Output file with the selected reference frame')
+
 
 class ChooseRefHMC(BaseInterface):
     input_spec = ChooseRefHMCInputSpec
@@ -60,18 +59,21 @@ class ChooseRefHMC(BaseInterface):
         max_frame_img = nb.Nifti1Image(max_frame_data, img.affine, img.header)
 
         # Save the new NIfTI image
-        output_filename = os.path.abspath("max_intensity_frame.nii.gz")
+        output_filename = os.path.abspath('max_intensity_frame.nii.gz')
         nb.save(max_frame_img, output_filename)
 
-        self._results["out_file"] = output_filename
+        self._results['out_file'] = output_filename
         return runtime
 
+
 class FDStatsInputSpec(BaseInterfaceInputSpec):
-    in_fd = File(exists=True, mandatory=True, desc="Input FD file")
-    fd_thres = File(mandatory=True, desc="FD threshold value")
+    in_fd = File(exists=True, mandatory=True, desc='Input FD file')
+    fd_thres = File(mandatory=True, desc='FD threshold value')
+
 
 class FDStatsOutputSpec(TraitedSpec):
-    out_fd = dict(desc="Dictionary with FD metrics: mean, num, perc")
+    out_fd = dict(desc='Dictionary with FD metrics: mean, num, perc')
+
 
 class FDStats(BaseInterface):
     input_spec = FDStatsInputSpec
