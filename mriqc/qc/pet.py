@@ -46,23 +46,25 @@ class PlotFD(SimpleInterface):
     output_spec = _PlotFDOutputSpec
 
     def _run_interface(self, runtime):
-        in_file_ref = Path(self.inputs.in_file)
-        if isdefined(self.inputs.out_file):
-            in_file_ref = Path(self.inputs.out_file)
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import os
 
-        fname = in_file_ref.name.rstrip("".join(in_file_ref.suffixes))
-        out_file = (Path(runtime.cwd) / (f"plot_{fname}_fd.png")).resolve()
-        self._results["out_file"] = str(out_file)
+        # Load FD data from file
+        fd_values = np.loadtxt(self.inputs.in_fd, skiprows=1)
 
-        plt.figure(figsize=(11, 5))
-        plt.plot(np.arange(0, len(self.inputs.in_fd)), self.inputs.in_fd, '-r')
-        plt.legend(loc='upper left')
-        plt.ylabel('Framewise Displacement [mm]')
-        plt.xlabel('frame #')
-        plt.grid(visible=True)
-        plt.savefig(out_file, format='png')
+        plt.figure(figsize=(12, 5))
+        plt.plot(np.arange(len(fd_values)), fd_values, '-r')
+        plt.xlabel('Frame number')
+        plt.ylabel('Framewise Displacement (FD)')
+        plt.title('FD plot for PET QC')
+        plt.grid(True)
+
+        output_filename = os.path.abspath('fd_plot.png')
+        plt.savefig(output_filename, bbox_inches='tight')
         plt.close()
 
+        self._results['out_file'] = output_filename
         return runtime
 
 
