@@ -56,8 +56,9 @@ class PlotFD(SimpleInterface):
         plt.figure(figsize=(12, 5))
         plt.plot(np.arange(len(fd_values)), fd_values, '-r')
         plt.xlabel('Frame number')
-        plt.ylabel('Framewise Displacement (FD)')
+        plt.ylabel('Framewise Displacement (FD) [mm]')
         plt.title('FD plot for PET QC')
+        plt.ylim(0, 10)
         plt.grid(True)
 
         output_filename = os.path.abspath('fd_plot.png')
