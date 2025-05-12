@@ -763,16 +763,13 @@ jobs:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            docker push nipreps/mriqc:latest
-
-            # only tag & push if CIRCLE_TAG is set
+            # only tag & push latest if CIRCLE_TAG is set
             if [ -n "${CIRCLE_TAG:-}" ]; then
-              echo "Tagging and pushing ${CIRCLE_TAG}..."
-              docker tag nipreps/mriqc nipreps/mriqc:"$CIRCLE_TAG"
-              docker push nipreps/mriqc:"$CIRCLE_TAG"
-            else
-              echo "CIRCLE_TAG is undefined - skipping tagged push"
-            fi
+              docker push nipreps/mriqc:latest
+
+            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:='experimental'}"
+            docker push nipreps/mriqc:"$CIRCLE_TAG"
+            echo "Pushed tag ${CIRCLE_TAG} to Docker Hub"
 
 workflows:
   version: 2
