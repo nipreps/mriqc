@@ -855,6 +855,7 @@ workflows:
             - deploy_docker
           filters:
             branches:
-              ignore: /.*/
+              only:
+                - master
             tags:
               only: /.*/
