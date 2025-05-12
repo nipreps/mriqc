@@ -766,6 +766,7 @@ jobs:
             # only tag & push latest if CIRCLE_TAG is set
             if [ -n "${CIRCLE_TAG:-}" ]; then
               docker push nipreps/mriqc:latest
+            fi
 
             docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:='experimental'}"
             docker push nipreps/mriqc:"$CIRCLE_TAG"
