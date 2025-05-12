@@ -851,7 +851,8 @@ workflows:
             - bold
           filters:
             branches:
-              ignore: /.*/
+              only:
+                - master
             tags:
               only: /.*/
 
@@ -862,7 +863,6 @@ workflows:
             - deploy_docker
           filters:
             branches:
-              only:
-                - master
+              ignore: /.*/
             tags:
               only: /.*/
