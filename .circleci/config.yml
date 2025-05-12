@@ -768,7 +768,7 @@ jobs:
               docker push nipreps/mriqc:latest
             fi
 
-            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:='experimental'}"
+            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:=experimental}"
             docker push nipreps/mriqc:"$CIRCLE_TAG"
             echo "Pushed tag ${CIRCLE_TAG} to Docker Hub"
 
