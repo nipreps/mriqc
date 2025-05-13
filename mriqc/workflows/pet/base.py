@@ -230,8 +230,8 @@ def compute_iqms(name='ComputeIQMs'):
     from mriqc.interfaces import IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces.pet import FDStats
-    from nipype.interfaces.afni import FWHMx
-    from mriqc.workflows.utils import _tofloat
+    from nipype.interfaces.freesurfer import MRIConvert
+    from nipype.interfaces.utility import Function
 
     mem_gb = config.workflow.biggest_file_gb['pet']
 
@@ -252,7 +252,7 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'out_file',
-                'fwhm',
+                'fwhm_list',
             ]
         ),
         name='outputnode',
@@ -267,18 +267,22 @@ def compute_iqms(name='ComputeIQMs'):
         name='FDStats',
     )
 
-    # Compute mean PET image (across frames)
-    mean_pet = pe.Node(
-        TStat(options='-mean', outputtype='NIFTI_GZ'),
-        name='MeanPET',
+    # Split 4D PET data into 3D frames using MRIConvert
+    split_pet = pe.Node(
+        MRIConvert(split=True, out_type='niigz'),
+        name='SplitPET',
         mem_gb=mem_gb * 2,
     )
 
-    # Compute smoothness (FWHM)
-    fwhm = pe.Node(
-        FWHMx(combine=True, detrend=True, args='-acf'),
-        name='smoothness',
-        mem_gb=mem_gb * 2,
+    # Compute smoothness (FWHM) per frame using MapNode
+    fwhm_per_frame = pe.MapNode(
+        Function(
+            input_names=['in_file'],
+            output_names=['fwhm_acf'],
+            function=compute_acf_fwhm
+        ),
+        name='FWHMPerFrame',
+        iterfield=['in_file']
     )
 
     addprov = pe.MapNode(
@@ -304,18 +308,42 @@ def compute_iqms(name='ComputeIQMs'):
     workflow.connect([
         (inputnode, addprov, [('in_file', 'in_file')]),
         (inputnode, datasink, [('in_file', 'in_file'),
-                               ('entities', 'entities'),
-                               ('metadata', 'metadata')]),
+                            ('entities', 'entities'),
+                            ('metadata', 'metadata')]),
         (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
-                               ('fd_thres', 'fd_thres')]),
-        (inputnode, mean_pet, [('in_file', 'in_file')]),
-        (mean_pet, fwhm, [('out_file', 'in_file')]),
+                            ('fd_thres', 'fd_thres')]),
+        (inputnode, split_pet, [('in_file', 'in_file')]),
+        (split_pet, fwhm_per_frame, [('out_file', 'in_file')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (fd_stats, datasink, [('out_fd', 'root')]),
-        (fwhm, datasink, [(('fwhm', _tofloat), 'fwhm')]),
+        (fwhm_per_frame, datasink, [('fwhm_acf', 'fwhm_per_frame')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
-        (fwhm, outputnode, [('fwhm', 'fwhm')]),
+        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')]),
     ])
     # fmt: on
 
     return workflow
+
+
+def compute_acf_fwhm(in_file):
+    import subprocess
+
+    cmd = f"3dFWHMx -input {in_file} -combine -detrend -acf -automask"
+    result = subprocess.run(cmd.split(), capture_output=True, text=True)
+
+    output_lines = result.stdout.strip().split("\n")
+
+    acf_line = None
+    for line in output_lines:
+        if line.startswith(" 0.") or line.startswith("0."):
+            values = line.split()
+            if len(values) >= 4:
+                acf_line = values
+                break
+
+    if acf_line is None:
+        raise ValueError("Failed to parse AFNI 3dFWHMx output correctly.")
+
+    fwhm_acf = float(acf_line[3])
+
+    return fwhm_acf
