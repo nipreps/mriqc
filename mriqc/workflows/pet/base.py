@@ -230,6 +230,10 @@ def compute_iqms(name='ComputeIQMs'):
     from mriqc.interfaces import IQMFileSink
     from mriqc.interfaces.reports import AddProvenance
     from mriqc.interfaces.pet import FDStats
+    from nipype.interfaces.afni import FWHMx
+    from mriqc.workflows.utils import _tofloat
+
+    mem_gb = config.workflow.biggest_file_gb['pet']
 
     workflow = pe.Workflow(name=name)
     inputnode = pe.Node(
@@ -248,6 +252,7 @@ def compute_iqms(name='ComputeIQMs'):
         niu.IdentityInterface(
             fields=[
                 'out_file',
+                'fwhm',
             ]
         ),
         name='outputnode',
@@ -260,6 +265,13 @@ def compute_iqms(name='ComputeIQMs'):
     fd_stats = pe.Node(
         FDStats(),
         name='FDStats',
+    )
+
+    # Compute smoothness (FWHM)
+    fwhm = pe.Node(
+        FWHMx(combine=True, detrend=True, args='-acf'),
+        name='smoothness',
+        mem_gb=mem_gb * 2,
     )
 
     addprov = pe.MapNode(
@@ -289,9 +301,12 @@ def compute_iqms(name='ComputeIQMs'):
                                ('metadata', 'metadata')]),
         (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
                                ('fd_thres', 'fd_thres')]),
+        (inputnode, fwhm, [('in_file', 'in_file')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (fd_stats, datasink, [('out_fd', 'root')]),
+        (fwhm, datasink, [(('fwhm', _tofloat), 'fwhm')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
+        (fwhm, outputnode, [('fwhm', 'fwhm')]),
     ])
     # fmt: on
 
