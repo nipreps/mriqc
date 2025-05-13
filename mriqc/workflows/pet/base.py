@@ -267,6 +267,13 @@ def compute_iqms(name='ComputeIQMs'):
         name='FDStats',
     )
 
+    # Compute mean PET image (across frames)
+    mean_pet = pe.Node(
+        TStat(options='-mean', outputtype='NIFTI_GZ'),
+        name='MeanPET',
+        mem_gb=mem_gb * 2,
+    )
+
     # Compute smoothness (FWHM)
     fwhm = pe.Node(
         FWHMx(combine=True, detrend=True, args='-acf'),
@@ -301,7 +308,8 @@ def compute_iqms(name='ComputeIQMs'):
                                ('metadata', 'metadata')]),
         (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
                                ('fd_thres', 'fd_thres')]),
-        (inputnode, fwhm, [('in_file', 'in_file')]),
+        (inputnode, mean_pet, [('in_file', 'in_file')]),
+        (mean_pet, fwhm, [('out_file', 'in_file')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (fd_stats, datasink, [('out_fd', 'root')]),
         (fwhm, datasink, [(('fwhm', _tofloat), 'fwhm')]),
