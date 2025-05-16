@@ -1,0 +1,39 @@
+package: mriqc
+title: "{filename} :: MRIQC's PET report"
+sections:
+  - name: Summary
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: summary
+          suffix: pet
+          extension: [.html]
+
+  - name: Motion Correction Reports
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: fd
+          extension: [.png]
+        caption: Framewise Displacement.
+        subtitle: FD
+        style:
+          max-width: 600px
+
+      - bids:
+          datatype: figures
+          desc: rotation
+          extension: [.png]
+        caption: Rotation components of motion correction.
+        subtitle: Rotation Metrics
+        style:
+          max-width: 600px
+
+      - bids:
+          datatype: figures
+          desc: translation
+          extension: [.png]
+        caption: Translation components of motion correction.
+        subtitle: Translation Metrics
+        style:
+          max-width: 600px

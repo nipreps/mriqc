@@ -1,0 +1,495 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+#
+# Copyright 2021 The NiPreps Developers <nipreps@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We support and encourage derived works from this project, please read
+# about our expectations at
+#
+#     https://www.nipreps.org/community/licensing/
+#
+"""
+Functional workflow
+===================
+
+.. image :: _static/functional_workflow_source.svg
+
+The functional workflow follows the following steps:
+
+#. Sanitize (revise data types and xforms) input data, read
+   associated metadata and discard non-steady state frames.
+#. :abbr:HMC (head-motion correction) based on `3dvolreg from
+   AFNI -- :py:func:hmc.
+#. Skull-stripping of the time-series (AFNI) --
+   :py:func:fmri_bmsk_workflow.
+#. Calculate mean time-series, and :abbr:tSNR (temporal SNR).
+#. Spatial Normalization to MNI (ANTs) -- :py:func:epi_mni_align
+#. Extraction of IQMs -- :py:func:compute_iqms.
+#. Individual-reports generation --
+   :py:func:~mriqc.workflows.functional.output.init_pet_report_wf.
+
+This workflow is orchestrated by :py:func:fmri_qc_workflow.
+"""
+
+from pkg_resources import resource_filename
+from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
+from niworkflows.interfaces.reportlets.registration import (
+    SpatialNormalizationRPT as RobustMNINormalization,
+)
+import os.path as op
+from mriqc import config
+from nipype.interfaces import utility as niu
+from nipype.pipeline import engine as pe
+from mriqc.workflows.pet.output import init_pet_report_wf
+from nipype.interfaces.utility import IdentityInterface
+from niworkflows.interfaces.bids import ReadSidecarJSON
+
+
+def pet_qc_workflow(name='petMRIQC'):
+    """
+    Initialize the (pet)MRIQC workflow.
+
+    .. workflow::
+
+        import os.path as op
+        from mriqc.workflows.functional.base import pet_qc_workflow
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = pet_qc_workflow()
+
+    """
+    from nipype.interfaces.afni import TStat
+    from niworkflows.interfaces.bids import ReadSidecarJSON
+    from mriqc.messages import BUILDING_WORKFLOW
+
+    dataset = config.workflow.inputs['pet']
+    metadata = config.workflow.inputs_metadata['pet']
+    entities = config.workflow.inputs_entities['pet']
+
+    message = BUILDING_WORKFLOW.format(
+        modality='pet',
+        detail=f'for {len(dataset)} PET runs.',
+    )
+    config.loggers.workflow.info(message)
+
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=['in_file', 'metadata', 'entities'],
+        ),
+        name='inputnode',
+    )
+    inputnode.synchronize = True
+    inputnode.iterables = [
+        ('in_file', dataset),
+        ('metadata', metadata),
+        ('entities', entities),
+    ]
+
+    load_meta = pe.Node(ReadSidecarJSON(bids_dir=config.execution.bids_dir), name='LoadMetadata')
+
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=[
+            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv'
+        ]),
+        name='outputnode',
+    )
+
+    hmcwf = hmc(omp_nthreads=config.nipype.omp_nthreads)
+    hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
+
+    mean_pet = pe.Node(TStat(args='-mean', outputtype='NIFTI_GZ'), name='MeanPET')
+
+    normwf = pet_mni_align()
+    tacswf = extract_tacs()
+    iqmswf = compute_iqms()
+    pet_report_wf = init_pet_report_wf()
+
+    workflow.connect([
+        (inputnode, load_meta, [('in_file', 'in_file')]),
+        (inputnode, hmcwf, [('in_file', 'inputnode.in_file')]),
+        # Feed IQMs computation
+        (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
+                             ('metadata', 'inputnode.metadata'),
+                             ('entities', 'inputnode.entities')]),
+        (hmcwf, iqmswf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
+        # Feed reportlet generation
+        (inputnode, pet_report_wf, [('in_file', 'inputnode.name_source')]),
+        (hmcwf, pet_report_wf, [
+            ('outputnode.out_fd', 'inputnode.hmc_fd'),
+            ('outputnode.out_mot_param', 'inputnode.hmc_mot_param'),
+        ]),
+        (iqmswf, pet_report_wf, [
+            ('outputnode.out_file', 'inputnode.in_iqms'),
+        ]),
+        (hmcwf, mean_pet, [('outputnode.out_file', 'in_file')]),
+        (mean_pet, normwf, [('out_file', 'inputnode.pet_mean')]),
+        (hmcwf, normwf, [('outputnode.out_file', 'inputnode.pet_dynamic')]),
+        (normwf, tacswf, [('outputnode.pet_dynamic_t1', 'inputnode.pet_dynamic_t1')]),
+        (load_meta, tacswf, [('out_dict', 'inputnode.pet_json')]),
+        (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
+        (mean_pet, outputnode, [('out_file', 'pet_mean')]),
+        (normwf, outputnode, [('outputnode.pet_dseg', 'pet_dseg')]),
+        (tacswf, outputnode, [('outputnode.tacs_tsv', 'tacs_tsv')]),
+    ])
+
+    if not config.execution.no_sub:
+        from mriqc.interfaces.webapi import UploadIQMs
+
+        upldwf = pe.MapNode(
+            UploadIQMs(
+                endpoint=config.execution.webapi_url,
+                auth_token=config.execution.webapi_token,
+                strict=config.execution.upload_strict,
+            ),
+            name='UploadMetrics',
+            iterfield=['in_iqms'],
+        )
+
+        workflow.connect([
+            (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
+        ])
+
+    return workflow
+
+
+def hmc(name='petHMC', omp_nthreads=None):
+    """
+    Create a :abbr: petHMC (head motion correction) workflow.
+    """
+    from nipype.algorithms.confounds import FramewiseDisplacement
+    from nipype.interfaces.afni import Volreg
+    from mriqc.interfaces.pet import ChooseRefHMC
+
+    mem_gb = config.workflow.biggest_file_gb['pet']
+
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        niu.IdentityInterface(fields=['in_file', 'fd_radius']),
+        name='inputnode',
+    )
+
+    outputnode = pe.Node(
+        niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars']),
+        name='outputnode',
+    )
+
+    choose_ref_node = pe.Node(
+        ChooseRefHMC(),
+        name='ChooseRefHMC',
+    )
+
+    estimate_hm = pe.Node(
+        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        name='estimate_hm',
+        mem_gb=mem_gb * 2.5,
+    )
+
+    fdnode = pe.Node(
+        FramewiseDisplacement(normalize=False, parameter_source='AFNI'),
+        name='ComputeFD',
+    )
+
+    workflow.connect([
+        (inputnode, choose_ref_node, [('in_file', 'in_file')]),
+        (inputnode, estimate_hm, [('in_file', 'in_file')]),
+        (inputnode, fdnode, [('fd_radius', 'radius')]),
+        (choose_ref_node, estimate_hm, [('out_file', 'basefile')]),
+
+        # Output corrected 4D PET file (out_file)
+        (estimate_hm, outputnode, [
+            ('out_file', 'out_file'),             # <-- added corrected 4D PET
+            ('oned_file', 'out_mot_param'),
+            ('oned_file', 'mpars'),
+        ]),
+        (estimate_hm, fdnode, [('oned_file', 'in_file')]),
+        (fdnode, outputnode, [('out_file', 'out_fd')]),
+    ])
+
+    return workflow
+
+
+def compute_iqms(name='ComputeIQMs'):
+    """
+    Initialize the workflow that actually computes the IQMs.
+
+    .. workflow::
+
+        from mriqc.workflows.functional.base import compute_iqms
+        from mriqc.testing import mock_config
+        with mock_config():
+            wf = compute_iqms()
+
+    """
+    from mriqc.interfaces import IQMFileSink
+    from mriqc.interfaces.reports import AddProvenance
+    from mriqc.interfaces.pet import FDStats
+    from nipype.interfaces.freesurfer import MRIConvert
+    from nipype.interfaces.utility import Function
+
+    mem_gb = config.workflow.biggest_file_gb['pet']
+
+    workflow = pe.Workflow(name=name)
+    inputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=[
+                'in_file',
+                'metadata',
+                'entities',
+                'hmc_fd',
+                'fd_thres',
+            ]
+        ),
+        name='inputnode',
+    )
+    outputnode = pe.Node(
+        niu.IdentityInterface(
+            fields=[
+                'out_file',
+                'fwhm_list',
+            ]
+        ),
+        name='outputnode',
+    )
+
+    # Set FD threshold
+    inputnode.inputs.fd_thres = config.workflow.fd_thres
+
+    # Compute FD statistics
+    fd_stats = pe.Node(
+        FDStats(),
+        name='FDStats',
+    )
+
+    # Split 4D PET data into 3D frames using MRIConvert
+    split_pet = pe.Node(
+        MRIConvert(split=True, out_type='niigz'),
+        name='SplitPET',
+        mem_gb=mem_gb * 2,
+    )
+
+    # Compute smoothness (FWHM) per frame using MapNode
+    fwhm_per_frame = pe.MapNode(
+        Function(
+            input_names=['in_file'],
+            output_names=['fwhm_acf'],
+            function=compute_acf_fwhm
+        ),
+        name='FWHMPerFrame',
+        iterfield=['in_file']
+    )
+
+    addprov = pe.MapNode(
+        AddProvenance(modality='pet'),
+        name='provenance',
+        run_without_submitting=True,
+        iterfield=['in_file'],
+    )
+
+    # Save to JSON file
+    datasink = pe.MapNode(
+        IQMFileSink(
+            modality='pet',
+            out_dir=str(config.execution.output_dir),
+            dataset=config.execution.dsname,
+        ),
+        name='datasink',
+        run_without_submitting=True,
+        iterfield=['in_file', 'root', 'metadata', 'provenance'],
+    )
+
+    # fmt: off
+    workflow.connect([
+        (inputnode, addprov, [('in_file', 'in_file')]),
+        (inputnode, datasink, [('in_file', 'in_file'),
+                            ('entities', 'entities'),
+                            ('metadata', 'metadata')]),
+        (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
+                            ('fd_thres', 'fd_thres')]),
+        (inputnode, split_pet, [('in_file', 'in_file')]),
+        (split_pet, fwhm_per_frame, [('out_file', 'in_file')]),
+        (addprov, datasink, [('out_prov', 'provenance')]),
+        (fd_stats, datasink, [('out_fd', 'root')]),
+        (fwhm_per_frame, datasink, [('fwhm_acf', 'fwhm_per_frame')]),
+        (datasink, outputnode, [('out_file', 'out_file')]),
+        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')]),
+    ])
+    # fmt: on
+
+    return workflow
+
+
+def compute_acf_fwhm(in_file):
+    import subprocess
+
+    cmd = f"3dFWHMx -input {in_file} -combine -detrend -acf -automask"
+    result = subprocess.run(cmd.split(), capture_output=True, text=True)
+
+    output_lines = result.stdout.strip().split("\n")
+
+    acf_line = None
+    for line in output_lines:
+        if line.startswith(" 0.") or line.startswith("0."):
+            values = line.split()
+            if len(values) >= 4:
+                acf_line = values
+                break
+
+    if acf_line is None:
+        raise ValueError("Failed to parse AFNI 3dFWHMx output correctly.")
+
+    fwhm_acf = float(acf_line[3])
+
+    return fwhm_acf
+
+
+from pkg_resources import resource_filename
+from nipype.interfaces.freesurfer import MRICoreg, ApplyVolTransform
+from niworkflows.interfaces.reportlets.registration import (
+    SpatialNormalizationRPT as RobustMNINormalization,
+)
+from nipype.interfaces.utility import IdentityInterface
+from nipype.pipeline import engine as pe
+import os.path as op
+
+from mriqc import config
+
+def pet_mni_align(name='PETSpatialNormalization'):
+    """
+    Estimate the transform that maps the PET space into provided T1 space.
+
+    The input pet_mean is the averaged PET data.
+    Returns the motion-corrected PET data resampled in provided T1 space.
+    """
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        IdentityInterface(fields=['pet_mean', 'pet_dynamic']),
+        name='inputnode',
+    )
+
+    outputnode = pe.Node(
+        IdentityInterface(fields=['pet_dynamic_t1', 'pet_dseg']),
+        name='outputnode',
+    )
+
+    template_dir = resource_filename('mriqc', 'data/atlas')
+    template_t1 = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_T1.nii.gz')
+    template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
+
+    coreg = pe.Node(
+        MRICoreg(
+            dof=12,
+            reference_file=template_t1
+        ),
+        name='PET2ProvidedT1',
+    )
+
+    apply_pet_dynamic_transform = pe.Node(
+        ApplyVolTransform(
+            interp='trilin',
+            target_file=template_t1,
+        ),
+        name='ApplyTransformPETDynamic',
+    )
+
+    workflow.connect([
+        (inputnode, coreg, [('pet_mean', 'source_file')]),
+        (inputnode, apply_pet_dynamic_transform, [('pet_dynamic', 'source_file')]),
+        (coreg, apply_pet_dynamic_transform, [('out_lta_file', 'lta_file')]),
+        (apply_pet_dynamic_transform, outputnode, [('transformed_file', 'pet_dynamic_t1')]),
+    ])
+
+    outputnode.inputs.pet_dseg = template_dseg
+
+    return workflow
+
+
+def extract_tacs(name='ExtractTACs'):
+    from nipype.interfaces.utility import Function, IdentityInterface
+    from nipype.pipeline import engine as pe
+    from pkg_resources import resource_filename
+    import os.path as op
+
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        IdentityInterface(fields=['pet_dynamic_t1', 'pet_json']),
+        name='inputnode'
+    )
+
+    outputnode = pe.Node(
+        IdentityInterface(fields=['tacs_tsv']),
+        name='outputnode'
+    )
+
+    template_dir = resource_filename('mriqc', 'data/atlas')
+    labels_tsv = op.join(template_dir, 'tpl-SPM_space-MNI152_dseg.tsv')
+    template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
+
+    def compute_tacs(dseg_file, dynamic_pet, labels_tsv, pet_json):
+        import pandas as pd
+        import nibabel as nib
+        import numpy as np
+        import os
+
+        dseg = nib.load(dseg_file).get_fdata()
+        pet_data = nib.load(dynamic_pet).get_fdata()
+        labels_df = pd.read_csv(labels_tsv, sep='\t')
+
+        frame_times_start = np.array(pet_json['FrameTimesStart'])
+        frame_duration = np.array(pet_json['FrameDuration'])
+        frame_times_end = frame_times_start + frame_duration
+
+        tacs = {
+            'frame_times_start': frame_times_start,
+            'frame_times_end': frame_times_end
+        }
+
+        for idx, row in labels_df.iterrows():
+            label_id = row['index']
+            region_name = row['name']
+            mask = dseg == label_id
+            tac = pet_data[mask, :].mean(axis=0)
+            tacs[region_name] = tac
+
+        df = pd.DataFrame(tacs)
+        tsv_file = os.path.abspath('tacs.tsv')
+        df.to_csv(tsv_file, sep='\t', index=False)
+        return tsv_file
+
+    tac_extraction = pe.Node(
+        Function(
+            input_names=['dseg_file', 'dynamic_pet', 'labels_tsv', 'pet_json'],
+            output_names=['tacs_tsv'],
+            function=compute_tacs,
+        ),
+        name='TACExtraction'
+    )
+
+    tac_extraction.inputs.labels_tsv = labels_tsv
+    tac_extraction.inputs.dseg_file = template_dseg
+
+    workflow.connect([
+        (inputnode, tac_extraction, [
+            ('pet_dynamic_t1', 'dynamic_pet'),
+            ('pet_json', 'pet_json')
+        ]),
+        (tac_extraction, outputnode, [('tacs_tsv', 'tacs_tsv')]),
+    ])
+
+    return workflow

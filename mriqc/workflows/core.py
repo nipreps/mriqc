@@ -29,10 +29,12 @@ from nipype.pipeline.engine import Workflow
 from mriqc.workflows.anatomical.base import anat_qc_workflow
 from mriqc.workflows.diffusion.base import dmri_qc_workflow
 from mriqc.workflows.functional.base import fmri_qc_workflow
+from mriqc.workflows.pet.base import pet_qc_workflow
 
 ANATOMICAL_KEYS = 't1w', 't2w'
 FMRI_KEY = 'bold'
 DMRI_KEY = 'dwi'
+PET_KEY = 'pet'
 
 
 def init_mriqc_wf():
@@ -46,6 +48,10 @@ def init_mriqc_wf():
     # Create fMRI QC workflow
     if FMRI_KEY in config.workflow.inputs:
         workflow.add_nodes([fmri_qc_workflow()])
+
+    # Create PET QC workflow
+    if PET_KEY in config.workflow.inputs:
+        workflow.add_nodes([pet_qc_workflow()])
 
     # Create dMRI QC workflow
     if DMRI_KEY in config.workflow.inputs:
