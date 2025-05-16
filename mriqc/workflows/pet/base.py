@@ -30,24 +30,31 @@ The functional workflow follows the following steps:
 
 #. Sanitize (revise data types and xforms) input data, read
    associated metadata and discard non-steady state frames.
-#. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
-   AFNI -- :py:func:`hmc`.
+#. :abbr:HMC (head-motion correction) based on `3dvolreg from
+   AFNI -- :py:func:hmc.
 #. Skull-stripping of the time-series (AFNI) --
-   :py:func:`fmri_bmsk_workflow`.
-#. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
-#. Spatial Normalization to MNI (ANTs) -- :py:func:`epi_mni_align`
-#. Extraction of IQMs -- :py:func:`compute_iqms`.
+   :py:func:fmri_bmsk_workflow.
+#. Calculate mean time-series, and :abbr:tSNR (temporal SNR).
+#. Spatial Normalization to MNI (ANTs) -- :py:func:epi_mni_align
+#. Extraction of IQMs -- :py:func:compute_iqms.
 #. Individual-reports generation --
-   :py:func:`~mriqc.workflows.functional.output.init_pet_report_wf`.
+   :py:func:~mriqc.workflows.functional.output.init_pet_report_wf.
 
-This workflow is orchestrated by :py:func:`fmri_qc_workflow`.
+This workflow is orchestrated by :py:func:fmri_qc_workflow.
 """
 
+from pkg_resources import resource_filename
+from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
+from niworkflows.interfaces.reportlets.registration import (
+    SpatialNormalizationRPT as RobustMNINormalization,
+)
+import os.path as op
+from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
-
-from mriqc import config
 from mriqc.workflows.pet.output import init_pet_report_wf
+from nipype.interfaces.utility import IdentityInterface
+from niworkflows.interfaces.bids import ReadSidecarJSON
 
 
 def pet_qc_workflow(name='petMRIQC'):
@@ -63,6 +70,8 @@ def pet_qc_workflow(name='petMRIQC'):
             wf = pet_qc_workflow()
 
     """
+    from nipype.interfaces.afni import TStat
+    from niworkflows.interfaces.bids import ReadSidecarJSON
     from mriqc.messages import BUILDING_WORKFLOW
 
     dataset = config.workflow.inputs['pet']
@@ -75,42 +84,42 @@ def pet_qc_workflow(name='petMRIQC'):
     )
     config.loggers.workflow.info(message)
 
-    # Define workflow, inputs and outputs
-    # 0. Get data, put it in RAS orientation
     workflow = pe.Workflow(name=name)
+
     inputnode = pe.Node(
         niu.IdentityInterface(
             fields=['in_file', 'metadata', 'entities'],
         ),
         name='inputnode',
     )
-    inputnode.synchronize = True  # Do not test combinations of iterables
+    inputnode.synchronize = True
     inputnode.iterables = [
         ('in_file', dataset),
         ('metadata', metadata),
         ('entities', entities),
     ]
 
+    load_meta = pe.Node(ReadSidecarJSON(bids_dir=config.execution.bids_dir), name='LoadMetadata')
+
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=['qc', 'mosaic', 'out_group', 'out_fd']),
+        niu.IdentityInterface(fields=[
+            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv'
+        ]),
         name='outputnode',
     )
 
-    # Workflow --------------------------------------------------------
-
-    # 1. HMC: head motion correct
     hmcwf = hmc(omp_nthreads=config.nipype.omp_nthreads)
-
-    # Set HMC settings
     hmcwf.inputs.inputnode.fd_radius = config.workflow.fd_radius
 
-    # 7. Compute IQMs
+    mean_pet = pe.Node(TStat(args='-mean', outputtype='NIFTI_GZ'), name='MeanPET')
+
+    normwf = pet_mni_align()
+    tacswf = extract_tacs()
     iqmswf = compute_iqms()
-    # Reports
     pet_report_wf = init_pet_report_wf()
 
-    # fmt: off
     workflow.connect([
+        (inputnode, load_meta, [('in_file', 'in_file')]),
         (inputnode, hmcwf, [('in_file', 'inputnode.in_file')]),
         # Feed IQMs computation
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
@@ -126,11 +135,17 @@ def pet_qc_workflow(name='petMRIQC'):
         (iqmswf, pet_report_wf, [
             ('outputnode.out_file', 'inputnode.in_iqms'),
         ]),
+        (hmcwf, mean_pet, [('outputnode.out_file', 'in_file')]),
+        (mean_pet, normwf, [('out_file', 'inputnode.pet_mean')]),
+        (hmcwf, normwf, [('outputnode.out_file', 'inputnode.pet_dynamic')]),
+        (normwf, tacswf, [('outputnode.pet_dynamic_t1', 'inputnode.pet_dynamic_t1')]),
+        (load_meta, tacswf, [('out_dict', 'inputnode.pet_json')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
+        (mean_pet, outputnode, [('out_file', 'pet_mean')]),
+        (normwf, outputnode, [('outputnode.pet_dseg', 'pet_dseg')]),
+        (tacswf, outputnode, [('outputnode.tacs_tsv', 'tacs_tsv')]),
     ])
-    # fmt: on
 
-    # Upload metrics
     if not config.execution.no_sub:
         from mriqc.interfaces.webapi import UploadIQMs
 
@@ -144,26 +159,16 @@ def pet_qc_workflow(name='petMRIQC'):
             iterfield=['in_iqms'],
         )
 
-        # fmt: off
         workflow.connect([
             (iqmswf, upldwf, [('outputnode.out_file', 'in_iqms')]),
         ])
-        # fmt: on
 
     return workflow
 
 
 def hmc(name='petHMC', omp_nthreads=None):
     """
-    Create a :abbr:` petHMC (head motion correction)` workflow.
-
-    .. workflow::
-
-        from mriqc.workflows.functional.base import hmc
-        from mriqc.testing import mock_config
-        with mock_config():
-            wf = hmc()
-
+    Create a :abbr: petHMC (head motion correction) workflow.
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Volreg
@@ -182,6 +187,7 @@ def hmc(name='petHMC', omp_nthreads=None):
         niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars']),
         name='outputnode',
     )
+
     choose_ref_node = pe.Node(
         ChooseRefHMC(),
         name='ChooseRefHMC',
@@ -193,24 +199,26 @@ def hmc(name='petHMC', omp_nthreads=None):
         mem_gb=mem_gb * 2.5,
     )
 
-    # Compute the frame-wise displacement
     fdnode = pe.Node(
         FramewiseDisplacement(normalize=False, parameter_source='AFNI'),
         name='ComputeFD',
     )
 
-    # fmt: off
     workflow.connect([
         (inputnode, choose_ref_node, [('in_file', 'in_file')]),
         (inputnode, estimate_hm, [('in_file', 'in_file')]),
         (inputnode, fdnode, [('fd_radius', 'radius')]),
         (choose_ref_node, estimate_hm, [('out_file', 'basefile')]),
-        (estimate_hm, outputnode, [('oned_file', 'out_mot_param')]),
+
+        # Output corrected 4D PET file (out_file)
+        (estimate_hm, outputnode, [
+            ('out_file', 'out_file'),             # <-- added corrected 4D PET
+            ('oned_file', 'out_mot_param'),
+            ('oned_file', 'mpars'),
+        ]),
         (estimate_hm, fdnode, [('oned_file', 'in_file')]),
-        (estimate_hm, outputnode, [('oned_file', 'mpars')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),
     ])
-    # fmt: on
 
     return workflow
 
@@ -347,3 +355,141 @@ def compute_acf_fwhm(in_file):
     fwhm_acf = float(acf_line[3])
 
     return fwhm_acf
+
+
+from pkg_resources import resource_filename
+from nipype.interfaces.freesurfer import MRICoreg, ApplyVolTransform
+from niworkflows.interfaces.reportlets.registration import (
+    SpatialNormalizationRPT as RobustMNINormalization,
+)
+from nipype.interfaces.utility import IdentityInterface
+from nipype.pipeline import engine as pe
+import os.path as op
+
+from mriqc import config
+
+def pet_mni_align(name='PETSpatialNormalization'):
+    """
+    Estimate the transform that maps the PET space into provided T1 space.
+
+    The input pet_mean is the averaged PET data.
+    Returns the motion-corrected PET data resampled in provided T1 space.
+    """
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        IdentityInterface(fields=['pet_mean', 'pet_dynamic']),
+        name='inputnode',
+    )
+
+    outputnode = pe.Node(
+        IdentityInterface(fields=['pet_dynamic_t1', 'pet_dseg']),
+        name='outputnode',
+    )
+
+    template_dir = resource_filename('mriqc', 'data/atlas')
+    template_t1 = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_T1.nii.gz')
+    template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
+
+    coreg = pe.Node(
+        MRICoreg(
+            dof=12,
+            reference_file=template_t1
+        ),
+        name='PET2ProvidedT1',
+    )
+
+    apply_pet_dynamic_transform = pe.Node(
+        ApplyVolTransform(
+            interp='trilin',
+            target_file=template_t1,
+        ),
+        name='ApplyTransformPETDynamic',
+    )
+
+    workflow.connect([
+        (inputnode, coreg, [('pet_mean', 'source_file')]),
+        (inputnode, apply_pet_dynamic_transform, [('pet_dynamic', 'source_file')]),
+        (coreg, apply_pet_dynamic_transform, [('out_lta_file', 'lta_file')]),
+        (apply_pet_dynamic_transform, outputnode, [('transformed_file', 'pet_dynamic_t1')]),
+    ])
+
+    outputnode.inputs.pet_dseg = template_dseg
+
+    return workflow
+
+
+def extract_tacs(name='ExtractTACs'):
+    from nipype.interfaces.utility import Function, IdentityInterface
+    from nipype.pipeline import engine as pe
+    from pkg_resources import resource_filename
+    import os.path as op
+
+    workflow = pe.Workflow(name=name)
+
+    inputnode = pe.Node(
+        IdentityInterface(fields=['pet_dynamic_t1', 'pet_json']),
+        name='inputnode'
+    )
+
+    outputnode = pe.Node(
+        IdentityInterface(fields=['tacs_tsv']),
+        name='outputnode'
+    )
+
+    template_dir = resource_filename('mriqc', 'data/atlas')
+    labels_tsv = op.join(template_dir, 'tpl-SPM_space-MNI152_dseg.tsv')
+    template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
+
+    def compute_tacs(dseg_file, dynamic_pet, labels_tsv, pet_json):
+        import pandas as pd
+        import nibabel as nib
+        import numpy as np
+        import os
+
+        dseg = nib.load(dseg_file).get_fdata()
+        pet_data = nib.load(dynamic_pet).get_fdata()
+        labels_df = pd.read_csv(labels_tsv, sep='\t')
+
+        frame_times_start = np.array(pet_json['FrameTimesStart'])
+        frame_duration = np.array(pet_json['FrameDuration'])
+        frame_times_end = frame_times_start + frame_duration
+
+        tacs = {
+            'frame_times_start': frame_times_start,
+            'frame_times_end': frame_times_end
+        }
+
+        for idx, row in labels_df.iterrows():
+            label_id = row['index']
+            region_name = row['name']
+            mask = dseg == label_id
+            tac = pet_data[mask, :].mean(axis=0)
+            tacs[region_name] = tac
+
+        df = pd.DataFrame(tacs)
+        tsv_file = os.path.abspath('tacs.tsv')
+        df.to_csv(tsv_file, sep='\t', index=False)
+        return tsv_file
+
+    tac_extraction = pe.Node(
+        Function(
+            input_names=['dseg_file', 'dynamic_pet', 'labels_tsv', 'pet_json'],
+            output_names=['tacs_tsv'],
+            function=compute_tacs,
+        ),
+        name='TACExtraction'
+    )
+
+    tac_extraction.inputs.labels_tsv = labels_tsv
+    tac_extraction.inputs.dseg_file = template_dseg
+
+    workflow.connect([
+        (inputnode, tac_extraction, [
+            ('pet_dynamic_t1', 'dynamic_pet'),
+            ('pet_json', 'pet_json')
+        ]),
+        (tac_extraction, outputnode, [('tacs_tsv', 'tacs_tsv')]),
+    ])
+
+    return workflow
