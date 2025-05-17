@@ -103,7 +103,7 @@ def pet_qc_workflow(name='petMRIQC'):
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=[
-            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv'
+            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv', 'norm_report'
         ]),
         name='outputnode',
     )
@@ -142,7 +142,10 @@ def pet_qc_workflow(name='petMRIQC'):
         (load_meta, tacswf, [('out_dict', 'inputnode.pet_json')]),
         (hmcwf, outputnode, [('outputnode.out_fd', 'out_fd')]),
         (mean_pet, outputnode, [('out_file', 'pet_mean')]),
-        (normwf, outputnode, [('outputnode.pet_dseg', 'pet_dseg')]),
+        (normwf, outputnode, [
+            ('outputnode.pet_dseg', 'pet_dseg'),
+            ('outputnode.out_report', 'norm_report')
+        ]),
         (tacswf, outputnode, [('outputnode.tacs_tsv', 'tacs_tsv')]),
     ])
 
@@ -358,10 +361,8 @@ def compute_acf_fwhm(in_file):
 
 
 from pkg_resources import resource_filename
-from nipype.interfaces.freesurfer import MRICoreg, ApplyVolTransform
-from niworkflows.interfaces.reportlets.registration import (
-    SpatialNormalizationRPT as RobustMNINormalization,
-)
+from nipype.interfaces.ants import ApplyTransforms
+from niworkflows.interfaces.reportlets.registration import SpatialNormalizationRPT as RobustMNINormalization
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline import engine as pe
 import os.path as op
@@ -369,12 +370,13 @@ import os.path as op
 from mriqc import config
 
 def pet_mni_align(name='PETSpatialNormalization'):
-    """
-    Estimate the transform that maps the PET space into provided T1 space.
+    from niworkflows.interfaces.reportlets.registration import SpatialNormalizationRPT as RobustMNINormalization
+    from nipype.interfaces.ants import ApplyTransforms
+    from nipype.interfaces.utility import IdentityInterface
+    from nipype.pipeline import engine as pe
+    from pkg_resources import resource_filename
+    import os.path as op
 
-    The input pet_mean is the averaged PET data.
-    Returns the motion-corrected PET data resampled in provided T1 space.
-    """
     workflow = pe.Workflow(name=name)
 
     inputnode = pe.Node(
@@ -383,35 +385,53 @@ def pet_mni_align(name='PETSpatialNormalization'):
     )
 
     outputnode = pe.Node(
-        IdentityInterface(fields=['pet_dynamic_t1', 'pet_dseg']),
+        IdentityInterface(fields=['pet_dynamic_t1', 'pet_dseg', 'out_report']),
         name='outputnode',
     )
 
     template_dir = resource_filename('mriqc', 'data/atlas')
     template_t1 = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_T1.nii.gz')
     template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
+    template_mask = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_mask.nii.gz')
 
-    coreg = pe.Node(
-        MRICoreg(
-            dof=12,
-            reference_file=template_t1
+    ants_norm = pe.Node(
+        RobustMNINormalization(
+            moving='boldref',
+            reference='boldref',
+            explicit_masking=True,
+            float=True,
+            generate_report=True,
+            reference_image=template_t1,
+            reference_mask=template_mask,
+            settings=['/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/atlas/petref-mni_registration_precise_000.json'],
         ),
-        name='PET2ProvidedT1',
+        name='ANTsNormalization'
     )
 
-    apply_pet_dynamic_transform = pe.Node(
-        ApplyVolTransform(
-            interp='trilin',
-            target_file=template_t1,
+    apply_transform_dynamic = pe.Node(
+        ApplyTransforms(
+            interpolation='Linear',
+            input_image_type=3,  # Time-series
+            dimension=3,
+            float=True,
+            reference_image=template_t1
         ),
-        name='ApplyTransformPETDynamic',
+        name='ApplyTransformDynamic'
     )
 
     workflow.connect([
-        (inputnode, coreg, [('pet_mean', 'source_file')]),
-        (inputnode, apply_pet_dynamic_transform, [('pet_dynamic', 'source_file')]),
-        (coreg, apply_pet_dynamic_transform, [('out_lta_file', 'lta_file')]),
-        (apply_pet_dynamic_transform, outputnode, [('transformed_file', 'pet_dynamic_t1')]),
+        (inputnode, ants_norm, [('pet_mean', 'moving_image')]),
+
+        # Correct connection: using composite transform
+        (ants_norm, apply_transform_dynamic, [('composite_transform', 'transforms')]),
+
+        # Connect dynamic PET
+        (inputnode, apply_transform_dynamic, [('pet_dynamic', 'input_image')]),
+
+        # Output
+        (apply_transform_dynamic, outputnode, [('output_image', 'pet_dynamic_t1')]),
+
+        (ants_norm, outputnode, [('out_report', 'out_report')])
     ])
 
     outputnode.inputs.pet_dseg = template_dseg
