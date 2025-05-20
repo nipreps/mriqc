@@ -27,8 +27,8 @@ from nipype.pipeline import engine as pe
 
 from mriqc import config
 from mriqc.interfaces import DerivativesDataSink
-from mriqc.qc.pet import PlotFD, PlotRotation, PlotTranslation
-
+from mriqc.qc.pet import PlotFD, PlotRotation, PlotTranslation, generate_tac_figures
+from nipype.interfaces.utility import Function
 
 def init_pet_report_wf(name='pet_report_wf'):
     """
@@ -42,7 +42,6 @@ def init_pet_report_wf(name='pet_report_wf'):
             wf = init_pet_report_wf()
 
     """
-    from nipype.interfaces.fsl import AvScale
 
     reportlets_dir = config.execution.work_dir / 'reportlets'
 
@@ -54,6 +53,8 @@ def init_pet_report_wf(name='pet_report_wf'):
                 'hmc_fd',
                 'in_iqms',
                 'name_source',
+                'tacs_tsv',
+                'metadata',
             ]
         ),
         name='inputnode',
@@ -73,6 +74,17 @@ def init_pet_report_wf(name='pet_report_wf'):
         PlotRotation(),
         name='plot_rotation',
     )
+
+    plot_tacs = pe.Node(
+        Function(
+            input_names=['tacs_tsv', 'metadata', 'output_dir'],
+            output_names=['figures', 'descriptions'],
+            function=generate_tac_figures_with_desc
+        ),
+        name='plot_tacs',
+    )
+
+    plot_tacs.inputs.output_dir = None
 
     ds_report_fd = pe.MapNode(
         DerivativesDataSink(
@@ -110,22 +122,62 @@ def init_pet_report_wf(name='pet_report_wf'):
         iterfield=['in_file', 'source_file'],
     )
 
+    ds_report_tacs = pe.MapNode(
+        DerivativesDataSink(base_directory=reportlets_dir,
+                            datatype='figures', dismiss_entities=('part',)),
+        name='ds_report_tacs', run_without_submitting=True,
+        iterfield=['in_file', 'source_file', 'desc'],
+    )
+
+    def repeat_source_file(source_file, figures):
+        return [source_file] * len(figures)
+
+    repeat_source_file_node = pe.Node(
+        Function(
+            input_names=['source_file', 'figures'],
+            output_names=['source_files'],
+            function=lambda source_file, figures: [source_file] * len(figures)
+        ),
+        name='repeat_source_file_node',
+    )
+
     # fmt: off
     workflow.connect([
         # (inputnode, rnode, [("in_iqms", "in_iqms")]),
+        (inputnode, repeat_source_file_node, [('name_source', 'source_file')]),
+        (plot_tacs, repeat_source_file_node, [('figures', 'figures')]),
         (inputnode, plot_fd, [('hmc_fd', 'in_fd')]),
         (inputnode, plot_fd, [('name_source', 'in_file')]),
         (inputnode, plot_trans, [('name_source', 'in_file'),
                                  ('hmc_mot_param', 'mot_param')]),
         (inputnode, plot_rot, [('name_source', 'in_file'),
                                ('hmc_mot_param', 'mot_param')]),
+        (inputnode, plot_tacs, [('tacs_tsv', 'tacs_tsv'), ('metadata', 'metadata')]),
         (inputnode, ds_report_fd, [('name_source', 'source_file')]),
         (inputnode, ds_report_trans, [('name_source', 'source_file')]),
         (inputnode, ds_report_rot, [('name_source', 'source_file')]),
         (plot_fd, ds_report_fd, [('out_file', 'in_file')]),
         (plot_trans, ds_report_trans, [('out_file', 'in_file')]),
-        (plot_rot, ds_report_rot, [('out_file', 'in_file')]),    
+        (plot_rot, ds_report_rot, [('out_file', 'in_file')]),
+        (plot_tacs, ds_report_tacs, [('figures', 'in_file'),
+                                     ('descriptions', 'desc')]),
+        (repeat_source_file_node, ds_report_tacs, [('source_files', 'source_file')]),
     ])
     # fmt: on
 
     return workflow
+
+
+def generate_tac_figures_with_desc(tacs_tsv, metadata, output_dir=None):
+    from mriqc.qc.pet import generate_tac_figures
+    figures = generate_tac_figures(tacs_tsv, metadata, output_dir)
+    descriptions = [
+        'tacsCortical',
+        'tacsSubcortical',
+        'tacsVentricular',
+        'tacsOther'
+    ]
+    # Ensure matching lengths
+    if len(figures) != len(descriptions):
+        raise ValueError("Mismatch in number of figures and descriptions.")
+    return figures, descriptions
