@@ -38,6 +38,7 @@ class _PlotFDInputSpec(BaseInterfaceInputSpec):
         desc='motion parameters for FD computation',
     )
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
     out_file = traits.File(exists=False, desc="output file name")
 
 
@@ -56,13 +57,23 @@ class PlotFD(SimpleInterface):
 
         # Load FD data from file
         fd_values = np.loadtxt(self.inputs.in_fd, skiprows=1)
+        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
+        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
+
+        midframe_times = frame_times_start[:-1] + (frame_duration[:-1] / 2)
+
+        # Trim data after 2 min (120 sec)
+        mask = midframe_times >= 120
+        midframe_times = midframe_times[mask]
+        fd_values = fd_values[mask]
 
         plt.figure(figsize=(12, 5))
-        plt.plot(np.arange(len(fd_values)), fd_values, '-r')
-        plt.xlabel('Frame number')
+        plt.plot(midframe_times, fd_values, '-r')
+        plt.xlabel('Time [s]')
         plt.ylabel('Framewise Displacement (FD) [mm]')
         plt.title('FD plot for PET QC')
         plt.grid(True)
+
 
         output_filename = os.path.abspath('fd_plot.png')
         plt.savefig(output_filename, bbox_inches='tight')
@@ -75,6 +86,7 @@ class PlotFD(SimpleInterface):
 class _PlotRotationInputSpec(BaseInterfaceInputSpec):
     mot_param = File(exists=True, mandatory=True, desc="motion parameters")
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
     out_file = traits.File(exists=False, desc="output file name")
 
 
@@ -98,16 +110,22 @@ class PlotRotation(SimpleInterface):
 
         # Extract timeseries
         motion = np.loadtxt(self.inputs.mot_param)
-        rot_angles = motion[:, 0:3]
-        n_frames = rot_angles.shape[0]
+        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
+        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
+
+        midframe_times = frame_times_start + (frame_duration / 2)
+
+        mask = midframe_times >= 120
+        midframe_times = midframe_times[mask]
+        rot_angles = motion[mask, 0:3]
 
         plt.figure(figsize=(11, 5))
-        plt.plot(np.arange(0, n_frames), rot_angles[:, 0], '-r', label='rot_x')
-        plt.plot(np.arange(0, n_frames), rot_angles[:, 1], '-g', label='rot_y')
-        plt.plot(np.arange(0, n_frames), rot_angles[:, 2], '-b', label='rot_z')
+        plt.plot(midframe_times, rot_angles[:, 0], '-r', label='rot_x')
+        plt.plot(midframe_times, rot_angles[:, 1], '-g', label='rot_y')
+        plt.plot(midframe_times, rot_angles[:, 2], '-b', label='rot_z')
         plt.legend(loc='upper left')
         plt.ylabel('Rotation [degrees]')
-        plt.xlabel('frame #')
+        plt.xlabel('Time [s]')
         plt.grid(visible=True)
         plt.savefig(out_file, format='png')
         plt.close()
@@ -118,6 +136,7 @@ class PlotRotation(SimpleInterface):
 class _PlotTranslationInputSpec(BaseInterfaceInputSpec):
     mot_param = File(exists=True, mandatory=True, desc="motion parameters")
     in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
     out_file = traits.File(exists=False, desc="output file name")
 
 
@@ -141,16 +160,22 @@ class PlotTranslation(SimpleInterface):
 
         # Extract timeseries
         motion = np.loadtxt(self.inputs.mot_param)
-        translations = motion[:, 3:6]
-        n_frames = translations.shape[0]
+        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
+        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
+
+        midframe_times = frame_times_start + (frame_duration / 2)
+
+        mask = midframe_times >= 120
+        midframe_times = midframe_times[mask]
+        translations = motion[mask, 3:6]
 
         plt.figure(figsize=(11, 5))
-        plt.plot(np.arange(0, n_frames), translations[:, 0], '-r', label='trans_x')
-        plt.plot(np.arange(0, n_frames), translations[:, 1], '-g', label='trans_y')
-        plt.plot(np.arange(0, n_frames), translations[:, 2], '-b', label='trans_z')
+        plt.plot(midframe_times, translations[:, 0], '-r', label='trans_x')
+        plt.plot(midframe_times, translations[:, 1], '-g', label='trans_y')
+        plt.plot(midframe_times, translations[:, 2], '-b', label='trans_z')
         plt.legend(loc='upper left')
         plt.ylabel('Translation [mm]')
-        plt.xlabel('frame #')
+        plt.xlabel('Time [s]')
         plt.grid(visible=True)
         plt.savefig(out_file, format='png')
         plt.close()
