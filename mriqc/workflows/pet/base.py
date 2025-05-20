@@ -55,7 +55,8 @@ from nipype.pipeline import engine as pe
 from mriqc.workflows.pet.output import init_pet_report_wf
 from nipype.interfaces.utility import IdentityInterface
 from niworkflows.interfaces.bids import ReadSidecarJSON
-
+from mriqc.qc.pet import generate_tac_figures
+from mriqc.interfaces import DerivativesDataSink
 
 def pet_qc_workflow(name='petMRIQC'):
     """
@@ -73,6 +74,7 @@ def pet_qc_workflow(name='petMRIQC'):
     from nipype.interfaces.afni import TStat
     from niworkflows.interfaces.bids import ReadSidecarJSON
     from mriqc.messages import BUILDING_WORKFLOW
+    import os
 
     dataset = config.workflow.inputs['pet']
     metadata = config.workflow.inputs_metadata['pet']
@@ -103,7 +105,7 @@ def pet_qc_workflow(name='petMRIQC'):
 
     outputnode = pe.Node(
         niu.IdentityInterface(fields=[
-            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv', 'norm_report'
+            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv', 'norm_report', 'tacs_figures'
         ]),
         name='outputnode',
     )
@@ -117,6 +119,18 @@ def pet_qc_workflow(name='petMRIQC'):
     tacswf = extract_tacs()
     iqmswf = compute_iqms()
     pet_report_wf = init_pet_report_wf()
+
+    norm_report_sink = pe.Node(
+        DerivativesDataSink(
+            base_directory=config.execution.work_dir / 'reportlets',
+            datatype='figures',
+            desc='norm',
+            extension='.svg',
+            dismiss_entities=('part',)
+        ),
+        name='norm_report_sink',
+        run_without_submitting=True,
+    )
 
     workflow.connect([
         (inputnode, load_meta, [('in_file', 'in_file')]),
@@ -135,6 +149,8 @@ def pet_qc_workflow(name='petMRIQC'):
         (iqmswf, pet_report_wf, [
             ('outputnode.out_file', 'inputnode.in_iqms'),
         ]),
+        (tacswf, pet_report_wf, [('outputnode.tacs_tsv', 'inputnode.tacs_tsv')]),
+        (load_meta, pet_report_wf, [('out_dict', 'inputnode.metadata')]),
         (hmcwf, mean_pet, [('outputnode.out_file', 'in_file')]),
         (mean_pet, normwf, [('out_file', 'inputnode.pet_mean')]),
         (hmcwf, normwf, [('outputnode.out_file', 'inputnode.pet_dynamic')]),
@@ -147,6 +163,8 @@ def pet_qc_workflow(name='petMRIQC'):
             ('outputnode.out_report', 'norm_report')
         ]),
         (tacswf, outputnode, [('outputnode.tacs_tsv', 'tacs_tsv')]),
+        (normwf, norm_report_sink, [('outputnode.out_report', 'in_file')]),
+        (inputnode, norm_report_sink, [('in_file', 'source_file')]),
     ])
 
     if not config.execution.no_sub:
@@ -243,6 +261,8 @@ def compute_iqms(name='ComputeIQMs'):
     from mriqc.interfaces.pet import FDStats
     from nipype.interfaces.freesurfer import MRIConvert
     from nipype.interfaces.utility import Function
+    from mriqc.interfaces import DerivativesDataSink
+
 
     mem_gb = config.workflow.biggest_file_gb['pet']
 
@@ -329,7 +349,7 @@ def compute_iqms(name='ComputeIQMs'):
         (fd_stats, datasink, [('out_fd', 'root')]),
         (fwhm_per_frame, datasink, [('fwhm_acf', 'fwhm_per_frame')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
-        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')]),
+        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')])
     ])
     # fmt: on
 
