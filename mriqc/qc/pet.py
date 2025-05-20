@@ -25,6 +25,10 @@ from pathlib import Path
 import os.path as op
 import matplotlib.pyplot as plt
 from nipype.interfaces.base import SimpleInterface, BaseInterfaceInputSpec, TraitedSpec, File, traits, isdefined
+import os
+import pandas as pd
+import seaborn as sns
+import re
 
 
 class _PlotFDInputSpec(BaseInterfaceInputSpec):
@@ -152,3 +156,135 @@ class PlotTranslation(SimpleInterface):
         plt.close()
 
         return runtime
+    
+
+def generate_tac_figures(tacs_tsv, metadata, output_dir=None): 
+    import matplotlib.pyplot as plt
+    import os
+    import pandas as pd
+    import seaborn as sns
+    import re
+    from pathlib import Path
+    # Default to the current directory if output_dir is None
+    if output_dir is None:
+        output_dir = os.getcwd()
+
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Load the data
+    tac_data = pd.read_csv(tacs_tsv, sep='\t')
+
+    # Calculate midframe times
+    tac_data['midframe'] = (tac_data['frame_times_start'] + tac_data['frame_times_end']) / 2
+
+    region_cols = [col for col in tac_data.columns if col not in ['frame_times_start', 'frame_times_end', 'midframe']]
+
+    def average_lr_regions(df, region_columns):
+        averaged_data = pd.DataFrame()
+        processed_regions = set()
+
+        for col in region_columns:
+            base_name = re.sub(r'(_L|_R)$', '', col)
+
+            if base_name in processed_regions:
+                continue
+
+            left_col = f'{base_name}_L'
+            right_col = f'{base_name}_R'
+
+            if left_col in df and right_col in df:
+                averaged_data[base_name] = df[[left_col, right_col]].mean(axis=1)
+            else:
+                averaged_data[base_name] = df[col]
+
+            processed_regions.add(base_name)
+
+        return averaged_data
+
+    avg_tac_data = average_lr_regions(tac_data, region_cols)
+    avg_tac_data['midframe'] = tac_data['midframe']
+
+    tac_melted = avg_tac_data.melt(
+        id_vars=['midframe'],
+        var_name='Region',
+        value_name='Uptake'
+    )
+
+    cortical_regions = [
+        col for col in avg_tac_data.columns if any(keyword in col.lower() for keyword in [
+            'gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula'
+        ])
+    ]
+
+    subcortical_regions = [
+        col for col in avg_tac_data.columns if any(keyword in col.lower() for keyword in [
+            'caudate', 'putamen', 'thalamus', 'pallidum', 'accumbens', 'amygdala', 'hippocampus'
+        ])
+    ]
+
+    ventricular_regions = [
+        col for col in avg_tac_data.columns if 'ventricle' in col.lower()
+    ]
+
+    other_regions = [
+        col for col in avg_tac_data.columns if col not in cortical_regions + subcortical_regions + ventricular_regions + ['midframe']
+    ]
+
+    unit = metadata.get('Units', 'Uptake')
+
+    def plot_regions(df, regions, title, unit, output_path):
+        plt.figure(figsize=(16, 10))
+
+        sns.set(style='whitegrid', font_scale=1.4, context='talk')
+        palette = sns.color_palette('tab10', n_colors=len(regions))
+
+        plot = sns.lineplot(
+            data=df[df['Region'].isin(regions)],
+            x='midframe',
+            y='Uptake',
+            hue='Region',
+            marker='o',
+            linewidth=2.5,
+            markersize=8,
+            palette=palette
+        )
+
+        plot.set_xlabel('Time (s)', fontsize=20, fontweight='bold')
+        plot.set_ylabel(f'Uptake ({unit})', fontsize=20, fontweight='bold')
+        plot.set_title(title, fontsize=22, fontweight='bold', pad=20)
+
+        plt.xticks(fontsize=16, fontweight='bold')
+        plt.yticks(fontsize=16, fontweight='bold')
+
+        plt.legend(
+            title='Region',
+            bbox_to_anchor=(0.5, -0.15),
+            loc='upper center',
+            fontsize=14,
+            title_fontsize=16,
+            frameon=False,
+            ncol=3
+        )
+
+        sns.despine(trim=True)
+
+        plt.tight_layout(rect=[0, 0.1, 1, 1])
+        plt.savefig(output_path)
+        plt.close()
+
+    figures = []
+    region_groups = [
+        (cortical_regions, 'Cortical Regions TACs'),
+        (subcortical_regions, 'Subcortical Regions TACs'),
+        (ventricular_regions, 'Ventricular Regions TACs'),
+        (other_regions, 'Other Regions TACs')
+    ]
+
+    for regions, title in region_groups:
+        if regions:
+            fig_filename = title.replace(' ', '_').lower() + '.png'
+            fig_path = os.path.join(output_dir, fig_filename)
+            plot_regions(tac_melted, regions, title, unit, fig_path)
+            figures.append(fig_path)
+
+    return figures
