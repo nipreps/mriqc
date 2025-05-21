@@ -31,6 +31,11 @@ import seaborn as sns
 import re
 
 
+def setup_plot_style():
+    sns.set_theme(style='whitegrid', font_scale=1.4, context='talk')
+    plt.figure(figsize=(16, 10))
+
+
 class _PlotFDInputSpec(BaseInterfaceInputSpec):
     in_fd = File(
         exists=True,
@@ -51,29 +56,27 @@ class PlotFD(SimpleInterface):
     output_spec = _PlotFDOutputSpec
 
     def _run_interface(self, runtime):
-        import matplotlib.pyplot as plt
-        import numpy as np
-        import os
-
-        # Load FD data from file
         fd_values = np.loadtxt(self.inputs.in_fd, skiprows=1)
-        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
-        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
+        times = np.array(self.inputs.metadata['FrameTimesStart'])
+        durations = np.array(self.inputs.metadata['FrameDuration'])
+        midframe_times = times[:-1] + durations[:-1] / 2
 
-        midframe_times = frame_times_start[:-1] + (frame_duration[:-1] / 2)
-
-        # Trim data after 2 min (120 sec)
         mask = midframe_times >= 120
         midframe_times = midframe_times[mask]
         fd_values = fd_values[mask]
 
-        plt.figure(figsize=(12, 5))
-        plt.plot(midframe_times, fd_values, '-r')
-        plt.xlabel('Time [s]')
-        plt.ylabel('Framewise Displacement (FD) [mm]')
-        plt.title('FD plot for PET QC')
-        plt.grid(True)
+        setup_plot_style()
 
+        sns.lineplot(x=midframe_times, y=fd_values, marker='o', linewidth=2.5, color='crimson')
+
+        plt.xlabel('Time (s)', fontsize=20, fontweight='bold')
+        plt.ylabel('Framewise Displacement (mm)', fontsize=20, fontweight='bold')
+        plt.title('FD plot for PET QC', fontsize=22, fontweight='bold', pad=20)
+        plt.xticks(fontsize=16, fontweight='bold')
+        plt.yticks(fontsize=16, fontweight='bold')
+
+        sns.despine(trim=True)
+        plt.tight_layout()
 
         output_filename = os.path.abspath('fd_plot.png')
         plt.savefig(output_filename, bbox_inches='tight')
@@ -99,37 +102,48 @@ class PlotRotation(SimpleInterface):
     output_spec = _PlotRotationOutputSpec
 
     def _run_interface(self, runtime):
-        #Define filename to save the plot
-        in_file_ref = Path(self.inputs.in_file)
-        if isdefined(self.inputs.out_file):
-            in_file_ref = Path(self.inputs.out_file)
-
-        fname = in_file_ref.name.rstrip("".join(in_file_ref.suffixes))
-        out_file = (Path(runtime.cwd) / (f"plot_{fname}_rotations.png")).resolve()
-        self._results["out_file"] = str(out_file)
-
-        # Extract timeseries
         motion = np.loadtxt(self.inputs.mot_param)
-        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
-        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
-
-        midframe_times = frame_times_start + (frame_duration / 2)
+        times = np.array(self.inputs.metadata['FrameTimesStart'])
+        durations = np.array(self.inputs.metadata['FrameDuration'])
+        midframe_times = times + durations / 2
 
         mask = midframe_times >= 120
         midframe_times = midframe_times[mask]
-        rot_angles = motion[mask, 0:3]
+        rot_angles = motion[mask, :3]
 
-        plt.figure(figsize=(11, 5))
-        plt.plot(midframe_times, rot_angles[:, 0], '-r', label='rot_x')
-        plt.plot(midframe_times, rot_angles[:, 1], '-g', label='rot_y')
-        plt.plot(midframe_times, rot_angles[:, 2], '-b', label='rot_z')
-        plt.legend(loc='upper left')
-        plt.ylabel('Rotation [degrees]')
-        plt.xlabel('Time [s]')
-        plt.grid(visible=True)
-        plt.savefig(out_file, format='png')
+        rotation_df = pd.DataFrame({
+            'Time (s)': np.tile(midframe_times, 3),
+            'Rotation (degrees)': rot_angles.flatten(),
+            'Axis': np.repeat(['X', 'Y', 'Z'], len(midframe_times))
+        })
+
+        setup_plot_style()
+
+        sns.lineplot(
+            data=rotation_df,
+            x='Time (s)',
+            y='Rotation (degrees)',
+            hue='Axis',
+            marker='o',
+            linewidth=2.5,
+            palette='tab10'
+        )
+
+        plt.xlabel('Time (s)', fontsize=20, fontweight='bold')
+        plt.ylabel('Rotation (degrees)', fontsize=20, fontweight='bold')
+        plt.title('Rotation plot for PET QC', fontsize=22, fontweight='bold', pad=20)
+        plt.xticks(fontsize=16, fontweight='bold')
+        plt.yticks(fontsize=16, fontweight='bold')
+        plt.legend(title='Axis', fontsize=14, title_fontsize=16, loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3, frameon=False)
+
+        sns.despine(trim=True)
+        plt.tight_layout(rect=[0, 0.1, 1, 1])
+
+        output_filename = os.path.abspath('rotation_plot.png')
+        plt.savefig(output_filename, bbox_inches='tight')
         plt.close()
 
+        self._results['out_file'] = output_filename
         return runtime
 
 
@@ -149,37 +163,48 @@ class PlotTranslation(SimpleInterface):
     output_spec = _PlotTranslationOutputSpec
 
     def _run_interface(self, runtime):
-        # Define filename to save the plot
-        in_file_ref = Path(self.inputs.in_file)
-        if isdefined(self.inputs.out_file):
-            in_file_ref = Path(self.inputs.out_file)
-
-        fname = in_file_ref.name.rstrip("".join(in_file_ref.suffixes))
-        out_file = (Path(runtime.cwd) / (f"plot_{fname}_translations.png")).resolve()
-        self._results["out_file"] = str(out_file)
-
-        # Extract timeseries
         motion = np.loadtxt(self.inputs.mot_param)
-        frame_times_start = np.array(self.inputs.metadata['FrameTimesStart'])
-        frame_duration = np.array(self.inputs.metadata['FrameDuration'])
-
-        midframe_times = frame_times_start + (frame_duration / 2)
+        times = np.array(self.inputs.metadata['FrameTimesStart'])
+        durations = np.array(self.inputs.metadata['FrameDuration'])
+        midframe_times = times + durations / 2
 
         mask = midframe_times >= 120
         midframe_times = midframe_times[mask]
         translations = motion[mask, 3:6]
 
-        plt.figure(figsize=(11, 5))
-        plt.plot(midframe_times, translations[:, 0], '-r', label='trans_x')
-        plt.plot(midframe_times, translations[:, 1], '-g', label='trans_y')
-        plt.plot(midframe_times, translations[:, 2], '-b', label='trans_z')
-        plt.legend(loc='upper left')
-        plt.ylabel('Translation [mm]')
-        plt.xlabel('Time [s]')
-        plt.grid(visible=True)
-        plt.savefig(out_file, format='png')
+        translation_df = pd.DataFrame({
+            'Time (s)': np.tile(midframe_times, 3),
+            'Translation (mm)': translations.flatten(),
+            'Axis': np.repeat(['X', 'Y', 'Z'], len(midframe_times))
+        })
+
+        setup_plot_style()
+
+        sns.lineplot(
+            data=translation_df,
+            x='Time (s)',
+            y='Translation (mm)',
+            hue='Axis',
+            marker='o',
+            linewidth=2.5,
+            palette='tab10'
+        )
+
+        plt.xlabel('Time (s)', fontsize=20, fontweight='bold')
+        plt.ylabel('Translation (mm)', fontsize=20, fontweight='bold')
+        plt.title('Translation plot for PET QC', fontsize=22, fontweight='bold', pad=20)
+        plt.xticks(fontsize=16, fontweight='bold')
+        plt.yticks(fontsize=16, fontweight='bold')
+        plt.legend(title='Axis', fontsize=14, title_fontsize=16, loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3, frameon=False)
+
+        sns.despine(trim=True)
+        plt.tight_layout(rect=[0, 0.1, 1, 1])
+
+        output_filename = os.path.abspath('translation_plot.png')
+        plt.savefig(output_filename, bbox_inches='tight')
         plt.close()
 
+        self._results['out_file'] = output_filename
         return runtime
     
 
@@ -237,7 +262,7 @@ def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
 
     cortical_regions = [
         col for col in avg_tac_data.columns if any(keyword in col.lower() for keyword in [
-            'gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula'
+            'gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula', 'cuneus'
         ])
     ]
 
