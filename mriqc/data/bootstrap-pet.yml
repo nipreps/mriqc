@@ -18,7 +18,7 @@ sections:
         caption: Framewise Displacement.
         subtitle: FD
         style:
-          max-width: 600px
+          max-width: 800px
 
       - bids:
           datatype: figures
@@ -27,7 +27,7 @@ sections:
         caption: Rotation components of motion correction.
         subtitle: Rotation Metrics
         style:
-          max-width: 600px
+          max-width: 800px
 
       - bids:
           datatype: figures
@@ -36,7 +36,7 @@ sections:
         caption: Translation components of motion correction.
         subtitle: Translation Metrics
         style:
-          max-width: 600px
+          max-width: 800px
 
   - name: Normalization Report
     reportlets:
@@ -85,6 +85,15 @@ sections:
           extension: [.png]
         caption: Other regions TACs.
         subtitle: Other TACs
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: carpet
+          extension: [.svg]
+        caption: Carpet plots of the time-activity curves
+        subtitle: Carpet Plots
         style:
           max-width: 800px
 
