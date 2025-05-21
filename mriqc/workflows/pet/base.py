@@ -53,10 +53,11 @@ from mriqc import config
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
 from mriqc.workflows.pet.output import init_pet_report_wf
-from nipype.interfaces.utility import IdentityInterface
+from nipype.interfaces.utility import IdentityInterface, Function
 from niworkflows.interfaces.bids import ReadSidecarJSON
 from mriqc.qc.pet import generate_tac_figures
 from mriqc.interfaces import DerivativesDataSink
+from nilearn.plotting import plot_carpet
 
 def pet_qc_workflow(name='petMRIQC'):
     """
@@ -132,6 +133,27 @@ def pet_qc_workflow(name='petMRIQC'):
         run_without_submitting=True,
     )
 
+    carpet_plot = pe.Node(Function(
+        input_names=['in_pet', 'seg_file', 'metadata', 'output_file'],
+        output_names=['out_file'],
+        function=create_pet_carpet_plot
+    ), name='carpet_plot')
+
+    carpet_plot.inputs.output_file = 'carpet_plot.svg'
+    
+    # DataSink node for carpet plot
+    ds_report_carpet = pe.Node(
+        DerivativesDataSink(
+            base_directory=config.execution.work_dir / 'reportlets',
+            datatype='figures',
+            desc='carpet',
+            extension='.svg',
+            dismiss_entities=('part',),
+        ),
+        name='ds_report_carpet',
+        run_without_submitting=True,
+    )
+
     workflow.connect([
         (inputnode, load_meta, [('in_file', 'in_file')]),
         (inputnode, hmcwf, [('in_file', 'inputnode.in_file')]),
@@ -165,6 +187,11 @@ def pet_qc_workflow(name='petMRIQC'):
         (tacswf, outputnode, [('outputnode.tacs_tsv', 'tacs_tsv')]),
         (normwf, norm_report_sink, [('outputnode.out_report', 'in_file')]),
         (inputnode, norm_report_sink, [('in_file', 'source_file')]),
+        (normwf, carpet_plot, [('outputnode.pet_dynamic_t1', 'in_pet'),
+                           ('outputnode.pet_dseg', 'seg_file')]),
+        (load_meta, carpet_plot, [('out_dict', 'metadata')]),
+        (carpet_plot, ds_report_carpet, [('out_file', 'in_file')]),
+        (inputnode, ds_report_carpet, [('in_file', 'source_file')]),
     ])
 
     if not config.execution.no_sub:
@@ -533,3 +560,85 @@ def extract_tacs(name='ExtractTACs'):
     ])
 
     return workflow
+
+
+def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
+    from nilearn.plotting import plot_carpet
+    import nibabel as nb
+    import numpy as np
+    import os.path as op
+    import pandas as pd
+    from pkg_resources import resource_filename
+    import matplotlib.pyplot as plt
+    import os
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from matplotlib.image import AxesImage
+    
+    pet_img = nb.load(in_pet)
+    seg_img = nb.load(seg_file)
+    seg_data = seg_img.get_fdata().astype(int)  # Extract segmentation data as numpy array
+
+    template_dir = resource_filename('mriqc', 'data/atlas')
+    labels_tsv = op.join(template_dir, 'tpl-SPM_space-MNI152_dseg.tsv')
+    labels_df = pd.read_csv(labels_tsv, sep='\t')
+    
+    # Define labels based on segmentation values
+    map_labels = {
+        "Cortical": 1,
+        "Subcortical": 2,
+        "Cerebellar": 3,
+    }
+
+    cortical_keywords = ['gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula','cuneus']
+    subcortical_keywords = ['caudate', 'putamen', 'thalamus', 'pallidum', 'accumbens', 'amygdala', 'hippocampus']
+    cerebellar_keywords = ['cerebellum']
+
+    # Create a mapping from original labels to simplified labels
+    label_to_group = {0: 0}  # Explicitly handle background
+    for idx, row in labels_df.iterrows():
+        label_id = row['index']
+        region_name = row['name'].lower()
+
+        if any(keyword in region_name for keyword in cortical_keywords):
+            label_to_group[label_id] = map_labels["Cortical"]
+        elif any(keyword in region_name for keyword in subcortical_keywords):
+            label_to_group[label_id] = map_labels["Subcortical"]
+        elif any(keyword in region_name for keyword in cerebellar_keywords):
+            label_to_group[label_id] = map_labels["Cerebellar"]
+
+    # Remap the segmentation image explicitly ensuring no gaps or unknown labels
+    grouped_dseg_data = np.zeros_like(seg_data, dtype=int)
+    unique_labels = np.unique(seg_data)
+
+    for original_label in unique_labels:
+        grouped_dseg_data[seg_data == original_label] = label_to_group.get(original_label, 0)  # Ensure fallback to 0
+
+    # Ensure data has correct datatype for nilearn
+    grouped_dseg_data = grouped_dseg_data.astype(np.int32)
+
+    # Generate new segmentation NIfTI image
+    grouped_dseg_img = nb.Nifti1Image(grouped_dseg_data, seg_img.affine, seg_img.header)
+
+    fig, ax = plt.subplots(figsize=(15, 20))
+
+    # Directly use plot_carpet and capture the figure object
+    fig = plot_carpet(
+        img=pet_img,
+        mask_img=grouped_dseg_img,
+        mask_labels=map_labels,
+        t_r=None,
+        cmap='turbo',
+        cmap_labels='Set1',
+        title='Global uptake patterns over time separated by tissue type'
+    )
+
+    # Manually adjust the xlabel on the correct axis (the carpet plot axis is usually axes[1])
+    fig.axes[1].set_xlabel('Frame #', fontsize=14)
+
+    # Adjust and save figure
+    fig.tight_layout()
+    output_file = op.abspath(output_file)
+    fig.savefig(output_file, bbox_inches='tight', dpi=300)
+    plt.close(fig)
+
+    return output_file
