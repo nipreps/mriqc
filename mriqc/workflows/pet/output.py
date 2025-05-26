@@ -174,6 +174,8 @@ def init_pet_report_wf(name='pet_report_wf'):
 
 def generate_tac_figures_with_desc(tacs_tsv, metadata, output_dir=None):
     """Return TAC figures with description strings for derivative naming."""
+    from mriqc.qc.pet import generate_tac_figures
+
     figures = generate_tac_figures(tacs_tsv, metadata, output_dir)
     descriptions = [
         'tacsCortical',
