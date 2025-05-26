@@ -154,6 +154,21 @@ def pet_qc_workflow(name='petMRIQC'):
         run_without_submitting=True,
     )
 
+    ds_tacs = pe.MapNode(
+        DerivativesDataSink(
+            base_directory=str(config.execution.output_dir),
+            datatype='pet',
+            space='MNI152',
+            atlas='hammers',
+            desc='preproc',
+            suffix='timeseries',
+            extension='.tsv',
+        ),
+        name='ds_tacs',
+        run_without_submitting=True,
+        iterfield=['in_file', 'source_file'],
+    )
+
     workflow.connect([
         (inputnode, load_meta, [('in_file', 'in_file')]),
         (inputnode, hmcwf, [('in_file', 'inputnode.in_file')]),
@@ -195,6 +210,8 @@ def pet_qc_workflow(name='petMRIQC'):
         (load_meta, carpet_plot, [('out_dict', 'metadata')]),
         (carpet_plot, ds_report_carpet, [('out_file', 'in_file')]),
         (inputnode, ds_report_carpet, [('in_file', 'source_file')]),
+        (tacswf, ds_tacs, [('outputnode.tacs_tsv', 'in_file')]),
+        (inputnode, ds_tacs, [('in_file', 'source_file')]),
     ])
 
     if not config.execution.no_sub:
