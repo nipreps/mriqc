@@ -487,7 +487,8 @@ def pet_mni_align(name='PETSpatialNormalization'):
             generate_report=True,
             reference_image=template_t1,
             reference_mask=template_mask,
-            settings=['/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/atlas/petref-mni_registration_precise_000.json'],
+            settings=[op.join(resource_filename('mriqc', 'data/atlas'),
+                              'petref-mni_registration_precise_000.json')],
         ),
         name='ANTsNormalization'
     )
