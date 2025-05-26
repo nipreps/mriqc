@@ -188,6 +188,6 @@
     "sub-{subject}/{datatype<figures>}/sub-{subject}[_ses-{session}][_acq-{acquisition}][_ce-{ceagent}][_rec-{reconstruction}][_run-{run}][_space-{space}][_cohort-{cohort}][_fmapid-{fmapid}][_desc-{desc}]_{suffix<fieldmap>}{extension<.html|.svg>|.svg}",
     "sub-{subject}/{datatype<figures>}/sub-{subject}[_ses-{session}][_acq-{acquisition}][_ce-{ceagent}][_rec-{reconstruction}][_dir-{direction}][_run-{run}][_echo-{echo}][_part-{part}][_space-{space}][_cohort-{cohort}][_desc-{desc}]_{suffix<dwi|epi|epiref>}{extension<.html|.svg>|.svg}",
     "sub-{subject}/{datatype<figures>}/sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}][_ce-{ceagent}][_rec-{reconstruction}][_dir-{direction}][_run-{run}][_echo-{echo}][_part-{part}][_space-{space}][_cohort-{cohort}][_desc-{desc}]_{suffix<bold|boldmap>}{extension<.html|.svg>|.svg}",
-    "sub-{subject}[_ses-{session}][_acq-{acquisition}][_rec-{reconstruction}][_run-{run}][_space-{space}][_cohort-{cohort}][_desc-{desc}]_{suffix<pet>}{extension<.html|.svg|.png>|.html}"
+    "sub-{subject}/{datatype<figures>}/sub-{subject}[_ses-{session}][_acq-{acquisition}][_rec-{reconstruction}][_run-{run}][_space-{space}][_cohort-{cohort}][_desc-{desc}]_{suffix<pet>}{extension<.html|.svg|.png>|.html}"  
   ]
 }
