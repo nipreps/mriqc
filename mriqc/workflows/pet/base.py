@@ -596,6 +596,7 @@ def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
     import nibabel as nb
     import numpy as np
     import pandas as pd
+    from nilearn.plotting import plot_carpet
     from pkg_resources import resource_filename
 
     pet_img = nb.load(in_pet)
