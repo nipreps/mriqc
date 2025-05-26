@@ -157,11 +157,11 @@ def pet_qc_workflow(name='petMRIQC'):
     ds_tacs = pe.MapNode(
         DerivativesDataSink(
             base_directory=str(config.execution.output_dir),
-            datatype='pet',
-            space='MNI152',
-            atlas='hammers',
-            desc='preproc',
             suffix='timeseries',
+            atlas="hammers",
+            space="MNI152",
+            datatype='pet',
+            dismiss_entities=("desc",),
             extension='.tsv',
         ),
         name='ds_tacs',
