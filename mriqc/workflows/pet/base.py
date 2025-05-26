@@ -33,6 +33,7 @@ from niworkflows.interfaces.reportlets.registration import (
     SpatialNormalizationRPT as RobustMNINormalization,
 )
 from pkg_resources import resource_filename
+
 from mriqc import config
 from mriqc.interfaces import DerivativesDataSink
 from mriqc.workflows.pet.output import init_pet_report_wf
@@ -53,6 +54,7 @@ def pet_qc_workflow(name='petMRIQC'):
     """
 
     from nipype.interfaces.afni import TStat
+
     from mriqc.messages import BUILDING_WORKFLOW
 
     dataset = config.workflow.inputs['pet']
@@ -146,10 +148,10 @@ def pet_qc_workflow(name='petMRIQC'):
         DerivativesDataSink(
             base_directory=str(config.execution.output_dir),
             suffix='timeseries',
-            atlas="hammers",
-            space="MNI152",
+            atlas='hammers',
+            space='MNI152',
             datatype='pet',
-            dismiss_entities=("desc",),
+            dismiss_entities=('desc',),
             extension='.tsv',
         ),
         name='ds_tacs',
@@ -241,7 +243,9 @@ def hmc(name='petHMC', omp_nthreads=None):
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars', 'ref_frame']),
+        niu.IdentityInterface(
+            fields=['out_file', 'out_mot_param', 'out_fd', 'mpars', 'ref_frame']
+        ),
         name='outputnode',
     )
 
@@ -415,7 +419,7 @@ def compute_acf_fwhm(in_file):
 
     acf_line = None
     for line in output_lines:
-        if line.startswith(" 0.") or line.startswith("0."):
+        if line.startswith(' 0.') or line.startswith('0.'):
             values = line.split()
             if len(values) >= 4:
                 acf_line = values
@@ -600,7 +604,7 @@ def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
     template_dir = resource_filename('mriqc', 'data/atlas')
     labels_tsv = op.join(template_dir, 'tpl-SPM_space-MNI152_dseg.tsv')
     labels_df = pd.read_csv(labels_tsv, sep='\t')
-    
+
     # Define labels based on segmentation values
     map_labels = {
         'Cortical': 1,

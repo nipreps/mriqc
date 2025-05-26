@@ -30,7 +30,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     File,
@@ -241,6 +240,7 @@ def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
     """Generate TAC plots grouped by region type."""
 
     import os
+
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
