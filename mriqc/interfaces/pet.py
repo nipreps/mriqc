@@ -19,12 +19,19 @@
 # about our expectations at
 #
 #     https://www.nipreps.org/community/licensing/
+"""Interfaces for basic PET QC operations."""
+
 import os
 
 import nibabel as nb
 import numpy as np
-import pandas as pd
-from nipype.interfaces.base import BaseInterfaceInputSpec, SimpleInterface, File, TraitedSpec, traits
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    traits,
+)
 
 
 class _ChooseRefHMCInputSpec(BaseInterfaceInputSpec):
@@ -37,6 +44,7 @@ class _ChooseRefHMCOutputSpec(TraitedSpec):
 
 
 class ChooseRefHMC(SimpleInterface):
+    """Select the frame with the highest global intensity as reference."""
     input_spec = _ChooseRefHMCInputSpec
     output_spec = _ChooseRefHMCOutputSpec
 
@@ -78,6 +86,7 @@ class _FDStatsOutputSpec(TraitedSpec):
 
 
 class FDStats(SimpleInterface):
+    """Compute summary statistics for framewise displacement."""
     input_spec = _FDStatsInputSpec
     output_spec = _FDStatsOutputSpec
 

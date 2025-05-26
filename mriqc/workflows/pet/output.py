@@ -20,15 +20,16 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""Writing out functional reportlets."""
+"""Generate reportlet figures for PET quality control."""
 
 from nipype.interfaces import utility as niu
+from nipype.interfaces.utility import Function
 from nipype.pipeline import engine as pe
 
 from mriqc import config
 from mriqc.interfaces import DerivativesDataSink
 from mriqc.qc.pet import PlotFD, PlotRotation, PlotTranslation, generate_tac_figures
-from nipype.interfaces.utility import Function
+
 
 def init_pet_report_wf(name='pet_report_wf'):
     """
@@ -172,7 +173,7 @@ def init_pet_report_wf(name='pet_report_wf'):
 
 
 def generate_tac_figures_with_desc(tacs_tsv, metadata, output_dir=None):
-    from mriqc.qc.pet import generate_tac_figures
+    """Return TAC figures with description strings for derivative naming."""
     figures = generate_tac_figures(tacs_tsv, metadata, output_dir)
     descriptions = [
         'tacsCortical',
@@ -182,5 +183,5 @@ def generate_tac_figures_with_desc(tacs_tsv, metadata, output_dir=None):
     ]
     # Ensure matching lengths
     if len(figures) != len(descriptions):
-        raise ValueError("Mismatch in number of figures and descriptions.")
+        raise ValueError('Mismatch in number of figures and descriptions.')
     return figures, descriptions

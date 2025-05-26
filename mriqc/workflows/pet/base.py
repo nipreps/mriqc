@@ -20,44 +20,23 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""
-Functional workflow
-===================
+"""Workflows building blocks used to generate PET QC derivatives."""
+import os.path as op
 
-.. image :: _static/functional_workflow_source.svg
-
-The functional workflow follows the following steps:
-
-#. Sanitize (revise data types and xforms) input data, read
-   associated metadata and discard non-steady state frames.
-#. :abbr:HMC (head-motion correction) based on `3dvolreg from
-   AFNI -- :py:func:hmc.
-#. Skull-stripping of the time-series (AFNI) --
-   :py:func:fmri_bmsk_workflow.
-#. Calculate mean time-series, and :abbr:tSNR (temporal SNR).
-#. Spatial Normalization to MNI (ANTs) -- :py:func:epi_mni_align
-#. Extraction of IQMs -- :py:func:compute_iqms.
-#. Individual-reports generation --
-   :py:func:~mriqc.workflows.functional.output.init_pet_report_wf.
-
-This workflow is orchestrated by :py:func:fmri_qc_workflow.
-"""
-
-from pkg_resources import resource_filename
-from nipype.interfaces.ants import ApplyTransforms, N4BiasFieldCorrection
+from nilearn.plotting import plot_carpet
+from nipype.interfaces import utility as niu
+from nipype.interfaces.ants import ApplyTransforms
+from nipype.interfaces.utility import Function, IdentityInterface
+from nipype.pipeline import engine as pe
+from niworkflows.interfaces.bids import ReadSidecarJSON
 from niworkflows.interfaces.reportlets.registration import (
     SpatialNormalizationRPT as RobustMNINormalization,
 )
-import os.path as op
+from pkg_resources import resource_filename
 from mriqc import config
-from nipype.interfaces import utility as niu
-from nipype.pipeline import engine as pe
-from mriqc.workflows.pet.output import init_pet_report_wf
-from nipype.interfaces.utility import IdentityInterface, Function
-from niworkflows.interfaces.bids import ReadSidecarJSON
-from mriqc.qc.pet import generate_tac_figures
 from mriqc.interfaces import DerivativesDataSink
-from nilearn.plotting import plot_carpet
+from mriqc.workflows.pet.output import init_pet_report_wf
+
 
 def pet_qc_workflow(name='petMRIQC'):
     """
@@ -72,10 +51,9 @@ def pet_qc_workflow(name='petMRIQC'):
             wf = pet_qc_workflow()
 
     """
+
     from nipype.interfaces.afni import TStat
-    from niworkflows.interfaces.bids import ReadSidecarJSON
     from mriqc.messages import BUILDING_WORKFLOW
-    import os
 
     dataset = config.workflow.inputs['pet']
     metadata = config.workflow.inputs_metadata['pet']
@@ -105,9 +83,19 @@ def pet_qc_workflow(name='petMRIQC'):
     load_meta = pe.Node(ReadSidecarJSON(bids_dir=config.execution.bids_dir), name='LoadMetadata')
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=[
-            'qc', 'mosaic', 'out_group', 'out_fd', 'pet_mean', 'pet_dseg', 'tacs_tsv', 'norm_report', 'tacs_figures'
-        ]),
+        niu.IdentityInterface(
+            fields=[
+                'qc',
+                'mosaic',
+                'out_group',
+                'out_fd',
+                'pet_mean',
+                'pet_dseg',
+                'tacs_tsv',
+                'norm_report',
+                'tacs_figures',
+            ]
+        ),
         name='outputnode',
     )
 
@@ -140,7 +128,7 @@ def pet_qc_workflow(name='petMRIQC'):
     ), name='carpet_plot')
 
     carpet_plot.inputs.output_file = 'carpet_plot.svg'
-    
+
     # DataSink node for carpet plot
     ds_report_carpet = pe.Node(
         DerivativesDataSink(
@@ -240,6 +228,7 @@ def hmc(name='petHMC', omp_nthreads=None):
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
     from nipype.interfaces.afni import Volreg
+
     from mriqc.interfaces.pet import ChooseRefHMC
 
     mem_gb = config.workflow.biggest_file_gb['pet']
@@ -304,12 +293,12 @@ def compute_iqms(name='ComputeIQMs'):
             wf = compute_iqms()
 
     """
-    from mriqc.interfaces import IQMFileSink
-    from mriqc.interfaces.reports import AddProvenance
-    from mriqc.interfaces.pet import FDStats
     from nipype.interfaces.freesurfer import MRIConvert
     from nipype.interfaces.utility import Function
-    from mriqc.interfaces import DerivativesDataSink
+
+    from mriqc.interfaces import IQMFileSink
+    from mriqc.interfaces.pet import FDStats
+    from mriqc.interfaces.reports import AddProvenance
 
 
     mem_gb = config.workflow.biggest_file_gb['pet']
@@ -416,12 +405,13 @@ def compute_iqms(name='ComputeIQMs'):
 
 
 def compute_acf_fwhm(in_file):
+    """Return the ACF-based FWHM estimated by AFNI's 3dFWHMx."""
     import subprocess
 
-    cmd = f"3dFWHMx -input {in_file} -combine -detrend -acf -automask"
+    cmd = f'3dFWHMx -input {in_file} -combine -detrend -acf -automask'
     result = subprocess.run(cmd.split(), capture_output=True, text=True)
 
-    output_lines = result.stdout.strip().split("\n")
+    output_lines = result.stdout.strip().split('\n')
 
     acf_line = None
     for line in output_lines:
@@ -432,7 +422,7 @@ def compute_acf_fwhm(in_file):
                 break
 
     if acf_line is None:
-        raise ValueError("Failed to parse AFNI 3dFWHMx output correctly.")
+        raise ValueError('Failed to parse AFNI 3dFWHMx output correctly.')
 
     fwhm_acf = float(acf_line[3])
 
@@ -444,22 +434,14 @@ def _mean(inlist):
 
     return float(mean(inlist))
 
-from pkg_resources import resource_filename
-from nipype.interfaces.ants import ApplyTransforms
-from niworkflows.interfaces.reportlets.registration import SpatialNormalizationRPT as RobustMNINormalization
-from nipype.interfaces.utility import IdentityInterface
-from nipype.pipeline import engine as pe
-import os.path as op
-
-from mriqc import config
 
 def pet_mni_align(name='PETSpatialNormalization'):
-    from niworkflows.interfaces.reportlets.registration import SpatialNormalizationRPT as RobustMNINormalization
-    from nipype.interfaces.ants import ApplyTransforms
+    """Align the PET series to the SPM T1 template with corresponding Hammer's atlas"""
+    import os.path as op
+
     from nipype.interfaces.utility import IdentityInterface
     from nipype.pipeline import engine as pe
     from pkg_resources import resource_filename
-    import os.path as op
 
     workflow = pe.Workflow(name=name)
 
@@ -525,10 +507,11 @@ def pet_mni_align(name='PETSpatialNormalization'):
 
 
 def extract_tacs(name='ExtractTACs'):
-    from nipype.interfaces.utility import Function, IdentityInterface
-    from nipype.pipeline import engine as pe
-    from pkg_resources import resource_filename
+    """Extract time-activity curves from normalized dynamic PET."""
     import os.path as op
+
+    from nipype.interfaces.utility import Function
+    from nipype.pipeline import engine as pe
 
     workflow = pe.Workflow(name=name)
 
@@ -547,10 +530,11 @@ def extract_tacs(name='ExtractTACs'):
     template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
 
     def compute_tacs(dseg_file, dynamic_pet, labels_tsv, pet_json):
-        import pandas as pd
+        import os
+
         import nibabel as nib
         import numpy as np
-        import os
+        import pandas as pd
 
         dseg = nib.load(dseg_file).get_fdata()
         pet_data = nib.load(dynamic_pet).get_fdata()
@@ -565,7 +549,7 @@ def extract_tacs(name='ExtractTACs'):
             'frame_times_end': frame_times_end
         }
 
-        for idx, row in labels_df.iterrows():
+        for _, row in labels_df.iterrows():
             label_id = row['index']
             region_name = row['name']
             mask = dseg == label_id
@@ -601,17 +585,14 @@ def extract_tacs(name='ExtractTACs'):
 
 
 def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
-    from nilearn.plotting import plot_carpet
+    """Create a carpet plot grouped by tissue type."""
+
+    import matplotlib.pyplot as plt
     import nibabel as nb
     import numpy as np
-    import os.path as op
     import pandas as pd
     from pkg_resources import resource_filename
-    import matplotlib.pyplot as plt
-    import os
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    from matplotlib.image import AxesImage
-    
+
     pet_img = nb.load(in_pet)
     seg_img = nb.load(seg_file)
     seg_data = seg_img.get_fdata().astype(int)  # Extract segmentation data as numpy array
@@ -622,34 +603,54 @@ def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
     
     # Define labels based on segmentation values
     map_labels = {
-        "Cortical": 1,
-        "Subcortical": 2,
-        "Cerebellar": 3,
+        'Cortical': 1,
+        'Subcortical': 2,
+        'Cerebellar': 3,
     }
 
-    cortical_keywords = ['gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula','cuneus']
-    subcortical_keywords = ['caudate', 'putamen', 'thalamus', 'pallidum', 'accumbens', 'amygdala', 'hippocampus']
+    cortical_keywords = [
+        'gyrus',
+        'cortex',
+        'cingulate',
+        'frontal',
+        'temporal',
+        'parietal',
+        'occipital',
+        'insula',
+        'cuneus',
+    ]
+    subcortical_keywords = [
+        'caudate',
+        'putamen',
+        'thalamus',
+        'pallidum',
+        'accumbens',
+        'amygdala',
+        'hippocampus',
+    ]
     cerebellar_keywords = ['cerebellum']
 
     # Create a mapping from original labels to simplified labels
     label_to_group = {0: 0}  # Explicitly handle background
-    for idx, row in labels_df.iterrows():
+    for _, row in labels_df.iterrows():
         label_id = row['index']
         region_name = row['name'].lower()
 
         if any(keyword in region_name for keyword in cortical_keywords):
-            label_to_group[label_id] = map_labels["Cortical"]
+            label_to_group[label_id] = map_labels['Cortical']
         elif any(keyword in region_name for keyword in subcortical_keywords):
-            label_to_group[label_id] = map_labels["Subcortical"]
+            label_to_group[label_id] = map_labels['Subcortical']
         elif any(keyword in region_name for keyword in cerebellar_keywords):
-            label_to_group[label_id] = map_labels["Cerebellar"]
+            label_to_group[label_id] = map_labels['Cerebellar']
 
     # Remap the segmentation image explicitly ensuring no gaps or unknown labels
     grouped_dseg_data = np.zeros_like(seg_data, dtype=int)
     unique_labels = np.unique(seg_data)
 
     for original_label in unique_labels:
-        grouped_dseg_data[seg_data == original_label] = label_to_group.get(original_label, 0)  # Ensure fallback to 0
+        grouped_dseg_data[seg_data == original_label] = label_to_group.get(
+            original_label, 0
+        )  # Ensure fallback to 0
 
     # Ensure data has correct datatype for nilearn
     grouped_dseg_data = grouped_dseg_data.astype(np.int32)

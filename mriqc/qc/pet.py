@@ -20,18 +20,28 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-import numpy as np
-from pathlib import Path
-import os.path as op
-import matplotlib.pyplot as plt
-from nipype.interfaces.base import SimpleInterface, BaseInterfaceInputSpec, TraitedSpec, File, traits, isdefined
+"""Plotting utilities used in PET quality control."""
+
 import os
+import re
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import re
+
+from nipype.interfaces.base import (
+    BaseInterfaceInputSpec,
+    File,
+    SimpleInterface,
+    TraitedSpec,
+    traits,
+)
 
 
 def setup_plot_style():
+    """Configure Seaborn and Matplotlib defaults for PET plots."""
     sns.set_theme(style='whitegrid', font_scale=1.4, context='talk')
     plt.figure(figsize=(16, 10))
 
@@ -42,16 +52,17 @@ class _PlotFDInputSpec(BaseInterfaceInputSpec):
         mandatory=True,
         desc='motion parameters for FD computation',
     )
-    in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
-    out_file = traits.File(exists=False, desc="output file name")
+    out_file = traits.File(exists=False, desc='output file name')
 
 
 class _PlotFDOutputSpec(TraitedSpec):
-    out_file = File(desc="Output file")
+    out_file = File(desc='Output file')
 
 
 class PlotFD(SimpleInterface):
+    """Create a plot of framewise displacement over time."""
     input_spec = _PlotFDInputSpec
     output_spec = _PlotFDOutputSpec
 
@@ -87,17 +98,18 @@ class PlotFD(SimpleInterface):
 
 
 class _PlotRotationInputSpec(BaseInterfaceInputSpec):
-    mot_param = File(exists=True, mandatory=True, desc="motion parameters")
-    in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    mot_param = File(exists=True, mandatory=True, desc='motion parameters')
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
-    out_file = traits.File(exists=False, desc="output file name")
+    out_file = traits.File(exists=False, desc='output file name')
 
 
 class _PlotRotationOutputSpec(TraitedSpec):
-    out_file = File(desc="Output file")
+    out_file = File(desc='Output file')
 
 
 class PlotRotation(SimpleInterface):
+    """Generate rotation parameter plots."""
     input_spec = _PlotRotationInputSpec
     output_spec = _PlotRotationOutputSpec
 
@@ -134,7 +146,15 @@ class PlotRotation(SimpleInterface):
         plt.title('Rotation plot for PET QC', fontsize=22, fontweight='bold', pad=20)
         plt.xticks(fontsize=16, fontweight='bold')
         plt.yticks(fontsize=16, fontweight='bold')
-        plt.legend(title='Axis', fontsize=14, title_fontsize=16, loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3, frameon=False)
+        plt.legend(
+            title='Axis',
+            fontsize=14,
+            title_fontsize=16,
+            loc='upper center',
+            bbox_to_anchor=(0.5, -0.1),
+            ncol=3,
+            frameon=False,
+        )
 
         sns.despine(trim=True)
         plt.tight_layout(rect=[0, 0.1, 1, 1])
@@ -148,17 +168,18 @@ class PlotRotation(SimpleInterface):
 
 
 class _PlotTranslationInputSpec(BaseInterfaceInputSpec):
-    mot_param = File(exists=True, mandatory=True, desc="motion parameters")
-    in_file = File(exists=True, mandatory=True, desc="File to be plotted")
+    mot_param = File(exists=True, mandatory=True, desc='motion parameters')
+    in_file = File(exists=True, mandatory=True, desc='File to be plotted')
     metadata = traits.Dict(mandatory=True, desc='Metadata dictionary containing timing info')
-    out_file = traits.File(exists=False, desc="output file name")
+    out_file = traits.File(exists=False, desc='output file name')
 
 
 class _PlotTranslationOutputSpec(TraitedSpec):
-    out_file = File(desc="Output file")
+    out_file = File(desc='Output file')
 
 
 class PlotTranslation(SimpleInterface):
+    """Generate translation parameter plots."""
     input_spec = _PlotTranslationInputSpec
     output_spec = _PlotTranslationOutputSpec
 
@@ -195,7 +216,15 @@ class PlotTranslation(SimpleInterface):
         plt.title('Translation plot for PET QC', fontsize=22, fontweight='bold', pad=20)
         plt.xticks(fontsize=16, fontweight='bold')
         plt.yticks(fontsize=16, fontweight='bold')
-        plt.legend(title='Axis', fontsize=14, title_fontsize=16, loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=3, frameon=False)
+        plt.legend(
+            title='Axis',
+            fontsize=14,
+            title_fontsize=16,
+            loc='upper center',
+            bbox_to_anchor=(0.5, -0.1),
+            ncol=3,
+            frameon=False,
+        )
 
         sns.despine(trim=True)
         plt.tight_layout(rect=[0, 0.1, 1, 1])
@@ -206,15 +235,16 @@ class PlotTranslation(SimpleInterface):
 
         self._results['out_file'] = output_filename
         return runtime
-    
 
-def generate_tac_figures(tacs_tsv, metadata, output_dir=None): 
-    import matplotlib.pyplot as plt
+
+def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
+    """Generate TAC plots grouped by region type."""
+
     import os
+    import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
-    import re
-    from pathlib import Path
+
     # Default to the current directory if output_dir is None
     if output_dir is None:
         output_dir = os.getcwd()
@@ -227,7 +257,11 @@ def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
     # Calculate midframe times
     tac_data['midframe'] = (tac_data['frame_times_start'] + tac_data['frame_times_end']) / 2
 
-    region_cols = [col for col in tac_data.columns if col not in ['frame_times_start', 'frame_times_end', 'midframe']]
+    region_cols = [
+        col
+        for col in tac_data.columns
+        if col not in ['frame_times_start', 'frame_times_end', 'midframe']
+    ]
 
     def average_lr_regions(df, region_columns):
         averaged_data = pd.DataFrame()
@@ -261,15 +295,39 @@ def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
     )
 
     cortical_regions = [
-        col for col in avg_tac_data.columns if any(keyword in col.lower() for keyword in [
-            'gyrus', 'cortex', 'cingulate', 'frontal', 'temporal', 'parietal', 'occipital', 'insula', 'cuneus'
-        ])
+        col
+        for col in avg_tac_data.columns
+        if any(
+            keyword in col.lower()
+            for keyword in [
+                'gyrus',
+                'cortex',
+                'cingulate',
+                'frontal',
+                'temporal',
+                'parietal',
+                'occipital',
+                'insula',
+                'cuneus',
+            ]
+        )
     ]
 
     subcortical_regions = [
-        col for col in avg_tac_data.columns if any(keyword in col.lower() for keyword in [
-            'caudate', 'putamen', 'thalamus', 'pallidum', 'accumbens', 'amygdala', 'hippocampus'
-        ])
+        col
+        for col in avg_tac_data.columns
+        if any(
+            keyword in col.lower()
+            for keyword in [
+                'caudate',
+                'putamen',
+                'thalamus',
+                'pallidum',
+                'accumbens',
+                'amygdala',
+                'hippocampus',
+            ]
+        )
     ]
 
     ventricular_regions = [
@@ -277,7 +335,10 @@ def generate_tac_figures(tacs_tsv, metadata, output_dir=None):
     ]
 
     other_regions = [
-        col for col in avg_tac_data.columns if col not in cortical_regions + subcortical_regions + ventricular_regions + ['midframe']
+        col
+        for col in avg_tac_data.columns
+        if col
+        not in cortical_regions + subcortical_regions + ventricular_regions + ['midframe']
     ]
 
     unit = metadata.get('Units', 'Uptake')
