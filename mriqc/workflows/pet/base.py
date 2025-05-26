@@ -590,6 +590,7 @@ def extract_tacs(name='ExtractTACs'):
 
 def create_pet_carpet_plot(in_pet, seg_file, metadata, output_file):
     """Create a carpet plot grouped by tissue type."""
+    import os.path as op
 
     import matplotlib.pyplot as plt
     import nibabel as nb
