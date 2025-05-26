@@ -316,6 +316,7 @@ def compute_iqms(name='ComputeIQMs'):
             fields=[
                 'out_file',
                 'fwhm_list',
+                'fwhm_mean',
             ]
         ),
         name='outputnode',
@@ -348,6 +349,11 @@ def compute_iqms(name='ComputeIQMs'):
         iterfield=['in_file']
     )
 
+    mean_fwhm = pe.Node(
+        niu.Function(input_names=['inlist'], output_names=['out'], function=_mean),
+        name='FWHMMean'
+    )
+
     addprov = pe.MapNode(
         AddProvenance(modality='pet'),
         name='provenance',
@@ -378,11 +384,14 @@ def compute_iqms(name='ComputeIQMs'):
                             ('fd_thres', 'fd_thres')]),
         (inputnode, split_pet, [('in_file', 'in_file')]),
         (split_pet, fwhm_per_frame, [('out_file', 'in_file')]),
+        (fwhm_per_frame, mean_fwhm, [('fwhm_acf', 'inlist')]),
+        (mean_fwhm, datasink, [('out', 'fwhm_mean')]),
         (addprov, datasink, [('out_prov', 'provenance')]),
         (fd_stats, datasink, [('out_fd', 'root')]),
         (fwhm_per_frame, datasink, [('fwhm_acf', 'fwhm_per_frame')]),
         (datasink, outputnode, [('out_file', 'out_file')]),
-        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')])
+        (fwhm_per_frame, outputnode, [('fwhm_acf', 'fwhm_list')]),
+        (mean_fwhm, outputnode, [('out', 'fwhm_mean')])
     ])
     # fmt: on
 
@@ -412,6 +421,11 @@ def compute_acf_fwhm(in_file):
 
     return fwhm_acf
 
+
+def _mean(inlist):
+    from numpy import mean
+
+    return float(mean(inlist))
 
 from pkg_resources import resource_filename
 from nipype.interfaces.ants import ApplyTransforms
