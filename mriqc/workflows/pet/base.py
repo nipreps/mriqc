@@ -161,7 +161,10 @@ def pet_qc_workflow(name='petMRIQC'):
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
-        (hmcwf, iqmswf, [('outputnode.out_fd', 'inputnode.hmc_fd')]),
+        (hmcwf, iqmswf, [
+            ('outputnode.out_fd', 'inputnode.hmc_fd'),
+            ('outputnode.ref_frame', 'inputnode.ref_frame'),
+        ]),
         # Feed reportlet generation
         (inputnode, pet_report_wf, [('in_file', 'inputnode.name_source')]),
         (hmcwf, pet_report_wf, [
@@ -232,7 +235,7 @@ def hmc(name='petHMC', omp_nthreads=None):
     )
 
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars']),
+        niu.IdentityInterface(fields=['out_file', 'out_mot_param', 'out_fd', 'mpars', 'ref_frame']),
         name='outputnode',
     )
 
@@ -266,6 +269,7 @@ def hmc(name='petHMC', omp_nthreads=None):
         ]),
         (estimate_hm, fdnode, [('oned_file', 'in_file')]),
         (fdnode, outputnode, [('out_file', 'out_fd')]),
+        (choose_ref_node, outputnode, [('ref_frame', 'ref_frame')]),
     ])
 
     return workflow
@@ -301,6 +305,7 @@ def compute_iqms(name='ComputeIQMs'):
                 'metadata',
                 'entities',
                 'hmc_fd',
+                'ref_frame',
                 'fd_thres',
             ]
         ),
@@ -367,7 +372,8 @@ def compute_iqms(name='ComputeIQMs'):
         (inputnode, addprov, [('in_file', 'in_file')]),
         (inputnode, datasink, [('in_file', 'in_file'),
                             ('entities', 'entities'),
-                            ('metadata', 'metadata')]),
+                            ('metadata', 'metadata'),
+                            ('ref_frame', 'ref_frame')]),
         (inputnode, fd_stats, [('hmc_fd', 'in_fd'),
                             ('fd_thres', 'fd_thres')]),
         (inputnode, split_pet, [('in_file', 'in_file')]),

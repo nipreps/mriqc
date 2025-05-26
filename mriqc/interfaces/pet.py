@@ -33,6 +33,7 @@ class _ChooseRefHMCInputSpec(BaseInterfaceInputSpec):
 
 class _ChooseRefHMCOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Output file with the selected reference frame')
+    ref_frame = traits.Int(desc='index of selected frame')
 
 
 class ChooseRefHMC(SimpleInterface):
@@ -63,6 +64,7 @@ class ChooseRefHMC(SimpleInterface):
         nb.save(max_frame_img, output_filename)
 
         self._results['out_file'] = output_filename
+        self._results['ref_frame'] = int(max_frame_idx)
         return runtime
 
 
