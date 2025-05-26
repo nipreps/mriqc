@@ -25,6 +25,9 @@ def test_choose_ref_hmc(tmp_path, n_frames):
     out_file = Path(result.outputs.out_file)
     assert out_file.exists()
 
+    # Ensure the interface reports the correct reference frame index
+    assert result.outputs.ref_frame == max_idx
+
     out_img = nb.load(out_file)
     assert np.allclose(out_img.get_fdata(), data[..., max_idx])
 
