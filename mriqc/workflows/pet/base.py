@@ -37,6 +37,7 @@ from pkg_resources import resource_filename
 from mriqc import config
 from mriqc.interfaces import DerivativesDataSink
 from mriqc.workflows.pet.output import init_pet_report_wf
+from mriqc.workflows.utils import threshold_image_percent
 
 
 def pet_qc_workflow(name='petMRIQC'):
@@ -464,6 +465,16 @@ def pet_mni_align(name='PETSpatialNormalization'):
     template_dseg = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_dseg.nii.gz')
     template_mask = op.join(template_dir, 'tpl-SPM_space-MNI152_desc-conform_mask.nii.gz')
 
+    threshold_ref = pe.Node(
+        niu.Function(
+            input_names=['in_file', 'percent'],
+            output_names=['out_file'],
+            function=threshold_image_percent,
+        ),
+        name='ThresholdRef'
+    )
+    threshold_ref.inputs.percent = 0.2
+
     ants_norm = pe.Node(
         RobustMNINormalization(
             moving='boldref',
@@ -491,7 +502,8 @@ def pet_mni_align(name='PETSpatialNormalization'):
     )
 
     workflow.connect([
-        (inputnode, ants_norm, [('pet_mean', 'moving_image')]),
+        (inputnode, threshold_ref, [('pet_mean', 'in_file')]),
+        (threshold_ref, ants_norm, [('out_file', 'moving_image')]),
 
         # Correct connection: using composite transform
         (ants_norm, apply_transform_dynamic, [('composite_transform', 'transforms')]),
