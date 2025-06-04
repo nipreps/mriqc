@@ -118,7 +118,6 @@ def pet_qc_workflow(name='petMRIQC'):
             datatype='figures',
             desc='norm',
             extension='.svg',
-            dismiss_entities=('part',)
         ),
         name='norm_report_sink',
         run_without_submitting=True,
@@ -139,7 +138,6 @@ def pet_qc_workflow(name='petMRIQC'):
             datatype='figures',
             desc='carpet',
             extension='.svg',
-            dismiss_entities=('part',),
         ),
         name='ds_report_carpet',
         run_without_submitting=True,
