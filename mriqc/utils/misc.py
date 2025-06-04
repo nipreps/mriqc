@@ -49,6 +49,7 @@ IMTYPES = {
     'T2w': 'anat',
     'bold': 'func',
     'dwi': 'dwi',
+    'pet': 'pet',
 }
 
 BIDS_COMP = OrderedDict(
@@ -56,6 +57,7 @@ BIDS_COMP = OrderedDict(
         ('subject_id', 'sub'),
         ('session_id', 'ses'),
         ('task_id', 'task'),
+        ('trc_id', 'trc'),
         ('acq_id', 'acq'),
         ('rec_id', 'rec'),
         ('run_id', 'run'),
@@ -64,7 +66,7 @@ BIDS_COMP = OrderedDict(
 
 BIDS_EXPR = """\
 ^sub-(?P<subject_id>[a-zA-Z0-9]+)(_ses-(?P<session_id>[a-zA-Z0-9]+))?\
-(_task-(?P<task_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?\
+(_task-(?P<task_id>[a-zA-Z0-9]+))?(_trc-(?P<trc_id>[a-zA-Z0-9]+))?(_acq-(?P<acq_id>[a-zA-Z0-9]+))?\
 (_rec-(?P<rec_id>[a-zA-Z0-9]+))?(_run-(?P<run_id>[a-zA-Z0-9]+))?\
 """
 

@@ -76,3 +76,44 @@ def test_generate_tac_figures(tmp_path):
     for fig in figs:
         assert Path(fig).exists()
 
+
+@pytest.mark.skipif(
+    any(importlib.util.find_spec(pkg) is None for pkg in ('bids', 'niworkflows')),
+    reason='Required packages are not installed.'
+)
+def test_tracer_entity_derivatives(tmp_path):
+    """DerivativesDataSink should keep tracer label in output filenames."""
+    from mriqc import config
+    from mriqc.testing import mock_config
+    from mriqc.utils.misc import initialize_meta_and_data
+    from mriqc.interfaces import DerivativesDataSink
+
+    pet_file = (
+        Path(__file__).parent.parent
+        / 'data'
+        / 'pet'
+        / 'sub-01'
+        / 'ses-baseline'
+        / 'pet'
+        / 'sub-01_ses-baseline_trc-ps13_pet.nii.gz'
+    )
+
+    with mock_config():
+        config.execution.bids_dir = pet_file.parents[3]
+        config.execution.init()
+        config.workflow.inputs = {'pet': [str(pet_file)]}
+        initialize_meta_and_data()
+        assert config.workflow.inputs_entities['pet'][0]['trc'] == 'ps13'
+
+        ds = DerivativesDataSink(
+            base_directory=tmp_path,
+            datatype='figures',
+            desc='carpet',
+            extension='.svg',
+            dismiss_entities=('part',),
+        )
+        ds.inputs.in_file = str(pet_file)
+        ds.inputs.source_file = str(pet_file)
+        result = ds.run()
+
+    assert 'trc-ps13' in Path(result.outputs.out_file).name
