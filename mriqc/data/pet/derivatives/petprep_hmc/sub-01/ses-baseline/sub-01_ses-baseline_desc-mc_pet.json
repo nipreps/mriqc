@@ -1,0 +1,13 @@
+{
+    "Description": "Motion-corrected PET file",
+    "Sources": "/Users/martinnorgaard/Downloads/eddymotion_pet_testdata/data/sub-01/ses-baseline/pet/sub-01_ses-baseline_pet.nii.gz",
+    "ReferenceImage": "Robust template using mri_robust_register",
+    "CostFunction": "ROB",
+    "MCTreshold": "20",
+    "MCFWHM": "10",
+    "MCStartTime": "60",
+    "QC": "",
+    "SoftwareName": "PETPrep HMC workflow",
+    "SoftwareVersion": "0.0.10",
+    "CommandLine": "run.py /Users/martinnorgaard/Downloads/eddymotion_pet_testdata/data/ /Users/martinnorgaard/Downloads/eddymotion_pet_testdata/data/derivatives/petprep_hmc participant --n_procs 6 --mc_start_time 60"
+}

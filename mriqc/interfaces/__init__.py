@@ -35,6 +35,7 @@ from mriqc.interfaces.bids import IQMFileSink
 from mriqc.interfaces.common import ConformImage, EnsureSize
 from mriqc.interfaces.functional import FunctionalQC, GatherTimeseries, Spikes
 from mriqc.interfaces.webapi import UploadIQMs
+from mriqc.interfaces.pet import ChooseRefHMC, FDStats
 
 
 class DerivativesDataSink(_DDSink):
@@ -55,4 +56,6 @@ __all__ = [
     'Spikes',
     'StructuralQC',
     'UploadIQMs',
+    'ChooseRefHMC',
+    'FDStats',
 ]
