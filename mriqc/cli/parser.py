@@ -59,6 +59,12 @@ def _build_parser():
     from packaging.version import Version
 
     from .version import check_latest, is_flagged
+    import numpy as np
+
+    # FIXME
+    # To be removed: added only to test warnings being treated as errors
+    x = np.array([0.0])
+    _ = np.log(x)
 
     class DeprecateAction(Action):
         def __call__(self, parser, namespace, values, option_string=None):
