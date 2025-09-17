@@ -98,6 +98,7 @@ from pathlib import Path
 from time import strftime
 from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
+import random
 
 try:
     # This option is only available with Python 3.8
@@ -696,11 +697,51 @@ class loggers:
         return retval
 
 
+class seeds(_Config):
+    """Initialize the PRNG and track random seed assignments"""
+
+    _random_seed = None
+    master = None
+    """Master random seed to initialize the Pseudorandom Number Generator (PRNG)"""
+    ants = None
+    """Seed used for antsRegistration, antsAI, antsMotionCorr"""
+    numpy = None
+    """Seed used by NumPy"""
+
+    @classmethod
+    def init(cls):
+        if cls._random_seed is not None:
+            cls.master = cls._random_seed
+        if cls.master is None:
+            cls.master = random.randint(1, 65536)
+        random.seed(cls.master)  # initialize the PRNG
+        # functions to set program specific seeds
+        cls.ants = _set_ants_seed()
+        cls.numpy = _set_numpy_seed()
+
+
+def _set_ants_seed():
+    """Fix random seed for antsRegistration, antsAI, antsMotionCorr"""
+    val = random.randint(1, 65536)
+    os.environ['ANTS_RANDOM_SEED'] = str(val)
+    return val
+
+
+def _set_numpy_seed():
+    """NumPy's random seed is independent from Python's `random` module"""
+    import numpy as np
+
+    val = random.randint(1, 65536)
+    np.random.seed(val)
+    return val
+
+
 def from_dict(sections: dict) -> None:
     """Read settings from a flat dictionary."""
     execution.load(sections)
     workflow.load(sections)
     nipype.load(sections, init=False)
+    seeds.load(sections, init=False)
 
 
 def load(filename: str | os.PathLike) -> None:
