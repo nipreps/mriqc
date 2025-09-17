@@ -193,8 +193,6 @@ line-length = 99
 
 [tool.ruff.lint]
 extend-select = [
-  "F",
-  "E",
   "W",
   "I",
   "UP",
@@ -203,11 +201,9 @@ extend-select = [
   "BLE",
   "B",
   "A",
-  # "CPY",
   "C4",
   "DTZ",
   "T10",
-  # "EM",
   "EXE",
   "FA",
   "ISC",
@@ -217,6 +213,7 @@ extend-select = [
 ]
 ignore = [
   "F841",
+  "S310",
   "S311", # We are not using random for cryptographic purposes
   "S603",
 ]
@@ -226,6 +223,7 @@ inline-quotes = "single"
 
 [tool.ruff.lint.extend-per-file-ignores]
 "*/test_*.py" = ["S101"]
+"docs/notebooks/*.ipynb" = ["B018", "A001", "A002", "F401", "F821"]
 "docs/source/conf.py" = ["A001"]
 "mriqc/bin/nib_hash.py" = ["S324"]
 "mriqc/config.py" = ["S105"]
