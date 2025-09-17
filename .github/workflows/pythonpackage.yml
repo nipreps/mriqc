@@ -79,7 +79,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - run: pipx run ruff format --diff
+    - run: |
+        pipx run ruff check --output-format=github
+        pipx run ruff format --diff
 
   codespell:
     runs-on: ubuntu-latest
