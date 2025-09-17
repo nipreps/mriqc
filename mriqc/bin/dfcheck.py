@@ -40,7 +40,7 @@ def read_iqms(feat_file):
     feat_file = Path(feat_file)
 
     if feat_file.suffix == '.csv':
-        x_df = pd.read_csv(feat_file, index_col=False, dtype={col: str for col in BIDS_COMP})
+        x_df = pd.read_csv(feat_file, index_col=False, dtype=dict.fromkeys(BIDS_COMP, str))
         # Find present bids bits and sort by them
         bids_comps_present = list(set(x_df.columns) & set(BIDS_COMP))
         bids_comps_present = [bit for bit in BIDS_COMP if bit in bids_comps_present]
