@@ -125,8 +125,7 @@ set i 0
             with open(tcl_file, 'w') as tclfp:
                 tclfp.write(tcl_contents)
                 tclfp.write(
-                    'for { set slice %d } { $slice < %d } { incr slice } {'
-                    % (bbox_min[2], bbox_max[2])
+                    f'for {{ set slice {bbox_min[2]} }} {{ $slice < {bbox_max[2]} }} {{ incr slice }} {{'
                 )
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
@@ -170,10 +169,9 @@ set i 0
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
                 tclfp.write(
-                    'for { set slice %d } { $slice < %d } { incr slice } {'
-                    % (bbox_min[2], bbox_max[2])
+                    'for {{ set slice {bbox_min[2]} }} {{ $slice < {bbox_max[2]} }} {{ incr slice }} {{'
                 )
-                tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] + 30, center[1] - 10))
+                tclfp.write(f'    SetZoomCenter {center[0] + 30} {center[1] - 10} $slice\n')
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
                 tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-lh-%03d.tif" $i]\n')
@@ -195,10 +193,9 @@ set i 0
                 tclfp.write(tcl_contents)
                 tclfp.write('SetZoomLevel 2')
                 tclfp.write(
-                    'for { set slice %d } { $slice < %d } { incr slice } {'
-                    % (bbox_min[2], bbox_max[2])
+                    'for {{ set slice {bbox_min[2]} }} {{ $slice < {bbox_max[2]} }} {{ incr slice }} {{'
                 )
-                tclfp.write('    SetZoomCenter %d %d $slice\n' % (center[0] - 30, center[1] - 10))
+                tclfp.write(f'    SetZoomCenter {center[0] - 30} {center[1] - 10} $slice\n')
                 tclfp.write('    SetSlice $slice\n')
                 tclfp.write('    RedrawScreen\n')
                 tclfp.write(f'    SaveTIFF [format "{tmp_sub}/{subid}-rh-%03d.tif" $slice]\n')
