@@ -1,6 +1,6 @@
 [build-system]
+requires = ["hatchling>=1.27", "hatch-vcs", "nipreps-versions"]
 build-backend = "hatchling.build"
-requires = ["hatchling", "hatch-vcs", "nipreps-versions"]
 
 [project]
 authors = [{name = "The NiPreps Developers", email = "nipreps@gmail.com"}]
@@ -9,7 +9,6 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Image Recognition",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -46,6 +45,7 @@ dependencies = [
 description = "Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain."
 dynamic = ["version"]
 license = "Apache-2.0"
+license-files = ["LICENSE"]
 name = "mriqc"
 readme = "README.rst"
 requires-python = ">=3.9"
