@@ -33,17 +33,19 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
     - name: Build and check package
       run: |
-        pipx run build
-        pipx run twine check dist/mriqc-*
+        uvx --from build pyproject-build
+        uvx twine check dist/mriqc-*
     - name: Interpolate version
       run: |
         # Interpolate version
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
           TAG=${GITHUB_REF##*/}
         fi
-        THISVERSION=$( pipx run hatch version | tail -n1 | xargs )
+        THISVERSION=$( uvx run hatch version | tail -n1 | xargs )
         THISVERSION=${TAG:-$THISVERSION}
         echo "Expected VERSION: \"${THISVERSION}\""
         echo "THISVERSION=${THISVERSION}" >> $GITHUB_ENV
@@ -51,6 +53,7 @@ jobs:
       run: |
         python -m venv /tmp/pip
         source /tmp/pip/bin/activate
+        python -m pip install --upgrade pip
         python -m pip install .
         INSTALLED_VERSION=$(python -c 'import mriqc as qc; print(qc.__version__, end="")')
         echo "INSTALLED: \"${INSTALLED_VERSION}\""
@@ -79,7 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - run: pipx run ruff format --diff
+    - uses: astral-sh/setup-uv@v6
+    - run: uvx ruff format --diff
 
   codespell:
     runs-on: ubuntu-latest
