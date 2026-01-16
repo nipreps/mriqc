@@ -70,16 +70,16 @@ def expand_namespace(doctest_namespace):
     tmpdir.cleanup()
 
 
-@pytest.fixture()
+@pytest.fixture
 def testdata_path():
     return _datadir
 
 
-@pytest.fixture()
+@pytest.fixture
 def workdir():
     return None if test_workdir is None else Path(test_workdir)
 
 
-@pytest.fixture()
+@pytest.fixture
 def outdir():
     return None if test_output_dir is None else Path(test_output_dir)

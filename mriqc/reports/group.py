@@ -45,9 +45,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     load_data = Loader('mriqc')
 
     if csv_file.suffix == '.csv':
-        dataframe = pd.read_csv(
-            csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
-        )
+        dataframe = pd.read_csv(csv_file, index_col=False, dtype=dict.fromkeys(BIDS_COMP, object))
 
         id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
         dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,), axis=1)

@@ -89,7 +89,7 @@ class StripModel(nn.Module):
             max_pool = [max_pool] * self.nb_levels
 
         # cache downsampling / upsampling operations
-        MaxPooling = getattr(nn, 'MaxPool%dd' % ndims)
+        MaxPooling = getattr(nn, f'MaxPool{ndims}d')
         self.pooling = [MaxPooling(s) for s in max_pool]
         self.upsampling = [nn.Upsample(scale_factor=s, mode='nearest') for s in max_pool]
 
@@ -164,7 +164,7 @@ class ConvBlock(nn.Module):
     def __init__(self, ndims, in_channels, out_channels, stride=1, activation='leaky'):
         super().__init__()
 
-        Conv = getattr(nn, 'Conv%dd' % ndims)
+        Conv = getattr(nn, f'Conv{ndims}d')
         self.conv = Conv(in_channels, out_channels, 3, stride, 1)
         if activation == 'leaky':
             self.activation = nn.LeakyReLU(0.2)

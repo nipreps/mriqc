@@ -35,11 +35,11 @@ def format_elapsed_time(elapsed_timedelta):
 def main(argv=None):
     """Entry point for MRIQC's CLI."""
     import atexit
+    import datetime
     import gc
     import os
     import sys
     import time
-    import datetime
     from tempfile import mkstemp
 
     from mriqc import config, messages

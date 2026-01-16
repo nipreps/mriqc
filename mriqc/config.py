@@ -93,10 +93,11 @@ from __future__ import annotations
 import os
 import pickle
 import sys
+from collections.abc import Iterable
 from contextlib import suppress
 from pathlib import Path
 from time import strftime
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 try:
