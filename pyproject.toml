@@ -158,7 +158,7 @@ doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
 junit_family = "xunit2"
-log_cli_level = "INFO"
+log_level = "INFO"
 minversion = "7"
 norecursedirs = [".git"]
 xfail_strict = true
@@ -202,10 +202,12 @@ extend-select = [
   "S",
   "BLE",
   "B",
-  "A", # "CPY",
+  "A",
+  # "CPY",
   "C4",
   "DTZ",
-  "T10", # "EM",
+  "T10",
+  # "EM",
   "EXE",
   "FA",
   "ISC",
