@@ -11,7 +11,7 @@ Before moving forward, please make sure to have read and understood
 `introductory documentation <https://www.nipreps.org/apps/framework/>`__).
 
 Containerized execution with *Docker* and *Singularity*/*Apptainer*
--------------------------------------------------------
+-------------------------------------------------------------------
 For containerized execution with *Docker* or *Singularity*/*Apptainer*, please
 follow the documentation on the *NiPreps* site, which contains
 tip and troubleshooting guidelines for both
@@ -23,6 +23,30 @@ also includes specific
 
 The rest of this documentation page applies to both *bare-metal*
 and containerized execution modes.
+
+*MRIQC* can fetch data in *DataLad* datasets
+--------------------------------------------
+As of version 22.0.3, *MRIQC* bundles *DataLad*, enabling automatic
+data fetching in *DataLad* datasets.
+Employing this feature in containerized environments may lead to
+somewhat obscure errors (see, for example,
+`nipreps/mriqc#1307 <https://github.com/nipreps/mriqc/issues/1307>`__).
+If you intend to use *DataLad* datasets, please read carefully
+*NiPreps*' `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
+
+Alternatively, this feature can be disabled by adding
+``--no-datalad-get`` to the command line.
+This will separate *DataLad* management from *MRIQC*'s operation,
+which can be an effective way of debugging issues and averting
+erroneous conditions.
+
+Troubleshooting
+---------------
+If you encounter problems, please check our
+`NiPreps Guidelines for Singularity or Apptainer <https://www.nipreps.org/apps/singularity/>`__.
+Common tips and guidelines that used to be found within *MRIQC*'s
+or *fMRIPrep*'s documentation sites have been relocated in the
+general *NiPreps* website.
 
 A *BIDS Apps* command line interface
 ------------------------------------
@@ -86,21 +110,13 @@ in :ref:`The MRIQC Reports <reports>`.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
 
-*MRIQC* can fetch data in *DataLad* datasets
---------------------------------------------
-As of version 22.0.3, *MRIQC* bundles *DataLad*, enabling automatic
-data fetching in *DataLad* datasets.
-Employing this feature in containerized environments may lead to
-somewhat obscure errors (see, for example,
-`nipreps/mriqc#1307 <https://github.com/nipreps/mriqc/issues/1307>`__).
-If you intend to use *DataLad* datasets, please read carefully
-*NiPreps*' `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
-
-Alternatively, this feature can be disabled by adding
-``--no-datalad-get`` to the command line.
-This will separate *DataLad* management from *MRIQC*'s operation,
-which can be an effective way of debugging issues and averting
-erroneous conditions.
+Command line interface
+......................
+.. argparse::
+   :ref: mriqc.cli.parser._build_parser
+   :prog: mriqc
+   :nodefault:
+   :nodefaultconst:
 
 Running *MRIQC* on HPC with *Singularity*/*Apptainer*
 -----------------------------------------------------
@@ -131,56 +147,6 @@ on ds030 of OpenfMRI:
   maximum of 10GB. Since we saw a memory consumption of 1-2GB during the
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.
-
-Known issues with HPC
-.....................
-
-#. No internet access
-
-    The container needs to download the templates from the internet.
-    If the container does not have internet access, you can download the
-    templates manually using the ``templateflow`` library:
-    
-    .. code-block:: python
-
-      import templateflow.api
-      templateflow.api.TF_S3_ROOT = 'http://templateflow.s3.amazonaws.com'
-      templateflow.api.get('MNI152NLin2009cAsym') # change template if needed
-
-    then provide the templates to the container by mounting the ``templateflow`` home directory and setting the ``TEMPLATEFLOW_HOME`` environment variable:
-
-    .. code-block:: bash
-
-      apptainer run -v /path/to/templateflow:/path/to/templates --env TEMPLATEFLOW_HOME=/path/to/templates ...
-
-#. Socket error:
-
-    When running multiple instances of MRIQC on a HPC, you may encounter the following error:
-
-    .. code-block:: python
-
-      OSError: [Errno 98] Address already in use
-
-    To solve this issue, you can try to isolate the container network from the host network by using the ``--network none`` option.
-
-    .. code-block:: bash
-
-      apptainer run --net --network none ...
-
-    This solution might prevent the container from accessing the internet and downloading templates.
-    In this case, you can download the templates manually and provide access to the downloaded files as explained in the previous section.
-
-    .. code-block:: bash
-
-      apptainer run --net --network none -v /path/to/templateflow:/path/to/templates --env TEMPLATEFLOW_HOME=/path/to/templates ...
-
-Command line interface
-----------------------
-.. argparse::
-   :ref: mriqc.cli.parser._build_parser
-   :prog: mriqc
-   :nodefault:
-   :nodefaultconst:
   
 .. topic:: References
 

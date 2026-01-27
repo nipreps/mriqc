@@ -383,8 +383,10 @@ class ComputeQI2(SimpleInterface):
 class HarmonizeInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True, desc='input data (after bias correction)')
     wm_mask = File(exists=True, mandatory=True, desc='white-matter mask')
+    brain_mask = File(exists=True, desc='brain mask (fall-back in case [near]-empty WM mask)')
     erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
     thresh = traits.Float(0.9, usedefault=True, desc='WM probability threshold')
+    min_size = traits.Int(30, usedefault=True, desc='minimum number of voxels in binary WM mask')
 
 
 class HarmonizeOutputSpec(TraitedSpec):
@@ -401,19 +403,26 @@ class Harmonize(SimpleInterface):
 
     def _run_interface(self, runtime):
         in_file = nb.load(self.inputs.in_file)
-        wm_mask = nb.load(self.inputs.wm_mask).get_fdata()
-        wm_mask[wm_mask < 0.9] = 0
-        wm_mask[wm_mask > 0] = 1
-        wm_mask = wm_mask.astype(np.uint8)
+        data = in_file.get_fdata()
 
-        if self.inputs.erodemsk:
+        wm_mask = nb.load(self.inputs.wm_mask).get_fdata()
+        wm_mask[wm_mask < self.inputs.thresh] = 0
+        wm_mask[wm_mask > 0] = 1
+        wm_mask = wm_mask.astype(bool)
+        wm_mask_size = wm_mask.sum()
+
+        if wm_mask_size < self.inputs.min_size:
+            brain_mask = nb.load(self.inputs.brain_mask).get_fdata() > 0.5
+            wm_mask = brain_mask.copy()
+            wm_mask[data < np.percentile(data[brain_mask], 75)] = False
+            wm_mask[data > np.percentile(data[brain_mask], 95)] = False
+        elif self.inputs.erodemsk:
             # Create a structural element to be used in an opening operation.
             struct = nd.generate_binary_structure(3, 2)
             # Perform an opening operation on the background data.
-            wm_mask = nd.binary_erosion(wm_mask, structure=struct).astype(np.uint8)
+            wm_mask = nd.binary_erosion(wm_mask.astype(np.uint8), structure=struct).astype(bool)
 
-        data = in_file.get_fdata()
-        data *= 1000.0 / np.median(data[wm_mask > 0])
+        data *= 1000.0 / np.median(data[wm_mask])
 
         out_file = fname_presuffix(self.inputs.in_file, suffix='_harmonized', newpath='.')
         in_file.__class__(data, in_file.affine, in_file.header).to_filename(out_file)

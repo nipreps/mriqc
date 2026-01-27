@@ -120,7 +120,7 @@ def get_git_lines(fname='line-contributors.txt'):
 
     git_line_summary_path = shutil.which('git-line-summary')
     if not git_line_summary_path:
-        git_line_summary_path = "git summary --dedup-by-email".split(" ")
+        git_line_summary_path = 'git summary --dedup-by-email'.split(' ')
     else:
         git_line_summary_path = [git_line_summary_path]
 
@@ -233,7 +233,7 @@ def zenodo(
             creator['affiliation'] = creator['affiliation'][0]
 
     Path(zenodo_file).write_text(
-        '%s\n' % json.dumps(zenodo, indent=2)
+        f'{json.dumps(zenodo, indent=2)}\n'
     )
 
 
@@ -301,20 +301,18 @@ def publication(
 
     print('Authors (%d):' % len(hits))
     print(
-        '%s.'
-        % '; '.join(
+        '{}.'.format('; '.join(
             [
                 '{} \\ :sup:`{}`\\ '.format(i['name'], idx)
                 for i, idx in zip(hits, aff_indexes)
             ]
-        )
+        ))
     )
 
     print(
-        '\n\nAffiliations:\n%s'
-        % '\n'.join(
+        '\n\nAffiliations:\n{}'.format('\n'.join(
             [f'{i + 1: >2}. {a}' for i, a in enumerate(affiliations)]
-        )
+        ))
     )
 
 

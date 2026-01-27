@@ -290,7 +290,7 @@ def upload_qc_metrics(
             timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = (f'Error uploading IQMs: Connection error:', f'{err}')
+        errmsg = ('Error uploading IQMs: Connection error:', f'{err}')
     except requests.exceptions.ReadTimeout as err:
         errmsg = (f'Error uploading IQMs: Server {endpoint} is down.', f'{err}')
 

@@ -23,7 +23,6 @@
 """Encapsulates report generation functions."""
 
 from itertools import product
-from sys import version_info
 
 import pandas as pd
 
@@ -34,6 +33,7 @@ from ..utils.misc import BIDS_COMP
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
     from datetime import datetime, timezone
+    from io import StringIO as TextIO
 
     from niworkflows.data import Loader
 
@@ -41,18 +41,11 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
     from .. import __version__ as ver
 
-    if version_info[0] > 2:
-        from io import StringIO as TextIO
-    else:
-        from io import BytesIO as TextIO
-
     UTC = timezone.utc
     load_data = Loader('mriqc')
 
     if csv_file.suffix == '.csv':
-        dataframe = pd.read_csv(
-            csv_file, index_col=False, dtype={comp: object for comp in BIDS_COMP}
-        )
+        dataframe = pd.read_csv(csv_file, index_col=False, dtype=dict.fromkeys(BIDS_COMP, object))
 
         id_labels = list(set(BIDS_COMP) & set(dataframe.columns))
         dataframe['label'] = dataframe[id_labels].apply(_format_labels, args=(id_labels,), axis=1)
@@ -185,7 +178,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['efc'], None),
             (['fber'], None),
             (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
-            (['gsr_%s' % a for a in ('x', 'y')], None),
+            ([f'gsr_{a}' for a in ('x', 'y')], None),
             (['snr'], None),
             (['dvars_std', 'dvars_vstd'], None),
             (['dvars_nstd'], None),

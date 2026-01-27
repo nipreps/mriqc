@@ -696,7 +696,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -725,7 +725,7 @@ jobs:
 
   deploy_docker:
     machine:
-      image: ubuntu-2004:202104-01
+      image: default
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:
@@ -763,9 +763,14 @@ jobs:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            docker push nipreps/mriqc:latest
-            docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
-            docker push nipreps/mriqc:$CIRCLE_TAG
+            # only tag & push latest if CIRCLE_TAG is set
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              docker push nipreps/mriqc:latest
+            fi
+
+            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:=experimental}"
+            docker push nipreps/mriqc:"$CIRCLE_TAG"
+            echo "Pushed tag ${CIRCLE_TAG} to Docker Hub"
 
 workflows:
   version: 2
@@ -844,7 +849,8 @@ workflows:
             - bold
           filters:
             branches:
-              ignore: /.*/
+              only:
+                - master
             tags:
               only: /.*/
 

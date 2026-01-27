@@ -23,8 +23,9 @@
 
 """Test parser."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from mriqc.cli.parser import _build_parser
 

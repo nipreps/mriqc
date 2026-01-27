@@ -60,7 +60,7 @@ class GroundTruth:
         return test_data, wmdata, bgdata
 
 
-@pytest.fixture()
+@pytest.fixture
 def gtruth():
     return GroundTruth()
 

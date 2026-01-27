@@ -93,10 +93,11 @@ from __future__ import annotations
 import os
 import pickle
 import sys
+from collections.abc import Iterable
 from contextlib import suppress
 from pathlib import Path
 from time import strftime
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 try:
@@ -618,7 +619,7 @@ class workflow(_Config):
 
         if cls.inputs_path.exists():
             with open(cls.inputs_path, 'rb') as handle:
-                _inputs = pickle.load(handle)
+                _inputs = pickle.load(handle)  # noqa: S301
 
                 cls.inputs = _inputs['paths']
                 cls.inputs_metadata = _inputs['metadata']

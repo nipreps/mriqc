@@ -19,6 +19,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Durnez | Joke | @jokedurnez | 0000-0001-9030-2202 | Department of Psychology, Stanford University, CA, USA |
 | Erramuzpe | Asier | @erramuzpe | 0000-0002-9402-2184 | Computational Neuroimaging Lab, BioCruces Health Research Institute |
 | Fauber | Bennet | @justbennet | | University of Michigan, Ann Arbor, USA |
+| Férat | Victor | @vferat | 0000-0003-1952-7657 | Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland |
 | Garcia-Dias | Rafael | @garciadias | 0000-0001-9332-1580 | Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK |
 | Ghosh | Satrajit S. | @satra | 0000-0002-5312-6729 | McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA |
 | Gomez | Teresa | @teresamg | | The University of Washington eScience Institute, WA, USA |

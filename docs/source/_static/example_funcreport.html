@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="NiReports: https://www.nipreps.org/" />
+<title>sub-03286_ses-NOT1ACH001_task-rest_bold :: MRIQC's BOLD fMRI report</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
+<script>
+var timestamp = Date.now()
+
+function read_form() {
+    var ds = "<unset>";
+    var sub = "sub-03286_ses-NOT1ACH001_task-rest_bold.nii.gz";
+
+    var artifacts = [];
+    $('#qcartifacts-group input:checked').each(function() {
+        artifacts.push($(this).attr('name'));
+    });
+
+    var rating = $('#qcslider').val();
+    var payload = {
+        'dataset': ds,
+        'subject': sub,
+        'rating': rating,
+        'artifacts': artifacts,
+        'time_sec': (Date.now() - timestamp) / 1000,
+        'confidence': $('#qcextra-confidence').val(),
+        'comments': $('#qcextra-comments').val()
+    };
+
+    var file = new Blob([JSON.stringify(payload)], {type: 'text/json'});
+    $('#btn-download').attr('href', URL.createObjectURL(file));
+    $('#btn-download').attr('download', payload['dataset'] + "_" + payload['subject'] + ".json");
+    return payload
+};
+
+function toggle_rating() {
+    if ($('#qcrating-menu').hasClass('d-none')) {
+        $('#qcrating-menu').removeClass('d-none');
+        $('#qcrating-toggler').prop('checked', true);
+    } else {
+        $('#qcrating-menu').addClass('d-none');
+        $('#qcrating-toggler').prop('checked', false);
+    }
+};
+
+$(window).on('load',function(){
+    var authorization = $('#btn-post').val()
+    if (authorization.includes("secret_token")) {
+        $('#btn-post').addClass('d-none');
+    };
+    timestamp = Date.now();
+});
+
+</script>
+<style type="text/css">
+/* The slider itself */
+.slider {
+  -webkit-appearance: none;  /* Override default CSS styles */
+  appearance: none;
+  margin-bottom: 8px;
+  margin-left: 10%;
+  width: 80%;
+  height: 5px; /* Specified height */
+  background: #d3d3d3; /* Grey background */
+  outline: none; /* Remove outline */
+  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.slider:hover {
+  opacity: 1; /* Fully shown on mouse-over */
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border: 0;
+  background: url('https://raw.githubusercontent.com/nipreps/nireports/main/assets/slider-handle.png');
+  cursor: pointer;
+  z-index: 2000 !important;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border: 0;
+  background: url('https://raw.githubusercontent.com/nipreps/nireports/main/assets/slider-handle.png');
+  cursor: pointer;
+  z-index: 2000 !important;
+}
+
+</style>
+</head>
+<body style="font-family: helvetica;">
+<nav class="navbar fixed-top navbar-expand-lg bg-light">
+<div class="container-fluid">
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="#Basic echo-wise reports">Basic echo-wise reports</a></li>
+        <li class="nav-item"><a class="nav-link" href="#Extended echo-wise reports">Extended echo-wise reports</a></li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" id="navbarAbout" role="button" data-bs-toggle="dropdown" aria-expanded="false" href="#About">
+            About
+            </a>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#errors">Errors</a></li>
+                <li><a class="dropdown-item" href="#meta-about-metadata">Reproducibility and provenance information</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+</div>
+<div class="d-flex flex-row-reverse">
+<div class="form-check form-switch align-self-center flex-fill me-4">
+<input class="form-check-input" type="checkbox" id="qcrating-toggler"></input>
+<label class="form-check-label" style="width: 100pt;" for="qcrating-toggler">Rating widget</label>
+</div>
+</div>
+</nav>
+<noscript>
+    <h1 class="text-danger"> The navigation menu uses Javascript. Without it this report might not work as expected </h1>
+</noscript>
+
+    <div id="Basic echo-wise reports" class="mt-5">
+    <h1 class="sub-report-title pt-5 ps-4">Basic echo-wise reports</h1>
+        <div id="datatype-figures_desc-stdev_session-NOT1ACH001_subject-03286_suffix-bold_task-rest" class="ps-4 pe-4 mb-2">
+<h3 class="run-title mt-3">Standard deviation of signal through time</h3><p class="elem-caption">The voxel-wise standard deviation of the signal (variability along time).</p>                    <div class="reportlet">
+<img class="svg-reportlet" src="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-stdev_bold.svg" style="width: 100%" />
+</div>
+<small>Get figure file: <a href="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-stdev_bold.svg" target="_blank">sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-stdev_bold.svg</a></small>
+
+        </div>
+        <div id="datatype-figures_desc-background_session-NOT1ACH001_subject-03286_suffix-bold_task-rest" class="ps-4 pe-4 mb-2">
+<h3 class="run-title mt-3">View of the background of the voxel-wise average of the BOLD timeseries</h3><p class="elem-caption">This panel shows a mosaic enhancing the background around the head. Artifacts usually unveil themselves in the air surrounding the head, where no signal sources are present.</p>                    <div class="reportlet">
+<img class="svg-reportlet" src="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-background_bold.svg" style="width: 100%" />
+</div>
+<small>Get figure file: <a href="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-background_bold.svg" target="_blank">sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-background_bold.svg</a></small>
+
+        </div>
+        <div id="datatype-figures_desc-zoomed_session-NOT1ACH001_subject-03286_suffix-bold_task-rest" class="ps-4 pe-4 mb-2">
+<h3 class="run-title mt-3">Voxel-wise average of BOLD time-series, zoomed-in covering just the brain</h3><p class="elem-caption">This panel shows a mosaic of the brain. This mosaic is the most suitable to screen head-motion intensity inhomogeneities, global/local noise, signal leakage (for example, from the eyeballs and across the phase-encoding axis), etc.</p>                    <div class="reportlet">
+<img class="svg-reportlet" src="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-zoomed_bold.svg" style="width: 100%" />
+</div>
+<small>Get figure file: <a href="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-zoomed_bold.svg" target="_blank">sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-zoomed_bold.svg</a></small>
+
+        </div>
+        <div id="datatype-figures_desc-carpet_session-NOT1ACH001_subject-03286_suffix-bold_task-rest" class="ps-4 pe-4 mb-2">
+<h3 class="run-title mt-3">Carpetplot and nuisance signals</h3><p class="elem-caption">The so-called &laquo;carpetplot&raquo; may assist in assessing head-motion derived artifacts and respiation effects.</p>                    <div class="reportlet">
+<img class="svg-reportlet" src="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-carpet_bold.svg" style="width: 100%" />
+</div>
+<small>Get figure file: <a href="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-carpet_bold.svg" target="_blank">sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-carpet_bold.svg</a></small>
+
+        </div>
+    </div>
+    <div id="Extended echo-wise reports" class="mt-5">
+    <h1 class="sub-report-title pt-5 ps-4">Extended echo-wise reports</h1>
+        <div id="datatype-figures_desc-mean_session-NOT1ACH001_subject-03286_suffix-bold_task-rest" class="ps-4 pe-4 mb-2">
+<h3 class="run-title mt-3">Voxel-wise average of BOLD time-series</h3><p class="elem-caption">The average signal calculated across the last axis (time).</p>                    <div class="reportlet">
+<img class="svg-reportlet" src="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-mean_bold.svg" style="width: 100%" />
+</div>
+<small>Get figure file: <a href="./sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-mean_bold.svg" target="_blank">sub-03286/figures/sub-03286_ses-NOT1ACH001_task-rest_desc-mean_bold.svg</a></small>
+
+        </div>
+    </div>
+    <div id="About" class="mt-5">
+    <h1 class="sub-report-title pt-5 ps-4">About</h1>
+        <div id="errors" class="ps-4 pe-4 mb-2">
+<h2 class="sub-report-group mt-4">Errors</h2>                    <p class="alert alert-success" role="alert">No errors to report!</p>
+        </div>
+        <div id="meta-about-metadata" class="ps-4 pe-4 mb-2">
+<h2 class="sub-report-group mt-4">Reproducibility and provenance information</h2><p class="elem-caption">Thanks for using <em>MRIQC</em>. The following information may assist in
+reconstructing the provenance of the corresponding derivatives.
+</p>                    <div class="accordion accordion-flush" id="about-metadata">
+
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="about-metadata-0">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-metadata-0-collapse" aria-controls="about-metadata-0-collapse">
+        Provenance Information
+      </button>
+    </h2>
+    <div id="about-metadata-0-collapse" class="accordion-collapse collapse" aria-labelledby="about-metadata-0-heading" data-bs-parent="#about-metadata-0">
+      <div class="accordion-body metadata-table">
+      <table id="about-metadata-table-0" class="table table-sm table-striped">
+<tr><td colspan=2>Execution environment</td><td>docker</td></tr>
+<tr><td colspan=2>Input filename</td><td><BIDS root>/sub-03286/ses-NOT1ACH001/func/sub-03286_ses-NOT1ACH001_task-rest_bold.nii.gz</td></tr>
+<tr><td>Versions</td><td>MRIQC</td><td>24.1.0.dev0+gd5b13cb5.d20240826</td></tr>
+<tr><td>Versions</td><td>NiPype</td><td>1.8.6</td></tr>
+<tr><td>Versions</td><td>TemplateFlow</td><td>24.2.0</td></tr>
+<tr><td colspan=2>md5sum</td><td>6462858509954133c8448a10b04757e5</td></tr>
+</table>
+
+      </div>
+    </div>
+  </div>
+
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="about-metadata-1">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-metadata-1-collapse" aria-controls="about-metadata-1-collapse">
+        Dataset Information
+      </button>
+    </h2>
+    <div id="about-metadata-1-collapse" class="accordion-collapse collapse" aria-labelledby="about-metadata-1-heading" data-bs-parent="#about-metadata-1">
+      <div class="accordion-body metadata-table">
+      <table id="about-metadata-table-1" class="table table-sm table-striped">
+<tr><td>AcquisitionMatrixPE</td><td>95</td></tr>
+<tr><td>AcquisitionNumber</td><td>8</td></tr>
+<tr><td>AcquisitionTime</td><td>10:15:56.720000</td></tr>
+<tr><td>B0FieldSource</td><td>pepolar_fmap0</td></tr>
+<tr><td>BodyPartExamined</td><td>BRAIN</td></tr>
+<tr><td>CoilString</td><td>MULTI COIL</td></tr>
+<tr><td>ConversionSoftware</td><td>dcm2niix</td></tr>
+<tr><td>ConversionSoftwareVersion</td><td>v1.0.20211006</td></tr>
+<tr><td>DeviceSerialNumber</td><td>17057</td></tr>
+<tr><td>EchoTime</td><td>0.039</td></tr>
+<tr><td>EchoTrainLength</td><td>95</td></tr>
+<tr><td>EffectiveEchoSpacing</td><td>0.000608401</td></tr>
+<tr><td>EstimatedEffectiveEchoSpacing</td><td>0.000608401</td></tr>
+<tr><td>EstimatedTotalReadoutTime</td><td>0.0577981</td></tr>
+<tr><td>FlipAngle</td><td>65</td></tr>
+<tr><td>ImageOrientationPatientDICOM</td><td>[0.998569, 0.00766079, 0.0529228, -0.00367802, 0.997181, -0.0749475]</td></tr>
+<tr><td>ImageType</td><td>['ORIGINAL', 'PRIMARY', 'M', 'FFE', 'M', 'FFE']</td></tr>
+<tr><td>ImagingFrequency</td><td>127.804</td></tr>
+<tr><td>InPlanePhaseEncodingDirectionDICOM</td><td>COL</td></tr>
+<tr><td>InstitutionName</td><td>SPMMRC Nottingham</td></tr>
+<tr><td>InstitutionalDepartmentName</td><td>MRI</td></tr>
+<tr><td>MRAcquisitionType</td><td>2D</td></tr>
+<tr><td>MTState</td><td>False</td></tr>
+<tr><td>MagneticFieldStrength</td><td>3</td></tr>
+<tr><td>Manufacturer</td><td>Philips</td></tr>
+<tr><td>ManufacturersModelName</td><td>Achieva</td></tr>
+<tr><td>Modality</td><td>MR</td></tr>
+<tr><td>ParallelAcquisitionTechnique</td><td>SENSE</td></tr>
+<tr><td>PartialFourierDirection</td><td>PHASE</td></tr>
+<tr><td>PartialFourierEnabled</td><td>YES</td></tr>
+<tr><td>PatientPosition</td><td>HFS</td></tr>
+<tr><td>PercentPhaseFOV</td><td>100</td></tr>
+<tr><td>PercentSampling</td><td>100</td></tr>
+<tr><td>PhaseEncodingAxis</td><td>j</td></tr>
+<tr><td>PhaseEncodingDirection</td><td>j</td></tr>
+<tr><td>PhaseEncodingStepsNoPartialFourier</td><td>95</td></tr>
+<tr><td>PhilipsRescaleIntercept</td><td>0</td></tr>
+<tr><td>PhilipsRescaleSlope</td><td>0.818071</td></tr>
+<tr><td>PhilipsScaleSlope</td><td>0.00153639</td></tr>
+<tr><td>PixelBandwidth</td><td>2328</td></tr>
+<tr><td>ProcedureStepDescription</td><td>H1408201447</td></tr>
+<tr><td>ProtocolName</td><td>WIP rs-fmri_singleMB4_HF0.8</td></tr>
+<tr><td>ReconMatrixPE</td><td>96</td></tr>
+<tr><td>RepetitionTime</td><td>1.15</td></tr>
+<tr><td>SAR</td><td>0.0227829</td></tr>
+<tr><td>ScanOptions</td><td>FS</td></tr>
+<tr><td>ScanningSequence</td><td>GR</td></tr>
+<tr><td>SequenceVariant</td><td>SK</td></tr>
+<tr><td>SeriesDescription</td><td>rs-fmri_singleMB4_HF0.8</td></tr>
+<tr><td>SeriesNumber</td><td>801</td></tr>
+<tr><td>SliceThickness</td><td>2.4</td></tr>
+<tr><td>SoftwareVersions</td><td>5.3.0\5.3.0.3</td></tr>
+<tr><td>SpacingBetweenSlices</td><td>2.4</td></tr>
+<tr><td>StationName</td><td>PHILIPS-T6O3EHP</td></tr>
+<tr><td>TaskName</td><td>rest</td></tr>
+<tr><td>TotalReadoutTime</td><td>0.0577981</td></tr>
+<tr><td>UsePhilipsFloatNotDisplayScaling</td><td>1</td></tr>
+<tr><td>WaterFatShift</td><td>25.3797</td></tr>
+</table>
+
+      </div>
+    </div>
+  </div>
+
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="about-metadata-2">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#about-metadata-2-collapse" aria-controls="about-metadata-2-collapse">
+        Extracted Image quality metrics (IQMs)
+      </button>
+    </h2>
+    <div id="about-metadata-2-collapse" class="accordion-collapse collapse" aria-labelledby="about-metadata-2-heading" data-bs-parent="#about-metadata-2">
+      <div class="accordion-body metadata-table">
+      <table id="about-metadata-table-2" class="table table-sm table-striped">
+<tr><td colspan=3>aor</td><td>0.0037614999999999997</td></tr>
+<tr><td colspan=3>aqi</td><td>0.023297618900000004</td></tr>
+<tr><td colspan=3>dummy_trs</td><td>0</td></tr>
+<tr><td>dvars</td><td colspan=2>nstd</td><td>44.00571358506266</td></tr>
+<tr><td>dvars</td><td colspan=2>std</td><td>1.1092985154385975</td></tr>
+<tr><td>dvars</td><td colspan=2>vstd</td><td>0.9788209838095238</td></tr>
+<tr><td colspan=3>efc</td><td>0.4504</td></tr>
+<tr><td colspan=3>fber</td><td>553307.625</td></tr>
+<tr><td>fd</td><td colspan=2>mean</td><td>0.2239716689042766</td></tr>
+<tr><td>fd</td><td colspan=2>num</td><td>215</td></tr>
+<tr><td>fd</td><td colspan=2>perc</td><td>53.75</td></tr>
+<tr><td>fwhm</td><td colspan=2>avg</td><td>2.3961225784666915</td></tr>
+<tr><td>fwhm</td><td colspan=2>x</td><td>2.4589816467849612</td></tr>
+<tr><td>fwhm</td><td colspan=2>y</td><td>2.401594514446574</td></tr>
+<tr><td>fwhm</td><td colspan=2>z</td><td>2.32779157416854</td></tr>
+<tr><td colspan=3>gcor</td><td>0.00260741</td></tr>
+<tr><td>gsr</td><td colspan=2>x</td><td>-0.018688196316361427</td></tr>
+<tr><td>gsr</td><td colspan=2>y</td><td>0.006971913389861584</td></tr>
+<tr><td>size</td><td colspan=2>t</td><td>400</td></tr>
+<tr><td>size</td><td colspan=2>x</td><td>96</td></tr>
+<tr><td>size</td><td colspan=2>y</td><td>96</td></tr>
+<tr><td>size</td><td colspan=2>z</td><td>48</td></tr>
+<tr><td colspan=3>snr</td><td>2.602224857820378</td></tr>
+<tr><td>spacing</td><td colspan=2>tr</td><td>1.1500004529953003</td></tr>
+<tr><td>spacing</td><td colspan=2>x</td><td>2.3958332538604736</td></tr>
+<tr><td>spacing</td><td colspan=2>y</td><td>2.3958332538604736</td></tr>
+<tr><td>spacing</td><td colspan=2>z</td><td>2.4000000953674316</td></tr>
+<tr><td>summary</td><td>bg</td><td>k</td><td>93.4153</td></tr>
+<tr><td>summary</td><td>bg</td><td>mad</td><td>959.2436</td></tr>
+<tr><td>summary</td><td>bg</td><td>mean</td><td>17223.3027</td></tr>
+<tr><td>summary</td><td>bg</td><td>median</td><td>647.0</td></tr>
+<tr><td>summary</td><td>bg</td><td>n</td><td>339609.0</td></tr>
+<tr><td>summary</td><td>bg</td><td>p05</td><td>0.0</td></tr>
+<tr><td>summary</td><td>bg</td><td>p95</td><td>76174.0</td></tr>
+<tr><td>summary</td><td>bg</td><td>stdv</td><td>61176.0266</td></tr>
+<tr><td>summary</td><td>fg</td><td>k</td><td>2.1816</td></tr>
+<tr><td>summary</td><td>fg</td><td>mad</td><td>142208.0543</td></tr>
+<tr><td>summary</td><td>fg</td><td>mean</td><td>500750.8674</td></tr>
+<tr><td>summary</td><td>fg</td><td>median</td><td>481252.0</td></tr>
+<tr><td>summary</td><td>fg</td><td>n</td><td>102759.0</td></tr>
+<tr><td>summary</td><td>fg</td><td>p05</td><td>206803.0</td></tr>
+<tr><td>summary</td><td>fg</td><td>p95</td><td>833312.0</td></tr>
+<tr><td>summary</td><td>fg</td><td>stdv</td><td>184937.7685</td></tr>
+<tr><td colspan=3>tsnr</td><td>25.0640248588752</td></tr>
+</table>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+        </div>
+    </div>
+
+<div id="qcrating-menu" class="card position-fixed d-none" style="width: 30%; top: 100px; left: 65%; max-height: 85%; overflow-y: auto;">
+<div class="card-header m-0">
+    Rating widget
+    <button type="button" class="btn-close position-absolute top-0 end-0" aria-label="Close" id="close-qcrating-menu" onclick="toggle_rating()" style="margin: 10px 10px 0 0"></button>
+</div>
+<div class="card-body">
+<div class="accordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="qcslider-head">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#qcslider-collapse" aria-expanded="true" aria-controls="qcslider-collapse">Overall Quality Rating</button>
+    </h2>
+    <div id="qcslider-collapse" class="accordion-collapse collapse show" aria-labelledby="qcslider-head">
+      <div class="accordion-body">
+        <input type="range" min="1.0" max="4.0" step="0.05" value="2.5" id="qcslider" class="slider">
+        <ul class="list-group list-group-horizontal slider-labels" style="width: 100%">
+            <li class="list-group-item list-group-item-danger small" style="font-size: 0.7em; width: 25%; text-align:center">Exclude</li>
+            <li class="list-group-item list-group-item-warning small" style="font-size: 0.7em; width: 25%; text-align:center">Poor</li>
+            <li class="list-group-item list-group-item-primary small" style="font-size: 0.7em; width: 25%; text-align:center">Acceptable</li>
+            <li class="list-group-item list-group-item-success small" style="font-size: 0.7em; width: 25%; text-align:center">Excellent</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="qcartifacts-head">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#qcartifacts-collapse" aria-expanded="false" aria-controls="qcartifacts-collapse">
+        Record specific artifacts
+      </button>
+    </h2>
+    <div id="qcartifacts-collapse" class="accordion-collapse collapse" aria-labelledby="qcartifacts-head">
+      <div class="accordion-body">
+        <fieldset id="qcartifacts-group" class="form-group">
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="head-motion" id="qcartifacts-item-0" />
+                <label class="form-check-label" for="qcartifacts-item-0">Head motion artifacts</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="eye-spillover" id="qcartifacts-item-1" />
+                <label class="form-check-label" for="qcartifacts-item-1">Eye spillover through <abbr title="phase-encoding">PE</abbr> axis</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="noneye-spillover" id="qcartifacts-item-2" />
+                <label class="form-check-label" for="qcartifacts-item-2">Non-eye spillover through <abbr title="phase-encoding">PE</abbr> axis</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="coil-failure" id="qcartifacts-item-3" />
+                <label class="form-check-label" for="qcartifacts-item-3">Coil failure</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="noise-global" id="qcartifacts-item-4" />
+                <label class="form-check-label" for="qcartifacts-item-4">Global noise</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="noise-local" id="qcartifacts-item-5" />
+                <label class="form-check-label" for="qcartifacts-item-5">Local noise</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="em-perturbation" id="qcartifacts-item-6" />
+                <label class="form-check-label" for="qcartifacts-item-6"><abbr title="electromagnetic">EM</abbr> interference/perturbation</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="wrap-around" id="qcartifacts-item-7" />
+                <label class="form-check-label" for="qcartifacts-item-7">Problematic <abbr title="field-of-view">FoV</abbr> prescription / wrap-around</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="ghost-aliasing" id="qcartifacts-item-8" />
+                <label class="form-check-label" for="qcartifacts-item-8">Aliasing ghosts</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="ghost-other" id="qcartifacts-item-9" />
+                <label class="form-check-label" for="qcartifacts-item-9">Other ghosts (for example, <abbr title="radiofrequency">RF</abbr> spoiling)</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="inu" id="qcartifacts-item-10" />
+                <label class="form-check-label" for="qcartifacts-item-10">Intensity non-uniformity (B<sub>1</sub> bias)</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="field-variation" id="qcartifacts-item-11" />
+                <label class="form-check-label" for="qcartifacts-item-11">Temporal B<sub>1</sub> field non-uniformity variation</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="processing" id="qcartifacts-item-12" />
+                <label class="form-check-label" for="qcartifacts-item-12">Processing such as denoising, defacing or resamplings happened</label>
+            </div>
+            <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" name="uncategorized" id="qcartifacts-item-13" />
+                <label class="form-check-label" for="qcartifacts-item-13">Other uncategorized artifact(s)</label>
+            </div>
+        </fieldset>
+      </div> <!-- accordion-body -->
+    </div> <!-- accordion-collapse -->
+  </div> <!-- accordion-item -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="qcextra-head">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#qcextra-collapse" aria-expanded="false" aria-controls="qcextra-collapse">
+        Extra details
+      </button>
+    </h2>
+    <div id="qcextra-collapse" class="accordion-collapse collapse" aria-labelledby="qcextra-head">
+      <div class="accordion-body">
+        <div class="input-group">
+          <span class="input-group-text">Comments</span>
+          <textarea class="form-control" aria-label="Comments" id="qcextra-comments"></textarea>
+        </div>
+
+        <p style="margin-top: 20px; font-weight: bold">Rater confidence</p>
+        <input type="range" min="0.0" max="4.0" step="0.05" value="3.5" id="qcextra-confidence" class="slider" style="margin-left: 22%;width: 56%;">
+        <ul class="list-group list-group-horizontal slider-labels" style="width: 100%">
+            <li class="list-group-item list-group-item-warning small" style="width: 50%; text-align:center">Doubtful</li>
+            <li class="list-group-item list-group-item-success bg-success text-white small" style="width: 50%; text-align:center">Confident</li>
+        </ul>
+       </div> <!-- accordion-body -->
+    </div> <!-- accordion-collapse -->
+  </div> <!-- accordion-item -->
+</div>
+<div style="margin-top: 10px">
+<a class="btn btn-primary disabled" id="btn-download" href="">Download</a>
+<button class="btn btn-primary" id="btn-post" value="8sSYVI0XjFqacEMZ8wF4" disabled>Share publicly</button>
+</div>
+<script type="text/javascript">
+var MINIMUM_RATING_TIME = 10
+$('#qcslider').on('input', function() {
+
+    if ( (Date.now() - timestamp) / 1000 > MINIMUM_RATING_TIME) {
+        $('#btn-download').removeClass('disabled');
+        $('#btn-download').removeAttr('aria-disabled');
+        $('#btn-post').removeAttr('disabled');
+    };
+
+    $('#qcslider-collapse .list-group-item').removeClass(function(index, classname) {
+        return (classname.match(/(^|\s)bg-\S+/g) || []).join(' ');
+    });
+    $('#qcslider-collapse .list-group-item').removeClass(function(index, classname) {
+        return (classname.match(/(^|\s)text-\S+/g) || []).join(' ');
+    });
+
+    if ( $(this).val() < 1.5 ) {
+        $('#qcslider-collapse .list-group-item-danger').addClass('bg-danger text-white');
+    } else if ( $(this).val() > 3.5 ) {
+        $('#qcslider-collapse .list-group-item-success').addClass('bg-success text-white');
+    } else if ( $(this).val() < 2.5 ) {
+        $('#qcslider-collapse .list-group-item-warning').addClass('bg-warning text-dark');
+    } else {
+        $('#qcslider-collapse .list-group-item-primary').addClass('bg-primary text-white');
+    };
+
+    var payload = read_form();
+});
+
+$('#qcextra-confidence').on('input', function() {
+    if ( (Date.now() - timestamp) / 1000 > MINIMUM_RATING_TIME) {
+        $('#btn-download').removeClass('disabled');
+        $('#btn-download').removeAttr('aria-disabled');
+        $('#btn-post').removeAttr('disabled');
+    };
+
+    $('#qcextra-collapse .list-group-item').removeClass(function(index, classname) {
+        return (classname.match(/(^|\s)bg-\S+/g) || []).join(' ');
+    });
+    $('#qcextra-collapse .list-group-item').removeClass(function(index, classname) {
+        return (classname.match(/(^|\s)text-\S+/g) || []).join(' ');
+    });
+
+    if ( $(this).val() < 2.0 ) {
+        $('#qcextra-collapse .list-group-item-warning').addClass('bg-warning text-dark');
+    } else {
+        $('#qcextra-collapse .list-group-item-success').addClass('bg-success text-white');
+    };
+
+    var payload = read_form();
+});
+
+
+$('#qcextra-comments').bind('input propertychange', function() {
+    if ( (Date.now() - timestamp) / 1000 > MINIMUM_RATING_TIME) {
+        $('#btn-download').removeClass('disabled');
+        $('#btn-download').removeAttr('aria-disabled');
+        $('#btn-post').removeAttr('disabled');
+    };
+});
+
+$( '#btn-post' ).click( function() {
+    var payload = read_form();
+    var md5sum = "unspecified";
+    var params = {
+        'rating': payload['rating'],
+        'md5sum': md5sum,
+        'name': "",
+        'comment': JSON.stringify(payload['artifacts'])
+    };
+
+    // disable development releases
+    var authorization = $(this).val();
+    var ratingReq = new XMLHttpRequest();
+    ratingReq.open("POST", "https://mriqc.nimh.nih.gov:443/api/v1/rating");
+    ratingReq.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    ratingReq.setRequestHeader("Authorization", authorization);
+    ratingReq.onload = function () {
+        status = ratingReq.status;
+        $('#btn-post').removeClass('btn-primary');
+        $('#btn-post').attr('disabled', true);
+        $('#btn-post').attr('aria-disabled', true);
+        $('#btn-post').prop('disabled');
+        $('#btn-post').addClass('disabled');
+        $('#btn-post').removeClass('active');
+        if (status === "201") {
+            $('#btn-post').addClass('btn-success');
+            $('#btn-post').html('Posted!');
+        } else {
+            $('#btn-post').addClass('btn-danger');
+            $('#btn-post').html('Failed');
+        };
+    };
+    ratingReq.send(JSON.stringify(params));
+});
+
+$( 'body' ).on( 'click', '#qcartifacts-group input', function(e) {
+    if ( (Date.now() - timestamp) / 1000 > MINIMUM_RATING_TIME) {
+        $('#btn-download').removeClass('disabled');
+        $('#btn-download').removeAttr('aria-disabled');
+        $('#btn-post').removeAttr('disabled');
+    };
+    
+    var payload = read_form();
+});
+
+$( 'body' ).on( 'click', '#qcrating-toggler', function(e) {
+    toggle_rating();
+});
+</script>
+</div>
+
+<script type="text/javascript">
+function toggle(id) {
+    var element = document.getElementById(id);
+    if(element.style.display == 'block')
+        element.style.display = 'none';
+    else
+        element.style.display = 'block';
+}
+</script>
+</body>
+</html>

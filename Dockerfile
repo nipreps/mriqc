@@ -176,7 +176,8 @@ ENV PATH="${CONDA_PATH}/bin:$PATH" \
     LD_LIBRARY_PATH="${CONDA_PATH}/lib:$LD_LIBRARY_PATH"
 
 # Refresh linked libraries
-RUN ldconfig
+RUN echo "${CONDA_PATH}/lib" > /etc/ld.so.conf.d/conda.conf \
+    && ldconfig
 # Installing dev requirements (packages that are not in pypi)
 WORKDIR /src/
 # Precaching atlases
