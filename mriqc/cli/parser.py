@@ -448,6 +448,14 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Despike the functional scans during head motion correction preprocessing.',
     )
     g_func.add_argument(
+        '--random-seed',
+        dest='_random_seed',
+        action='store',
+        type=int,
+        default=None,
+        help='Initialize the random seed for the workflow',
+    )
+    g_func.add_argument(
         '--start-idx',
         action=DeprecateAction,
         type=int,
@@ -461,7 +469,6 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='DEPRECATED Final volume in functional timeseries that should be '
         'considered for preprocessing.',
     )
-
     latest = check_latest()
     if latest is not None and currentv < latest:
         print(
