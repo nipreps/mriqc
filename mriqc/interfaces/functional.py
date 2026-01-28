@@ -558,7 +558,7 @@ def select_echo(
     if te_echos is not None and len(te_echos) == n_echos:
         try:
             index = np.argmin(np.abs(np.array(te_echos) - te_reference))
-            return in_files[index], index
+            return in_files[index], int(index)
         except TypeError:
             pass
 
