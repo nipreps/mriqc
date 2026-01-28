@@ -24,6 +24,7 @@ import re
 from pathlib import Path
 
 import orjson as json
+import pandas as pd
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     DynamicTraitedSpec,
@@ -36,7 +37,7 @@ from nipype.interfaces.base import (
     traits,
 )
 
-from mriqc import config
+from mriqc import __version__, config
 from mriqc.utils.misc import BIDS_COMP
 
 
@@ -74,7 +75,8 @@ class IQMFileSinkInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
 
 
 class IQMFileSinkOutputSpec(TraitedSpec):
-    out_file = File(desc='the output JSON file containing the IQMs')
+    out_file = File(desc='the output parquet file containing the IQMs')
+    out_sidecar = File(desc='the output sidecar JSON file containing schema metadata')
 
 
 class IQMFileSink(SimpleInterface):
@@ -104,7 +106,7 @@ class IQMFileSink(SimpleInterface):
         self.inputs._outputs[name] = value
         return value
 
-    def _gen_outfile(self):
+    def _gen_outfiles(self):
         out_dir = Path()
         if isdefined(self.inputs.out_dir):
             out_dir = Path(self.inputs.out_dir)
@@ -125,13 +127,19 @@ class IQMFileSink(SimpleInterface):
                 path = path.parent / '_'.join(bids_chunks)
 
         # Build path and ensure directory exists
-        bids_path = out_dir / in_file.replace(''.join(Path(in_file).suffixes), '.json')
+        bids_path = out_dir / in_file.replace(''.join(Path(in_file).suffixes), '+iqms.parquet')
         bids_path.parent.mkdir(parents=True, exist_ok=True)
         self._results['out_file'] = str(bids_path)
-        return self._results['out_file']
+        self._results['out_sidecar'] = str(bids_path.with_suffix('.json'))
+        return self._results['out_file'], self._results['out_sidecar']
+
+    def _build_dataframe(self, iqm_payload):
+        dataframe = pd.json_normalize(iqm_payload, sep='.')
+        dataframe = dataframe.reindex(sorted(dataframe.columns), axis=1)
+        return dataframe
 
     def _run_interface(self, runtime):
-        out_file = self._gen_outfile()
+        out_parquet, out_json = self._gen_outfiles()
 
         if isdefined(self.inputs.root):
             self._out_dict = self.inputs.root
@@ -165,7 +173,6 @@ class IQMFileSink(SimpleInterface):
             comp_val = getattr(self.inputs, comp, None)
             if isdefined(comp_val) and comp_val is not None:
                 id_dict[comp] = comp_val
-        id_dict['modality'] = self.inputs.modality
 
         if isdefined(self.inputs.metadata) and self.inputs.metadata:
             id_dict.update(self.inputs.metadata)
@@ -187,9 +194,28 @@ class IQMFileSink(SimpleInterface):
             self._out_dict['provenance'] = {}
         self._out_dict['provenance'].update(prov_dict)
 
-        Path(out_file).write_bytes(
+        metadata_payload = self._out_dict.get('bids_meta', {})
+        iqm_payload = {
+            key: value
+            for key, value in self._out_dict.items()
+            if key not in ('bids_meta', 'provenance')
+        }
+        dataframe = self._build_dataframe(iqm_payload)
+        dataframe.to_parquet(out_parquet, index=False)
+
+        sidecar_payload = {
+            'mriqc_version': __version__,
+            'modality': self.inputs.modality,
+            'bids_meta': self._out_dict['bids_meta'],
+            'provenance': self._out_dict['provenance'],
+            'columns': [
+                {'name': name, 'dtype': str(dtype)} for name, dtype in dataframe.dtypes.items()
+            ],
+        }
+
+        Path(out_json).write_bytes(
             json.dumps(
-                self._out_dict,
+                sidecar_payload,
                 option=(
                     json.OPT_SORT_KEYS
                     | json.OPT_INDENT_2
@@ -198,6 +224,7 @@ class IQMFileSink(SimpleInterface):
                 ),
             )
         )
+
         return runtime
 
 
