@@ -1,0 +1,118 @@
+package: mriqc
+title: "{filename} :: MRIQC's PET report"
+sections:
+  - name: Summary
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: summary
+          suffix: pet
+          extension: [.html]
+
+  - name: Motion Correction Reports
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: fd
+          extension: [.png]
+        caption: Framewise Displacement.
+        subtitle: FD
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: rotation
+          extension: [.png]
+        caption: Rotation components of motion correction.
+        subtitle: Rotation Metrics
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: translation
+          extension: [.png]
+        caption: Translation components of motion correction.
+        subtitle: Translation Metrics
+        style:
+          max-width: 800px
+
+  - name: Normalization Report
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: norm
+          extension: [.svg]
+        caption: Spatial normalization to standard (MNI) space. The visualization dynamically transitions between subject PET and template images.
+        subtitle: Normalization Report
+        static: false
+        style:
+          max-width: 800px
+
+  - name: Time-Activity Curves (TACs)
+    reportlets:
+      - bids:
+          datatype: figures
+          desc: tacsCortical
+          extension: [.png]
+        caption: Cortical regions TACs.
+        subtitle: Cortical TACs
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: tacsSubcortical
+          extension: [.png]
+        caption: Subcortical regions TACs.
+        subtitle: Subcortical TACs
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: tacsVentricular
+          extension: [.png]
+        caption: Ventricular regions TACs.
+        subtitle: Ventricular TACs
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: tacsOther
+          extension: [.png]
+        caption: Other regions TACs.
+        subtitle: Other TACs
+        style:
+          max-width: 800px
+
+      - bids:
+          datatype: figures
+          desc: carpet
+          extension: [.svg]
+        caption: Carpet plots of the time-activity curves
+        subtitle: Carpet Plots
+        style:
+          max-width: 800px
+
+  - name: About
+    nested: true
+    reportlets:
+      - custom: errors
+        path: '{reportlets_dir}/{run_uuid}'
+        captions: "<em>MRIQC</em> may have recorded failure conditions."
+        title: Errors
+      - metadata: "input"
+        settings:
+          folded: true
+          id: 'about-metadata'
+        caption: |
+          Thanks for using <em>MRIQC</em>. The following information may assist in
+          reconstructing the provenance of the corresponding derivatives.
+        title: Reproducibility and provenance information
+
+plugins:
+  - module: nireports.assembler
+    path: data/rating-widget/bootstrap.yml

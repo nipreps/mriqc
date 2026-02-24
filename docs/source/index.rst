@@ -18,6 +18,7 @@ Contents
    measures
    reports
    workflows
+   petqc
    dsa
    license
    changes

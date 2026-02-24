@@ -1,0 +1,81 @@
+[environment]
+cache_path = "PosixPath('/Users/martinnorgaard/.cache/mriqc')"
+cpu_count = 10
+exec_env = "posix"
+freesurfer_home = "/Applications/freesurfer/7.4.1"
+overcommit_policy = "n/a"
+overcommit_limit = "n/a"
+nipype_version = "1.10.0"
+synthstrip_path = "PosixPath('/Applications/freesurfer/7.4.1/models/synthstrip.1.pt')"
+templateflow_version = "24.2.2"
+total_memory = 32.0
+version = "25.1.0.dev49+g1b92a165.d20250509"
+
+[execution]
+ants_float = false
+bids_dir = "/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet"
+bids_dir_datalad = false
+bids_database_dir = "/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet/derivatives/mriqc/.bids_db"
+bids_database_wipe = false
+cwd = "/Users/martinnorgaard/Dropbox/Mac/Documents/GitHub/mriqc"
+datalad_get = true
+debug = false
+dry_run = false
+dsname = "<unset>"
+float32 = true
+layout = "BIDS Layout: /Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet"
+log_dir = "/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet/derivatives/mriqc/logs"
+log_level = 25
+modalities = [ "T1w", "T2w", "bold", "dwi", "pet",]
+no_sub = true
+notrack = false
+output_dir = "/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet/derivatives/mriqc"
+participant_label = [ "01",]
+pdb = false
+reports_only = false
+resource_monitor = false
+run_uuid = "20250509-150839_62d91c5f-fc2a-4ed5-87b2-8c474d5e033e"
+templateflow_home = "/Users/martinnorgaard/.cache/templateflow"
+upload_strict = false
+verbose_reports = false
+webapi_url = "https://mriqc.nimh.nih.gov:443/api/v1"
+work_dir = "/Users/martinnorgaard/Dropbox/Mac/Documents/GitHub/mriqc/work"
+write_graph = false
+
+[workflow]
+analysis_level = [ "participant",]
+deoblique = false
+despike = false
+fd_thres = 0.2
+fd_radius = 50
+fft_spikes_detector = false
+inputs_path = "PosixPath('/Users/martinnorgaard/Dropbox/Mac/Documents/GitHub/mriqc/work/inputs-20250509-150839_62d91c5f-fc2a-4ed5-87b2-8c474d5e033e.pkl')"
+min_len_dwi = 7
+min_len_bold = 5
+species = "human"
+template_id = "MNI152NLin2009cAsym"
+
+[nipype]
+crashfile_format = "txt"
+get_linked_libs = false
+local_hash_check = true
+nprocs = 10
+omp_nthreads = 10
+plugin = "MultiProc"
+remove_node_directories = false
+resource_monitor = false
+stop_on_first_crash = true
+
+[settings]
+file_path = "/Users/martinnorgaard/Documents/GitHub/mriqc/mriqc/data/pet/derivatives/mriqc/logs/config-20250509-150839_62d91c5f-fc2a-4ed5-87b2-8c474d5e033e.toml"
+start_time = 1746796119.322388
+
+[execution.bids_filters]
+
+[workflow.biggest_file_gb]
+pet = 0.04553897213190794
+
+[nipype.plugin_args]
+maxtasksperchild = 1
+raise_insufficient = false
+n_procs = 10
