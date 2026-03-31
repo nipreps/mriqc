@@ -837,7 +837,10 @@ def _get_mod(in_file):
 def _get_norm_mod(in_file):
     """Map modality to a valid spatial normalization reference.
     FLAIR uses T2w template reference as it shares similar contrast."""
-    mod = _get_mod(in_file)
+    from pathlib import Path
+    in_file = Path(in_file)
+    extension = ''.join(in_file.suffixes)
+    mod = in_file.name.replace(extension, '').split('_')[-1]
     if mod == 'FLAIR':
         return 'T2w'
     return mod
