@@ -176,7 +176,7 @@ def anat_qc_workflow(name='anatMRIQC'):
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
-        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
+        (inputnode, norm, [(('in_file', _get_norm_mod), 'inputnode.modality')]),
         (to_ras, skull_stripping, [('out_file', 'inputnode.in_files')]),
         (skull_stripping, hmsk, [
             ('outputnode.out_corrected', 'inputnode.in_file'),
@@ -833,6 +833,14 @@ def _get_mod(in_file):
     in_file = Path(in_file)
     extension = ''.join(in_file.suffixes)
     return in_file.name.replace(extension, '').split('_')[-1]
+
+def _get_norm_mod(in_file):
+    """Map modality to a valid spatial normalization reference.
+    FLAIR uses T2w template reference as it shares similar contrast."""
+    mod = _get_mod(in_file)
+    if mod == 'FLAIR':
+        return 'T2w'
+    return mod
 
 
 def _pop(inlist):
