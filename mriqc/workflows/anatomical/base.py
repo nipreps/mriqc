@@ -99,18 +99,21 @@ def anat_qc_workflow(name='anatMRIQC'):
         chain(
             config.workflow.inputs.get('t1w', []),
             config.workflow.inputs.get('t2w', []),
+            config.workflow.inputs.get('flair', []),
         )
     )
     metadata = list(
         chain(
             config.workflow.inputs_metadata.get('t1w', []),
             config.workflow.inputs_metadata.get('t2w', []),
+            config.workflow.inputs_metadata.get('flair', []),
         )
     )
     entities = list(
         chain(
             config.workflow.inputs_entities.get('t1w', []),
             config.workflow.inputs_entities.get('t2w', []),
+            config.workflow.inputs_entities.get('flair', []),
         )
     )
     message = BUILDING_WORKFLOW.format(
