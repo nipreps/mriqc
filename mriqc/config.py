@@ -521,7 +521,10 @@ class execution(_Config):
                 ),
                 # Ignore all files, except for the supported modalities
                 # (also when the suffix is the whole name, as in a top-level ``dwi.json``)
-                re.compile(r'^.+(?<!(_T1w|_T2w|_FLAIR|bold|_dwi|/T1w|/T2w|/dwi))\.(json|nii|nii\.gz)$'),
+                re.compile(
+                    r'^.+(?<!_T1w)(?<!_T2w)(?<!_FLAIR)(?<!bold)(?<!_dwi)'
+                    r'(?<!/T1w)(?<!/T2w)(?<!/FLAIR)(?<!/dwi)\.(json|nii|nii\.gz)$'
+                ),
             ]
 
             if cls.participant_label:
