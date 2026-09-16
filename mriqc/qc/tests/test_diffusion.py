@@ -23,7 +23,7 @@
 
 import numpy as np
 
-from mriqc.qc.diffusion import spike_ppm
+from mriqc.qc.diffusion import neighboring_dwi_correlation, spike_ppm
 
 
 def test_spike_ppm():
@@ -35,3 +35,16 @@ def test_spike_ppm():
     assert np.min([val[f'slice_{ax}'] for ax in 'ijk']) >= 0
     assert np.max([val[f'slice_{ax}'] for ax in 'ijk']) <= 1e6
     assert len([val[f'slice_{ax}'] for ax in 'ijk']) == msk.ndim - 1
+
+
+def test_neighboring_dwi_correlation():
+    rng = np.random.default_rng(42)
+    data = rng.random((5, 5, 5, 4))
+    # Volume 1 is a copy of volume 0, so their correlation is exactly 1
+    data[..., 1] = data[..., 0]
+
+    assert neighboring_dwi_correlation(data, [(0, 1)]) == 1.0
+
+    mask = np.zeros(data.shape[:-1], dtype=bool)
+    mask[1:4, 1:4, 1:4] = True
+    assert neighboring_dwi_correlation(data, [(0, 1)], mask=mask) == 1.0
