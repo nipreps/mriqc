@@ -67,6 +67,9 @@ def synthstrip_wf(name='synthstrip_wf', omp_nthreads=None):
         SynthStrip(num_threads=omp_nthreads),
         name='synthstrip',
         num_threads=omp_nthreads,
+        # The model weights alone take several GB, so the default 0.25 lets the
+        # scheduler run too many at once
+        mem_gb=6,
     )
 
     final_masked = pe.Node(ApplyMask(), name='final_masked')
