@@ -37,6 +37,9 @@ def write_bidsignore(deriv_dir):
     bids_ignore = [
         '*.html',
         'logs/',  # Reports
+        'figures/',  # Reportlets
+        '*_timeseries.tsv',
+        '*_timeseries.json',
     ] + [f'*_{suffix}.json' for suffix in SUPPORTED_SUFFIXES]
 
     ignore_file = Path(deriv_dir) / '.bidsignore'
