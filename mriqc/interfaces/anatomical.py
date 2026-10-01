@@ -36,6 +36,8 @@ from nipype.interfaces.base import (
     traits,
 )
 from nipype.utils.filemanip import fname_presuffix
+from nipype import logging
+iflogger = logging.getLogger('nipype.interface')
 
 from mriqc.qc.anatomical import (
     art_qi1,
@@ -72,6 +74,8 @@ class StructuralQCInputSpec(BaseInterfaceInputSpec):
     mni_tpms = InputMultiPath(File(), desc='tissue probability maps from FSL FAST')
     in_fwhm = traits.List(traits.Float, mandatory=True, desc='smoothness estimated with AFNI')
     human = traits.Bool(True, usedefault=True, desc='human workflow')
+    modality = traits.Str('', usedefault=True, desc='imaging modality suffix (e.g. T1w, T2w, FLAIR)')
+
 
 
 class StructuralQCOutputSpec(TraitedSpec):
@@ -113,10 +117,16 @@ class StructuralQC(SimpleInterface):
         inudata[inudata < 0] = 0
 
         if np.all(inudata < 1e-5):
-            raise RuntimeError(
-                'Input inhomogeneity-corrected data seem empty. '
-                'MRIQC failed to process this dataset.'
-            )
+            if self.inputs.modality.upper() == 'FLAIR':
+                iflogger.warning(
+                    "N4 produced near-empty output for FLAIR image — substituting "
+                    "original image. IQMs will reflect uncorrected data."
+                )
+                imnii = nb.load(self.inputs.in_file)
+                inudata = np.nan_to_num(imnii.get_fdata())
+                inudata[inudata < 0] = 0
+            else:
+                raise RuntimeError("Input inhomogeneity-corrected data seem empty.")
 
         # Load binary segmentation from FSL FAST
         segnii = nb.load(self.inputs.in_segm)

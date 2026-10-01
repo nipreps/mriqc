@@ -105,7 +105,7 @@ def _build_parser():
         description=f"""\
 MRIQC {config.environment.version}
 Automated Quality Control and visual reports for Quality Assessment of structural \
-(T1w, T2w) and functional MRI of the brain.
+(T1w, T2w, FLAIR) and functional MRI of the brain.
 
 {config.DSA_MESSAGE}""",
         formatter_class=ArgumentDefaultsHelpFormatter,

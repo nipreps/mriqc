@@ -47,6 +47,7 @@ R = TypeVar('R')
 IMTYPES = {
     'T1w': 'anat',
     'T2w': 'anat',
+    'FLAIR': 'anat',
     'bold': 'func',
     'dwi': 'dwi',
 }
@@ -466,7 +467,7 @@ def initialize_meta_and_data(
 
         # Some modalities require a maximum number of volumes
         volmax = None
-        if mod in ('T1w', 'T2w'):
+        if mod in ('T1w', 'T2w', 'flair'):
             volmax = 1
 
         # Run extraction in a asyncio coroutine loop

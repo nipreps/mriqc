@@ -99,18 +99,21 @@ def anat_qc_workflow(name='anatMRIQC'):
         chain(
             config.workflow.inputs.get('t1w', []),
             config.workflow.inputs.get('t2w', []),
+            config.workflow.inputs.get('flair', []),
         )
     )
     metadata = list(
         chain(
             config.workflow.inputs_metadata.get('t1w', []),
             config.workflow.inputs_metadata.get('t2w', []),
+            config.workflow.inputs_metadata.get('flair', []),
         )
     )
     entities = list(
         chain(
             config.workflow.inputs_entities.get('t1w', []),
             config.workflow.inputs_entities.get('t2w', []),
+            config.workflow.inputs_entities.get('flair', []),
         )
     )
     message = BUILDING_WORKFLOW.format(
@@ -173,7 +176,7 @@ def anat_qc_workflow(name='anatMRIQC'):
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
-        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
+        (inputnode, norm, [(('in_file', _get_norm_mod), 'inputnode.modality')]),
         (to_ras, skull_stripping, [('out_file', 'inputnode.in_files')]),
         (skull_stripping, hmsk, [
             ('outputnode.out_corrected', 'inputnode.in_file'),
@@ -517,7 +520,8 @@ def compute_iqms(name='ComputeIQMs'):
                                ('rotmask', 'rot_msk'),
                                ('segmentation', 'in_segm'),
                                ('pvms', 'in_pvms'),
-                               ('std_tpms', 'mni_tpms')]),
+                               ('std_tpms', 'mni_tpms'),
+                               (('in_file', _get_mod), 'modality')]),
         (inputnode, fwhm, [('in_ras', 'in_file'),
                            ('brainmask', 'mask')]),
         (homog, measures, [('out_file', 'in_noinu')]),
@@ -825,6 +829,17 @@ def _get_mod(in_file):
     in_file = Path(in_file)
     extension = ''.join(in_file.suffixes)
     return in_file.name.replace(extension, '').split('_')[-1]
+
+def _get_norm_mod(in_file):
+    """Map modality to a valid spatial normalization reference.
+    FLAIR uses T2w template reference as it shares similar contrast."""
+    from pathlib import Path
+    in_file = Path(in_file)
+    extension = ''.join(in_file.suffixes)
+    mod = in_file.name.replace(extension, '').split('_')[-1]
+    if mod == 'FLAIR':
+        return 'T2w'
+    return mod
 
 
 def _pop(inlist):
