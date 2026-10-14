@@ -130,7 +130,12 @@ def fetch(args: (str, str, str, str)) -> (str, str):
     sub_file = op.join(tmpdir, f'{pkg_id}.zip')
 
     cmd = [_curl_cmd, '-s', '-u', f'{user}:{password}', '-o', sub_file, url]
-    sp.check_call(cmd)
+    try:
+        sp.check_call(cmd)
+    except sp.CalledProcessError as exc:
+        raise sp.CalledProcessError(
+            exc.returncode, [_curl_cmd, '<arguments redacted>']
+        ) from None
     sp.check_call([_unzip_cmd, '-qq', '-d', tmpdir, '-u', sub_file])
 
     abide_root = op.join(tmpdir, 'ABIDE')
