@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.27", "hatch-vcs", "nipreps-versions"]
+requires = ["hatchling>=1.27", "hatch-vcs", "nipreps-versions", "setuptools-scm>=8,<9"]
 build-backend = "hatchling.build"
 
 [project]
@@ -17,6 +17,7 @@ classifiers = [
 ]
 dependencies = [
   "acres",
+  "defusedxml",
   "dipy >= 1.10.0",
   "markupsafe ~= 2.0.1",
   "matplotlib",
