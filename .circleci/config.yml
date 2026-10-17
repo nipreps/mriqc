@@ -681,7 +681,7 @@ jobs:
           command: |
             python -m venv /tmp/venv
             source /tmp/venv/bin/activate
-            python -m pip install -U build hatch hatchling pip twine docutils
+            python -m pip install -U build hatch hatchling pip twine docutils 'virtualenv<21'
       - run:
           name: Build and check
           command: |
