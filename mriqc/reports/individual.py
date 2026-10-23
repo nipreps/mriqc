@@ -25,6 +25,7 @@
 from json import loads
 from pathlib import Path
 
+import pandas as pd
 from nireports.assembler.report import Report
 from niworkflows.data import Loader
 
@@ -56,15 +57,15 @@ def _single_report(in_file):
     entities.pop('part', None)
     report_type = entities.pop('datatype', None)
 
-    # Read output file:
-    mriqc_json = loads(
-        (
-            Path(config.execution.output_dir)
-            / in_file.parent.relative_to(config.execution.bids_dir)
-            / in_file.name.replace(''.join(in_file.suffixes), '.json')
-        ).read_text()
+    json_path = (
+        Path(config.execution.output_dir)
+        / in_file.parent.relative_to(config.execution.bids_dir)
+        / in_file.name.replace(''.join(in_file.suffixes), '+iqms.json')
     )
-    mriqc_json.pop('bids_meta')
+
+    # Read output file:
+    mriqc_json = loads(json_path.read_text())
+    json_bids_meta = mriqc_json.pop('bids_meta', None)
 
     # Clean-up provenance dictionary
     prov = mriqc_json.pop('provenance', None)
@@ -80,7 +81,18 @@ def _single_report(in_file):
     prov['Versions_TemplateFlow'] = config.environment.templateflow_version
 
     bids_meta = config.execution.layout.get_file(in_file).get_metadata()
-    bids_meta.pop('global', None)
+    if bids_meta:
+        bids_meta.pop('global', None)
+    elif json_bids_meta:
+        bids_meta = json_bids_meta
+    bids_meta = bids_meta or {}
+
+    # Open IQMs (parquet)
+    dataframe = pd.read_parquet(json_path.with_suffix('.parquet'))
+    if dataframe.empty:
+        raise ValueError(f'<{json_path.with_suffix(".parquet")}> is an empty dataframe.')
+
+    iqms_dict = dataframe.iloc[0].to_dict()
 
     robj = Report(
         config.execution.output_dir,
@@ -92,7 +104,7 @@ def _single_report(in_file):
             'about-metadata': {
                 'Provenance Information': prov,
                 'Dataset Information': bids_meta,
-                'Extracted Image quality metrics (IQMs)': mriqc_json,
+                'Extracted Image quality metrics (IQMs)': iqms_dict,
             },
         },
         plugin_meta={

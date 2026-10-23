@@ -110,6 +110,34 @@ in :ref:`The MRIQC Reports <reports>`.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
 
+Participant-level IQM parquet outputs
+.....................................
+Participant-level runs generate a parquet file containing the IQMs for each input image.
+The file is written in the derivatives output directory (``output-folder``) using the
+following layout::
+
+  <derivs-folder>/sub-<label>/[ses-<label>/]<anat|func|dwi>/<bids-selectors>_<suffix>+iqms.parquet
+
+Each parquet file contains a single row with IQM values (no metadata). A sidecar JSON is
+written alongside it to document the schema::
+
+  <derivs-folder>/sub-<label>/[ses-<label>/]<anat|func|dwi>/<bids-selectors>_<suffix>+iqms.json
+
+The sidecar includes the column names and types, the MRIQC version used to generate
+the file, the modality, and the BIDS entities identifying the input.
+
+The traditional ``<bids-selectors>_<suffix>.json`` file now contains only metadata
+fields (formerly under ``bids_meta``) at the root level and no IQM values.
+
+Schema compatibility policy
+...........................
+The IQM parquet schema is intended to remain stable for all patch releases within a
+minor MRIQC version (e.g., ``24.0.x``). New minor versions may add columns, refine
+types, or introduce new metrics, but column removal or renaming is reserved for major
+version changes. Downstream consumers should treat the schema as additive across minor
+releases and use the sidecar metadata to validate expectations and handle unknown or
+missing columns.
+
 Command line interface
 ......................
 .. argparse::

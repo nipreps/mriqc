@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+import re
 from collections import OrderedDict
 from collections.abc import Iterable
 from functools import partial
@@ -191,25 +193,33 @@ def generate_pred(derivatives_dir, output_dir, mod):
 
 def generate_tsv(output_dir, mod):
     """
-    Generates a tsv file from all json files in the derivatives directory
+    Generates a tsv file from IQM parquet files with sidecar JSON.
     """
 
     # If some were found, generate the CSV file and group report
+    logger = logging.getLogger(__name__)
     out_tsv = output_dir / (f'group_{mod}.tsv')
-    jsonfiles = list(output_dir.glob(f'sub-*/**/{IMTYPES[mod]}/sub-*_{mod}.json'))
-    if not jsonfiles:
+    parquet_files = list(output_dir.glob(f'sub-*/**/{IMTYPES[mod]}/*_{mod}+iqms.parquet'))
+    if not parquet_files:
         return None, out_tsv
 
     datalist = []
-    for jsonfile in jsonfiles:
-        dfentry = _read_and_save(jsonfile)
+    for parquet_file in parquet_files:
+        parquet_df = pd.read_parquet(parquet_file)
+        if parquet_df.empty:
+            logger.warning('Parquet IQM file <%s> is empty', parquet_file)
 
-        if dfentry is not None:
-            bids_name = str(Path(jsonfile.name).stem)
-            dfentry.pop('bids_meta', None)
-            dfentry.pop('provenance', None)
-            dfentry['bids_name'] = bids_name
-            datalist.append(dfentry)
+        records = parquet_df.to_dict(orient='records')
+        for record in records:
+            record['bids_name'] = re.sub(r'\+iqms$', '', parquet_file.stem)
+            datalist.append(record)
+
+    if not datalist:
+        logger.warning(
+            'No valid parquet IQM data found for modality %s; check logs for skipped files.',
+            mod,
+        )
+        return None, out_tsv
 
     dataframe = pd.DataFrame(datalist)
     cols = dataframe.columns.tolist()  # pylint: disable=no-member

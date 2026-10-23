@@ -9,7 +9,8 @@ logs/config-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.toml
 logs/mriqc-18480913-163000_PhineasG-ageh-adhi-sacc-ident9b1ab0f.log
 sub-50137
 sub-50137/anat
-sub-50137/anat/sub-50137_T1w.json
+sub-50137/anat/sub-50137_T1w+iqms.json
+sub-50137/anat/sub-50137_T1w+iqms.parquet
 sub-50137/figures
 sub-50137/figures/sub-50137_desc-airmask_T1w.svg
 sub-50137/figures/sub-50137_desc-artifacts_T1w.svg
@@ -23,7 +24,8 @@ sub-50137/figures/sub-50137_desc-zoomed_T1w.svg
 sub-50137_T1w.html
 sub-50152
 sub-50152/anat
-sub-50152/anat/sub-50152_T1w.json
+sub-50152/anat/sub-50152_T1w+iqms.json
+sub-50152/anat/sub-50152_T1w+iqms.parquet
 sub-50152/figures
 sub-50152/figures/sub-50152_desc-airmask_T1w.svg
 sub-50152/figures/sub-50152_desc-artifacts_T1w.svg
@@ -37,7 +39,8 @@ sub-50152/figures/sub-50152_desc-zoomed_T1w.svg
 sub-50152_T1w.html
 sub-50785
 sub-50785/anat
-sub-50785/anat/sub-50785_T1w.json
+sub-50785/anat/sub-50785_T1w+iqms.json
+sub-50785/anat/sub-50785_T1w+iqms.parquet
 sub-50785/figures
 sub-50785/figures/sub-50785_desc-airmask_T1w.svg
 sub-50785/figures/sub-50785_desc-artifacts_T1w.svg
@@ -51,7 +54,8 @@ sub-50785/figures/sub-50785_desc-zoomed_T1w.svg
 sub-50785_T1w.html
 sub-51187
 sub-51187/anat
-sub-51187/anat/sub-51187_T1w.json
+sub-51187/anat/sub-51187_T1w+iqms.json
+sub-51187/anat/sub-51187_T1w+iqms.parquet
 sub-51187/figures
 sub-51187/figures/sub-51187_desc-airmask_T1w.svg
 sub-51187/figures/sub-51187_desc-artifacts_T1w.svg
