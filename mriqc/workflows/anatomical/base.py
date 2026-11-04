@@ -398,6 +398,8 @@ def init_brain_tissue_segmentation(name='brain_tissue_segmentation'):
             out_classified_image_name='segment.nii.gz',
             output_posteriors_name_template='segment_%02d.nii.gz',
             num_threads=config.nipype.omp_nthreads,
+            # With a seed, a constant one rather than the clock (Atropos ignores ANTS_RANDOM_SEED)
+            use_random_seed=config.seeds.ants is None,
         ),
         name='segmentation',
         mem_gb=5,
@@ -561,13 +563,14 @@ def headmsk_wf(name='HeadMaskWorkflow', omp_nthreads=1):
 
     enhance = pe.Node(
         niu.Function(
-            input_names=['in_file', 'wm_tpm'],
+            input_names=['in_file', 'wm_tpm', 'seed'],
             output_names=['out_file'],
             function=_enhance,
         ),
         name='Enhance',
         num_threads=omp_nthreads,
     )
+    enhance.inputs.seed = config.seeds.numpy
 
     gradient = pe.Node(
         niu.Function(
@@ -703,7 +706,7 @@ def _binarize(in_file, threshold=0.5, out_file=None):
     return out_file
 
 
-def _enhance(in_file, wm_tpm, out_file=None):
+def _enhance(in_file, wm_tpm, out_file=None, seed=None):
     import nibabel as nb
     import numpy as np
 
@@ -723,7 +726,8 @@ def _enhance(in_file, wm_tpm, out_file=None):
     wm_sigma = np.sqrt(np.average((data - wm_mu) ** 2, weights=wm_prob))
 
     # Resample signal excess pixels
-    data[excess] = np.random.normal(loc=wm_mu, scale=wm_sigma, size=excess.sum())
+    rng = np.random.default_rng(seed)
+    data[excess] = rng.normal(loc=wm_mu, scale=wm_sigma, size=excess.sum())
 
     out_file = out_file or str(generate_filename(in_file, suffix='enhanced').absolute())
     nb.Nifti1Image(data, imnii.affine, imnii.header).to_filename(out_file)

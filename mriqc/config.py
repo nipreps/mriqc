@@ -49,6 +49,8 @@ Configuration sections
    :members:
 .. autoclass:: nipype
    :members:
+.. autoclass:: seeds
+   :members:
 
 Usage
 -----
@@ -92,6 +94,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import random
 import sys
 from collections.abc import Iterable
 from contextlib import suppress
@@ -626,6 +629,37 @@ class workflow(_Config):
                 cls.inputs_entities = _inputs['entities']
 
 
+class seeds(_Config):
+    """Initialize the random seeds (``--random-seed``).
+
+    Without a master seed, MRIQC seeds nothing, as before: Atropos and the intensity enhancement
+    of the head mask draw new random numbers in every run, and ANTs registration reads
+    ``ANTS_RANDOM_SEED`` only if the environment sets it.
+    """
+
+    _random_seed: int | None = None
+    master: int | None = None
+    """Master seed, from which the other seeds are drawn."""
+    ants: int | None = None
+    """Seed for ANTs registration (``ANTS_RANDOM_SEED``).
+
+    Atropos ignores ``ANTS_RANDOM_SEED``: with a master seed, it uses its constant seed instead.
+    """
+    numpy: int | None = None
+    """Seed for the random numbers MRIQC draws with NumPy."""
+
+    @classmethod
+    def init(cls):
+        if cls._random_seed is not None:
+            cls.master = cls._random_seed
+        if cls.master is None:
+            return
+        rng = random.Random(cls.master)
+        cls.ants = rng.randint(1, 65536)
+        cls.numpy = rng.randint(1, 65536)
+        os.environ['ANTS_RANDOM_SEED'] = str(cls.ants)
+
+
 class loggers:
     """Keep loggers easily accessible (see :py:func:`init`)."""
 
@@ -702,6 +736,7 @@ def from_dict(sections: dict) -> None:
     execution.load(sections)
     workflow.load(sections)
     nipype.load(sections, init=False)
+    seeds.load(sections)
 
 
 def load(filename: str | os.PathLike) -> None:
@@ -731,6 +766,7 @@ def get(flat: bool = False) -> dict[str, dict[str, Any]]:
         'execution': execution.get(),
         'workflow': workflow.get(),
         'nipype': nipype.get(),
+        'seeds': seeds.get(),
         'settings': settings.get(),
     }
     if not flat:
