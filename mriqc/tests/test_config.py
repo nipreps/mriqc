@@ -82,3 +82,34 @@ def test_bids_indexing_manifest(tmp_path, testdata_path, testcase):
     assert len(config.execution.layout.get()) == int(
         (testdata_path / f'{testcase}.oracle').read_text().strip()
     )
+
+
+def test_seeds(monkeypatch):
+    """A master seed fixes the ANTs and NumPy seeds, and nothing is seeded without one."""
+    import os
+
+    from mriqc import config
+
+    # Restore the environment and the seeds after the test
+    monkeypatch.setenv('ANTS_RANDOM_SEED', 'unset')
+    monkeypatch.delenv('ANTS_RANDOM_SEED')
+    for name in ('_random_seed', 'master', 'ants', 'numpy'):
+        monkeypatch.setattr(config.seeds, name, None)
+
+    config.seeds.init()
+    assert (config.seeds.master, config.seeds.ants, config.seeds.numpy) == (None, None, None)
+    assert 'ANTS_RANDOM_SEED' not in os.environ
+
+    config.seeds.load({'_random_seed': 42})
+    seeds = (config.seeds.ants, config.seeds.numpy)
+    assert config.seeds.master == 42
+    assert None not in seeds
+    assert os.environ['ANTS_RANDOM_SEED'] == str(config.seeds.ants)
+
+    # Worker processes load the seeds from the config file and get the same ones
+    saved = config.get()['seeds']
+    assert saved == {'master': 42, 'ants': seeds[0], 'numpy': seeds[1]}
+    for name in ('_random_seed', 'master', 'ants', 'numpy'):
+        setattr(config.seeds, name, None)
+    config.seeds.load(saved)
+    assert (config.seeds.ants, config.seeds.numpy) == seeds
