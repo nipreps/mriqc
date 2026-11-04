@@ -80,8 +80,8 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - run: |
-        pipx run ruff check --output-format=github
-        pipx run ruff format --diff
+        pipx run ruff==0.17.3 check --output-format=github
+        pipx run ruff==0.17.3 format --diff
 
   codespell:
     runs-on: ubuntu-latest

@@ -86,7 +86,7 @@ notebook = [
 ]
 
 dev = [
-    "ruff",
+    "ruff == 0.17.3",
 ]
 
 test = [
@@ -191,7 +191,13 @@ exclude = [".maint/update_authors.py"]
 line-length = 99
 
 [tool.ruff.lint]
-extend-select = [
+# Select rules explicitly (ruff's defaults plus our families), so that
+# changes to ruff's default rule set do not enable new rules here.
+select = [
+  "E4",
+  "E7",
+  "E9",
+  "F",
   "W",
   "I",
   "UP",
