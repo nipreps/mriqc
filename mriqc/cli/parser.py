@@ -316,8 +316,9 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         action='store',
         type=int,
         default=None,
-        help='Seed the random numbers of ANTs (registration, Atropos) and of MRIQC. '
-        'With --omp-nthreads 1, two runs with the same seed give the same results.',
+        help='Seed the random numbers of ANTs registration and of MRIQC, and run Atropos '
+        'with its constant seed (Atropos takes no seed value). With --omp-nthreads 1, two runs '
+        'with the same seed give the same results.',
     )
     g_outputs.add_argument('--reports-only', default=False, action='store_true')
     g_outputs.add_argument(
