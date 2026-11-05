@@ -172,16 +172,11 @@ def slice_wise_fft(in_file, ftmask=None, spike_thres=3.0, out_prefix=None):
 
 
 def get_fwhmx():
-    from nipype.interfaces.afni import FWHMx, Info
+    from nipype.interfaces.afni import FWHMx
 
-    fwhm_args = {'combine': True, 'detrend': True}
-    afni_version = Info.version()
-
-    if afni_version and afni_version >= (2017, 2, 3):
-        fwhm_args['args'] = '-ShowMeClassicFWHM'
-
-    fwhm_interface = FWHMx(**fwhm_args)
-    return fwhm_interface
+    # Classic FWHM estimates, as with any AFNI since 17.2.3 (2017). Probing the version
+    # needs the AFNI GUI binary (``afni --version``), which the image does not ship.
+    return FWHMx(combine=True, detrend=True, args='-ShowMeClassicFWHM')
 
 
 def generate_filename(in_file, dirname=None, suffix='', extension=None):
