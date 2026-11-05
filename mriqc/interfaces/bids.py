@@ -194,7 +194,6 @@ class IQMFileSink(SimpleInterface):
             self._out_dict['provenance'] = {}
         self._out_dict['provenance'].update(prov_dict)
 
-        metadata_payload = self._out_dict.get('bids_meta', {})
         iqm_payload = {
             key: value
             for key, value in self._out_dict.items()

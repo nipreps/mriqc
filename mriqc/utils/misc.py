@@ -236,10 +236,6 @@ def generate_tsv(output_dir, mod):
     return dataframe, out_tsv
 
 
-def _read_and_save(in_file):
-    return json.loads(Path(in_file).read_text()) or None
-
-
 def _flatten(in_dict, parent_key='', sep='_'):
     items = []
     for k, val in list(in_dict.items()):
