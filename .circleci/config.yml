@@ -656,6 +656,11 @@ jobs:
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
+      # Before the skip check, so that the arm64 jobs downstream find it on docs commits
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - src/mriqc
       - run:
           name: Check whether build should be skipped
           command: |
