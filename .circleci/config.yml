@@ -1099,8 +1099,8 @@ jobs:
             TAG="${CIRCLE_TAG:-experimental}"
             docker buildx imagetools create -t nipreps/mriqc:"${TAG}" \
               nipreps/mriqc:"${TAG}-amd64" nipreps/mriqc:"${TAG}-arm64"
-            # only tag latest if CIRCLE_TAG is set
-            if [ -n "${CIRCLE_TAG:-}" ]; then
+            # latest follows final releases (X.Y.Z), not release candidates or master
+            if [[ "${CIRCLE_TAG:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               docker buildx imagetools create -t nipreps/mriqc:latest nipreps/mriqc:"${TAG}"
             fi
             docker buildx imagetools inspect nipreps/mriqc:"${TAG}"
