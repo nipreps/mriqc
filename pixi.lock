@@ -8674,28 +8674,27 @@ packages:
   requires_dist:
   - acres
   - dipy>=1.10.0
-  - matplotlib
+  - matplotlib>=3.10
   - migas>=0.4.0
   - mriqc-learn
   - nibabel>=3.0.1
   - nilearn>=0.5.1
-  - nipype>=1.11
+  - nipype>=1.12
   - nireports>=26.0
   - nitime
-  - nitransforms>=24.1
-  - niworkflows>=1.14
-  - numpy>=1.26
+  - nitransforms>=25.1
+  - niworkflows>=1.15
+  - numpy>=2.2
   - orjson
-  - pandas
+  - pandas>=2.3
   - psutil
   - pybids>=0.15.6
   - pyyaml
-  - scikit-learn
-  - scipy~=1.8
+  - scikit-learn>=1.6
+  - scipy>=1.15
   - statsmodels
   - templateflow
   - toml
-  - tomli>=1.1.0 ; python_full_version < '3.11'
   - torch>=2.5
   - coverage ; extra == 'all'
   - datalad ; extra == 'all'
@@ -8718,7 +8717,7 @@ packages:
   - seaborn ; extra == 'all'
   - sphinx-argparse ; extra == 'all'
   - sphinx-rtd-theme ; extra == 'all'
-  - sphinx~=5.0 ; extra == 'all'
+  - sphinx>=8 ; extra == 'all'
   - xvfbwrapper ; extra == 'all'
   - datalad ; extra == 'container'
   - datalad-osf ; extra == 'container'
@@ -8729,14 +8728,14 @@ packages:
   - pydotplus ; extra == 'doc'
   - sphinx-argparse ; extra == 'doc'
   - sphinx-rtd-theme ; extra == 'doc'
-  - sphinx~=5.0 ; extra == 'doc'
+  - sphinx>=8 ; extra == 'doc'
   - nipype ; extra == 'docs'
   - packaging ; extra == 'docs'
   - pydot>=1.2.3 ; extra == 'docs'
   - pydotplus ; extra == 'docs'
   - sphinx-argparse ; extra == 'docs'
   - sphinx-rtd-theme ; extra == 'docs'
-  - sphinx~=5.0 ; extra == 'docs'
+  - sphinx>=8 ; extra == 'docs'
   - ipython ; extra == 'notebook'
   - jupyter ; extra == 'notebook'
   - nipy ; extra == 'notebook'
@@ -8761,7 +8760,7 @@ packages:
   - pytest-cov ; extra == 'tests'
   - pytest-env ; extra == 'tests'
   - pytest-xdist ; extra == 'tests'
-  requires_python: '>=3.10'
+  requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/02/36/ecc85bc96c273dc8a11273ed4782272975e6338d4a3e9228621175edf0e3/jaraco_functools-4.6.0-py3-none-any.whl
   name: jaraco-functools
   version: 4.6.0
