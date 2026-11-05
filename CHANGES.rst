@@ -44,7 +44,7 @@ CHANGES
 * FIX: Passing ``bytes`` into ``str.join()`` by @oesteban (`#1356 <https://github.com/nipreps/mriqc/pull/1356>`__)
 * FIX: Optimize interface to minimize memory fingerprint by @oesteban (`#1351 <https://github.com/nipreps/mriqc/pull/1351>`__)
 * ENH: Add parquet IQM outputs and a schema sidecar by @oesteban (`#1428 <https://github.com/nipreps/mriqc/pull/1428>`__)
-* ENH: Add ``--random-seed``, so that two runs give identical results by @oesteban (`#1453 <https://github.com/nipreps/mriqc/pull/1453>`__)
+* ENH: Add ``--random-seed``, so that two runs give identical results by @oesteban, after a proposal by @yohanchatelain (`#1453 <https://github.com/nipreps/mriqc/pull/1453>`__, `#1413 <https://github.com/nipreps/mriqc/pull/1413>`__)
 * ENH: Remove redundant *DIPY* function by @jhlegarreta (`#1369 <https://github.com/nipreps/mriqc/pull/1369>`__)
 * DOC: Move Read the Docs to a supported build image by @oesteban (`#1456 <https://github.com/nipreps/mriqc/pull/1456>`__)
 * DOC: Make ``AGENTS.md`` agent-neutral and terser by @oesteban (`#1459 <https://github.com/nipreps/mriqc/pull/1459>`__)
