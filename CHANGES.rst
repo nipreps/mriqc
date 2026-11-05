@@ -1,5 +1,5 @@
-26.0.0 (TBD)
-============
+26.0.0 (November 5, 2026)
+=========================
 The first release of the 26.x series, and the first since 24.0.2 (25.0.0rc0 was never finalized).
 *MRIQC* now requires Python 3.13 or newer, following `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`__,
 and its container image runs on ``linux/amd64`` and ``linux/arm64``.
@@ -61,6 +61,7 @@ CHANGES
 * DOC: Reorganize documentation and redirect to *NiPreps* docs by @oesteban (`#1367 <https://github.com/nipreps/mriqc/pull/1367>`__)
 * DOC: Provide a range of years ending with current for the copyright statement by @yarikoptic (`#1359 <https://github.com/nipreps/mriqc/pull/1359>`__)
 * DOC: Add a HPC troubleshooting section to the documentation by @vferat (`#1349 <https://github.com/nipreps/mriqc/pull/1349>`__)
+* MAINT: Move ``latest`` only on final release tags by @oesteban (`#1468 <https://github.com/nipreps/mriqc/pull/1468>`__)
 * MAINT: Let the arm64 CI jobs skip docs commits without failing by @oesteban (`#1467 <https://github.com/nipreps/mriqc/pull/1467>`__)
 * MAINT: Require Python 3.13 and SPEC 0 minimum versions by @oesteban (`#1464 <https://github.com/nipreps/mriqc/pull/1464>`__)
 * MAINT: Build the image on Python 3.13 with *pixi*, for ``amd64`` and ``arm64`` by @oesteban (`#1463 <https://github.com/nipreps/mriqc/pull/1463>`__)
