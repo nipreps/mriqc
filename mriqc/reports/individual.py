@@ -92,7 +92,7 @@ def _single_report(in_file):
     if dataframe.empty:
         raise ValueError(f'<{json_path.with_suffix(".parquet")}> is an empty dataframe.')
 
-    iqms_dict = dataframe.iloc[0].to_dict()
+    iqms_dict = dataframe.to_dict(orient='records')[0]
 
     robj = Report(
         config.execution.output_dir,

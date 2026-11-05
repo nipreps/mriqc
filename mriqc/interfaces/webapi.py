@@ -236,7 +236,8 @@ def upload_qc_metrics(
     if dataframe.empty:
         raise ValueError(f'<{in_iqms}> is an empty dataframe.')
 
-    data = dataframe.iloc[0].to_dict()
+    # Unlike ``iloc[0]``, records keep integer IQMs (e.g., ``size_x``) as integers
+    data = dataframe.to_dict(orient='records')[0]
 
     # Open metadata (json)
     in_data = orjson.loads(Path(in_iqms).with_suffix('.json').read_bytes())
