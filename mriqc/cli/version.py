@@ -23,7 +23,7 @@
 """Version CLI helpers."""
 
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 
@@ -31,7 +31,6 @@ from mriqc import __version__, config
 
 RELEASE_EXPIRY_DAYS = 14
 DATE_FMT = '%Y%m%d'
-UTC = timezone.utc
 
 
 def check_latest():

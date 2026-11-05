@@ -39,7 +39,9 @@ def test_help(capsys):
     with pytest.raises(SystemExit):
         main(['--help'])
     captured = capsys.readouterr()
-    assert captured.out.startswith('usage: mriqc [-h]')
+    # The program name depends on how Python was started (``python -m pytest`` on 3.14+)
+    assert captured.out.startswith('usage: ')
+    assert '[-h]' in captured.out.splitlines()[0]
 
 
 def test_main(tmp_path):

@@ -24,6 +24,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import nibabel as nb
 import numpy as np
 import scipy.ndimage as nd
@@ -33,6 +35,8 @@ from nipype.interfaces.base import (
     BaseInterfaceInputSpec as _BaseInterfaceInputSpec,
 )
 from nipype.interfaces.base import (
+    CommandLine,
+    CommandLineInputSpec,
     File,
     InputMultiObject,
     OutputMultiObject,
@@ -62,6 +66,7 @@ __all__ = (
     'PIESNO',
     'ReadDWIMetadata',
     'RotateVectors',
+    'SVHTDenoise',
     'SpikingVoxelsMask',
     'SplitShells',
     'WeightedStat',
@@ -347,6 +352,49 @@ class ReadDWIMetadata(ReadSidecarJSON):
         self._results['out_bmatrix'] = np.hstack((bvecs, bvals[:, np.newaxis])).tolist()
 
         return runtime
+
+
+class _SVHTDenoiseInputSpec(CommandLineInputSpec):
+    in_file = File(
+        exists=True, mandatory=True, argstr='%s', position=0, desc='input DWI series (4D)'
+    )
+    out_file = File(
+        argstr='%s',
+        position=1,
+        name_source='in_file',
+        name_template='%s_denoised',
+        keep_extension=True,
+        desc='denoised DWI series',
+    )
+    mask = File(exists=True, argstr='-mask %s', desc='denoise inside this mask (zero outside)')
+    noise = File(argstr='-noise %s', desc='write the estimated noise-level map here')
+    nthreads = traits.Int(argstr='-nthreads %d', nohash=True, desc='number of threads')
+
+
+class _SVHTDenoiseOutputSpec(_TraitedSpec):
+    out_file = File(exists=True, desc='denoised DWI series')
+    noise = File(desc='estimated noise-level map')
+
+
+class SVHTDenoise(CommandLine):
+    """
+    Denoise a DWI series with `svht_denoise <https://github.com/rordenlab/svht_denoise>`__.
+
+    It shrinks the singular values of local patches with the optimal rule of Gavish and
+    Donoho, against a noise level it estimates itself. Its options follow MRtrix3's
+    ``dwidenoise``, which it replaces in MRIQC.
+
+    """
+
+    _cmd = 'svht_denoise'
+    input_spec = _SVHTDenoiseInputSpec
+    output_spec = _SVHTDenoiseOutputSpec
+
+    def _list_outputs(self):
+        outputs = super()._list_outputs()
+        if isdefined(self.inputs.noise):
+            outputs['noise'] = str(Path(self.inputs.noise).absolute())
+        return outputs
 
 
 class _WeightedStatInputSpec(_BaseInterfaceInputSpec):

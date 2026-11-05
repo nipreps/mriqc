@@ -7,8 +7,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.1.1
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
-          python:3.7-slim"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:1.26.2 swaggerapi/swagger-ui:v5.17.14 mongo:6.0.15
+          python:3.7-slim-bullseye"
       - DOCKER_BUILDKIT: 1
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -31,11 +31,11 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v4-{{ .Branch }}-{{ .Revision }}
-            - build-v4--{{ .Revision }}
-            - build-v4-{{ .Branch }}-
-            - build-v4-master-
-            - build-v4-
+            - build-v5-{{ .Branch }}-{{ .Revision }}
+            - build-v5--{{ .Revision }}
+            - build-v5-{{ .Branch }}-
+            - build-v5-master-
+            - build-v5-
           paths:
             - /tmp/docker
             - /tmp/images
@@ -64,20 +64,15 @@ jobs:
           name: Pull images
           command: |
             set +e
-            docker pull localhost:5000/miniconda
+            docker pull localhost:5000/mriqc
             success=$?
             set -e
             if [[ "$success" = "0" ]]; then
                 echo "Pulling from local registry"
-                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2403.0
-                docker pull localhost:5000/mriqc
                 docker tag localhost:5000/mriqc nipreps/mriqc:latest
                 docker tag localhost:5000/mriqc nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
-                docker pull nipreps/miniconda:py39_2403.0
-                docker tag nipreps/miniconda:py39_2403.0 localhost:5000/miniconda
-                docker push localhost:5000/miniconda
                 docker pull nipreps/mriqc:latest
             fi
 
@@ -118,6 +113,11 @@ jobs:
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" dockereve-master/.env
               grep -q -i $MRIQC_API_SECRET_TOKEN dockereve-master/.env
             fi
+            sed -i -E \
+              -e 's#image: nginx:latest#image: nginx:1.26.2#' \
+              -e 's#image: swaggerapi/swagger-ui:latest#image: swaggerapi/swagger-ui:v5.17.14#' \
+              -e 's#image: mongo:latest#image: mongo:6.0.15#' \
+              dockereve-master/docker-compose.yml
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml pull
             docker-compose -f /tmp/src/mriqcwebapi/dockereve-master/docker-compose.yml build
 
@@ -183,7 +183,7 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-          key: build-v4-{{ .Branch }}-{{ .Revision }}
+          key: build-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -264,7 +264,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -317,8 +317,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
-          python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:1.26.2 swaggerapi/swagger-ui:v5.17.14 mongo:6.0.15
+          python:3.7-slim-bullseye dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -343,7 +343,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -382,9 +382,9 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - t1w-v6-{{ .Branch }}
-            - t1w-v6-master
-            - t1w-v6-
+            - t1w-v7-{{ .Branch }}
+            - t1w-v7-master
+            - t1w-v7-
 
       - run:
           name: Remove old, cached configs
@@ -406,9 +406,15 @@ jobs:
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
-                       --resource-monitor \
+                       --resource-monitor --random-seed 42 \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+
+      - run:
+          name: Check that Atropos ran with its constant seed
+          command: |
+            find /tmp/t1w/work -path '*/segmentation/command.txt' \
+              -exec grep -l -- '--use-random-seed 0' {} + | grep .
 
       - run:
           name: Move temporary but relevant artifacts
@@ -421,7 +427,7 @@ jobs:
           path: /tmp/t1w/misc
 
       - save_cache:
-          key: t1w-v6-{{ .Branch }}
+          key: t1w-v7-{{ .Branch }}
           paths:
             - /tmp/t1w/work
 
@@ -444,7 +450,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/t1w/test
-            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | LC_ALL=C sort > /tmp/t1w/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
             exit $?
 
@@ -469,7 +475,7 @@ jobs:
           name: WebAPI - Check records
           command: |
             docker run --rm -ti \
-              --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
+              --entrypoint="mriqcwebapi_test" \
               nipreps/mriqc:latest \
               T1w 4 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/T1w
@@ -481,8 +487,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
-          python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:1.26.2 swaggerapi/swagger-ui:v5.17.14 mongo:6.0.15
+          python:3.7-slim-bullseye dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -506,7 +512,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -546,9 +552,9 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v6-{{ .Branch }}
-            - bold-v6-master
-            - bold-v6-
+            - bold-v7-{{ .Branch }}
+            - bold-v7-master
+            - bold-v7-
 
       - run:
           name: Remove old, cached configs
@@ -583,7 +589,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v6-{{ .Branch }}
+          key: bold-v7-{{ .Branch }}
           paths:
             - /tmp/bold/work
 
@@ -605,7 +611,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/bold/test
-            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | LC_ALL=C sort > /tmp/bold/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
             exit $?
 
@@ -629,7 +635,7 @@ jobs:
           name: WebAPI - Check records
           command: |
             docker run --rm -ti \
-              --entrypoint="/opt/conda/bin/mriqcwebapi_test" \
+              --entrypoint="mriqcwebapi_test" \
               nipreps/mriqc:latest \
               bold 9 \
               --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1/bold
@@ -639,9 +645,291 @@ jobs:
     # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
     resource_class: large
 
+  # linux/arm64: built natively and unit-tested on every change. The T1w/bold pipelines
+  # (without the WebAPI, --no-sub; IQMs checked against the amd64 references) run on
+  # master and tags, which gate the arm64 deploy, and on pull requests that change the
+  # image recipe or whose last commit message says [arm64].
+  build_arm64:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.large
+    working_directory: /tmp/src/mriqc
+    steps:
+      - checkout
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+      - run:
+          name: Decide whether the arm64 pipelines run
+          command: |
+            mkdir -p /tmp/arm64 /tmp/images && touch /tmp/images/.keep
+            run=no
+            if [[ "${CIRCLE_BRANCH:-}" == "master" || -n "${CIRCLE_TAG:-}" ]]; then
+              run=yes
+            elif git log --format=%B -n 1 $CIRCLE_SHA1 | grep -q -i '\[arm64\]'; then
+              run=yes
+            elif ! base=$( git merge-base HEAD origin/master 2> /dev/null ); then
+              run=yes  # cannot tell what changed
+            elif git diff --name-only "$base" HEAD | grep -q -x -E 'Dockerfile|Dockerfile\.base|pixi\.lock'; then
+              run=yes
+            fi
+            echo "$run" > /tmp/arm64/pipelines
+            echo "arm64 T1w/bold pipelines: $run"
+      - run:
+          name: Build Docker image (linux/arm64)
+          no_output_timeout: 60m
+          command: |
+            python3 -m venv /tmp/venv
+            source /tmp/venv/bin/activate
+            pip install hatch build
+            # Get version before making repo dirty
+            THISVERSION=$( hatch version )
+            if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
+              sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
+              grep -q -i $MRIQC_API_SECRET_TOKEN mriqc/config.py
+            fi
+            docker build \
+              -t nipreps/mriqc:latest \
+              --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+              --build-arg VCS_REF=`git rev-parse --short HEAD` \
+              --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" .
+
+            TARGET_VERSION="${CIRCLE_TAG:-$THISVERSION}"
+            TARGET_VERSION="MRIQC v${TARGET_VERSION%+*}"
+            DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
+            DOCKER_VERSION="${DOCKER_VERSION%+*}"
+            test "${TARGET_VERSION}" == "$DOCKER_VERSION"
+            test "$( docker run --rm --entrypoint uname nipreps/mriqc:latest -m )" == "aarch64"
+
+            # _version.py for the tests, which run from the source tree
+            python -m build --sdist
+      - run:
+          name: Run MRIQC tests
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/tests
+            docker run --rm -ti -v /tmp/tests:/scratch --entrypoint="pytest" \
+              -v /tmp/src:/src -w /src/mriqc \
+              nipreps/mriqc:latest mriqc \
+              --junitxml=/scratch/tests.xml \
+              --doctest-modules --ignore=mriqc/bin \
+              --ignore=mriqc/interfaces/transitional.py
+      - store_test_results:
+          path: /tmp/tests
+      - run:
+          name: Save the image for the next jobs
+          no_output_timeout: 30m
+          command: |
+            if [[ "$( cat /tmp/arm64/pipelines )" == "yes" ]]; then
+              docker save nipreps/mriqc:latest | gzip -1 > /tmp/images/mriqc-arm64.tar.gz
+            fi
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - src/mriqc
+            - arm64
+            - images
+
+  T1w_arm64:
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+      - MIGAS_OPTOUT: "1"
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.large
+    working_directory: /tmp/t1w
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+      - run:
+          name: Run only where arm64 results can change
+          command: |
+            if [[ "$( cat /tmp/arm64/pipelines )" != "yes" ]]; then
+              echo "The image recipe did not change: skipping (say [arm64] in the commit message to run)"
+              circleci step halt
+            fi
+      - restore_cache:
+          keys:
+            - data-v2-{{ epoch }}
+            - data-v2-
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - t1w-arm64-v1-master
+      - run:
+          name: Load the arm64 image
+          command: |
+            docker load < /tmp/images/mriqc-arm64.tar.gz
+            rm -f /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/work/.resources.*
+      - run:
+          name: Run participant-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/t1w/work /tmp/t1w/derivatives
+            docker run -u $( id -u ) --rm -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
+                       nipreps/mriqc:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports -m T1w --dsname circletests \
+                       --random-seed 42 --no-sub \
+                       --n_procs 2 --ants-nthreads 1 --ants-float
+      - run:
+          name: Check that Atropos ran with its constant seed
+          command: |
+            find /tmp/t1w/work -path '*/segmentation/command.txt' \
+              -exec grep -l -- '--use-random-seed 0' {} + | grep .
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - save_cache:
+                key: t1w-arm64-v1-master-{{ epoch }}
+                paths:
+                  - /tmp/t1w/work
+      - run:
+          name: Run group-level on T1w images
+          no_output_timeout: 2h
+          command: |
+            docker run -u $( id -u ) --rm -ti \
+                       -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
+                       nipreps/mriqc:latest \
+                       /data derivatives/ group \
+                       -m T1w -vv
+      - store_artifacts:
+          path: /tmp/t1w/derivatives
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/t1w/test
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | LC_ALL=C sort > /tmp/t1w/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
+      - run:
+          name: Checking changes on IQMs (against the amd64 reference)
+          command: |
+            docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
+              -i /scratch/derivatives/group_T1w.tsv \
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
+            || true  # ignore failure, as the amd64 job does
+      - store_artifacts:
+          path: /tmp/t1w/test
+
+  bold_arm64:
+    environment:
+      - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      - TEST_DATA_NAME: "circle-tests"
+      - MIGAS_OPTOUT: "1"
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.large
+    working_directory: /tmp/bold
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Check whether build should be skipped
+          command: |
+            cd /tmp/src/mriqc
+            if [[ "$( git log --format='format:%s' -n 1 $CIRCLE_SHA1 | grep -i -E '^docs?(\(\w+\))?:' )" != "" ]]; then
+              echo "Only docs build"
+              circleci step halt
+            fi
+      - run:
+          name: Run only where arm64 results can change
+          command: |
+            if [[ "$( cat /tmp/arm64/pipelines )" != "yes" ]]; then
+              echo "The image recipe did not change: skipping (say [arm64] in the commit message to run)"
+              circleci step halt
+            fi
+      - restore_cache:
+          keys:
+            - data-v2-{{ epoch }}
+            - data-v2-
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - bold-arm64-v1-master
+      - run:
+          name: Load the arm64 image
+          command: |
+            docker load < /tmp/images/mriqc-arm64.tar.gz
+            rm -f /tmp/bold/work/.mriqc.*.toml /tmp/bold/work/.resources.*
+      - run:
+          name: Run participant-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            mkdir -p /tmp/bold/work /tmp/bold/derivatives
+            docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
+                       nipreps/mriqc:latest \
+                       /data derivatives/ participant \
+                       -vv --verbose-reports -m bold --dsname circletests \
+                       --n_procs 2 --ants-nthreads 1 --ants-float \
+                       --testing --no-sub
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - save_cache:
+                key: bold-arm64-v1-master-{{ epoch }}
+                paths:
+                  - /tmp/bold/work
+      - run:
+          name: Run group-level on BOLD images
+          no_output_timeout: 2h
+          command: |
+            docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -v $PWD:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
+                       nipreps/mriqc:latest \
+                       /data derivatives/ group \
+                       -m bold -vv
+      - store_artifacts:
+          path: /tmp/bold/derivatives
+      - run:
+          name: Checking presence of outputs
+          command: |
+            mkdir -p /tmp/bold/test
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | LC_ALL=C sort > /tmp/bold/test/outputs.out
+            diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
+      - run:
+          name: Checking changes on IQMs (against the amd64 reference)
+          command: |
+            docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
+              --entrypoint="dfcheck" nipreps/mriqc:latest \
+              -i /scratch/derivatives/group_bold.tsv \
+              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
+      - store_artifacts:
+          path: /tmp/bold/test
+
   build_docs:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.13
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -667,7 +955,7 @@ jobs:
 
   test_package:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.13
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -696,7 +984,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.13
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -730,7 +1018,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -760,17 +1048,57 @@ jobs:
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
 
       - run:
-          name: Deploy to Docker Hub
+          name: Deploy to Docker Hub (linux/amd64)
           no_output_timeout: 40m
           command: |
-            # only tag & push latest if CIRCLE_TAG is set
-            if [ -n "${CIRCLE_TAG:-}" ]; then
-              docker push nipreps/mriqc:latest
-            fi
+            # deploy_manifest joins this with the arm64 image under the plain tag
+            TAG="${CIRCLE_TAG:-experimental}"
+            docker tag nipreps/mriqc:latest nipreps/mriqc:"${TAG}-amd64"
+            docker push nipreps/mriqc:"${TAG}-amd64"
 
-            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:=experimental}"
-            docker push nipreps/mriqc:"$CIRCLE_TAG"
-            echo "Pushed tag ${CIRCLE_TAG} to Docker Hub"
+  deploy_docker_arm64:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.large
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: Docker authentication
+          command: |
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
+            fi
+      - run:
+          name: Deploy to Docker Hub (linux/arm64)
+          no_output_timeout: 40m
+          command: |
+            docker load < /tmp/images/mriqc-arm64.tar.gz
+            TAG="${CIRCLE_TAG:-experimental}"
+            docker tag nipreps/mriqc:latest nipreps/mriqc:"${TAG}-arm64"
+            docker push nipreps/mriqc:"${TAG}-arm64"
+
+  deploy_manifest:
+    machine:
+      image: default
+    steps:
+      - run:
+          name: Docker authentication
+          command: |
+            if [[ -n $DOCKER_PAT ]]; then
+              echo "$DOCKER_PAT" | docker login -u $DOCKER_USER --password-stdin
+            fi
+      - run:
+          name: Join amd64 and arm64 under one tag
+          command: |
+            TAG="${CIRCLE_TAG:-experimental}"
+            docker buildx imagetools create -t nipreps/mriqc:"${TAG}" \
+              nipreps/mriqc:"${TAG}-amd64" nipreps/mriqc:"${TAG}-arm64"
+            # only tag latest if CIRCLE_TAG is set
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              docker buildx imagetools create -t nipreps/mriqc:latest nipreps/mriqc:"${TAG}"
+            fi
+            docker buildx imagetools inspect nipreps/mriqc:"${TAG}"
 
 workflows:
   version: 2
@@ -854,11 +1182,67 @@ workflows:
             tags:
               only: /.*/
 
-      - deploy_pypi:
+      - build_arm64:
+          context:
+            - nipreps-common
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - T1w_arm64:
+          requires:
+            - get_data
+            - build_arm64
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - bold_arm64:
+          requires:
+            - get_data
+            - build_arm64
+          filters:
+            branches:
+              ignore: /docs?\/.*/
+            tags:
+              only: /.*/
+
+      - deploy_docker_arm64:
+          context:
+            - nipreps-common
+          requires:
+            - build_arm64
+            - T1w_arm64
+            - bold_arm64
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /.*/
+
+      - deploy_manifest:
           context:
             - nipreps-common
           requires:
             - deploy_docker
+            - deploy_docker_arm64
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /.*/
+
+      - deploy_pypi:
+          context:
+            - nipreps-common
+          requires:
+            - deploy_manifest
           filters:
             branches:
               ignore: /.*/

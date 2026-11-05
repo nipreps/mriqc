@@ -22,8 +22,9 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/') && !contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13', '3.14']
 
     steps:
     - uses: actions/checkout@v6
@@ -75,13 +76,37 @@ jobs:
         test "${INSTALLED_VERSION}" = "${THISVERSION}"
         rm -r /tmp/install_wheel
 
+  test:
+    if: "!startsWith(github.ref, 'refs/tags/') && !contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install (CPU-only torch)
+      run: |
+        python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install .[test]
+    - name: Run tests
+      run: |
+        pytest mriqc --doctest-modules --ignore=mriqc/bin --ignore=mriqc/interfaces/transitional.py
+
   ruff:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - run: |
-        pipx run ruff check --output-format=github
-        pipx run ruff format --diff
+        pipx run ruff==0.17.3 check --output-format=github
+        pipx run ruff==0.17.3 format --diff
 
   codespell:
     runs-on: ubuntu-latest

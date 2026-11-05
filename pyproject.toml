@@ -9,38 +9,35 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Image Recognition",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "acres",
   "dipy >= 1.10.0",
-  "markupsafe ~= 2.0.1",
-  "matplotlib",
+  "matplotlib >= 3.10",
   "migas >= 0.4.0",
   "mriqc-learn",
   "nibabel >= 3.0.1",
   "nilearn >= 0.5.1",
-  "nipype ~= 1.4",
-  "nireports ~= 24.0.2",
-  "nitransforms ~= 24.0",
-  "niworkflows ~=1.10.1",
-  "numpy ~=1.20",
+  "nipype >= 1.12",
+  "nireports >= 26.0",
+  "nitime",
+  "nitransforms >= 25.1",
+  "niworkflows >= 1.15",
+  "numpy >= 2.2",
   "orjson",
-  "pandas",
+  "pandas >= 2.3",
+  "psutil",
   "pyarrow",
   "pybids >= 0.15.6",
   "PyYAML",
-  "scikit-learn",
-  "scipy ~=1.8",
+  "scikit-learn >= 1.6",
+  "scipy >= 1.15",
   "statsmodels",
   "templateflow",
   "toml",
-  "tomli >= 1.1.0; python_version < '3.11'",
-  "torch >= 1.10.2",
+  "torch >= 2.5",
 ]
 description = "Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain."
 dynamic = ["version"]
@@ -48,7 +45,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "mriqc"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 
 [project.urls]
 "Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
@@ -67,7 +64,7 @@ doc = [
   "pydotplus",
   "sphinx-argparse",
   "sphinx_rtd_theme",
-  "sphinx~=5.0",
+  "sphinx >= 8",
 ]
 
 container = [
@@ -87,7 +84,7 @@ notebook = [
 ]
 
 dev = [
-    "ruff",
+    "ruff == 0.17.3",
 ]
 
 test = [
@@ -149,11 +146,60 @@ source = "vcs"
 version-file = "mriqc/_version.py"
 
 #
+# Pixi: the environment shipped in the Docker image (see pixi.lock). AFNI, ANTs and
+# svht_denoise come from the base image (Dockerfile.base), not from here.
+#
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64"]
+
+# The image runs Ubuntu 22.04 (glibc 2.35); git-annex's wheels need glibc 2.34
+[tool.pixi.system-requirements]
+libc = "2.35"
+
+[tool.pixi.environments]
+default = { features = ["editable"], solve-group = "default" }
+test = { features = ["editable", "test"], solve-group = "default" }
+# The Docker image ships this environment; it includes the tests CircleCI runs in the image
+mriqc = { features = ["production", "container", "rodents", "test"], solve-group = "production" }
+
+[tool.pixi.feature.editable.pypi-dependencies]
+mriqc = { path = ".", editable = true }
+
+[tool.pixi.feature.production.pypi-dependencies]
+mriqc = { path = ".", editable = false }
+
+[tool.pixi.dependencies]
+python = "3.13.*"
+graphviz = "14.*"
+h5py = "3.16.*"
+matplotlib = "3.11.*"
+numpy = "2.5.*"
+pandas = "3.1.*"
+pytorch-cpu = "2.14.*"
+scikit-image = "0.26.*"
+scikit-learn = "1.9.*"
+scipy = "1.18.*"
+
+[tool.pixi.feature.container.dependencies]
+git = "*"
+
+# conda-forge has no linux-aarch64 git-annex; its PyPI wheels cover both
+[tool.pixi.feature.container.pypi-dependencies]
+git-annex = ">=10.20260717"
+
+#
 # Developer tool configurations
 #
 
 [tool.pytest.ini_options]
-addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
+addopts = [
+  "-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers",
+  # datalad's plugin (installed with the container extra) collects every file with
+  # doctests, overriding --ignore
+  "-p", "no:datalad",
+]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
@@ -192,7 +238,13 @@ exclude = [".maint/update_authors.py"]
 line-length = 99
 
 [tool.ruff.lint]
-extend-select = [
+# Select rules explicitly (ruff's defaults plus our families), so that
+# changes to ruff's default rule set do not enable new rules here.
+select = [
+  "E4",
+  "E7",
+  "E9",
+  "F",
   "W",
   "I",
   "UP",
@@ -212,6 +264,9 @@ extend-select = [
   "Q",
 ]
 ignore = [
+  # zip() without strict= (flagged since the Python 3.10 floor). Choosing
+  # strict=True changes runtime behaviour: audit with the SPEC 0 update.
+  "B905",
   "F841",
   "S310",
   "S311", # We are not using random for cryptographic purposes

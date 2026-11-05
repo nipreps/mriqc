@@ -66,7 +66,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     """
     from nipype.interfaces.afni import Volreg
-    from nipype.interfaces.mrtrix3.preprocess import DWIDenoise
     from niworkflows.interfaces.header import SanitizeImage
     from niworkflows.interfaces.images import RobustAverage
 
@@ -79,6 +78,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         NumberOfShells,
         ReadDWIMetadata,
         SpikingVoxelsMask,
+        SVHTDenoise,
         WeightedStat,
     )
     from mriqc.messages import BUILDING_WORKFLOW
@@ -174,12 +174,12 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         iterfield=['in_weights'],
     )
 
-    dwidenoise = pe.Node(
-        DWIDenoise(
+    denoise = pe.Node(
+        SVHTDenoise(
             noise='noisemap.nii.gz',
             nthreads=config.nipype.omp_nthreads,
         ),
-        name='dwidenoise',
+        name='denoise',
         n_procs=config.nipype.nprocs,
     )
     drift = pe.Node(
@@ -262,9 +262,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (shells, dwimodel, [('out_data', 'bvals'),
                             ('n_shells', 'n_shells')]),
         (load_bmat, dwimodel, [('out_bvec_file', 'bvec_file')]),
-        (drift, dwidenoise, [('out_full_file', 'in_file')]),
-        (dmri_bmsk, dwidenoise, [('outputnode.out_mask', 'mask')]),
-        (dwidenoise, dwimodel, [('out_file', 'in_file')]),
+        (drift, denoise, [('out_full_file', 'in_file')]),
+        (dmri_bmsk, denoise, [('outputnode.out_mask', 'mask')]),
+        (denoise, dwimodel, [('out_file', 'in_file')]),
         (dmri_bmsk, dwimodel, [('outputnode.out_mask', 'brain_mask')]),
         (load_bmat, get_hmc_shells, [('out_bvec_file', 'in_bvec_file')]),
         (shells, get_hmc_shells, [('b_indices', 'indices')]),
@@ -293,7 +293,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
                            ('b_values', 'inputnode.b_values_shells')]),
         (get_hmc_shells, iqms_wf, [('out_file', 'inputnode.in_shells'),
                                    ('out_bvec', 'inputnode.in_bvec')]),
-        (dwidenoise, iqms_wf, [('noise', 'inputnode.in_noise')]),
+        (denoise, iqms_wf, [('noise', 'inputnode.in_noise')]),
         (dwi_ref, spatial_norm, [('out_file', 'inputnode.epi_mean')]),
         (dmri_bmsk, spatial_norm, [('outputnode.out_mask', 'inputnode.epi_mask')]),
         (iqms_wf, dwi_report_wf, [('outputnode.noise_floor', 'inputnode.noise_floor')]),

@@ -1,4 +1,6 @@
 FROM nipreps/mriqc:latest
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /usr/local/bin/uv
 COPY . /src/mriqc
 ARG VERSION
-RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION && pip install -e /src/mriqc[all]
+RUN export SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION \
+    && uv pip install --python /app/.pixi/envs/mriqc/bin/python -e /src/mriqc[all]

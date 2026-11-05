@@ -28,12 +28,12 @@ import asyncio
 import json
 import logging
 import re
+import threading
 from collections import OrderedDict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import partial
 from os import cpu_count
 from pathlib import Path
-from typing import Callable, TypeVar
 
 import nibabel as nb
 import numpy as np
@@ -44,7 +44,9 @@ try:
 except ImportError:
     from collections.abc import MutableMapping
 
-R = TypeVar('R')
+# The workers in _extract_meta_and_size share one pybids layout, whose SQLite session
+# must not be used from two threads at once
+_LAYOUT_LOCK = threading.Lock()
 
 IMTYPES = {
     'T1w': 'anat',
@@ -71,7 +73,7 @@ BIDS_EXPR = """\
 """
 
 
-async def worker(job: Callable[[], R], semaphore) -> R:
+async def worker[R](job: Callable[[], R], semaphore) -> R:
     async with semaphore:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, job)
@@ -354,8 +356,9 @@ def _file_meta_and_size(
         valid = all(_valid_list) and len({_m['NumberOfVolumes'] for _m in metadata}) == 1
         return metadata, _merge_entities(_bids_list), np.sum(_size_list), valid
 
-    metadata = config.execution.layout.get_metadata(files)
-    entities = config.execution.layout.parse_file_entities(files)
+    with _LAYOUT_LOCK:
+        metadata = config.execution.layout.get_metadata(files)
+        entities = config.execution.layout.parse_file_entities(files)
     size = os.path.getsize(files) / (1024**3)
 
     metadata['FileSize'] = size

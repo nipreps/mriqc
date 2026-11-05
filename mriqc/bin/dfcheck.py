@@ -61,7 +61,7 @@ def read_iqms(feat_file):
         x_df = x_df.sort_values(by=['bids_name'])
         x_df['subject_id'] = x_df.bids_name.str.lstrip('sub-')
         x_df = x_df.drop(columns=['bids_name'])
-        x_df.subject_id = ['_'.join(v.split('_')[:-1]) for v in x_df.subject_id.ravel()]
+        x_df.subject_id = ['_'.join(v.split('_')[:-1]) for v in x_df.subject_id.to_numpy()]
         feat_names = x_df._get_numeric_data().columns.tolist()
 
     for col in feat_names:

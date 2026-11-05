@@ -1,0 +1,177 @@
+# check=skip=FromPlatformFlagConstDisallowed
+# (the synthstrip stage is amd64 on purpose: it only provides a model file)
+#
+# MRIQC base image: native tools compiled from source for linux/amd64 and linux/arm64
+#
+# MIT License
+#
+# Copyright (c) 2026 The NiPreps Developers
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# Built and published by .github/workflows/docker-base.yml as ghcr.io/nipreps/mriqc-base.
+# AFNI, ANTs and svht_denoise have no upstream Linux arm64 binaries, so all three are
+# compiled here, from the same recipe on both architectures.
+
+# Ubuntu 22.04 LTS - Jammy
+ARG BASE_IMAGE=ubuntu:jammy-20261020
+
+FROM ${BASE_IMAGE} AS builder
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+                    build-essential \
+                    ca-certificates \
+                    cmake \
+                    git \
+                    libexpat1-dev \
+                    libgsl-dev \
+                    ninja-build \
+                    python3 \
+                    zlib1g-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Plain char is unsigned on Linux arm64 and signed on x86-64. Upstream tests arm64 on
+# macOS, where it stays signed, so arm64 builds use -fsigned-char to match x86-64.
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "arm64" ]; then echo "-fsigned-char"; fi > /signed-char.flag
+
+#
+# AFNI: the 12 programs MRIQC runs, and @compute_gcor
+#
+FROM builder AS afni
+ARG AFNI_VERSION=AFNI_26.2.05
+# A git checkout (not a tarball), so that the programs report their version
+RUN git clone --depth 1 --branch ${AFNI_VERSION} https://github.com/afni/afni.git /src/afni && \
+    export CC=gcc CXX=g++ CFLAGS="$(cat /signed-char.flag)" CXXFLAGS="$(cat /signed-char.flag)" && \
+    cmake -S /src/afni -B /build -GNinja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCOMP_GUI=OFF \
+          -DCOMP_PYTHON=OFF \
+          -DCOMP_RSTATS=OFF \
+          -DCOMP_ATLASES=OFF \
+          -DREMOVE_BUILD_PARITY_CHECKS=ON && \
+    ninja -C /build \
+          3dAutomask 3dcalc 3dDespike 3dFWHMx 3dinfo 3dmaskave 3drefit \
+          3dTnorm 3dToutcount 3dTqual 3dTstat 3dvolreg && \
+    mkdir -p /opt/afni && \
+    for prog in 3dAutomask 3dcalc 3dDespike 3dFWHMx 3dinfo 3dmaskave 3drefit \
+                3dTnorm 3dToutcount 3dTqual 3dTstat 3dvolreg; do \
+        install -m 0755 "$( find /build -type f -name "$prog" -perm -u+x )" /opt/afni/; \
+    done && \
+    install -m 0755 /src/afni/src/scripts_install/@compute_gcor /opt/afni/ && \
+    rm -rf /src/afni /build
+
+#
+# ANTs: its core programs (the main stage picks the ones MRIQC runs)
+#
+FROM builder AS ants
+ARG ANTS_VERSION=v2.6.5
+# Parallel compile jobs. ANTs' registration sources need several GB each to compile, so
+# keep this low: 2 fits GitHub's 16 GB runners
+ARG ANTS_JOBS=2
+COPY docker/files/ants-2.6.5-signed-char.patch /tmp/
+RUN git clone --depth 1 --branch ${ANTS_VERSION} https://github.com/ANTsX/ANTs.git /src/ants && \
+    git -C /src/ants apply /tmp/ants-2.6.5-signed-char.patch && \
+    export CFLAGS="$(cat /signed-char.flag)" CXXFLAGS="$(cat /signed-char.flag)" && \
+    # The SuperBuild runs ITK and ANTs as sub-builds, which read this, not --parallel
+    export CMAKE_BUILD_PARALLEL_LEVEL=${ANTS_JOBS} && \
+    cmake -S /src/ants -B /build -GNinja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TESTING=OFF \
+          -DRUN_SHORT_TESTS=OFF \
+          -DRUN_LONG_TESTS=OFF \
+          -DBUILD_ALL_ANTS_APPS=OFF \
+          -DCMAKE_INSTALL_PREFIX=/opt/ants && \
+    cmake --build /build --parallel ${ANTS_JOBS} && \
+    cmake --install /build/ANTS-build && \
+    rm -rf /src/ants /build
+
+#
+# svht_denoise: DWI denoising (replaces MRtrix3's dwidenoise)
+#
+FROM builder AS svht
+ARG SVHT_VERSION=v0.1.20260813
+RUN git clone --depth 1 --branch ${SVHT_VERSION} https://github.com/rordenlab/svht_denoise.git /src/svht && \
+    make -C /src/svht/src CPPFLAGS="$(cat /signed-char.flag)" && \
+    install -m 0755 /src/svht/src/svht_denoise /usr/local/bin/ && \
+    rm -rf /src/svht
+
+#
+# SynthStrip's model (data, so the amd64 image serves both architectures)
+#
+FROM --platform=linux/amd64 freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569facb46e904b45fd52f1a12beb8b AS synthstrip
+
+#
+# Main stage
+#
+FROM ${BASE_IMAGE} AS base
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8"
+
+# Runtime libraries of the programs below (see the ldd check), and tcsh for @compute_gcor
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+                    ca-certificates \
+                    libexpat1 \
+                    libgomp1 \
+                    tcsh \
+                    zlib1g && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+COPY --link --from=afni /opt/afni /opt/afni
+# ANTs programs run by MRIQC and by the niworkflows interfaces it uses
+# (antsAffineInitializer: niworkflows' RobustMNINormalization)
+COPY --link --from=ants \
+    /opt/ants/bin/antsAffineInitializer \
+    /opt/ants/bin/antsApplyTransforms \
+    /opt/ants/bin/antsRegistration \
+    /opt/ants/bin/Atropos \
+    /opt/ants/bin/N4BiasFieldCorrection \
+    /opt/ants/bin/
+COPY --link --from=svht /usr/local/bin/svht_denoise /usr/local/bin/svht_denoise
+COPY --link --from=synthstrip /freesurfer/models/synthstrip.1.pt /opt/freesurfer/models/synthstrip.1.pt
+
+ENV PATH="/opt/afni:/opt/ants/bin:$PATH" \
+    ANTSPATH="/opt/ants/bin/" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    FREESURFER_HOME="/opt/freesurfer"
+
+# Every program must find its libraries and report the expected version
+ARG AFNI_VERSION=AFNI_26.2.05
+ARG ANTS_VERSION=v2.6.5
+RUN missing=""; \
+    for bin in /opt/afni/3d* /opt/ants/bin/* /usr/local/bin/svht_denoise; do \
+        if ldd "$bin" | grep "not found"; then echo "  ^ in $bin"; missing=1; fi; \
+    done; \
+    test -z "$missing" && \
+    3dvolreg -ver 2>&1 | grep -q "${AFNI_VERSION}" && \
+    antsRegistration --version | grep -q "${ANTS_VERSION#v}" && \
+    svht_denoise -help > /dev/null
+
+ARG BUILD_DATE
+ARG VCS_REF
+LABEL org.opencontainers.image.source="https://github.com/nipreps/mriqc" \
+      org.opencontainers.image.description="MRIQC base image: AFNI ${AFNI_VERSION}, ANTs ${ANTS_VERSION}, svht_denoise" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.created=$BUILD_DATE \
+      org.opencontainers.image.revision=$VCS_REF
