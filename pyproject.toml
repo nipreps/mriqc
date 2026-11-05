@@ -23,6 +23,7 @@ dependencies = [
   "nilearn >= 0.5.1",
   "nipype >= 1.11",
   "nireports >= 26.0",
+  "nitime",
   "nitransforms >= 24.1",
   "niworkflows >= 1.14",
   "numpy >= 1.26",

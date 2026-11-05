@@ -285,6 +285,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/83/27/f997c9da0e179986fadd6c8474d16743f1b3697c129c2fcd1e739cd038c2/etelemetry-0.3.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/88/5d/ae275feedaa6590cf6e185cfeb7c4d28b5e1a10fcb492fd5340b07921675/nitime-0.12.1-cp311-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/95/81/314320aeffd88dadeac553ff9eb10f54507ab41deccd0c69f6221d254a0a/puremagic-2.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9d/6a/43827cf9d1e70c0c3d916b8d139f2ff07501a8adadd8585e432af0bb7db4/migas-0.4.0-py3-none-any.whl
@@ -532,6 +533,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/04/ef/9db6224bea5d984e6a454bba599c05f7e2b8582bda1b127a1a9e65c9c934/nitime-0.12.1-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
       - pypi: https://files.pythonhosted.org/packages/07/ea/2e31b67051e91a133189e9c000c222502ddc6969856416de0d095de4c0b0/typer-0.27.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/1c/e34b241b24e8a3d5177cc2a3e89483d506f9a31d0430a7505197302fa4d2/niworkflows-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0f/f4/482701d2dc7540897b13ead827cf8499b11c7325753b8cc4ff1a82c87a18/statsmodels-0.15.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
@@ -889,6 +891,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/83/27/f997c9da0e179986fadd6c8474d16743f1b3697c129c2fcd1e739cd038c2/etelemetry-0.3.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/87/d9/5cfd5b348fc22ae1a4a219dc693e0492ca66f775b9c2641539b7dfff5906/nirodents-0.2.8-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/88/5d/ae275feedaa6590cf6e185cfeb7c4d28b5e1a10fcb492fd5340b07921675/nitime-0.12.1-cp311-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/8e/e9/6e6ffdb3c767becfe4deaddb7f5a42e0638de3076ff22fd3d57fb89aaca8/datalad_next-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/91/b6/0d74517d0b33dfe372b47b2ef5781a2231e891f8fe8edea74a447a7f7380/annexremote-1.6.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl
@@ -1162,6 +1165,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/02/36/ecc85bc96c273dc8a11273ed4782272975e6338d4a3e9228621175edf0e3/jaraco_functools-4.6.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/04/ef/9db6224bea5d984e6a454bba599c05f7e2b8582bda1b127a1a9e65c9c934/nitime-0.12.1-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
       - pypi: https://files.pythonhosted.org/packages/07/ea/2e31b67051e91a133189e9c000c222502ddc6969856416de0d095de4c0b0/typer-0.27.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/1c/e34b241b24e8a3d5177cc2a3e89483d506f9a31d0430a7505197302fa4d2/niworkflows-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0f/f4/482701d2dc7540897b13ead827cf8499b11c7325753b8cc4ff1a82c87a18/statsmodels-0.15.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
@@ -1545,6 +1549,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/82/3b/64d4899d73f91ba49a8c18a8ff3f0ea8f1c1d75481760df8c68ef5235bf5/rich-15.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/83/27/f997c9da0e179986fadd6c8474d16743f1b3697c129c2fcd1e739cd038c2/etelemetry-0.3.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/88/5d/ae275feedaa6590cf6e185cfeb7c4d28b5e1a10fcb492fd5340b07921675/nitime-0.12.1-cp311-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/95/81/314320aeffd88dadeac553ff9eb10f54507ab41deccd0c69f6221d254a0a/puremagic-2.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9d/6a/43827cf9d1e70c0c3d916b8d139f2ff07501a8adadd8585e432af0bb7db4/migas-0.4.0-py3-none-any.whl
@@ -1796,6 +1801,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/04/ef/9db6224bea5d984e6a454bba599c05f7e2b8582bda1b127a1a9e65c9c934/nitime-0.12.1-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
       - pypi: https://files.pythonhosted.org/packages/07/ea/2e31b67051e91a133189e9c000c222502ddc6969856416de0d095de4c0b0/typer-0.27.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0e/1c/e34b241b24e8a3d5177cc2a3e89483d506f9a31d0430a7505197302fa4d2/niworkflows-1.15.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0f/f4/482701d2dc7540897b13ead827cf8499b11c7325753b8cc4ff1a82c87a18/statsmodels-0.15.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl
@@ -8675,6 +8681,7 @@ packages:
   - nilearn>=0.5.1
   - nipype>=1.11
   - nireports>=26.0
+  - nitime
   - nitransforms>=24.1
   - niworkflows>=1.14
   - numpy>=1.26
@@ -8774,6 +8781,17 @@ packages:
   - pytest-cov ; extra == 'cover'
   - pytest-enabler>=3.4 ; extra == 'enabler'
   - pytest-mypy>=1.0.1 ; platform_python_implementation != 'PyPy' and extra == 'type'
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/04/ef/9db6224bea5d984e6a454bba599c05f7e2b8582bda1b127a1a9e65c9c934/nitime-0.12.1-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl
+  name: nitime
+  version: 0.12.1
+  sha256: e056996455faf667ff251fc654b1d2e4963442273edb06b3d72b2b9beaf3d64a
+  requires_dist:
+  - matplotlib>=3.7
+  - numpy>=1.24
+  - scipy>=1.10
+  - networkx>=3.0 ; extra == 'full'
+  - nibabel>=5.0 ; extra == 'full'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/07/ea/2e31b67051e91a133189e9c000c222502ddc6969856416de0d095de4c0b0/typer-0.27.3-py3-none-any.whl
   name: typer
@@ -9912,6 +9930,17 @@ packages:
   - pytest-cov ; extra == 'tests'
   - pytest-xdist>=1.28 ; extra == 'tests'
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/88/5d/ae275feedaa6590cf6e185cfeb7c4d28b5e1a10fcb492fd5340b07921675/nitime-0.12.1-cp311-abi3-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+  name: nitime
+  version: 0.12.1
+  sha256: 19442111829b94fa9aa9849bdfb6aa92bc5467ba74194b18450728e432086882
+  requires_dist:
+  - matplotlib>=3.7
+  - numpy>=1.24
+  - scipy>=1.10
+  - networkx>=3.0 ; extra == 'full'
+  - nibabel>=5.0 ; extra == 'full'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/8e/e9/6e6ffdb3c767becfe4deaddb7f5a42e0638de3076ff22fd3d57fb89aaca8/datalad_next-1.6.0-py3-none-any.whl
   name: datalad-next
   version: 1.6.0
