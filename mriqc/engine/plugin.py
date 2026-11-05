@@ -624,7 +624,7 @@ def report_crash(node, traceback=None, hostname=None):
     timeofcrash = strftime('%Y%m%d-%H%M%S')
     try:
         login_name = getpass.getuser()
-    except KeyError:
+    except (KeyError, OSError):  # Python 3.13 raises OSError when the UID has no name
         login_name = f'UID{os.getuid():d}'
 
     crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{str(uuid.uuid4())}'

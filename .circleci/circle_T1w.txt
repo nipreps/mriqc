@@ -1,6 +1,7 @@
 .bids_db
 .bids_db/layout_index.sqlite
 .bidsignore
+/tmp/t1w/derivatives
 dataset_description.json
 group_T1w.html
 group_T1w.tsv
@@ -63,4 +64,3 @@ sub-51187/figures/sub-51187_desc-norm_T1w.svg
 sub-51187/figures/sub-51187_desc-segmentation_T1w.svg
 sub-51187/figures/sub-51187_desc-zoomed_T1w.svg
 sub-51187_T1w.html
-/tmp/t1w/derivatives

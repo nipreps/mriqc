@@ -55,7 +55,7 @@ def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
         rows = unified[_TIME_LABEL].isin(pid_info['timestamp'])
         if label not in unified.columns:
             proc_names.append(label)
-            unified[label] = 0
+            unified[label] = 0.0
 
         unified.loc[rows, label] += pid_info[param].values / (
             1024 if param.startswith('mem') else 1
