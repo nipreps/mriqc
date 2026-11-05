@@ -645,8 +645,10 @@ jobs:
     # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
     resource_class: large
 
-  # linux/arm64: built natively, then the same unit tests and smoke tests as amd64,
-  # without the WebAPI (--no-sub). IQMs are checked against the amd64 references.
+  # linux/arm64: built natively and unit-tested on every change. The T1w/bold pipelines
+  # (without the WebAPI, --no-sub; IQMs checked against the amd64 references) run on
+  # master and tags, which gate the arm64 deploy, and on pull requests that change the
+  # image recipe or whose last commit message says [arm64].
   build_arm64:
     machine:
       image: ubuntu-2204:current
@@ -662,6 +664,22 @@ jobs:
               echo "Only docs build"
               circleci step halt
             fi
+      - run:
+          name: Decide whether the arm64 pipelines run
+          command: |
+            mkdir -p /tmp/arm64 /tmp/images && touch /tmp/images/.keep
+            run=no
+            if [[ "${CIRCLE_BRANCH:-}" == "master" || -n "${CIRCLE_TAG:-}" ]]; then
+              run=yes
+            elif git log --format=%B -n 1 $CIRCLE_SHA1 | grep -q -i '\[arm64\]'; then
+              run=yes
+            elif ! base=$( git merge-base HEAD origin/master 2> /dev/null ); then
+              run=yes  # cannot tell what changed
+            elif git diff --name-only "$base" HEAD | grep -q -x -E 'Dockerfile|Dockerfile\.base|pixi\.lock'; then
+              run=yes
+            fi
+            echo "$run" > /tmp/arm64/pipelines
+            echo "arm64 T1w/bold pipelines: $run"
       - run:
           name: Build Docker image (linux/arm64)
           no_output_timeout: 60m
@@ -707,13 +725,15 @@ jobs:
           name: Save the image for the next jobs
           no_output_timeout: 30m
           command: |
-            mkdir -p /tmp/images
-            docker save nipreps/mriqc:latest | gzip -1 > /tmp/images/mriqc-arm64.tar.gz
+            if [[ "$( cat /tmp/arm64/pipelines )" == "yes" ]]; then
+              docker save nipreps/mriqc:latest | gzip -1 > /tmp/images/mriqc-arm64.tar.gz
+            fi
       - persist_to_workspace:
           root: /tmp
           paths:
             - src/mriqc
-            - images/mriqc-arm64.tar.gz
+            - arm64
+            - images
 
   T1w_arm64:
     environment:
@@ -735,13 +755,29 @@ jobs:
               echo "Only docs build"
               circleci step halt
             fi
+      - run:
+          name: Run only where arm64 results can change
+          command: |
+            if [[ "$( cat /tmp/arm64/pipelines )" != "yes" ]]; then
+              echo "The image recipe did not change: skipping (say [arm64] in the commit message to run)"
+              circleci step halt
+            fi
       - restore_cache:
           keys:
             - data-v2-{{ epoch }}
             - data-v2-
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - t1w-arm64-v1-master
       - run:
           name: Load the arm64 image
-          command: docker load < /tmp/images/mriqc-arm64.tar.gz
+          command: |
+            docker load < /tmp/images/mriqc-arm64.tar.gz
+            rm -f /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/work/.resources.*
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -761,6 +797,14 @@ jobs:
           command: |
             find /tmp/t1w/work -path '*/segmentation/command.txt' \
               -exec grep -l -- '--use-random-seed 0' {} + | grep .
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - save_cache:
+                key: t1w-arm64-v1-master-{{ epoch }}
+                paths:
+                  - /tmp/t1w/work
       - run:
           name: Run group-level on T1w images
           no_output_timeout: 2h
@@ -811,13 +855,29 @@ jobs:
               echo "Only docs build"
               circleci step halt
             fi
+      - run:
+          name: Run only where arm64 results can change
+          command: |
+            if [[ "$( cat /tmp/arm64/pipelines )" != "yes" ]]; then
+              echo "The image recipe did not change: skipping (say [arm64] in the commit message to run)"
+              circleci step halt
+            fi
       - restore_cache:
           keys:
             - data-v2-{{ epoch }}
             - data-v2-
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - bold-arm64-v1-master
       - run:
           name: Load the arm64 image
-          command: docker load < /tmp/images/mriqc-arm64.tar.gz
+          command: |
+            docker load < /tmp/images/mriqc-arm64.tar.gz
+            rm -f /tmp/bold/work/.mriqc.*.toml /tmp/bold/work/.resources.*
       - run:
           name: Run participant-level on BOLD images
           no_output_timeout: 2h
@@ -831,6 +891,14 @@ jobs:
                        -vv --verbose-reports -m bold --dsname circletests \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --testing --no-sub
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - save_cache:
+                key: bold-arm64-v1-master-{{ epoch }}
+                paths:
+                  - /tmp/bold/work
       - run:
           name: Run group-level on BOLD images
           no_output_timeout: 2h
