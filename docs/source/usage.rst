@@ -179,6 +179,31 @@ on ds030 of OpenfMRI:
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.
   
+.. _abide_datalad:
+
+The ABIDE images behind MRIQC's classifier
+------------------------------------------
+MRIQC's classifier (Esteban et al., 2017,
+`doi:10.1371/journal.pone.0184661 <https://doi.org/10.1371/journal.pone.0184661>`__)
+was trained on the T1w images of ABIDE I.
+Up to version 26.0, MRIQC shipped an ``abide2bids`` script that downloaded them from NITRC
+with NITRC credentials.
+The same images are available in BIDS, without credentials, from the DataLad dataset
+``///abide``, a mirror of FCP-INDI's ``s3://fcp-indi/data/Projects/ABIDE/RawDataBIDS/``.
+
+:download:`abide-datalad.tsv <resources/abide-datalad.tsv>` maps each ``participant_id``,
+as ``abide2bids`` named it (e.g., ``sub-50137``), to its site and to the paths of its T1w
+image and of its first resting-state BOLD run in ``///abide``, with their MD5 checksums.
+To fetch an image::
+
+  datalad clone ///abide abide
+  cd abide
+  datalad get RawDataBIDS/Olin/sub-0050137/anat/sub-0050137_T1w.nii.gz
+
+``datalad get`` installs the subdatasets it needs along the way.
+Ten subjects have no T1w image (``n/a``), and 28 have more than one BOLD run
+(``bold_runs``), stored next to the first one.
+
 .. topic:: References
 
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
