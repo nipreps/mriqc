@@ -110,6 +110,8 @@ in :ref:`The MRIQC Reports <reports>`.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
 
+.. _iqm_outputs:
+
 Participant-level IQM parquet outputs
 .....................................
 Participant-level runs generate a parquet file containing the IQMs for each input image.
