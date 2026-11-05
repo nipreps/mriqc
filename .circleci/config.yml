@@ -678,7 +678,7 @@ jobs:
 
   test_package:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.12
     working_directory: /tmp/src/mriqc
     steps:
       - checkout

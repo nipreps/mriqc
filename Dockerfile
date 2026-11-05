@@ -72,9 +72,11 @@ RUN mkdir -p /opt/afni-latest \
     && find /opt/afni-latest -type f -not \( \
             -name "3dAutomask" \
         -or -name "3dcalc" \
+        -or -name "3dDespike" \
         -or -name "3dFWHMx" \
         -or -name "3dinfo" \
         -or -name "3dmaskave" \
+        -or -name "3drefit" \
         -or -name "3dSkullStrip" \
         -or -name "3dTnorm" \
         -or -name "3dToutcount" \
