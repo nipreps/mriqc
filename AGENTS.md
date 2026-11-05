@@ -1,40 +1,23 @@
-# Agent Instructions for Codex
+# Agent instructions
 
-## Operating Principles
-1. **Always plan first.** Provide a brief plan before any changes and do the hardest thinking during the planning phase.
-2. **Highlight critical points.** When proposing tasks, call out steps that could introduce side effects (e.g., migrations, API changes, backward-compatibility concerns).
-3. **Ask one question at a time.** If a decision is needed from a user, ask a single, clear question before proceeding.
+## Working
+- Plan before changing code, and flag side effects: API, CLI, outputs, backward compatibility.
+- When a decision is needed, ask one question at a time.
+- Lint as CI does before proposing changes, or say why you could not:
+  `pipx run ruff==0.17.3 check` and `pipx run ruff==0.17.3 format --diff`.
 
-## Branch Naming
-- **Format:** `<type>/<short-description>`
-- **Examples:**
-  - `fix/one-off-bug-gh134`
-  - `enh/add-bids-validator`
-  - `doc/update-readme`
-- If working from a tracked issue, include the issue number in the branch name (e.g., `fix/segfault-gh134`).
+## Branches
+`<type>/<short-description>`, with the issue number when there is one:
+`fix/segfault-gh134`, `enh/add-bids-validator`, `doc/update-readme`.
 
-## Commit Messages (Conventional Commits)
-- **Must strictly follow** Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/
-- Examples:
-  - `fix(parser): handle empty token stream`
-  - `docs(readme): add quickstart example`
-  - `chore(ci): pin action versions`
+## Commits
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), kept short:
+- a one-line subject, e.g. `fix(parser): handle empty token stream`;
+- a one-line body saying why.
 
-## Pull Request Titles & Descriptions
-- **PR Title format:** `TYPE: Short summary`
-  - Type is **all caps**, from a conventional-commit-like set (e.g., FIX, ENH, MNT, DOC, CI, CHORE).
-  - **No scope parenthetical** in PR titles.
-- **Examples:**
-  - `FIX: Address one-off bug in traversing list`
-  - `DOC: Complete docstring with missing arguments`
-- **PR Description should include:**
-  - Summary of changes
-  - Motivation / context
-  - Testing performed (exact commands)
+Only a fundamental change (behaviour, outputs, compatibility) gets a longer body, and it stays terse.
+`doc/` branches and `docs:` subjects skip CircleCI's build and test jobs.
 
-## Linting & Pre-Change Validation
-- **Always run linting before proposing changes.**
-- This repository uses the GitHub Actions linting commands, with the ruff version pinned in CI:
-  - `pipx run ruff==0.17.3 check`
-  - `pipx run ruff==0.17.3 format --diff`
-- If linting cannot run due to environment constraints, state the limitation and suggest a retry in a fully configured environment.
+## Pull requests
+- Title: `TYPE: Short summary`. TYPE in capitals (FIX, ENH, MNT, DOC, CI, CHORE), no scope.
+- Description, brief and to the point: what changes and why, in a few bullets, then the exact test commands.
