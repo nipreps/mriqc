@@ -46,6 +46,8 @@ CHANGES
 * ENH: Add parquet IQM outputs and a schema sidecar by @oesteban (`#1428 <https://github.com/nipreps/mriqc/pull/1428>`__)
 * ENH: Add ``--random-seed``, so that two runs give identical results by @oesteban, after a proposal by @yohanchatelain (`#1453 <https://github.com/nipreps/mriqc/pull/1453>`__, `#1413 <https://github.com/nipreps/mriqc/pull/1413>`__)
 * ENH: Remove redundant *DIPY* function by @jhlegarreta (`#1369 <https://github.com/nipreps/mriqc/pull/1369>`__)
+* DOC: Point the measures page to the parquet IQM outputs by @oesteban (`#1466 <https://github.com/nipreps/mriqc/pull/1466>`__)
+* DOC: Fix the broken link to an example IQM JSON by @celprov (`#1398 <https://github.com/nipreps/mriqc/pull/1398>`__)
 * DOC: Move Read the Docs to a supported build image by @oesteban (`#1456 <https://github.com/nipreps/mriqc/pull/1456>`__)
 * DOC: Make ``AGENTS.md`` agent-neutral and terser by @oesteban (`#1459 <https://github.com/nipreps/mriqc/pull/1459>`__)
 * DOC: Add ``AGENTS.md`` guidance for *Codex* usage by @oesteban (`#1427 <https://github.com/nipreps/mriqc/pull/1427>`__)
