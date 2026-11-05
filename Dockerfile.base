@@ -79,7 +79,7 @@ RUN git clone --depth 1 --branch ${AFNI_VERSION} https://github.com/afni/afni.gi
     rm -rf /src/afni /build
 
 #
-# ANTs: the four programs MRIQC runs
+# ANTs: its core programs (the main stage picks the ones MRIQC runs)
 #
 FROM builder AS ants
 ARG ANTS_VERSION=v2.6.5
@@ -99,14 +99,10 @@ RUN git clone --depth 1 --branch ${ANTS_VERSION} https://github.com/ANTsX/ANTs.g
           -DRUN_SHORT_TESTS=OFF \
           -DRUN_LONG_TESTS=OFF \
           -DBUILD_ALL_ANTS_APPS=OFF \
-          -DCMAKE_INSTALL_PREFIX=/opt/ants-full && \
+          -DCMAKE_INSTALL_PREFIX=/opt/ants && \
     cmake --build /build --parallel ${ANTS_JOBS} && \
     cmake --install /build/ANTS-build && \
-    mkdir -p /opt/ants/bin && \
-    for prog in antsApplyTransforms antsRegistration Atropos N4BiasFieldCorrection; do \
-        install -m 0755 /opt/ants-full/bin/$prog /opt/ants/bin/; \
-    done && \
-    rm -rf /src/ants /build /opt/ants-full
+    rm -rf /src/ants /build
 
 #
 # svht_denoise: DWI denoising (replaces MRtrix3's dwidenoise)
@@ -143,7 +139,15 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --link --from=afni /opt/afni /opt/afni
-COPY --link --from=ants /opt/ants /opt/ants
+# ANTs programs run by MRIQC and by the niworkflows interfaces it uses
+# (antsAffineInitializer: niworkflows' RobustMNINormalization)
+COPY --link --from=ants \
+    /opt/ants/bin/antsAffineInitializer \
+    /opt/ants/bin/antsApplyTransforms \
+    /opt/ants/bin/antsRegistration \
+    /opt/ants/bin/Atropos \
+    /opt/ants/bin/N4BiasFieldCorrection \
+    /opt/ants/bin/
 COPY --link --from=svht /usr/local/bin/svht_denoise /usr/local/bin/svht_denoise
 COPY --link --from=synthstrip /freesurfer/models/synthstrip.1.pt /opt/freesurfer/models/synthstrip.1.pt
 
