@@ -1,3 +1,6 @@
+# check=skip=FromPlatformFlagConstDisallowed
+# (the synthstrip stage is amd64 on purpose: it only provides a model file)
+#
 # MRIQC base image: native tools compiled from source for linux/amd64 and linux/arm64
 #
 # MIT License
@@ -129,13 +132,12 @@ ENV DEBIAN_FRONTEND="noninteractive" \
     LANG="C.UTF-8" \
     LC_ALL="C.UTF-8"
 
-# Runtime libraries of the programs below, and tcsh for @compute_gcor
+# Runtime libraries of the programs below (see the ldd check), and tcsh for @compute_gcor
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
                     ca-certificates \
                     libexpat1 \
                     libgomp1 \
-                    libgsl27 \
                     tcsh \
                     zlib1g && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
