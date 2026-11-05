@@ -1,0 +1,72 @@
+ANTs v2.6.5: the antsApplyTransforms.cxx part of ANTsX/ANTs#2032 (merged as e4a06528a),
+"COMP: replace char with explicit (un)signed char", by Philip A Cook.
+Plain char is unsigned on Linux arm64, so v2.6.5 maps char pixels to unsigned there.
+The rest of #2032 touches programs MRIQC does not ship, and does not apply to v2.6.5.
+
+diff --git a/Examples/antsApplyTransforms.cxx b/Examples/antsApplyTransforms.cxx
+index 39e7968..1a35df1 100644
+--- a/Examples/antsApplyTransforms.cxx
++++ b/Examples/antsApplyTransforms.cxx
+@@ -1152,7 +1152,7 @@ antsApplyTransformsInitializeCommandLineOptions(itk::ants::CommandLineParser * p
+     std::string description = std::string("Output image data type. ") +
+                               std::string("This is a direct typecast; output values are not rescaled. ") +
+                               std::string("Default is to use the internal data type (float or double). ") +
+-                              std::string("uchar is unsigned char; others are signed. ") +
++                              std::string("char is signed char; uchar is unsigned char; others are signed. ") +
+                               std::string("WARNING: Outputs will be incorrect (overflowed/reinterpreted) ") +
+                               std::string("if values exceed the range allowed by your choice. ") +
+                               std::string("Note that some pixel types are not supported by some image ") +
+@@ -1475,7 +1475,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+         if (useDoublePrecision)
+         {
+           if (!std::strcmp(outputDataType.c_str(), "char"))
+-            return antsApplyTransforms<double, 2, char>(parser, imageType);
++            return antsApplyTransforms<double, 2, signed char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+             return antsApplyTransforms<double, 2, unsigned char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "short"))
+@@ -1492,7 +1492,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+         else
+         {
+           if (!std::strcmp(outputDataType.c_str(), "char"))
+-            return antsApplyTransforms<float, 2, char>(parser, imageType);
++            return antsApplyTransforms<float, 2, signed char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+             return antsApplyTransforms<float, 2, unsigned char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "short"))
+@@ -1514,7 +1514,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+       if (useDoublePrecision)
+       {
+         if (!std::strcmp(outputDataType.c_str(), "char"))
+-          return antsApplyTransforms<double, 3, char>(parser, imageType);
++          return antsApplyTransforms<double, 3, signed char>(parser, imageType);
+         else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+           return antsApplyTransforms<double, 3, unsigned char>(parser, imageType);
+         else if (!std::strcmp(outputDataType.c_str(), "short"))
+@@ -1531,7 +1531,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+       else
+       {
+         if (!std::strcmp(outputDataType.c_str(), "char"))
+-          return antsApplyTransforms<float, 3, char>(parser, imageType);
++          return antsApplyTransforms<float, 3, signed char>(parser, imageType);
+         else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+           return antsApplyTransforms<float, 3, unsigned char>(parser, imageType);
+         else if (!std::strcmp(outputDataType.c_str(), "short"))
+@@ -1568,7 +1568,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+         if (useDoublePrecision)
+         {
+           if (!std::strcmp(outputDataType.c_str(), "char"))
+-            return antsApplyTransforms<double, 4, char>(parser, imageType);
++            return antsApplyTransforms<double, 4, signed char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+             return antsApplyTransforms<double, 4, unsigned char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "short"))
+@@ -1585,7 +1585,7 @@ antsApplyTransforms(std::vector<std::string> args, std::ostream * /*out_stream =
+         else
+         {
+           if (!std::strcmp(outputDataType.c_str(), "char"))
+-            return antsApplyTransforms<float, 4, char>(parser, imageType);
++            return antsApplyTransforms<float, 4, signed char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "uchar"))
+             return antsApplyTransforms<float, 4, unsigned char>(parser, imageType);
+           else if (!std::strcmp(outputDataType.c_str(), "short"))
