@@ -450,7 +450,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/t1w/test
-            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | LC_ALL=C sort > /tmp/t1w/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
             exit $?
 
@@ -611,7 +611,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/bold/test
-            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | LC_ALL=C sort > /tmp/bold/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
             exit $?
 
@@ -822,7 +822,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/t1w/test
-            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | sort > /tmp/t1w/test/outputs.out
+            find /tmp/t1w/derivatives | sed s+/tmp/t1w/derivatives/++ | LC_ALL=C sort > /tmp/t1w/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_T1w.txt /tmp/t1w/test/outputs.out
       - run:
           name: Checking changes on IQMs (against the amd64 reference)
@@ -915,7 +915,7 @@ jobs:
           name: Checking presence of outputs
           command: |
             mkdir -p /tmp/bold/test
-            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | sort > /tmp/bold/test/outputs.out
+            find /tmp/bold/derivatives | sed s+/tmp/bold/derivatives/++ | LC_ALL=C sort > /tmp/bold/test/outputs.out
             diff /tmp/src/mriqc/.circleci/circle_bold.txt /tmp/bold/test/outputs.out
       - run:
           name: Checking changes on IQMs (against the amd64 reference)
