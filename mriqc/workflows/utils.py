@@ -62,6 +62,28 @@ def thresh_image(in_file, thres=0.5, out_file=None):
     return out_file
 
 
+def threshold_image_percent(in_file, percent=0.2, out_file=None):
+    """Threshold ``in_file`` at ``percent`` of its maximum intensity."""
+    import os.path as op
+
+    import nibabel as nb
+    import numpy as np
+
+    if out_file is None:
+        fname, ext = op.splitext(op.basename(in_file))
+        if ext == '.gz':
+            fname, ext2 = op.splitext(fname)
+            ext = ext2 + ext
+        out_file = op.abspath(f'{fname}_pctthresh{ext}')
+
+    im = nb.load(in_file)
+    data = im.get_fdata()
+    cutoff = percent * np.max(data)
+    data[data < cutoff] = 0
+    nb.Nifti1Image(data, im.affine, im.header).to_filename(out_file)
+    return out_file
+
+
 def spectrum_mask(size):
     """Creates a mask to filter the image of size size"""
     import numpy as np

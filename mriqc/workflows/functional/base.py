@@ -492,7 +492,7 @@ def fmri_bmsk_workflow(name='fMRIBrainMask'):
     return workflow
 
 
-def hmc(name='fMRI_HMC', omp_nthreads=None):
+def hmc(name='fmriHMC', omp_nthreads=None):
     """
     Create a :abbr:`HMC (head motion correction)` workflow for fMRI.
 

@@ -29,6 +29,14 @@ software engineering principles:
    Its reliability is permanently checked and maintained with
    `CircleCI <https://circleci.com/gh/nipreps/mriqc>`_.
 
+PETQC support
+-------------
+*MRIQC* also provides workflows for quality control of positron emission
+tomography (PET) images. When PET data are detected in a BIDS dataset,
+the PETQC pipeline runs automatically and generates PET-specific IQMs and
+HTML reports. Further details can be found in the
+`documentation <https://mriqc.readthedocs.io/en/latest/petqc.html>`__.
+
 Citation
 --------
 .. topic:: **When using MRIQC, please include the following citation:**
