@@ -175,8 +175,10 @@ class ResourceRecorder(Process):
 
         # Write headers (comment trace + header row)
         _header = [
-            f'# MRIQC Resource recorder started tracking PID {self._pid} '
-            f'{datetime.now(tz=UTC).strftime("(%Y/%m/%d; %H:%M:%S)")}',
+            (
+                f'# MRIQC Resource recorder started tracking PID {self._pid} '
+                f'{datetime.now(tz=UTC).strftime("(%Y/%m/%d; %H:%M:%S)")}'
+            ),
             '\t'.join(('timestamp', *SAMPLE_ATTRS)).replace(
                 'memory_info', 'mem_rss_mb\tmem_vsm_mb'
             ),

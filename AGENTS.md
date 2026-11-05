@@ -34,6 +34,7 @@
 
 ## Linting & Pre-Change Validation
 - **Always run linting before proposing changes.**
-- This repository uses the GitHub Actions linting command:
-  - `pipx run ruff format --diff`
+- This repository uses the GitHub Actions linting commands, with the ruff version pinned in CI:
+  - `pipx run ruff==0.17.3 check`
+  - `pipx run ruff==0.17.3 format --diff`
 - If linting cannot run due to environment constraints, state the limitation and suggest a retry in a fully configured environment.

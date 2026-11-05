@@ -35,7 +35,7 @@ def format_elapsed_time(elapsed_timedelta):
 def main(argv=None):
     """Entry point for MRIQC's CLI."""
     import atexit
-    import datetime
+    import datetime as dt
     import gc
     import os
     import sys
@@ -199,7 +199,7 @@ def main(argv=None):
         _subject_duration = (time.time() - config.settings.start_time) / sum(
             len(files) for files in config.workflow.inputs.values()
         )
-        _subject_duration_td = datetime.timedelta(seconds=_subject_duration)
+        _subject_duration_td = dt.timedelta(seconds=_subject_duration)
         time_strf = format_elapsed_time(_subject_duration_td)
 
         config.loggers.cli.log(
@@ -270,7 +270,7 @@ def main(argv=None):
     write_bidsignore(config.execution.output_dir)
 
     _run_duration = time.time() - config.settings.start_time
-    _run_duration_td = datetime.timedelta(seconds=_run_duration)
+    _run_duration_td = dt.timedelta(seconds=_run_duration)
     time_strf = format_elapsed_time(_run_duration_td)
 
     config.loggers.cli.log(
