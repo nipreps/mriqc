@@ -1,19 +1,86 @@
-25.0.0 (TBD)
+26.0.0 (TBD)
 ============
-A new 25.x series.
+The first release of the 26.x series, and the first since 24.0.2 (25.0.0rc0 was never finalized).
+*MRIQC* now requires Python 3.13 or newer, following `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`__,
+and its container image runs on ``linux/amd64`` and ``linux/arm64``.
+
+With thanks to @asaraog and @vferat for their first contributions, and to @yohanchatelain
+for proposing ``--random-seed`` (`#1413 <https://github.com/nipreps/mriqc/pull/1413>`__).
+
+Highlights:
+
+* **Python 3.13 and 3.14**, with the SPEC 0 minimum versions of *NumPy* (2.2), *SciPy* (1.15),
+  *Pandas* (2.3), *Matplotlib* (3.10) and *scikit-learn* (1.6).
+* **A new container image** for ``linux/amd64`` and ``linux/arm64``, built with *pixi* from a lockfile
+  on Python 3.13.
+  *AFNI* (26.2.05), *ANTs* (2.6.5) and *svht_denoise* are compiled from source for both architectures.
+* **Reproducible runs:** ``--random-seed`` makes two runs give identical results.
+* **Parquet IQM outputs:** each participant-level run writes ``<entities>_<suffix>+iqms.parquet``,
+  with a JSON sidecar holding the schema, the BIDS metadata and the provenance.
+
+Backward-incompatible changes:
+
+* The participant-level ``<entities>_<suffix>.json`` file is no longer written: the parquet file and its
+  ``+iqms.json`` sidecar replace it.
+* DWI denoising uses `svht_denoise <https://github.com/rordenlab/svht_denoise>`__ instead of *MRtrix3*'s
+  ``dwidenoise``, which is licensed for non-commercial use only and has no ``arm64`` build.
+  DWI IQMs change.
+* Python 3.10, 3.11 and 3.12 are no longer supported.
+* IQMs computed on ``arm64`` differ slightly from those computed on ``amd64`` (most T1w IQMs agree
+  within 1%; BOLD IQMs within 0.02%).
+  Do not mix the two architectures within a study.
 
 CHANGES
 -------
-  * FIX: Decode bytes to produce a string (#1371)
-  * FIX: Containers report wrong version (#1357)
-  * FIX: Elapsed run time format (#1366)
-  * FIX: Passing ``bytes`` into ``str.join()`` (#1356)
-  * FIX: Optimize interface to minimize memory fingerprint (#1351)
-  * ENH: Remove redundant *DIPY* function (#1369)
-  * DOC: Add a HPC troubleshooting section to the documentation (#1349)
-  * DOC: Provide a range of years ending with current for the copyright statement (#1359)
-  * DOC: Fix missing code block start (#1368)
-  * DOC: Reorganize documentation and redirect to *NiPreps* docs (#1367)
+* FIX: Correlate neighboring DWI volumes, not two voxels by @asaraog (`#1446 <https://github.com/nipreps/mriqc/pull/1446>`__)
+* FIX: Declare ``mem_gb`` on the *SynthStrip* node by @asaraog (`#1447 <https://github.com/nipreps/mriqc/pull/1447>`__)
+* FIX: Keep ``3drefit`` and ``3dDespike`` in the image by @asaraog (`#1449 <https://github.com/nipreps/mriqc/pull/1449>`__)
+* FIX: Ship ``antsAffineInitializer`` in the base image by @oesteban (`#1462 <https://github.com/nipreps/mriqc/pull/1462>`__)
+* FIX: Ensure *conda*'s ``libstdc++`` is preferred at runtime by @oesteban (`#1429 <https://github.com/nipreps/mriqc/pull/1429>`__)
+* FIX: More reliable anatomical harmonization by @oesteban (`#1394 <https://github.com/nipreps/mriqc/pull/1394>`__)
+* FIX: Decode bytes to produce a string by @oesteban (`#1371 <https://github.com/nipreps/mriqc/pull/1371>`__)
+* FIX: Containers report wrong version by @oesteban (`#1357 <https://github.com/nipreps/mriqc/pull/1357>`__, `#1372 <https://github.com/nipreps/mriqc/pull/1372>`__)
+* FIX: Elapsed run time format by @jhlegarreta (`#1366 <https://github.com/nipreps/mriqc/pull/1366>`__)
+* FIX: Passing ``bytes`` into ``str.join()`` by @oesteban (`#1356 <https://github.com/nipreps/mriqc/pull/1356>`__)
+* FIX: Optimize interface to minimize memory fingerprint by @oesteban (`#1351 <https://github.com/nipreps/mriqc/pull/1351>`__)
+* ENH: Add parquet IQM outputs and a schema sidecar by @oesteban (`#1428 <https://github.com/nipreps/mriqc/pull/1428>`__)
+* ENH: Add ``--random-seed``, so that two runs give identical results by @oesteban, after a proposal by @yohanchatelain (`#1453 <https://github.com/nipreps/mriqc/pull/1453>`__, `#1413 <https://github.com/nipreps/mriqc/pull/1413>`__)
+* ENH: Remove redundant *DIPY* function by @jhlegarreta (`#1369 <https://github.com/nipreps/mriqc/pull/1369>`__)
+* DOC: Point the measures page to the parquet IQM outputs by @oesteban (`#1466 <https://github.com/nipreps/mriqc/pull/1466>`__)
+* DOC: Fix the broken link to an example IQM JSON by @celprov (`#1398 <https://github.com/nipreps/mriqc/pull/1398>`__)
+* DOC: Move Read the Docs to a supported build image by @oesteban (`#1456 <https://github.com/nipreps/mriqc/pull/1456>`__)
+* DOC: Make ``AGENTS.md`` agent-neutral and terser by @oesteban (`#1459 <https://github.com/nipreps/mriqc/pull/1459>`__)
+* DOC: Add ``AGENTS.md`` guidance for *Codex* usage by @oesteban (`#1427 <https://github.com/nipreps/mriqc/pull/1427>`__)
+* DOC: Add Python package CI workflow status badge to ``README`` by @jhlegarreta (`#1408 <https://github.com/nipreps/mriqc/pull/1408>`__)
+* DOC: Update the example report for fMRI to a newer version of *MRIQC* by @celprov (`#1397 <https://github.com/nipreps/mriqc/pull/1397>`__)
+* DOC: Fix link about *PyBIDS* BIDS file filtering option by @jhlegarreta (`#1395 <https://github.com/nipreps/mriqc/pull/1395>`__)
+* DOC: Make the SBATCH script more detailed for newer users by @mckenziephagen (`#1379 <https://github.com/nipreps/mriqc/pull/1379>`__)
+* DOC: Update the SBATCH script for the *MRIQC* protocol manuscript by @mckenziephagen (`#1355 <https://github.com/nipreps/mriqc/pull/1355>`__)
+* DOC: Continue moving documentation to the *NiPreps* site by @oesteban (`#1374 <https://github.com/nipreps/mriqc/pull/1374>`__)
+* DOC: Fix missing code block start by @effigies (`#1368 <https://github.com/nipreps/mriqc/pull/1368>`__)
+* DOC: Reorganize documentation and redirect to *NiPreps* docs by @oesteban (`#1367 <https://github.com/nipreps/mriqc/pull/1367>`__)
+* DOC: Provide a range of years ending with current for the copyright statement by @yarikoptic (`#1359 <https://github.com/nipreps/mriqc/pull/1359>`__)
+* DOC: Add a HPC troubleshooting section to the documentation by @vferat (`#1349 <https://github.com/nipreps/mriqc/pull/1349>`__)
+* MAINT: Let the arm64 CI jobs skip docs commits without failing by @oesteban (`#1467 <https://github.com/nipreps/mriqc/pull/1467>`__)
+* MAINT: Require Python 3.13 and SPEC 0 minimum versions by @oesteban (`#1464 <https://github.com/nipreps/mriqc/pull/1464>`__)
+* MAINT: Build the image on Python 3.13 with *pixi*, for ``amd64`` and ``arm64`` by @oesteban (`#1463 <https://github.com/nipreps/mriqc/pull/1463>`__)
+* MAINT: Add a multi-arch base image with *AFNI*, *ANTs* and *svht_denoise* by @oesteban (`#1461 <https://github.com/nipreps/mriqc/pull/1461>`__)
+* MAINT: Print *NumPy* scalars the pre-2.0 way in doctests by @oesteban (`#1460 <https://github.com/nipreps/mriqc/pull/1460>`__)
+* MAINT: Drop Python 3.9 and stop claiming Python 3.13 by @oesteban (`#1458 <https://github.com/nipreps/mriqc/pull/1458>`__)
+* MAINT: Refresh the BOLD IQM reference by @oesteban (`#1457 <https://github.com/nipreps/mriqc/pull/1457>`__)
+* MAINT: Build and validate the package on Python 3.12 by @oesteban (`#1455 <https://github.com/nipreps/mriqc/pull/1455>`__)
+* MAINT: Pin *ruff* and freeze its rule selection by @oesteban (`#1454 <https://github.com/nipreps/mriqc/pull/1454>`__)
+* MAINT: Pin WebAPI image tags in CI by @oesteban (`#1430 <https://github.com/nipreps/mriqc/pull/1430>`__, `#1431 <https://github.com/nipreps/mriqc/pull/1431>`__)
+* MAINT: A couple of ``pyproject.toml`` fixes by @DimitriPapadopoulos (`#1426 <https://github.com/nipreps/mriqc/pull/1426>`__)
+* MAINT: ``ruff check`` by @DimitriPapadopoulos (`#1420 <https://github.com/nipreps/mriqc/pull/1420>`__)
+* MAINT: Bump Python versions by @DimitriPapadopoulos (`#1418 <https://github.com/nipreps/mriqc/pull/1418>`__)
+* MAINT: PEP 639 compliance by @DimitriPapadopoulos (`#1417 <https://github.com/nipreps/mriqc/pull/1417>`__)
+* MAINT: Bump ``actions/checkout`` and ``actions/setup-python`` to v7 by @dependabot (`#1415 <https://github.com/nipreps/mriqc/pull/1415>`__, `#1424 <https://github.com/nipreps/mriqc/pull/1424>`__, `#1440 <https://github.com/nipreps/mriqc/pull/1440>`__, `#1444 <https://github.com/nipreps/mriqc/pull/1444>`__)
+* MAINT: Execute ``deploy_docker`` with commits to master by @oesteban (`#1400 <https://github.com/nipreps/mriqc/pull/1400>`__)
+* MAINT: Remove an additional ``setup-python`` action in the GHA workflow file by @jhlegarreta (`#1377 <https://github.com/nipreps/mriqc/pull/1377>`__)
+* MAINT: Specify Python version for *ruff* by @jhlegarreta (`#1376 <https://github.com/nipreps/mriqc/pull/1376>`__)
+* MAINT: Upgrade to *ruff* 0.9.1 by @DimitriPapadopoulos (`#1375 <https://github.com/nipreps/mriqc/pull/1375>`__)
+* MAINT: Add @vferat to ``CONTRIBUTORS.md`` by @oesteban (`#1373 <https://github.com/nipreps/mriqc/pull/1373>`__)
 
 24.0.2 (August 26, 2024)
 ========================

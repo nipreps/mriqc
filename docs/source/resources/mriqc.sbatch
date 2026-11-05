@@ -55,7 +55,7 @@ BIDS_DIR="${STUDY}/ds002785"  # TODO: replace with path to your dataset
 
 # NOTE: These variables set the "Apptainer" execution for your 
  # MRIQC container
-MRIQC_VERSION="24.0.2" #TODO: update if using a different version
+MRIQC_VERSION="26.0.0" #TODO: update if using a different version
 APPTAINER_CMD="apptainer run -e mriqc_${MRIQC_VERSION}.sif"
 
 OUTPUT_DIR="${BIDS_DIR}/derivatives/mriqc-${MRIQC_VERSION}"
