@@ -110,7 +110,6 @@ others = ["mriqc[other]"]
 tests = ["mriqc[test]"]
 
 [project.scripts]
-abide2bids = "mriqc.bin.abide2bids:main"
 dfcheck = "mriqc.bin.dfcheck:main"
 fs2gif = "mriqc.bin.fs2gif:main"
 mriqc = "mriqc.cli.run:main"
