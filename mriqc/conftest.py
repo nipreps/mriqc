@@ -41,6 +41,13 @@ test_output_dir = os.getenv('TEST_OUTPUT_DIR')
 test_workdir = os.getenv('TEST_WORK_DIR')
 
 
+@pytest.fixture(scope='session', autouse=True)
+def _legacy_printoptions():
+    # Print NumPy scalars as `2`, not `np.int64(2)` as NumPy 2 does, so that the doctests
+    # pass on either major version (same setting as fMRIPrep)
+    np.set_printoptions(legacy='1.21')
+
+
 @pytest.fixture(autouse=True)
 def expand_namespace(doctest_namespace):
     doctest_namespace['PY_VERSION'] = version_info
