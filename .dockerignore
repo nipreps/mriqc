@@ -56,3 +56,6 @@ requirements-dev.txt
 requirements.txt
 venv/
 venv/**/*
+
+# pixi environments (the image builds its own)
+.pixi/
