@@ -61,6 +61,7 @@ CHANGES
 * DOC: Reorganize documentation and redirect to *NiPreps* docs by @oesteban (`#1367 <https://github.com/nipreps/mriqc/pull/1367>`__)
 * DOC: Provide a range of years ending with current for the copyright statement by @yarikoptic (`#1359 <https://github.com/nipreps/mriqc/pull/1359>`__)
 * DOC: Add a HPC troubleshooting section to the documentation by @vferat (`#1349 <https://github.com/nipreps/mriqc/pull/1349>`__)
+* MAINT: Let the arm64 CI jobs skip docs commits without failing by @oesteban (`#1467 <https://github.com/nipreps/mriqc/pull/1467>`__)
 * MAINT: Require Python 3.13 and SPEC 0 minimum versions by @oesteban (`#1464 <https://github.com/nipreps/mriqc/pull/1464>`__)
 * MAINT: Build the image on Python 3.13 with *pixi*, for ``amd64`` and ``arm64`` by @oesteban (`#1463 <https://github.com/nipreps/mriqc/pull/1463>`__)
 * MAINT: Add a multi-arch base image with *AFNI*, *ANTs* and *svht_denoise* by @oesteban (`#1461 <https://github.com/nipreps/mriqc/pull/1461>`__)
