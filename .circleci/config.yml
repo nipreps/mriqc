@@ -929,7 +929,7 @@ jobs:
 
   build_docs:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.13
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -955,7 +955,7 @@ jobs:
 
   test_package:
     docker:
-      - image: cimg/python:3.12
+      - image: cimg/python:3.13
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -984,7 +984,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.13
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
