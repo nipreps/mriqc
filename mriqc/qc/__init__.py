@@ -27,8 +27,12 @@ A no-reference :abbr:`IQM (image quality metric)` is a measurement of some aspec
 of the actual image which cannot be compared to a reference value for the metric
 since there is no ground-truth about what this number should be.
 All the computed :abbr:`IQMs (image quality metrics)` corresponding to
-an image are saved in a `JSON file <https://mriqc.readthedocs.io/en/latest/_static/iqms.json>`_ under the ``<output-dir>/derivatives/``
-folder.
+an image are saved in a parquet file in the output directory, next to a JSON sidecar
+that describes its columns and holds the image's metadata and provenance
+(see :ref:`iqm_outputs`).
+The `IQMs of the example functional report
+<https://mriqc.readthedocs.io/en/latest/_static/iqms.json>`_ show what they look like,
+as an earlier version of MRIQC wrote them to a single JSON file.
 
 The IQMs can be grouped in four broad categories, providing a vector of 56
 features per anatomical image. Some measures characterize the impact of noise and/or
