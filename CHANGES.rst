@@ -4,7 +4,8 @@ The first release of the 26.x series, and the first since 24.0.2 (25.0.0rc0 was 
 *MRIQC* now requires Python 3.13 or newer, following `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`__,
 and its container image runs on ``linux/amd64`` and ``linux/arm64``.
 
-With thanks to @asaraog and @vferat for their first contributions.
+With thanks to @asaraog and @vferat for their first contributions, and to @yohanchatelain
+for proposing ``--random-seed`` (`#1413 <https://github.com/nipreps/mriqc/pull/1413>`__).
 
 Highlights:
 
