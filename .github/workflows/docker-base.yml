@@ -1,8 +1,8 @@
 # Build the base image (Dockerfile.base) natively for linux/amd64 and linux/arm64,
 # and publish it as one multi-arch tag on ghcr.io.
 #
-# The tag is the date of the last commit that changed the base image (YYYYMMDD), so the
-# main Dockerfile can pin it. Pull requests only build; pushes to master publish a tag
+# The tag is the date and short hash of the last commit that changed the base image
+# (YYYYMMDD-abcdef1), unique per change, so the main Dockerfile can pin it. Pull requests only build; pushes to master publish a tag
 # that does not exist yet.
 
 name: Base image
@@ -47,7 +47,7 @@ jobs:
     - name: Tag from the last change to the base image
       id: tag
       run: |
-        TAG=$( git log -1 --format=%cd --date=format:%Y%m%d -- Dockerfile.base docker/files )
+        TAG=$( git log -1 --format=%cd-%h --abbrev=7 --date=format:%Y%m%d -- Dockerfile.base docker/files )
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         echo "date=$( date -u +%Y-%m-%dT%H:%M:%SZ )" >> $GITHUB_OUTPUT
         if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
