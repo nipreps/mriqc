@@ -27,11 +27,11 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import OrderedDict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import partial
 from os import cpu_count
 from pathlib import Path
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 import nibabel as nb
 import numpy as np

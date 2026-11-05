@@ -9,11 +9,9 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Image Recognition",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
   "acres",
@@ -47,7 +45,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "mriqc"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [project.urls]
 "Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
@@ -86,7 +84,7 @@ notebook = [
 ]
 
 dev = [
-    "ruff",
+    "ruff == 0.17.3",
 ]
 
 test = [
@@ -191,7 +189,13 @@ exclude = [".maint/update_authors.py"]
 line-length = 99
 
 [tool.ruff.lint]
-extend-select = [
+# Select rules explicitly (ruff's defaults plus our families), so that
+# changes to ruff's default rule set do not enable new rules here.
+select = [
+  "E4",
+  "E7",
+  "E9",
+  "F",
   "W",
   "I",
   "UP",
@@ -211,6 +215,9 @@ extend-select = [
   "Q",
 ]
 ignore = [
+  # zip() without strict= (flagged since the Python 3.10 floor). Choosing
+  # strict=True changes runtime behaviour: audit with the SPEC 0 update.
+  "B905",
   "F841",
   "S310",
   "S311", # We are not using random for cryptographic purposes
