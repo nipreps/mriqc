@@ -32,7 +32,6 @@ from collections.abc import Callable, Iterable
 from functools import partial
 from os import cpu_count
 from pathlib import Path
-from typing import TypeVar
 
 import nibabel as nb
 import numpy as np
@@ -42,8 +41,6 @@ try:
     from collections.abc import MutableMapping
 except ImportError:
     from collections.abc import MutableMapping
-
-R = TypeVar('R')
 
 # The workers in _extract_meta_and_size share one pybids layout, whose SQLite session
 # must not be used from two threads at once
@@ -74,7 +71,7 @@ BIDS_EXPR = """\
 """
 
 
-async def worker(job: Callable[[], R], semaphore) -> R:
+async def worker[R](job: Callable[[], R], semaphore) -> R:
     async with semaphore:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, job)

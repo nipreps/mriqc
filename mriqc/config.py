@@ -741,10 +741,7 @@ def from_dict(sections: dict) -> None:
 
 def load(filename: str | os.PathLike) -> None:
     """Load settings from file."""
-    try:
-        from tomllib import loads
-    except ModuleNotFoundError:  # Python < 3.11
-        from tomli import loads
+    from tomllib import loads
 
     filename: Path = Path(filename)
     sections: dict[str, Any] = loads(filename.read_text())

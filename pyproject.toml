@@ -9,35 +9,33 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Image Recognition",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "acres",
   "dipy >= 1.10.0",
-  "matplotlib",
+  "matplotlib >= 3.10",
   "migas >= 0.4.0",
   "mriqc-learn",
   "nibabel >= 3.0.1",
   "nilearn >= 0.5.1",
-  "nipype >= 1.11",
+  "nipype >= 1.12",
   "nireports >= 26.0",
   "nitime",
-  "nitransforms >= 24.1",
-  "niworkflows >= 1.14",
-  "numpy >= 1.26",
+  "nitransforms >= 25.1",
+  "niworkflows >= 1.15",
+  "numpy >= 2.2",
   "orjson",
-  "pandas",
+  "pandas >= 2.3",
   "psutil",
   "pybids >= 0.15.6",
   "PyYAML",
-  "scikit-learn",
-  "scipy ~=1.8",
+  "scikit-learn >= 1.6",
+  "scipy >= 1.15",
   "statsmodels",
   "templateflow",
   "toml",
-  "tomli >= 1.1.0; python_version < '3.11'",
   "torch >= 2.5",
 ]
 description = "Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain."
@@ -46,7 +44,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "mriqc"
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 
 [project.urls]
 "Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
@@ -65,7 +63,7 @@ doc = [
   "pydotplus",
   "sphinx-argparse",
   "sphinx_rtd_theme",
-  "sphinx~=5.0",
+  "sphinx >= 8",
 ]
 
 container = [

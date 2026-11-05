@@ -32,7 +32,7 @@ from ..utils.misc import BIDS_COMP
 
 def gen_html(csv_file, mod, csv_failed=None, out_file=None):
     import os.path as op
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
     from io import StringIO as TextIO
 
     from niworkflows.data import Loader
@@ -41,7 +41,6 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
 
     from .. import __version__ as ver
 
-    UTC = timezone.utc
     load_data = Loader('mriqc')
 
     if csv_file.suffix == '.csv':
