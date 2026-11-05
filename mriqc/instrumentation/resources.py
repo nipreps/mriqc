@@ -24,14 +24,13 @@
 
 import signal
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from multiprocessing import Event, Process
 from pathlib import Path
 from time import sleep, time_ns
 
 import psutil
 
-UTC = timezone.utc
 _MB = 1024.0**2
 SAMPLE_ATTRS = (
     'pid',
