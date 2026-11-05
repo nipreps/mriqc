@@ -72,7 +72,7 @@ CHANGES
 * MAINT: ``ruff check`` by @DimitriPapadopoulos (`#1420 <https://github.com/nipreps/mriqc/pull/1420>`__)
 * MAINT: Bump Python versions by @DimitriPapadopoulos (`#1418 <https://github.com/nipreps/mriqc/pull/1418>`__)
 * MAINT: PEP 639 compliance by @DimitriPapadopoulos (`#1417 <https://github.com/nipreps/mriqc/pull/1417>`__)
-* MAINT: Bump ``actions/checkout`` to v6 and ``actions/setup-python`` to v6 by @dependabot (`#1415 <https://github.com/nipreps/mriqc/pull/1415>`__, `#1424 <https://github.com/nipreps/mriqc/pull/1424>`__)
+* MAINT: Bump ``actions/checkout`` and ``actions/setup-python`` to v7 by @dependabot (`#1415 <https://github.com/nipreps/mriqc/pull/1415>`__, `#1424 <https://github.com/nipreps/mriqc/pull/1424>`__, `#1440 <https://github.com/nipreps/mriqc/pull/1440>`__, `#1444 <https://github.com/nipreps/mriqc/pull/1444>`__)
 * MAINT: Execute ``deploy_docker`` with commits to master by @oesteban (`#1400 <https://github.com/nipreps/mriqc/pull/1400>`__)
 * MAINT: Remove an additional ``setup-python`` action in the GHA workflow file by @jhlegarreta (`#1377 <https://github.com/nipreps/mriqc/pull/1377>`__)
 * MAINT: Specify Python version for *ruff* by @jhlegarreta (`#1376 <https://github.com/nipreps/mriqc/pull/1376>`__)
