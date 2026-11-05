@@ -194,7 +194,12 @@ git-annex = ">=10.20260717"
 #
 
 [tool.pytest.ini_options]
-addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
+addopts = [
+  "-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers",
+  # datalad's plugin (installed with the container extra) collects every file with
+  # doctests, overriding --ignore
+  "-p", "no:datalad",
+]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
