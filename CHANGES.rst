@@ -31,7 +31,6 @@ Backward-incompatible changes:
 
 CHANGES
 -------
-
 * FIX: Correlate neighboring DWI volumes, not two voxels by @asaraog (`#1446 <https://github.com/nipreps/mriqc/pull/1446>`__)
 * FIX: Declare ``mem_gb`` on the *SynthStrip* node by @asaraog (`#1447 <https://github.com/nipreps/mriqc/pull/1447>`__)
 * FIX: Keep ``3drefit`` and ``3dDespike`` in the image by @asaraog (`#1449 <https://github.com/nipreps/mriqc/pull/1449>`__)
