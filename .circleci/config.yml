@@ -411,9 +411,15 @@ jobs:
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
-                       --resource-monitor \
+                       --resource-monitor --random-seed 42 \
                        --n_procs 2 --ants-nthreads 1 --ants-float \
                        --webapi-url http://$( hostname -I | awk '{print $1}' )/api/v1 --upload-strict
+
+      - run:
+          name: Check that Atropos ran with its constant seed
+          command: |
+            find /tmp/t1w/work -path '*/segmentation/command.txt' \
+              -exec grep -l -- '--use-random-seed 0' {} + | grep .
 
       - run:
           name: Move temporary but relevant artifacts

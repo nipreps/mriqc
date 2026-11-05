@@ -103,3 +103,12 @@ def test_species_arg(tmp_path, argval, _species):
     opts = _build_parser().parse_args(args)
 
     assert opts.species == _species
+
+
+def test_random_seed_arg(tmp_path):
+    """Check the correct parsing of the random seed argument."""
+    args = _create_set_bids_dir(MIN_ARGS + ['--random-seed', '42'], tmp_path)
+    assert _build_parser().parse_args(args)._random_seed == 42
+
+    args = _create_set_bids_dir(list(MIN_ARGS), tmp_path)
+    assert _build_parser().parse_args(args)._random_seed is None
