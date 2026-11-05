@@ -124,15 +124,16 @@ written alongside it to document the schema::
   <derivs-folder>/sub-<label>/[ses-<label>/]<anat|func|dwi>/<bids-selectors>_<suffix>+iqms.json
 
 The sidecar includes the column names and types, the MRIQC version used to generate
-the file, the modality, and the BIDS entities identifying the input.
+the file, the modality, the BIDS entities and metadata of the input (``bids_meta``),
+and the provenance record (``provenance``).
 
-The traditional ``<bids-selectors>_<suffix>.json`` file now contains only metadata
-fields (formerly under ``bids_meta``) at the root level and no IQM values.
+Before MRIQC 26.0, IQMs, metadata and provenance were written together to
+``<bids-selectors>_<suffix>.json``, which is no longer generated.
 
 Schema compatibility policy
 ...........................
 The IQM parquet schema is intended to remain stable for all patch releases within a
-minor MRIQC version (e.g., ``24.0.x``). New minor versions may add columns, refine
+minor MRIQC version (e.g., ``26.0.x``). New minor versions may add columns, refine
 types, or introduce new metrics, but column removal or renaming is reserved for major
 version changes. Downstream consumers should treat the schema as additive across minor
 releases and use the sidecar metadata to validate expectations and handle unknown or
