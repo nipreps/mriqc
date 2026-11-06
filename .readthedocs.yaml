@@ -12,15 +12,16 @@ build:
     - graphviz
   tools:
     python: "3.13"
+  jobs:
+    # Install the "docs" dependency group (RTD has no native support yet)
+    post_install:
+      - python -m pip install --group docs .
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/source/conf.py
 
-# Install with pip install .[docs]
 python:
   install:
     - method: pip
       path: .
-      extra_requirements:
-        - docs

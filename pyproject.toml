@@ -56,7 +56,7 @@ NiPreps = "https://www.nipreps.org/"
 "Sci Dat Paper" = "https://doi.org/10.1038/s41597-019-0035-4"
 "Web API" = "https://mriqc.nimh.nih.gov/"
 
-[project.optional-dependencies]
+[dependency-groups]
 doc = [
   "nipype",
   "packaging",
@@ -104,10 +104,17 @@ other = [
 ]
 
 # Aliases
-all = ["mriqc[doc,container,test,notebook,other,rodents]"]
-docs = ["mriqc[doc]"]
-others = ["mriqc[other]"]
-tests = ["mriqc[test]"]
+all = [
+  {include-group = "doc"},
+  {include-group = "container"},
+  {include-group = "test"},
+  {include-group = "notebook"},
+  {include-group = "other"},
+  {include-group = "rodents"},
+]
+docs = [{include-group = "doc"}]
+others = [{include-group = "other"}]
+tests = [{include-group = "test"}]
 
 [project.scripts]
 dfcheck = "mriqc.bin.dfcheck:main"
