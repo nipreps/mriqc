@@ -834,15 +834,21 @@ def _get_mod(in_file):
     return in_file.name.replace(extension, '').split('_')[-1]
 
 def _get_norm_mod(in_file):
-    """Map modality to a valid spatial normalization reference.
-    FLAIR uses T2w template reference as it shares similar contrast."""
-    from pathlib import Path
-    in_file = Path(in_file)
-    extension = ''.join(in_file.suffixes)
-    mod = in_file.name.replace(extension, '').split('_')[-1]
-    if mod == 'FLAIR':
-        return 'T2w'
-    return mod
+    """
+    Map the modality to a template contrast for spatial normalization.
+
+    FLAIR uses the T2w template, as their contrasts are similar.
+
+    >>> _get_norm_mod('sub-01_FLAIR.nii.gz')
+    'T2w'
+    >>> _get_norm_mod('sub-01_T1w.nii.gz')
+    'T1w'
+
+    """
+    from mriqc.workflows.anatomical.base import _get_mod
+
+    mod = _get_mod(in_file)
+    return 'T2w' if mod == 'FLAIR' else mod
 
 
 def _pop(inlist):
