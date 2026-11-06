@@ -21,9 +21,9 @@
 #     https://www.nipreps.org/community/licensing/
 #
 """Interfaces for manipulating DWI data."""
+
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import nibabel as nb
@@ -60,6 +60,7 @@ __all__ = (
     'CorrectSignalDrift',
     'DiffusionModel',
     'DiffusionQC',
+    'DWISummary',
     'ExtractOrientations',
     'FilterShells',
     'NumberOfShells',
@@ -72,18 +73,18 @@ __all__ = (
     'WeightedStat',
 )
 
-DWI_TEMPLATE = """\
-\t<ul class="elem-desc">
-\t\t<li>Filename: {filename}</li>
-\t\t\t<li>Phase-encoding (PE) direction: {pedir}</li>
-\t\t\t<li>Echo time (TE): {te}</li>
-\t\t\t<li>Repetition time (TR): {tr}</li>
-\t\t\t<li>Number of b=0: {n_b0}</li>
-\t\t\t<li>Indices of the b=0 scans: {b0_indices}</li>
-\t\t\t<li>Type of DWIs: {dwi_type}</li>
-\t\t\t<li>Number of shells (after 'shell-ifying' if DSI): {n_shells}</li>
-\t\t\t<li>Number of DWIs: {n_dwis}</li>
-\t</ul>
+DWI_SUMMARY = """\
+<ul class="elem-desc">
+  <li>Filename: {filename}</li>
+  <li>Phase-encoding (PE) direction: {pe_direction}</li>
+  <li>Echo time (TE): {echo_time}</li>
+  <li>Repetition time (TR): {repetition_time}</li>
+  <li>Number of b=0: {n_b0}</li>
+  <li>Indices of the b=0 scans: {b0_indices}</li>
+  <li>Type of DWIs: {dwi_type}</li>
+  <li>Number of shells (after 'shell-ifying' if DSI): {n_shells}</li>
+  <li>Number of DWIs: {n_dwis}</li>
+</ul>
 """
 
 FD_THRESHOLD = 0.2
@@ -367,69 +368,73 @@ class ReadDWIMetadata(ReadSidecarJSON):
         return runtime
 
 
-class SummaryOutputSpec(_TraitedSpec):
-    out_report = File(exists=True, desc='HTML segment containing summary')
+class _DWISummaryInputSpec(_BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True, desc='the input DWI file')
+    pe_direction = traits.Str(desc='phase-encoding direction (``PhaseEncodingDirection``)')
+    echo_time = traits.Float(desc='echo time in seconds (``EchoTime``)')
+    repetition_time = traits.Float(desc='repetition time in seconds (``RepetitionTime``)')
+    n_shells = traits.Int(mandatory=True, desc='number of shells')
+    is_dsi = traits.Bool(mandatory=True, desc='whether the data are DSI')
+    b_dict = traits.Dict(
+        traits.Int,
+        traits.List(traits.Int),
+        mandatory=True,
+        desc='a map of b-values (including b=0) and their volume indices',
+    )
 
 
-class SummaryInterface(SimpleInterface):
-    output_spec = SummaryOutputSpec
+class _DWISummaryOutputSpec(_TraitedSpec):
+    out_report = File(exists=True, desc='HTML segment with the summary')
+
+
+class DWISummary(SimpleInterface):
+    """
+    Render the textual summary of a DWI run for the report.
+
+    It only formats values computed upstream: the metadata, read from the BIDS layout
+    by :py:class:`ReadDWIMetadata`, and the shells, from :py:class:`NumberOfShells`.
+
+    """
+
+    input_spec = _DWISummaryInputSpec
+    output_spec = _DWISummaryOutputSpec
 
     def _run_interface(self, runtime):
-        segment = self._generate_segment()
-        fname = os.path.join(runtime.cwd, 'report.html')
-        with open(fname, 'w') as fobj:
-            fobj.write(segment)
-        self._results['out_report'] = fname
-        return runtime
-
-    def _generate_segment(self):
-        raise NotImplementedError
-
-
-class DWISummaryInputSpec(_BaseInterfaceInputSpec):
-    in_file = File(exists=True, mandatory=True, desc='the input DWI nifti file')
-    metadata = traits.Dict(desc='layout metadata')
-    n_shells = traits.Int(desc='number of shells')
-    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit on DSI')
-    b_indices = traits.List(
-        traits.List(traits.Int, minlen=1),
-        minlen=1,
-        desc='list of ``n_shells`` b-value-wise indices lists',
-    )
-    b_values = traits.List(
-        traits.Float,
-        minlen=1,
-        desc='list of ``n_shells`` b-values associated with each shell (only nonzero)',
-    )
-
-
-class DWISummary(SummaryInterface):
-    input_spec = DWISummaryInputSpec
-
-    def _generate_segment(self):
-        # Determine type of DWI data (multi-shell, single-shell or DSI)
-        if self.inputs.models == [0]:
-            dwi_type = 'single-shell' if self.inputs.n_shells == 1 else 'multi-shell'
-        else:
+        inputs = self.inputs
+        if inputs.is_dsi:
             dwi_type = 'DSI'
+        else:
+            dwi_type = 'single-shell' if inputs.n_shells == 1 else 'multi-shell'
 
-        # Format string to display number of DWIs per shell
+        b0_indices = inputs.b_dict.get(0, [])
         n_dwis = ', '.join(
-            f'{len(indices)} DWIs at b={bval:.0f}'
-            for bval, indices in zip(self.inputs.b_values, self.inputs.b_indices[1:])
+            f'{len(indices)} at b={bval}'
+            for bval, indices in sorted(inputs.b_dict.items())
+            if bval > 0
         )
 
-        return DWI_TEMPLATE.format(
-            filename=os.path.basename(self.inputs.in_file),
-            pedir=self.inputs.metadata.get('PhaseEncodingDirection'),
-            te=self.inputs.metadata.get('EchoTime'),
-            tr=self.inputs.metadata.get('RepetitionTime'),
-            n_b0=len(self.inputs.b_indices[0]),
-            b0_indices=self.inputs.b_indices[0],
-            dwi_type=dwi_type,
-            n_shells=self.inputs.n_shells,
-            n_dwis=n_dwis,
+        out_report = Path(runtime.cwd) / 'report.html'
+        out_report.write_text(
+            DWI_SUMMARY.format(
+                filename=Path(inputs.in_file).name,
+                pe_direction=inputs.pe_direction if isdefined(inputs.pe_direction) else 'n/a',
+                echo_time=(
+                    f'{round(inputs.echo_time * 1e3, 2):g} ms'
+                    if isdefined(inputs.echo_time)
+                    else 'n/a'
+                ),
+                repetition_time=(
+                    f'{inputs.repetition_time:g} s' if isdefined(inputs.repetition_time) else 'n/a'
+                ),
+                n_b0=len(b0_indices),
+                b0_indices=', '.join(str(i) for i in b0_indices) or 'none',
+                dwi_type=dwi_type,
+                n_shells=inputs.n_shells,
+                n_dwis=n_dwis,
+            )
         )
+        self._results['out_report'] = str(out_report)
+        return runtime
 
 
 class _SVHTDenoiseInputSpec(CommandLineInputSpec):
@@ -528,8 +533,11 @@ class _NumberOfShellsInputSpec(_BaseInterfaceInputSpec):
 
 
 class _NumberOfShellsOutputSpec(_TraitedSpec):
-    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit on DSI')
+    models = traits.List(traits.Int, minlen=1, desc='number of shells ordered by model fit')
     n_shells = traits.Int(desc='number of shells')
+    is_dsi = traits.Bool(
+        desc='whether the data are DSI (more than ``dsi_threshold`` b-values, clustered into shells)'
+    )
     out_data = traits.List(
         traits.Float,
         minlen=1,
@@ -562,14 +570,16 @@ class NumberOfShells(SimpleInterface):
     Examples
     --------
     >>> np.savetxt("test.bval", [0] * 8 + [1000] * 12 + [2000] * 10)
-    >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells
-    2
+    >>> outputs = NumberOfShells(in_bvals="test.bval").run().outputs
+    >>> outputs.n_shells, outputs.is_dsi
+    (2, False)
     >>> np.savetxt("test.bval", [0] * 8 + [1000] * 12)
     >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells
     1
     >>> np.savetxt("test.bval", np.arange(0, 9001, 120))
-    >>> NumberOfShells(in_bvals="test.bval").run().outputs.n_shells > 7
-    True
+    >>> outputs = NumberOfShells(in_bvals="test.bval").run().outputs
+    >>> outputs.n_shells > 7, outputs.is_dsi
+    (True, True)
 
     """
 
@@ -584,9 +594,10 @@ class NumberOfShells(SimpleInterface):
         round_bvals = np.round(in_data, -2).astype(int)
         shell_bvals = sorted(set(round_bvals[highb_mask]))
 
-        if len(shell_bvals) <= self.inputs.dsi_threshold:
+        self._results['is_dsi'] = len(shell_bvals) > self.inputs.dsi_threshold
+        if not self._results['is_dsi']:
             self._results['n_shells'] = len(shell_bvals)
-            self._results['models'] = [0]
+            self._results['models'] = [self._results['n_shells']]
             self._results['out_data'] = round_bvals.tolist()
             self._results['b_values'] = shell_bvals
         else:

@@ -31,6 +31,7 @@ from nireports.interfaces.reporting.base import (
 
 from mriqc import config
 from mriqc.interfaces import DerivativesDataSink
+from mriqc.interfaces.diffusion import DWISummary
 
 
 def init_dwi_report_wf(name='dwi_report_wf'):
@@ -69,6 +70,11 @@ def init_dwi_report_wf(name='dwi_report_wf'):
                 'in_bdict',
                 'noise_floor',
                 'name_source',
+                'pe_direction',
+                'echo_time',
+                'repetition_time',
+                'n_shells',
+                'is_dsi',
             ]
         ),
         name='inputnode',
@@ -76,6 +82,17 @@ def init_dwi_report_wf(name='dwi_report_wf'):
 
     # Set FD threshold
     # inputnode.inputs.fd_thres = config.workflow.fd_thres
+
+    summary = pe.Node(DWISummary(), name='summary', run_without_submitting=True)
+    ds_report_summary = pe.Node(
+        DerivativesDataSink(
+            base_directory=reportlets_dir,
+            desc='summary',
+            datatype='figures',
+        ),
+        name='ds_report_summary',
+        run_without_submitting=True,
+    )
 
     mosaic_fa = pe.Node(
         PlotMosaic(cmap='Greys_r'),
@@ -165,6 +182,15 @@ def init_dwi_report_wf(name='dwi_report_wf'):
 
     # fmt: off
     workflow.connect([
+        (inputnode, summary, [('name_source', 'in_file'),
+                              ('pe_direction', 'pe_direction'),
+                              ('echo_time', 'echo_time'),
+                              ('repetition_time', 'repetition_time'),
+                              ('n_shells', 'n_shells'),
+                              ('is_dsi', 'is_dsi'),
+                              ('in_bdict', 'b_dict')]),
+        (inputnode, ds_report_summary, [('name_source', 'source_file')]),
+        (summary, ds_report_summary, [('out_report', 'in_file')]),
         (inputnode, mosaic_snr, [('in_avgmap', 'before'),
                                  ('in_stdmap', 'after'),
                                  ('brain_mask', 'wm_seg')]),

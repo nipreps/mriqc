@@ -45,7 +45,6 @@ This workflow is orchestrated by :py:func:`dmri_qc_workflow`.
 
 from nipype.interfaces import utility as niu
 from nipype.pipeline import engine as pe
-from mriqc.interfaces import DerivativesDataSink
 
 from mriqc import config
 from mriqc.workflows.diffusion.output import init_dwi_report_wf
@@ -75,7 +74,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         CCSegmentation,
         CorrectSignalDrift,
         DiffusionModel,
-        DWISummary,
         ExtractOrientations,
         NumberOfShells,
         ReadDWIMetadata,
@@ -126,20 +124,14 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # Read metadata & bvec/bval, estimate number of shells, extract and split B0s
     load_bmat = pe.Node(
-        ReadDWIMetadata(index_db=config.execution.bids_database_dir),
+        ReadDWIMetadata(
+            index_db=config.execution.bids_database_dir,
+            fields=['PhaseEncodingDirection', 'EchoTime', 'RepetitionTime'],
+            undef_fields=True,
+        ),
         name='load_bmat',
     )
     shells = pe.Node(NumberOfShells(), name='shells')
-    summary = pe.Node(DWISummary(), name='summary')
-    ds_report_summary = pe.Node(
-        DerivativesDataSink(
-            base_directory=config.execution.output_dir,
-            desc='summary',
-            datatype='figures',
-        ),
-        name='ds_report_summary',
-        run_without_submitting=True,
-    )
     get_lowb = pe.Node(
         ExtractOrientations(),
         name='get_lowb',
@@ -237,8 +229,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # fmt: off
     workflow.connect([
-        (inputnode, summary, [('in_file', 'in_file')]),
-        (inputnode, ds_report_summary, [('in_file', 'source_file')]),
         (inputnode, load_bmat, [('in_file', 'in_file')]),
         (inputnode, dwi_report_wf, [
             ('in_file', 'inputnode.name_source'),
@@ -255,12 +245,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (shells, dwi_ref, [(('b_masks', _first), 't_mask')]),
         (shells, sp_mask, [('b_masks', 'b_masks')]),
         (load_bmat, shells, [('out_bval_file', 'in_bvals')]),
-        (load_bmat, summary, [('out_dict', 'metadata')]),
-        (shells, summary, [('n_shells', 'n_shells'),
-                              ('models', 'models'),
-                              ('b_indices', 'b_indices'),
-                              ('b_values', 'b_values'),]),
-        (summary, ds_report_summary, [('out_report', 'in_file')]),
         (sanitize, drift, [('out_file', 'full_epi')]),
         (shells, get_lowb, [(('b_indices', _first), 'indices')]),
         (sanitize, get_lowb, [('out_file', 'in_file')]),
@@ -317,7 +301,14 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (dwi_ref, spatial_norm, [('out_file', 'inputnode.epi_mean')]),
         (dmri_bmsk, spatial_norm, [('outputnode.out_mask', 'inputnode.epi_mask')]),
         (iqms_wf, dwi_report_wf, [('outputnode.noise_floor', 'inputnode.noise_floor')]),
-        (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict')]),
+        (load_bmat, dwi_report_wf, [
+            ('PhaseEncodingDirection', 'inputnode.pe_direction'),
+            ('EchoTime', 'inputnode.echo_time'),
+            ('RepetitionTime', 'inputnode.repetition_time'),
+        ]),
+        (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict'),
+                                 ('n_shells', 'inputnode.n_shells'),
+                                 ('is_dsi', 'inputnode.is_dsi')]),
         (dmri_bmsk, dwi_report_wf, [('outputnode.out_mask', 'inputnode.brain_mask')]),
         (shells, dwi_report_wf, [('b_values', 'inputnode.in_shells')]),
         (averages, dwi_report_wf, [('out_file', 'inputnode.in_avgmap')]),
