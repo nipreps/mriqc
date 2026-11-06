@@ -508,23 +508,26 @@ class execution(_Config):
             from bids.layout import BIDSLayout
             from bids.layout.index import BIDSLayoutIndexer
 
+            # Top-level sidecars (e.g., ``task-rest_bold.json``, ``dwi.bval``) must be indexed
+            # for the BIDS inheritance principle to apply.
+            top_level_sidecars = r'|/[^/]+\.(json|bval|bvec)$'
             ignore_paths: list[Pattern] = [
                 # Ignore folders at the top if they don't start with /sub-<label>/
-                re.compile(r'^(?!/sub-[a-zA-Z0-9]+)'),
+                re.compile(r'^(?!/sub-[a-zA-Z0-9]+' + top_level_sidecars + ')'),
                 # Ignore all modality subfolders, except for func/ or anat/
                 re.compile(
                     r'^/sub-[a-zA-Z0-9]+(/ses-[a-zA-Z0-9]+)?/'
                     r'(beh|fmap|pet|perf|meg|eeg|ieeg|micr|nirs)'
                 ),
                 # Ignore all files, except for the supported modalities
-                re.compile(r'^.+(?<!(_T1w|_T2w|bold|_dwi))\.(json|nii|nii\.gz)$'),
+                # (also when the suffix is the whole name, as in a top-level ``dwi.json``)
+                re.compile(r'^.+(?<!(_T1w|_T2w|bold|_dwi|/T1w|/T2w|/dwi))\.(json|nii|nii\.gz)$'),
             ]
 
             if cls.participant_label:
                 # If we know participant labels, ignore all other
-                ignore_paths[0] = re.compile(
-                    r'^(?!/sub-(' + '|'.join(cls.participant_label) + '))'
-                )
+                labels = '|'.join(cls.participant_label)
+                ignore_paths[0] = re.compile(f'^(?!/sub-({labels}){top_level_sidecars})')
 
             # Recommended after PyBIDS 12.1
             _indexer: BIDSLayoutIndexer = BIDSLayoutIndexer(
