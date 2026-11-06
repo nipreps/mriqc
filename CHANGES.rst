@@ -1,3 +1,110 @@
+26.1.0 (November 6, 2026)
+=========================
+The first minor release of the 26.x series.
+*MRIQC* now supports FLAIR images, and a fix to the head mask changes the background IQMs
+of every anatomical run.
+
+With thanks to @cooper-sharp for their first contribution (FLAIR support), to @celprov for the
+summary of the DWI report, and to @asaraog, @DimitriPapadopoulos, @jdotc1 and @jhlegarreta,
+whose pull requests and proposals some of the changes below build on.
+
+.. admonition:: Author list for papers based on *MRIQC* 26.1 series
+
+    As described in the `Contributor Guidelines
+    <https://www.nipreps.org/community/CONTRIBUTING/#recognizing-contributions>`__,
+    anyone listed as a developer or contributor may write and submit manuscripts
+    about *MRIQC*.
+    To do so, please move the author(s) name(s) to the front of the following list:
+
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Bennet Fauber \ :sup:`19`\ ; Taylor Salo \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Pablo Velasco \ :sup:`22`\ ; Thomas Nichols \ :sup:`23`\ ; Victor Férat \ :sup:`24`\ ; Adam Huffman \ :sup:`25`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`26`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`27`\ ; Adam C. Raikes \ :sup:`28`\ ; Asier Erramuzpe \ :sup:`29`\ ; Benjamin Kay \ :sup:`30`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`31`\ ; Michael G. Clark \ :sup:`32`\ ; Rafael Garcia-Dias \ :sup:`33`\ ; Adam G. Thomas \ :sup:`34`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`6`\ ; Oscar Esteban \ :sup:`3`\ .
+
+    Affiliations:
+
+      1. Department of Psychology, Stanford University, CA, USA
+      2. Quantivly Inc., Somerville, MA, USA
+      3. Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland
+      4. Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK
+      5. NeuroSpin, CEA, Université Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France
+      6. The University of Washington eScience Institute, WA, USA
+      7. Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA
+      8. Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA
+      9. Psychology Department, University of Washington, Seattle, WA, USA
+      10. University of Florida: Gainesville, Florida, US
+      11. Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA
+      12. CRC ULiege, Liege, Belgium
+      13. Quansight, Dublin, Ireland
+      14. Johns Hopkins Bloomberg School of Public Health, MD, USA
+      15. Department of Neuroscience, University of Pennsylvania, PA, USA
+      16. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
+      17. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
+      18. Department of Psychology, University of Texas at Austin, TX, USA
+      19. University of Michigan, Ann Arbor, USA
+      20. Department of Psychology, Florida International University, FL, USA
+      21. Max Planck Institute for Human Development, Berlin, Germany
+      22. Center for Brain Imaging, New York University, NY, USA
+      23. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      24. Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland
+      25. Department of Physics, Imperial College London, London, UK
+      26. Charité Berlin, Berlin, Germany
+      27. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      28. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
+      29. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      30. Washington University School of Medicine, St.Louis, MO, USA
+      31. International Committee of the Red Cross - ICRC, Geneva, Switzerland
+      32. National Institutes of Health, USA
+      33. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      34. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+
+Highlights:
+
+* **FLAIR images:** ``*_FLAIR`` runs go through the anatomical workflow, which normalizes them
+  to the T2w template, and get participant and group reports
+  (`#1438 <https://github.com/nipreps/mriqc/pull/1438>`__).
+  FLAIR IQMs are not uploaded to the *MRIQC Web API*.
+* **A head mask that keeps the brain:** since 23.1.0, every head mask included the two outermost
+  sagittal planes, and where the field of view cut the brain, the brain fell into the background
+  (`#1479 <https://github.com/nipreps/mriqc/pull/1479>`__).
+* **BIDS inheritance:** metadata set only in top-level sidecars (for example, ``RepetitionTime`` in
+  ``task-rest_bold.json``) now reaches the workflows
+  (`#1471 <https://github.com/nipreps/mriqc/pull/1471>`__).
+* **DataLad in the container image:** the image installs a working *boto3* again, so runs on
+  *DataLad* datasets no longer need ``--no-datalad-get``
+  (`#1478 <https://github.com/nipreps/mriqc/pull/1478>`__).
+
+Backward-incompatible changes:
+
+* The background IQMs of every anatomical run change: ``summary_bg_*``, ``snrd_*``, ``fber`` and
+  ``qi_2``.
+  On five T1w runs of ds007486, the median changes were +7% for ``fber``, +1% for ``snrd_total``
+  and −28% for ``qi_2``.
+  Where the field of view cuts the brain, as in reduced-FoV FLAIR, they change much more, and so
+  does ``cnr``.
+  Do not mix anatomical IQMs from 26.0 and 26.1 within a study.
+* FLAIR runs are processed by default when a dataset has them.
+  Pass ``-m T1w T2w bold dwi`` to keep the 26.0 selection.
+* Anatomical runs with more than one volume are dropped with a warning.
+  The check never applied to T1w and T2w before
+  (`#1474 <https://github.com/nipreps/mriqc/pull/1474>`__).
+* A BIDS database written by an earlier version keeps its old index, without the top-level
+  sidecars: pass ``--bids-database-wipe`` when rerunning into an existing output folder
+  (`#1471 <https://github.com/nipreps/mriqc/pull/1471>`__).
+* The ``abide2bids`` command is removed (it had failed on import since 24.0).
+  The usage guide now has a table of where each ABIDE subject lives in *DataLad*'s ``///abide``
+  (`#1470 <https://github.com/nipreps/mriqc/pull/1470>`__).
+
+CHANGES
+-------
+* FIX: Head mask cutting through brain with narrow FoV anatomicals by @oesteban (`#1479 <https://github.com/nipreps/mriqc/pull/1479>`__)
+* FIX: Keep ``Harmonize`` from emptying the image and apply the single-volume check to T1w/T2w by @oesteban (`#1474 <https://github.com/nipreps/mriqc/pull/1474>`__)
+* FIX: Index top-level sidecars so BIDS metadata inheritance works by @oesteban (`#1471 <https://github.com/nipreps/mriqc/pull/1471>`__)
+* FIX: Cap ``python-dateutil`` so the image resolves a working *boto3* by @oesteban (`#1478 <https://github.com/nipreps/mriqc/pull/1478>`__)
+* FIX: List every output BIDS does not define in ``.bidsignore`` by @oesteban, building on work by @asaraog (`#1480 <https://github.com/nipreps/mriqc/pull/1480>`__, `#1448 <https://github.com/nipreps/mriqc/pull/1448>`__)
+* ENH: Add FLAIR as a supported anatomical modality by @cooper-sharp (`#1438 <https://github.com/nipreps/mriqc/pull/1438>`__)
+* ENH: Add a textual summary to the DWI report by @celprov (`#1291 <https://github.com/nipreps/mriqc/pull/1291>`__)
+* MAINT: Replace the ``abide2bids`` script with a table of ABIDE locations in *DataLad* by @oesteban, superseding a fix by @jdotc1 (`#1470 <https://github.com/nipreps/mriqc/pull/1470>`__, `#1451 <https://github.com/nipreps/mriqc/pull/1451>`__)
+* MAINT: Fail *pytest* on warnings by @oesteban, after a proposal by @jhlegarreta (`#1472 <https://github.com/nipreps/mriqc/pull/1472>`__, `#1370 <https://github.com/nipreps/mriqc/pull/1370>`__)
+* MAINT: Run ``build``, ``twine``, ``hatch`` and *ruff* with *uv* instead of *pipx* by @oesteban, after a proposal by @DimitriPapadopoulos (`#1473 <https://github.com/nipreps/mriqc/pull/1473>`__, `#1419 <https://github.com/nipreps/mriqc/pull/1419>`__)
+
 26.0.0 (November 5, 2026)
 =========================
 The first release of the 26.x series, and the first since 24.0.2 (25.0.0rc0 was never finalized).
