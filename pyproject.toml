@@ -184,10 +184,14 @@ scipy = "1.18.*"
 
 [tool.pixi.feature.container.dependencies]
 git = "*"
+# botocore (boto3, required by DataLad) needs python-dateutil < 3; with 4.x the
+# PyPI solve falls back to boto3 0.0.3, which breaks importing datalad.api
+python-dateutil = "<3"
 
 # conda-forge has no linux-aarch64 git-annex; its PyPI wheels cover both
 [tool.pixi.feature.container.pypi-dependencies]
 git-annex = ">=10.20260717"
+boto3 = ">=1.35"
 
 #
 # Developer tool configurations
