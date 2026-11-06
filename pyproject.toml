@@ -202,7 +202,8 @@ addopts = [
 ]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
-filterwarnings = ["ignore::DeprecationWarning"]
+# Fail on any warning except DeprecationWarning (the last matching filter wins)
+filterwarnings = ["error", "ignore::DeprecationWarning"]
 junit_family = "xunit2"
 log_level = "INFO"
 minversion = "7"
