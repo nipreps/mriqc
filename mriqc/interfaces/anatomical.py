@@ -27,6 +27,7 @@ from pathlib import Path
 import nibabel as nb
 import numpy as np
 import scipy.ndimage as nd
+from nipype import logging
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     File,
@@ -52,6 +53,8 @@ from mriqc.qc.anatomical import (
     wm2max,
 )
 from mriqc.utils.misc import _flatten_dict
+
+IFLOGGER = logging.getLogger('nipype.interface')
 
 
 class StructuralQCInputSpec(BaseInterfaceInputSpec):
@@ -395,7 +398,7 @@ class HarmonizeOutputSpec(TraitedSpec):
 
 class Harmonize(SimpleInterface):
     """
-    Computes the artifact mask using the method described in [Mortamet2009]_.
+    Scale intensities so that the median within the white matter is 1000.
     """
 
     input_spec = HarmonizeInputSpec
@@ -409,18 +412,26 @@ class Harmonize(SimpleInterface):
         wm_mask[wm_mask < self.inputs.thresh] = 0
         wm_mask[wm_mask > 0] = 1
         wm_mask = wm_mask.astype(bool)
-        wm_mask_size = wm_mask.sum()
 
-        if wm_mask_size < self.inputs.min_size:
-            brain_mask = nb.load(self.inputs.brain_mask).get_fdata() > 0.5
-            wm_mask = brain_mask.copy()
-            wm_mask[data < np.percentile(data[brain_mask], 75)] = False
-            wm_mask[data > np.percentile(data[brain_mask], 95)] = False
-        elif self.inputs.erodemsk:
+        if self.inputs.erodemsk:
             # Create a structural element to be used in an opening operation.
             struct = nd.generate_binary_structure(3, 2)
             # Perform an opening operation on the background data.
             wm_mask = nd.binary_erosion(wm_mask.astype(np.uint8), structure=struct).astype(bool)
+
+        # Check the size after erosion, which can empty a sparse mask
+        # (an empty mask would turn the whole image into NaNs below)
+        wm_mask_size = int(wm_mask.sum())
+        if wm_mask_size < self.inputs.min_size:
+            IFLOGGER.warning(
+                'White-matter mask too small to harmonize intensities (%d voxels); '
+                'using the 75th-95th percentiles within the brain mask instead.',
+                wm_mask_size,
+            )
+            brain_mask = nb.load(self.inputs.brain_mask).get_fdata() > 0.5
+            wm_mask = brain_mask.copy()
+            wm_mask[data < np.percentile(data[brain_mask], 75)] = False
+            wm_mask[data > np.percentile(data[brain_mask], 95)] = False
 
         data *= 1000.0 / np.median(data[wm_mask])
 
