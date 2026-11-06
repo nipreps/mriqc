@@ -799,10 +799,7 @@ def gradient_threshold(in_file, brainmask, thresh=15.0, out_file=None, aniso=Fal
     mask = sim.binary_closing(mask, struct, iterations=2).astype(np.uint8)
     mask = sim.binary_erosion(mask, sim.generate_binary_structure(3, 2)).astype(np.uint8)
 
-    # Add the dilated brain mask, so the brain stays in even where it reaches the FoV edge.
-    # Keep it boolean: a uint8 index would set the first two planes instead (#1475).
-    # Outside the volume is background: ``border_value=1`` would grow a frame from every
-    # face, and filling holes would then turn the whole volume into head.
+    # See gh-1479 for the justification of the latest updates
     segdata = np.asanyarray(nb.load(brainmask).dataobj) > 0
     segdata = sim.binary_dilation(segdata, struct, iterations=2)
     mask[segdata] = 1
