@@ -32,12 +32,18 @@ DOI = 'https://doi.org/10.1371/journal.pone.0184661'
 
 
 def write_bidsignore(deriv_dir):
-    from mriqc.config import SUPPORTED_SUFFIXES
-
+    """Write a ``.bidsignore`` covering the outputs of MRIQC that BIDS does not define."""
     bids_ignore = [
-        '*.html',
-        'logs/',  # Reports
-    ] + [f'*_{suffix}.json' for suffix in SUPPORTED_SUFFIXES]
+        '*.html',  # Reports
+        'logs/',
+        'figures',  # Reportlets (no trailing slash, so the folders are ignored too)
+        '*+iqms.json',  # IQMs
+        '*+iqms.parquet',
+        '*_timeseries.tsv',  # Timeseries of BOLD runs
+        '*_timeseries.json',
+        'group_*.tsv',  # Group-level tables
+        'group_*.csv',
+    ]
 
     ignore_file = Path(deriv_dir) / '.bidsignore'
 
