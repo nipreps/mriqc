@@ -124,7 +124,11 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # Read metadata & bvec/bval, estimate number of shells, extract and split B0s
     load_bmat = pe.Node(
-        ReadDWIMetadata(index_db=config.execution.bids_database_dir),
+        ReadDWIMetadata(
+            index_db=config.execution.bids_database_dir,
+            fields=['PhaseEncodingDirection', 'EchoTime', 'RepetitionTime'],
+            undef_fields=True,
+        ),
         name='load_bmat',
     )
     shells = pe.Node(NumberOfShells(), name='shells')
@@ -297,7 +301,14 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (dwi_ref, spatial_norm, [('out_file', 'inputnode.epi_mean')]),
         (dmri_bmsk, spatial_norm, [('outputnode.out_mask', 'inputnode.epi_mask')]),
         (iqms_wf, dwi_report_wf, [('outputnode.noise_floor', 'inputnode.noise_floor')]),
-        (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict')]),
+        (load_bmat, dwi_report_wf, [
+            ('PhaseEncodingDirection', 'inputnode.pe_direction'),
+            ('EchoTime', 'inputnode.echo_time'),
+            ('RepetitionTime', 'inputnode.repetition_time'),
+        ]),
+        (shells, dwi_report_wf, [('b_dict', 'inputnode.in_bdict'),
+                                 ('n_shells', 'inputnode.n_shells'),
+                                 ('is_dsi', 'inputnode.is_dsi')]),
         (dmri_bmsk, dwi_report_wf, [('outputnode.out_mask', 'inputnode.brain_mask')]),
         (shells, dwi_report_wf, [('b_values', 'inputnode.in_shells')]),
         (averages, dwi_report_wf, [('out_file', 'inputnode.in_avgmap')]),
