@@ -475,7 +475,7 @@ def initialize_meta_and_data(
 
         # Some modalities require a maximum number of volumes
         volmax = None
-        if mod in ('T1w', 'T2w'):
+        if mod in ('t1w', 't2w'):
             volmax = 1
 
         # Run extraction in a asyncio coroutine loop
