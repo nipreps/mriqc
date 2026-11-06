@@ -4,7 +4,7 @@
 - Plan before changing code, and flag side effects: API, CLI, outputs, backward compatibility.
 - When a decision is needed, ask one question at a time.
 - Lint as CI does before proposing changes, or say why you could not:
-  `pipx run ruff==0.17.3 check` and `pipx run ruff==0.17.3 format --diff`.
+  `uvx ruff@0.17.3 check` and `uvx ruff@0.17.3 format --diff`.
 
 ## Branches
 `<type>/<short-description>`, with the issue number when there is one:
