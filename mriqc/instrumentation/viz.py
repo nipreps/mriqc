@@ -25,6 +25,7 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
 _TIME_LABEL = 'runtime'
 
@@ -75,7 +76,7 @@ def plot(filename, param='mem_vsm_mb', mask_processes=(), out_file=None):
     else:
         ax.set_ylabel(param)
 
-    ax.set_xticklabels([f'{int(float(v) // 60)}:{int(float(v) % 60)}' for v in ax.get_xticks()])
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{int(v // 60)}:{int(v % 60)}'))
     if out_file is not None:
         fig.savefig(out_file, bbox_inches='tight', pad_inches=0, dpi=300)
         return

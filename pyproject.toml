@@ -202,7 +202,13 @@ addopts = [
 ]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
-filterwarnings = ["ignore::DeprecationWarning"]
+# Fail on any warning except those listed after "error" (the last matching filter wins)
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning",
+  # TemplateFlow creates its cache on first use (e.g., on a fresh CI runner)
+  "ignore:TemplateFlow:ResourceWarning",
+]
 junit_family = "xunit2"
 log_level = "INFO"
 minversion = "7"
