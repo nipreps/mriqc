@@ -833,6 +833,7 @@ def _get_mod(in_file):
     extension = ''.join(in_file.suffixes)
     return in_file.name.replace(extension, '').split('_')[-1]
 
+
 def _get_norm_mod(in_file):
     """
     Map the modality to a template contrast for spatial normalization.
