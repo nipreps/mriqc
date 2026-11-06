@@ -84,6 +84,42 @@ def test_bids_indexing_manifest(tmp_path, testdata_path, testcase):
     )
 
 
+@pytest.mark.parametrize('participant_label', [None, ['01']])
+def test_bids_inheritance(tmp_path, participant_label):
+    """Check that metadata in top-level sidecars reach the input files."""
+    from importlib import reload
+
+    from mriqc import config
+
+    reload(config)
+
+    bids_dir = tmp_path / 'ds'
+    for path in ('sub-01/dwi/sub-01_dwi.nii.gz', 'sub-01/func/sub-01_task-rest_bold.nii.gz'):
+        (bids_dir / path).parent.mkdir(parents=True, exist_ok=True)
+        (bids_dir / path).write_text('')
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+    (bids_dir / 'dwi.json').write_text('{"PhaseEncodingDirection": "j-"}')
+    (bids_dir / 'task-rest_bold.json').write_text('{"RepetitionTime": 2.0}')
+    (bids_dir / 'sub-01' / 'dwi' / 'sub-01_dwi.json').write_text('{"EchoTime": 0.09}')
+
+    config.execution.output_dir = tmp_path / 'out'
+    config.execution.work_dir = tmp_path / 'work'
+    config.execution.bids_dir = bids_dir
+    config.execution.participant_label = participant_label
+    config.execution.init()
+
+    layout = config.execution.layout
+    assert layout.get_metadata(bids_dir / 'sub-01' / 'dwi' / 'sub-01_dwi.nii.gz') == {
+        'EchoTime': 0.09,
+        'PhaseEncodingDirection': 'j-',
+    }
+    assert layout.get_metadata(bids_dir / 'sub-01' / 'func' / 'sub-01_task-rest_bold.nii.gz') == {
+        'RepetitionTime': 2.0
+    }
+
+
 def test_seeds(monkeypatch):
     """A master seed fixes the ANTs and NumPy seeds, and nothing is seeded without one."""
     import os
