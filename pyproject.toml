@@ -83,8 +83,8 @@ notebook = [
   "nipy",
 ]
 
-dev = [
-    "ruff == 0.17.3",
+lint = [
+  "ruff == 0.17.3",
 ]
 
 test = [
@@ -103,8 +103,8 @@ other = [
   "xvfbwrapper",
 ]
 
-# Aliases
-all = [
+dev = [
+  {include-group = "lint"},
   {include-group = "doc"},
   {include-group = "container"},
   {include-group = "test"},
@@ -112,6 +112,8 @@ all = [
   {include-group = "other"},
   {include-group = "rodents"},
 ]
+
+# Aliases
 docs = [{include-group = "doc"}]
 others = [{include-group = "other"}]
 tests = [{include-group = "test"}]
