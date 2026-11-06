@@ -99,18 +99,21 @@ def anat_qc_workflow(name='anatMRIQC'):
         chain(
             config.workflow.inputs.get('t1w', []),
             config.workflow.inputs.get('t2w', []),
+            config.workflow.inputs.get('flair', []),
         )
     )
     metadata = list(
         chain(
             config.workflow.inputs_metadata.get('t1w', []),
             config.workflow.inputs_metadata.get('t2w', []),
+            config.workflow.inputs_metadata.get('flair', []),
         )
     )
     entities = list(
         chain(
             config.workflow.inputs_entities.get('t1w', []),
             config.workflow.inputs_entities.get('t2w', []),
+            config.workflow.inputs_entities.get('flair', []),
         )
     )
     message = BUILDING_WORKFLOW.format(
@@ -173,7 +176,7 @@ def anat_qc_workflow(name='anatMRIQC'):
         (inputnode, iqmswf, [('in_file', 'inputnode.in_file'),
                              ('metadata', 'inputnode.metadata'),
                              ('entities', 'inputnode.entities')]),
-        (inputnode, norm, [(('in_file', _get_mod), 'inputnode.modality')]),
+        (inputnode, norm, [(('in_file', _get_norm_mod), 'inputnode.modality')]),
         (to_ras, skull_stripping, [('out_file', 'inputnode.in_files')]),
         (skull_stripping, hmsk, [
             ('outputnode.out_corrected', 'inputnode.in_file'),
@@ -829,6 +832,24 @@ def _get_mod(in_file):
     in_file = Path(in_file)
     extension = ''.join(in_file.suffixes)
     return in_file.name.replace(extension, '').split('_')[-1]
+
+
+def _get_norm_mod(in_file):
+    """
+    Map the modality to a template contrast for spatial normalization.
+
+    FLAIR uses the T2w template, as their contrasts are similar.
+
+    >>> _get_norm_mod('sub-01_FLAIR.nii.gz')
+    'T2w'
+    >>> _get_norm_mod('sub-01_T1w.nii.gz')
+    'T1w'
+
+    """
+    from mriqc.workflows.anatomical.base import _get_mod
+
+    mod = _get_mod(in_file)
+    return 'T2w' if mod == 'FLAIR' else mod
 
 
 def _pop(inlist):

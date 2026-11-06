@@ -93,13 +93,20 @@ def test_bids_inheritance(tmp_path, participant_label):
 
     reload(config)
 
+    from niworkflows.utils.bids import DEFAULT_BIDS_QUERIES, collect_data
+
     bids_dir = tmp_path / 'ds'
-    for path in ('sub-01/dwi/sub-01_dwi.nii.gz', 'sub-01/func/sub-01_task-rest_bold.nii.gz'):
+    for path in (
+        'sub-01/anat/sub-01_FLAIR.nii.gz',
+        'sub-01/dwi/sub-01_dwi.nii.gz',
+        'sub-01/func/sub-01_task-rest_bold.nii.gz',
+    ):
         (bids_dir / path).parent.mkdir(parents=True, exist_ok=True)
         (bids_dir / path).write_text('')
     (bids_dir / 'dataset_description.json').write_text(
         '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
     )
+    (bids_dir / 'FLAIR.json').write_text('{"InversionTime": 2.5}')
     (bids_dir / 'dwi.json').write_text('{"PhaseEncodingDirection": "j-"}')
     (bids_dir / 'task-rest_bold.json').write_text('{"RepetitionTime": 2.0}')
     (bids_dir / 'sub-01' / 'dwi' / 'sub-01_dwi.json').write_text('{"EchoTime": 0.09}')
@@ -118,6 +125,12 @@ def test_bids_inheritance(tmp_path, participant_label):
     assert layout.get_metadata(bids_dir / 'sub-01' / 'func' / 'sub-01_task-rest_bold.nii.gz') == {
         'RepetitionTime': 2.0
     }
+
+    # FLAIR files are indexed, inherit the top-level sidecar, and are selected as inputs
+    flair = bids_dir / 'sub-01' / 'anat' / 'sub-01_FLAIR.nii.gz'
+    assert layout.get_metadata(flair) == {'InversionTime': 2.5}
+    inputs, _ = collect_data(layout, ['01'], queries={'flair': DEFAULT_BIDS_QUERIES['flair']})
+    assert inputs['flair'] == [str(flair)]
 
 
 def test_seeds(monkeypatch):

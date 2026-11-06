@@ -276,6 +276,8 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             ),
         ],
     }
+    # FLAIR shares the T2w IQMs
+    QCGROUPS['FLAIR'] = QCGROUPS['T2w']
 
     nPart = len(dataframe)
 

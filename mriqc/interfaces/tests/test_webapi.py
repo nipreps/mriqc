@@ -30,11 +30,12 @@ import requests
 
 from mriqc import config
 from mriqc.interfaces.bids import IQMFileSink
-from mriqc.interfaces.webapi import upload_qc_metrics
+from mriqc.interfaces.webapi import UploadIQMs, upload_qc_metrics
 
 
-def test_upload_keeps_integer_iqms(tmp_path, monkeypatch):
-    in_file = tmp_path / 'ds' / 'sub-01' / 'anat' / 'sub-01_T1w.nii.gz'
+def _sink_iqms(tmp_path, monkeypatch, suffix):
+    """Write the IQMs of an anatomical image, as the workflows do, and return their path."""
+    in_file = tmp_path / 'ds' / 'sub-01' / 'anat' / f'sub-01_{suffix}.nii.gz'
     in_file.parent.mkdir(parents=True)
     in_file.touch()
 
@@ -42,14 +43,18 @@ def test_upload_keeps_integer_iqms(tmp_path, monkeypatch):
     monkeypatch.setattr(config.loggers, 'interface', logging.getLogger('nipype.interface'))
     sink = IQMFileSink(
         in_file=str(in_file),
-        modality='T1w',
+        modality=suffix,
         # As the workflows pass them, from ``BIDSLayout.parse_file_entities``
-        entities={'subject': '01', 'datatype': 'anat', 'suffix': 'T1w', 'extension': '.nii.gz'},
+        entities={'subject': '01', 'datatype': 'anat', 'suffix': suffix, 'extension': '.nii.gz'},
         out_dir=str(tmp_path / 'out'),
         root={'size_x': 256, 'size_y': 256, 'size_z': 176, 'cjv': 0.42},
         provenance={'version': '26.0.0'},
     )
-    out_file = sink.run().outputs.out_file
+    return sink.run().outputs.out_file
+
+
+def test_upload_keeps_integer_iqms(tmp_path, monkeypatch):
+    out_file = _sink_iqms(tmp_path, monkeypatch, 'T1w')
 
     sent = {}
 
@@ -70,3 +75,29 @@ def test_upload_keeps_integer_iqms(tmp_path, monkeypatch):
     # The Web API rejects non-integer image sizes
     assert all(type(sent['data'][f'size_{ax}']) is int for ax in 'xyz')
     assert sent['data']['cjv'] == 0.42
+
+
+def test_upload_skips_unsupported_modality(tmp_path, monkeypatch):
+    """FLAIR IQMs are not sent (the Web API rejects them), even in strict mode."""
+    out_file = _sink_iqms(tmp_path, monkeypatch, 'FLAIR')
+
+    def _post(*args, **kwargs):
+        raise AssertionError('nothing should be posted')
+
+    monkeypatch.setattr(requests, 'post', _post)
+    result = UploadIQMs(
+        in_iqms=out_file,
+        endpoint='http://api',
+        auth_token='not-a-secret',  # noqa: S106
+        strict=True,
+    ).run()
+    assert result.outputs.api_id is None
+
+    # Called directly, the upload function still returns a (response, payload) pair
+    response, payload = upload_qc_metrics(
+        out_file,
+        endpoint='http://api',
+        auth_token='not-a-secret',  # noqa: S106
+    )
+    assert response.status_code == 1
+    assert payload == {}

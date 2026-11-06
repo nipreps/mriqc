@@ -112,6 +112,9 @@ PROV_WHITELIST = ['version', 'md5sum', 'software', 'settings']
 
 HASH_BIDS = ['subject_id', 'session_id']
 
+# Modalities the MRIQC Web API accepts
+API_MODALITIES = ('T1w', 'T2w', 'bold')
+
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
     in_iqms = File(exists=True, mandatory=True, desc='the input IQMs (a parquet file)')
@@ -146,6 +149,13 @@ class UploadIQMs(SimpleInterface):
             email = self.inputs.email
 
         self._results['api_id'] = None
+
+        modality = _get_modality(self.inputs.in_iqms, self.inputs.modality)
+        if modality not in API_MODALITIES:
+            config.loggers.interface.info(
+                'The MRIQC Web API does not accept %s IQMs; skipping the upload.', modality
+            )
+            return runtime
 
         response, payload = upload_qc_metrics(
             self.inputs.in_iqms,
@@ -216,9 +226,9 @@ def upload_qc_metrics(
     :param str email: email address to be included with the metric submission
     :param str auth_token: authentication token
 
-    :return: either the response object if a response was successfully sent
-             or it returns the string "No Response"
-    :rtype: object
+    :return: the response (or a stand-in with ``status_code=1`` if nothing was sent)
+             and the payload
+    :rtype: tuple
 
 
     """
@@ -229,7 +239,7 @@ def upload_qc_metrics(
     if not endpoint or not auth_token:
         # If endpoint unknown, do not even report what happens to the token.
         errmsg = 'Unknown API endpoint' if not endpoint else 'Authentication failed.'
-        return Bunch(status_code=1, text=errmsg)
+        return Bunch(status_code=1, text=errmsg), {}
 
     # Open IQMs (parquet)
     dataframe = pd.read_parquet(in_iqms)
@@ -244,13 +254,13 @@ def upload_qc_metrics(
     meta = in_data['bids_meta']
 
     # Check modality
-    modality = meta.get('modality', None) or meta.get('suffix', None) or modality
-    if modality not in ('T1w', 'bold', 'T2w'):
+    modality = _get_modality(in_iqms, modality)
+    if modality not in API_MODALITIES:
         errmsg = (
             'Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
             f'(found "{modality}")'
         )
-        return Bunch(status_code=1, text=errmsg)
+        return Bunch(status_code=1, text=errmsg), {}
 
     # Filter metadata values that aren't in whitelist
     data['bids_meta'] = {k: meta[k] for k in META_WHITELIST if k in meta}
@@ -302,6 +312,12 @@ def upload_qc_metrics(
         response = Bunch(status_code=1, text='\n'.join(errmsg))
 
     return response, data
+
+
+def _get_modality(in_iqms, modality=None):
+    """Read the modality from the metadata next to the IQMs, or fall back to ``modality``."""
+    meta = orjson.loads(Path(in_iqms).with_suffix('.json').read_bytes())['bids_meta']
+    return meta.get('modality', None) or meta.get('suffix', None) or modality
 
 
 def _hashfields(data):
