@@ -16,7 +16,7 @@ whose pull requests and proposals some of the changes below build on.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Bennet Fauber \ :sup:`19`\ ; Taylor Salo \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Pablo Velasco \ :sup:`22`\ ; Thomas Nichols \ :sup:`23`\ ; Victor Férat \ :sup:`24`\ ; Adam Huffman \ :sup:`25`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`26`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`27`\ ; Adam C. Raikes \ :sup:`28`\ ; Asier Erramuzpe \ :sup:`29`\ ; Benjamin Kay \ :sup:`30`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`31`\ ; Michael G. Clark \ :sup:`32`\ ; Rafael Garcia-Dias \ :sup:`33`\ ; Adam G. Thomas \ :sup:`34`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`6`\ ; Oscar Esteban \ :sup:`3`\ .
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Bennet Fauber \ :sup:`19`\ ; Taylor Salo \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Pablo Velasco \ :sup:`22`\ ; Thomas Nichols \ :sup:`23`\ ; Victor Férat \ :sup:`24`\ ; Adam Huffman \ :sup:`25`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`26`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`27`\ ; Adam C. Raikes \ :sup:`28`\ ; Asier Erramuzpe \ :sup:`29`\ ; Benjamin Kay \ :sup:`30`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`31`\ ; Michael G. Clark \ :sup:`32`\ ; Rafael Garcia-Dias \ :sup:`33`\ ; Adam G. Thomas \ :sup:`34`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`6`\ ; Oscar Esteban \ :sup:`35`\ .
 
     Affiliations:
 
@@ -54,6 +54,7 @@ whose pull requests and proposals some of the changes below build on.
       32. National Institutes of Health, USA
       33. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
       34. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      35. School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland
 
 Highlights:
 

@@ -12,5 +12,5 @@ If you are participating because of your affiliation with another organization (
 | Provins | Céline | @celprov | 0000-0002-1668-9629 | Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland |
 | Hagen | McKenzie P. | @mckenziephagen | 0000-0002-7454-8189 | Psychology Department, University of Washington, Seattle, WA, USA |
 | MacNicol | Eilidh | @eilidhmacnicol | 0000-0003-3715-7012 | Department of Neuroimaging, Institute of Psychiatry, Psychology and Neuroscience, King's College London, London, UK |
-| Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland |
+| Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland |
 | Markiewicz | Christopher J. | @effigies | 0000-0002-6533-164X | Department of Psychology, Stanford University, CA, USA |
