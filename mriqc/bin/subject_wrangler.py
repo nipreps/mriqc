@@ -31,7 +31,7 @@ from textwrap import dedent
 from mriqc import __version__
 from mriqc.bin import messages
 
-COMMAND = '{exec} {bids_dir} {out_dir} participant --participant_label {labels} {work_dir} {arguments} {logfile}'  # noqa: E501
+COMMAND = '{exec} {bids_dir} {out_dir} participant --participant_label {labels} {work_dir} {arguments} {logfile}'
 
 
 def main():

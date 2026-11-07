@@ -63,7 +63,7 @@ def setup_exceptionhook(ipython=False):
         traceback.print_exception(exc_type, value, tb)
         print()
         if is_interactive():
-            import pdb  # noqa: T100
+            import pdb
 
             pdb.post_mortem(tb)
 

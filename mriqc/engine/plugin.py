@@ -187,7 +187,7 @@ class DistributedPluginBase(PluginBase):
                 taskid, jobid = self.pending_tasks.pop()
                 try:
                     result = self._get_result(taskid)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     notrun.append(self._clean_queue(jobid, graph))
                     errors.append(exc)
                 else:
