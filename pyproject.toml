@@ -252,13 +252,6 @@ line-length = 99
 # Select rules explicitly (ruff's defaults plus our families), so that
 # changes to ruff's default rule set do not enable new rules here.
 select = [
-  "E4",
-  "E7",
-  "E9",
-  "F",
-  "W",
-  "I",
-  "UP",
   "YTT",
   "ASYNC",
   "S",
@@ -279,19 +272,28 @@ select = [
   "PT",
   "Q",
   "FLY",
+  "I",
   "PERF",
+  "E",
+  "W",
+  "F",
   "PGH",
+  "UP",
   "FURB",
   "RUF",
 ]
 ignore = [
-  # zip() without strict= (flagged since the Python 3.10 floor). Choosing
-  # strict=True changes runtime behaviour: audit with the SPEC 0 update.
-  "B905",
-  "F841",
   "S310",
   "S311", # We are not using random for cryptographic purposes
   "S603",
+  # zip() without strict= (flagged since the Python 3.10 floor). Choosing
+  # strict=True changes runtime behaviour: audit with the SPEC 0 update.
+  "B905",
+  "E1",
+  "E2",
+  "E3",
+  "E5",
+  "F841",
   "RUF005",
 ]
 
