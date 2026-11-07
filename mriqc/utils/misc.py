@@ -416,21 +416,20 @@ async def _extract_meta_and_size(
     """
 
     semaphore = asyncio.Semaphore(max_concurrent)
-    tasks = []
-    for filename in filelist:
-        tasks.append(
-            asyncio.create_task(
-                worker(
-                    partial(
-                        _file_meta_and_size,
-                        filename,
-                        volmin=volmin,
-                        volmax=volmax,
-                    ),
-                    semaphore,
-                )
+    tasks = [
+        asyncio.create_task(
+            worker(
+                partial(
+                    _file_meta_and_size,
+                    filename,
+                    volmin=volmin,
+                    volmax=volmax,
+                ),
+                semaphore,
             )
         )
+        for filename in filelist
+    ]
 
     # Gather guarantees the order of the output
     metadata, entities, sizes, valid = list(zip(*await asyncio.gather(*tasks)))
