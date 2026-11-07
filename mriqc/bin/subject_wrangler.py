@@ -119,7 +119,7 @@ def main():
     else:
         # remove sub- prefix, get unique
         for i, subj in enumerate(subject_list):
-            subject_list[i] = subj[4:] if subj.startswith('sub-') else subj
+            subject_list[i] = subj.removeprefix('sub-')
 
         subject_list = sorted(set(subject_list))
 
