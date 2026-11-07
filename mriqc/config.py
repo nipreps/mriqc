@@ -810,9 +810,7 @@ def get(flat: bool = False) -> dict[str, dict[str, Any]]:
         return sections
 
     return {
-        '.'.join((section, k)): v
-        for section, configs in sections.items()
-        for k, v in configs.items()
+        f'{section}.{k}': v for section, configs in sections.items() for k, v in configs.items()
     }
 
 
