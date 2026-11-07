@@ -310,7 +310,7 @@ class DistributedPluginBase(PluginBase):
         overwrite = self.procs[jobid].overwrite
         always_run = self.procs[jobid].interface.always_run
 
-        if cached and updated and (overwrite is False or overwrite is None and not always_run):
+        if cached and updated and (overwrite is False or (overwrite is None and not always_run)):
             try:
                 self._task_finished_cb(jobid, cached=True)
                 self._remove_node_dirs()
