@@ -153,9 +153,10 @@ jobs:
       run: |
         find "$OUT" -mindepth 1 | sed "s+^$OUT/++" | LC_ALL=C sort > outputs.txt
         diff .github/integration/outputs-${{ matrix.modality }}.txt outputs.txt
+    # amd64 runs reproduce the reference exactly (--random-seed, single-threaded ANTs);
+    # arm64 IQMs differ, so they are not compared
     - name: Compare the IQMs with the reference
       if: matrix.arch == 'amd64'
-      continue-on-error: true
       run: |
         reference=mriqc/data/testdata/group_${{ matrix.modality }}.tsv
         if [[ ! -f "$reference" ]]; then
