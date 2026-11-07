@@ -627,7 +627,7 @@ def report_crash(node, traceback=None, hostname=None):
     except (KeyError, OSError):  # Python 3.13 raises OSError when the UID has no name
         login_name = f'UID{os.getuid():d}'
 
-    crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{str(uuid.uuid4())}'
+    crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{uuid.uuid4()}'
     crashdir = node.config['execution'].get('crashdump_dir', os.getcwd())
 
     os.makedirs(crashdir, exist_ok=True)
