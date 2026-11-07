@@ -96,12 +96,14 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    env:
-      DATA: ${{ github.workspace }}/../testdata/${{ matrix.dataset }}
-      OUT: ${{ github.workspace }}/../out
-      WORK: ${{ github.workspace }}/../work
     steps:
     - uses: actions/checkout@v7
+    # Outside the checkout, without '..': upload-artifact rejects relative segments
+    - name: Set the paths
+      run: |
+        echo "DATA=${RUNNER_TEMP}/testdata/${{ matrix.dataset }}" >> "$GITHUB_ENV"
+        echo "OUT=${RUNNER_TEMP}/out" >> "$GITHUB_ENV"
+        echo "WORK=${RUNNER_TEMP}/work" >> "$GITHUB_ENV"
 
     - name: Restore the test data
       id: data
