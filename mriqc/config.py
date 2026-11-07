@@ -201,7 +201,7 @@ if 'linux' in sys.platform:
     with suppress(Exception):
         with open('/proc/meminfo') as f_in:
             _meminfo_lines: list[str] = f_in.readlines()
-            _mem_total_line: str = [line for line in _meminfo_lines if 'MemTotal' in line][0]
+            _mem_total_line: str = next(line for line in _meminfo_lines if 'MemTotal' in line)
             _mem_total: float = float(_mem_total_line.split()[1])
             _memory_gb = _mem_total / (1024.0**2)
 elif 'darwin' in sys.platform:
