@@ -1,0 +1,73 @@
+{
+  "description": "Three 2D FLAIR runs with a reduced field of view (Siemens MAGNETOM Prisma) from OpenNeuro ds007486. sub-11028 and sub-11039 are the cases that exposed #1475 and #1477.",
+  "dataset_description": {
+    "Name": "MRIQC integration tests: FLAIR (OpenNeuro ds007486)",
+    "BIDSVersion": "1.10.0",
+    "DatasetType": "raw",
+    "License": "CC0-1.0",
+    "Authors": ["OpenNeuro ds007486 contributors"],
+    "SourceDatasets": [
+      {
+        "URL": "https://openneuro.org/datasets/ds007486/versions/1.0.0",
+        "DOI": "doi:10.18112/openneuro.ds007486.v1.0.0"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "name": "Social Reward Processing, Response Inhibition, and Cue Reactivity in Problem Gamblers (OpenNeuro ds007486, version 1.0.0)",
+      "url": "https://doi.org/10.18112/openneuro.ds007486.v1.0.0",
+      "license": "CC0"
+    }
+  ],
+  "files": [
+    {
+      "path": "participants.tsv",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/participants.tsv",
+      "version_id": "RHKd4iQoLwhb7K5vei_Qe6dCBS0g2qt8",
+      "md5": "91b0a367acab671bd8aa0e125fc64c1d"
+    },
+    {
+      "path": "participants.json",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/participants.json",
+      "version_id": ".VddMHnn4Wi02IzevOhOkrRGy9yUbPtt",
+      "md5": "dae342e287f2946fdada1360169f6762"
+    },
+    {
+      "path": "sub-10562/anat/sub-10562_FLAIR.nii.gz",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-10562/anat/sub-10562_FLAIR.nii.gz",
+      "version_id": "pgq2lA.v34OVHAR7OY9cP1YGjzu.VDk0",
+      "md5": "f8bf524f2a0c7fca63f680e857fe60e4"
+    },
+    {
+      "path": "sub-10562/anat/sub-10562_FLAIR.json",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-10562/anat/sub-10562_FLAIR.json",
+      "version_id": "TKN.QB3kCHjs5_8bWQ.Om7._7QJfRQbA",
+      "md5": "86a889fb29f8bd8a2f3422264f13141a"
+    },
+    {
+      "path": "sub-11028/anat/sub-11028_FLAIR.nii.gz",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-11028/anat/sub-11028_FLAIR.nii.gz",
+      "version_id": "znyuhbqLx0Wp6ZnnVevrL0kF5_ouF8oM",
+      "md5": "0d47fb567d8c36f979e6befc3a6bd8e6"
+    },
+    {
+      "path": "sub-11028/anat/sub-11028_FLAIR.json",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-11028/anat/sub-11028_FLAIR.json",
+      "version_id": "y.5SCTy9s0P4bvgEBB8s7V_e3VOS6dM1",
+      "md5": "0413028ba66dc7398cb4ddfe4b624570"
+    },
+    {
+      "path": "sub-11039/anat/sub-11039_FLAIR.nii.gz",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-11039/anat/sub-11039_FLAIR.nii.gz",
+      "version_id": "hqp_jFRZsPWyRgyUntt8CMNqLsHA4nJm",
+      "md5": "c99bbbfdb67d3f65e7d43a7670f5e88a"
+    },
+    {
+      "path": "sub-11039/anat/sub-11039_FLAIR.json",
+      "url": "https://s3.amazonaws.com/openneuro.org/ds007486/sub-11039/anat/sub-11039_FLAIR.json",
+      "version_id": "uckzH82Q3yRXkIH79N2zgyfnxXt5sRZV",
+      "md5": "139e482f08a7a5c79553dc14af93e133"
+    }
+  ]
+}
