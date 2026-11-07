@@ -56,15 +56,15 @@ from sklearn.model_selection import GridSearchCV
 from mriqc.utils.misc import _flatten_dict
 
 __all__ = (
+    'PIESNO',
     'CCSegmentation',
     'CorrectSignalDrift',
+    'DWISummary',
     'DiffusionModel',
     'DiffusionQC',
-    'DWISummary',
     'ExtractOrientations',
     'FilterShells',
     'NumberOfShells',
-    'PIESNO',
     'ReadDWIMetadata',
     'RotateVectors',
     'SVHTDenoise',
