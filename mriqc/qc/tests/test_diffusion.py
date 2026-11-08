@@ -22,8 +22,9 @@
 #
 
 import numpy as np
+from statsmodels.robust.scale import mad
 
-from mriqc.qc.diffusion import neighboring_dwi_correlation, spike_ppm
+from mriqc.qc.diffusion import cc_snr, neighboring_dwi_correlation, spike_ppm
 
 
 def test_spike_ppm():
@@ -48,3 +49,55 @@ def test_neighboring_dwi_correlation():
     mask = np.zeros(data.shape[:-1], dtype=bool)
     mask[1:4, 1:4, 1:4] = True
     assert neighboring_dwi_correlation(data, [(0, 1)], mask=mask) == 1.0
+
+
+def _cc_data():
+    """Generate a cubic corpus callosum mask and a noisy b=0 image."""
+    rng = np.random.default_rng(42)
+    cc_mask = np.zeros((10, 10, 10), dtype=bool)
+    cc_mask[3:7, 3:7, 3:7] = True
+    return rng, cc_mask, rng.normal(1000.0, 50.0, size=cc_mask.shape)
+
+
+def _shell(cc_mask, values):
+    """Generate a shell whose volumes are constant (one value each) within the CC."""
+    data = np.zeros((*cc_mask.shape, len(values)))
+    data[cc_mask] = values
+    return data
+
+
+def test_cc_snr():
+    """Each diffusion-weighted shell reports SNR on its own data and b-vectors."""
+    _, cc_mask, in_b0 = _cc_data()
+    sigma = mad(in_b0[cc_mask])
+
+    # The CC runs left-right, so the volume closest to X is the darkest of each shell
+    shells = [_shell(cc_mask, [600.0, 200.0, 600.0]), _shell(cc_mask, [150.0, 50.0, 150.0])]
+    bvecs = [
+        [(0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)],
+        # -X is as aligned with X as +X
+        [(0.0, 0.8, 0.6), (-1.0, 0.0, 0.0), (0.0, 0.0, 1.0)],
+    ]
+
+    snr, cc_sigma = cc_snr(in_b0, shells, cc_mask, [1000, 2000], bvecs)
+
+    assert cc_sigma == sigma
+    # gh-1358: best and worst must differ when the volume closest to X is darker
+    assert snr['shell1_best'] != snr['shell1_worst']
+    assert set(snr) == {'shell0', 'shell1_worst', 'shell1_best', 'shell2_worst', 'shell2_best'}
+    assert snr['shell0'] == round(in_b0[cc_mask].mean() / sigma, 2)
+    assert snr['shell1_worst'] == round(200.0 / sigma, 2)
+    assert snr['shell1_best'] == round(600.0 / sigma, 2)
+    assert snr['shell2_worst'] == round(50.0 / sigma, 2)
+    assert snr['shell2_best'] == round(150.0 / sigma, 2)
+
+
+def test_cc_snr_single_volume_shell():
+    """A shell with a single volume, squeezed into 3D, is still averaged within the CC."""
+    rng, cc_mask, in_b0 = _cc_data()
+    shell = rng.normal(400.0, 50.0, size=cc_mask.shape)
+
+    snr, cc_sigma = cc_snr(in_b0, [shell], cc_mask, [1000], [[(1.0, 0.0, 0.0)]])
+
+    expected = round(shell[cc_mask].mean() / cc_sigma, 2)
+    assert snr['shell1_worst'] == snr['shell1_best'] == expected

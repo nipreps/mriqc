@@ -261,13 +261,13 @@ class DiffusionQC(SimpleInterface):
         stats = aqc.summary_stats(b0data, rois)
         self._results['summary'] = stats
 
-        # CC mask SNR and std
+        # CC mask SNR and std (the first split of shells and b-vectors is b=0)
         self._results['snr_cc'], cc_sigma = dqc.cc_snr(
             in_b0=b0data,
-            dwi_shells=shelldata,
+            dwi_shells=shelldata[1:],
             cc_mask=ccdata,
             b_values=self.inputs.in_shells_bval,
-            b_vectors=self.inputs.in_bvec,
+            b_vectors=self.inputs.in_bvec[1:],
         )
 
         fa_nans_mask = np.asanyarray(nb.load(self.inputs.in_fa_nans).dataobj) > 0.0
