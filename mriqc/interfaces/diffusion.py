@@ -1290,7 +1290,7 @@ class PIESNO(SimpleInterface):
         in_nii = nb.load(self.inputs.in_file)
         data = np.round(in_nii.get_fdata(), 4).astype('float32')
 
-        sigma, maskdata = noise_piesno(data)
+        sigma, maskdata = noise_piesno(data, n_channels=self.inputs.n_channels)
 
         header = in_nii.header.copy()
         header.set_data_dtype(np.uint8)
@@ -1305,7 +1305,10 @@ class PIESNO(SimpleInterface):
             header,
         ).to_filename(self._results['out_mask'])
 
-        self._results['sigma'] = round(float(np.median(sigma)), 5)
+        # Mostly zero-valued slices (e.g., zero-filled) get a null sigma: leave them out
+        sigma = np.atleast_1d(sigma)
+        sigma = sigma[sigma > 0]
+        self._results['sigma'] = round(float(np.median(sigma)), 5) if sigma.size else 0.0
         return runtime
 
 
@@ -1556,5 +1559,7 @@ def noise_piesno(data: np.ndarray, n_channels: int = 4) -> (np.ndarray, np.ndarr
     """
     from dipy.denoise.noise_estimate import piesno
 
-    sigma, mask = piesno(data, N=n_channels, return_mask=True)
+    # PIESNO divides by sigma, which reaches zero on mostly zero-valued slices (gh-1333)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        sigma, mask = piesno(data, N=n_channels, return_mask=True)
     return sigma, mask
