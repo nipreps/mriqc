@@ -24,6 +24,25 @@
 """
 Image quality metrics for diffusion MRI data
 ============================================
+The names below are the columns of the group table (``group_dwi.tsv``).
+Volumes with a b-value of 50 or lower are considered b=0, and shells are sorted by
+increasing b-value.
+The ``efc_shell*`` and ``fber_shell*`` columns count the b=0 volumes as their first
+shell (``shell01``), whereas the ``snr_cc_shell*`` columns number b=0 as ``shell0``
+and the diffusion-weighted shells from ``shell1`` on.
+
+Shell descriptors
+-----------------
+
+.. _iqms_dwi_shells:
+
+Number of shells and b-values (``NumberOfShells``, ``bValues``, ``bValuesEstimation``)
+    ``NumberOfShells`` is the number of diffusion-weighted shells (b=0 excluded),
+    and ``bValuesEstimation`` lists the b-value of each of them.
+    ``bValues`` lists the unique b-values in the ``.bval`` file, or reads
+    ``Likely DSI`` when there are more than ten.
+    Data with more than eleven distinct nonzero b-values (rounded to hundreds) are
+    considered DSI, and their b-values are clustered into shells with k-means.
 
 IQMs relating to spatial information
 ------------------------------------
@@ -31,44 +50,69 @@ Definitions are given in the :ref:`summary of structural IQMs <iqms_t1w>`.
 
 .. _iqms_efc:
 
-- **Entropy-focus criterion** (:py:func:`~mriqc.qc.anatomical.efc`).
+- **Entropy-focus criterion** (``efc_shell*``, :py:func:`~mriqc.qc.anatomical.efc`),
+  calculated on each shell after head-motion correction.
 
 .. _iqms_fber:
 
-- **Foreground-Background energy ratio** (:py:func:`~mriqc.qc.anatomical.fber`,  [Shehzad2015]_).
-
-.. _iqms_fwhm:
-
-- **Full-width half maximum smoothness** (``fwhm_*``, see [Friedman2008]_).
-
-.. _iqms_snr:
-
-- **Signal-to-noise ratio** (:py:func:`~mriqc.qc.anatomical.snr`).
+- **Foreground-Background energy ratio** (``fber_shell*``,
+  :py:func:`~mriqc.qc.anatomical.fber`, [Shehzad2015]_), calculated on each shell after
+  head-motion correction, with the brain mask as foreground.
 
 .. _iqms_summary:
 
-- **Summary statistics** (:py:func:`~mriqc.qc.anatomical.summary_stats`).
+- **Summary statistics** (``summary_{bg,fg,wm}_*``,
+  :py:func:`~mriqc.qc.anatomical.summary_stats`) of the average b=0 image within the
+  background (``bg``), the brain mask (``fg``), and a white-matter mask (``wm``, the
+  largest connected component of FA above 0.35).
+  For each region, MRIQC reports the mean, the median, the standard deviation (``stdv``),
+  the median absolute deviation (``mad``), the kurtosis (``k``), the 5th and 95th
+  percentiles (``p05``, ``p95``), and the number of voxels (``n``).
 
 IQMs relating to diffusion weighting
 ------------------------------------
 IQMs specific to diffusion weighted imaging.
 
-.. _iqms_piesno:
-
-Noise in raw dMRI estimated with PIESNO (``piesno_sigma``)
-    Employs PIESNO (Probabilistic Identification and Estimation
-    of Noise) algorithm [Koay2009]_ to estimate the standard deviation (sigma) of the
-    noise in each voxel of a 4D dMRI data array.
-
 .. _iqms_cc_snr:
 
-SNR estimated in the Corpus Callosum (``cc_snr``)
-    Worst-case and best-case signal-to-noise ratio (SNR) within the corpus callosum.
+SNR estimated in the Corpus Callosum (``snr_cc_*``, :py:func:`~mriqc.qc.diffusion.cc_snr`)
+    The corpus callosum (CC) mask gathers the white-matter voxels, within a central
+    bounding box, whose color FA is predominantly red (left-right orientation).
+    ``snr_cc_shell0`` is the mean of the average b=0 image within the CC, divided by
+    ``sigma_cc``.
+    For each diffusion-weighted shell, ``snr_cc_shell<N>_worst`` takes the volume whose
+    b-vector is closest to the left-right (X) axis, where diffusion along the callosal
+    fibers attenuates the signal the most, and ``snr_cc_shell<N>_best`` averages the
+    volumes closest to the Y and Z axes.
+    Both are the mean signal within the CC divided by ``sigma_cc``.
+
+.. _iqms_sigma_cc:
+
+Signal variability in the Corpus Callosum (``sigma_cc``)
+    Robust standard deviation (normalized median absolute deviation) of the average
+    b=0 image within the CC mask, used as the noise term of ``snr_cc_*``.
+
+.. _iqms_sigma_pca:
+
+Noise level estimated by PCA denoising (``sigma_pca``)
+    Median, within the brain mask, of the noise-level map that
+    `svht_denoise <https://github.com/rordenlab/svht_denoise>`__ estimates while
+    denoising the series (singular value shrinkage on local patches).
+
+.. _iqms_piesno:
+
+Noise in raw dMRI estimated with PIESNO (``sigma_piesno``)
+    Employs the PIESNO (Probabilistic Identification and Estimation of Noise)
+    algorithm [Koay2009]_ to estimate the standard deviation (sigma) of the noise in
+    each slice of the input 4D dMRI series, assuming four receiver channels.
+    MRIQC reports the median across slices.
 
 .. _iqms_fa_nans:
 
-Number of not-a-number (NaN) values in the FA map (``fa_nan``)
+Number of not-a-number (NaN) values in the FA map (``fa_nans``)
     Fraction of NaNs within the brain mask, in ppm.
+    The FA map comes from a tensor (single-shell) or a kurtosis (multi-shell) model
+    fitted on the denoised data.
 
 .. _iqms_fa_degenerate:
 
@@ -76,16 +120,48 @@ Number of degenerate modeled voxels in the FA map (``fa_degenerate``)
     Fraction of invalid FA values (i.e., outside the [0, 1] closed range) within
     the brain mask, in ppm.
 
+.. _iqms_ndc:
+
+Neighboring DWI correlation (``ndc``, :py:func:`~mriqc.qc.diffusion.neighboring_dwi_correlation`)
+    Average Pearson correlation, within the brain mask, between each diffusion-weighted
+    volume of the input series and its nearest neighbor in q-space [Yeh2019]_.
+    Low values (typically below 0.4) can indicate poor image quality.
+
 IQMs relating artifacts and other
 ---------------------------------
 IQMs targeting artifacts that are specific of DWI images.
 
 .. _iqms_spike_ppm:
 
-Global and slice-wise spike fractions (``spikes_ppm``)
+Global and slice-wise spike fractions (``spikes_*``, :py:func:`~mriqc.qc.diffusion.spike_ppm`)
     Fractions of voxels classified as spikes (in parts-per-million, ppm).
-    The spikes mask is calculated by identifying voxels with signal intensities
-    exceeding a threshold based on standard deviations above the mean.
+    A voxel is a spike when its intensity exceeds the mean plus three standard
+    deviations of the brain voxels in its shell.
+    ``spikes_global`` is the fraction of spiking voxels across the input series.
+    For each axis, ``spikes_slice_{i,j,k}`` is the fraction of rows of voxels along that
+    axis (one row per position on the other two axes and volume) where more than 5%
+    of the voxels are spikes.
+
+.. _iqms_dwi_fd:
+
+Head motion (``fd_*``)
+    :ref:`Framewise displacement <iqms_fd>` (FD) estimated by the head-motion correction,
+    which aligns every volume to the average b=0 image with AFNI's ``3dvolreg``.
+    ``fd_mean`` is the average FD (in mm), ``fd_num`` the number of volumes with an FD
+    above 0.2 mm, and ``fd_perc`` their percentage over the series.
+
+.. _iqms_bdiffs:
+
+Rotation of the b-vectors by head motion (``bdiffs_*``)
+    Angle (in radians) between each original b-vector and the same vector rotated by
+    the head-motion correction.
+    ``bdiffs_mean``, ``bdiffs_median``, ``bdiffs_min``, and ``bdiffs_max`` summarize
+    the volumes rotated by more than 1e-4 rad (b=0 volumes are therefore excluded).
+
+Not reported
+------------
+Smoothness (``fwhm_*``) is not computed on DWI data, and
+:py:func:`~mriqc.qc.diffusion.noise_b0` is not used by the DWI workflow.
 
 References
 ----------
@@ -122,6 +198,7 @@ def noise_b0(
     within a provided mask. It then computes the noise estimates at specified
     percentiles of the variance distribution. This approach assumes that noise primarily
     contributes to the lower end of the variance distribution.
+    MRIQC does not report these estimates among the DWI IQMs.
 
     Parameters
     ----------

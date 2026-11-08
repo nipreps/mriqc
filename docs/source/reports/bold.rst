@@ -4,7 +4,7 @@
 BOLD images
 ===========
 One individual report per input functional timeseries will be generated
-in the path ``<output_dir>/reports/sub-IDxxx_task-name_bold.html```.
+at the root of the output directory, e.g., ``<output_dir>/sub-IDxxx_task-name_bold.html``.
 An example report is given
 `here <../_static/example_funcreport.html>`_.
 

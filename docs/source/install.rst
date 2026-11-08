@@ -99,3 +99,71 @@ If your *FreeSurfer* version is older than 7.2, then you can get *MRIQC*'s requi
 
           $ stat $FREESURFER_HOME/models/synthstrip.1.pt
           stat: cannot statx '/opt/freesurfer/models/synthstrip.1.pt': No such file or directory
+
+.. _running-tests:
+
+Running the tests
+-----------------
+
+Unit tests and doctests
+.......................
+*MRIQC*'s unit tests and doctests run with *pytest*.
+From a clone of the repository, install *MRIQC* with the ``test`` extra::
+
+  git clone https://github.com/nipreps/mriqc.git
+  cd mriqc
+  python -m pip install -e ".[test]"
+
+Then, run the tests as the continuous integration does::
+
+  pytest mriqc --doctest-modules --ignore=mriqc/bin --ignore=mriqc/interfaces/transitional.py
+
+The *pytest* configuration in ``pyproject.toml`` stops at the first failure and turns
+warnings into errors.
+The continuous integration runs these tests on GitHub Actions
+(``.github/workflows/pythonpackage.yml``) and, within the *Docker* image, on CircleCI
+(``.circleci/config.yml``).
+
+Integration tests
+.................
+To check that *MRIQC* behaves correctly end to end, the continuous integration runs
+the *Docker* image on small datasets and compares the resulting IQMs with the
+reference tables in ``mriqc/data/testdata/group_<modality>.tsv``:
+
+* GitHub Actions (``.github/workflows/integration.yml``) processes DWI and FLAIR images,
+  on linux/amd64 and linux/arm64.
+  The datasets are assembled from pinned public sources by ``.github/testdata/fetch.py``
+  (see ``.github/testdata/README.md``).
+* CircleCI (``.circleci/config.yml``) processes the T1w and BOLD images of a small
+  dataset hosted on OSF.
+
+Each run first checks that the expected files were written
+(``.github/integration/outputs-<modality>.txt`` and ``.circleci/circle_<modality>.txt``),
+and then compares the group table with its reference using ``dfcheck``.
+``dfcheck`` lists every IQM that differs from the reference (with a relative tolerance
+of 1e-5), and fails if the columns or the number of images differ, or if an IQM
+correlates below 0.95 with the reference across images.
+On linux/amd64, the runs are expected to reproduce the reference exactly, thanks to
+a fixed random seed (``--random-seed 42``) and single-threaded *ANTs*
+(``--ants-nthreads 1``).
+IQMs computed on linux/arm64 differ, and GitHub Actions does not compare them.
+
+For example, the DWI test can be reproduced locally from the root of the repository
+with an image built from it::
+
+  docker build -t nipreps/mriqc:ci .
+  uv run --no-project --with nibabel --with numpy \
+      python .github/testdata/fetch.py .github/testdata/dwi.json $PWD/testdata/dwi
+  mkdir -p out work
+  docker run --rm -u $(id -u):$(id -g) -e MRIQC_DEV=1 \
+      -v $PWD/testdata/dwi:/data:ro -v $PWD/out:/out -v $PWD/work:/work \
+      nipreps/mriqc:ci /data /out participant -m dwi --no-sub \
+      --random-seed 42 --nprocs 4 --omp-nthreads 2 --ants-nthreads 1 -w /work
+  docker run --rm -u $(id -u):$(id -g) -e MRIQC_DEV=1 \
+      -v $PWD/testdata/dwi:/data:ro -v $PWD/out:/out -v $PWD/work:/work \
+      nipreps/mriqc:ci /data /out group -m dwi --no-sub -w /work
+  docker run --rm -v $PWD/out:/out:ro -v $PWD:/src:ro --entrypoint dfcheck \
+      nipreps/mriqc:ci -i /out/group_dwi.tsv -r /src/mriqc/data/testdata/group_dwi.tsv
+
+``MRIQC_DEV=1`` fixes the run identifier, so that the names of the log files match
+the list of expected outputs.
