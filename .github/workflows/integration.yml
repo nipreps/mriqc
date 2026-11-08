@@ -153,8 +153,8 @@ jobs:
       run: |
         find "$OUT" -mindepth 1 | sed "s+^$OUT/++" | LC_ALL=C sort > outputs.txt
         diff .github/integration/outputs-${{ matrix.modality }}.txt outputs.txt
-    # amd64 runs reproduce the reference exactly (--random-seed, single-threaded ANTs);
-    # arm64 IQMs differ, so they are not compared
+    # amd64 runs reproduce the reference exactly (--random-seed, single-threaded ANTs), so any
+    # change fails (--strict); arm64 IQMs differ, so they are not compared
     - name: Compare the IQMs with the reference
       if: matrix.arch == 'amd64'
       run: |
@@ -168,7 +168,7 @@ jobs:
           echo '```'
         } >> "$GITHUB_STEP_SUMMARY"
         docker run --rm -v "$OUT:/out:ro" -v "$PWD:/src:ro" --entrypoint dfcheck \
-          nipreps/mriqc:ci -i /out/group_${{ matrix.modality }}.tsv -r /src/${reference} \
+          nipreps/mriqc:ci -i /out/group_${{ matrix.modality }}.tsv -r /src/${reference} --strict \
           2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
         status=${PIPESTATUS[0]}
         echo '```' >> "$GITHUB_STEP_SUMMARY"
