@@ -112,3 +112,45 @@ def test_random_seed_arg(tmp_path):
 
     args = _create_set_bids_dir(list(MIN_ARGS), tmp_path)
     assert _build_parser().parse_args(args)._random_seed is None
+
+
+@pytest.mark.parametrize(
+    ('bids_filters', 'part'),
+    [
+        (None, 'mag'),
+        ({'dwi': {'part': 'phase'}}, 'phase'),
+    ],
+)
+def test_dwi_phase(tmp_path, monkeypatch, cli_config, bids_filters, part):
+    """DWI phase images are only processed when the BIDS filters select them (#1436)."""
+    import json
+    from copy import deepcopy
+
+    from niworkflows.utils.bids import DEFAULT_BIDS_QUERIES
+
+    from mriqc.cli.parser import parse_args
+
+    bids_dir = tmp_path / 'ds'
+    dwi_dir = bids_dir / 'sub-01' / 'dwi'
+    dwi_dir.mkdir(parents=True)
+    for name in ('part-mag_dwi', 'part-phase_dwi'):
+        for ext in ('nii.gz', 'bval', 'bvec'):
+            (dwi_dir / f'sub-01_{name}.{ext}').write_text('')
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+
+    args = [str(bids_dir), str(tmp_path / 'out'), 'participant', '-m', 'dwi']
+    args += ['-w', str(tmp_path / 'work')]
+    if bids_filters:
+        (tmp_path / 'filters.json').write_text(json.dumps(bids_filters))
+        args += ['--bids-filter-file', str(tmp_path / 'filters.json')]
+
+    # These empty files have no data or metadata to read
+    monkeypatch.setattr('mriqc.utils.misc.initialize_meta_and_data', lambda: None)
+    defaults = deepcopy(DEFAULT_BIDS_QUERIES)
+    parse_args(args)
+
+    assert cli_config.workflow.inputs == {'dwi': [str(dwi_dir / f'sub-01_part-{part}_dwi.nii.gz')]}
+    # The BIDS filters do not leak into niworkflows' defaults
+    assert DEFAULT_BIDS_QUERIES == defaults
