@@ -1,0 +1,40 @@
+# When Integration succeeds on master or on a pull request, ask nipreps/mriqc-ci-reports
+# to republish its site (https://www.nipreps.org/mriqc-ci-reports/).
+#
+# workflow_run runs in this repository's context, so it has the App's credentials also
+# for pull requests from forks; it checks out and runs no code from the pull request.
+
+name: Integration reports
+
+on:
+  workflow_run:
+    workflows: [ Integration ]
+    types: [ completed ]
+
+permissions: {}
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' && (
+        github.event.workflow_run.event == 'pull_request' || (
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'master'))
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get a token for nipreps/mriqc-ci-reports
+      id: app
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      with:
+        client-id: ${{ vars.CI_REPORTS_CLIENT_ID }}
+        private-key: ${{ secrets.CI_REPORTS_PRIVATE_KEY }}
+        owner: nipreps
+        repositories: mriqc-ci-reports
+        permission-actions: write
+    - name: Trigger the deployment
+      env:
+        GH_TOKEN: ${{ steps.app.outputs.token }}
+      run: |
+        gh api -X POST repos/nipreps/mriqc-ci-reports/actions/workflows/deploy.yml/dispatches \
+          -f ref=main
+        echo "Republishing https://www.nipreps.org/mriqc-ci-reports/" >> "$GITHUB_STEP_SUMMARY"
