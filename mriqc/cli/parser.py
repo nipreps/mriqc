@@ -635,11 +635,13 @@ def parse_args(args=None, namespace=None):
         # Skip DWI phase images, as for the other suffixes; collect_data applies the
         # BIDS filters on top of the queries, so a filter setting ``part`` still wins
         queries['dwi'].setdefault('part', ['mag', None])
+    if config.execution.task_id and 'bold' in queries:
+        # Not passed as collect_data's ``task``, which also sets it on a PET query we lack
+        queries['bold']['task'] = config.execution.task_id
     bids_dataset, _ = collect_data(
         config.execution.layout,
         config.execution.participant_label,
         session_id=config.execution.session_id,
-        task=config.execution.task_id,
         group_echos=True,
         bids_filters={mod: config.execution.bids_filters.get(mod, {}) for mod in lc_modalities},
         queries=queries,

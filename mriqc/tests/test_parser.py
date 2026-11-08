@@ -154,3 +154,26 @@ def test_dwi_phase(tmp_path, monkeypatch, cli_config, bids_filters, part):
     assert cli_config.workflow.inputs == {'dwi': [str(dwi_dir / f'sub-01_part-{part}_dwi.nii.gz')]}
     # The BIDS filters do not leak into niworkflows' defaults
     assert DEFAULT_BIDS_QUERIES == defaults
+
+
+def test_task_id(tmp_path, monkeypatch, cli_config):
+    """``--task-id`` selects BOLD runs (it raised ``KeyError: 'pet'``)."""
+    from mriqc.cli.parser import parse_args
+
+    bids_dir = tmp_path / 'ds'
+    func_dir = bids_dir / 'sub-01' / 'func'
+    func_dir.mkdir(parents=True)
+    for task in ('rest', 'nback'):
+        (func_dir / f'sub-01_task-{task}_bold.nii.gz').write_text('')
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+
+    # These empty files have no data or metadata to read
+    monkeypatch.setattr('mriqc.utils.misc.initialize_meta_and_data', lambda: None)
+    parse_args(
+        [str(bids_dir), str(tmp_path / 'out'), 'participant', '-m', 'bold', '--task-id', 'rest']
+        + ['-w', str(tmp_path / 'work')]
+    )
+
+    assert cli_config.workflow.inputs == {'bold': [str(func_dir / 'sub-01_task-rest_bold.nii.gz')]}
