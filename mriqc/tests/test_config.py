@@ -133,6 +133,71 @@ def test_bids_inheritance(tmp_path, participant_label):
     assert inputs['flair'] == [str(flair)]
 
 
+def _init_layout(bids_dir, work_dir, **kwargs):
+    """Index ``bids_dir`` with a fresh config and return the config module."""
+    from importlib import reload
+
+    from mriqc import config
+
+    reload(config)
+    config.execution.output_dir = work_dir.parent / 'out'
+    config.execution.work_dir = work_dir
+    config.execution.bids_dir = bids_dir
+    for key, value in kwargs.items():
+        setattr(config.execution, key, value)
+    config.execution.init()
+    return config
+
+
+def _make_dataset(bids_dir):
+    (bids_dir / 'sub-01' / 'anat').mkdir(parents=True)
+    (bids_dir / 'sub-01' / 'anat' / 'sub-01_T1w.nii.gz').write_text('')
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+    return bids_dir
+
+
+@pytest.mark.parametrize('relocate', ['move', 'copy'])
+def test_bids_database_relocated(tmp_path, relocate):
+    """A default database indexing another path is rebuilt (gh-1410)."""
+    import shutil
+
+    old_dir = _make_dataset(tmp_path / 'ds')
+    config = _init_layout(old_dir, tmp_path / 'work')
+    assert config.execution.bids_database_dir == tmp_path / 'work' / '.bids_db'
+    assert not (tmp_path / 'out' / '.bids_db').exists()
+
+    new_dir = tmp_path / 'moved'
+    (shutil.move if relocate == 'move' else shutil.copytree)(old_dir, new_dir)
+    config = _init_layout(new_dir, tmp_path / 'work')
+    assert config.execution.layout.root == str(new_dir)
+    assert config.execution.layout.get(suffix='T1w', return_type='file') == [
+        str(new_dir / 'sub-01' / 'anat' / 'sub-01_T1w.nii.gz')
+    ]
+
+
+def test_bids_database_user_mismatch(tmp_path):
+    """A database given with ``--bids-database-dir`` is never re-indexed."""
+    user_db = tmp_path / 'user_db'
+    _init_layout(_make_dataset(tmp_path / 'ds'), tmp_path / 'work', bids_database_dir=user_db)
+
+    with pytest.raises(ValueError, match='indexes a different dataset'):
+        _init_layout(
+            _make_dataset(tmp_path / 'other'), tmp_path / 'work', bids_database_dir=user_db
+        )
+    assert (user_db / 'layout_index.sqlite').exists()
+
+
+def test_bids_database_wipe(tmp_path):
+    """``--bids-database-wipe`` replaces an existing default database."""
+    bids_dir = _make_dataset(tmp_path / 'ds')
+    _init_layout(bids_dir, tmp_path / 'work')
+    config = _init_layout(bids_dir, tmp_path / 'work', bids_database_wipe=True)
+    assert config.execution.layout.root == str(bids_dir)
+    assert sorted(p.name for p in (tmp_path / 'work').iterdir()) == ['.bids_db']
+
+
 def test_seeds(monkeypatch):
     """A master seed fixes the ANTs and NumPy seeds, and nothing is seeded without one."""
     import os

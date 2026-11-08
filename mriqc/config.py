@@ -504,6 +504,7 @@ class execution(_Config):
 
         if cls._layout is None:
             import re
+            import shutil
 
             from bids.layout import BIDSLayout
             from bids.layout.index import BIDSLayoutIndexer
@@ -538,17 +539,32 @@ class execution(_Config):
                 ignore=ignore_paths,
             )
 
-            # Initialize database in a multiprocessing-safe manner
-            _db_path: Path = (
-                cls.work_dir if cls.participant_label else cls.output_dir
-            ) / f'.bids_db-{cls.run_uuid}'
+            # Initialize database in a multiprocessing-safe manner, in the work directory
+            # (SQLite locking fails on some network filesystems, see gh-1439)
+            _db_path: Path = cls.work_dir / f'.bids_db-{cls.run_uuid}'
+            _default_db: Path = cls.work_dir / '.bids_db'
 
             if cls.bids_database_dir is None:
-                cls.bids_database_dir = (
-                    cls.output_dir / '.bids_db' if not cls.participant_label else _db_path
-                )
+                cls.bids_database_dir = _default_db if not cls.participant_label else _db_path
 
-            if cls.bids_database_wipe or not cls.bids_database_dir.exists():
+            _reindex: bool = cls.bids_database_wipe or not cls.bids_database_dir.exists()
+
+            # PyBIDS takes the dataset root from an existing database (gh-1410)
+            if not _reindex and (_db_root := _bids_database_root(cls.bids_database_dir)):
+                if _db_root != Path(cls.bids_dir).resolve():
+                    if cls.bids_database_dir != _default_db:
+                        raise ValueError(
+                            f'The BIDS database at <{cls.bids_database_dir}> indexes a '
+                            f'different dataset (<{_db_root}>, not <{cls.bids_dir}>). '
+                            'Point --bids-database-dir to a new folder, or drop it.'
+                        )
+                    loggers.cli.warning(
+                        f'The BIDS database at <{cls.bids_database_dir}> indexes '
+                        f'<{_db_root}>, not <{cls.bids_dir}>: re-indexing.'
+                    )
+                    _reindex = True
+
+            if _reindex:
                 _db_path.mkdir(exist_ok=True, parents=True)
 
                 cls._layout = BIDSLayout(
@@ -558,6 +574,8 @@ class execution(_Config):
                 )
 
                 if _db_path != cls.bids_database_dir:
+                    if cls.bids_database_dir == _default_db and _default_db.exists():
+                        shutil.rmtree(_default_db)
                     _db_path.replace(cls.bids_database_dir.absolute())
 
             cls._layout = BIDSLayout(
@@ -572,6 +590,22 @@ class execution(_Config):
             cls._layout.__class__.__repr__ = lambda x: f'BIDS Layout: {cls.bids_dir}'
 
         cls.layout: BIDSLayout = cls._layout
+
+
+def _bids_database_root(database_dir: Path) -> Path | None:
+    """Read the dataset root of an existing PyBIDS database, without validating it."""
+    from bids.layout.db import ConnectionManager
+
+    if not ConnectionManager.exists(database_dir):
+        return None
+
+    connection = ConnectionManager(database_dir)
+    try:
+        info = connection.layout_info
+        return Path(info.root).resolve() if info is not None else None
+    finally:
+        connection.session.close()
+        connection.engine.dispose()
 
 
 # These variables are not necessary anymore
