@@ -1,0 +1,85 @@
+{
+  "description": "Two multi-shell DWI runs from the Healthy Brain Network (Siemens TrioTim at the RU site, Siemens Prisma at the CBIC site), each trimmed to its b=0 volume and 16 directions at each of b = 1000 and 2000.",
+  "dataset_description": {
+    "Name": "MRIQC integration tests: DWI (Healthy Brain Network)",
+    "BIDSVersion": "1.10.0",
+    "DatasetType": "raw",
+    "License": "CC-BY-4.0",
+    "Authors": ["Healthy Brain Network (Child Mind Institute)"],
+    "HowToAcknowledge": "Cite Alexander et al. (2017), Sci Data 4:170181, doi:10.1038/sdata.2017.181.",
+    "SourceDatasets": [
+      {
+        "URL": "https://fcon_1000.projects.nitrc.org/indi/cmi_healthy_brain_network/",
+        "DOI": "doi:10.1038/sdata.2017.181"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "name": "Healthy Brain Network, release 8, as curated by PennLINC's Reproducible Brain Charts (fcp-indi/data/Projects/HBN/BIDS_datalad)",
+      "url": "https://fcon_1000.projects.nitrc.org/indi/cmi_healthy_brain_network/",
+      "license": "CC BY 4.0",
+      "attribution": "Both participants have Commercial_Use=Yes in the site's participants.tsv (fcp-indi/data/Projects/HBN/MRI/Site-RU and Site-CBIC), so their data are shared under CC BY 4.0. Cite Alexander et al. (2017), Sci Data 4:170181."
+    }
+  ],
+  "files": [
+    {
+      "path": "sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.nii.gz",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.nii.gz",
+      "version_id": "GE02ZYBoMSQOoWBtwAPgJaGyDL.HzNKt",
+      "md5": "912393aaba3c3c7ca199f501014bda09"
+    },
+    {
+      "path": "sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.bval",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.bval",
+      "version_id": "re2LK4w4aelIiVbb7NfU5_FIKTZFxZGP",
+      "md5": "e991daa52129e9246c296b715a23cfc7"
+    },
+    {
+      "path": "sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.bvec",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.bvec",
+      "version_id": "oSjBZxaLwJEKD0eAZzklRw3Ck77A4jtd",
+      "md5": "29317ffdc1b5989373e805e83a663f49"
+    },
+    {
+      "path": "sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.json",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi.json",
+      "version_id": "Hv0vHTR9LrfshNiBhasf0zOeI7qyIiER",
+      "md5": "f364a14b51deb620c12e97dfb440d919"
+    },
+    {
+      "path": "sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.nii.gz",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.nii.gz",
+      "version_id": "VKIdHZSY_28KqSEmdSR2AYR0S.E9JA6q",
+      "md5": "04e15e009f0278b9b274a26c5efcc0e4"
+    },
+    {
+      "path": "sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.bval",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.bval",
+      "version_id": "nZuK3ZQaqEf.VbQ2cMg0AYHheCT39qhQ",
+      "md5": "e991daa52129e9246c296b715a23cfc7"
+    },
+    {
+      "path": "sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.bvec",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.bvec",
+      "version_id": "h7_6qQn7W7Vzqt1Lx08QiPFtNTYSFQWo",
+      "md5": "28da6e7a622aa168528c45b3968b2687"
+    },
+    {
+      "path": "sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.json",
+      "url": "https://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_datalad/sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi.json",
+      "version_id": "ACKgtVFel0Nfexdd4iEzA1ml8XQHwmb8",
+      "md5": "d946eac70975d1f3c9ecd5dde4100ab3"
+    }
+  ],
+  "subsets": {
+    "sub-NDARAA306NT2/ses-HBNsiteRU/dwi/sub-NDARAA306NT2_ses-HBNsiteRU_acq-64dir_dwi": [
+      0, 1, 2, 7, 12, 31, 37, 38, 40, 41, 42, 44, 45, 51, 53, 54, 59,
+      65, 66, 71, 76, 95, 101, 102, 104, 105, 106, 108, 109, 115, 117, 118, 123
+    ],
+    "sub-NDARAA504CRN/ses-HBNsiteCBIC/dwi/sub-NDARAA504CRN_ses-HBNsiteCBIC_acq-64dir_dwi": [
+      0, 1, 2, 12, 15, 22, 37, 38, 40, 41, 42, 44, 45, 51, 53, 54, 59,
+      65, 66, 76, 79, 86, 101, 102, 104, 105, 106, 108, 109, 115, 117, 118, 123
+    ]
+  }
+}
