@@ -111,3 +111,17 @@ def test_qi2(gtruth, sigma):
     rmtree(tmpdir)
     assert value > 0.0
     assert value < 0.04
+
+
+def test_qi2_zero_background():
+    """QI2 is zero, not a crash, when the background is almost all zeros (gh-1402)."""
+    rng = np.random.default_rng(1402)
+    airmask = np.ones((50, 50, 100), dtype=np.uint8)
+    data = np.zeros(airmask.shape)
+    # 0.5% of the background is positive: enough voxels to pass ``min_voxels``,
+    # yet the 99th percentile is zero (as in defaced or synthetic images)
+    positive = rng.choice(data.size, size=data.size // 200, replace=False)
+    data.flat[positive] = rng.rayleigh(scale=10.0, size=positive.size)
+
+    value, _ = art_qi2(data, airmask, save_plot=False)
+    assert value == 0.0

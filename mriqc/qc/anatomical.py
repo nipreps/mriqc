@@ -488,7 +488,12 @@ def art_qi2(
     if (data > 0).sum() < min_voxels:
         return 0.0, out_file
 
-    data *= 100 / np.percentile(data, 99)
+    p99 = np.percentile(data, 99)
+    # More than 99% of the background is zero (e.g., defaced or synthetic images)
+    if p99 <= 0:
+        return 0.0, out_file
+
+    data *= 100 / p99
     modelx = data if len(data) < max_voxels else np.random.choice(data, size=max_voxels)
 
     x_grid = np.linspace(0.0, 110, 1000)
