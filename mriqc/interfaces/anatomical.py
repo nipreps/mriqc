@@ -172,6 +172,11 @@ class StructuralQC(SimpleInterface):
         self._results['snr']['total'] = float(np.mean(snrvals))
 
         snrvals = []
+        if stats['bg']['mad'] <= 1.0:  # snr_dietrich falls back to the standard deviation
+            IFLOGGER.warning(
+                'Estimated signal variation in the background was too small '
+                f'(MAD={stats["bg"]["mad"]}, sigma={stats["bg"]["stdv"]})',
+            )
         self._results['snrd'] = {
             tlabel: snr_dietrich(
                 stats[tlabel]['median'],
