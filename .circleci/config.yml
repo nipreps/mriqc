@@ -468,8 +468,7 @@ jobs:
             docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
-            || true  # ignore failure
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv --strict
 
       - run:
           name: WebAPI - Check records
@@ -629,7 +628,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv --strict
 
       - run:
           name: WebAPI - Check records
@@ -836,7 +835,7 @@ jobs:
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
-            || true  # ignore failure, as the amd64 job does
+            || true  # arm64 results differ from the amd64 reference
       - store_artifacts:
           path: /tmp/t1w/test
 
