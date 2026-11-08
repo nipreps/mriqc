@@ -26,7 +26,7 @@ import nibabel as nb
 import numpy as np
 import pytest
 
-from mriqc.interfaces.anatomical import Harmonize
+from mriqc.interfaces.anatomical import Harmonize, artifact_mask
 
 
 def _write(path, data):
@@ -76,3 +76,15 @@ def test_harmonize_sparse_wm(tmp_path, inputs):
     lo, hi = np.percentile(data[brain], [75, 95])
     fallback = brain & (data >= lo) & (data <= hi)
     assert np.isclose(np.median(out_data[fallback]), 1000, rtol=1e-4)
+
+
+def test_artifact_mask_zero_mad():
+    """No artifacts are flagged when the background MAD is zero (gh-1423)."""
+    imdata = np.zeros((40, 40, 40), dtype=np.float32)
+    # Most non-zero background voxels share one value, so their MAD is zero
+    imdata[10:30, 10:30, 10:30] = 1.0
+    imdata.flat[np.random.default_rng(1423).choice(imdata.size, size=100)] = 5.0
+    airdata = np.ones(imdata.shape, dtype=bool)
+
+    artmask = artifact_mask(imdata, airdata, np.ones(imdata.shape))
+    assert not artmask.any()

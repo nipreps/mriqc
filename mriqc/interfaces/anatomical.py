@@ -506,6 +506,10 @@ def artifact_mask(imdata, airdata, distance, zscore=10.0):
 
     # Standardize the distribution of the background
     bg_spread = mad(bg_data[bg_data > 0])
+    if np.isclose(bg_spread, 0.0):
+        # Most non-zero background voxels share one value: no spread to flag artifacts against
+        return qi1_msk
+
     bg_data[bg_data > 0] = bg_data[bg_data > 0] / bg_spread
 
     # Apply this threshold to the background voxels to identify voxels
