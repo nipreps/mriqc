@@ -22,6 +22,7 @@
 #
 """Exercise report generation with *NiReports*."""
 
+import re
 from json import loads
 from pathlib import Path
 
@@ -67,3 +68,43 @@ def test_anat_reports(tmp_path, testdata_path, outdir, dataset, subject):
             'dataset': dataset,
         },
     ).generate_report()
+
+
+@pytest.mark.parametrize('acquisition', [None, 'hippo'])
+def test_report_entities(tmp_path, monkeypatch, acquisition):
+    """A report only shows the figures of its own input (gh-1303)."""
+    import pandas as pd
+    from bids.layout import BIDSLayout
+
+    from mriqc import config
+    from mriqc.reports.individual import _single_report
+
+    bids_dir = tmp_path / 'ds'
+    out_dir = tmp_path / 'out'
+    figures_dir = tmp_path / 'work' / 'reportlets' / 'sub-01' / 'figures'
+    for path in (bids_dir / 'sub-01' / 'anat', out_dir / 'sub-01' / 'anat', figures_dir):
+        path.mkdir(parents=True)
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+
+    for acq in ('', 'acq-hippo_'):
+        (bids_dir / 'sub-01' / 'anat' / f'sub-01_{acq}T2w.nii.gz').write_text('')
+        iqms_json = out_dir / 'sub-01' / 'anat' / f'sub-01_{acq}T2w+iqms.json'
+        iqms_json.write_text('{"provenance": {}}')
+        pd.DataFrame([{'cjv': 0.5}]).to_parquet(iqms_json.with_suffix('.parquet'))
+        (figures_dir / f'sub-01_{acq}desc-zoomed_T2w.svg').write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"></svg>'
+        )
+
+    monkeypatch.setattr(config.execution, 'bids_dir', bids_dir)
+    monkeypatch.setattr(config.execution, 'output_dir', out_dir)
+    monkeypatch.setattr(config.execution, 'work_dir', tmp_path / 'work')
+    monkeypatch.setattr(config.execution, 'layout', BIDSLayout(bids_dir, validate=False))
+
+    acq = f'acq-{acquisition}_' if acquisition else ''
+    report = _single_report(bids_dir / 'sub-01' / 'anat' / f'sub-01_{acq}T2w.nii.gz')
+    assert report == out_dir / f'sub-01_{acq}T2w.html'
+
+    figures = sorted(set(re.findall(r'sub-01_[^/"]*\.svg', report.read_text())))
+    assert figures == [f'sub-01_{acq}desc-zoomed_T2w.svg']
