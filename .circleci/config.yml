@@ -390,6 +390,7 @@ jobs:
           name: Remove old, cached configs
           command: |
             rm -f /tmp/t1w/work/.mriqc.*.toml
+            rm -rf /tmp/t1w/work/.bids_db*
             rm -f /tmp/t1w/work/.resources.*.tsv
             rm -f /tmp/t1w/work/.resources.*.png
 
@@ -560,6 +561,7 @@ jobs:
           name: Remove old, cached configs
           command: |
             rm -f /tmp/bold/work/.mriqc.*.toml
+            rm -rf /tmp/bold/work/.bids_db*
             rm -f /tmp/bold/work/.resources.*.tsv
             rm -f /tmp/bold/work/.resources.*.png
 
@@ -783,6 +785,7 @@ jobs:
           command: |
             docker load < /tmp/images/mriqc-arm64.tar.gz
             rm -f /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/work/.resources.*
+            rm -rf /tmp/t1w/work/.bids_db*
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -883,6 +886,7 @@ jobs:
           command: |
             docker load < /tmp/images/mriqc-arm64.tar.gz
             rm -f /tmp/bold/work/.mriqc.*.toml /tmp/bold/work/.resources.*
+            rm -rf /tmp/bold/work/.bids_db*
       - run:
           name: Run participant-level on BOLD images
           no_output_timeout: 2h
