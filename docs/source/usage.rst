@@ -109,6 +109,10 @@ in :ref:`The MRIQC Reports <reports>`.
     the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
+    With ``--participant-label``, ``--session-id``, ``--run-id``, ``--task-id`` or
+    ``--bids-filter-file``, only the IQMs of the images they select are combined.
+    The outputs keep their ``group_<suffix>.*`` names, so a ``group`` run
+    overwrites the outputs of the previous one.
 
 .. _iqm_outputs:
 
