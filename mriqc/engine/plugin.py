@@ -187,7 +187,7 @@ class DistributedPluginBase(PluginBase):
                 taskid, jobid = self.pending_tasks.pop()
                 try:
                     result = self._get_result(taskid)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     notrun.append(self._clean_queue(jobid, graph))
                     errors.append(exc)
                 else:
@@ -310,7 +310,7 @@ class DistributedPluginBase(PluginBase):
         overwrite = self.procs[jobid].overwrite
         always_run = self.procs[jobid].interface.always_run
 
-        if cached and updated and (overwrite is False or overwrite is None and not always_run):
+        if cached and updated and (overwrite is False or (overwrite is None and not always_run)):
             try:
                 self._task_finished_cb(jobid, cached=True)
                 self._remove_node_dirs()
@@ -627,7 +627,7 @@ def report_crash(node, traceback=None, hostname=None):
     except (KeyError, OSError):  # Python 3.13 raises OSError when the UID has no name
         login_name = f'UID{os.getuid():d}'
 
-    crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{str(uuid.uuid4())}'
+    crashfile = f'crash-{timeofcrash}-{login_name}-{name}-{uuid.uuid4()}'
     crashdir = node.config['execution'].get('crashdump_dir', os.getcwd())
 
     os.makedirs(crashdir, exist_ok=True)

@@ -96,7 +96,7 @@ import os
 import pickle
 import random
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from pathlib import Path
 from time import strftime
@@ -201,7 +201,7 @@ if 'linux' in sys.platform:
     with suppress(Exception):
         with open('/proc/meminfo') as f_in:
             _meminfo_lines: list[str] = f_in.readlines()
-            _mem_total_line: str = [line for line in _meminfo_lines if 'MemTotal' in line][0]
+            _mem_total_line: str = next(line for line in _meminfo_lines if 'MemTotal' in line)
             _mem_total: float = float(_mem_total_line.split()[1])
             _memory_gb = _mem_total / (1024.0**2)
 elif 'darwin' in sys.platform:
@@ -351,7 +351,7 @@ class nipype(_Config):
     """Number of CPUs a single process can access for multithreaded execution."""
     plugin: str = 'MultiProc'
     """NiPype's execution plugin."""
-    plugin_args: dict[str, Any] = {
+    plugin_args: dict[str, Any] = {  # noqa: RUF012
         'maxtasksperchild': 1,
         'raise_insufficient': False,
     }
@@ -619,7 +619,7 @@ del _oc_policy
 class workflow(_Config):
     """Configure the particular execution graph of this workflow."""
 
-    analysis_level: list[str] = ['participant']
+    analysis_level: Sequence[str] = ('participant',)
     """Level of analysis."""
     biggest_file_gb: dict[int] = 1
     """Dictionary holding the size of largest file in GB (per modality)."""
@@ -810,9 +810,7 @@ def get(flat: bool = False) -> dict[str, dict[str, Any]]:
         return sections
 
     return {
-        '.'.join((section, k)): v
-        for section, configs in sections.items()
-        for k, v in configs.items()
+        f'{section}.{k}': v for section, configs in sections.items() for k, v in configs.items()
     }
 
 

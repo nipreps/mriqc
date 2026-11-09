@@ -260,6 +260,7 @@ select = [
   "I",
   "UP",
   "YTT",
+  "ASYNC",
   "S",
   "BLE",
   "B",
@@ -271,8 +272,17 @@ select = [
   "FA",
   "ISC",
   "ICN",
+  "LOG",
+  "G",
+  "PIE",
+  "PYI",
   "PT",
   "Q",
+  "FLY",
+  "PERF",
+  "PGH",
+  "FURB",
+  "RUF",
 ]
 ignore = [
   # zip() without strict= (flagged since the Python 3.10 floor). Choosing
@@ -282,6 +292,7 @@ ignore = [
   "S310",
   "S311", # We are not using random for cryptographic purposes
   "S603",
+  "RUF005",
 ]
 
 [tool.ruff.lint.flake8-quotes]

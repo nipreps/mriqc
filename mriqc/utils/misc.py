@@ -261,10 +261,10 @@ def _flatten_dict(indict):
         else:
             for subk, subval in list(value.items()):
                 if not isinstance(subval, dict):
-                    out_qc['_'.join([k, subk])] = subval
+                    out_qc[f'{k}_{subk}'] = subval
                 else:
                     for ssubk, ssubval in list(subval.items()):
-                        out_qc['_'.join([k, subk, ssubk])] = ssubval
+                        out_qc[f'{k}_{subk}_{ssubk}'] = ssubval
     return out_qc
 
 
@@ -416,21 +416,20 @@ async def _extract_meta_and_size(
     """
 
     semaphore = asyncio.Semaphore(max_concurrent)
-    tasks = []
-    for filename in filelist:
-        tasks.append(
-            asyncio.create_task(
-                worker(
-                    partial(
-                        _file_meta_and_size,
-                        filename,
-                        volmin=volmin,
-                        volmax=volmax,
-                    ),
-                    semaphore,
-                )
+    tasks = [
+        asyncio.create_task(
+            worker(
+                partial(
+                    _file_meta_and_size,
+                    filename,
+                    volmin=volmin,
+                    volmax=volmax,
+                ),
+                semaphore,
             )
         )
+        for filename in filelist
+    ]
 
     # Gather guarantees the order of the output
     metadata, entities, sizes, valid = list(zip(*await asyncio.gather(*tasks)))

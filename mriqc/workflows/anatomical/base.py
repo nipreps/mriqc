@@ -562,7 +562,7 @@ def headmsk_wf(name='HeadMaskWorkflow', omp_nthreads=1):
     )
 
     def _select_wm(inlist):
-        return [f for f in inlist if 'WM' in f][0]
+        return next(f for f in inlist if 'WM' in f)
 
     enhance = pe.Node(
         niu.Function(

@@ -172,7 +172,7 @@ Number of *dummy* scans** (``dummy``)
     focus criterion*, IEEE Trans Med Imag 16(6):903-910, 1997.
     doi:`10.1109/42.650886 <https://doi.org/10.1109/42.650886>`_.
 
-  .. [Friedman2008] Friedman, L et al., *Test--retest and between‐site reliability in a multicenter
+  .. [Friedman2008] Friedman, L et al., *Test--retest and between-site reliability in a multicenter
     fMRI study*. Hum Brain Mapp, 29(8):958--972, 2008. doi:`10.1002/hbm.20440
     <https://doi.org/10.1002/hbm.20440>`_.
 

@@ -30,4 +30,4 @@ from mriqc._version import __version__
 
 __copyright__ = 'Copyright 2016-2024, The NiPreps Developers'
 __download__ = f'https://github.com/nipreps/mriqc/archive/{__version__}.tar.gz'
-__all__ = ['__version__', '__copyright__', '__download__']
+__all__ = ['__copyright__', '__download__', '__version__']
