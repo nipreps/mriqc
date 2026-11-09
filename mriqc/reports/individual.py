@@ -31,6 +31,17 @@ from niworkflows.data import Loader
 
 _load_data = Loader('mriqc')
 
+_QUERY_ENTITIES = (
+    'session',
+    'task',
+    'acquisition',
+    'ceagent',
+    'reconstruction',
+    'direction',
+    'run',
+)
+"""Entities of the input names that the reportlets carry (``echo`` and ``part`` excepted)."""
+
 
 def generate_reports():
     """Generate the reports associated with an MRIQC run."""
@@ -56,6 +67,10 @@ def _single_report(in_file):
     entities.pop('echo', None)
     entities.pop('part', None)
     report_type = entities.pop('datatype', None)
+    # The entities are a query over the reportlets: set those absent from the input to None
+    # (no such entity), or ``sub-01_T2w`` also gets the figures of ``sub-01_acq-hippo_T2w``
+    for name in _QUERY_ENTITIES:
+        entities.setdefault(name, None)
 
     json_path = (
         Path(config.execution.output_dir)
