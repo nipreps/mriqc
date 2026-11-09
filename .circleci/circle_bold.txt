@@ -1,5 +1,3 @@
-.bids_db
-.bids_db/layout_index.sqlite
 .bidsignore
 /tmp/bold/derivatives
 dataset_description.json
