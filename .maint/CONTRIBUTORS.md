@@ -39,7 +39,7 @@ Before every release, unlisted contributors will be invited again to add their n
 | Sadil | Patrick | @psadil | 0000-0003-4141-1343 | Johns Hopkins Bloomberg School of Public Health, MD, USA |
 | Salo | Taylor | @tsalo | 0000-0001-9813-3167 | Department of Psychology, Florida International University, FL, USA |
 | Savary | Elodie | @esavary | 0000-0002-3896-6906 | Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland |
-| Sharp | Cooper | @cooper-sharp | | Temple University, Philadelphia, PA, USA |
+| Sharp | Cooper | @cooper-sharp | 0009-0004-9347-878X | Temple University, Philadelphia, PA, USA |
 | Tooley | Ursula A. | @utooley | 0000-0001-6377-3885 | Department of Neuroscience, University of Pennsylvania, PA, USA |
 | Triplett | William | @wtriplett | 0000-0002-9546-1306 | University of Florida: Gainesville, Florida, US |
 | Varada | Jan | @jvarada | | Functional MRI Facility, National Institute of Mental Health, Bethesda, MD, USA |
