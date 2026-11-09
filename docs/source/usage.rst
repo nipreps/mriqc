@@ -69,16 +69,16 @@ That command will run MRIQC only on the subjects indicated: only
 ``bids-root/sub-S01``, ``bids-root/sub-S02``, and ``bids-root/sub-S03``
 will be processed.
 
-The second level (``group``) is never run automatically, whether
-``--participant-label`` is given or not.
+The second level (``group``) is never run automatically.
 Once the participant level has finished, we generate the ``group`` level
 results (the group level report and the features TSV table) with: ::
 
   mriqc bids-root/ output-folder/ group
 
-The ``group`` level only reads the IQM files in ``output-folder/``, not the
-images in ``bids-root/``, so their content may be absent (e.g., dropped from
-a *DataLad* dataset).
+The ``group`` level traditionally required the same ``bids-root/`` provided to
+the ``participant`` level.
+This requirement was dropped starting with _MRIQC_ version 26.2.0, which
+only needs the IQM files in ``output-folder/``.
 Both levels can also be run in one call, with
 ``mriqc bids-root/ output-folder/ participant group``.
 
