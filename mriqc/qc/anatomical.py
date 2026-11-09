@@ -211,8 +211,6 @@ import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
 
-from mriqc import config
-
 DIETRICH_FACTOR = 0.6551364  # 1.0 / sqrt(2 / (4 - pi))
 FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
@@ -263,10 +261,6 @@ def snr_dietrich(mu_fg, mad_air=0.0, sigma_air=1.0):
     if mad_air > 1.0:
         return float(DIETRICH_FACTOR * mu_fg / mad_air)
 
-    config.loggers.interface.warning(
-        'Estimated signal variation in the background was too small '
-        f'(MAD={mad_air}, sigma={sigma_air})',
-    )
     return float(DIETRICH_FACTOR * mu_fg / sigma_air) if sigma_air > 1e-3 else -1.0
 
 

@@ -172,6 +172,11 @@ class StructuralQC(SimpleInterface):
         self._results['snr']['total'] = float(np.mean(snrvals))
 
         snrvals = []
+        if stats['bg']['mad'] <= 1.0:  # snr_dietrich falls back to the standard deviation
+            IFLOGGER.warning(
+                'Estimated signal variation in the background was too small '
+                f'(MAD={stats["bg"]["mad"]}, sigma={stats["bg"]["stdv"]})',
+            )
         self._results['snrd'] = {
             tlabel: snr_dietrich(
                 stats[tlabel]['median'],
@@ -506,6 +511,10 @@ def artifact_mask(imdata, airdata, distance, zscore=10.0):
 
     # Standardize the distribution of the background
     bg_spread = mad(bg_data[bg_data > 0])
+    if np.isclose(bg_spread, 0.0):
+        # Most non-zero background voxels share one value: no spread to flag artifacts against
+        return qi1_msk
+
     bg_data[bg_data > 0] = bg_data[bg_data > 0] / bg_spread
 
     # Apply this threshold to the background voxels to identify voxels
