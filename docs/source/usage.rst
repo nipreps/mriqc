@@ -77,7 +77,7 @@ results (the group level report and the features TSV table) with: ::
 
 The ``group`` level traditionally required the same ``bids-root/`` provided to
 the ``participant`` level.
-This requirement was dropped starting with _MRIQC_ version 26.2.0, which
+This requirement was dropped starting with _MRIQC_ 26, which
 only needs the IQM files in ``output-folder/``.
 Both levels can also be run in one call, with
 ``mriqc bids-root/ output-folder/ participant group``.
