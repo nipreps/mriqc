@@ -490,7 +490,7 @@ def art_qi2(
 
     p99 = np.percentile(data, 99)
     # More than 99% of the background is zero (e.g., defaced or synthetic images)
-    if p99 <= 0:
+    if p99 < 1e-4:
         return 0.0, out_file
 
     data *= 100 / p99
