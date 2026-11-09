@@ -390,6 +390,7 @@ jobs:
           name: Remove old, cached configs
           command: |
             rm -f /tmp/t1w/work/.mriqc.*.toml
+            rm -rf /tmp/t1w/work/.bids_db*
             rm -f /tmp/t1w/work/.resources.*.tsv
             rm -f /tmp/t1w/work/.resources.*.png
 
@@ -468,8 +469,7 @@ jobs:
             docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
-            || true  # ignore failure
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv --strict
 
       - run:
           name: WebAPI - Check records
@@ -560,6 +560,7 @@ jobs:
           name: Remove old, cached configs
           command: |
             rm -f /tmp/bold/work/.mriqc.*.toml
+            rm -rf /tmp/bold/work/.bids_db*
             rm -f /tmp/bold/work/.resources.*.tsv
             rm -f /tmp/bold/work/.resources.*.png
 
@@ -629,7 +630,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_bold.tsv --strict
 
       - run:
           name: WebAPI - Check records
@@ -783,6 +784,7 @@ jobs:
           command: |
             docker load < /tmp/images/mriqc-arm64.tar.gz
             rm -f /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/work/.resources.*
+            rm -rf /tmp/t1w/work/.bids_db*
       - run:
           name: Run participant-level on T1w images
           no_output_timeout: 2h
@@ -836,7 +838,7 @@ jobs:
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
-            || true  # ignore failure, as the amd64 job does
+            || true  # arm64 results differ from the amd64 reference
       - store_artifacts:
           path: /tmp/t1w/test
 
@@ -883,6 +885,7 @@ jobs:
           command: |
             docker load < /tmp/images/mriqc-arm64.tar.gz
             rm -f /tmp/bold/work/.mriqc.*.toml /tmp/bold/work/.resources.*
+            rm -rf /tmp/bold/work/.bids_db*
       - run:
           name: Run participant-level on BOLD images
           no_output_timeout: 2h

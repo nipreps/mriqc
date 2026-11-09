@@ -190,11 +190,11 @@ def cc_snr(
     in_b0 : :obj:`~numpy.ndarray` (float, 3D)
         T1-weighted or b0 image used for background signal estimation.
     dwi_shells : list[:obj:`~numpy.ndarray` (float, 4D)]
-        List of DWI data for each diffusion shell.
+        List of DWI data for each diffusion-weighted shell (excluding b=0).
     cc_mask : :obj:`~numpy.ndarray` (bool, 3D)
         Boolean mask of the corpus callosum.
     b_values : :obj:`~numpy.ndarray` (int)
-        Array of b-values for each DWI volume in ``dwi_shells``.
+        Array of b-values, one per shell in ``dwi_shells``.
     b_vectors : :obj:`~numpy.ndarray` (float)
         Array of diffusion-encoding vectors for each DWI volume in ``dwi_shells``.
 
@@ -235,12 +235,16 @@ def cc_snr(
 
     # Shell-wise calculation
     for shell_index, bvecs, shell_data in zip(range(1, n_shells + 1), b_vectors, dwi_shells):
+        # Single-volume shells may come as 3D arrays: keep the volume axis
+        if shell_data.ndim == 3:
+            shell_data = shell_data[..., np.newaxis]
         shell_data = shell_data[cc_mask]
+        bvecs = np.atleast_2d(np.asarray(bvecs, dtype=float))
 
-        # Find main directions of diffusion
-        axis_X = np.argmin(np.sum((bvecs - xyz[0, :]) ** 2, axis=-1))
-        axis_Y = np.argmin(np.sum((bvecs - xyz[1, :]) ** 2, axis=-1))
-        axis_Z = np.argmin(np.sum((bvecs - xyz[2, :]) ** 2, axis=-1))
+        # Find main directions of diffusion (a vector and its opposite are equivalent)
+        axis_X = np.argmax(np.abs(bvecs @ xyz[0]))
+        axis_Y = np.argmax(np.abs(bvecs @ xyz[1]))
+        axis_Z = np.argmax(np.abs(bvecs @ xyz[2]))
 
         mean_signal_worst = 0
         with suppress(IndexError):

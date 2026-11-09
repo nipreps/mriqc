@@ -194,15 +194,20 @@ def generate_pred(derivatives_dir, output_dir, mod):
     return out_csv
 
 
-def generate_tsv(output_dir, mod):
+def generate_tsv(output_dir, mod, stems=None):
     """
     Generates a tsv file from IQM parquet files with sidecar JSON.
+
+    If ``stems`` is given, only the parquet files with one of those stems
+    (e.g., ``sub-01_T1w+iqms``) are gathered.
     """
 
     # If some were found, generate the CSV file and group report
     logger = logging.getLogger(__name__)
     out_tsv = output_dir / (f'group_{mod}.tsv')
     parquet_files = list(output_dir.glob(f'sub-*/**/{IMTYPES[mod]}/*_{mod}+iqms.parquet'))
+    if stems is not None:
+        parquet_files = [path for path in parquet_files if path.stem in stems]
     if not parquet_files:
         return None, out_tsv
 

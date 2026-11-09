@@ -90,3 +90,23 @@ def workdir():
 @pytest.fixture
 def outdir():
     return None if test_output_dir is None else Path(test_output_dir)
+
+
+@pytest.fixture
+def cli_config(monkeypatch):
+    """Run the CLI on a fresh config, offline, and drop the log handlers it adds."""
+    import logging
+    from importlib import reload
+
+    from mriqc import config
+    from mriqc.cli import version
+
+    reload(config)
+    monkeypatch.setattr(version, 'check_latest', lambda: None)
+    monkeypatch.setattr(version, 'is_flagged', lambda: (False, None))
+    root = logging.getLogger()
+    handlers = list(root.handlers)
+    yield config
+    for handler in set(root.handlers) - set(handlers):
+        root.removeHandler(handler)
+        handler.close()

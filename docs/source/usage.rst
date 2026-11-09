@@ -59,14 +59,6 @@ under the BIDS-compliant folder ``bids-root/``.
 The last ``participant`` keyword indicates that the first level analysis
 is run. (i.e. extracting the :abbr:`IQMs (image quality metrics)` from the
 images retrieved within ``bids-root/``).
-The second level (``group``) is automatically run if no particular subject
-is provided for analysis.
-
-.. note::
-
-   If the argument :code:`--participant-label` is not provided, then all
-   subjects will be processed and the group level analysis will
-   automatically be executed without need of running the command in item 3.
 
 To specify one particular subject, the ``--participant-label`` argument
 can be used::
@@ -76,11 +68,19 @@ can be used::
 That command will run MRIQC only on the subjects indicated: only
 ``bids-root/sub-S01``, ``bids-root/sub-S02``, and ``bids-root/sub-S03``
 will be processed.
-In this case, the ``group`` level will not be triggered automatically.
-We generate the ``group`` level results (the group level report and the
-features CSV table) with: ::
+
+The second level (``group``) is never run automatically.
+Once the participant level has finished, we generate the ``group`` level
+results (the group level report and the features TSV table) with: ::
 
   mriqc bids-root/ output-folder/ group
+
+The ``group`` level traditionally required the same ``bids-root/`` provided to
+the ``participant`` level.
+This requirement was dropped starting with _MRIQC_ 26, which
+only needs the IQM files in ``output-folder/``.
+Both levels can also be run in one call, with
+``mriqc bids-root/ output-folder/ participant group``.
 
 Examples of the generated visual reports are found
 in :ref:`The MRIQC Reports <reports>`.
@@ -109,6 +109,10 @@ in :ref:`The MRIQC Reports <reports>`.
     the individual reports (see :ref:`The MRIQC Reports <reports>`) generated.
     In the ``group`` level, the :abbr:`IQMs (image quality metrics)` extracted in
     first place are combined in a table and the group reports are generated.
+    With ``--participant-label``, ``--session-id``, ``--run-id``, ``--task-id`` or
+    ``--bids-filter-file``, only the IQMs of the images they select are combined.
+    The outputs keep their ``group_<suffix>.*`` names, so a ``group`` run
+    overwrites the outputs of the previous one.
 
 .. _iqm_outputs:
 

@@ -497,6 +497,7 @@ discourage its usage.""",
 
 def parse_args(args=None, namespace=None):
     """Parse args and run further checks on the command line."""
+    from copy import deepcopy
     from json import loads
     from logging import DEBUG, FileHandler
     from pathlib import Path
@@ -620,22 +621,24 @@ def parse_args(args=None, namespace=None):
 
     config.execution.participant_label = sorted(participant_label)
 
-    # Handle analysis_level
-    analysis_level = set(config.workflow.analysis_level)
-    if not config.execution.participant_label:
-        analysis_level.add('group')
-    config.workflow.analysis_level = list(analysis_level)
-
     # List of files to be run
     lc_modalities = [mod.lower() for mod in config.execution.modalities]
+    # Copy the defaults, as collect_data writes the BIDS filters into the queries
+    queries = {mod: deepcopy(DEFAULT_BIDS_QUERIES[mod]) for mod in lc_modalities}
+    if 'dwi' in queries:
+        # Skip DWI phase images, as for the other suffixes; collect_data applies the
+        # BIDS filters on top of the queries, so a filter setting ``part`` still wins
+        queries['dwi'].setdefault('part', ['mag', None])
+    if config.execution.task_id and 'bold' in queries:
+        # Not passed as collect_data's ``task``, which also sets it on a PET query we lack
+        queries['bold']['task'] = config.execution.task_id
     bids_dataset, _ = collect_data(
         config.execution.layout,
         config.execution.participant_label,
         session_id=config.execution.session_id,
-        task=config.execution.task_id,
         group_echos=True,
         bids_filters={mod: config.execution.bids_filters.get(mod, {}) for mod in lc_modalities},
-        queries={mod: DEFAULT_BIDS_QUERIES[mod] for mod in lc_modalities},
+        queries=queries,
     )
 
     # Drop empty queries
@@ -665,7 +668,9 @@ Please, check out your currently set filters {ffile}:
             f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
-    initialize_meta_and_data()
+    # The group level only reads the IQMs in the output folder, not the input images
+    if 'participant' in config.workflow.analysis_level:
+        initialize_meta_and_data()
 
     # set specifics for alternative populations
     if opts.species.lower() != 'human':

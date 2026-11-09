@@ -32,6 +32,35 @@ def format_elapsed_time(elapsed_timedelta):
     )
 
 
+def _selected_iqm_stems():
+    """
+    Return the IQM file stems of the inputs the parser collected.
+
+    Return ``None`` (gather all IQM files) unless the inputs were selected with
+    ``--participant-label``, ``--session-id``, ``--run-id``, ``--task-id`` or
+    ``--bids-filter-file``.
+    """
+    from pathlib import Path
+
+    from mriqc import config
+    from mriqc.utils.misc import _flatten_list
+
+    # Without --participant-label, the parser selects all the subjects
+    subjects = {path.name[4:] for path in config.execution.bids_dir.glob('sub-*') if path.is_dir()}
+    if not (
+        config.execution.bids_filters
+        or config.execution.session_id
+        or config.execution.run_id
+        or config.execution.task_id
+        or set(config.execution.participant_label or subjects) != subjects
+    ):
+        return None
+
+    # As IQMFileSink names them: the input file name, with +iqms in place of its extensions
+    names = [Path(path).name for path in _flatten_list(config.workflow.inputs.values())]
+    return {name.replace(''.join(Path(name).suffixes), '+iqms') for name in names}
+
+
 def main(argv=None):
     """Entry point for MRIQC's CLI."""
     import atexit
@@ -230,11 +259,15 @@ def main(argv=None):
 
         config.loggers.cli.log(26, messages.GROUP_START)
 
+        stems = _selected_iqm_stems()
+        if stems is not None:
+            config.loggers.cli.info(f'Gathering the IQMs of {len(stems)} selected input files.')
+
         # Generate reports
         mod_group_reports = []
         for mod in config.execution.modalities or config.SUPPORTED_SUFFIXES:
             output_dir = config.execution.output_dir
-            dataframe, out_tsv = generate_tsv(output_dir, mod)
+            dataframe, out_tsv = generate_tsv(output_dir, mod, stems=stems)
             # If there are no iqm.json files, nothing to do.
             if dataframe is None:
                 continue
@@ -259,7 +292,7 @@ def main(argv=None):
             mod_group_reports.append(mod)
 
         if not mod_group_reports:
-            raise Exception(messages.GROUP_NO_DATA)
+            raise Exception(messages.GROUP_NO_DATA.format(output_dir=config.execution.output_dir))
 
         config.loggers.cli.info(messages.GROUP_FINISHED)
 
