@@ -601,7 +601,7 @@ class workflow(_Config):
     """Turn on FFT based spike detector (slow)."""
     inputs: list[str | os.PathLike] | None = None
     """List of files to be processed with MRIQC."""
-    inputs_entities: dict[list[dict]]
+    inputs_entities: dict[list[dict]] | None = None
     """List of entities corresponding to inputs."""
     inputs_metadata: dict[list[dict | list[dict]]] | None = None
     """List of metadata corresponding to inputs."""

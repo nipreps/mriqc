@@ -259,7 +259,7 @@ def main(argv=None):
             mod_group_reports.append(mod)
 
         if not mod_group_reports:
-            raise Exception(messages.GROUP_NO_DATA)
+            raise Exception(messages.GROUP_NO_DATA.format(output_dir=config.execution.output_dir))
 
         config.loggers.cli.info(messages.GROUP_FINISHED)
 

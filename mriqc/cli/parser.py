@@ -621,12 +621,6 @@ def parse_args(args=None, namespace=None):
 
     config.execution.participant_label = sorted(participant_label)
 
-    # Handle analysis_level
-    analysis_level = set(config.workflow.analysis_level)
-    if not config.execution.participant_label:
-        analysis_level.add('group')
-    config.workflow.analysis_level = list(analysis_level)
-
     # List of files to be run
     lc_modalities = [mod.lower() for mod in config.execution.modalities]
     # Copy the defaults, as collect_data writes the BIDS filters into the queries
@@ -674,7 +668,9 @@ Please, check out your currently set filters {ffile}:
             f'MRIQC is unable to process the following modalities: {", ".join(unknown_mods)}.'
         )
 
-    initialize_meta_and_data()
+    # The group level only reads the IQMs in the output folder, not the input images
+    if 'participant' in config.workflow.analysis_level:
+        initialize_meta_and_data()
 
     # set specifics for alternative populations
     if opts.species.lower() != 'human':

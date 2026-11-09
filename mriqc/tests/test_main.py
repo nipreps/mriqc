@@ -64,3 +64,46 @@ def test_main(tmp_path):
                 species,
             ]
         )
+
+
+@pytest.fixture
+def dropped_bids(tmp_path):
+    """A BIDS dataset whose image content is absent, as after ``datalad drop``."""
+    bids_dir = tmp_path / 'ds'
+    (bids_dir / 'sub-01' / 'anat').mkdir(parents=True)
+    (bids_dir / 'sub-01' / 'anat' / 'sub-01_T1w.nii.gz').symlink_to(
+        '../../.git/annex/objects/sub-01_T1w.nii.gz'
+    )
+    (bids_dir / 'dataset_description.json').write_text(
+        '{"Name": "Example dataset", "BIDSVersion": "1.10.0"}'
+    )
+    return bids_dir
+
+
+def _no_raw_data():
+    raise AssertionError('The group level must not read the input images.')
+
+
+def test_group_level_without_raw_data(tmp_path, monkeypatch, cli_config, dropped_bids):
+    """The group level does not read the input images (#1388)."""
+    from mriqc.cli.parser import parse_args
+
+    monkeypatch.setattr('mriqc.utils.misc.initialize_meta_and_data', _no_raw_data)
+    parse_args([str(dropped_bids), str(tmp_path / 'out'), 'group', '-w', str(tmp_path / 'work')])
+
+    assert cli_config.workflow.analysis_level == ['group']
+    assert cli_config.workflow.inputs == {
+        't1w': [str(dropped_bids / 'sub-01' / 'anat' / 'sub-01_T1w.nii.gz')]
+    }
+    # The config is written out without the inputs' metadata
+    cli_config.to_filename()
+
+
+def test_group_level_no_iqms(tmp_path, monkeypatch, cli_config, dropped_bids):
+    """Without IQM files, the group level says where it looked and for what."""
+    monkeypatch.setattr('mriqc.utils.misc.initialize_meta_and_data', _no_raw_data)
+    out_dir = tmp_path / 'out'
+    with pytest.raises(Exception, match=r'\+iqms\.parquet') as excinfo:
+        main([str(dropped_bids), str(out_dir), 'group', '-w', str(tmp_path / 'work')])
+
+    assert f'<{out_dir}>' in str(excinfo.value)
