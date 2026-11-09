@@ -143,10 +143,14 @@ and then compares the group table with its reference using ``dfcheck``.
 ``dfcheck`` lists every IQM that differs from the reference (with a relative tolerance
 of 1e-5), and fails if the columns or the number of images differ, or if an IQM
 correlates below 0.95 with the reference across images.
-On linux/amd64, the runs are expected to reproduce the reference exactly, thanks to
-a fixed random seed (``--random-seed 42``) and single-threaded *ANTs*
-(``--ants-nthreads 1``).
-IQMs computed on linux/arm64 differ, and GitHub Actions does not compare them.
+On linux/amd64, the runs reproduce the reference exactly: *ANTs* runs single-threaded
+(``--ants-nthreads 1``), and every run but BOLD fixes the random seed
+(``--random-seed 42``; the BOLD IQMs do not depend on it).
+Therefore, the continuous integration runs ``dfcheck --strict``, which also fails on any
+value outside the tolerance, and a change that alters the IQMs must update the
+reference table in the same pull request.
+IQMs computed on linux/arm64 differ: GitHub Actions does not compare them, and CircleCI
+compares them without ``--strict``.
 
 For example, the DWI test can be reproduced locally from the root of the repository
 with an image built from it::
