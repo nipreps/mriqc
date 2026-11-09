@@ -3,7 +3,7 @@
 T1 and T2 -weighed images
 =========================
 One individual report per input structural volume will be generated
-in the path ``<output_dir>/reports/sub-IDxxx_T1w.html```.
+at the root of the output directory, e.g., ``<output_dir>/sub-IDxxx_T1w.html``.
 An example report is given
 `here <../_static/example_anatreport.html>`_.
 
@@ -33,6 +33,11 @@ The section with visual reports contains:
      :alt: zoomed in mosaic
 
 #. Mosaic view with background noise enhancement.
+   The input image, reoriented but otherwise unprocessed, is shown with its background
+   (not cropped to the brain) and the ``viridis_r`` colormap, which spans from the
+   minimum to the 61st percentile of the nonzero voxel intensities.
+   Brighter voxels saturate, so the plot reveals the structure of the background noise
+   and artifacts such as ghosts, ringing, or wrap-around.
 
    .. figure:: ../resources/reports-t1w_background.png
      :alt: t1 background
