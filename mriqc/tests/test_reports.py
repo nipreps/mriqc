@@ -108,3 +108,18 @@ def test_report_entities(tmp_path, monkeypatch, acquisition):
 
     figures = sorted(set(re.findall(r'sub-01_[^/"]*\.svg', report.read_text())))
     assert figures == [f'sub-01_{acq}desc-zoomed_T2w.svg']
+
+
+@pytest.mark.parametrize(
+    ('mod', 'table'), [('T1w', 'T1w'), ('T2w', 'FLAIR'), ('FLAIR', 'FLAIR'), ('bold', 'bold')]
+)
+def test_group_report(tmp_path, mod, table):
+    """Group reports plot every FWHM, in voxels (gh-835)."""
+    from mriqc.reports.group import gen_html
+
+    tsv = Path(__file__).parent.parent / 'data' / 'testdata' / f'group_{table}.tsv'
+    html = Path(gen_html(tsv, mod, out_file=str(tmp_path / 'group.html'))).read_text()
+
+    fwhm = [line.strip().split(',') for line in html.splitlines() if line.startswith('fwhm_')]
+    assert {row[0] for row in fwhm} == {'fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'}
+    assert {row[-1] for row in fwhm} == {'vox'}

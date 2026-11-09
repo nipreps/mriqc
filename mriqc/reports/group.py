@@ -126,7 +126,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
             (['wm2max'], None),
             (['snr_csf', 'snr_gm', 'snr_wm'], None),
             (['snrd_csf', 'snrd_gm', 'snrd_wm'], None),
-            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'vox'),
             (['qi_1', 'qi_2'], None),
             (['inu_range', 'inu_med'], None),
             (['icvs_csf', 'icvs_gm', 'icvs_wm'], None),
@@ -176,7 +176,7 @@ def gen_html(csv_file, mod, csv_failed=None, out_file=None):
         'bold': [
             (['efc'], None),
             (['fber'], None),
-            (['fwhm', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'mm'),
+            (['fwhm_avg', 'fwhm_x', 'fwhm_y', 'fwhm_z'], 'vox'),
             ([f'gsr_{a}' for a in ('x', 'y')], None),
             (['snr'], None),
             (['dvars_std', 'dvars_vstd'], None),

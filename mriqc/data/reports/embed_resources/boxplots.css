@@ -134,6 +134,13 @@ body {
     fill-opacity: 0.4;
 }
 
+/* Points beyond the y axis, drawn at its ends */
+.chart-wrapper .points-plot .point.clipped {
+    fill-opacity: 0;
+    stroke: #d62728;
+    stroke-width: 1.5px;
+}
+
 .chart-wrapper .metrics-lines {
     stroke-width: 4px;
 }

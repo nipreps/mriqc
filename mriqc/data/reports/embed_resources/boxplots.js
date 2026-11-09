@@ -319,6 +319,18 @@ function makeDistroChart(settings) {
         chart.yScale.range([chart.height, 0]).domain(chart.range).nice().clamp(true);
         chart.xScale = d3.scale.ordinal().domain(Object.keys(chart.groupObjs)).rangeBands([0, chart.width]);
 
+        // The scale clamps values beyond its domain to the plot edges: count them in the label
+        chart.isClipped = function (value) {
+            var domain = chart.yScale.domain();
+            return value < domain[0] || value > domain[1];
+        };
+        var nClipped = chart.data.filter(function (d) {
+            return chart.isClipped(d[chart.settings.yName]);
+        }).length;
+        if (nClipped > 0) {
+            chart.yAxisLable += ' (' + nClipped + ' clipped)';
+        }
+
         //Build Axes Functions
         chart.objs.yAxis = d3.svg.axis()
             .scale(chart.yScale)
@@ -1511,7 +1523,8 @@ function makeDistroChart(settings) {
                         for (var pt = 0; pt < cGroup.values.length; pt++) {
                             cPlot.objs.points.pts[pt]
                                 .attr("cx", plotBounds.middle + addJitter(true, width))
-                                .attr("cy", chart.yScale(cGroup.values[pt]));
+                                .attr("cy", chart.yScale(cGroup.values[pt]))
+                                .classed("clipped", chart.isClipped(cGroup.values[pt]));
                         }
                     }
                 }
