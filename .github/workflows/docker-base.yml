@@ -41,7 +41,7 @@ jobs:
       build: ${{ steps.tag.outputs.build }}
       push: ${{ steps.tag.outputs.push }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: Tag from the last change to the base image
@@ -81,7 +81,7 @@ jobs:
     steps:
     - name: Free disk space
       run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: docker/setup-buildx-action@v4
     - name: Log into ghcr.io
       if: needs.tag.outputs.push == 'true'
