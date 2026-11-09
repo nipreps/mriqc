@@ -39,8 +39,9 @@ jobs:
     steps:
     - name: Free disk space
       run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
+        persist-credentials: false
         fetch-depth: 0
     - name: Set up uv
       uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -49,9 +50,9 @@ jobs:
       run: |
         echo "version=$( uvx hatch version | tail -n1 | xargs )" >> "$GITHUB_OUTPUT"
         echo "date=$( date -u +%Y-%m-%dT%H:%M:%SZ )" >> "$GITHUB_OUTPUT"
-    - uses: docker/setup-buildx-action@v4
+    - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
     - name: Build
-      uses: docker/build-push-action@v7
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
       with:
         context: .
         platforms: linux/${{ matrix.arch }}
@@ -64,14 +65,16 @@ jobs:
         tags: nipreps/mriqc:ci
         load: true
     - name: Check the version
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
       run: |
-        expected="MRIQC v${{ steps.version.outputs.version }}"
+        expected="MRIQC v${VERSION}"
         found="$( docker run --rm nipreps/mriqc:ci --version )"
         echo "Expected: ${expected}, found: ${found}"
         test "${expected%+*}" == "${found%+*}"
     - name: Save the image
       run: docker save nipreps/mriqc:ci | zstd -T0 -3 -o ${{ runner.temp }}/mriqc.tar.zst
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: image-${{ matrix.arch }}
         path: ${{ runner.temp }}/mriqc.tar.zst
@@ -97,7 +100,9 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
     # Outside the checkout, without '..': upload-artifact rejects relative segments
     - name: Set the paths
       run: |
@@ -107,7 +112,7 @@ jobs:
 
     - name: Restore the test data
       id: data
-      uses: actions/cache/restore@v6
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ env.DATA }}
         key: testdata-${{ matrix.dataset }}-${{ hashFiles(format('.github/testdata/{0}.json', matrix.dataset), '.github/testdata/fetch.py') }}
@@ -121,12 +126,12 @@ jobs:
           python .github/testdata/fetch.py .github/testdata/${{ matrix.dataset }}.json "$DATA"
     - name: Save the test data
       if: steps.data.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v6
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ env.DATA }}
         key: ${{ steps.data.outputs.cache-primary-key }}
 
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: image-${{ matrix.arch }}
         path: ${{ runner.temp }}
@@ -176,7 +181,7 @@ jobs:
 
     - name: Upload the reports
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: reports-${{ matrix.dataset }}-${{ matrix.arch }}
         path: ${{ env.OUT }}
@@ -187,7 +192,7 @@ jobs:
       run: find "$WORK" -type f -not -name report.rst -not -name command.txt -delete || true
     - name: Upload the work directory
       if: failure()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: work-${{ matrix.dataset }}-${{ matrix.arch }}
         path: ${{ env.WORK }}

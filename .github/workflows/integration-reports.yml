@@ -7,7 +7,8 @@
 name: Integration reports
 
 on:
-  workflow_run:
+  # Safe here: GITHUB_TOKEN has no permissions, and no pull request code runs (see above)
+  workflow_run:  # zizmor: ignore[dangerous-triggers]
     workflows: [ Integration ]
     types: [ completed ]
 
