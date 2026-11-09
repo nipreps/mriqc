@@ -24,9 +24,11 @@
 
 from pathlib import Path
 
+import nibabel as nb
+import numpy as np
 import pytest
 
-from mriqc.interfaces.diffusion import DWISummary
+from mriqc.interfaces.diffusion import PIESNO, DWISummary
 
 B_DICT = {0: [0, 9], 1000: [1, 2, 3, 4], 2000: [5, 6, 7, 8]}
 
@@ -62,3 +64,23 @@ def test_dwi_summary_type(tmp_path, monkeypatch, n_shells, is_dsi, dwi_type):
     """The type of DWI follows the shells found upstream."""
     html = _summary(tmp_path, monkeypatch, n_shells=n_shells, is_dsi=is_dsi)
     assert f'<li>Type of DWIs: {dwi_type}</li>' in html
+
+
+def test_piesno(tmp_path, monkeypatch):
+    """PIESNO's sigma ignores mostly zero-valued slices, without dividing by zero."""
+    monkeypatch.chdir(tmp_path)
+    rng = np.random.default_rng(1234)
+    shape = (16, 16, 6, 10)
+    # Rician noise (single channel) with a sigma of 10
+    noise = np.abs(rng.normal(0, 10.0, shape) + 1j * rng.normal(0, 10.0, shape))
+    # Most slices are zero-valued: they would drag the median sigma down to zero
+    data = noise.copy()
+    data[:, :, :4] = 0
+    # A slice with a single nonzero volume makes PIESNO divide by zero (gh-1333)
+    data[:, :, 0, 0] = noise[:, :, 0, 0]
+    in_file = tmp_path / 'sub-01_dwi.nii.gz'
+    nb.Nifti1Image(data.astype('float32'), np.eye(4)).to_filename(in_file)
+
+    sigma = PIESNO(in_file=str(in_file), n_channels=1).run().outputs.sigma
+
+    assert sigma == pytest.approx(10.0, rel=0.05)
