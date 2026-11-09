@@ -100,6 +100,12 @@ def main():
         default=1.0e-5,
         help='relative tolerance for comparison',
     )
+    g_input.add_argument(
+        '--strict',
+        action='store_true',
+        help='fail when any value differs beyond the tolerance, instead of only when an\n'
+        "IQM's correlation with the reference drops below 0.95",
+    )
 
     opts = parser.parse_args()
 
@@ -145,6 +151,9 @@ def main():
         chng_df = pd.DataFrame({'iqm': cols, 'from': changed_from, 'to': changed_to})
         table = pd.concat([bids_df, chng_df], axis=1)
         print(table[ref_bids + ['iqm', 'from', 'to']].to_string(index=False))
+
+        if opts.strict:
+            sys.exit(messages.DFCHECK_CSV_CHANGED)
 
         corr = pd.DataFrame()
         corr['iqms'] = ref_names
