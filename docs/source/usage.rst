@@ -21,6 +21,33 @@ In addition to container-specific guidelines, the documentation
 also includes specific
 `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
 
+TemplateFlow templates inside the container
+...........................................
+*MRIQC* gets its templates from `TemplateFlow <https://www.templateflow.org>`__,
+which keeps them in ``$TEMPLATEFLOW_HOME`` or, when that variable is not set,
+in ``$HOME/.cache/templateflow``.
+The container image ships the ``MNI152NLin2009cAsym`` files *MRIQC* uses
+in ``/home/mriqc/.cache/templateflow``, and leaves ``TEMPLATEFLOW_HOME`` unset:
+
+* *Docker* runs with ``HOME=/home/mriqc``, so the shipped templates are used.
+* *Singularity*/*Apptainer* sets ``$HOME`` to your home directory on the host,
+  so *TemplateFlow* looks in the host's ``~/.cache/templateflow`` and
+  downloads the templates there on the first run.
+  Because that cache is writable, templates the image does not ship
+  (e.g., ``Fischer344`` for ``--species rat``) can be downloaded as well.
+
+If your compute nodes cannot reach the Internet, either pre-fetch the templates
+from a node that can (see the *NiPreps* guidelines on
+`TemplateFlow and Singularity <https://www.nipreps.org/apps/singularity/#templateflow-and-singularity>`__),
+or point *TemplateFlow* to the templates in the image::
+
+    $ apptainer run --env TEMPLATEFLOW_HOME=/home/mriqc/.cache/templateflow \
+          mriqc.sif <mriqc arguments>
+
+The image is read-only under *Apptainer*, so the second option only covers
+the templates the image ships, that is, human data.
+``--species rat`` needs a writable ``TEMPLATEFLOW_HOME``.
+
 The rest of this documentation page applies to both *bare-metal*
 and containerized execution modes.
 
