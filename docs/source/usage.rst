@@ -22,7 +22,7 @@ also includes specific
 `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
 
 TemplateFlow templates inside the container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+...........................................
 *MRIQC* gets its templates from `TemplateFlow <https://www.templateflow.org>`__,
 which keeps them in ``$TEMPLATEFLOW_HOME`` or, when that variable is not set,
 in ``$HOME/.cache/templateflow``.
