@@ -78,7 +78,7 @@ whose pull requests and proposals some of the changes below build on.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Bennet Fauber \ :sup:`19`\ ; Taylor Salo \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Pablo Velasco \ :sup:`22`\ ; Thomas Nichols \ :sup:`23`\ ; Victor Férat \ :sup:`24`\ ; Adam Huffman \ :sup:`25`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`26`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`27`\ ; Adam C. Raikes \ :sup:`28`\ ; Asier Erramuzpe \ :sup:`29`\ ; Benjamin Kay \ :sup:`30`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`31`\ ; Michael G. Clark \ :sup:`32`\ ; Rafael Garcia-Dias \ :sup:`33`\ ; Adam G. Thomas \ :sup:`34`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`6`\ ; Oscar Esteban \ :sup:`35`\ .
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Apoorv Saraogee \ :sup:`19`\ ; Bennet Fauber \ :sup:`20`\ ; Taylor Salo \ :sup:`21`\ ; Michael Krause \ :sup:`22`\ ; Pablo Velasco \ :sup:`23`\ ; Thomas Nichols \ :sup:`24`\ ; Victor Férat \ :sup:`25`\ ; Adam Huffman \ :sup:`26`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`27`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`28`\ ; Adam C. Raikes \ :sup:`29`\ ; Asier Erramuzpe \ :sup:`30`\ ; Benjamin Kay \ :sup:`31`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`32`\ ; Michael G. Clark \ :sup:`33`\ ; Rafael Garcia-Dias \ :sup:`34`\ ; Adam G. Thomas \ :sup:`35`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`36`\ ; Oscar Esteban \ :sup:`37`\ .
 
     Affiliations:
 
@@ -100,23 +100,25 @@ whose pull requests and proposals some of the changes below build on.
       16. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
       17. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
       18. Department of Psychology, University of Texas at Austin, TX, USA
-      19. University of Michigan, Ann Arbor, USA
-      20. Department of Psychology, Florida International University, FL, USA
-      21. Max Planck Institute for Human Development, Berlin, Germany
-      22. Center for Brain Imaging, New York University, NY, USA
-      23. Oxford Big Data Institute, University of Oxford, Oxford, GB
-      24. Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland
-      25. Department of Physics, Imperial College London, London, UK
-      26. Charité Berlin, Berlin, Germany
-      27. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
-      28. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
-      29. Computational Neuroimaging Lab, BioCruces Health Research Institute
-      30. Washington University School of Medicine, St.Louis, MO, USA
-      31. International Committee of the Red Cross - ICRC, Geneva, Switzerland
-      32. National Institutes of Health, USA
-      33. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
-      34. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
-      35. School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland
+      19. Independent researcher, San Jose, CA, USA
+      20. University of Michigan, Ann Arbor, USA
+      21. Department of Psychology, Florida International University, FL, USA
+      22. Max Planck Institute for Human Development, Berlin, Germany
+      23. Center for Brain Imaging, New York University, NY, USA
+      24. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      25. Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland
+      26. Department of Physics, Imperial College London, London, UK
+      27. Charité Berlin, Berlin, Germany
+      28. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      29. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
+      30. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      31. Washington University School of Medicine, St.Louis, MO, USA
+      32. International Committee of the Red Cross - ICRC, Geneva, Switzerland
+      33. National Institutes of Health, USA
+      34. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      35. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      36. Centre for Addiction and Mental Health and University of Toronto, Toronto, ON, Canada
+      37. School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland
 
 Highlights:
 
