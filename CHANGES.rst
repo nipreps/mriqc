@@ -1,3 +1,65 @@
+26.1.1 (November 10, 2026)
+==========================
+A patch release with bug fixes.
+Anatomical runs whose background is almost all zeros, as in many defaced and synthetic images,
+no longer crash in ``ComputeQI2``, and the group level now honours the participant, session,
+run and task selection.
+
+With thanks to @DimitriPapadopoulos for the *zizmor* security audit and the new *ruff* rules.
+
+Changes in IQMs and reports:
+
+* Anatomical runs where more than 99% of the background is exactly zero get ``qi_2 = 0``
+  instead of crashing (`#1493 <https://github.com/nipreps/mriqc/pull/1493>`__).
+* When the non-zero background voxels have a MAD of zero, no background voxel is flagged as an
+  artifact anymore: ``qi_1`` becomes 0, and ``summary_bg_*``, ``snrd_*`` and ``cnr`` are computed
+  on the full air mask (`#1499 <https://github.com/nipreps/mriqc/pull/1499>`__).
+* DWI: ``snr_cc_shell<N>_*`` were computed one shell off (``shell1`` on the b=0 volumes, and the
+  last shell was never reported).
+  They now follow the diffusion-weighted shells, and ``sigma_piesno`` changes where many slices had
+  a zero sigma (`#1492 <https://github.com/nipreps/mriqc/pull/1492>`__).
+* Group reports label the FWHM in voxels for every modality, plot the average BOLD FWHM, and mark
+  clipped FD and spikes points. No IQMs change
+  (`#1500 <https://github.com/nipreps/mriqc/pull/1500>`__).
+* A report no longer includes the figures of other acquisitions or runs of the same subject
+  (`#1498 <https://github.com/nipreps/mriqc/pull/1498>`__).
+
+Changes in behavior:
+
+* The default BIDS database moves from ``<output_dir>/.bids_db`` to ``<work_dir>/.bids_db``.
+  A database left in the output folder by an earlier version is ignored, not deleted, and a saved
+  database that points to another dataset root is re-indexed with a warning
+  (`#1497 <https://github.com/nipreps/mriqc/pull/1497>`__).
+* At the group level, ``--participant-label``, ``--session-id``, ``--run-id``, ``--task-id`` and
+  ``--bids-filter-file`` limit the IQMs gathered.
+  The filtered tables and reports keep the ``group_<suffix>.*`` names
+  (`#1496 <https://github.com/nipreps/mriqc/pull/1496>`__).
+* The group level no longer reads the raw data, so it runs on *DataLad* datasets whose content
+  is not present (`#1495 <https://github.com/nipreps/mriqc/pull/1495>`__).
+* DWI phase images (``part-phase``) are skipped unless a filter selects them, and ``--task-id``
+  works again (`#1494 <https://github.com/nipreps/mriqc/pull/1494>`__).
+
+CHANGES
+-------
+* FIX: Return QI2 = 0 when the background is almost all zeros by @oesteban (`#1493 <https://github.com/nipreps/mriqc/pull/1493>`__)
+* FIX: Do not flag every background voxel as artifact when its MAD is zero by @oesteban (`#1499 <https://github.com/nipreps/mriqc/pull/1499>`__)
+* FIX: Compute the corpus callosum SNR on the right DWI shells by @oesteban (`#1492 <https://github.com/nipreps/mriqc/pull/1492>`__)
+* FIX: Make the group level honour the participant, session, run and task selection by @oesteban (`#1496 <https://github.com/nipreps/mriqc/pull/1496>`__)
+* FIX: Run the group level without reading the raw data by @oesteban (`#1495 <https://github.com/nipreps/mriqc/pull/1495>`__)
+* FIX: Re-index when the saved BIDS database points elsewhere, and keep it in the work directory by @oesteban (`#1497 <https://github.com/nipreps/mriqc/pull/1497>`__)
+* FIX: Skip DWI phase images, and make ``--task-id`` work again by @oesteban (`#1494 <https://github.com/nipreps/mriqc/pull/1494>`__)
+* FIX: Keep figures of other acquisitions out of a report by @oesteban (`#1498 <https://github.com/nipreps/mriqc/pull/1498>`__)
+* FIX: Label FWHM in voxels, plot the BOLD average, and mark clipped FD points by @oesteban (`#1500 <https://github.com/nipreps/mriqc/pull/1500>`__)
+* FIX: Make the integration IQM check fail on any changed value (``dfcheck --strict``) by @oesteban (`#1491 <https://github.com/nipreps/mriqc/pull/1491>`__)
+* DOC: Document the DWI IQMs and how to run the tests by @oesteban (`#1501 <https://github.com/nipreps/mriqc/pull/1501>`__)
+* MAINT: Add @asaraog to ``CONTRIBUTORS.md`` by @oesteban (`#1482 <https://github.com/nipreps/mriqc/pull/1482>`__)
+* MAINT: Update contributor affiliation for Ariel Rokem by @arokem (`#1484 <https://github.com/nipreps/mriqc/pull/1484>`__)
+* STY: Enforce more *ruff* rules by @DimitriPapadopoulos (`#1489 <https://github.com/nipreps/mriqc/pull/1489>`__)
+* CI: Add a *zizmor* GitHub Action for security auditing by @DimitriPapadopoulos (`#1485 <https://github.com/nipreps/mriqc/pull/1485>`__)
+* CI: Pin actions by commit and clear the *zizmor* findings by @oesteban (`#1502 <https://github.com/nipreps/mriqc/pull/1502>`__)
+* CI: Run DWI and FLAIR end to end on GitHub Actions by @oesteban (`#1487 <https://github.com/nipreps/mriqc/pull/1487>`__)
+* CI: Republish the integration reports site when Integration succeeds by @oesteban (`#1490 <https://github.com/nipreps/mriqc/pull/1490>`__)
+
 26.1.0 (November 6, 2026)
 =========================
 The first minor release of the 26.x series.
