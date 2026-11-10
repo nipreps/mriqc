@@ -79,6 +79,8 @@ ENV MKL_NUM_THREADS=1 \
 RUN useradd -m -s /bin/bash -G users mriqc
 WORKDIR /home/mriqc
 ENV HOME="/home/mriqc"
+# TEMPLATEFLOW_HOME is left unset on purpose: Apptainer sets $HOME to the host's home,
+# which stays writable for templates the image does not ship (e.g., Fischer344).
 COPY --link --from=build /templateflow /home/mriqc/.cache/templateflow
 
 # The pixi environment, at the same path it was built in
