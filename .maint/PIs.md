@@ -11,6 +11,6 @@ If you are participating because of your affiliation with another organization (
 | **Lastname** | **Name** | **Handle** | **ORCID** | **Affiliation** |
 | --- | --- | --- | --- | --- |
 | Esteban | Oscar | @oesteban | 0000-0001-8435-6191 | School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland |
-| Rokem | Ariel | @arokem | 0000-0003-0679-1985 | The University of Washington eScience Institute, WA, USA |
+| Rokem | Ariel | @arokem | 0000-0003-0679-1985 | Centre for Addiction and Mental Health and University of Toronto, Toronto, ON, Canada |
 | Poldrack | Russell A. | @poldrack | 0000-0001-6755-0259 | Department of Psychology, Stanford University, CA, USA |
 | Thomas | Adam G. | | 0000-0002-2850-1419 | Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA |

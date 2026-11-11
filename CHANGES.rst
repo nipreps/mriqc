@@ -1,3 +1,65 @@
+26.1.1 (November 10, 2026)
+==========================
+A patch release with bug fixes.
+Anatomical runs whose background is almost all zeros, as in many defaced and synthetic images,
+no longer crash in ``ComputeQI2``, and the group level now honours the participant, session,
+run and task selection.
+
+With thanks to @DimitriPapadopoulos for the *zizmor* security audit and the new *ruff* rules.
+
+Changes in IQMs and reports:
+
+* Anatomical runs where more than 99% of the background is exactly zero get ``qi_2 = 0``
+  instead of crashing (`#1493 <https://github.com/nipreps/mriqc/pull/1493>`__).
+* When the non-zero background voxels have a MAD of zero, no background voxel is flagged as an
+  artifact anymore: ``qi_1`` becomes 0, and ``summary_bg_*``, ``snrd_*`` and ``cnr`` are computed
+  on the full air mask (`#1499 <https://github.com/nipreps/mriqc/pull/1499>`__).
+* DWI: ``snr_cc_shell<N>_*`` were computed one shell off (``shell1`` on the b=0 volumes, and the
+  last shell was never reported).
+  They now follow the diffusion-weighted shells, and ``sigma_piesno`` changes where many slices had
+  a zero sigma (`#1492 <https://github.com/nipreps/mriqc/pull/1492>`__).
+* Group reports label the FWHM in voxels for every modality, plot the average BOLD FWHM, and mark
+  clipped FD and spikes points. No IQMs change
+  (`#1500 <https://github.com/nipreps/mriqc/pull/1500>`__).
+* A report no longer includes the figures of other acquisitions or runs of the same subject
+  (`#1498 <https://github.com/nipreps/mriqc/pull/1498>`__).
+
+Changes in behavior:
+
+* The default BIDS database moves from ``<output_dir>/.bids_db`` to ``<work_dir>/.bids_db``.
+  A database left in the output folder by an earlier version is ignored, not deleted, and a saved
+  database that points to another dataset root is re-indexed with a warning
+  (`#1497 <https://github.com/nipreps/mriqc/pull/1497>`__).
+* At the group level, ``--participant-label``, ``--session-id``, ``--run-id``, ``--task-id`` and
+  ``--bids-filter-file`` limit the IQMs gathered.
+  The filtered tables and reports keep the ``group_<suffix>.*`` names
+  (`#1496 <https://github.com/nipreps/mriqc/pull/1496>`__).
+* The group level no longer reads the raw data, so it runs on *DataLad* datasets whose content
+  is not present (`#1495 <https://github.com/nipreps/mriqc/pull/1495>`__).
+* DWI phase images (``part-phase``) are skipped unless a filter selects them, and ``--task-id``
+  works again (`#1494 <https://github.com/nipreps/mriqc/pull/1494>`__).
+
+CHANGES
+-------
+* FIX: Return QI2 = 0 when the background is almost all zeros by @oesteban (`#1493 <https://github.com/nipreps/mriqc/pull/1493>`__)
+* FIX: Do not flag every background voxel as artifact when its MAD is zero by @oesteban (`#1499 <https://github.com/nipreps/mriqc/pull/1499>`__)
+* FIX: Compute the corpus callosum SNR on the right DWI shells by @oesteban (`#1492 <https://github.com/nipreps/mriqc/pull/1492>`__)
+* FIX: Make the group level honour the participant, session, run and task selection by @oesteban (`#1496 <https://github.com/nipreps/mriqc/pull/1496>`__)
+* FIX: Run the group level without reading the raw data by @oesteban (`#1495 <https://github.com/nipreps/mriqc/pull/1495>`__)
+* FIX: Re-index when the saved BIDS database points elsewhere, and keep it in the work directory by @oesteban (`#1497 <https://github.com/nipreps/mriqc/pull/1497>`__)
+* FIX: Skip DWI phase images, and make ``--task-id`` work again by @oesteban (`#1494 <https://github.com/nipreps/mriqc/pull/1494>`__)
+* FIX: Keep figures of other acquisitions out of a report by @oesteban (`#1498 <https://github.com/nipreps/mriqc/pull/1498>`__)
+* FIX: Label FWHM in voxels, plot the BOLD average, and mark clipped FD points by @oesteban (`#1500 <https://github.com/nipreps/mriqc/pull/1500>`__)
+* FIX: Make the integration IQM check fail on any changed value (``dfcheck --strict``) by @oesteban (`#1491 <https://github.com/nipreps/mriqc/pull/1491>`__)
+* DOC: Document the DWI IQMs and how to run the tests by @oesteban (`#1501 <https://github.com/nipreps/mriqc/pull/1501>`__)
+* MAINT: Add @asaraog to ``CONTRIBUTORS.md`` by @oesteban (`#1482 <https://github.com/nipreps/mriqc/pull/1482>`__)
+* MAINT: Update contributor affiliation for Ariel Rokem by @arokem (`#1484 <https://github.com/nipreps/mriqc/pull/1484>`__)
+* STY: Enforce more *ruff* rules by @DimitriPapadopoulos (`#1489 <https://github.com/nipreps/mriqc/pull/1489>`__)
+* CI: Add a *zizmor* GitHub Action for security auditing by @DimitriPapadopoulos (`#1485 <https://github.com/nipreps/mriqc/pull/1485>`__)
+* CI: Pin actions by commit and clear the *zizmor* findings by @oesteban (`#1502 <https://github.com/nipreps/mriqc/pull/1502>`__)
+* CI: Run DWI and FLAIR end to end on GitHub Actions by @oesteban (`#1487 <https://github.com/nipreps/mriqc/pull/1487>`__)
+* CI: Republish the integration reports site when Integration succeeds by @oesteban (`#1490 <https://github.com/nipreps/mriqc/pull/1490>`__)
+
 26.1.0 (November 6, 2026)
 =========================
 The first minor release of the 26.x series.
@@ -16,7 +78,7 @@ whose pull requests and proposals some of the changes below build on.
     about *MRIQC*.
     To do so, please move the author(s) name(s) to the front of the following list:
 
-    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Bennet Fauber \ :sup:`19`\ ; Taylor Salo \ :sup:`20`\ ; Michael Krause \ :sup:`21`\ ; Pablo Velasco \ :sup:`22`\ ; Thomas Nichols \ :sup:`23`\ ; Victor Férat \ :sup:`24`\ ; Adam Huffman \ :sup:`25`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`26`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`27`\ ; Adam C. Raikes \ :sup:`28`\ ; Asier Erramuzpe \ :sup:`29`\ ; Benjamin Kay \ :sup:`30`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`31`\ ; Michael G. Clark \ :sup:`32`\ ; Rafael Garcia-Dias \ :sup:`33`\ ; Adam G. Thomas \ :sup:`34`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`6`\ ; Oscar Esteban \ :sup:`35`\ .
+    Christopher J. Markiewicz \ :sup:`1`\ ; Zvi Baratz \ :sup:`2`\ ; Céline Provins \ :sup:`3`\ ; Eilidh MacNicol \ :sup:`4`\ ; Dimitri Papadopoulos Orfanos \ :sup:`5`\ ; Teresa Gomez \ :sup:`6`\ ; Dylan Nielson \ :sup:`7`\ ; Jan Varada \ :sup:`8`\ ; Ross W. Blair \ :sup:`1`\ ; McKenzie P. Hagen \ :sup:`9`\ ; William Triplett \ :sup:`10`\ ; Jon Haitz Legarreta Gorroño \ :sup:`11`\ ; Mathias Goncalves \ :sup:`1`\ ; Nikita Beliy \ :sup:`12`\ ; John A. Lee \ :sup:`13`\ ; Patrick Sadil \ :sup:`14`\ ; Ursula A. Tooley \ :sup:`15`\ ; Yaroslav O. Halchenko \ :sup:`16`\ ; Yibei Chen \ :sup:`17`\ ; James D. Kent \ :sup:`18`\ ; Apoorv Saraogee \ :sup:`19`\ ; Bennet Fauber \ :sup:`20`\ ; Taylor Salo \ :sup:`21`\ ; Michael Krause \ :sup:`22`\ ; Pablo Velasco \ :sup:`23`\ ; Thomas Nichols \ :sup:`24`\ ; Victor Férat \ :sup:`25`\ ; Adam Huffman \ :sup:`26`\ ; Elodie Savary \ :sup:`3`\ ; Johannes Achtzehn \ :sup:`27`\ ; Joke Durnez \ :sup:`1`\ ; Satrajit S. Ghosh \ :sup:`28`\ ; Adam C. Raikes \ :sup:`29`\ ; Asier Erramuzpe \ :sup:`30`\ ; Benjamin Kay \ :sup:`31`\ ; Daniel Birman \ :sup:`1`\ ; Michael Dayan \ :sup:`32`\ ; Michael G. Clark \ :sup:`33`\ ; Rafael Garcia-Dias \ :sup:`34`\ ; Adam G. Thomas \ :sup:`35`\ ; Russell A. Poldrack \ :sup:`1`\ ; Ariel Rokem \ :sup:`36`\ ; Oscar Esteban \ :sup:`37`\ .
 
     Affiliations:
 
@@ -38,23 +100,25 @@ whose pull requests and proposals some of the changes below build on.
       16. Psychological and Brain Sciences Department, Dartmouth College, NH, USA
       17. McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA
       18. Department of Psychology, University of Texas at Austin, TX, USA
-      19. University of Michigan, Ann Arbor, USA
-      20. Department of Psychology, Florida International University, FL, USA
-      21. Max Planck Institute for Human Development, Berlin, Germany
-      22. Center for Brain Imaging, New York University, NY, USA
-      23. Oxford Big Data Institute, University of Oxford, Oxford, GB
-      24. Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland
-      25. Department of Physics, Imperial College London, London, UK
-      26. Charité Berlin, Berlin, Germany
-      27. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
-      28. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
-      29. Computational Neuroimaging Lab, BioCruces Health Research Institute
-      30. Washington University School of Medicine, St.Louis, MO, USA
-      31. International Committee of the Red Cross - ICRC, Geneva, Switzerland
-      32. National Institutes of Health, USA
-      33. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
-      34. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
-      35. School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland
+      19. Independent researcher, San Jose, CA, USA
+      20. University of Michigan, Ann Arbor, USA
+      21. Department of Psychology, Florida International University, FL, USA
+      22. Max Planck Institute for Human Development, Berlin, Germany
+      23. Center for Brain Imaging, New York University, NY, USA
+      24. Oxford Big Data Institute, University of Oxford, Oxford, GB
+      25. Department of Basic Neurosciences, Université de Genève, Geneva, Switzerland
+      26. Department of Physics, Imperial College London, London, UK
+      27. Charité Berlin, Berlin, Germany
+      28. McGovern Institute for Brain Research, MIT, MA, USA; and Department of Otolaryngology, Harvard Medical School, MA, USA
+      29. Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA
+      30. Computational Neuroimaging Lab, BioCruces Health Research Institute
+      31. Washington University School of Medicine, St.Louis, MO, USA
+      32. International Committee of the Red Cross - ICRC, Geneva, Switzerland
+      33. National Institutes of Health, USA
+      34. Institute of Psychiatry, Psychology & Neuroscience, King's College London, London, UK
+      35. Data Science and Sharing Team, National Institute of Mental Health, Bethesda, MD, USA
+      36. Centre for Addiction and Mental Health and University of Toronto, Toronto, ON, Canada
+      37. School of Engineering, HES-SO Valais/Wallis, Sion, Switzerland
 
 Highlights:
 
