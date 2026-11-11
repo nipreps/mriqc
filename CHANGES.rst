@@ -1,4 +1,4 @@
-26.1.1 (November 10, 2026)
+26.1.1 (November 11, 2026)
 ==========================
 A patch release with bug fixes.
 Anatomical runs whose background is almost all zeros, as in many defaced and synthetic images,
@@ -52,8 +52,10 @@ CHANGES
 * FIX: Label FWHM in voxels, plot the BOLD average, and mark clipped FD points by @oesteban (`#1500 <https://github.com/nipreps/mriqc/pull/1500>`__)
 * FIX: Make the integration IQM check fail on any changed value (``dfcheck --strict``) by @oesteban (`#1491 <https://github.com/nipreps/mriqc/pull/1491>`__)
 * DOC: Document the DWI IQMs and how to run the tests by @oesteban (`#1501 <https://github.com/nipreps/mriqc/pull/1501>`__)
+* DOC: Explain where container images look for TemplateFlow templates by @oesteban (`#1509 <https://github.com/nipreps/mriqc/pull/1509>`__)
 * MAINT: Add @asaraog to ``CONTRIBUTORS.md`` by @oesteban (`#1482 <https://github.com/nipreps/mriqc/pull/1482>`__)
 * MAINT: Update contributor affiliation for Ariel Rokem by @arokem (`#1484 <https://github.com/nipreps/mriqc/pull/1484>`__)
+* MAINT: Bump ``actions/checkout`` to v7.0.1 and ``actions/setup-python`` to v7.1.0 by @dependabot (`#1505 <https://github.com/nipreps/mriqc/pull/1505>`__, `#1506 <https://github.com/nipreps/mriqc/pull/1506>`__)
 * STY: Enforce more *ruff* rules by @DimitriPapadopoulos (`#1489 <https://github.com/nipreps/mriqc/pull/1489>`__)
 * CI: Add a *zizmor* GitHub Action for security auditing by @DimitriPapadopoulos (`#1485 <https://github.com/nipreps/mriqc/pull/1485>`__)
 * CI: Pin actions by commit and clear the *zizmor* findings by @oesteban (`#1502 <https://github.com/nipreps/mriqc/pull/1502>`__)
