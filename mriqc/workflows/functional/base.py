@@ -772,14 +772,21 @@ def _parse_tout(in_file):
 def _apply_transforms(in_file, in_xfm, max_concurrent):
     from pathlib import Path
 
+    import nibabel as nb
+    import numpy as np
     from nitransforms.linear import load
     from nitransforms.resampling import apply
 
     from mriqc.utils.bids import derive_bids_fname
 
+    # nitransforms reads the series one volume at a time, and each read of a gzipped
+    # file decompresses it again up to that volume: load the series once instead
+    img = nb.load(in_file)
+    img = img.__class__(np.asanyarray(img.dataobj), img.affine, img.header)
+
     realigned = apply(
         load(in_xfm, fmt='afni', reference=in_file, moving=in_file),
-        in_file,
+        img,
         dtype_width=4,
         serialize_nvols=2,
         max_concurrent=max_concurrent,
