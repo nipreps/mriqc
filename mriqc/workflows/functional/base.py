@@ -634,7 +634,6 @@ def epi_mni_align(name='SpatialNormalization'):
 
     # Get settings
     testing = config.execution.debug
-    n_procs = config.nipype.nprocs
     ants_nthreads = config.nipype.omp_nthreads
 
     workflow = pe.Workflow(name=name)
@@ -661,7 +660,6 @@ def epi_mni_align(name='SpatialNormalization'):
             template=config.workflow.template_id,
         ),
         name='EPI2MNI',
-        num_threads=n_procs,
         mem_gb=3,
     )
 
