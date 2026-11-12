@@ -84,8 +84,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     from mriqc.messages import BUILDING_WORKFLOW
     from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
 
-    # Enable if necessary
-    # mem_gb = config.workflow.biggest_file_gb['dwi']
+    mem_gb = config.workflow.biggest_file_gb['dwi']
     dataset = config.workflow.inputs['dwi']
     metadata = config.workflow.inputs_metadata['dwi']
     entities = config.workflow.inputs_entities['dwi']
@@ -145,11 +144,11 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         n_procs=max(1, config.nipype.nprocs // 2),
     )
 
+    # 3dvolreg runs on a single thread, so it reserves one process (the default)
     hmc_b0 = pe.Node(
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='hmc_b0',
         mem_gb=3.0,
-        n_procs=config.nipype.nprocs,
     )
 
     # Calculate brainmask
@@ -184,7 +183,8 @@ def dmri_qc_workflow(name='dwiMRIQC'):
             nthreads=config.nipype.omp_nthreads,
         ),
         name='denoise',
-        n_procs=config.nipype.nprocs,
+        n_procs=config.nipype.omp_nthreads,
+        mem_gb=mem_gb * 6,  # 0.64 GB for a 0.12 GB series
     )
     drift = pe.Node(
         CorrectSignalDrift(),
@@ -197,11 +197,11 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         n_procs=max(1, config.nipype.nprocs // 2),
     )
 
-    # Fit DTI/DKI model
+    # Fit DTI/DKI model (single-threaded)
     dwimodel = pe.Node(
         DiffusionModel(),
         name='dwimodel',
-        n_procs=config.nipype.nprocs,
+        mem_gb=mem_gb * 10,  # 1.2 GB for a 0.12 GB series
     )
 
     # Calculate CC mask
@@ -489,12 +489,11 @@ def hmc_workflow(name='dMRI_HMC'):
         name='outputnode',
     )
 
-    # calculate hmc parameters
+    # calculate hmc parameters (3dvolreg runs on a single thread)
     hmc = pe.Node(
         Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
         name='motion_correct',
         mem_gb=3.0,
-        n_procs=config.nipype.nprocs,
     )
 
     bvec_rot = pe.Node(RotateVectors(), name='bvec_rot')
