@@ -148,6 +148,10 @@ jobs:
           nipreps/mriqc:ci /data /out participant -m ${{ matrix.modality }} \
           --no-sub --random-seed 42 --nprocs 4 --omp-nthreads 2 --ants-nthreads 1 \
           --verbose-reports -vv -w /work
+    # The work directory starts empty, so every node's time is from this run
+    - name: Summarize the node times
+      continue-on-error: true
+      run: python3 .maint/profile_nodes.py "$WORK" --top 15 --markdown >> "$GITHUB_STEP_SUMMARY"
     - name: Run group level
       run: |
         docker run --rm -u "$( id -u ):$( id -g )" -e MRIQC_DEV=1 \
