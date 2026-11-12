@@ -950,7 +950,7 @@ jobs:
           command: |
             pip install -U pip hatch docutils
             hatch version
-            pip install .[docs]
+            pip install --group docs .
       - run:
           name: Build MRIQC documentation
           no_output_timeout: 2h
