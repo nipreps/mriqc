@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Update and sort the creators list of the zenodo record."""
+"""Update and sort the creators list of the zenodo record and the CITATION.cff authors."""
 import json
 import sys
 from pathlib import Path
 
 import click
+import yaml
 from fuzzywuzzy import fuzz, process
 
 
@@ -141,6 +142,55 @@ def get_git_lines(fname='line-contributors.txt'):
     return [' '.join(line.strip().split()[1:-1]) for line in lines if '%' in line]
 
 
+CFF_BEGIN = '# BEGIN AUTHORS'
+CFF_END = '# END AUTHORS'
+
+
+def _cff_names(md_file):
+    """Map each full name to its (given, family) pair from a ``.maint`` table."""
+    return {
+        f"{row.get('name', '')} {row.get('lastname', '')}".strip(): (
+            row.get('name'),
+            row.get('lastname'),
+        )
+        for row in read_md_table(Path(md_file).read_text())
+    }
+
+
+def _cff_person(entry, names):
+    """Convert a Zenodo creator into a CFF person."""
+    given, family = names.get(entry['name'], (None, None))
+    person = {}
+    if family:
+        person['family-names'] = family
+    if given:
+        person['given-names'] = given
+    if not person:
+        person['name'] = entry['name']
+    if entry.get('orcid'):
+        person['orcid'] = f"https://orcid.org/{entry['orcid']}"
+    if entry.get('affiliation') and entry['affiliation'] != 'Unknown affiliation':
+        person['affiliation'] = entry['affiliation']
+    return person
+
+
+def _write_cff_authors(cff_file, authors):
+    """Replace the authors block between the BEGIN/END markers of a CFF file."""
+    lines = Path(cff_file).read_text().splitlines(keepends=True)
+    begin = [i for i, line in enumerate(lines) if line.startswith(CFF_BEGIN)]
+    end = [i for i, line in enumerate(lines) if line.startswith(CFF_END)]
+    if len(begin) != 1 or len(end) != 1 or begin[0] > end[0]:
+        raise RuntimeError(
+            f'{cff_file} must contain one "{CFF_BEGIN}" line followed by one "{CFF_END}" line.'
+        )
+    block = yaml.safe_dump(
+        {'authors': authors}, sort_keys=False, allow_unicode=True, width=10**6
+    )
+    Path(cff_file).write_text(
+        ''.join(lines[:begin[0] + 1]) + block + ''.join(lines[end[0]:])
+    )
+
+
 def _namelast(inlist):
     retval = []
     for i in inlist:
@@ -164,14 +214,16 @@ def cli():
               default='.maint/CONTRIBUTORS.md')
 @click.option('--pi', type=click.Path(exists=True), default='.maint/PIs.md')
 @click.option('-f', '--former-file', type=click.Path(exists=True), default='.maint/FORMER.md')
+@click.option('--cff-file', type=click.Path(exists=True), default='CITATION.cff')
 def zenodo(
     zenodo_file,
     maintainers,
     contributors,
     pi,
     former_file,
+    cff_file,
 ):
-    """Generate a new Zenodo payload file."""
+    """Generate a new Zenodo payload file and the matching CITATION.cff authors."""
     data = get_git_lines()
 
     zenodo = json.loads(Path(zenodo_file).read_text())
@@ -234,6 +286,12 @@ def zenodo(
 
     Path(zenodo_file).write_text(
         f'{json.dumps(zenodo, indent=2)}\n'
+    )
+
+    # CITATION.cff has no contributor role: its authors mirror the Zenodo creators
+    names = _cff_names(maintainers)
+    _write_cff_authors(
+        cff_file, [_cff_person(creator, names) for creator in zenodo['creators']]
     )
 
 

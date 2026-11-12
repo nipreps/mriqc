@@ -1,3 +1,4 @@
 click
 fuzzywuzzy
 python-Levenshtein
+pyyaml
