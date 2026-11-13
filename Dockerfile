@@ -23,9 +23,9 @@
 # SOFTWARE.
 
 
-# AFNI, ANTs and svht_denoise on Ubuntu 22.04, for linux/amd64 and linux/arm64
+# AFNI, ANTs, svht_denoise and niimath on Ubuntu 22.04, for linux/amd64 and linux/arm64
 # (Dockerfile.base, published by .github/workflows/docker-base.yml)
-ARG BASE_IMAGE=ghcr.io/nipreps/mriqc-base:20261105-06b7981
+ARG BASE_IMAGE=ghcr.io/nipreps/mriqc-base:20261113-3c48cbe
 
 #
 # Build the pixi environment (pixi.lock): Python and the scientific stack from
