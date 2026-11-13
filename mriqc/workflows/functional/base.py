@@ -779,8 +779,6 @@ def _apply_transforms(in_file, in_xfm, max_concurrent):
 
     from mriqc.utils.bids import derive_bids_fname
 
-    # nitransforms reads the series one volume at a time, and each read of a gzipped
-    # file decompresses it again up to that volume: load the series once instead
     img = nb.load(in_file)
     
     # Force decompression and materialize the data array in memory.
