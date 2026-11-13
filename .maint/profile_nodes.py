@@ -10,9 +10,11 @@ The source is either a work directory or a log written with ``-vv``:
 * In a log, each ``[Node] Finished "<name>", elapsed time <seconds>s.`` line gives the
   end and the duration of a node, but only its short name.
 
-The summary lists the total, median and share of time per node, the wall time, the
-average number of nodes running at once, and the critical chain: tracing back from the
-node that ended last, the node that ended last before each one started.
+The summary lists the total, median and share of time per node, the wall time (from
+the first node's start to the last node's end), the linear time (the sum of all node
+durations, as if they ran one at a time), the average number of nodes running at once
+(their ratio), and the critical chain: tracing back from the node that ended last, the
+node that ended last before each one started.
 Gaps in that chain are time spent outside node execution (workflow set-up, hashing,
 waiting for free processors).
 
@@ -164,12 +166,18 @@ def summarize(records):
     groups = {}
     for record in records:
         groups.setdefault(record.name, []).append(record.duration)
-    busy = sum(sum(durations) for durations in groups.values())
+    linear = sum(sum(durations) for durations in groups.values())
     rows = [
-        (name, len(durations), sum(durations), statistics.median(durations), sum(durations) / busy)
+        (
+            name,
+            len(durations),
+            sum(durations),
+            statistics.median(durations),
+            sum(durations) / linear,
+        )
         for name, durations in groups.items()
     ]
-    return sorted(rows, key=lambda row: -row[2]), busy
+    return sorted(rows, key=lambda row: -row[2]), linear
 
 
 def fmt(seconds):
@@ -177,14 +185,14 @@ def fmt(seconds):
 
 
 def report(records, top, markdown):
-    rows, busy = summarize(records)
+    rows, linear = summarize(records)
     wall = max(r.end for r in records) - min(r.start for r in records)
     chain = critical_chain(records)
     chain_busy = sum(r.duration for r in chain)
     lines = []
     head = (
         f'{len(records)} node runs ({len(rows)} nodes): wall time {fmt(wall)}, '
-        f'node time {fmt(busy)}, on average {busy / wall:.1f} nodes running at once.'
+        f'linear time {fmt(linear)}, on average {linear / wall:.1f} nodes running at once.'
     )
     chain_line = (
         f'Critical chain: {len(chain)} node runs, {fmt(chain_busy)} running and '
