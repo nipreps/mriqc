@@ -179,6 +179,27 @@ def get_fwhmx():
     return FWHMx(combine=True, detrend=True, args='-ShowMeClassicFWHM')
 
 
+def get_hmc(estimate=False):
+    """
+    Return the head-motion correction interface selected with ``--hmc-engine``.
+
+    Both write the same outputs: ``out_file``, ``oned_file`` and ``oned_matrix_save``.
+    AFNI's 3dvolreg runs on one thread; niimath's ``-moco`` runs on ``--omp-nthreads``,
+    and with ``estimate`` it writes no realigned series.
+
+    """
+    from mriqc import config
+
+    if config.workflow.hmc_engine == 'niimath':
+        from mriqc.interfaces.niimath import Moco
+
+        return Moco(estimate=estimate, num_threads=config.nipype.omp_nthreads)
+
+    from nipype.interfaces.afni import Volreg
+
+    return Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ')
+
+
 def generate_filename(in_file, dirname=None, suffix='', extension=None):
     """
     Generate a nipype-like filename.

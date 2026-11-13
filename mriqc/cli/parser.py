@@ -52,7 +52,7 @@ def _build_parser():
     """Build parser object."""
     import sys
     import warnings
-    from argparse import Action, ArgumentDefaultsHelpFormatter, ArgumentParser
+    from argparse import SUPPRESS, Action, ArgumentDefaultsHelpFormatter, ArgumentParser
     from functools import partial
     from pathlib import Path
 
@@ -456,6 +456,14 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         action='store_true',
         default=False,
         help='Despike the functional scans during head motion correction preprocessing.',
+    )
+    # Experimental, hidden from --help until validated (applies to DWI too)
+    g_func.add_argument(
+        '--hmc-engine',
+        action='store',
+        choices=('3dvolreg', 'niimath'),
+        default=config.workflow.hmc_engine,
+        help=SUPPRESS,
     )
     g_func.add_argument(
         '--start-idx',
