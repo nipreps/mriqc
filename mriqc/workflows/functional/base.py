@@ -780,9 +780,9 @@ def _apply_transforms(in_file, in_xfm, max_concurrent):
     from mriqc.utils.bids import derive_bids_fname
 
     img = nb.load(in_file)
-    
-    # Force decompression and materialize the data array in memory.
-    # This seemingly no-op actually reduces access latency by 10x.
+    # Force decompression and materialize the data array in memory: nitransforms reads
+    # one volume at a time, and each read of a .gz file decompresses it from the start.
+    # This seemingly no-op line cut resampling from 538 s to 53 s on 480 volumes.
     img = img.__class__(np.asanyarray(img.dataobj), img.affine, img.header)
 
     realigned = apply(
