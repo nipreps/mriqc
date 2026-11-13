@@ -26,8 +26,8 @@
 # SOFTWARE.
 
 # Built and published by .github/workflows/docker-base.yml as ghcr.io/nipreps/mriqc-base.
-# AFNI, ANTs and svht_denoise have no upstream Linux arm64 binaries, so all three are
-# compiled here, from the same recipe on both architectures.
+# AFNI, ANTs, svht_denoise and niimath have no upstream Linux arm64 binaries, so all four
+# are compiled here, from the same recipe on both architectures.
 
 # Ubuntu 22.04 LTS - Jammy
 ARG BASE_IMAGE=ubuntu:jammy-20261020
@@ -115,6 +115,17 @@ RUN git clone --depth 1 --branch ${SVHT_VERSION} https://github.com/rordenlab/sv
     rm -rf /src/svht
 
 #
+# niimath: image operations, including rigid-body motion correction (-moco) and N4 (-n4)
+#
+FROM builder AS niimath
+ARG NIIMATH_VERSION=v1.0.20261016
+# CFLAGS is set inside niimath's Makefile, so the arm64 flag goes with the compiler
+RUN git clone --depth 1 --branch ${NIIMATH_VERSION} https://github.com/rordenlab/niimath.git /src/niimath && \
+    make -C /src/niimath/src CNAME="gcc $(cat /signed-char.flag)" MOCO=1 N4=1 && \
+    install -m 0755 /src/niimath/src/niimath /usr/local/bin/ && \
+    rm -rf /src/niimath
+
+#
 # SynthStrip's model (data, so the amd64 image serves both architectures)
 #
 FROM --platform=linux/amd64 freesurfer/synthstrip@sha256:f19578e5f033f2c707fa66efc8b3e11440569facb46e904b45fd52f1a12beb8b AS synthstrip
@@ -149,6 +160,7 @@ COPY --link --from=ants \
     /opt/ants/bin/N4BiasFieldCorrection \
     /opt/ants/bin/
 COPY --link --from=svht /usr/local/bin/svht_denoise /usr/local/bin/svht_denoise
+COPY --link --from=niimath /usr/local/bin/niimath /usr/local/bin/niimath
 COPY --link --from=synthstrip /freesurfer/models/synthstrip.1.pt /opt/freesurfer/models/synthstrip.1.pt
 
 ENV PATH="/opt/afni:/opt/ants/bin:$PATH" \
@@ -159,19 +171,22 @@ ENV PATH="/opt/afni:/opt/ants/bin:$PATH" \
 # Every program must find its libraries and report the expected version
 ARG AFNI_VERSION=AFNI_26.2.05
 ARG ANTS_VERSION=v2.6.5
+ARG NIIMATH_VERSION=v1.0.20261016
 RUN missing=""; \
-    for bin in /opt/afni/3d* /opt/ants/bin/* /usr/local/bin/svht_denoise; do \
+    for bin in /opt/afni/3d* /opt/ants/bin/* /usr/local/bin/svht_denoise /usr/local/bin/niimath; do \
         if ldd "$bin" | grep "not found"; then echo "  ^ in $bin"; missing=1; fi; \
     done; \
     test -z "$missing" && \
     3dvolreg -ver 2>&1 | grep -q "${AFNI_VERSION}" && \
     antsRegistration --version | grep -q "${ANTS_VERSION#v}" && \
-    svht_denoise -help > /dev/null
+    svht_denoise -help > /dev/null && \
+    niimath | grep -q "${NIIMATH_VERSION#v}" && \
+    niimath | grep -q -- "-moco"
 
 ARG BUILD_DATE
 ARG VCS_REF
 LABEL org.opencontainers.image.source="https://github.com/nipreps/mriqc" \
-      org.opencontainers.image.description="MRIQC base image: AFNI ${AFNI_VERSION}, ANTs ${ANTS_VERSION}, svht_denoise" \
+      org.opencontainers.image.description="MRIQC base image: AFNI ${AFNI_VERSION}, ANTs ${ANTS_VERSION}, svht_denoise, niimath ${NIIMATH_VERSION}" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.revision=$VCS_REF
