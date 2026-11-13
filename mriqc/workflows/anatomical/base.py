@@ -279,8 +279,6 @@ def spatial_normalization(name='SpatialNormalization'):
             generate_report=True,
         ),
         name='SpatialNormalization',
-        # Request all MultiProc processes when ants_nthreads > n_procs
-        num_threads=config.nipype.omp_nthreads,
         mem_gb=3,
     )
     if config.workflow.species.lower() == 'human':
@@ -406,7 +404,6 @@ def init_brain_tissue_segmentation(name='brain_tissue_segmentation'):
         ),
         name='segmentation',
         mem_gb=5,
-        num_threads=config.nipype.omp_nthreads,
     )
 
     # fmt: off
@@ -571,7 +568,6 @@ def headmsk_wf(name='HeadMaskWorkflow', omp_nthreads=1):
             function=_enhance,
         ),
         name='Enhance',
-        num_threads=omp_nthreads,
     )
     enhance.inputs.seed = config.seeds.numpy
 
@@ -582,7 +578,6 @@ def headmsk_wf(name='HeadMaskWorkflow', omp_nthreads=1):
             function=image_gradient,
         ),
         name='Grad',
-        num_threads=omp_nthreads,
     )
     thresh = pe.Node(
         niu.Function(
@@ -591,7 +586,6 @@ def headmsk_wf(name='HeadMaskWorkflow', omp_nthreads=1):
             function=gradient_threshold,
         ),
         name='GradientThreshold',
-        num_threads=omp_nthreads,
     )
     if config.workflow.species != 'human':
         gradient.inputs.sigma = 3.0
