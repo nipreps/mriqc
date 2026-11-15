@@ -49,6 +49,15 @@ github using ``pip`` on a Python 3 environment::
 
         $ sed -i 's/\(backend *: \).*$/\1Agg/g' $( python -c "import matplotlib; print(matplotlib.matplotlib_fname())" )
 
+Supported versions
+..................
+*MRIQC* follows `SPEC 0 <https://scientific-python.org/specs/spec-0000/>`__,
+the minimum supported dependencies of the Scientific Python ecosystem.
+A Python version is supported for three years after its release, and a version of a
+dependency for two years after its release.
+Python 3.13 and 3.14 are supported, and every pull request is tested on both.
+Each quarter, an automated pull request raises the minimum versions of the dependencies.
+
 Execution system dependencies
 .............................
 If you are using a a `Neurodebian <http://neuro.debian.net/>`_ Linux distribution,

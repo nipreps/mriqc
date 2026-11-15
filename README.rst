@@ -1,7 +1,7 @@
 mriqc: image quality metrics for quality assessment of MRI
 ==========================================================
 
-|DOI| |Zenodo| |Package| |Pythons| |DevStatus| |PackageBuild| |License| |Documentation| |CircleCI| |EOSS|
+|DOI| |Zenodo| |Package| |Pythons| |SPEC0| |DevStatus| |PackageBuild| |License| |Documentation| |CircleCI| |EOSS|
 
 MRIQC extracts no-reference IQMs (image quality metrics) from
 structural (T1w, T2w and FLAIR), functional and diffusion MRI (magnetic resonance imaging)
@@ -118,6 +118,9 @@ brain connectivity using MRI*” (grant number
    :target: https://pypi.python.org/pypi/mriqc/
 .. |Pythons| image:: https://img.shields.io/pypi/pyversions/mriqc.svg
    :target: https://pypi.python.org/pypi/mriqc/
+.. |SPEC0| image:: https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038
+   :target: https://scientific-python.org/specs/spec-0000/
+   :alt: SPEC 0: Minimum Supported Dependencies
 .. |DevStatus| image:: https://img.shields.io/pypi/status/mriqc.svg
    :target: https://pypi.python.org/pypi/mriqc/
 .. |PackageBuild| image:: https://github.com/nipreps/mriqc/actions/workflows/pythonpackage.yml/badge.svg
