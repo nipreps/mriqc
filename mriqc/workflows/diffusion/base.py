@@ -31,7 +31,7 @@ The diffusion workflow follows the following steps:
 #. Sanitize (revise data types and xforms) input data, read
    associated metadata and discard non-steady state frames.
 #. :abbr:`HMC (head-motion correction)` based on ``3dvolreg`` from
-   AFNI -- :py:func:`hmc`.
+   AFNI -- :py:func:`hmc_workflow`.
 #. Skull-stripping of the time-series (AFNI) --
    :py:func:`dmri_bmsk_workflow`.
 #. Calculate mean time-series, and :abbr:`tSNR (temporal SNR)`.
@@ -144,7 +144,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         n_procs=max(1, config.nipype.nprocs // 2),
     )
 
-    # 3dvolreg runs on a single thread, so it reserves one process (the default)
+    # Reserves one process for 3dvolreg, --omp-nthreads for NiFreeze (see get_hmc)
     hmc_b0 = pe.Node(
         get_hmc(modality='dwi'),
         name='hmc_b0',
@@ -257,7 +257,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (dmri_bmsk, sp_mask, [('outputnode.out_mask', 'brain_mask')]),
         (dmri_bmsk, drift, [('outputnode.out_mask', 'brainmask_file')]),
         (drift, hmcwf, [('out_full_file', 'inputnode.in_file')]),
-        (load_bmat, hmcwf, [('out_bvec_file', 'inputnode.in_bvec')]),
+        (load_bmat, hmcwf, [('out_bvec_file', 'inputnode.in_bvec'),
+                            ('out_bval_file', 'inputnode.in_bval')]),
+        (dmri_bmsk, hmcwf, [('outputnode.out_mask', 'inputnode.brain_mask')]),
         (drift, averages, [('out_full_file', 'in_file')]),
         (drift, stddev, [('out_full_file', 'in_file')]),
         (shells, averages, [('b_masks', 'in_weights')]),
@@ -319,6 +321,9 @@ def dmri_qc_workflow(name='dwiMRIQC'):
         (spatial_norm, dwi_report_wf, [('outputnode.epi_parc', 'inputnode.in_parcellation')]),
     ])
     # fmt: on
+
+    if config.workflow.hmc_engine == 'nifreeze':
+        workflow.connect(dmri_bmsk, 'outputnode.out_mask', hmc_b0, 'brain_mask')
     return workflow
 
 
@@ -452,12 +457,19 @@ def hmc_workflow(name='dMRI_HMC'):
     """
     Create a :abbr:`HMC (head motion correction)` workflow for dMRI.
 
+    AFNI's ``3dvolreg`` (default) and niimath's ``-moco`` register every volume to the
+    b=0 reference; NiFreeze (``--hmc-engine nifreeze``) registers each diffusion-weighted
+    volume to its prediction from the others (see :py:func:`~mriqc.workflows.utils.get_hmc`).
+    With ``--dwi-eddy``, NiFreeze registers each one again with an affine transform, which
+    also corrects eddy-current distortions; the framewise displacement keeps the rigid
+    estimates, and the b-vectors are rotated by the rotation of the affine transforms.
+
     .. workflow::
 
-        from mriqc.workflows.diffusion.base import hmc
+        from mriqc.workflows.diffusion.base import hmc_workflow
         from mriqc.testing import mock_config
         with mock_config():
-            wf = hmc()
+            wf = hmc_workflow()
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
@@ -473,6 +485,8 @@ def hmc_workflow(name='dMRI_HMC'):
                 'in_file',
                 'reference',
                 'in_bvec',
+                'in_bval',
+                'brain_mask',
             ]
         ),
         name='inputnode',
@@ -489,11 +503,13 @@ def hmc_workflow(name='dMRI_HMC'):
         name='outputnode',
     )
 
-    # calculate hmc parameters (3dvolreg runs on a single thread)
+    # calculate hmc parameters (one process for 3dvolreg, --omp-nthreads for NiFreeze)
+    nifreeze = config.workflow.hmc_engine == 'nifreeze'
     hmc = pe.Node(
         get_hmc(modality='dwi'),
         name='motion_correct',
-        mem_gb=3.0,
+        # NiFreeze peaked at 0.9 GB on a 0.08 GB HBN series, 8.0 GB on a 0.41 GB HCPh one
+        mem_gb=max(3.0, 22 * config.workflow.biggest_file_gb['dwi']) if nifreeze else 3.0,
     )
 
     bvec_rot = pe.Node(RotateVectors(), name='bvec_rot')
@@ -522,6 +538,14 @@ def hmc_workflow(name='dMRI_HMC'):
                                 ('out_diff', 'out_bvec_diff')]),
     ])
     # fmt: on
+
+    if nifreeze:
+        hmc.inputs.eddy = config.workflow.dwi_eddy
+        workflow.connect([
+            (inputnode, hmc, [('in_bvec', 'in_bvec'),
+                              ('in_bval', 'in_bval'),
+                              ('brain_mask', 'brain_mask')]),
+        ])  # fmt: skip
     return workflow
 
 

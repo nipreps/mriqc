@@ -98,3 +98,62 @@ def test_hmc_engine_cli(tmp_path):
     assert '--hmc-engine' in parser.format_help()
     args = [str(tmp_path), str(tmp_path / 'out'), 'participant', '--hmc-engine', 'niimath']
     assert parser.parse_args(args).hmc_engine == 'niimath'
+    args[-1] = 'nifreeze'
+    assert parser.parse_args(args).hmc_engine == 'nifreeze'
+    assert '--dwi-eddy' in parser.format_help()
+    assert not parser.parse_args(args).dwi_eddy
+    assert parser.parse_args([*args, '--dwi-eddy']).dwi_eddy
+
+
+@pytest.mark.parametrize('engine', ['3dvolreg', 'niimath'])
+def test_dwi_eddy_requires_nifreeze(tmp_path, engine):
+    """--dwi-eddy is an error with the engines that cannot correct eddy currents."""
+    from mriqc.cli.parser import parse_args
+
+    with pytest.raises(SystemExit):
+        parse_args(
+            [
+                str(tmp_path),
+                str(tmp_path / 'out'),
+                'participant',
+                '--hmc-engine',
+                engine,
+                '--dwi-eddy',
+            ]
+        )
+
+
+@pytest.mark.parametrize('eddy', [False, True])
+@pytest.mark.parametrize('seed', [None, 1234])
+def test_nifreeze_engine(monkeypatch, seed, eddy):
+    """--hmc-engine nifreeze corrects DWI with NiFreeze, and leaves BOLD on 3dvolreg."""
+    from nipype.interfaces.afni import Volreg
+
+    from mriqc import config
+    from mriqc.interfaces.nifreeze import NiFreezeHMC
+    from mriqc.testing import mock_config
+    from mriqc.workflows.diffusion.base import hmc_workflow
+    from mriqc.workflows.utils import get_hmc
+
+    with mock_config():
+        monkeypatch.setattr(config.workflow, 'hmc_engine', 'nifreeze')
+        monkeypatch.setattr(config.workflow, 'biggest_file_gb', {'dwi': 0.41})
+        monkeypatch.setattr(config.seeds, 'ants', seed)
+        monkeypatch.setattr(config.workflow, 'dwi_eddy', eddy)
+        monkeypatch.setattr(config.nipype, 'omp_nthreads', 3)
+        assert isinstance(get_hmc(estimate=True), Volreg)
+        wf = hmc_workflow()
+
+    hmc = wf.get_node('motion_correct')
+    assert isinstance(hmc.interface, NiFreezeHMC)
+    assert hmc.n_procs == 3
+    assert hmc.mem_gb == pytest.approx(22 * 0.41)
+    assert (hmc.inputs.seed if seed else None) == seed
+    assert hmc.inputs.eddy is eddy
+    connected = {
+        conn[1]
+        for _, node, data in wf._graph.edges(data=True)
+        if node is hmc
+        for conn in data['connect']
+    }
+    assert connected == {'in_file', 'basefile', 'in_bvec', 'in_bval', 'brain_mask'}
