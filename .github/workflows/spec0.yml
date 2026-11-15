@@ -1,0 +1,53 @@
+name: Update SPEC 0 dependency floors
+
+on:
+  schedule:
+    # Day 3 of each quarter, after the action publishes the quarter's schedule on day 1
+    - cron: '0 0 3 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      create_pr:
+        description: 'Open a pull request (otherwise, only show the changes in the log)'
+        type: boolean
+        default: true
+
+# GITHUB_TOKEN only checks the code out; the app's token pushes and opens the pull request
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      # CI starts on pull requests opened by the nipreps-spec0 app, unlike on those
+      # opened with GITHUB_TOKEN
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: app-token
+        with:
+          client-id: ${{ vars.SPEC0_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SPEC0_APP_PRIVATE_KEY }}
+          # Enough to push the branch and open the pull request
+          permission-contents: write
+          permission-pull-requests: write
+      # Python is excluded: dropping a Python version also changes the CI matrices
+      # and images, the classifiers, and the Python of the Docker image (pixi)
+      - uses: scientific-python/spec0-action@7c875bc60508e9aab2bdb851e99bfcc53b283e94 # v1.6
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          target_branch: master
+          create_pr: ${{ github.event_name == 'schedule' || inputs.create_pr }}
+          update_all: 2
+          excluded_packages: python
+          pr_title: 'MNT: Drop dependency versions past the SPEC 0 window'
+          commit_msg: 'mnt: drop dependency versions past the SPEC 0 window'
+          pr_body: >-
+            Raises the lower bounds of the dependencies to the SPEC 0 schedule
+            (https://scientific-python.org/specs/spec-0000/), and those of the other
+            dependencies to their oldest release of the last two years.
+            Before merging, run `pixi lock` on this branch, with the Dockerfile's
+            pixi version, and push the updated `pixi.lock`: it records MRIQC's
+            requirements.
