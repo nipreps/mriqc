@@ -84,3 +84,36 @@ def test_piesno(tmp_path, monkeypatch):
     sigma = PIESNO(in_file=str(in_file), n_channels=1).run().outputs.sigma
 
     assert sigma == pytest.approx(10.0, rel=0.05)
+
+
+def test_rotate_vectors_affine(tmp_path, monkeypatch):
+    """Affine transforms turn the b-vectors by their rotation, not by their stretch."""
+    from scipy.spatial.transform import Rotation
+
+    from mriqc.interfaces.diffusion import RotateVectors
+
+    monkeypatch.chdir(tmp_path)
+    nb.Nifti1Image(
+        np.zeros((8, 8, 8), dtype='float32'), np.diag([2.0, 2.0, 2.5, 1.0])
+    ).to_filename('ref.nii.gz')
+    np.savetxt('dwi.bvec', np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0.6, 0, 0.8]]).T)
+
+    rotation = Rotation.from_euler('xyz', [2.0, -1.0, 3.0], degrees=True).as_matrix()
+    stretch = np.array([[1.01, 0.01, 0.0], [0.01, 1.03, 0.005], [0.0, 0.005, 0.99]])
+    results = {}
+    for name, linear in (('rigid', rotation), ('affine', rotation @ stretch)):
+        matrices = np.tile(np.eye(4)[:3], (4, 1, 1))
+        matrices[1:, :, :3] = linear
+        np.savetxt(f'{name}.aff12.1D', matrices.reshape(-1, 12))
+        results[name] = (
+            RotateVectors(
+                in_file='dwi.bvec', reference='ref.nii.gz', transforms=f'{name}.aff12.1D'
+            )
+            .run()
+            .outputs
+        )
+
+    np.testing.assert_allclose(results['affine'].out_diff, results['rigid'].out_diff, atol=2e-6)
+    np.testing.assert_allclose(results['affine'].out_bvec, results['rigid'].out_bvec, atol=1e-6)
+    assert results['rigid'].out_diff[0] == 0.0  # b=0
+    assert all(0.01 < diff < 0.07 for diff in results['rigid'].out_diff[1:])  # 0.6 to 4 degrees
