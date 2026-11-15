@@ -505,7 +505,9 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Despike, Refit, Volreg
+    from nipype.interfaces.afni import Despike, Refit
+
+    from mriqc.workflows.utils import get_hmc
 
     mem_gb = config.workflow.biggest_file_gb['bold']
 
@@ -521,9 +523,9 @@ def hmc(name='fMRI_HMC', omp_nthreads=None):
         name='outputnode',
     )
 
-    # calculate hmc parameters
+    # calculate hmc parameters (apply_hmc resamples the series)
     estimate_hm = pe.Node(
-        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        get_hmc(estimate=True),
         name='estimate_hm',
         mem_gb=mem_gb * 2.5,
     )

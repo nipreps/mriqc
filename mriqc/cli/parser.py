@@ -458,6 +458,15 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Despike the functional scans during head motion correction preprocessing.',
     )
     g_func.add_argument(
+        '--hmc-engine',
+        action='store',
+        choices=('3dvolreg', 'niimath'),
+        default=config.workflow.hmc_engine,
+        help="Head-motion correction of BOLD runs: AFNI's 3dvolreg, or niimath's -moco, a "
+        'reimplementation of 3dvolreg that takes seconds instead of minutes. The motion '
+        'IQMs (e.g., fd_mean) differ between them. DWI runs always use 3dvolreg.',
+    )
+    g_func.add_argument(
         '--start-idx',
         action=DeprecateAction,
         type=int,

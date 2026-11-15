@@ -20,10 +20,11 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-"""Resampling of the BOLD series with the head-motion transforms."""
+"""Head-motion correction: resampling the BOLD series, and the engines."""
 
 import nibabel as nb
 import numpy as np
+import pytest
 from nitransforms.linear import load
 from nitransforms.resampling import apply
 
@@ -60,3 +61,40 @@ def test_apply_transforms_in_memory(tmp_path, monkeypatch):
     assert realigned.shape == data.shape
     assert not np.array_equal(realigned, data)  # the transforms moved the volumes
     assert np.array_equal(realigned, np.asanyarray(expected.dataobj))
+
+
+@pytest.mark.parametrize('engine', ['3dvolreg', 'niimath'])
+def test_hmc_engine(monkeypatch, engine):
+    """--hmc-engine niimath corrects BOLD with niimath, and leaves DWI on 3dvolreg."""
+    from nipype.interfaces.afni import Volreg
+
+    from mriqc import config
+    from mriqc.interfaces.niimath import Moco
+    from mriqc.testing import mock_config
+    from mriqc.workflows.diffusion.base import hmc_workflow
+    from mriqc.workflows.functional.base import hmc
+    from mriqc.workflows.utils import get_hmc
+
+    with mock_config():
+        monkeypatch.setattr(config.workflow, 'hmc_engine', engine)
+        # mock_config() gives one size for all modalities
+        monkeypatch.setattr(config.workflow, 'biggest_file_gb', {'bold': 0.1, 'dwi': 0.1})
+        monkeypatch.setattr(config.nipype, 'omp_nthreads', 3)
+        bold = hmc().get_node('estimate_hm')
+        dwi = hmc_workflow().get_node('motion_correct')
+        assert isinstance(get_hmc(modality='dwi'), Volreg)
+
+    assert isinstance(bold.interface, Moco if engine == 'niimath' else Volreg)
+    assert bold.n_procs == (3 if engine == 'niimath' else 1)
+    assert isinstance(dwi.interface, Volreg)
+    assert dwi.n_procs == 1
+
+
+def test_hmc_engine_cli(tmp_path):
+    """--hmc-engine is listed in --help, and parsed."""
+    from mriqc.cli.parser import _build_parser
+
+    parser = _build_parser()
+    assert '--hmc-engine' in parser.format_help()
+    args = [str(tmp_path), str(tmp_path / 'out'), 'participant', '--hmc-engine', 'niimath']
+    assert parser.parse_args(args).hmc_engine == 'niimath'

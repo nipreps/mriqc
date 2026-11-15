@@ -633,6 +633,8 @@ class workflow(_Config):
     """Radius in mm. of the sphere for the FD calculation."""
     fft_spikes_detector: bool = False
     """Turn on FFT based spike detector (slow)."""
+    hmc_engine: str = '3dvolreg'
+    """Head-motion correction of BOLD: AFNI's ``3dvolreg``, or niimath's ``-moco`` (DWI: 3dvolreg)."""
     inputs: list[str | os.PathLike] | None = None
     """List of files to be processed with MRIQC."""
     inputs_entities: dict[list[dict]] | None = None

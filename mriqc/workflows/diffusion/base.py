@@ -65,7 +65,6 @@ def dmri_qc_workflow(name='dwiMRIQC'):
             wf = dmri_qc_workflow()
 
     """
-    from nipype.interfaces.afni import Volreg
     from niworkflows.interfaces.header import SanitizeImage
     from niworkflows.interfaces.images import RobustAverage
 
@@ -83,6 +82,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
     )
     from mriqc.messages import BUILDING_WORKFLOW
     from mriqc.workflows.shared import synthstrip_wf as dmri_bmsk_workflow
+    from mriqc.workflows.utils import get_hmc
 
     mem_gb = config.workflow.biggest_file_gb['dwi']
     dataset = config.workflow.inputs['dwi']
@@ -146,7 +146,7 @@ def dmri_qc_workflow(name='dwiMRIQC'):
 
     # 3dvolreg runs on a single thread, so it reserves one process (the default)
     hmc_b0 = pe.Node(
-        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        get_hmc(modality='dwi'),
         name='hmc_b0',
         mem_gb=3.0,
     )
@@ -461,9 +461,9 @@ def hmc_workflow(name='dMRI_HMC'):
 
     """
     from nipype.algorithms.confounds import FramewiseDisplacement
-    from nipype.interfaces.afni import Volreg
 
     from mriqc.interfaces.diffusion import RotateVectors
+    from mriqc.workflows.utils import get_hmc
 
     workflow = pe.Workflow(name=name)
 
@@ -491,7 +491,7 @@ def hmc_workflow(name='dMRI_HMC'):
 
     # calculate hmc parameters (3dvolreg runs on a single thread)
     hmc = pe.Node(
-        Volreg(args='-Fourier -twopass', zpad=4, outputtype='NIFTI_GZ'),
+        get_hmc(modality='dwi'),
         name='motion_correct',
         mem_gb=3.0,
     )
