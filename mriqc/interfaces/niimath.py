@@ -22,7 +22,6 @@
 #
 """Interfaces to `niimath <https://github.com/rordenlab/niimath>`__."""
 
-from itertools import permutations
 from pathlib import Path
 
 import nibabel as nb
@@ -34,6 +33,8 @@ from nipype.interfaces.base import (
     TraitedSpec,
     traits,
 )
+
+from mriqc.utils.hmc import afni_matrices
 
 
 class _MocoInputSpec(CommandLineInputSpec):
@@ -158,69 +159,3 @@ class Moco(CommandLine):
         oned_file = Path(outputs['oned_file'])
         outputs['oned_matrix_save'] = str(oned_file.with_name(f'{oned_file.stem}.aff12.1D'))
         return outputs
-
-
-def afni_matrices(params, header, shape):
-    """
-    Compute the matrices of 3dvolreg's ``-1Dmatrix_save`` from its motion parameters.
-
-    3dvolreg and niimath ignore obliquity: they snap each voxel axis onto the nearest
-    DICOM axis (+x Left, +y Posterior, +z Superior), and rotate about the centre of that
-    grid. Each matrix maps a point of the base (DICOM mm) onto the input volume.
-
-    Parameters
-    ----------
-    params : :obj:`numpy.ndarray`
-        One row per volume: roll, pitch, yaw (degrees), dS, dL, dP (mm).
-    header : :obj:`nibabel.nifti1.Nifti1Header`
-        Header of the realigned series.
-    shape : :obj:`tuple`
-        Its three spatial dimensions.
-
-    Returns
-    -------
-    :obj:`numpy.ndarray`
-        One 3x4 matrix per volume.
-
-    """
-    # The sform, unless the qform has a higher code (as niimath reads them)
-    sform, sform_code = header.get_sform(coded=True)
-    qform, qform_code = header.get_qform(coded=True)
-    affine = sform if sform_code > 0 and not sform_code < qform_code else qform
-    zooms = np.abs(np.array(header.get_zooms()[:3], dtype=float))
-    zooms[zooms <= 0] = 1.0
-
-    idx2mm = np.diag(zooms)
-    origin = np.zeros(3)
-    if affine is not None:
-        flip = np.array([-1.0, -1.0, 1.0])  # RAS+ to DICOM
-        linear = flip[:, None] * affine[:3, :3]
-        best = max(
-            permutations(range(3)),
-            key=lambda perm: sum(abs(linear[perm[j], j]) for j in range(3)),
-        )
-        idx2mm = np.zeros((3, 3))
-        for j, i in enumerate(best):
-            idx2mm[i, j] = np.copysign(zooms[j], linear[i, j])
-        origin = flip * affine[:3, 3]
-    center = origin + idx2mm @ ((np.array(shape[:3]) - 1) / 2)
-
-    params = np.asanyarray(params, dtype=float)
-    roll, pitch, yaw = np.deg2rad(params[:, :3]).T
-    rotations = _rotation(2, -roll) @ _rotation(0, -pitch) @ _rotation(1, -yaw)
-    shifts = params[:, [4, 5, 3]]  # (dL, dP, dS) = DICOM (x, y, z)
-    translations = -np.einsum('nij,nj->ni', rotations, shifts) + center - rotations @ center
-    return np.concatenate((rotations, translations[..., None]), axis=-1)
-
-
-def _rotation(axis, angles):
-    """Right-handed rotations by ``angles`` (radians) about one axis, one per angle."""
-    cos, sin = np.cos(angles), np.sin(angles)
-    rot = np.zeros((len(angles), 3, 3))
-    rot[:, axis, axis] = 1.0
-    i, j = (axis + 1) % 3, (axis + 2) % 3
-    rot[:, i, i] = cos
-    rot[:, j, j] = cos
-    rot[:, i, j] = -sin
-    rot[:, j, i] = sin
-    return rot

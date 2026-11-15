@@ -28,48 +28,7 @@ import nibabel as nb
 import numpy as np
 import pytest
 
-from mriqc.interfaces.niimath import Moco, afni_matrices
-
-# Three volumes of an HBN DWI run (oblique), realigned by 3dvolreg (AFNI 26.0.07):
-# its -1Dfile parameters and its -1Dmatrix_save matrices.
-HBN_AFFINE = np.array(
-    [
-        [-1.79009676, 0.00000009, 0.16939613, 90.46134186],
-        [-0.01180378, 1.79369688, -0.12500422, -83.0014801],
-        [0.1688032, 0.1254275, 1.78764367, -94.22790527],
-        [0.0, 0.0, 0.0, 1.0],
-    ]
-)
-HBN_SHAPE = (104, 104, 72)
-VOLREG_PARAMS = np.array(
-    [
-        [0.5071, 7.0387, -0.0961, 8.3341, 0.4766, -2.6787],
-        [0.1705, 7.0124, -0.5696, 8.4216, 0.5818, -3.0870],
-        [0.7173, 8.3701, 6.7830, 4.6742, 1.1331, -2.6984],
-    ]
-)
-VOLREG_MATRICES = np.array(
-    [
-        [0.999958, 0.00878402, 0.00276198, -0.307877, -0.00905626, 0.992425,
-         0.12252, 5.30405, -0.00166483, -0.12254, 0.992462, -10.0001],
-        [0.999943, 0.00295412, 0.0103048, -0.318432, -0.00418993, 0.992515,
-         0.122048, 5.67706, -0.00986716, -0.122084, 0.992471, -10.1085],
-        [0.993138, 0.0123849, -0.116291, -3.94159, 0.00476081, 0.989271,
-         0.146015, 6.2967, 0.116852, -0.145566, 0.982424, -7.29765],
-    ]
-).reshape(-1, 3, 4)  # fmt: skip
-
-
-def test_afni_matrices():
-    """The matrices match 3dvolreg's, to the precision of its parameter file."""
-    header = nb.Nifti1Header()
-    header.set_data_shape(HBN_SHAPE)
-    header.set_qform(HBN_AFFINE, code=1)
-    header.set_sform(HBN_AFFINE, code=1)
-
-    matrices = afni_matrices(VOLREG_PARAMS, header, HBN_SHAPE)
-    np.testing.assert_allclose(matrices[..., :3], VOLREG_MATRICES[..., :3], atol=1e-5)
-    np.testing.assert_allclose(matrices[..., 3], VOLREG_MATRICES[..., 3], atol=2e-4)
+from mriqc.interfaces.niimath import Moco
 
 
 def test_moco_cmdline(tmp_path, monkeypatch):
