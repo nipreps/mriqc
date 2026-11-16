@@ -421,6 +421,16 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
         help='Drop DWI runs with fewer orientations than this threshold.',
         type=int,
     )
+    g_dwi.add_argument(
+        '--dwi-eddy',
+        action='store_true',
+        default=config.workflow.dwi_eddy,
+        help='Also correct eddy-current distortions (requires --hmc-engine nifreeze): each '
+        'diffusion-weighted volume is registered onto its prediction a second time, with an '
+        'affine transform, so that head-motion correction takes about three times as long. '
+        'The framewise displacement keeps the rigid estimates; the IQMs of the realigned '
+        'series (efc_shell*, fber_shell*, snr_cc_shell*) and bdiffs_* change.',
+    )
 
     # Functional workflow settings
     g_func = parser.add_argument_group('Functional MRI workflow configuration')
@@ -460,11 +470,13 @@ not be what you want in, e.g., shared systems like a HPC cluster.""",
     g_func.add_argument(
         '--hmc-engine',
         action='store',
-        choices=('3dvolreg', 'niimath'),
+        choices=('3dvolreg', 'niimath', 'nifreeze'),
         default=config.workflow.hmc_engine,
-        help="Head-motion correction of BOLD runs: AFNI's 3dvolreg, or niimath's -moco, a "
-        'reimplementation of 3dvolreg that takes seconds instead of minutes. The motion '
-        'IQMs (e.g., fd_mean) differ between them. DWI runs always use 3dvolreg.',
+        help="Head-motion correction: AFNI's 3dvolreg (BOLD and DWI); niimath's -moco "
+        '(BOLD only), a reimplementation of 3dvolreg that takes seconds instead of minutes; '
+        'or NiFreeze (DWI only), which registers each volume to its prediction from the '
+        'others. Runs of the other modality use 3dvolreg. The motion IQMs (e.g., fd_mean) '
+        'differ between engines.',
     )
     g_func.add_argument(
         '--start-idx',
@@ -521,6 +533,8 @@ def parse_args(args=None, namespace=None):
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
+    if opts.dwi_eddy and opts.hmc_engine != 'nifreeze':
+        parser.error('--dwi-eddy requires --hmc-engine nifreeze.')
     config.execution.log_level = int(max(25 - 5 * opts.verbose_count, DEBUG))
 
     config.loggers.init()

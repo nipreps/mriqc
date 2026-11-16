@@ -1361,6 +1361,12 @@ class RotateVectors(SimpleInterface):
         xyz[nonzero] = xyz[nonzero] / xyz_norms[nonzero, np.newaxis]
 
         hmc_rot = load(self.inputs.transforms).matrix[:, :3, :3]
+        if not np.allclose(hmc_rot @ hmc_rot.transpose(0, 2, 1), np.eye(3), atol=1e-4):
+            # Affine transforms (eddy-current correction) also scale and shear: rotate
+            # by their rotation only, from the polar decomposition. 3dvolreg's matrices
+            # are rotations to their six significant digits, and are used as written.
+            u, _, vt = np.linalg.svd(hmc_rot)
+            hmc_rot = u @ vt
         ijk_rotated = (ras2vox[:3, :3] @ np.einsum('ijk,ik->ij', hmc_rot, xyz).T).T.astype(
             'float32'
         )

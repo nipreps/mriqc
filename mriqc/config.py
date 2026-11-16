@@ -627,6 +627,8 @@ class workflow(_Config):
     """Deoblique the functional scans during head motion correction preprocessing."""
     despike: bool = False
     """Despike the functional scans during head motion correction preprocessing."""
+    dwi_eddy: bool = False
+    """Correct the eddy-current distortions of DWI with NiFreeze (``--hmc-engine nifreeze``)."""
     fd_thres: float = 0.2
     """Threshold on Framewise Displacement estimates to detect outliers."""
     fd_radius: int = 50
@@ -634,7 +636,7 @@ class workflow(_Config):
     fft_spikes_detector: bool = False
     """Turn on FFT based spike detector (slow)."""
     hmc_engine: str = '3dvolreg'
-    """Head-motion correction of BOLD: AFNI's ``3dvolreg``, or niimath's ``-moco`` (DWI: 3dvolreg)."""
+    """Head-motion correction: ``3dvolreg``, niimath's ``-moco`` (BOLD), or ``nifreeze`` (DWI)."""
     inputs: list[str | os.PathLike] | None = None
     """List of files to be processed with MRIQC."""
     inputs_entities: dict[list[dict]] | None = None

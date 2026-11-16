@@ -146,7 +146,9 @@ Global and slice-wise spike fractions (``spikes_*``, :py:func:`~mriqc.qc.diffusi
 
 Head motion (``fd_*``)
     :ref:`Framewise displacement <iqms_fd>` (FD) estimated by the head-motion correction,
-    which aligns every volume to the average b=0 image with AFNI's ``3dvolreg``.
+    which aligns every volume to the average b=0 image with AFNI's ``3dvolreg`` (default),
+    or each diffusion-weighted volume to its prediction from the others with NiFreeze
+    (``--hmc-engine nifreeze``). With ``--dwi-eddy``, FD keeps NiFreeze's rigid estimates.
     ``fd_mean`` is the average FD (in mm), ``fd_num`` the number of volumes with an FD
     above 0.2 mm, and ``fd_perc`` their percentage over the series.
 
@@ -154,7 +156,8 @@ Head motion (``fd_*``)
 
 Rotation of the b-vectors by head motion (``bdiffs_*``)
     Angle (in radians) between each original b-vector and the same vector rotated by
-    the head-motion correction.
+    the head-motion correction (with ``--dwi-eddy``, by the rotation part of its affine
+    transforms).
     ``bdiffs_mean``, ``bdiffs_median``, ``bdiffs_min``, and ``bdiffs_max`` summarize
     the volumes rotated by more than 1e-4 rad (b=0 volumes are therefore excluded).
 

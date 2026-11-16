@@ -183,15 +183,29 @@ def get_hmc(estimate=False, modality='bold'):
     """
     Return the head-motion correction interface selected with ``--hmc-engine``.
 
-    Both write the same outputs: ``out_file``, ``oned_file`` and ``oned_matrix_save``.
-    AFNI's 3dvolreg runs on one thread; niimath's ``-moco`` runs on ``--omp-nthreads``,
-    and with ``estimate`` it writes no realigned series.
+    All write the same outputs: ``out_file``, ``oned_file`` and ``oned_matrix_save``.
+    AFNI's 3dvolreg runs on one thread; niimath's ``-moco`` and NiFreeze run on
+    ``--omp-nthreads``, and with ``estimate`` they write no realigned series.
 
-    niimath corrects BOLD only. Like 3dvolreg, it registers every volume to one
-    reference, which across b-values is biased by the contrast: DWI keeps 3dvolreg.
+    niimath corrects BOLD only: like 3dvolreg, it registers every volume to one
+    reference, which across b-values is biased by the contrast. NiFreeze corrects
+    DWI only, registering each volume to its prediction from the others. The other
+    modality keeps 3dvolreg.
 
     """
     from mriqc import config
+
+    if config.workflow.hmc_engine == 'nifreeze':
+        if modality == 'dwi':
+            from mriqc.interfaces.nifreeze import NiFreezeHMC
+
+            hmc = NiFreezeHMC(estimate=estimate, num_threads=config.nipype.omp_nthreads)
+            if config.seeds.ants is not None:
+                hmc.inputs.seed = config.seeds.ants
+            return hmc
+        config.loggers.workflow.warning(
+            '--hmc-engine nifreeze corrects DWI only: %s uses 3dvolreg.', modality.upper()
+        )
 
     if config.workflow.hmc_engine == 'niimath':
         if modality == 'bold':
