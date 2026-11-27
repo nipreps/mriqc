@@ -44,7 +44,7 @@ jobs:
         persist-credentials: false
         fetch-depth: 0
     - name: Set up uv
-      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
     - name: Get the version
       id: version
       run: |
@@ -118,7 +118,7 @@ jobs:
         key: testdata-${{ matrix.dataset }}-${{ hashFiles(format('.github/testdata/{0}.json', matrix.dataset), '.github/testdata/fetch.py') }}
     - name: Set up uv
       if: steps.data.outputs.cache-hit != 'true'
-      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
     - name: Fetch the test data
       if: steps.data.outputs.cache-hit != 'true'
       run: |
