@@ -398,15 +398,20 @@ def compute_iqms(name='ComputeIQMs'):
     )
 
     # Save to JSON file
+    datasink_fields = ['aor', 'gcor', 'aqi']
+    if config.workflow.fft_spikes_detector:
+        datasink_fields.append('spikes_num')
+
     datasink = pe.MapNode(
         IQMFileSink(
             modality='bold',
             out_dir=str(config.execution.output_dir),
             dataset=config.execution.dsname,
+            fields=datasink_fields,
         ),
         name='datasink',
         run_without_submitting=True,
-        iterfield=['in_file', 'root', 'metadata', 'provenance'],
+        iterfield=['in_file', 'root', 'metadata', 'provenance', *datasink_fields],
     )
 
     # Save timeseries TSV file
